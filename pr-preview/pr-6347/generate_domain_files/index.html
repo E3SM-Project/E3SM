@@ -1721,34 +1721,31 @@
 
 
 <h1 id="generating-domain-files">Generating Domain Files</h1>
-<p>Domain files are needed at runtime by the coupler, data models, and land model.
-The land model uses the mask to determine where to run and the coupler use the
-land fraction to merge fluxes from multiple surface types to the atmosphere
-above them.</p>
-<p>Domain files are created from a conservative, monotone mapping file from the 
-ocean grid (where the mask is defined) to the atmosphere grid.</p>
-<p>a mapping files created in the 
-previous step, using a tool provided with CIME in 
-${e3sm_root}/cime/tools/mapping/gen_domain_files. </p>
+<p>Domain files are needed at runtime by the coupler, data models, and land model. The land model uses the mask to determine where to run and the coupler use the land fraction to merge fluxes from multiple surface types to the atmosphere above them.</p>
+<p>Domain files are created from a conservative, monotone mapping file from the ocean grid (where the mask is defined) to the atmosphere grid.</p>
 <h2 id="environement">Environement</h2>
-<p>The new domain generation tool requires a few special packages, 
-such as xarray, numba, and itertools.
-These are all included in the E3SM unified environment:
+<p>The new domain generation tool requires a few special packages, such as xarray, numba, and itertools. These are all included in the E3SM unified environment:
 https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</p>
-<p>Alternatively, a simple conda environment can be created with the following command:
-<div class="highlight"><pre><span></span><code>conda create --name example_env --channel conda-forge xarray numpy numba scikit-learn netcdf4
-</code></pre></div></p>
-<h2 id="map-file-generation">Map File Generation</h2>
-<p>The map file used to generate the domain files can be created a few different ways.
-For a typical E3SM configuration we recommend using a conservative, monotone map.
-Here is an example command that can be used to generate one (as of NCO version 5.2.2)</p>
-<div class="highlight"><pre><span></span><code>ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
+<p>Alternatively, a simple conda environment can be created with the following command:</p>
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>example_env<span class="w"> </span>--channel<span class="w"> </span>conda-forge<span class="w"> </span>xarray<span class="w"> </span>numpy<span class="w"> </span>numba<span class="w"> </span>scikit-learn<span class="w"> </span>netcdf4
 </code></pre></div>
+<h2 id="map-file-generation">Map File Generation</h2>
+<p>The map file used to generate the domain files can be created a few different ways. For a typical E3SM configuration we recommend using a conservative, monotone map. Here is an example command that can be used to generate one (as of NCO version 5.2.2)</p>
+<div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-5<span class="w"> </span>-a<span class="w"> </span>traave<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">OCN_GRID</span><span class="si">}</span><span class="w"> </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">ATM_GRID</span><span class="si">}</span><span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">MAP_FILE</span><span class="si">}</span>
+</code></pre></div>
+<p>Note that existing ocean grid files can be found in the inputdata repository: <code>inputdata/ocn/mpas-o/&lt;ocn_grid_name&gt;/</code></p>
+<p>The atmosphere grid file should be on the "pg2" grid. These grid files are easily generated with three TempestRemap commands as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_scrip.nc
+</code></pre></div>
+<p>For RRM grids the last two commands would be used on the exodus file produced by <a href="https://github.com/ClimateGlobalChange/squadgen">SQuadGen</a> (See the <a href="https://docs.e3sm.org/user-guides/adding-grid-support-overview.md">Adding Support for New Grids</a> tutorial for more information.).</p>
 <h2 id="generating-domain-files_1">Generating Domain Files</h2>
 <p>Below is a typical example of how to invoke the domain generation tool from the command line:</p>
-<div class="highlight"><pre><span></span><code>NE=30
-MAP_FILE=${MAP_FILE_ROOT}/map_oEC60to30v3_to_ne${NE}pg2_traave.20240313.nc
-python generate_domain_files_E3SM.py -m ${MAP_FILE} -o oEC60to30v3 -l ne${NE}pg2 --date-stamp=9999 --output-root=${OUTPUT_ROOT}
+<div class="highlight"><pre><span></span><code><span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
+<span class="nv">MAP_FILE</span><span class="o">=</span><span class="si">${</span><span class="nv">MAP_FILE_ROOT</span><span class="si">}</span>/map_oEC60to30v3_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_traave.20240313.nc
+python<span class="w"> </span>generate_domain_files_E3SM.py<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">MAP_FILE</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span>oEC60to30v3<span class="w"> </span>-l<span class="w"> </span>ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2<span class="w"> </span>--date-stamp<span class="o">=</span><span class="m">9999</span><span class="w"> </span>--output-root<span class="o">=</span><span class="si">${</span><span class="nv">OUTPUT_ROOT</span><span class="si">}</span>
 </code></pre></div>
 
 
