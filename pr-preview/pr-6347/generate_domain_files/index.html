@@ -1681,9 +1681,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generating-domain-files_1" class="md-nav__link">
+  <a href="#running-the-domain-generation-tool" class="md-nav__link">
     <span class="md-ellipsis">
-      Generating Domain Files
+      Running the Domain Generation Tool
     </span>
   </a>
   
@@ -1725,7 +1725,7 @@
 <p>Domain files are created from a conservative, monotone mapping file from the ocean grid (where the mask is defined) to the atmosphere grid.</p>
 <h2 id="environement">Environement</h2>
 <p>The new domain generation tool requires a few special packages, such as xarray, numba, and itertools. These are all included in the E3SM unified environment:
-https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</p>
+<a href="https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/">https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</a></p>
 <p>Alternatively, a simple conda environment can be created with the following command:</p>
 <div class="highlight"><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>example_env<span class="w"> </span>--channel<span class="w"> </span>conda-forge<span class="w"> </span>xarray<span class="w"> </span>numpy<span class="w"> </span>numba<span class="w"> </span>scikit-learn<span class="w"> </span>netcdf4
 </code></pre></div>
@@ -1741,7 +1741,7 @@ GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span 
 ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">GRID_FILE_PATH</span><span class="si">}</span>/ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_scrip.nc
 </code></pre></div>
 <p>For RRM grids the last two commands would be used on the exodus file produced by <a href="https://github.com/ClimateGlobalChange/squadgen">SQuadGen</a> (See the <a href="https://docs.e3sm.org/user-guides/adding-grid-support-overview.md">Adding Support for New Grids</a> tutorial for more information.).</p>
-<h2 id="generating-domain-files_1">Generating Domain Files</h2>
+<h2 id="running-the-domain-generation-tool">Running the Domain Generation Tool</h2>
 <p>Below is a typical example of how to invoke the domain generation tool from the command line:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
 <span class="nv">MAP_FILE</span><span class="o">=</span><span class="si">${</span><span class="nv">MAP_FILE_ROOT</span><span class="si">}</span>/map_oEC60to30v3_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_traave.20240313.nc
