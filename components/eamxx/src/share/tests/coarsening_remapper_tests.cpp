@@ -105,6 +105,8 @@ build_src_grid(const ekat::Comm& comm, const int ngdofs, Engine& engine)
 }
 
 constexpr int vec_dim = 2;
+constexpr int tens_dim1 = 3;
+constexpr int tens_dim2 = 4;
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
 {
   const auto u = ekat::units::Units::nondimensional();
@@ -116,12 +118,18 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
       f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,vec_dim),u,gn));  break;
+    case LayoutType::Tensor2D:
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({CMP,CMP},{tens_dim1,tens_dim2}),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
       f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,CMP,vec_dim),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      break;
+    case LayoutType::Tensor3D:
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{CMP,CMP},{tens_dim1,tens_dim2}),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -188,6 +196,13 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
         case 3:
           if (pid==comm.rank()) {
             data = ekat::subview(f.get_view<T***,Host>(),icol).data();
+          } else {
+            data = data_vec.data();
+          }
+          break;
+        case 4:
+          if (pid==comm.rank()) {
+            data = ekat::subview(f.get_view<T****,Host>(),icol).data();
           } else {
             data = data_vec.data();
           }
@@ -306,20 +321,26 @@ TEST_CASE("coarsening_remap")
 
   auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, engine);
   auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, engine);
+  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, engine);
   auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  engine);
   auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, engine);
   auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  engine);
   auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, engine);
+  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  engine);
+  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, engine);
 
   auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);
   auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, false);
+  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, false);
   auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, true );
   auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, false);
   auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, true );
   auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, false);
+  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, true );
+  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, false);
 
-  std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
+  std::vector<Field> src_f = {src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
+  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};
 
   // -------------------------------------- //
   //     Register fields in the remapper    //
@@ -357,7 +378,7 @@ TEST_CASE("coarsening_remap")
 
       const auto& l = gsrc.get_header().get_identifier().get_layout();
       const auto ls = to_string(l);
-      std::string dots (25-ls.size(),'.');
+      std::string dots (30-ls.size(),'.');
       auto msg = "   -> Checking field with layout " + to_string(l) + " " + dots;
       root_print (msg + "\n",comm);
       bool ok = true;
@@ -393,6 +414,26 @@ TEST_CASE("coarsening_remap")
               }
               CHECK ( v_tgt(idof,icmp)== expected );
               ok &= catch_capture.lastAssertionPassed();
+            }
+          }
+        } break;
+        case LayoutType::Tensor2D:
+        {
+          const auto v_src = gsrc.get_view<const Real***,Host>();
+          const auto v_tgt = gtgt.get_view<const Real***,Host>();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<vec_dim; ++icmp) {
+              for (int jcmp=0; jcmp<vec_dim; ++jcmp) {
+                Real expected = 0;
+                auto gdof = gids_tgt_v(idof);
+                for (int j=0; j<2; ++j) {
+                  auto src_gcol = gdof + j;
+                  auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                  expected += w*v_src(src_lcol,icmp,jcmp);
+                }
+                CHECK ( v_tgt(idof,icmp,jcmp)== expected );
+                ok &= catch_capture.lastAssertionPassed();
+              }
             }
           }
         } break;
@@ -432,6 +473,29 @@ TEST_CASE("coarsening_remap")
                 }
                 CHECK ( v_tgt(idof,icmp,ilev)== expected );
                 ok &= catch_capture.lastAssertionPassed();
+              }
+            }
+          }
+        } break;
+        case LayoutType::Tensor3D:
+        {
+          const auto v_src = gsrc.get_view<const Real****,Host>();
+          const auto v_tgt = gtgt.get_view<const Real****,Host>();
+          auto f_nlevs = gsrc.get_header().get_identifier().get_layout().dims().back();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<tens_dim1; ++icmp) {
+              for (int jcmp=0; jcmp<tens_dim2; ++jcmp) {
+                for (int ilev=0; ilev<f_nlevs; ++ilev) {
+                  Real expected = 0;
+                  auto gdof = gids_tgt_v(idof);
+                  for (int j=0; j<2; ++j) {
+                    auto src_gcol = gdof + j;
+                    auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                    expected += w*v_src(src_lcol,icmp,jcmp,ilev);
+                  }
+                  CHECK ( v_tgt(idof,icmp,jcmp,ilev)== expected );
+                  ok &= catch_capture.lastAssertionPassed();
+                }
               }
             }
           }

@@ -108,7 +108,7 @@ if (SCREAM_SMALL_KERNELS)
   add_library(shoc ${SHOC_SRCS} ${SHOC_SK_SRCS})
 else()
   add_library(shoc ${SHOC_SRCS})
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_BASELINES_ONLY)
+  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
     # Always build shoc_sk with SCREAM_SMALL_KERNELS on
     target_compile_definitions(shoc_sk PUBLIC "SCREAM_SMALL_KERNELS")

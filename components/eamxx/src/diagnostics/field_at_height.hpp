@@ -33,6 +33,7 @@ protected:
 
   std::string         m_diag_name;
   std::string         m_z_name;
+  std::string         m_z_suffix;
   std::string         m_field_name;
 
   Real                m_z;

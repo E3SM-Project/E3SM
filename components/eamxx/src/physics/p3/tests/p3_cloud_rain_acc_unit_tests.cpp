@@ -97,7 +97,7 @@ static void run_bfb()
     Spack nc_accret_tend{0.0};
 
     Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
-                                    inv_qc_relvar, qc2qr_accret_tend, nc_accret_tend);
+                                    inv_qc_relvar, qc2qr_accret_tend, nc_accret_tend, physics::P3_Constants<Real>());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

@@ -11,3 +11,5 @@ updates:
     reviewers:
       - "mahf708"
       - "bartgol"
+    labels:
+      - "AT: Integrate Without Testing"

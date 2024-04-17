@@ -1,12 +1,7 @@
-#include <catch2/catch.hpp>
-
 #include <iostream>
 
-namespace scream {
-
-TEST_CASE("nightly_unit")
+int main(int,char**)
 {
   std::cout << "NIGHTLY unit test running" << std::endl;
+  return 0;
 }
-
-} // empty namespace

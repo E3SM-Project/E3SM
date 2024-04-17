@@ -2,6 +2,50 @@ include(EkatUtils)
 include(EkatSetCompilerFlags)
 include(ScreamUtils)
 
+# Copied from EKAT, YAKL is an interface target so requires special
+# handling. Get rid of this once RRTMGP is using kokkos.
+macro (SetCudaFlagsYakl targetName)
+  if (Kokkos_ENABLE_CUDA)
+    # We must find CUDA
+    find_package(CUDA REQUIRED)
+
+    # Still check if CUDA_FOUND is true, since we don't know if the particular
+    # FindCUDA.cmake module being used is checking _FIND_REQUIRED
+    if (NOT CUDA_FOUND)
+      message (FATAL_ERROR "Error! Unable to find CUDA.")
+    endif()
+
+    set(options CUDA_LANG)
+    set(args1v)
+    set(argsMv FLAGS)
+    cmake_parse_arguments(SCF "${options}" "${args1v}" "${argsMv}" ${ARGN})
+
+    if (SCF_FLAGS)
+      set (FLAGS ${SCF_FLAGS})
+    else ()
+      # We need host-device lambdas
+      set (FLAGS --expt-extended-lambda)
+
+      IsDebugBuild (SCF_DEBUG)
+      if (SCF_DEBUG)
+        # Turn off fused multiply add for debug so we can stay BFB with host
+        list (APPEND FLAGS --fmad=false)
+      endif()
+    endif()
+
+    # Set the flags on the target
+    if (SCF_CUDA_LANG)
+      # User is setting the src files language to CUDA
+      target_compile_options (${targetName} INTERFACE
+        "$<$<COMPILE_LANGUAGE:CUDA>:${FLAGS}>")
+    else()
+      # We assume the user is setting the src files lang to CXX
+      target_compile_options (${targetName} INTERFACE
+        "$<$<COMPILE_LANGUAGE:CXX>:${FLAGS}>")
+    endif()
+  endif()
+endmacro()
+
 ##################################
 #             YAKL               #
 ##################################
@@ -17,8 +61,9 @@ if (TARGET yakl)
 else ()
   # Prepare CUDA/HIP flags for YAKL
   if (CUDA_BUILD)
+    string(REPLACE ";" " " KOKKOS_CUDA_OPTIONS_STR "${KOKKOS_CUDA_OPTIONS}")
     set(YAKL_ARCH "CUDA")
-    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA ${KOKKOS_CUDA_OPTIONS_STR} --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
     string (REPLACE " " ";" YAKL_CUDA_FLAGS_LIST ${YAKL_CUDA_FLAGS})
   endif()
   if (HIP_BUILD)
@@ -36,21 +81,20 @@ else ()
 
   # EAMxx *requires* MPI, so simply look for it, then link against it
   find_package(MPI REQUIRED COMPONENTS C)
-  target_link_libraries (yakl MPI::MPI_C)
-  EkatDisableAllWarning(yakl)
+  target_link_libraries (yakl INTERFACE MPI::MPI_C)
 
   # For debug builds, set -DYAKL_DEBUG
   if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-    target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
+    target_compile_definitions(yakl INTERFACE YAKL_DEBUG)
   endif()
 endif()
 
 # See eamxx/src/dynamics/homme/CMakeLists.txt for an explanation of this
 # workaround.
 if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-  SetCudaFlags(yakl CUDA_LANG FLAGS -UNDEBUG)
+  SetCudaFlagsYakl(yakl CUDA_LANG FLAGS -UNDEBUG)
 else()
-  SetCudaFlags(yakl CUDA_LANG)
+  SetCudaFlagsYakl(yakl CUDA_LANG)
 endif()
 
 ##################################
@@ -81,7 +125,7 @@ yakl_process_target(rrtmgp)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
-target_link_libraries(rrtmgp yakl)
+target_link_libraries(rrtmgp yakl Kokkos::kokkos)
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
@@ -90,12 +134,6 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
-
-# The lines below are needed to ensure that kokkos_launch_compiler injects
-# nvcc into compilations. rrtmgp uses YAKL, not kokkos, so the wrapper
-# didn't know to add nvcc without these lines.
-target_compile_definitions(rrtmgp PRIVATE KOKKOS_DEPENDENCE)
-target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
 
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface
 # from the external core RRTMGP library because, ideally, the RRTMGP library has its
@@ -125,7 +163,7 @@ yakl_process_target(scream_rrtmgp_yakl)
 #       since yakl_process_target already used it
 #       with the "plain" signature
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share)
+target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
 target_include_directories(scream_rrtmgp_yakl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
@@ -142,7 +180,7 @@ set(SCREAM_RRTMGP_SOURCES
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})
-target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_yakl)
+target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_yakl Kokkos::kokkos)
 set_target_properties(scream_rrtmgp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )

@@ -432,7 +432,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   if (m_grid->has_geometry_data("dx_short")) {
     // We must be running with IntensiveObservationPeriod on, with a planar geometry
     auto dx = m_grid->get_geometry_data("dx_short").get_view<const Real,Host>()();
-    Kokkos::deep_copy(cell_length, dx);
+    Kokkos::deep_copy(cell_length, dx*1000); // convert km -> m
   } else {
     const auto area = m_grid->get_geometry_data("area").get_view<const Real*>();
     const auto lat  = m_grid->get_geometry_data("lat").get_view<const Real*>();

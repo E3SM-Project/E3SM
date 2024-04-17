@@ -179,6 +179,16 @@ TEST_CASE ("time_stamp") {
     auto ts6 = ts1 + spd*1000;
     REQUIRE ( (ts6-ts1)==spd*1000 );
   }
+  SECTION ("large_updates") {
+    TS base ({1850,1,1},{0,0,0},1);
+    for (int i=1; i<=500; ++i) {
+      TS curr ({1850+i,1,1},{0,0,0},0);
+      auto diff = curr.seconds_from(base);
+      TS time = base;
+      time += diff;
+      REQUIRE (time==curr);
+    }
+  }
 }
 
 TEST_CASE ("array_utils") {

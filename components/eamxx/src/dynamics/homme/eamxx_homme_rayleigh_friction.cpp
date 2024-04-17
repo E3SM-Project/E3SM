@@ -22,12 +22,9 @@ void HommeDynamics::rayleigh_friction_init()
   // to 0-based for computations
   m_rayk0 -= 1;
 
-  constexpr int N = SCREAM_PACK_SIZE;
-  using Pack = RPack<N>;
-
   // Calculate decay rate profile, otau.
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
   m_otau = decltype(m_otau)("otau", npacks);
 
   // Local paramters
@@ -48,7 +45,7 @@ void HommeDynamics::rayleigh_friction_init()
 
   Kokkos::parallel_for(KT::RangePolicy(0, npacks),
                        KOKKOS_LAMBDA (const int ilev) {
-    const auto range_pack = ekat::range<Pack>(ilev*N);
+    const auto range_pack = ekat::range<Pack>(ilev*Pack::n);
     const Pack x = (rayk0 - range_pack)/krange;
     otau(ilev) = otau0*(1.0 + ekat::tanh(x))/2.0;
   });
@@ -56,9 +53,7 @@ void HommeDynamics::rayleigh_friction_init()
 
 void HommeDynamics::rayleigh_friction_apply(const Real dt) const
 {
-  constexpr int N = HOMMEXX_PACK_SIZE;
   using PF = PhysicsFunctions<DefaultDevice>;
-  using Pack = RPack<N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   // If m_raytau0==0, then no Rayleigh friction is applied. Return.
@@ -66,7 +61,7 @@ void HommeDynamics::rayleigh_friction_apply(const Real dt) const
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   const auto horiz_winds_view = get_field_out("horiz_winds").get_view<Pack***>();
   const auto T_mid_view       = get_field_out("T_mid").get_view<Pack**>();

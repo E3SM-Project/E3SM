@@ -44,7 +44,8 @@ public:
 
   CoarseningRemapper (const grid_ptr_type& src_grid,
                       const std::string& map_file,
-                      const bool track_mask = false);
+                      const bool track_mask = false,
+                      const bool populate_tgt_grid_geo_data = true);
 
   ~CoarseningRemapper ();
 

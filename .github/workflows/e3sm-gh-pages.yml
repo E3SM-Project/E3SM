@@ -15,7 +15,7 @@ concurrency:
   
 jobs:
   Build-and-Deploy-docs:
-    if: ${{ github.event.repository.name != 'scream' }}
+    if: ${{ github.event.repository.name == 'e3sm' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

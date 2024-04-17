@@ -20,9 +20,6 @@ public:
   // Constructors
   PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // Set type to diagnostic
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
-
   // The name of the diagnostic
   std::string name () const { return "PotentialTemperature"; }
 

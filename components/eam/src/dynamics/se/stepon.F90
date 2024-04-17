@@ -585,8 +585,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    if (dp_crm) then
 
      do ie=1,nelemd
-       out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
-       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lon
+       out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lon
+       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
        call outfld('crm_grid_x', out_gridx, npsq, ie)
        call outfld('crm_grid_y', out_gridy, npsq, ie)
      enddo

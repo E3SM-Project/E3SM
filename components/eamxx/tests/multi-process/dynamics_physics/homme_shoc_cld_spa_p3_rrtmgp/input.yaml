@@ -1,0 +1,68 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+
+atmosphere_processes:
+  atm_procs_list: [homme,physics]
+  schedule_type: Sequential
+  homme:
+    Moisture: moist
+  physics:
+    atm_procs_list: [mac_aero_mic,rrtmgp]
+    schedule_type: Sequential
+    Type: Group
+    mac_aero_mic:
+      atm_procs_list: [shoc,CldFraction,spa,p3]
+      Type: Group
+      schedule_type: Sequential
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      spa:
+        spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
+      p3:
+        max_total_ni: 740.0e3
+      shoc:
+        check_flux_state_consistency: true
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        Ckh: 0.1
+        Ckm: 0.1
+    rrtmgp:
+      column_chunk_size: 123
+      active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

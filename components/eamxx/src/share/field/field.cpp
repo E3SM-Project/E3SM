@@ -122,7 +122,7 @@ get_component (const int i, const bool dynamic) {
       "Error! 'get_component' available only for vector fields.\n"
       "       Layout of '" + fname + "': " + e2str(get_layout_type(layout.tags())) + "\n");
 
-  const int idim = layout.get_vector_dim();
+  const int idim = layout.get_vector_component_idx();
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),
       "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
 

@@ -56,6 +56,9 @@ public:
     register_field(create_src_fid(tgt),tgt);
   }
 
+  virtual void register_field_from_src (const field_type& src);
+  virtual void register_field_from_tgt (const field_type& tgt);
+
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 

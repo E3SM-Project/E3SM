@@ -21,7 +21,7 @@ from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_pr
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
-from yaml_utils import Bools,Ints,Floats,Strings,array_representer
+from yaml_utils import Bools,Ints,Floats,Strings,array_representer,array_constructor
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
@@ -465,7 +465,18 @@ def expand_cime_vars(element, case):
             child.text = do_cime_vars(child.text, case)
 
 ###############################################################################
-def _create_raw_xml_file_impl(case, xml):
+def write_pretty_xml(filepath, xml):
+###############################################################################
+    with open(filepath, "w") as fd:
+        # dom has better pretty printing than ET in older python versions < 3.9
+        dom = md.parseString(ET.tostring(xml, encoding="unicode"))
+        pretty_xml = dom.toprettyxml(indent="  ")
+        pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
+                                      if s.strip()])
+        fd.write(pretty_xml)
+
+###############################################################################
+def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
     On input, xml contains the parsed content of namelist_defaults_scream.xml.
@@ -610,32 +621,40 @@ def _create_raw_xml_file_impl(case, xml):
     selectors = get_valid_selectors(xml)
 
     # 1. Evaluate all selectors
-    evaluate_selectors(xml, case, selectors)
+    try:
+        evaluate_selectors(xml, case, selectors)
 
-    # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-    #    which atm processes are used
-    apply_atm_procs_list_changes_from_buffer (case,xml)
+        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
+        #    which atm processes are used
+        apply_atm_procs_list_changes_from_buffer (case,xml)
 
-    # 3. Resolve all inheritances
-    resolve_all_inheritances(xml)
+        # 3. Resolve all inheritances
+        resolve_all_inheritances(xml)
 
-    # 4. Expand any CIME var that appears inside XML nodes text
-    expand_cime_vars(xml,case)
+        # 4. Expand any CIME var that appears inside XML nodes text
+        expand_cime_vars(xml,case)
 
-    # 5. Grab the atmosphere_processes macro list, with all the defaults
-    atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        # 5. Grab the atmosphere_processes macro list, with all the defaults
+        atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
 
-    # 6. Get atm procs list
-    atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+        # 6. Get atm procs list
+        atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
-    # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-    atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-    atm_procs.tag = "atmosphere_processes"
-    xml.append(atm_procs)
+        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
+        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
+        atm_procs.tag = "atmosphere_processes"
+        xml.append(atm_procs)
 
-    # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-    #    which atm processes are used
-    apply_non_atm_procs_list_changes_from_buffer (case,xml)
+        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
+        #    which atm processes are used
+        apply_non_atm_procs_list_changes_from_buffer (case,xml)
+    except BaseException as e:
+        if filepath is not None:
+            dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
+            write_pretty_xml(dbg_xml_path, xml)
+            print(f"Error during XML creation, writing {dbg_xml_path}")
+
+        raise e
 
     perform_consistency_checks (case, xml)
 
@@ -666,17 +685,11 @@ def create_raw_xml_file(case, caseroot):
         # be processed early by treating them as if they were made to the defaults file.
         with open(src, "r") as fd:
             defaults = ET.parse(fd).getroot()
-            raw_xml = _create_raw_xml_file_impl(case, defaults)
+            raw_xml = _create_raw_xml_file_impl(case, defaults, filepath=raw_xml_file)
 
         check_all_values(raw_xml)
 
-        with open(raw_xml_file, "w") as fd:
-            # dom has better pretty printing than ET in older python versions < 3.9
-            dom = md.parseString(ET.tostring(raw_xml, encoding="unicode"))
-            pretty_xml = dom.toprettyxml(indent="  ")
-            pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
-                                          if s.strip()])
-            fd.write(pretty_xml)
+        write_pretty_xml(raw_xml_file, raw_xml)
 
 ###############################################################################
 def convert_to_dict(element):
@@ -877,6 +890,11 @@ def get_file_parameters(caseroot):
 
     result = []
     for item in raw_xml.findall('.//*[@type="file"]'):
+        # Certain configurations may not need a file (e.g., a remap
+        # file for SPA may not be needed if the model resolution
+        # matches the data file resolution
+        if item.text is None or item.text=="":
+            continue
         result.append(item.text.strip())
 
     for item in raw_xml.findall('.//*[@type="array(file)"]'):
@@ -886,7 +904,7 @@ def get_file_parameters(caseroot):
     return list(OrderedDict.fromkeys(result))
 
 ###############################################################################
-def create_input_data_list_file(caseroot):
+def create_input_data_list_file(case,caseroot):
 ###############################################################################
     """
     Create the scream.input_data_list file for this case. This will tell CIME
@@ -894,18 +912,51 @@ def create_input_data_list_file(caseroot):
     """
     files_to_download = get_file_parameters(caseroot)
 
+    # Add array parsing knowledge to yaml loader
+    loader = yaml.SafeLoader
+    loader.add_constructor("!bools",array_constructor)
+    loader.add_constructor("!ints",array_constructor)
+    loader.add_constructor("!floats",array_constructor)
+    loader.add_constructor("!strings",array_constructor)
+
+    # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
+    rundir   = case.get_value("RUNDIR")
+    eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(eamxx_xml_file, "r") as fd:
+        eamxx_xml = ET.parse(fd).getroot()
+
+        scorpio = get_child(eamxx_xml,'Scorpio')
+        out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+        #  out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
+        #  for fn in out_files:
+        if (out_files_xml is not None and out_files_xml.text is not None):
+            for fn in out_files_xml.text.split(","):
+                # Get full name
+                src_yaml = os.path.expanduser(os.path.join(fn.strip()))
+                dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
+
+                # Load file, and look for the remap file entries
+                content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+                if 'horiz_remap_file' in content.keys():
+                    files_to_download += [content['horiz_remap_file']]
+                if 'vertical_remap_file' in content.keys():
+                    files_to_download += [content['vertical_remap_file']]
+
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
 
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
     with open(input_data_list_file, "w") as fd:
-        for idx, file_path in enumerate(files_to_download):
-            fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+        for idx, file_path in enumerate(list(set(files_to_download))):
+            # Only add files whose full path starts with the CIME's input data location
+            if file_path.startswith(din_loc_root):
+                fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+
 
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case, caseroot):
 ###############################################################################
-    from yaml_utils import array_constructor
 
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
@@ -956,14 +1007,15 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # produces an output at t=0, which is not present in the restarted run, and
         # which also causes different timestamp in the file name.
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
-        if case.get_value("TESTCASE") in ["ERP", "ERS"]:
-            test_env = case.get_env('test')
-            stop_n = int(test_env.get_value("STOP_N"))
-            stop_opt = test_env.get_value("STOP_OPTION")
-            content['output_control']['Frequency'] = stop_n
-            content['output_control']['frequency_units'] = stop_opt
-            content['Averaging Type'] = 'AVERAGE'
-            print ("WARNING: ERS/ERP tests hard code output to consist of a single AVERAGE output step at the end of the run.")
+        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['Averaging Type'].upper()=="INSTANT":
+            hist_n = int(case.get_value("HIST_N",resolved=True))
+            hist_opt = case.get_value("HIST_OPTION",resolved=True)
+            content['output_control']['Frequency'] = hist_n
+            content['output_control']['frequency_units'] = hist_opt
+            content['output_control']['skip_t0_output'] = True
+            print ("ERS/ERP test with INSTANT output detected. Adjusting output control specs:\n")
+            print ("  - setting skip_t0_output=true\n")
+            print ("  - setting freq and freq_units to HIST_N and HIST_OPTION respectively\n")
 
         ordered_dump(content, open(dst_yaml, "w"))
 

@@ -1,12 +1,12 @@
 INCLUDE (ScreamUtils)
 
 CreateUnitTest(spa_read_data_test "spa_read_data_from_file_test.cpp"
-  LIBS spa scream_io
+  LIBS spa scream_io scream_control
   LABELS spa
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 CreateUnitTest(spa_one_to_one_remap_test "spa_one_to_one_remap_test.cpp"
-  LIBS spa scream_io
+  LIBS spa scream_io scream_control
   LABELS spa
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )

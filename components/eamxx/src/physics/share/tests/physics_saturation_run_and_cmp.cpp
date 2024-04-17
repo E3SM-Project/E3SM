@@ -50,7 +50,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     sat_ice_fp  = physics::polysvp1(temps, true, Smask(true))[0];
     sat_liq_fp  = physics::polysvp1(temps, false, Smask(true))[0];
 
-    //Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const Smask& range_mask, 
+    //Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const Smask& range_mask,
     //                           const SaturationFcn func_idx, const char* caller)
     mix_ice_fr = physics::qv_sat_dry(temps, pres, true, Smask(true), physics::Polysvp1)[0];
     mix_liq_fr = physics::qv_sat_dry(temps, pres, false,Smask(true), physics::Polysvp1)[0];
@@ -109,24 +109,27 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
 
     for (auto p : params_) {
-      OutputData d;
       ParamSet ps = p;
-      Kokkos::parallel_reduce(1,
-        KOKKOS_LAMBDA(const size_t&, OutputData& output) {
+      Kokkos::View<OutputData*> d_dev("",1);
+      Kokkos::parallel_for(1,
+        KOKKOS_LAMBDA(const size_t&) {
           TestSaturation::saturation_tests(
             ps.temperature, ps.pressure,
-            output.sat_ice_fp,
-            output.sat_liq_fp,
-            output.mix_ice_fr,
-            output.mix_liq_fr,
-            output.sat_ice_mkp,
-            output.sat_liq_mkp,
-            output.mix_ice_mkr,
-            output.mix_liq_mkr);
-        }, d);
-
+            d_dev[0].sat_ice_fp,
+            d_dev[0].sat_liq_fp,
+            d_dev[0].mix_ice_fr,
+            d_dev[0].mix_liq_fr,
+            d_dev[0].sat_ice_mkp,
+            d_dev[0].sat_liq_mkp,
+            d_dev[0].mix_ice_mkr,
+            d_dev[0].mix_liq_mkr);
+      });
       Kokkos::fence();
-      write(fid, d); // Save the fields to the baseline file.
+
+      auto d_host = Kokkos::create_mirror_view(d_dev);
+      Kokkos::deep_copy(d_host,d_dev);
+
+      write(fid, d_host[0]); // Save the fields to the baseline file.
     }
 
     return 0;
@@ -139,28 +142,31 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     int case_num = 0;
     for (auto p : params_) {
       ++case_num;
-      OutputData ref, d;
+      OutputData ref;
       ParamSet ps = p;
       std::cout << "--- checking physics saturation case # " << case_num << std::endl;
       read(fid, ref);
 
-      Kokkos::parallel_reduce(1,
-        KOKKOS_LAMBDA(const size_t&, OutputData& output) {
+      Kokkos::View<OutputData*> d_dev("",1);
+      Kokkos::parallel_for(1,
+        KOKKOS_LAMBDA(const size_t&) {
           TestSaturation::saturation_tests(
             ps.temperature, ps.pressure,
-            output.sat_ice_fp,
-            output.sat_liq_fp,
-            output.mix_ice_fr,
-            output.mix_liq_fr,
-            output.sat_ice_mkp,
-            output.sat_liq_mkp,
-            output.mix_ice_mkr,
-            output.mix_liq_mkr);
-        }, d);
-
+            d_dev[0].sat_ice_fp,
+            d_dev[0].sat_liq_fp,
+            d_dev[0].mix_ice_fr,
+            d_dev[0].mix_liq_fr,
+            d_dev[0].sat_ice_mkp,
+            d_dev[0].sat_liq_mkp,
+            d_dev[0].mix_ice_mkr,
+            d_dev[0].mix_liq_mkr);
+      });
       Kokkos::fence();
 
-      ne = compare(tol, ref, d);
+      auto d_host = Kokkos::create_mirror_view(d_dev);
+      Kokkos::deep_copy(d_host,d_dev);
+
+      ne = compare(tol, ref, d_host[0]);
       if (ne) std::cout << "Ref impl failed.\n";
       nerr += ne;
     }
@@ -189,6 +195,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     Scalar mix_ice_mkr;
     Scalar mix_liq_mkr;
 
+    KOKKOS_INLINE_FUNCTION
     OutputData& operator+=(const OutputData& rhs)
     {
       sat_ice_fp += rhs.sat_ice_fp;

@@ -20,6 +20,7 @@ from mdutils import Html
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import resolve_all_inheritances, get_valid_selectors
+from atm_manip import is_locked_impl
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -34,14 +35,15 @@ def parse_command_line(args, description):
     return parser.parse_args(args[1:])
 
 ###########################################################################
-def add_param(docs,scope,item):
+def add_param(docs, scope, item):
 ###########################################################################
     # Locked parameters are not to be configured at runtime, so don't even bother
     # E.g, a locked param is something we need to get in the input file, like
     # the restart write frequency, but we don't want the user to modify it
     # via atmchange
-    if "locked" in item.attrib.keys():
+    if is_locked_impl(item):
         return
+
     docs.new_line(f"* {scope}{item.tag}:")
 
     pdoc = item.attrib['doc'] if 'doc' in item.attrib.keys() else "**MISSING**"
@@ -53,21 +55,23 @@ def add_param(docs,scope,item):
     pvalid = item.attrib['valid_values'] if 'valid_values' in item.attrib.keys() else None
     if pvalid is not None:
         docs.new_line(f"    - valid values: {pvalid}")
+
     pconstr = item.attrib['constraints'] if 'constraints' in item.attrib.keys() else None
     if pconstr is not None:
         docs.new_line(f"    - constraints: {pconstr}")
 
 ###########################################################################
-def add_children(docs,xml,scope=""):
+def add_children(docs, elem, scope=""):
 ###########################################################################
     done = []
     # Locked parameters are not to be configured at runtime, so don't even bother
     # E.g, a locked param is something we need to get in the input file, like
     # the restart write frequency, but we don't want the user to modify it
     # via atmchange
-    if "locked" in xml.attrib.keys():
+    if is_locked_impl(elem):
         return
-    for item in xml:
+
+    for item in elem:
         # The same entry may appear multiple times in the XML defaults file,
         # each time with different selectors. We don't want to generate the
         # same documentation twice.
@@ -75,9 +79,10 @@ def add_children(docs,xml,scope=""):
             continue
         done.append(item.tag)
         if len(item)>0:
-            add_children (docs,item,f"{scope}{xml.tag}::")
+            add_children (docs,item,f"{scope}{elem.tag}::")
         else:
-            add_param(docs,f"{scope}{xml.tag}::",item)
+            add_param(docs,f"{scope}{elem.tag}::",item)
+
     docs.new_line()
 
 ###########################################################################
@@ -107,7 +112,7 @@ def generate_params_docs():
                 continue
             docs.new_header(level=2,title=ap.tag)
             add_children(docs,ap)
-                
+
         ic = xml_defaults.find('initial_conditions')
         docs.new_header(level=1,title="Initial Conditions Parameters")
         add_children(docs,ic)
@@ -123,6 +128,7 @@ def generate_params_docs():
         homme = xml_defaults.find('ctl_nl')
         docs.new_header(level=1,title='Homme namelist')
         add_children(docs,homme)
+
     docs.create_md_file()
 
     print("Generating eamxx params documentation ... SUCCESS!")

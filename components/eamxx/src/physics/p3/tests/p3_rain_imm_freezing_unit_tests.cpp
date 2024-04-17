@@ -92,7 +92,7 @@ static void run_bfb()
     Spack nr2ni_immers_freeze_tend{0.0};
 
     Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
-                                       qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend);
+                                       qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, physics::P3_Constants<Real>());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

@@ -2,6 +2,7 @@
 #define SCREAM_UNIVERSAL_CONSTANTS_HPP
 
 #include <limits>
+#include <type_traits>
 
 namespace scream {
 
@@ -14,9 +15,9 @@ constexpr int days_per_nonleap_year = 365;
 // TODO: When we switch to supporting C++17 we can use a simple `inline constexpr` rather than a struct
 template<typename T>
 struct DefaultFillValue {
-  static const bool is_float = std::is_floating_point<T>::value;
-  static const bool is_int   = std::is_integral<T>::value;
-  T value = is_int ? std::numeric_limits<int>::max() / 2 : 
+  static constexpr bool is_float = std::is_floating_point<T>::value;
+  static constexpr bool is_int   = std::is_integral<T>::value;
+  static constexpr T value = is_int ? std::numeric_limits<int>::max() / 2 :
 	  is_float ? std::numeric_limits<float>::max() / 1e5 : std::numeric_limits<char>::max();
 
 };

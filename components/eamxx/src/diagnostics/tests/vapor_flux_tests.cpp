@@ -83,7 +83,7 @@ void run(std::mt19937_64& engine)
   REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // No 'Wind Component'
   params.set<std::string>("Wind Component","foo");
   REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // Invalid 'Wind Component'
-  for (const std::string& which_comp : {"Zonal", "Meridional"}) {
+  for (const std::string which_comp : {"Zonal", "Meridional"}) {
     // Construct the Diagnostic
     params.set<std::string>("Wind Component",which_comp);
     auto diag = diag_factory.create("VaporFlux",comm,params);

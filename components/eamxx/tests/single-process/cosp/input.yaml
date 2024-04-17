@@ -1,0 +1,40 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [cosp]
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics]
+  Physics:
+    aliases: [Point Grid]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  dtau067: 1.0
+  dtau105: 1.0
+  cldfrac_rad: 0.5
+  eff_radius_qc: 0.0
+  eff_radius_qi: 0.0
+  sunlit: 1.0
+  surf_radiative_T: 288.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

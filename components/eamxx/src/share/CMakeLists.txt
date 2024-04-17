@@ -24,9 +24,9 @@ set(SHARE_SRC
   grid/remap/abstract_remapper.cpp
   grid/remap/coarsening_remapper.cpp
   grid/remap/horiz_interp_remapper_base.cpp
+  grid/remap/horiz_interp_remapper_data.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
-  grid/remap/horizontal_remap_utility.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp

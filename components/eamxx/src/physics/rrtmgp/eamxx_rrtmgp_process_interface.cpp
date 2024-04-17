@@ -159,6 +159,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name);
   add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name);
   add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name);
+  add_field<Computed>("cldfrac_rad"   , scalar3d_layout_mid, nondim, grid_name);
   // Cloud-top diagnostics following AeroCOM recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
   add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
@@ -468,6 +469,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
+  auto d_cldfrac_rad = get_field_out("cldfrac_rad").get_view<Real**>();
 
   // Aerosol optics only exist if m_do_aerosol_rad is true, so declare views and copy from FM if so
   using view_3d = Field::view_dev_t<const Real***>;
@@ -868,6 +870,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
             } else {
               cldfrac_tot(i+1,k+1) = 0;
             }
+            d_cldfrac_rad(icol,k) = cldfrac_tot(i+1,k+1);
           });
         });
       } else {
@@ -877,6 +880,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           const int icol = i + beg;
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             cldfrac_tot(i+1,k+1) = d_cldfrac_tot(icol,k);
+            d_cldfrac_rad(icol,k) = d_cldfrac_tot(icol,k);
           });
         });
       }
