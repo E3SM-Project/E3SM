@@ -120,8 +120,6 @@ if opts.ocn_grid is None:
 if not os.path.exists(opts.output_root) :
   raise ValueError(f'{clr.RED}Output root path does not exist{clr.END}')
 #-------------------------------------------------------------------------------
-# define constants
-eps = 1.0e-12
 # Set date stamp for file name
 if opts.date_stamp is None:
   cdate = datetime.datetime.utcnow().strftime('%Y%m%d')
@@ -142,7 +140,6 @@ Input files and parameter values:
   {clr.GREEN}fminval         {clr.END}: {opts.fminval}
   {clr.GREEN}fmaxval         {clr.END}: {opts.fmaxval}
   {clr.GREEN}set_omask       {clr.END}: {opts.set_omask}
-  {clr.GREEN}eps             {clr.END}: {eps}
 ''')
 #---------------------------------------------------------------------------------------------------
 def add_metadata(ds):
@@ -168,8 +165,7 @@ def add_metadata(ds):
   ds_out['frac'] = ds_out['frac'].assign_attrs({'long_name':'fraction of grid cell that is active'})
   ds_out['frac'] = ds_out['frac'].assign_attrs({'units':'unitless'})
   ds_out['frac'] = ds_out['frac'].assign_attrs({'coordinates':'xc yc'})
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'filter1':f'error if frac> 1.0+eps or frac < 0.0-eps; eps = {eps}'})
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'filter2':f'limit frac to [fminval,fmaxval]; fminval={opts.fminval} fmaxval={opts.fmaxval}'})
+  ds_out['frac'] = ds_out['frac'].assign_attrs({'filter':f'limit frac to [fminval,fmaxval]; fminval={opts.fminval} fmaxval={opts.fmaxval}'})
 
   ds_out['mask'] = ds_out['mask'].assign_attrs({'long_name':'domain mask'})
   ds_out['mask'] = ds_out['mask'].assign_attrs({'units':'unitless'})
