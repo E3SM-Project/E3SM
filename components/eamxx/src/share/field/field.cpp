@@ -82,7 +82,6 @@ Field Field::
 subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
           const int idim, const int index, const bool dynamic) const {
 
-  //
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
 
@@ -119,8 +118,7 @@ subfield (const int idim, const int index, const bool dynamic) const {
 // slice at index idim, entries \in [index_beg, index_end]
 Field Field::subfield(const std::string& sf_name,
                       const ekat::units::Units& sf_units, const int idim,
-                      const int index_beg, const int index_end,
-                      const bool dynamic) const {
+                      const int index_beg, const int index_end) const {
 
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
@@ -129,11 +127,9 @@ Field Field::subfield(const std::string& sf_name,
   EKAT_REQUIRE_MSG(
       is_allocated(),
       "Error! Input field must be allocated in order to subview it.\n");
-  // EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
-  //                  "Error! Subview dimension index must be either 0 or 1.\n");
 
   auto sf_layout =
-      lt.clone_with_different_extent(idim, index_end - index_beg + 1);
+      lt.clone_with_different_extent(idim, index_end - index_beg);
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name());
 
@@ -141,23 +137,22 @@ Field Field::subfield(const std::string& sf_name,
   // Note: we can access protected members, since it's the same type
   Field sf;
   sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg,
-                                       index_end, dynamic);
+                                       index_end);
   sf.m_data = m_data;
 
   return sf;
 }
 
 Field Field::subfield(const std::string& sf_name, const int idim,
-                      const int index_beg, const int index_end,
-                      const bool dynamic) const {
+                      const int index_beg, const int index_end) const {
   const auto& id = m_header->get_identifier();
-  return subfield(sf_name, id.get_units(), idim, index_beg, index_end, dynamic);
+  return subfield(sf_name, id.get_units(), idim, index_beg, index_end);
 }
 
-Field Field::subfield(const int idim, const int index_beg, const int index_end,
-                      const bool dynamic) const {
-  return subfield(m_header->get_identifier().name(), idim, index_beg, index_end,
-                  dynamic);
+Field Field::subfield(const int idim, const int index_beg,
+                      const int index_end) const {
+  return subfield(m_header->get_identifier().name(), idim, index_beg,
+                  index_end);
 }
 
 Field Field::
@@ -177,7 +172,7 @@ get_component (const int i, const bool dynamic) {
   return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
-Field Field::get_component(const int i1, const int i2, const bool dynamic) {
+Field Field::get_components(const int i1, const int i2) {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG(layout.is_vector_layout(),
@@ -195,7 +190,7 @@ Field Field::get_component(const int i1, const int i2, const bool dynamic) {
   // Add _$i1-$i2 to the field name, to avoid issues if the subfield is stored
   // in some structure that requires unique names (e.g., a remapper)
   return subfield(fname + "_" + std::to_string(i1) + "-" + std::to_string(i2),
-                  idim, i1, i2, dynamic);
+                  idim, i1, i2);
 }
 
 bool Field::equivalent(const Field& rhs) const

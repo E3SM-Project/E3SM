@@ -79,12 +79,11 @@ subview (const int idim, const int k, const bool dynamic) const {
 
 FieldAllocProp FieldAllocProp::subview(const int idim,
                                        const int k_beg,
-                                       const int k_end,
-                                       const bool dynamic) const {
+                                       const int k_end) const {
   EKAT_REQUIRE_MSG(
       is_committed(),
       "Error! Subview requires alloc properties to be committed.\n");
-  EKAT_REQUIRE_MSG(idim <= m_layout.rank(),
+  EKAT_REQUIRE_MSG(idim < m_layout.rank(),
                    "Error! Dimension index out of bounds.\n");
   EKAT_REQUIRE_MSG(k_beg < k_end,
                    "Error! Slice indices are invalid (non-increasing).\n");
@@ -97,19 +96,17 @@ FieldAllocProp FieldAllocProp::subview(const int idim,
   props.m_committed = true;
   props.m_scalar_type_size = m_scalar_type_size;
   props.m_layout =
-      m_layout.clone_with_different_extent(idim, k_end - k_beg + 1);
+      m_layout.clone_with_different_extent(idim, k_end - k_beg);
 
   // Output is contiguous if either
   //  - this->m_contiguous=true AND idim==0
   //  - m_layout.dim(i)==1 for all i<idim
-  //  - m_layout.rank()==1 (we end up with a rank-0 subview)
   auto is_one = [](int i) { return i == 1; };
-  props.m_contiguous = (m_contiguous and idim == 0) || m_layout.rank() == 1 ||
-                       std::all_of(m_layout.dims().begin(),
-                                   m_layout.dims().begin() + idim, is_one);
+  // we do not currently have the capability for contiguous multi-slice views
+  props.m_contiguous = false;
 
   props.m_subview_info =
-      SubviewInfo(idim, k_beg, k_end, m_layout.dim(idim), dynamic);
+      SubviewInfo(idim, k_beg, k_end, m_layout.dim(idim));
 
   // Figure out strides/packs
   if (idim == m_layout.rank()) {

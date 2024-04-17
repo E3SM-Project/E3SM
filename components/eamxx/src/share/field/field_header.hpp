@@ -95,8 +95,7 @@ protected:
   friend std::shared_ptr<FieldHeader>
   create_subfield_header (const FieldIdentifier&,
                           std::shared_ptr<FieldHeader>,
-                          const int idim, const int k_beg, const int k_end,
-                          const bool dynamic);
+                          const int idim, const int k_beg, const int k_end);
 
   // NOTE: the identifier *cannot* be a shared_ptr, b/c we
   //       don't foresee sharing an identifier between two
@@ -178,8 +177,7 @@ create_subfield_header (const FieldIdentifier& id,
 std::shared_ptr<FieldHeader>
 create_subfield_header (const FieldIdentifier& id,
                         std::shared_ptr<FieldHeader> parent,
-                        const int idim, const int k_beg, const int k_end,
-                        const bool dynamic);
+                        const int idim, const int k_beg, const int k_end);
 
 } // namespace scream
 

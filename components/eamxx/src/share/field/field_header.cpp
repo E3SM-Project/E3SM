@@ -72,7 +72,7 @@ create_subfield_header (const FieldIdentifier& id,
 std::shared_ptr<FieldHeader>
 create_subfield_header(const FieldIdentifier& id,
                        std::shared_ptr<FieldHeader> parent, const int idim,
-                       const int k_beg, const int k_end, const bool dynamic) {
+                       const int k_beg, const int k_end) {
   // Sanity checks
   EKAT_REQUIRE_MSG(parent != nullptr,
                    "Error! Invalid pointer for parent header.\n");
@@ -92,7 +92,7 @@ create_subfield_header(const FieldIdentifier& id,
 
   // Create alloc props
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(
-      parent->get_alloc_properties().subview(idim, k_beg, k_end, dynamic));
+      parent->get_alloc_properties().subview(idim, k_beg, k_end));
 
   return fh;
 }

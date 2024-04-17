@@ -1,73 +1,59 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
-#include "share/grid/point_grid.hpp"
-
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
-
 
 TEST_CASE("field", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  auto engine = setup_random_test ();
+  auto engine = setup_random_test();
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.01,0.99);
-
-  std::vector<FieldTag> tags = {COL,LEV};
-  std::vector<int> dims = {3,24};
-
-  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
+  RPDF pdf(0.01, 0.99);
 
   // Subfields
-  SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,10,2,24};
+  SECTION("subfield") {
+    std::vector<FieldTag> t1 = {COL, CMP, CMP, LEV};
+    std::vector<int> d1 = {3, 10, 2, 24};
 
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+    FieldIdentifier fid1("4d", {t1, d1}, m / s, "some_grid");
 
     Field f1(fid1);
     f1.allocate_view();
-    randomize(f1,engine,pdf);
+    randomize(f1, engine, pdf);
 
     const int idim = 1;
     const int ivar = 2;
 
-    auto f2 = f1.subfield(idim,ivar);
+    auto f2 = f1.subfield(idim, ivar);
 
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_view<Real****>());
 
-    auto v4d_h = f1.get_view<Real****,Host>();
-    auto v3d_h = f2.get_view<Real***,Host>();
-    for (int i=0; i<d1[0]; ++i)
-      for (int j=0; j<d1[2]; ++j)
-        for (int k=0; k<d1[3]; ++k) {
-          REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
+    auto v4d_h = f1.get_view<Real****, Host>();
+    auto v3d_h = f2.get_view<Real***, Host>();
+    for (int i = 0; i < d1[0]; ++i)
+      for (int j = 0; j < d1[2]; ++j)
+        for (int k = 0; k < d1[3]; ++k) {
+          REQUIRE(v4d_h(i, ivar, j, k) == v3d_h(i, j, k));
         }
   }
 
-  SECTION ("multi-sliced subfield") {
-    SECTION ("1D multi-slice") {
+  SECTION("multi-sliced subfield") {
+    SECTION("1D multi-slice") {
       // ==============
       /* Rank-1 view */
       // ==============
       std::vector<FieldTag> t1 = {COL};
       std::vector<int> d1 = {11};
-      FieldIdentifier fid1("1d", {t1, d1}, m/s, "some_grid");
+      FieldIdentifier fid1("1d", {t1, d1}, m / s, "some_grid");
 
       Field f1(fid1);
       f1.allocate_view();
@@ -81,14 +67,17 @@ TEST_CASE("field", "") {
       auto sf = f1.subfield(idim, sl_beg, sl_end);
       auto sv_h = sf.get_multi_sliced_view<Real, 1, Host>();
 
+      REQUIRE(sv_h.extent_int(idim) == (sl_end - sl_beg));
+
       for (int i = sl_beg; i < sl_end; i++) {
         REQUIRE(v1d_h(i) == sv_h(i - sl_beg));
       }
     }
-    SECTION ("2D multi-slice") {
+
+    SECTION("2D multi-slice") {
       std::vector<FieldTag> t2 = {COL, CMP};
       std::vector<int> d2 = {5, 10};
-      FieldIdentifier fid2("2d", {t2, d2}, m/s, "some_grid");
+      FieldIdentifier fid2("2d", {t2, d2}, m / s, "some_grid");
 
       Field f2(fid2);
       f2.allocate_view();
@@ -115,13 +104,13 @@ TEST_CASE("field", "") {
         }
       }
     }
-    SECTION ("3D multi-slice") {
+    SECTION("3D multi-slice") {
       // ==============
       /* Rank-3 view */
       // ==============
       std::vector<FieldTag> t3 = {COL, CMP, LEV};
       std::vector<int> d3 = {5, 10, 2};
-      FieldIdentifier fid3("3d", {t3, d3}, m/s, "some_grid");
+      FieldIdentifier fid3("3d", {t3, d3}, m / s, "some_grid");
 
       Field f3(fid3);
       f3.allocate_view();
@@ -152,9 +141,9 @@ TEST_CASE("field", "") {
         }
       }
       // ======================
-      /*  get_component test */
+      /*  get_components test */
       // ======================
-      auto cmp3 = f3.get_component(sl_beg[1], sl_end[1]);
+      auto cmp3 = f3.get_components(sl_beg[1], sl_end[1]);
 
       auto svc_h = cmp3.get_multi_sliced_view<Real, 3, Host>();
       for (int i = 0; i < d3[0]; i++) {
@@ -164,15 +153,14 @@ TEST_CASE("field", "") {
           }
         }
       }
-
     }
-    SECTION ("4D multi-slice") {
+    SECTION("4D multi-slice") {
       // ==============
       /* Rank-4 view */
       // ==============
       std::vector<FieldTag> t4 = {COL, CMP, CMP, LEV};
       std::vector<int> d4 = {5, 10, 2, 23};
-      FieldIdentifier fid4("4d", {t4, d4}, m/s, "some_grid");
+      FieldIdentifier fid4("4d", {t4, d4}, m / s, "some_grid");
 
       Field f4(fid4);
       f4.allocate_view();
@@ -200,20 +188,21 @@ TEST_CASE("field", "") {
           for (int j = j1; j < j2; j++) {
             for (int k = k1; k < k2; k++) {
               for (int l = l1; l < l2; l++) {
-                REQUIRE(v4d_h(i, j, k, l) == sv_h(i - i1, j - j1, k - k1, l - l1));
+                REQUIRE(v4d_h(i, j, k, l) ==
+                        sv_h(i - i1, j - j1, k - k1, l - l1));
               }
             }
           }
         }
       }
     }
-    SECTION ("5D multi-slice") {
+    SECTION("5D multi-slice") {
       // ==============
       /* Rank-5 view */
       // ==============
       std::vector<FieldTag> t5 = {EL, CMP, GP, GP, LEV};
       std::vector<int> d5 = {5, 10, 4, 2, 23};
-      FieldIdentifier fid5("5d", {t5, d5}, m/s, "some_grid");
+      FieldIdentifier fid5("5d", {t5, d5}, m / s, "some_grid");
 
       Field f5(fid5);
       f5.allocate_view();
@@ -244,8 +233,8 @@ TEST_CASE("field", "") {
             for (int k = k1; k < k2; k++) {
               for (int l = l1; l < l2; l++) {
                 for (int m = m1; m < m2; m++) {
-                  REQUIRE(v5d_h(i, j, k, l, m) == sv_h(i - i1, j - j1, k - k1,
-                                                        l - l1, m - m1));
+                  REQUIRE(v5d_h(i, j, k, l, m) ==
+                          sv_h(i - i1, j - j1, k - k1, l - l1, m - m1));
                 }
               }
             }
@@ -253,13 +242,13 @@ TEST_CASE("field", "") {
         }
       }
     }
-    SECTION ("6D multi-slice") {
+    SECTION("6D multi-slice") {
       // ==============
       /* Rank-6 view */
       // ==============
       std::vector<FieldTag> t6 = {EL, TL, CMP, GP, GP, LEV};
       std::vector<int> d6 = {5, 10, 4, 2, 9, 23};
-      FieldIdentifier fid6("6d", {t6, d6}, m/s, "some_grid");
+      FieldIdentifier fid6("6d", {t6, d6}, m / s, "some_grid");
 
       Field f6(fid6);
       f6.allocate_view();
@@ -293,9 +282,15 @@ TEST_CASE("field", "") {
               for (int l = l1; l < l2; l++) {
                 for (int m = m1; m < m2; m++) {
                   for (int n = n1; n < n2; n++) {
-                    REQUIRE(v6d_h(i, j, k, l, m, n) ==
-                            sv_h(i - i1, j - j1, k - k1,
-                                 l - l1, m - m1, n - n1));
+                    REQUIRE(v6d_h(i, j, k, l, m, n) == sv_h(i - i1, j - j1,
+                                                            k - k1, l - l1,
+                                                            m - m1, n - n1));
+                    REQUIRE((sv_h.extent_int(0) == (i2 - i1) &&
+                             sv_h.extent_int(1) == (j2 - j1) &&
+                             sv_h.extent_int(2) == (k2 - k1) &&
+                             sv_h.extent_int(3) == (l2 - l1) &&
+                             sv_h.extent_int(4) == (m2 - m1) &&
+                             sv_h.extent_int(5) == (n2 - n1)));
                   }
                 }
               }
@@ -305,23 +300,22 @@ TEST_CASE("field", "") {
       }
     }
   }
-
   // Dynamic Subfields
-  SECTION ("dynamic_subfield") {
+  SECTION("dynamic_subfield") {
     const int vec_dim = 10;
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,vec_dim,2,24};
+    std::vector<FieldTag> t1 = {COL, CMP, CMP, LEV};
+    std::vector<int> d1 = {3, vec_dim, 2, 24};
 
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+    FieldIdentifier fid1("4d", {t1, d1}, m / s, "some_grid");
 
     Field f1(fid1);
     f1.allocate_view();
-    randomize(f1,engine,pdf);
+    randomize(f1, engine, pdf);
 
     const int idim = 1;
     const int ivar = 0;
 
-    auto f2 = f1.subfield(idim,ivar,/* dynamic = */ true);
+    auto f2 = f1.subfield(idim, ivar, /* dynamic = */ true);
 
     // Cannot reset subview idx of non-subfield fields
     REQUIRE_THROWS(f1.get_header().get_alloc_properties().reset_subview_idx(0));
@@ -331,29 +325,30 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS(f2_ap.reset_subview_idx(-1));
     REQUIRE_THROWS(f2_ap.reset_subview_idx(vec_dim));
 
-    // Fill f1 with random numbers, and verify corresponding subviews get same values
-    randomize(f1,engine,pdf);
+    // Fill f1 with random numbers, and verify corresponding subviews get same
+    // values
+    randomize(f1, engine, pdf);
 
-    for (int ivar_dyn=0; ivar_dyn<vec_dim; ++ivar_dyn) {
+    for (int ivar_dyn = 0; ivar_dyn < vec_dim; ++ivar_dyn) {
       // Reset slice idx
       f2_ap.reset_subview_idx(ivar_dyn);
-      REQUIRE(f2_ap.get_subview_info().slice_idx==ivar_dyn);
+      REQUIRE(f2_ap.get_subview_info().slice_idx == ivar_dyn);
 
-      auto v4d_h = f1.get_view<Real****,Host>();
-      auto v3d_h = f2.get_view<Real***,Host>();
-      for (int i=0; i<d1[0]; ++i)
-        for (int j=0; j<d1[2]; ++j)
-          for (int k=0; k<d1[3]; ++k) {
-            REQUIRE (v4d_h(i,ivar_dyn,j,k)==v3d_h(i,j,k));
+      auto v4d_h = f1.get_view<Real****, Host>();
+      auto v3d_h = f2.get_view<Real***, Host>();
+      for (int i = 0; i < d1[0]; ++i)
+        for (int j = 0; j < d1[2]; ++j)
+          for (int k = 0; k < d1[3]; ++k) {
+            REQUIRE(v4d_h(i, ivar_dyn, j, k) == v3d_h(i, j, k));
           }
     }
   }
 
-  SECTION ("vector_component") {
-    std::vector<FieldTag> tags_2 = {COL,CMP,LEV};
-    std::vector<int> dims_2 = {3,2,24};
+  SECTION("vector_component") {
+    std::vector<FieldTag> tags_2 = {COL, CMP, LEV};
+    std::vector<int> dims_2 = {3, 2, 24};
 
-    FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");
+    FieldIdentifier fid_2("vec_3d", {tags_2, dims_2}, m / s, "some_grid");
 
     Field f_vec(fid_2);
     f_vec.allocate_view();
@@ -372,18 +367,13 @@ TEST_CASE("field", "") {
 
     f_vec.sync_to_host();
 
-    auto v = f_vec.get_view<Real***,Host>();
-    for (int col=0; col<3; ++col) {
-      for (int lev=0; lev<24; ++lev) {
-        REQUIRE (v(col,0,lev)==1.0);
-        REQUIRE (v(col,1,lev)==2.0);
+    auto v = f_vec.get_view<Real***, Host>();
+    for (int col = 0; col < 3; ++col) {
+      for (int lev = 0; lev < 24; ++lev) {
+        REQUIRE(v(col, 0, lev) == 1.0);
+        REQUIRE(v(col, 1, lev) == 2.0);
       }
     }
   }
 }
-
-
-
-
-
 } // anonymous namespace
