@@ -18,6 +18,148 @@ bool isApprox(Real X, Real Y, Real RTol) {
    return std::abs(X - Y) <= RTol * std::max(std::abs(X), std::abs(Y));
 }
 
+// convert spherical components of a vector to Cartesian
+KOKKOS_INLINE_FUNCTION void sphereToCartVec(Real (&CartVec)[3],
+                                            const Real (&SphereVec)[2],
+                                            Real Lon, Real Lat) {
+   using std::cos;
+   using std::sin;
+   CartVec[0] = -sin(Lon) * SphereVec[0] - sin(Lat) * cos(Lon) * SphereVec[1];
+   CartVec[1] = cos(Lon) * SphereVec[0] - sin(Lat) * sin(Lon) * SphereVec[1];
+   CartVec[2] = cos(Lat) * SphereVec[1];
+}
+
+// returns Cartesian components of unit vector tangent to the spherical arc
+// between Cartesian points X1 and X2 parametrized with t
+KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
+                                          const Real (&X1)[3],
+                                          const Real (&X2)[3], Real t = 0) {
+   const Real Radius =
+       Kokkos::sqrt(X1[0] * X1[0] + X1[1] * X1[1] + X1[2] * X1[2]);
+   Real XC[3];
+   Real DX[3];
+   for (int Dim = 0; Dim < 3; ++Dim) {
+      XC[Dim] = (1 - t) * X1[Dim] + t * X2[Dim];
+      DX[Dim] = X2[Dim] - X1[Dim];
+   }
+   const Real XCDotDX = XC[0] * DX[0] + XC[1] * DX[1] + XC[2] * DX[2];
+   const Real NormXC =
+       Kokkos::sqrt(XC[0] * XC[0] + XC[1] * XC[1] + XC[2] * XC[2]);
+
+   for (int Dim = 0; Dim < 3; ++Dim) {
+      const Real NormXC3 = NormXC * NormXC * NormXC;
+      TanVec[Dim] =
+          Radius / NormXC * DX[Dim] - (Radius * XCDotDX) / NormXC3 * XC[Dim];
+   }
+
+   const Real NormTanVec = Kokkos::sqrt(
+       TanVec[0] * TanVec[0] + TanVec[1] * TanVec[1] + TanVec[2] * TanVec[2]);
+   for (int Dim = 0; Dim < 3; ++Dim) {
+      TanVec[Dim] /= NormTanVec;
+   }
+}
+
+enum class EdgeOrientation { Normal, Tangential };
+
+template <class Functor>
+void computeVecFieldEdge(const Functor &Fun, const Array1DReal &VecFieldArr,
+                         EdgeOrientation EdgeOrient, const HorzMesh *mesh) {
+   auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
+   auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
+   auto ZEdge = createDeviceMirrorCopy(mesh->ZEdgeH);
+
+   auto XCell = createDeviceMirrorCopy(mesh->XCellH);
+   auto YCell = createDeviceMirrorCopy(mesh->YCellH);
+   auto ZCell = createDeviceMirrorCopy(mesh->ZCellH);
+
+   auto XVertex = createDeviceMirrorCopy(mesh->XVertexH);
+   auto YVertex = createDeviceMirrorCopy(mesh->YVertexH);
+   auto ZVertex = createDeviceMirrorCopy(mesh->ZVertexH);
+
+   auto LonEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
+   auto LatEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
+
+   auto &AngleEdge      = mesh->AngleEdge;
+   auto &CellsOnEdge    = mesh->CellsOnEdge;
+   auto &VerticesOnEdge = mesh->VerticesOnEdge;
+
+   parallelFor(
+       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+          Real VecFieldEdge;
+#ifdef HORZOPERATORS_TEST_PLANE
+          const Real XE = XEdge(IEdge);
+          const Real YE = YEdge(IEdge);
+
+          Real VecField[2];
+          Fun(VecField, XE, YE);
+
+          if (EdgeOrient == EdgeOrientation::Normal) {
+             const Real EdgeNormalX = std::cos(AngleEdge(IEdge));
+             const Real EdgeNormalY = std::sin(AngleEdge(IEdge));
+             VecFieldEdge =
+                 EdgeNormalX * VecField[0] + EdgeNormalY * VecField[1];
+          }
+
+          if (EdgeOrient == EdgeOrientation::Tangential) {
+             const Real EdgeTangentX = -std::sin(AngleEdge(IEdge));
+             const Real EdgeTangentY = std::cos(AngleEdge(IEdge));
+             VecFieldEdge =
+                 EdgeTangentX * VecField[0] + EdgeTangentY * VecField[1];
+          }
+#else
+          const Real LonE                = LonEdge(IEdge);
+          const Real LatE                = LatEdge(IEdge);
+
+          Real VecField[2];
+          Fun(VecField, LonE, LatE);
+
+          bool UseCartesianProjection = true;
+
+          if (UseCartesianProjection) {
+            Real VecFieldCart[3];
+            sphereToCartVec(VecFieldCart, VecField, LonE, LatE);
+
+            const Real EdgeCoords[3] = {XEdge[IEdge], YEdge[IEdge], ZEdge[IEdge]};
+
+            if (EdgeOrient == EdgeOrientation::Normal) {
+              const int JCell1 = CellsOnEdge(IEdge, 1);
+              const Real CellCoords[3] = {XCell(JCell1), YCell(JCell1), ZCell(JCell1)};
+
+              Real EdgeNormal[3];
+              tangentVector(EdgeNormal, EdgeCoords, CellCoords);
+              VecFieldEdge = EdgeNormal[0] * VecFieldCart[0] +
+                             EdgeNormal[1] * VecFieldCart[1] +
+                             EdgeNormal[2] * VecFieldCart[2];
+            }
+
+            if (EdgeOrient == EdgeOrientation::Tangential) {
+              const int JVertex1 = VerticesOnEdge(IEdge, 1);
+              const Real VertexCoords[3] = {XVertex(JVertex1), YVertex(JVertex1), ZVertex(JVertex1)};
+
+              Real EdgeTangent[3];
+              tangentVector(EdgeTangent, EdgeCoords, VertexCoords);
+              VecFieldEdge = EdgeTangent[0] * VecFieldCart[0] +
+                             EdgeTangent[1] * VecFieldCart[1] +
+                             EdgeTangent[2] * VecFieldCart[2];
+            }
+          } else {
+            if (EdgeOrient == EdgeOrientation::Normal) {
+              const Real EdgeNormalX      = std::cos(AngleEdge(IEdge));
+              const Real EdgeNormalY      = std::sin(AngleEdge(IEdge));
+              VecFieldEdge = EdgeNormalX * VecField[0] + EdgeNormalY * VecField[1];
+            }
+
+            if (EdgeOrient == EdgeOrientation::Tangential) {
+              const Real EdgeTangentX  = -std::sin(AngleEdge(IEdge));
+              const Real EdgeTangentY  = std::cos(AngleEdge(IEdge));
+              VecFieldEdge = EdgeTangentX * VecField[0] + EdgeTangentY * VecField[1];
+            }
+          }
+#endif
+          VecFieldArr[IEdge] = VecFieldEdge;
+       });
+}
+
 // temporary replacement for YAKL intrinsics
 Real maxVal(const Array1DReal &Arr) {
    Real MaxVal;
@@ -107,14 +249,14 @@ struct TestSetup {
    // TODO: get this from the mesh
    Real Radius = 6371220;
 
-   Real ExpectedDivErrorLInf   = 0.0158660625383131929;
-   Real ExpectedDivErrorL2     = 0.00401711826857833413;
-   Real ExpectedGradErrorLInf  = 0.00182941720362535579;
-   Real ExpectedGradErrorL2    = 0.00152823722290378484;
-   Real ExpectedCurlErrorLInf  = 0.0361051145615213023;
-   Real ExpectedCurlErrorL2    = 0.0271253226603560341;
-   Real ExpectedReconErrorLInf = 0.0207855998352246864;
-   Real ExpectedReconErrorL2   = 0.00687944381487612909;
+   Real ExpectedDivErrorLInf   = 0.013659577398978353;
+   Real ExpectedDivErrorL2     = 0.00367052484586382743;
+   Real ExpectedGradErrorLInf  = 0.00187912292540628936;
+   Real ExpectedGradErrorL2    = 0.00149841802817334306;
+   Real ExpectedCurlErrorLInf  = 0.0271404735181308317;
+   Real ExpectedCurlErrorL2    = 0.025202316610921989;
+   Real ExpectedReconErrorLInf = 0.0206375134079833517;
+   Real ExpectedReconErrorL2   = 0.00692590524910695858;
 
    KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return Radius * std::cos(Lon) * std::pow(std::cos(Lat), 4);
@@ -158,14 +300,14 @@ struct TestSetup {
    // TODO: get this from the mesh
    Real Radius = 6371220;
 
-   Real ExpectedDivErrorLInf   = 1.45295480324903797e-09;
-   Real ExpectedDivErrorL2     = 0.00429375897154735467;
-   Real ExpectedGradErrorLInf  = 0.00202094598872142039;
-   Real ExpectedGradErrorL2    = 0.00117807041607626765;
-   Real ExpectedCurlErrorLInf  = 0.0328084017109396969;
-   Real ExpectedCurlErrorL2    = 0.0105749467007983152;
-   Real ExpectedReconErrorLInf = 0.0253216806569417016;
-   Real ExpectedReconErrorL2   = 0.00425161856853827763;
+   Real ExpectedDivErrorLInf   = 1.37734693033362766e-10;
+   Real ExpectedDivErrorL2     = 0.000484370621558727582;
+   Real ExpectedGradErrorLInf  = 0.000906351303388669991;
+   Real ExpectedGradErrorL2    = 0.000949206041390823676;
+   Real ExpectedCurlErrorLInf  = 0.00433205620592059647;
+   Real ExpectedCurlErrorL2    = 0.00204725417666192042;
+   Real ExpectedReconErrorLInf = 0.0254271921029878764;
+   Real ExpectedReconErrorL2   = 0.00419630561428921064;
 
    KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lat), 2);
@@ -200,30 +342,16 @@ int testDivergence(Real RTol) {
    TestSetup Setup;
 
    const auto &mesh = HorzMesh::getDefault();
-#ifdef HORZOPERATORS_TEST_PLANE
-   auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
-   auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
-#else
-   auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
-   auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
-#endif
-   auto &AngleEdge = mesh->AngleEdge;
 
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          const Real X = XEdge(IEdge);
-          const Real Y = YEdge(IEdge);
 
-          const Real VecX = Setup.exactVecX(X, Y);
-          const Real VecY = Setup.exactVecY(X, Y);
-
-          const Real EdgeNormalX = std::cos(AngleEdge(IEdge));
-          const Real EdgeNormalY = std::sin(AngleEdge(IEdge));
-
-          VecEdge(IEdge) = EdgeNormalX * VecX + EdgeNormalY * VecY;
-       });
+   computeVecFieldEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.exactVecX(X, Y);
+          VecField[1] = Setup.exactVecY(X, Y);
+       },
+       VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
@@ -327,17 +455,17 @@ int testGradient(Real RTol) {
    MyHalo.exchangeFullArrayHalo(ScalarCellH, OnCell);
    deepCopy(ScalarCell, ScalarCellH);
 
-#ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
-#else
-   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
-#endif
-   const auto &AngleEdge = mesh->AngleEdge;
-   const auto &DcEdge    = mesh->DcEdge;
-   const auto &DvEdge    = mesh->DvEdge;
+   // Compute exact result
+   Array1DReal ExactGradEdge("ExactGradEdge", mesh->NEdgesOwned);
+   computeVecFieldEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.exactGradScalarX(X, Y);
+          VecField[1] = Setup.exactGradScalarY(X, Y);
+       },
+       ExactGradEdge, EdgeOrientation::Normal, mesh);
 
+   const auto &DcEdge = mesh->DcEdge;
+   const auto &DvEdge = mesh->DvEdge;
    // Compute element-wise errors
    Array1DReal LInfEdge("LInfEdge", mesh->NEdgesOwned);
    Array1DReal L2Edge("L2Edge", mesh->NEdgesOwned);
@@ -350,14 +478,7 @@ int testGradient(Real RTol) {
           const Real GradScalarNum = GradientEdge(IEdge, ScalarCell);
 
           // Exact result
-          const Real X                = XEdge(IEdge);
-          const Real Y                = YEdge(IEdge);
-          const Real GradScalarExactX = Setup.exactGradScalarX(X, Y);
-          const Real GradScalarExactY = Setup.exactGradScalarY(X, Y);
-          const Real EdgeNormalX      = std::cos(AngleEdge(IEdge));
-          const Real EdgeNormalY      = std::sin(AngleEdge(IEdge));
-          const Real GradScalarExact =
-              EdgeNormalX * GradScalarExactX + EdgeNormalY * GradScalarExactY;
+          const Real GradScalarExact = ExactGradEdge(IEdge);
 
           LInfEdge(IEdge)      = std::abs(GradScalarNum - GradScalarExact);
           LInfScaleEdge(IEdge) = std::abs(GradScalarExact);
@@ -406,28 +527,15 @@ int testCurl(Real RTol) {
    TestSetup Setup;
    const auto &mesh = HorzMesh::getDefault();
 
-#ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
-#else
-   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
-#endif
-   const auto &AngleEdge = mesh->AngleEdge;
-
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          const Real X = XEdge(IEdge);
-          const Real Y = YEdge(IEdge);
 
-          const Real VecExactX   = Setup.exactVecX(X, Y);
-          const Real VecExactY   = Setup.exactVecY(X, Y);
-          const Real EdgeNormalX = std::cos(AngleEdge(IEdge));
-          const Real EdgeNormalY = std::sin(AngleEdge(IEdge));
-          VecEdge(IEdge) = EdgeNormalX * VecExactX + EdgeNormalY * VecExactY;
-       });
+   computeVecFieldEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.exactVecX(X, Y);
+          VecField[1] = Setup.exactVecY(X, Y);
+       },
+       VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
@@ -509,34 +617,32 @@ int testRecon(Real RTol) {
    TestSetup Setup;
 
    const auto &mesh = HorzMesh::getDefault();
-#ifdef HORZOPERATORS_TEST_PLANE
-   const auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
-#else
-   const auto XEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
-   const auto YEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
-#endif
-   const auto &AngleEdge = mesh->AngleEdge;
 
    // Prepare operator input
    Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
-   parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          const Real X = XEdge(IEdge);
-          const Real Y = YEdge(IEdge);
 
-          const Real VecExactX   = Setup.exactVecX(X, Y);
-          const Real VecExactY   = Setup.exactVecY(X, Y);
-          const Real EdgeNormalX = std::cos(AngleEdge(IEdge));
-          const Real EdgeNormalY = std::sin(AngleEdge(IEdge));
-          VecEdge(IEdge) = EdgeNormalX * VecExactX + EdgeNormalY * VecExactY;
-       });
+   computeVecFieldEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.exactVecX(X, Y);
+          VecField[1] = Setup.exactVecY(X, Y);
+       },
+       VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
    Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
    auto VecEdgeH = createHostMirrorCopy(VecEdge);
    MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
    deepCopy(VecEdge, VecEdgeH);
+
+   // Compute exact result
+   Array1DReal ExactReconEdge("ExactReconEdge", mesh->NEdgesOwned);
+
+   computeVecFieldEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.exactVecX(X, Y);
+          VecField[1] = Setup.exactVecY(X, Y);
+       },
+       ExactReconEdge, EdgeOrientation::Tangential, mesh);
 
    const auto &DcEdge = mesh->DcEdge;
    const auto &DvEdge = mesh->DvEdge;
@@ -553,13 +659,7 @@ int testRecon(Real RTol) {
           const Real VecReconNum = TanReconEdge(IEdge, VecEdge);
 
           // Exact result
-          const Real X             = XEdge(IEdge);
-          const Real Y             = YEdge(IEdge);
-          const Real VecX          = Setup.exactVecX(X, Y);
-          const Real VecY          = Setup.exactVecY(X, Y);
-          const Real EdgeTangentX  = -std::sin(AngleEdge(IEdge));
-          const Real EdgeTangentY  = std::cos(AngleEdge(IEdge));
-          const Real VecReconExact = EdgeTangentX * VecX + EdgeTangentY * VecY;
+          const Real VecReconExact = ExactReconEdge(IEdge);
 
           // Errors
           LInfEdge(IEdge)      = std::abs(VecReconNum - VecReconExact);
