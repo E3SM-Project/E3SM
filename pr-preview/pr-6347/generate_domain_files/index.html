@@ -1680,6 +1680,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#generating-domain-files_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating Domain Files
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1734,6 +1743,12 @@ https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/</p>
 For a typical E3SM configuration we recommend using a conservative, monotone map.
 Here is an example command that can be used to generate one (as of NCO version 5.2.2)</p>
 <div class="highlight"><pre><span></span><code>ncremap -5 -a traave --src_grd=${OCN_GRID} --dst_grd=${ATM_GRID} --map_file=${MAP_FILE}
+</code></pre></div>
+<h2 id="generating-domain-files_1">Generating Domain Files</h2>
+<p>Below is a typical example of how to invoke the domain generation tool from the command line:</p>
+<div class="highlight"><pre><span></span><code>NE=30
+MAP_FILE=${MAP_FILE_ROOT}/map_oEC60to30v3_to_ne${NE}pg2_traave.20240313.nc
+python generate_domain_files_E3SM.py -m ${MAP_FILE} -o oEC60to30v3 -l ne${NE}pg2 --date-stamp=9999 --output-root=${OUTPUT_ROOT}
 </code></pre></div>
 
 
