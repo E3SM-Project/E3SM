@@ -24,4 +24,9 @@
     <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_MALI_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>GMPAS-JRA1p5-MALI</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_MALI_SWAV</lname>
+  </compset>
+
 </compsets>
