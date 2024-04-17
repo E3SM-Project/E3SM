@@ -264,8 +264,9 @@ contains
        l2racc_lx_cnt = 0
 #ifdef HAVE_MOAB
        ! this l2racc_lm will be over land size ? 
-       sharedFieldsLndRof=trim( mct_aVect_exportRList2c(l2racc_lx(1)) )
+       sharedFieldsLndRof=''
        nfields_sh_lr = mct_aVect_nRAttr(l2racc_lx(1))
+       if( nfields_sh_lr /= 0 ) sharedFieldsLndRof=trim( mct_aVect_exportRList2c(l2racc_lx(1)) )
        tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
        ! find the size of land mesh locally
        ! find out the number of local elements in moab mesh lnd instance on coupler
@@ -340,12 +341,12 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing comm graph , lnd-rof')
                endif
                ! context for rearrange is target in this case
-            if ( mapper_Fl2r%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fl2r%mbname) &
-                             //' mapper_Fl2r'
-                endif
-            endif
+               if ( mapper_Fl2r%src_mbid .gt. -1 ) then
+                  if (iamroot_CPLID) then
+                        write(logunit,F00) 'overwriting '//trim(mapper_Fl2r%mbname) &
+                              //' mapper_Fl2r'
+                  endif
+               endif
                mapper_Fl2r%src_mbid = mblxid
                mapper_Fl2r%tgt_mbid = mbrxid
                mapper_Fl2r%src_context = lnd(1)%cplcompid
@@ -373,12 +374,12 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
                endif
                ! now take care of the mapper 
-            if ( mapper_Fl2r%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fl2r%mbname) &
-                             //' mapper_Fl2r'
-                endif
-            endif
+               if ( mapper_Fl2r%src_mbid .gt. -1 ) then
+                  if (iamroot_CPLID) then
+                        write(logunit,F00) 'overwriting '//trim(mapper_Fl2r%mbname) &
+                              //' mapper_Fl2r'
+                  endif
+               endif
                mapper_Fl2r%src_mbid = mblxid
                mapper_Fl2r%tgt_mbid = mbrxid
                mapper_Fl2r%intx_mbid = mbintxlr 
@@ -435,7 +436,6 @@ contains
                endif
 #endif
             end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
-   ! endif HAVE_MOAB 
          endif ! samegrid_lr
 #endif
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
@@ -469,9 +469,10 @@ contains
        a2racc_ax_cnt = 0
 #ifdef HAVE_MOAB
        ! this a2racc_am will be over atm size 
-       sharedFieldsAtmRof=trim( mct_aVect_exportRList2c(a2racc_ax(1)) )
-       tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
+       sharedFieldsAtmRof=''
        nfields_sh_ar = mct_aVect_nRAttr(a2racc_ax(1))
+       if (nfields_sh_ar /= 0 ) sharedFieldsAtmRof = trim( mct_aVect_exportRList2c(a2racc_ax(1)) )
+       tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
        ! find the size of atm mesh locally
        ! find out the number of local elements in moab mesh atm instance on coupler
        ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -675,9 +676,10 @@ contains
 #ifdef HAVE_MOAB
 
        ! this o2racc_om will be over ocn size 
-       sharedFieldsOcnRof=trim( mct_aVect_exportRList2c(o2racc_ox(1)) )
-       tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
+       sharedFieldsOcnRof=''
        nfields_sh_or = mct_aVect_nRAttr(o2racc_ox(1))
+       if ( nfields_sh_or /= 0 ) sharedFieldsOcnRof = trim( mct_aVect_exportRList2c(o2racc_ox(1)) )
+       tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
       
       ! find the size of ocn mesh locally
       ! find out the number of local elements in moab mesh ocn instance on coupler

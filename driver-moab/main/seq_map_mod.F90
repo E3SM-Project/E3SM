@@ -423,7 +423,8 @@ end subroutine moab_map_init_rcfile
          else
             ! Extract character strings from attribute vector
             nfields = mct_aVect_nRAttr(av_s)
-            fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
+            fldlist_moab = ''
+            if ( nfields /= 0 ) fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
          endif
 
          if (mbnorm) then
@@ -1244,9 +1245,11 @@ end subroutine moab_map_init_rcfile
        call mct_aVect_init(avp_i, rList=trim( rList)//trim(appnd), lsize=lsize_i)
        call mct_aVect_init(avp_o, rList=trim( rList)//trim(appnd), lsize=lsize_o)
     else
-       lrList = mct_aVect_exportRList2c(av_i)
+       lrList = ''
+       if(mct_aVect_nRAttr(av_i) /= 0) lrList = mct_aVect_exportRList2c(av_i)
        call mct_aVect_init(avp_i, rList=trim(lrList)//trim(appnd), lsize=lsize_i)
-       lrList = mct_aVect_exportRList2c(av_o)
+       lrList = ''
+       if(mct_aVect_nRAttr(av_o) /= 0) lrList = mct_aVect_exportRList2c(av_o)
        call mct_aVect_init(avp_o, rList=trim(lrList)//trim(appnd), lsize=lsize_o)
     endif
 
