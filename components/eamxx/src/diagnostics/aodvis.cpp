@@ -34,7 +34,7 @@ void AODVis::set_grids(
 
   // Construct and allocate the aodvis field
   // We are going to assume we have nondim units here for ease
-  FieldIdentifier fid("aodvis", scalar1d_layout, nondim,
+  FieldIdentifier fid("AerosolOpticalDepth550nm", scalar1d_layout, nondim,
                       grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();

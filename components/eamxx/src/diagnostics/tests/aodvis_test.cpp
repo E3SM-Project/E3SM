@@ -72,7 +72,7 @@ TEST_CASE("aodvis") {
 
     // Create and set up the diagnostic
     ekat::ParameterList params;
-    auto diag = diag_factory.create("aodvis", comm, params);
+    auto diag = diag_factory.create("AerosolOpticalDepth550nm", comm, params);
     diag->set_grids(gm);
     diag->set_required_field(tau);
     diag->initialize(t0, RunType::Initial);
