@@ -1854,10 +1854,10 @@ that include many variables (&gt;200). At times, many of the default output
 variables may not be of interest, thus one could remove all default variables
 (via <code>hist_empty_htapes</code>) and only include select variables (via <code>hist_fincl1</code>)
 to the monthly history files by</p>
-<div class="highlight"><pre><span></span><code>   &amp;elm_inparm
-     hist_empty_htapes = .true.
-     hist_fincl1 = &#39;TG&#39;, &#39;TV&#39;, &#39;FSA&#39;
-   /
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="p">&amp;</span>elm_inparm
+<span class="w">     </span><span class="nv">hist_empty_htapes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+<span class="w">     </span><span class="nv">hist_fincl1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span>,<span class="w"> </span><span class="s1">&#39;TV&#39;</span>,<span class="w"> </span><span class="s1">&#39;FSA&#39;</span>
+<span class="w">   </span>/
 </code></pre></div>
 <h4 id="saving-additional-output-files">Saving additional output files</h4>
 <p>ELM can output additional history files (such as <code>*elm.h1.*.nc</code>, <code>*elm.h2.*.nc</code>)
@@ -1871,13 +1871,13 @@ that have different temporal averaging (e.g. daily, hourly, every model timestep
 </ul>
 <p>The number of time slices in these additional files can be controlled
 vai <code>hist_mfilt</code>.</p>
-<div class="highlight"><pre><span></span><code>   &amp;elm_inparm
-     hist_fincl2 = &#39;TG&#39;
-     hist_fincl3 = &#39;TV&#39;
-     hist_fincl4 = &#39;TG&#39;, &#39;TV&#39;, &#39;FSA&#39;
-     hist_nhtfrq = 0, -24, -1, 1
-     hist_mfilt  = 12, 30, 24, 48
-   /
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="p">&amp;</span>elm_inparm
+<span class="w">     </span><span class="nv">hist_fincl2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span>
+<span class="w">     </span><span class="nv">hist_fincl3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TV&#39;</span>
+<span class="w">     </span><span class="nv">hist_fincl4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span>,<span class="w"> </span><span class="s1">&#39;TV&#39;</span>,<span class="w"> </span><span class="s1">&#39;FSA&#39;</span>
+<span class="w">     </span><span class="nv">hist_nhtfrq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>,<span class="w"> </span>-24,<span class="w"> </span>-1,<span class="w"> </span><span class="m">1</span>
+<span class="w">     </span><span class="nv">hist_mfilt</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="m">12</span>,<span class="w"> </span><span class="m">30</span>,<span class="w"> </span><span class="m">24</span>,<span class="w"> </span><span class="m">48</span>
+<span class="w">   </span>/
 </code></pre></div>
 <p>Using the above-mentioned settings:</p>
 <ul>
