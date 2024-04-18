@@ -57,7 +57,7 @@ void AODVis::compute_diagnostic_impl() {
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         auto tau_icol  = ekat::subview(tau_vis, icol);
-        aod(icol) = ekat::ExecSpaceUtils::view_reduction(team, 0, num_levs, tau_icol);
+        aod(icol) = ESU::view_reduction(team, 0, num_levs, tau_icol);
       });
 }
 
