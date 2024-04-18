@@ -5,6 +5,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
@@ -19,21 +20,21 @@ VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file,
                   const Field& lev_prof,
-                  const Field& ilev_prof,
-                  const Real mask_val)
-  : VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof)
+                  const Field& ilev_prof)
+  : VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,constants::DefaultFillValue<float>::value)
 {
-  m_mask_val = mask_val;
+  // Nothing to do here
 }
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file,
                   const Field& lev_prof,
-                  const Field& ilev_prof)
+                  const Field& ilev_prof,
+                  const Real mask_val)
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
- , m_mask_val(std::numeric_limits<float>::max()/10.0)
+ , m_mask_val(mask_val)
 {
   using namespace ShortFieldTagsNames;
 
@@ -67,6 +68,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // Gather the pressure level data for vertical remapping
   set_pressure_levels(map_file);
 
+  // Add tgt pressure levels to the tgt grid
+  tgt_grid->set_geometry_data(m_remap_pres);
   scorpio::eam_pio_closefile(map_file);
 }
 
@@ -79,28 +82,9 @@ create_src_layout (const FieldLayout& tgt_layout) const
       "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
       " - input layout: " + to_string(tgt_layout));
 
-  const auto lt = get_layout_type(tgt_layout.tags());
-  auto src = FieldLayout::invalid();
-  const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
-  switch (lt) {
-    case LayoutType::Scalar2D:
-      src = m_src_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      src = m_src_grid->get_2d_vector_layout(CMP,vec_dim);
-      break;
-    case LayoutType::Scalar3D:
-      src = m_src_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      src = m_src_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by VerticalRemapper: " + e2str(lt) + "\n");
-  }
-  return src;
+  return create_layout(tgt_layout,m_src_grid);
 }
+
 FieldLayout VerticalRemapper::
 create_tgt_layout (const FieldLayout& src_layout) const
 {
@@ -110,27 +94,51 @@ create_tgt_layout (const FieldLayout& src_layout) const
       "[VerticalRemapper] Error! Input source layout is not valid for this remapper.\n"
       " - input layout: " + to_string(src_layout));
 
-  const auto lt = get_layout_type(src_layout.tags());
-  auto tgt = FieldLayout::invalid();
-  const bool midpoints = true; //src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
+  return create_layout(src_layout,m_tgt_grid);
+}
+
+FieldLayout VerticalRemapper::
+create_layout (const FieldLayout& fl_in,
+               const grid_ptr_type& grid_out) const
+{
+  using namespace ShortFieldTagsNames;
+
+  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
+  //       between midpoints and interfaces: we're simply asking for a quantity
+  //       at a given set of pressure levels. So we choose to have fl_out
+  //       to *always* have LEV as vertical tag.
+  const auto lt = get_layout_type(fl_in.tags());
+  auto fl_out = FieldLayout::invalid();
   switch (lt) {
-    case LayoutType::Scalar2D:
-      tgt = m_tgt_grid->get_2d_scalar_layout();
+    case LayoutType::Scalar0D: [[ fallthrough ]];
+    case LayoutType::Vector0D: [[ fallthrough ]];
+    case LayoutType::Scalar2D: [[ fallthrough ]];
+    case LayoutType::Vector2D: [[ fallthrough ]];
+    case LayoutType::Tensor2D:
+      // These layouts do not have vertical dim tags, so no change
+      fl_out = fl_in;
       break;
-    case LayoutType::Vector2D:
-      tgt = m_tgt_grid->get_2d_vector_layout(CMP,vec_dim);
+    case LayoutType::Scalar1D:
+      fl_out = grid_out->get_vertical_layout(true);
       break;
     case LayoutType::Scalar3D:
-      tgt = m_tgt_grid->get_3d_scalar_layout(midpoints);
+      fl_out = grid_out->get_3d_scalar_layout(true);
       break;
     case LayoutType::Vector3D:
-      tgt = m_tgt_grid->get_3d_vector_layout(midpoints,CMP,vec_dim);
+    {
+      const auto vec_tag = fl_in.get_vector_tag();
+      const auto vec_dim = fl_in.dim(vec_tag);
+      fl_out = grid_out->get_3d_vector_layout(true,vec_tag,vec_dim);
       break;
+    }
     default:
-      EKAT_ERROR_MSG ("Layout not supported by VerticalRemapper: " + e2str(lt) + "\n");
+      // NOTE: this also include Tensor3D. We don't really have any atm proc
+      //       that needs to handle a tensor3d quantity, so no need to add it
+      EKAT_ERROR_MSG (
+          "Layout not supported by VerticalRemapper.\n"
+          " - input layout: " + to_string(fl_in) + "\n");
   }
-  return tgt;
+  return fl_out;
 }
 
 void VerticalRemapper::
@@ -146,7 +154,7 @@ set_pressure_levels(const std::string& map_file)
   std::vector<FieldTag> tags = {LEV};
   std::vector<int>      dims = {m_num_remap_levs};
   FieldLayout layout(tags,dims);
-  FieldIdentifier fid("p_remap",layout,ekat::units::Pa,m_tgt_grid->name());
+  FieldIdentifier fid("p_levs",layout,ekat::units::Pa,m_tgt_grid->name());
   m_remap_pres = Field(fid);
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
@@ -312,7 +320,6 @@ void VerticalRemapper::do_remap_fwd ()
 {
   using namespace ShortFieldTagsNames;
   // Loop over each field
-  constexpr auto can_pack = SCREAM_PACK_SIZE>1;
   const auto& tgt_pres_ap = m_remap_pres.get_header().get_alloc_properties();
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src    = m_src_fields[i];
@@ -325,10 +332,10 @@ void VerticalRemapper::do_remap_fwd ()
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
       const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+      if (src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
         apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt); 
       } else {
         apply_vertical_interpolation<1>(f_src,f_tgt); 
@@ -358,10 +365,10 @@ void VerticalRemapper::do_remap_fwd ()
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
       const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+      if (src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+          tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
         apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt,true); 
       } else {
         apply_vertical_interpolation<1>(f_src,f_tgt,true); 
@@ -378,44 +385,42 @@ template<int Packsize>
 void VerticalRemapper::
 apply_vertical_interpolation(const Field& f_src, const Field& f_tgt, const bool mask_interp) const
 {
-    
-    using Pack = ekat::Pack<Real,Packsize>;
-    using namespace ShortFieldTagsNames;
-    using namespace scream::vinterp;
-    const auto& layout = f_src.get_header().get_identifier().get_layout();
-    const auto  rank   = f_src.rank();
-    const auto src_tag = layout.tags().back();
-    const auto src_num_levs = layout.dims().back();
-    // ARG mask_interp checks if this is a vertical interpolation of the mask array that tracks masked 0.0 or not 1.0
-    Real mask_val = mask_interp ? 0.0 : m_mask_val;
+  using Pack = ekat::Pack<Real,Packsize>;
+  using namespace ShortFieldTagsNames;
+  using namespace scream::vinterp;
+  const auto& layout = f_src.get_header().get_identifier().get_layout();
+  const auto  rank   = f_src.rank();
+  const auto src_tag = layout.tags().back();
+  const auto src_num_levs = layout.dims().back();
+  // ARG mask_interp checks if this is a vertical interpolation of the mask array that tracks masked 0.0 or not 1.0
+  Real mask_val = mask_interp ? 0.0 : m_mask_val;
 
-    Field    src_lev_f;
-    if (src_tag == ILEV) {
-      src_lev_f = m_src_int;
-    } else {
-      src_lev_f = m_src_mid;
+  Field    src_lev_f;
+  if (src_tag == ILEV) {
+    src_lev_f = m_src_int;
+  } else {
+    src_lev_f = m_src_mid;
+  }
+  auto src_lev  = src_lev_f.get_view<const Pack**>();
+  auto remap_pres_view = m_remap_pres.get_view<Pack*>();
+  switch(rank) {
+    case 2:
+    {
+      auto src_view = f_src.get_view<const Pack**>();
+      auto tgt_view = f_tgt.get_view<      Pack**>();
+      perform_vertical_interpolation<Real,Packsize,2>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
+      break;
     }
-    auto src_lev  = src_lev_f.get_view<const Pack**>();
-    auto remap_pres_view = m_remap_pres.get_view<Pack*>();
-    switch(rank) {
-      case 2:
-      {
-        auto src_view = f_src.get_view<const Pack**>();
-        auto tgt_view = f_tgt.get_view<      Pack**>();
-        perform_vertical_interpolation<Real,Packsize,2>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
-        break;
-      }
-      case 3:
-      {
-        auto src_view = f_src.get_view<const Pack***>();
-        auto tgt_view = f_tgt.get_view<      Pack***>();
-        perform_vertical_interpolation<Real,Packsize,3>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by VerticalRemapper.\n");
+    case 3:
+    {
+      auto src_view = f_src.get_view<const Pack***>();
+      auto tgt_view = f_tgt.get_view<      Pack***>();
+      perform_vertical_interpolation<Real,Packsize,3>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
+      break;
     }
-
+    default:
+      EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by VerticalRemapper.\n");
+  }
 }
 
 } // namespace scream

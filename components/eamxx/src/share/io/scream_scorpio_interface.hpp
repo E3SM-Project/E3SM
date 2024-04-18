@@ -38,6 +38,8 @@ namespace scorpio {
   int get_dimlen(const std::string& filename, const std::string& dimname);
   bool has_dim(const std::string& filename, const std::string& dimname);
   bool has_variable (const std::string& filename, const std::string& varname);
+  bool has_attribute (const std::string& filename, const std::string& attname);
+  bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
@@ -93,8 +95,11 @@ namespace scorpio {
   }
 
   // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
-  void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts);
-  util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name);
+  void write_timestamp (const std::string& filename, const std::string& ts_name,
+                        const util::TimeStamp& ts, const bool write_nsteps = false);
+  util::TimeStamp read_timestamp (const std::string& filename,
+                                  const std::string& ts_name,
+                                  const bool read_nsteps = false);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
