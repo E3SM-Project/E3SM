@@ -99,6 +99,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   Field sf;
   sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_data = m_data;
+  sf.m_is_read_only = m_is_read_only;
 
   return sf;
 }

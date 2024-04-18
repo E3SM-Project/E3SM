@@ -166,6 +166,9 @@ TEST_CASE("field", "") {
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
     REQUIRE_THROWS (f1.get_view<P16***>());
+
+    // Can't get non-const data type view from a read-only field
+    REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
   SECTION ("equivalent") {
@@ -299,6 +302,10 @@ TEST_CASE("field", "") {
         for (int k=0; k<d1[3]; ++k) {
           REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
+
+    // Subfields of read-only fields must be read-only
+    auto f3 = f1.get_const().subfield(idim,ivar);
+    REQUIRE (f3.is_read_only());
   }
 
   // Dynamic Subfields
