@@ -614,6 +614,14 @@ class TimeInstant {
                const I8 Denom   ///< [in] second (fraction denominator)
    );
 
+   /// Construct time instant from a standard date-time string in the
+   /// form YYYY-MM-DD_HH:MM:SS.SSSS where the width of the YY and SS
+   /// strings can be of arbitrary width (within reason) and the
+   /// separators can be any single non-numeric character
+   TimeInstant(Calendar *Cal,          ///< [in] Calendar to use
+               std::string &TimeString ///< [in] string containing date/time
+   );
+
    /// Destructor for time interval
    ~TimeInstant(void);
 
