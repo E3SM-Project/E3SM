@@ -70,6 +70,12 @@
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- Same as WCYCL1850NS but for 2010 (to avoid needing transient files). Mainly for testing. -->
+<compset>
+  <alias>WCYCL2010NS</alias>
+  <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <compset>
   <alias>WCYCL1950</alias>
   <lname>1950SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
