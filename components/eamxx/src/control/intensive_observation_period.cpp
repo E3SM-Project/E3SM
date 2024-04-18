@@ -238,7 +238,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   setup_iop_field({"Q2"},       fl_vector);
   setup_iop_field({"omega"},    fl_vector, "Ptend");
 
-  // Require Ps, T, q, divT, divq are all defined in the iop file
+  // Certain fields are required from the iop file
   EKAT_REQUIRE_MSG(has_iop_field("Ps"),
                    "Error! IOP file required to contain variable \"Ps\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("T"),
@@ -249,6 +249,19 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                    "Error! IOP file required to contain variable \"divT\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("divq"),
                    "Error! IOP file required to contain variable \"divq\".\n");
+
+  // Check for large scale winds and enfore "all-or-nothing" for u and v component
+  const bool both_ls = (has_iop_field("u_ls") and has_iop_field("v_ls"));
+  const bool neither_ls = (not (has_iop_field("u_ls") or has_iop_field("v_ls")));
+  EKAT_REQUIRE_MSG(both_ls or neither_ls,
+    "Error! Either u_ls and v_ls both defined in IOP file, or neither.\n");
+  m_params.set<bool>("use_large_scale_wind", both_ls);
+
+  // Require large scale winds if using Coriolis forcing
+  if (m_params.get<bool>("iop_coriolis")) {
+    EKAT_REQUIRE_MSG(m_params.get<bool>("use_large_scale_wind"),
+                     "Error! Large scale winds required for coriolis forcing.\n");
+  }
 
   // If we have the vertical component of T/Q forcing, define 3d forcing as a computed field.
   if (has_iop_field("vertdivT")) {
@@ -268,12 +281,12 @@ initialize_iop_file(const util::TimeStamp& run_t0,
     m_iop_field_type.insert({"divq3d", IOPFieldType::Computed});
   }
 
-  // Enforce that 3D forcing is all-or-nothing.
-  const bool both = (has_iop_field("divT3d") and has_iop_field("divq3d"));
-  const bool neither = (not (has_iop_field("divT3d") or has_iop_field("divq3d")));
-  EKAT_REQUIRE_MSG(both or neither,
+  // Enforce that 3D forcing is all-or-nothing for T and q.
+  const bool both_3d_forcing = (has_iop_field("divT3d") and has_iop_field("divq3d"));
+  const bool neither_3d_forcing = (not (has_iop_field("divT3d") or has_iop_field("divq3d")));
+  EKAT_REQUIRE_MSG(both_3d_forcing or neither_3d_forcing,
     "Error! Either T and q both have 3d forcing, or neither have 3d forcing.\n");
-  m_params.set<bool>("use_3d_forcing", both);
+  m_params.set<bool>("use_3d_forcing", both_3d_forcing);
 
   // Initialize time information
   int bdate;
@@ -307,10 +320,14 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   Real iop_file_lat, iop_file_lon;
   read_variable_from_file(iop_file, "lat", "real", {"lat"}, -1, &iop_file_lat);
   read_variable_from_file(iop_file, "lon", "real", {"lon"}, -1, &iop_file_lon);
-  EKAT_REQUIRE_MSG(iop_file_lat == m_params.get<Real>("target_latitude"),
-                  "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
-  EKAT_REQUIRE_MSG(std::fmod(iop_file_lon + 360, 360) == m_params.get<Real>("target_longitude"),
-                  "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
+  const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude"))/
+                             m_params.get<Real>("target_latitude");
+  const Real rel_lon_err = std::fabs(std::fmod(iop_file_lon + 360.0, 360.0)-m_params.get<Real>("target_longitude"))/
+                             m_params.get<Real>("target_longitude");
+  EKAT_REQUIRE_MSG(rel_lat_err < std::numeric_limits<float>::epsilon(),
+                   "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
+  EKAT_REQUIRE_MSG(rel_lon_err < std::numeric_limits<float>::epsilon(),
+                   "Error! IOP file variable \"lon\" does not match target_longitude from IOP parameters.\n");
 
   // Store iop file pressure as helper field with dimension lev+1.
   // Load the first lev entries from iop file, the lev+1 entry will
@@ -693,6 +710,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
         const auto dx = iop_file_v_h(adjusted_file_levs-2) - iop_file_v_h(adjusted_file_levs-3);
         if (dx == 0) iop_file_v_h(adjusted_file_levs-1) = iop_file_v_h(adjusted_file_levs-2);
         else {
+          iop_file_pressure.sync_to_host();
           const auto iop_file_pres_v_h = iop_file_pressure.get_view<const Real*, Host>();
           const auto dy = iop_file_pres_v_h(adjusted_file_levs-2) - iop_file_pres_v_h(adjusted_file_levs-3);
           const auto scale = dy/dx;

@@ -423,10 +423,6 @@ subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete
       call outfld('QDIFF',qdiff_dyn,plon,begchunk)
     endif
 
-    if (iop_coriolis) then
-      call iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
-    endif
-
     call outfld('TOBS',tobs,plon,begchunk)
     call outfld('QOBS',qobs,plon,begchunk)
     call outfld('DIVQ',divq,plon,begchunk)
@@ -441,6 +437,10 @@ subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete
     call outfld('QRELAX',relaxq,plon,begchunk)
 
   enddo
+
+  if (iop_coriolis) then
+    call iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
+  endif
 
   if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
     ! If running in a doubly periodic CRM mode, then nudge the domain
