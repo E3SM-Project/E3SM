@@ -4824,12 +4824,6 @@ Defaults:
   3D CRM: 0
 </entry>
 
-<entry id="MMF_PAM_dyn_per_phys" type="integer"  category="conv"
-       group="phys_ctl_nl" valid_values="" >
-Number of PAM dycor calls per physics time step.
-Default: 2
-</entry>
-
 <entry id="MMF_VT_wn_max" type="real" category="conv"
        group="phys_ctl_nl" valid_values="">
 Wavenumber cutoff for filtered MMF variance transport.

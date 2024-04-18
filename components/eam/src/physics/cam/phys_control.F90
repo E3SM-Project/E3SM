@@ -72,7 +72,6 @@ logical           :: use_MMF_ESMT         = .false.    ! true => use MMF explici
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
 real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
 logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
-integer           :: MMF_PAM_dyn_per_phys = 2          ! PAM CRM dynamics steps per CRM physics steps
 
 logical           :: use_subcol_microp    = .false.    ! if .true. then use sub-columns in microphysics
 
@@ -229,7 +228,7 @@ subroutine phys_ctl_readnl(nlfile)
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
       use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
-      use_crm_accel, crm_accel_factor, crm_accel_uv, MMF_PAM_dyn_per_phys, &
+      use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       get_presc_aero_data,history_aerosol, history_aero_optics, &
       is_output_interactive_volc, &
@@ -314,7 +313,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
    call mpibcast(crm_accel_factor,                1 , mpir8,   0, mpicom)
    call mpibcast(crm_accel_uv,                    1 , mpilog,  0, mpicom)
-   call mpibcast(MMF_PAM_dyn_per_phys,            1 , mpiint,  0, mpicom)
    call mpibcast(use_subcol_microp,               1 , mpilog,  0, mpicom)
    call mpibcast(atm_dep_flux,                    1 , mpilog,  0, mpicom)
    call mpibcast(history_amwg,                    1 , mpilog,  0, mpicom)
@@ -598,7 +596,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         prog_modal_aero_out, macrop_scheme_out, ideal_phys_option_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
                         MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, use_MMF_ESMT_out, &
-                        use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, MMF_PAM_dyn_per_phys_out, &
+                        use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_shoc_sgs_out, do_tms_out, state_debug_checks_out, &
                         linearize_pbl_winds_out, &
                         do_aerocom_ind3_out,  &
@@ -641,7 +639,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: use_crm_accel_out
    real(r8),          intent(out), optional :: crm_accel_factor_out
    logical,           intent(out), optional :: crm_accel_uv_out
-   integer,           intent(out), optional :: MMF_PAM_dyn_per_phys_out
    logical,           intent(out), optional :: use_subcol_microp_out
    logical,           intent(out), optional :: atm_dep_flux_out
    logical,           intent(out), optional :: history_amwg_out
@@ -745,7 +742,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
    if ( present(crm_accel_uv_out        ) ) crm_accel_uv_out         = crm_accel_uv
-   if ( present(MMF_PAM_dyn_per_phys_out) ) MMF_PAM_dyn_per_phys_out = MMF_PAM_dyn_per_phys
 
    if ( present(use_subcol_microp_out   ) ) use_subcol_microp_out    = use_subcol_microp
    if ( present(macrop_scheme_out       ) ) macrop_scheme_out        = macrop_scheme

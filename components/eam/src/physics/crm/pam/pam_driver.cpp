@@ -122,6 +122,7 @@ extern "C" void pam_driver() {
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
   //------------------------------------------------------------------------------------------------
   // coupler options for SPAM dycor
+  coupler.set_option<int>("crm_dyn_per_phys",1);
   coupler.set_option<bool>("spam_couple_wind_exact_inverse",true);
   coupler.set_option<bool>("spam_clip_negative_densities",true);
   coupler.set_option<bool>("spam_clip_vertical_velocities",true);
