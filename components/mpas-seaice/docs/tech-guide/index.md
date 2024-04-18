@@ -1,8 +1,6 @@
-Technical Guide
-===============
+# Technical Guide
 
-**Primary documentation for MPAS-seaice**
------------------------------------------
+## Primary documentation for MPAS-seaice
 
 See complete citations in [References](../references.md).
 
@@ -16,8 +14,7 @@ See complete citations in [References](../references.md).
 
 A comprehensive paper describing MPAS-seaice is in preparation.
 
-**Meshes**
-----------
+## Meshes
 
 MPAS-Seaice is the sea ice component of E3SMv1. MPAS-Seaice and MPAS-Ocean share identical meshes, but MPAS-Seaice uses B-grid discretizations (Arakawa & Lamb, 1977) with sea ice concentration, volume, and tracers defined at cell centers and velocity defined at cell vertices.
 
@@ -25,8 +22,7 @@ The MPAS mesh system requires the definition of seven elements.  These seven ele
 ![mesh](../figures/mesh.png)
 Figure: Sample from an MPAS mesh showing the primal mesh (solid lines), the dual mesh (dashed), and velocity components aligned with a locally Cartesian coordinate system (east/north).
 
-**Velocity and Stresses**
--------------------------
+## Velocity and Stresses
 
 Velocity components at cell vertices are not aligned with the mesh, as in sea ice models with structured meshes and quadrilateral cells. Instead, the velocity components are aligned with a spherical coordinate system that is locally Cartesian, eastwards (u) and northwards (v), irrespective of the orientation of edges joining that vertex. Such a definition, however, would result in a convergence of v components at the geographic North Pole and strong metric terms in the velocity solution. Consequently, in addition, these definitions of u and v are rotated so that their pole lies on the geographical equator at 0 deg longitude.
 
@@ -40,8 +36,7 @@ Velocities are determined by solving the sea ice momentum equation (Hibler, 1979
 
 Two schemes to calculate the strain rate tensor and the divergence of internal stress on MPAS meshes are implemented in MPAS-Seaice, a variational scheme based on that used in CICE (Hunke and Dukowicz, 2002), and a weak scheme that uses the line integral forms of the symmetric gradient and divergence operators. The variational scheme is based on the fact that over the entire domain, Ω, and ignoring boundary effects, the total work done by the internal stress is equal to the dissipation of mechanical energy. Instead of the bilinear basis functions used by CICE, MPAS-Seaice uses Wachspress basis functions (Dasgupta, 2003), which are integrated with the quadrature rules of Dunavant (1985).
 
-**Horizontal Transport of Ice Area Fraction and Tracers**
----------------------------------------------------------
+## Horizontal Transport of Ice Area Fraction and Tracers
 
 Horizontal transport of ice concentration, volume, and tracers is achieved with an incremental remapping (IR) scheme similar to that described in Dukowicz and Baumgardner (2000), Lipscomb and Hunke (2004), and Lipscomb and Ringler (2005).  For MPAS-Seaice the IR scheme was generalized to work on either the standard MPAS mesh (hexagons and other n-gons of varying sizes, with a vertex degree of 3, or a quadrilateral mesh with a vertex degree of 4 as in CICE. Since MPAS meshes are unstructured, the IR scheme had to be rewritten from scratch. Most of the code is mesh-agnostic, but a small amount of code is specific to quad meshes.
 The transport equations describe conservation of quantities such as volume and energy.  Fractional ice area (also known as sea ice concentration) is a mass-like quantity whose transport equation forms the basis for all other transported quantities in the model.  In particular, ice volume is the product of ice area and thickness; therefore thickness is treated as a tracer on ice area, transported with the continuity equation for conservation of volume. Likewise, snow depth is carried as a tracer on ice area via a conservation of snow volume equation.  Ice thickness and snow depth are referred to as “type 1” tracers (carried directly on ice area). Ice and snow enthalpy in each vertical layer are type 2 tracers, carried on ice and snow volume. When run with advanced options (e.g., active melt ponds and biogeochemistry), MPAS-Seaice advects tracers up to type 3. Thus, the mass-like field (area) is the “parent field” for type 1 tracers; type 1 tracers are parents of type 2; and type 2 tracers are parents of type 3.  Sources and sinks of mass and tracers (e.g., ice growth and melting) are treated separately from transport.
@@ -57,8 +52,7 @@ Since all fields are transported by the same velocity field, the second step is 
 
 With advanced physics and biogeochemistry (BGC) options, MPAS-Seaice can be configured to include numerous tracer fields, each of which is advected in every thickness category, and many of which are defined in each vertical ice or snow layer. In order to accommodate different tracer combinations and make it easy to add new tracers, the tracer fields are organized in a linked list that depends on which physics and BGC packages are active. The list is arranged with fractional ice area first, followed by the type 1 tracers, type 2 tracers, and finally type 3 tracers. In this way, values computed for parent tracers are always available when needed for computations involving child tracers.
 
-**Column Physics**
-------------------
+## Column Physics
 
 The Icepack software has replaced the original ``colpkg`` column physics code in MPAS-seaice. The ``config_column_physics_type = 'column_package'`` option is still available but is no longer being supported in MPAS-seaice.
 
@@ -92,8 +86,7 @@ A paper describing the advanced snow physics is in preparation.
 
 This section is under construction, pending the full merge of BGC codes in Icepack and the older column physics package.
 
-**Coupling of MPAS-seaice within E3SM**
----------------------------------------
+## Coupling of MPAS-seaice within E3SM
 
 This section is under construction.  Current text is quoted from the v1 and v2 overview papers.
 

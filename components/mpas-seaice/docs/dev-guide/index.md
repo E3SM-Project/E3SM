@@ -1,18 +1,15 @@
-Developer's Guide
-=================
+# Developer's Guide
 
 Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.
 
 [Development Guide for E3SM Code](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide)
 [Development Guide for E3SM Documentation](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation)
 
-**Configuration Controls**
---------------------------
+## Configuration Controls
 
 MPAS-seaice is controlled using namelist options.  Namelist files for E3SM runs are found in ``E3SM/components/mpas-seaice/bld/namelist_files/``.  However, the values in these files are drawn from the Registry, following the convention of all MPAS components. Registry files are used directly for stand-alone MPAS-seaice runs, and E3SM scripts pass information from them into E3SM's namelist files when a PR is merged.  E3SM's namelist files need to be changed for development purposes.  It's easiest to change all of them when needed, to keep them consistent, taking care not to unintentionally change standalone MPAS-seaice configurations.
 
-**MPAS Framework**
-------------------
+## MPAS Framework
 
 MPAS-seaice is built on the MPAS Framework.
 
@@ -30,8 +27,7 @@ The framework code includes shared modules for fundamental model operation. Sign
 
 Additionally, a number of shared operators exist to perform common operations on model data. These include geometric operations (e.g., length, area, and angle operations on the sphere or the plane), interpolation (linear, barycentric, Wachspress, radial basis functions, spline), vector and tensor operations (e.g., cross products, divergence), and vector reconstruction (e.g., interpolating from cell edges to cell centers). Most operators work on both spherical and planar meshes.
 
-**Icepack**
------------
+## Icepack
 
 For changes to Icepack, please consult the [CICE Consortium's recommendations for code contributions](https://github.com/CICE-Consortium/About-Us/wiki/Contributing).
 
@@ -39,12 +35,11 @@ To access the column physics in Icepack, MPAS-seaice uses methods defined in ``i
 
 Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. **We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.**
 
-**E3SM-Polar-Developer Script**
--------------------------------
+## E3SM-Polar-Developer Script
 
 To accelerate early development stages, a script is available for configuring and testing MPAS-seaice (including the Icepack submodule) in D compsets, which have the sea ice component active and data models for the other components.
 
-### View helpful information, including default values for duration, configuration, etc.
+### View helpful information, including default values for duration, configuration, etc
 
 ```text
 git clone git@github.com:E3SM-Project/SimulationScripts.git
@@ -176,8 +171,7 @@ Once the PR has been tested and merged into the main Icepack codebase, a new PR 
 
 More extensive documentation of this workflow tool used for the Icepack merge project is available [here](https://acme-climate.atlassian.net/wiki/spaces/ICE/pages/3450339435/Project+Workflow).
 
-**CICE-QC Quality Control Testing**
------------------------------------
+## CICE-QC Quality Control Testing
 
 Example to run a CICE-QC comparison between two E3SM simulations with changes to the sea ice component.
 

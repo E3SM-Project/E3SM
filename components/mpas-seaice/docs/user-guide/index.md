@@ -1,10 +1,8 @@
-User's Guide
-============
+# User's Guide
 
 Guidance for using E3SM is available from [E3SM's public web site](<https://e3sm.org/model/running-e3sm/e3sm-quick-start>).
 
-**Configuring MPAS-seaice**
----------------------------
+## Configuring MPAS-seaice
 
 MPAS-seaice is controlled using namelist options.
 
@@ -43,8 +41,7 @@ Related namelist variables are grouped according to their application.
 | ``diagnostics``     | diagnostic output                        |
 | ``prescribed_ice``  | for testing atmosphere simulations       |
 
-**Icepack**
------------
+## Icepack
 
 The Icepack software has replaced the original ``colpkg`` column physics code in MPAS-seaice. The ``column_package`` option is still available but is no longer being supported in MPAS-seaice.
 
@@ -56,8 +53,7 @@ The MPAS-seaice driver for Icepack is
 
 and the mapping between the names of Icepack's namelist options and those in MPAS-seaice can be found in subroutine ``init_icepack_package_configs`` (see the argument list for ``call subroutine icepack_init_parameters`` and comments at the end of ``init_icepack_package_configs``.
 
-**Configuring Model Input and Output**
---------------------------------------
+## Configuring Model Input and Output
 
 The reading and writing of model fields in MPAS is handled by user-configurable streams. A stream represents a fixed set of model fields, together with dimensions and attributes, that are all written or read together to or from the same file or set of files. Each MPAS model core may define its own set of default streams that it typically uses for reading initial conditions, for writing and reading restart fields, and for writing additional model history fields. Besides these default streams, users may define new streams to, e.g., write certain diagnostic fields at a higher temporal frequency than the usual model history fields.
 
