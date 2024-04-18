@@ -84,25 +84,21 @@ TEST_CASE("aodvis") {
     tau.sync_to_host();
     diag->get_diagnostic().sync_to_host();
 
-    auto tau_h  = tau.get_view<const Real ***, Host>();
-    auto aod_hf = diag->get_diagnostic();
-    auto aod_h  = aod_hf.get_view<const Real *, Host>();
+    const auto tau_h  = tau.get_view<const Real ***, Host>();
+    const auto aod_hf = diag->get_diagnostic();
 
     Field aod_tf = diag->get_diagnostic().clone();
     aod_tf.deep_copy<double, Host>(0.0);
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      auto aod_temp = 0.0;
       for(int ilev = 0; ilev < nlevs; ++ilev) {
         // TODO: Don't hardcode the 10!
-        aod_temp += tau_h(icol, 10, ilev);
         aod_t(icol) += tau_h(icol, 10, ilev);
       }
-      // Allow for sp tolerance?
-      REQUIRE(std::abs(aod_temp - aod_h(icol)) < 1e-6);
     }
-    // Another way to test is to compare the views
+    aod_hf.sync_to_dev();
+    aod_tf.sync_to_dev();
     REQUIRE(views_are_equal(aod_hf, aod_tf));
   }
 }
