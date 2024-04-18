@@ -1,7 +1,6 @@
 Developer's Guide
 =================
 
-
 Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.
 
 [Development Guide for E3SM Code](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide)
@@ -41,7 +40,7 @@ The following examples describe how to use the script for development in Icepack
 **Set up and run baselines.**
 
 Create a file containing modified namelist options. The file ``nset01.nlk`` in this example creates baselines for two types of column physics and turns off the ``snicar_ad`` radiation scheme.
-    
+
 ```text
 $ less nset01.nlk
 [mpassi]

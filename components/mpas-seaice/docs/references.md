@@ -19,16 +19,16 @@ Golaz, J.-C., Caldwell, P. M., Van Roekel, L. P., Petersen, M. R., Tang, Q., W
 
 Golaz, J.-C., Van Roekel, L. P., Zheng, X., Roberts, A. F., Wolfe, J. D., Lin, W., et al. (2022). The DOE E3SM Model version 2: Overview of the physical model and initial model evaluation. Journal of Advances in Modeling Earth Systems, 14, e2022MS003156. <https://doi.org/10.1029/2022MS003156>
 
-Hibler, W. D. III (1979). A dynamic thermodynamic sea ice model. Journal of Physical Oceanography, 9(4), 815–846. <https://doi.org/10.1175/1520- 0485(1979)009&lt;0815:ADTSIM&gt;2.0.CO;2>
+Hibler, W. D. III (1979). A dynamic thermodynamic sea ice model. Journal of Physical Oceanography, 9(4), 815–846. <https://doi.org/10.1175/1520-0485(1979)009&lt;0815:ADTSIM&gt;2.0.CO;2>
 
-Holland, M. M., D. A. Bailey, B. P. Briegleb, B. Light, and E. Hunke (2012). Improved sea ice shortwave radiation physics in CCSM4: The impact of melt ponds and aerosols on arctic sea ice, Journal of Climate, 25(5), 1413–1430, doi:10.1175/JCLI-D-11- 00078.1.
+Holland, M. M., D. A. Bailey, B. P. Briegleb, B. Light, and E. Hunke (2012). Improved sea ice shortwave radiation physics in CCSM4: The impact of melt ponds and aerosols on arctic sea ice, Journal of Climate, 25(5), 1413–1430, doi:10.1175/JCLI-D-11-00078.1.
 
 <!-- Elizabeth Hunke, Richard Allard, David Bailey, Anthony Craig, Anders Damsgaard, Frederic Dupont, Alice DuVivier, Marika Holland, Nicole Jeffery, Jean-Francois Lemieux, Christopher Newman, Andrew Roberts, Adrian Turner, Matthew Turner, & Michael Winton.-->
 Hunke, E., et al. (2018). CICE-Consortium/Icepack. Zenodo. <https://doi.org/10.5281/zenodo.1213462>
 
 Hunke, E. C., & Dukowicz, J. K. (1997). An elastic-viscous-plastic model for sea ice dynamics. Journal of Physical Oceanography, 27(9), 1849–1867. <https://doi.org/10.1175/1520-0485(1997)027&lt;1849:AEVPMF&gt;2.0.CO;2>
 
-Hunke, E. C., & Dukowicz, J. K. (2002). The elastic-viscous-plastic sea ice dynamics model in general orthogonal curvilinear coordinates on a sphere—Incorporation of metric terms. Monthly Weather Review, 130(7), 1848–1865. <https://doi.org/10.1175/1520- 0493(2002)130<1848:TEVPSI>2.0.CO;2>
+Hunke, E. C., & Dukowicz, J. K. (2002). The elastic-viscous-plastic sea ice dynamics model in general orthogonal curvilinear coordinates on a sphere—Incorporation of metric terms. Monthly Weather Review, 130(7), 1848–1865. <https://doi.org/10.1175/1520-0493(2002)130<1848:TEVPSI>2.0.CO;2>
 
 Hunke, E. C., Hebert, D. A., & Lecomte, O. (2013). Level-ice melt ponds in the Los Alamos sea ice model, CICE. Ocean Modelling, 71, 26–42. <https://doi.org/10.1016/j.ocemod.2012.11.008>
 
@@ -45,5 +45,3 @@ Turner, A. K., and E. C. Hunke (2015). Impacts of a mushy-layer thermodynamic ap
 Turner, A. K., E. C. Hunke, and C. M. Bitz (2013). Two modes of sea-ice gravity drainage: A parameterization for large-scale modeling, Journal of Geophysical Research: Oceans, 118(5), 2279–2294, doi:10.1002/jgrc.20171.
 
 Turner, A. K., Lipscomb, W. H., Hunke, E. C., Jacobsen, D. W., Jeffery, N., Engwirda, D., Ringer, T. D., Wolfe, J. D. (2021). MPAS-seaice (v1.0.0): Sea-ice dynamics on unstructured Voronoi meshes. Geoscientific Model Development Discussions, 1–46. <https://doi.org/10.5194/gmd-2021-355>
-
-

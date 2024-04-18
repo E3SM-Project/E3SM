@@ -37,8 +37,8 @@ Code structure within the ``mpas-seaice/``component-level directory:
 | ``driver``      | coupling modules |
 | ``src``         | source code for the model physics and output |
 | ``src/analysis_members`` | source code for model output |
-| ``src/column ``          | source code for the (original) ``column_package`` |
-| ``src/icepack ``         | link to the icepack submodule |
+| ``src/column``           | source code for the (original) ``column_package`` |
+| ``src/icepack``          | link to the icepack submodule |
 | ``src/model_forward``    | top-level mpas-seaice modules |
 | ``src/shared``           | dynamics and general-purpose modules (e.g. mesh, constants) |
 | ``testing``     | testing scripts |
