@@ -28,13 +28,13 @@ Hunke, E., et al. (2018). CICE-Consortium/Icepack. Zenodo. <https://doi.org/10.5
 
 Hunke, E. C., & Dukowicz, J. K. (1997). An elastic-viscous-plastic model for sea ice dynamics. Journal of Physical Oceanography, 27(9), 1849–1867. <https://doi.org/10.1175/1520-0485(1997)027&lt;1849:AEVPMF&gt;2.0.CO;2>
 
-Hunke, E. C., & Dukowicz, J. K. (2002). The elastic-viscous-plastic sea ice dynamics model in general orthogonal curvilinear coordinates on a sphere—Incorporation of metric terms. Monthly Weather Review, 130(7), 1848–1865. <https://doi.org/10.1175/1520-0493(2002)130<1848:TEVPSI>2.0.CO;2>
+Hunke, E. C., & Dukowicz, J. K. (2002). The elastic-viscous-plastic sea ice dynamics model in general orthogonal curvilinear coordinates on a sphere—Incorporation of metric terms. Monthly Weather Review, 130(7), 1848–1865. <https://doi.org/10.1175/1520-0493(2002)130\<1848:TEVPSI\>2.0.CO;2>
 
 Hunke, E. C., Hebert, D. A., & Lecomte, O. (2013). Level-ice melt ponds in the Los Alamos sea ice model, CICE. Ocean Modelling, 71, 26–42. <https://doi.org/10.1016/j.ocemod.2012.11.008>
 
 Lipscomb, W. H. (2001). Remapping the thickness distribution in sea ice models, Journal of Geophysical Research: Oceans, 106(C7), 13,989–14,000, doi:10.1029/2000JC000518.
 
-Lipscomb, W. H., & Hunke, E. C. (2004). Modeling sea ice transport using incremental remapping. Monthly Weather Review, 132(6), 1341–1354. <https://doi.org/10.1175/1520-0493(2004)132<1341:MSITUI>2.0.CO;2>
+Lipscomb, W. H., & Hunke, E. C. (2004). Modeling sea ice transport using incremental remapping. Monthly Weather Review, 132(6), 1341–1354. <https://doi.org/10.1175/1520-0493(2004)132\<1341:MSITUI\>2.0.CO;2>
 
 Lipscomb, W. H., Hunke, E. C., Maslowski, W., & Jakacki, J. (2007). Ridging, strength, and stability in high-resolution sea ice models. Journal of Geophysical Research, 112. C03S91. <https://doi.org/10.1029/2005JC003355>
 
