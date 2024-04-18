@@ -1931,6 +1931,66 @@
 <li>type: array(file)  </li>
 </ul>
 </li>
+<li>p3::p3_autoconversion_prefactor:  <ul>
+<li>description: P3 autoconversion_prefactor (scale factor in autoconversion)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_mu_r_constant:  <ul>
+<li>description: P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_spa_to_nc:  <ul>
+<li>description: P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_k_accretion:  <ul>
+<li>description: P3 k_accretion (scaling factor on accretion)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_eci:  <ul>
+<li>description: P3 eci (liquid/ice collision/collection coefficient)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_eri:  <ul>
+<li>description: P3 eri (ice/rain collision/collection coefficient)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_rho_rime_min:  <ul>
+<li>description: P3 rho_rime_min (riming density maximum)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_rho_rime_max:  <ul>
+<li>description: P3 rho_rime_max (riming density minimum)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_a_imm:  <ul>
+<li>description: P3 a_imm (drop freezing exponent )  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_dep_nucleation_exponent:  <ul>
+<li>description: P3 dep_nucleation_exponent (deposition nucleation)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_ice_sed_knob:  <ul>
+<li>description: P3 ice_sed_knob (ice fall speed)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_d_breakup_cutoff:  <ul>
+<li>description: P3 d_breakup_cutoff (rain self collection and breakup)  </li>
+<li>type: real  </li>
+</ul>
+</li>
 <li>p3::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -2104,9 +2164,104 @@
 </ul>
 </li>
 </ul>
+<h2 id="mam4_optics">mam4_optics</h2>
+<ul>
+<li>mam4_optics::mam4_mode1_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 1, accumulation mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode2_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 2, Aitken mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode3_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 3, coarse mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode4_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 4, p-carbon mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_water_refindex_file:  <ul>
+<li>description: File containing optical properties for aerosol water  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_soa_physical_properties_file:  <ul>
+<li>description: File containing optical properties for secondary organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_dust_physical_properties_file:  <ul>
+<li>description: File containing optical properties for dust  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_nacl_physical_properties_file:  <ul>
+<li>description: File containing optical properties for sea salt  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_so4_physical_properties_file:  <ul>
+<li>description: File containing optical properties for sulfate  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_pom_physical_properties_file:  <ul>
+<li>description: File containing optical properties for primary organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_bc_physical_properties_file:  <ul>
+<li>description: File containing optical properties for black carbon  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mom_physical_properties_file:  <ul>
+<li>description: File containing optical properties for marine organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>mam4_optics::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_optics::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_optics::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>mam4_optics::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>mam4_optics::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
 <h2 id="nudging">nudging</h2>
 <ul>
-<li>nudging::nudging_filename:  <ul>
+<li>nudging::nudging_filenames_patterns:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: array(string)  </li>
 </ul>
@@ -2131,6 +2286,11 @@
 <li>type: string  </li>
 </ul>
 </li>
+<li>nudging::skip_vert_interpolation:  <ul>
+<li>description: Flag for skipping vertical interpolation  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>nudging::source_pressure_type:  <ul>
 <li>description: Flag for how source pressure levels are handled in the nudging dataset.     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).  </li>
 <li>type: string  </li>
@@ -2138,7 +2298,7 @@
 </ul>
 </li>
 <li>nudging::source_pressure_file:  <ul>
-<li>description: If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.       Default is to look for p_levs in the first nudging_filename file  </li>
+<li>description: If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.     Default is to look for p_levs in the first nudging_filenames_patterns file  </li>
 <li>type: string  </li>
 </ul>
 </li>
@@ -2288,12 +2448,12 @@
 <h2 id="spa">spa</h2>
 <ul>
 <li>spa::spa_remap_file:  <ul>
-<li>description: <strong>MISSING</strong>  </li>
+<li>description: File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same.  </li>
 <li>type: file  </li>
 </ul>
 </li>
 <li>spa::spa_data_file:  <ul>
-<li>description: <strong>MISSING</strong>  </li>
+<li>description: File containing aerosol data. Must be on same grid as the atm, or a coarser one  </li>
 <li>type: file  </li>
 </ul>
 </li>
@@ -2442,6 +2602,11 @@
 <li>type: logical  </li>
 </ul>
 </li>
+<li>rrtmgp::do_subcol_sampling:  <ul>
+<li>description: Flag to turn on/off subcolumn sampling of optical properties; if false treat cells as either completely clear or cloudy  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>rrtmgp::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -2528,7 +2693,7 @@
 <h2 id="cosp">cosp</h2>
 <ul>
 <li>cosp::cosp_subcolumns:  <ul>
-<li>description: <strong>MISSING</strong>  </li>
+<li>description: Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling  </li>
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
@@ -2819,6 +2984,31 @@
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
+<li>initial_conditions::perturbed_fields:  <ul>
+<li>description: IC fields (with level dimension) to apply a random perturbation to based on the parameters below.  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>initial_conditions::generate_perturbation_random_seed:  <ul>
+<li>description: Whether or not to generate a random seed for perturbation.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_random_seed:  <ul>
+<li>description: Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_limit:  <ul>
+<li>description: Defines a range [1-x, 1+x] which perturbation will be taken from.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_minimum_pressure:  <ul>
+<li>description: Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.  </li>
+<li>type: real  </li>
+</ul>
+</li>
 </ul>
 <h1 id="atmosphere-driver-parameters">Atmosphere Driver Parameters</h1>
 <ul>
@@ -2829,6 +3019,12 @@
 </li>
 <li>driver_options::atm_log_level:  <ul>
 <li>description: Verbosity level for the atm logger  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn,error  </li>
+</ul>
+</li>
+<li>driver_options::atm_flush_level:  <ul>
+<li>description: Verbosity level that triggers automatic flush of the atm logger  </li>
 <li>type: string  </li>
 <li>valid values: trace,debug,info,warn,error  </li>
 </ul>
@@ -2861,6 +3057,11 @@
 <li>driver_options::property_check_data_fields:  <ul>
 <li>description: list of additional data fields to output in property checks (only for physics grid)  </li>
 <li>type: array(string)  </li>
+</ul>
+</li>
+<li>driver_options::enable_iop:  <ul>
+<li>description: Enable intensive observation period. Currently the only use case is DP-EAMxx  </li>
+<li>type: logical  </li>
 </ul>
 </li>
 </ul>
@@ -2977,6 +3178,16 @@
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
+<li>ctl_nl::se_lx:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ly:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
 <li>ctl_nl::se_nsplit:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -2994,7 +3205,7 @@
 </li>
 <li>ctl_nl::se_tstep:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
-<li>type: <strong>MISSING</strong>  </li>
+<li>type: real  </li>
 </ul>
 </li>
 <li>ctl_nl::statefreq:  <ul>
