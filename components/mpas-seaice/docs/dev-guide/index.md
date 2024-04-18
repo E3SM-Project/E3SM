@@ -1,5 +1,6 @@
-**General Guidance**
---------------------
+Developer's Guide
+=================
+
 
 Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.
 
@@ -203,6 +204,7 @@ lines.append('    <var name="iceThicknessCell"/>')
 ```
 
 a few lines below that:
+
 ```text
             lines.append('<stream name="output"')
             lines.append('        type="output"')
@@ -307,5 +309,3 @@ Edit and submit (on chrysalis) the job script 3 times, once for icepack, once fo
 
 Browse the html output, e.g. navigate to
 ``https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.eclare/icepack-testing/D12.qcPR19.emc.qcPR19.snicar_active.eclare108213.anvil/mpas_analysis_output/``
-
-
