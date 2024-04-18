@@ -3,6 +3,11 @@ Development of the MPAS-seaice component should follow the general procedures ou
 [Development Guide for E3SM Code](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide)    
 [Development Guide for E3SM Documentation](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation)
 
+**Configuration Controls**
+--------------------------
+
+MPAS-seaice is controlled using namelist options.  Namelist files for E3SM runs are found in ``E3SM/components/mpas-seaice/bld/namelist_files/``.  However, the values in these files are drawn from the Registry, following the convention of all MPAS components. Registry files are used directly for stand-alone MPAS-seaice runs, and E3SM scripts pass information from them into E3SM's namelist files when a PR is merged.  E3SM's namelist files need to be changed for development purposes.  It's easiest to change all of them when needed, to keep them consistent, taking care not to unintentionally change standalone MPAS-seaice configurations.
+
 **Icepack**
 -----------
 
