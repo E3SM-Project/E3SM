@@ -1727,7 +1727,7 @@
           <li class="md-nav__item">
   <a href="#view-helpful-information-including-default-values-for-duration-configuration-etc" class="md-nav__link">
     <span class="md-ellipsis">
-      View helpful information, including default values for duration, configuration, etc.
+      View helpful information, including default values for duration, configuration, etc
     </span>
   </a>
   
@@ -1927,7 +1927,7 @@
           <li class="md-nav__item">
   <a href="#view-helpful-information-including-default-values-for-duration-configuration-etc" class="md-nav__link">
     <span class="md-ellipsis">
-      View helpful information, including default values for duration, configuration, etc.
+      View helpful information, including default values for duration, configuration, etc
     </span>
   </a>
   
@@ -2051,9 +2051,9 @@
 <p>Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.</p>
 <p><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide">Development Guide for E3SM Code</a>
 <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation">Development Guide for E3SM Documentation</a></p>
-<h2 id="configuration-controls"><strong>Configuration Controls</strong></h2>
+<h2 id="configuration-controls">Configuration Controls</h2>
 <p>MPAS-seaice is controlled using namelist options.  Namelist files for E3SM runs are found in <code>E3SM/components/mpas-seaice/bld/namelist_files/</code>.  However, the values in these files are drawn from the Registry, following the convention of all MPAS components. Registry files are used directly for stand-alone MPAS-seaice runs, and E3SM scripts pass information from them into E3SM's namelist files when a PR is merged.  E3SM's namelist files need to be changed for development purposes.  It's easiest to change all of them when needed, to keep them consistent, taking care not to unintentionally change standalone MPAS-seaice configurations.</p>
-<h2 id="mpas-framework"><strong>MPAS Framework</strong></h2>
+<h2 id="mpas-framework">MPAS Framework</h2>
 <p>MPAS-seaice is built on the MPAS Framework.</p>
 <p>The MPAS Framework provides the foundation for a generalized geophysical fluid dynamics model on unstructured spherical and planar meshes. On top of the framework, implementations specific to the modeling of a particular physical system (e.g., sea ice, ocean) are created as MPAS cores. The MPAS design philosophy is to leverage the efforts of developers from the various MPAS cores to provide common framework functionality with minimal effort, allowing MPAS core developers to focus on development of the physics and features relevant to their application.</p>
 <p>The framework code includes shared modules for fundamental model operation. Significant capabilities include:</p>
@@ -2067,13 +2067,13 @@
 <li><strong>Online, run-time analysis framework.</strong> A system for defining analysis of model states during run time, reducing the need for post-processing and model output.</li>
 </ul>
 <p>Additionally, a number of shared operators exist to perform common operations on model data. These include geometric operations (e.g., length, area, and angle operations on the sphere or the plane), interpolation (linear, barycentric, Wachspress, radial basis functions, spline), vector and tensor operations (e.g., cross products, divergence), and vector reconstruction (e.g., interpolating from cell edges to cell centers). Most operators work on both spherical and planar meshes.</p>
-<h2 id="icepack"><strong>Icepack</strong></h2>
+<h2 id="icepack">Icepack</h2>
 <p>For changes to Icepack, please consult the <a href="https://github.com/CICE-Consortium/About-Us/wiki/Contributing">CICE Consortium's recommendations for code contributions</a>.</p>
 <p>To access the column physics in Icepack, MPAS-seaice uses methods defined in <code>icepack_intfc.F90</code>. The 'init' and 'query' methods are used to set and retrieve Icepack values. A 'write' method is also available for documenting these values. MPAS-seaice follows the 'icepack_warnings' methodology where <code>icepack_warnings_aborted</code> is checked and <code>icepack_warnings_flush</code> is called after every call to an Icepack method. It does not directly “use” Icepack data, accessing Icepack data only through these interfaces.</p>
 <p>Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. <strong>We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.</strong></p>
-<h2 id="e3sm-polar-developer-script"><strong>E3SM-Polar-Developer Script</strong></h2>
+<h2 id="e3sm-polar-developer-script">E3SM-Polar-Developer Script</h2>
 <p>To accelerate early development stages, a script is available for configuring and testing MPAS-seaice (including the Icepack submodule) in D compsets, which have the sea ice component active and data models for the other components.</p>
-<h3 id="view-helpful-information-including-default-values-for-duration-configuration-etc">View helpful information, including default values for duration, configuration, etc.</h3>
+<h3 id="view-helpful-information-including-default-values-for-duration-configuration-etc">View helpful information, including default values for duration, configuration, etc</h3>
 <div class="highlight"><pre><span></span><code>git clone git@github.com:E3SM-Project/SimulationScripts.git
 cd SimulationScripts/archive/PolarGroup
 ./E3SM-Polar-Developer.sh -h
@@ -2147,7 +2147,7 @@ git commit -m &quot;update from cice-consortium main&quot;
 <p>Create a PR from branch to cice-consortium/icepack -b main.</p>
 <p>Once the PR has been tested and merged into the main Icepack codebase, a new PR is submitted to E3SM.</p>
 <p>More extensive documentation of this workflow tool used for the Icepack merge project is available <a href="https://acme-climate.atlassian.net/wiki/spaces/ICE/pages/3450339435/Project+Workflow">here</a>.</p>
-<h2 id="cice-qc-quality-control-testing"><strong>CICE-QC Quality Control Testing</strong></h2>
+<h2 id="cice-qc-quality-control-testing">CICE-QC Quality Control Testing</h2>
 <p>Example to run a CICE-QC comparison between two E3SM simulations with changes to the sea ice component.</p>
 <h3 id="set-up-and-run-simulations-to-be-compared">Set up and run simulations to be compared</h3>
 <div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/

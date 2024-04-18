@@ -1845,7 +1845,7 @@
 
 <h1 id="users-guide">User's Guide</h1>
 <p>Guidance for using E3SM is available from <a href="https://e3sm.org/model/running-e3sm/e3sm-quick-start">E3SM's public web site</a>.</p>
-<h2 id="configuring-mpas-seaice"><strong>Configuring MPAS-seaice</strong></h2>
+<h2 id="configuring-mpas-seaice">Configuring MPAS-seaice</h2>
 <p>MPAS-seaice is controlled using namelist options.</p>
 <ul>
 <li>Default namelist values are found in
@@ -1958,13 +1958,13 @@ including type, category (<code>seaice_model</code>), group, valid values and a 
 </tr>
 </tbody>
 </table>
-<h2 id="icepack"><strong>Icepack</strong></h2>
+<h2 id="icepack">Icepack</h2>
 <p>The Icepack software has replaced the original <code>colpkg</code> column physics code in MPAS-seaice. The <code>column_package</code> option is still available but is no longer being supported in MPAS-seaice.</p>
 <p>Full documentation for E3SM's version of Icepack can be found in <a href="https://e3sm-icepack.readthedocs.io/en/latest">E3SM's Icepack readthedocs</a>.  The most up-to-date documentation from the CICE Consortium's main Icepack repository is <a href="https://cice-consortium-icepack.readthedocs.io/en/main">here</a>.</p>
 <p>The MPAS-seaice driver for Icepack is</p>
 <p><code>E3SM/components/mpas-seaice/src/shared/mpas_seaice_icepack.f</code></p>
 <p>and the mapping between the names of Icepack's namelist options and those in MPAS-seaice can be found in subroutine <code>init_icepack_package_configs</code> (see the argument list for <code>call subroutine icepack_init_parameters</code> and comments at the end of <code>init_icepack_package_configs</code>.</p>
-<h2 id="configuring-model-input-and-output"><strong>Configuring Model Input and Output</strong></h2>
+<h2 id="configuring-model-input-and-output">Configuring Model Input and Output</h2>
 <p>The reading and writing of model fields in MPAS is handled by user-configurable streams. A stream represents a fixed set of model fields, together with dimensions and attributes, that are all written or read together to or from the same file or set of files. Each MPAS model core may define its own set of default streams that it typically uses for reading initial conditions, for writing and reading restart fields, and for writing additional model history fields. Besides these default streams, users may define new streams to, e.g., write certain diagnostic fields at a higher temporal frequency than the usual model history fields.</p>
 <p>Streams are defined in XML configuration files that are created at build time for each model core. The name of this XML file is simply ‘streams.’ suffixed with the name of the core. For example, the streams for the sw (shallow-water) core are defined in a file named ‘streams.sw’. An XML stream file may further reference other text files that contain lists of the model fields that are read or written in each of the streams defined in the XML stream file.</p>
 <p>Changes to the XML stream configuration file will take effect the next time an MPAS core is run; there is no need to re-compile after making modifications to the XML files. As described in the next section, it is therefore possible, e.g., to change the interval at which a stream is written, the template for the filenames associated with a stream, or the set of fields that are written to a stream, without the need to re-compile any code.</p>
