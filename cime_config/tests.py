@@ -55,7 +55,6 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
-            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.hcru_hcru.IELM.elm-multi_inst",
             )
@@ -304,6 +303,7 @@ _TESTS = {
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
             "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-nlmaps",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF",
+            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             )
         },
 
