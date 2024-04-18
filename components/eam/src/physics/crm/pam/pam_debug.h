@@ -91,121 +91,144 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
   auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
   real grav = 9.80616;
   //------------------------------------------------------------------------------------------------
+  // logical switches to set which checks are active
+  bool chk_nan    = true;  // check for NaN values in select fields
+  bool chk_neg    = true;  // check for negative values in select fields
+  bool chk_low_t  = false; // check for low temperatures
+  bool chk_drop_t = true;  // check for large drops in temperature
+  bool chk_wvel   = false; // check for large vertical velocity
+  //------------------------------------------------------------------------------------------------
   // Check for invalid values
   parallel_for("", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     auto phis = input_phis(iens)/grav;
+    //--------------------------------------------------------------------------
     // Check for NaNs
-    const auto is_nan_t_atm = isnan( temp(k,j,i,iens) );
-    const auto is_nan_d_atm = isnan( rhod(k,j,i,iens) );
-    const auto is_nan_q_atm = isnan( rhov(k,j,i,iens) );
-    if ( is_nan_t_atm || is_nan_q_atm || is_nan_d_atm ) {
-      auto phis = input_phis(iens)/grav;
-      printf("PAM-DEBUG nan-found - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-        nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-        temp(k,j,i,iens),
-        rhod(k,j,i,iens),
-        rhov(k,j,i,iens),
-        rhoc(k,j,i,iens),
-        rhoi(k,j,i,iens),
-        uvel(k,j,i,iens),
-        wvel(k,j,i,iens),
-        debug_save_temp(k,j,i,iens),
-        debug_save_rhod(k,j,i,iens),
-        debug_save_rhov(k,j,i,iens),
-        debug_save_rhoc(k,j,i,iens),
-        debug_save_rhoi(k,j,i,iens),
-        debug_save_uvel(k,j,i,iens),
-        debug_save_wvel(k,j,i,iens)
-      );
+    if (chk_nan) {
+      const auto is_nan_t_atm = isnan( temp(k,j,i,iens) );
+      const auto is_nan_d_atm = isnan( rhod(k,j,i,iens) );
+      const auto is_nan_q_atm = isnan( rhov(k,j,i,iens) );
+      if ( is_nan_t_atm || is_nan_q_atm || is_nan_d_atm ) {
+        auto phis = input_phis(iens)/grav;
+        printf("PAM-DEBUG nan-found - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+          nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+          temp(k,j,i,iens),
+          rhod(k,j,i,iens),
+          rhov(k,j,i,iens),
+          rhoc(k,j,i,iens),
+          rhoi(k,j,i,iens),
+          uvel(k,j,i,iens),
+          wvel(k,j,i,iens),
+          debug_save_temp(k,j,i,iens),
+          debug_save_rhod(k,j,i,iens),
+          debug_save_rhov(k,j,i,iens),
+          debug_save_rhoc(k,j,i,iens),
+          debug_save_rhoi(k,j,i,iens),
+          debug_save_uvel(k,j,i,iens),
+          debug_save_wvel(k,j,i,iens)
+        );
+      }
     }
+    //--------------------------------------------------------------------------
     // Check for negative values
-    const auto is_neg_t_atm = temp(k,j,i,iens)<0;
-    const auto is_neg_d_atm = rhod(k,j,i,iens)<0;
-    const auto is_neg_q_atm = rhov(k,j,i,iens)<0;
-    if ( is_neg_t_atm || is_neg_q_atm || is_neg_d_atm ) {
-      auto phis = input_phis(iens)/grav;
-      printf("PAM-DEBUG neg-found - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-        nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-        temp(k,j,i,iens),
-        rhod(k,j,i,iens),
-        rhov(k,j,i,iens),
-        rhoc(k,j,i,iens),
-        rhoi(k,j,i,iens),
-        uvel(k,j,i,iens),
-        wvel(k,j,i,iens),
-        debug_save_temp(k,j,i,iens),
-        debug_save_rhod(k,j,i,iens),
-        debug_save_rhov(k,j,i,iens),
-        debug_save_rhoc(k,j,i,iens),
-        debug_save_rhoi(k,j,i,iens),
-        debug_save_uvel(k,j,i,iens),
-        debug_save_wvel(k,j,i,iens)
-      );
+    if (chk_neg) {
+      const auto is_neg_t_atm = temp(k,j,i,iens)<0;
+      const auto is_neg_d_atm = rhod(k,j,i,iens)<0;
+      const auto is_neg_q_atm = rhov(k,j,i,iens)<0;
+      if ( is_neg_t_atm || is_neg_q_atm || is_neg_d_atm ) {
+        auto phis = input_phis(iens)/grav;
+        printf("PAM-DEBUG neg-found - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+          nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+          temp(k,j,i,iens),
+          rhod(k,j,i,iens),
+          rhov(k,j,i,iens),
+          rhoc(k,j,i,iens),
+          rhoi(k,j,i,iens),
+          uvel(k,j,i,iens),
+          wvel(k,j,i,iens),
+          debug_save_temp(k,j,i,iens),
+          debug_save_rhod(k,j,i,iens),
+          debug_save_rhov(k,j,i,iens),
+          debug_save_rhoc(k,j,i,iens),
+          debug_save_rhoi(k,j,i,iens),
+          debug_save_uvel(k,j,i,iens),
+          debug_save_wvel(k,j,i,iens)
+        );
+      }
     }
-    // // Check for low temperature
-    // const auto is_low_t = temp(k,j,i,iens)<100;
-    // if ( is_low_t ) {
-    //   printf("PAM-DEBUG low-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-    //     nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-    //     temp(k,j,i,iens),
-    //     rhod(k,j,i,iens),
-    //     rhov(k,j,i,iens),
-    //     rhoc(k,j,i,iens),
-    //     rhoi(k,j,i,iens),
-    //     uvel(k,j,i,iens),
-    //     wvel(k,j,i,iens),
-    //     debug_save_temp(k,j,i,iens),
-    //     debug_save_rhod(k,j,i,iens),
-    //     debug_save_rhov(k,j,i,iens),
-    //     debug_save_rhoc(k,j,i,iens),
-    //     debug_save_rhoi(k,j,i,iens),
-    //     debug_save_uvel(k,j,i,iens),
-    //     debug_save_wvel(k,j,i,iens)
-    //   );
-    // }
+    //--------------------------------------------------------------------------
+    // Check for low temperature
+    if (chk_low_t) {
+      const auto is_low_t = temp(k,j,i,iens)<100;
+      if ( is_low_t ) {
+        printf("PAM-DEBUG low-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+          nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+          temp(k,j,i,iens),
+          rhod(k,j,i,iens),
+          rhov(k,j,i,iens),
+          rhoc(k,j,i,iens),
+          rhoi(k,j,i,iens),
+          uvel(k,j,i,iens),
+          wvel(k,j,i,iens),
+          debug_save_temp(k,j,i,iens),
+          debug_save_rhod(k,j,i,iens),
+          debug_save_rhov(k,j,i,iens),
+          debug_save_rhoc(k,j,i,iens),
+          debug_save_rhoi(k,j,i,iens),
+          debug_save_uvel(k,j,i,iens),
+          debug_save_wvel(k,j,i,iens)
+        );
+      }
+    }
+    //--------------------------------------------------------------------------
     // Check for large temperature drops
-    const auto is_drop_t = (temp(k,j,i,iens)-debug_save_temp(k,j,i,iens))<-50;
-    if ( is_drop_t ) {
-      printf("PAM-DEBUG drop-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-        nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-        temp(k,j,i,iens),
-        rhod(k,j,i,iens),
-        rhov(k,j,i,iens),
-        rhoc(k,j,i,iens),
-        rhoi(k,j,i,iens),
-        uvel(k,j,i,iens),
-        wvel(k,j,i,iens),
-        debug_save_temp(k,j,i,iens),
-        debug_save_rhod(k,j,i,iens),
-        debug_save_rhov(k,j,i,iens),
-        debug_save_rhoc(k,j,i,iens),
-        debug_save_rhoi(k,j,i,iens),
-        debug_save_uvel(k,j,i,iens),
-        debug_save_wvel(k,j,i,iens)
-      );
+    if (chk_drop_t) {
+      const auto is_drop_t = (temp(k,j,i,iens)-debug_save_temp(k,j,i,iens))<-50;
+      if ( is_drop_t ) {
+        printf("PAM-DEBUG drop-T - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+          nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+          temp(k,j,i,iens),
+          rhod(k,j,i,iens),
+          rhov(k,j,i,iens),
+          rhoc(k,j,i,iens),
+          rhoi(k,j,i,iens),
+          uvel(k,j,i,iens),
+          wvel(k,j,i,iens),
+          debug_save_temp(k,j,i,iens),
+          debug_save_rhod(k,j,i,iens),
+          debug_save_rhov(k,j,i,iens),
+          debug_save_rhoc(k,j,i,iens),
+          debug_save_rhoi(k,j,i,iens),
+          debug_save_uvel(k,j,i,iens),
+          debug_save_wvel(k,j,i,iens)
+        );
+      }
     }
-    // // Check for large vertical velocity
-    // const auto is_large_pos_w = wvel(k,j,i,iens)> 40;
-    // const auto is_large_neg_w = wvel(k,j,i,iens)<-40;
-    // if ( is_large_pos_w || is_large_neg_w ) {
-    //   printf("PAM-DEBUG large-W - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
-    //     nstep,id,k,i,iens,lat(iens),lon(iens),phis,
-    //     temp(k,j,i,iens),
-    //     rhod(k,j,i,iens),
-    //     rhov(k,j,i,iens),
-    //     rhoc(k,j,i,iens),
-    //     rhoi(k,j,i,iens),
-    //     uvel(k,j,i,iens),
-    //     wvel(k,j,i,iens),
-    //     debug_save_temp(k,j,i,iens),
-    //     debug_save_rhod(k,j,i,iens),
-    //     debug_save_rhov(k,j,i,iens),
-    //     debug_save_rhoc(k,j,i,iens),
-    //     debug_save_rhoi(k,j,i,iens),
-    //     debug_save_uvel(k,j,i,iens),
-    //     debug_save_wvel(k,j,i,iens)
-    //   );
-    // }
+    //--------------------------------------------------------------------------
+    // Check for large vertical velocity
+    if (chk_wvel) {
+      const auto is_large_pos_w = wvel(k,j,i,iens)> 40;
+      const auto is_large_neg_w = wvel(k,j,i,iens)<-40;
+      if ( is_large_pos_w || is_large_neg_w ) {
+        printf("PAM-DEBUG large-W - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
+          nstep,id,k,i,iens,lat(iens),lon(iens),phis,
+          temp(k,j,i,iens),
+          rhod(k,j,i,iens),
+          rhov(k,j,i,iens),
+          rhoc(k,j,i,iens),
+          rhoi(k,j,i,iens),
+          uvel(k,j,i,iens),
+          wvel(k,j,i,iens),
+          debug_save_temp(k,j,i,iens),
+          debug_save_rhod(k,j,i,iens),
+          debug_save_rhov(k,j,i,iens),
+          debug_save_rhoc(k,j,i,iens),
+          debug_save_rhoi(k,j,i,iens),
+          debug_save_uvel(k,j,i,iens),
+          debug_save_wvel(k,j,i,iens)
+        );
+      }
+    }
+    //--------------------------------------------------------------------------
     // update saved previous values
     debug_save_temp(k,j,i,iens) = temp(k,j,i,iens);
     debug_save_rhod(k,j,i,iens) = rhod(k,j,i,iens);
