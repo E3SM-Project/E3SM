@@ -31,7 +31,7 @@ MPAS-seaice is controlled using namelist options.
 ``E3SM/components/mpas-seaice/bld/namelist_files/namelist_defaults_mpassi.xml``.
 - Namelist options are defined in
 ``E3SM/components/mpas-seaice/bld/namelist_files/namelist_definitions_mpassi.xml``,
-including type, category (``seaice_model``), group, valid values and a brief description. Each namelist variable is defined in an <entry> element.  The content of the element is the documentation of how the variable is used.  Other aspects of the variable's definition are expressed as attributes of the <entry> element.
+including type, category (``seaice_model``), group, valid values and a brief description. Each namelist variable is defined in an ``entry`` element.  The content of the element is the documentation of how the variable is used.  Other aspects of the variable's definition are expressed as attributes of the ``entry`` element.
 - Some namelist values or combinations are not allowed and will generate warnings and often abort the code.  The consistency checks for using MPAS-seaice within E3SM are in ``mpas_seaice_initialize`` (subroutines ``seaice_check_configs_coupled``, ``seaice_check_constants_coupled``), and those specific to Icepack can be found in subroutine ``check_column_package_configs`` in ``mpas_seaice_icepack.F``.
 
 Related namelist variables are grouped according to their application.
