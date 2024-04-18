@@ -1117,6 +1117,9 @@ contains
                   write(logunit,*) 'Failed to load atm domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load atm domain mesh on coupler  ')
                endif
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' load atm domain mesh from file '//trim(atm_mesh)
+               endif
                ! right now, turn atm_pg_active to true
                atm_pg_active = .true. ! FIXME TODO 
                ! need to add global id tag to the app, it will be used in restart
@@ -1295,6 +1298,9 @@ contains
                   write(logunit,*) 'Failed to load ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load ocean domain mesh on coupler  ')
                endif
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' load ocn domain mesh from file '//trim(ocn_domain)
+               endif
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer
                numco = 1
@@ -1404,6 +1410,9 @@ contains
                   write(logunit,*) 'Failed to load second ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load second ocean domain mesh on coupler  ')
                endif
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' load ocn domain mesh from file for second ocn instance '//trim(ocn_domain)
+               endif
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer
                numco = 1
@@ -1457,6 +1466,9 @@ contains
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
                call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
+            endif
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,'(A)') subname//' load lnd domain mesh from file '//trim(lnd_domain)
             endif
             ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
@@ -1643,9 +1655,13 @@ contains
             endif
             nghlay = 0 ! no ghost layers 
             ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,'(A)') subname//' load rof from file '//trim(outfile)
+            endif
             if ( ierr .ne. 0  ) then
                call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
             end if
+            
              ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
             numco = 1
