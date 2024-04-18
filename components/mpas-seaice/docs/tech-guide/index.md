@@ -70,25 +70,25 @@ Icepack includes sophisticated vertical physics and biogeochemical schemes, whic
 
 Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](https://e3sm-icepack.readthedocs.io/en/latest).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](https://cice-consortium-icepack.readthedocs.io/en/main).
 
-**Thermodynamics.**
+### Thermodynamics
 
 In its default configuration, MPAS-Seaice uses the “mushy layer” vertical thermodynamics scheme of Turner et al. (2013) and Turner and Hunke (2015).  The mushy layer formulation describes the sea ice as a two-phase system of crystalline, fresh ice and liquid brine. Enthalpy depends on temperature and salinity, all of which are prognostic variables.  The mushy layer equations are derived from conservation of energy, conservation of salt, an ice-brine liquidus relation that determines the temperature- and salinity-dependent phase, and Darcy flow through a porous medium to describe the vertical movement of brine within the ice.  When or where the ice is cold, brine pockets are isolated from each other, but warmer temperatures cause the brine pockets to expand and connect into vertical channels in which meltwater, seawater, biology and nutrients may move through the ice.
 
-**Melt Ponds.**
+### Melt Ponds
 
 MPAS-seaice uses the level-ice melt pond scheme of Hunke et al. (2013). The ponds are carried as tracers on the level (undeformed) ice area of each thickness category, thus limiting their spatial extent based on the simulated sea ice topography. This limiting is meant to approximate the horizontal drainage of melt water into depressions in ice floes. The ponds evolve according to physically based process descriptions, assuming a thickness-area ratio for changes in pond volume. Melt pond processes include addition of liquid water from rain, melting snow and melting surface ice, drainage of pond water when its weight pushes the ice surface below sea level or when the ice interior becomes permeable, and refreezing of the pond water. If snow falls after a layer of ice has formed on the ponds, the snow may block sunlight from reaching the ponds below. When melt water forms with snow still on the ice, the water is assumed to infiltrate the snow. If there is enough water to fill the air spaces within the snowpack, then the pond becomes visible above the snow, thus decreasing the albedo and ultimately causing the snow to melt faster. The albedo also decreases as snow depth decreases, and thus a thin layer of snow remaining above a pond-saturated layer of snow will have a lower albedo than if the melt water were not present. Level-ice melt ponds are “virtual” in the sense that rain and meltwater is sent to the ocean immediately, and the tracers are only used thereafter to adjust the radiative calculations as if the ponds were present.  The delta-Eddington radiative transfer scheme must be active for this purpose.
 
-**Radiation.**
+### Radiation
 
 The Delta-Eddington radiation scheme of Briegleb & Light (2007) has been updated to the Dang et al. (2019) SNICAR-AD model, to ensure radiative consistency across all snow surfaces in E3SM, including on land, ice sheets and sea ice. The SNICAR-AD radiative transfer code includes five-band snow single-scattering properties, two-stream Delta-Eddington approximation with the adding–doubling technique, and parameterization for correcting the near-infrared (NIR) snow albedo biases when solar zenith angle exceeds 75 degrees (Dang et al., 2019).
 
-**Snow.**
+### Snow
 
 A new snow-on-sea-ice morphology has been added to E3SMv2 that includes the effects of wind redistribution: losses to leads and meltponds, and the piling of snow against ridges. Snow grain radius, now a prognosed tracer field on sea ice, evolves according to temperature gradient and wet snow metamorphism and feeds back to the SNICAR-AD radiative model up to a dry maximum of 2800 μm. Fresh snow falls at a grain radius of 54.5 μm, and five vertical snow layers replace the previous single snow layer atop each of the five sea ice thickness categories retained from E3SMv1.
 
 A paper describing the advanced snow physics is in preparation.
 
-**Biogeochemistry.**
+### Biogeochemistry
 
 This section is under construction, pending the full merge of BGC codes in Icepack and the older column physics package.
 
@@ -101,6 +101,6 @@ v1: Coupling of the sea ice component to the ocean takes advantage of z star oce
 
 v2: The most significant improvement to the sea ice climate since E3SMv1 was achieved with coupling changes associated with mushy-layer thermodynamics. Whereas the basal temperature of the ice was held fixed at -1.8◦C in E3SMv1, the new version of the model assumes the mushy liquidus basal temperature from the sea ice as described by Turner & Hunke (2015). Conversion of frazil ice from MPAS-Ocean with a fixed reference salinity of 4 PSU to the mushy layer now conserves to computational accuracy over a 500-year control integration. This was achieved by exchanging additional mass between the upper ocean and sea ice model to accommodate an assumed 25% mushy liquid content  assumed from heat and mass transferred adiabatically from the MPAS-Ocean frazil scheme active from a depth of 100 m. In addition to achieving perfect heat and mass conserva tion between sea ice and ocean models, this improvement greatly reduces a negative sea  ice thickness bias in the summer Arctic reported by Golaz et al. (2019) for E3SMv1; it only minimally impacts Southern Ocean sea ice mass that was better simulated as compared to northern hemisphere sea ice in E3SMv1. Note that E3SM does not use virtual ice-ocean fluxes, but instead full mass and heat flux exchange consistent with a Boussinesq ocean model as described by Campin et al. (2008).  Radiative coupling with the atmosphere still integrates across just two bands (visible and NIR) separated at 700nm, which does not fully exploit the five-band capability available in the delta-Eddington scheme.
 
-**Prescribed Ice Mode.**
+### Prescribed Ice Mode
 
 E3SM also includes a prescribed-extent ice mode for MPAS-SeaIce based the CESM implementation. This mode is needed for Atmospheric Model Intercomparison Project (AMIP) style simulations where a full prognostic sea ice model is not desired but sea ice surface fluxes, albedos, snow depth, and surface temperature are needed by the atmosphere model. These fields are calculated by the vertical thermodynamics module of the sea ice component. The prescribed-ice mode is intended for atmosphere sensitivity experiments and does not conserve energy or mass. In this mode, sea ice thermodynamics is active but sea ice dynamics are disabled, and at each time step ice area and thickness are reset to specified values. Ice area is interpolated in time and space from an input data set, while ice thickness in grid cells containing sea ice is set to 2 m in the Northern hemisphere and 1 m in the Southern hemisphere. During each area and thickness adjustment, snow volume preserves the snow thickness prognosed in the previous time step. Snow temperatures are reset to the surface temperature, as prognosed in the previous time step, while ice temperatures are set so that the ice temperature gradient is linear, with the ice temperature at the top equal to the prognosed surface temperature, and equal to the sea freezing temperature at the base of the ice. The vertical ice salinity profile is reset to the profile from Bitz & Lipscomb (1999). The prescribed-ice mode implemented in MPAS-SeaIce can now replace that in CICE in such configurations, but CICE continues to be used for those requiring exceptional computational efficiency.
