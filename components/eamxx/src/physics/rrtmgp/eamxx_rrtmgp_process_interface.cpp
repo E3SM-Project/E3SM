@@ -797,6 +797,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
       // as the fastest index. For this reason we must copy the data.
+#ifdef RRTMGP_ENABLE_YAKL
       auto subview_1d = [&](const real1d v) -> real1d {
         return real1d(v.label(),v.myData,ncol);
       };
@@ -867,10 +868,89 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       auto d_tint = m_buffer.d_tint;
       auto d_dz = m_buffer.d_dz;
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+      auto subview_1dk = [&](const real1dk v) -> real1dk {
+        return real1dk(v.data(),ncol);
+      };
+      auto subview_2dk = [&](const real2dk v) -> real2dk {
+        return real2dk(v.data(),ncol,v.extent(0));
+      };
+      auto subview_3dk = [&](const real3dk v) -> real3dk {
+        return real3dk(v.data(),ncol,v.extent(0),v.extent(1));
+      };
+
+      auto p_lay_k           = subview_2dk(m_buffer.p_lay_k);
+      auto t_lay_k           = subview_2dk(m_buffer.t_lay_k);
+      auto p_lev_k           = subview_2dk(m_buffer.p_lev_k);
+      auto z_del_k           = subview_2dk(m_buffer.z_del_k);
+      auto p_del_k           = subview_2dk(m_buffer.p_del_k);
+      auto t_lev_k           = subview_2dk(m_buffer.t_lev_k);
+      auto mu0_k             = subview_1dk(m_buffer.mu0_k);
+      auto sfc_alb_dir_k     = subview_2dk(m_buffer.sfc_alb_dir_k);
+      auto sfc_alb_dif_k     = subview_2dk(m_buffer.sfc_alb_dif_k);
+      auto sfc_alb_dir_vis_k = subview_1dk(m_buffer.sfc_alb_dir_vis_k);
+      auto sfc_alb_dir_nir_k = subview_1dk(m_buffer.sfc_alb_dir_nir_k);
+      auto sfc_alb_dif_vis_k = subview_1dk(m_buffer.sfc_alb_dif_vis_k);
+      auto sfc_alb_dif_nir_k = subview_1dk(m_buffer.sfc_alb_dif_nir_k);
+      auto qc_k              = subview_2dk(m_buffer.qc_k);
+      auto nc_k              = subview_2dk(m_buffer.nc_k);
+      auto qi_k              = subview_2dk(m_buffer.qi_k);
+      auto cldfrac_tot_k     = subview_2dk(m_buffer.cldfrac_tot_k);
+      auto rel_k             = subview_2dk(m_buffer.eff_radius_qc_k);
+      auto rei_k             = subview_2dk(m_buffer.eff_radius_qi_k);
+      auto sw_flux_up_k      = subview_2dk(m_buffer.sw_flux_up_k);
+      auto sw_flux_dn_k      = subview_2dk(m_buffer.sw_flux_dn_k);
+      auto sw_flux_dn_dir_k  = subview_2dk(m_buffer.sw_flux_dn_dir_k);
+      auto lw_flux_up_k      = subview_2dk(m_buffer.lw_flux_up_k);
+      auto lw_flux_dn_k      = subview_2dk(m_buffer.lw_flux_dn_k);
+      auto sw_clnclrsky_flux_up_k      = subview_2dk(m_buffer.sw_clnclrsky_flux_up_k);
+      auto sw_clnclrsky_flux_dn_k      = subview_2dk(m_buffer.sw_clnclrsky_flux_dn_k);
+      auto sw_clnclrsky_flux_dn_dir_k  = subview_2dk(m_buffer.sw_clnclrsky_flux_dn_dir_k);
+      auto sw_clrsky_flux_up_k      = subview_2dk(m_buffer.sw_clrsky_flux_up_k);
+      auto sw_clrsky_flux_dn_k      = subview_2dk(m_buffer.sw_clrsky_flux_dn_k);
+      auto sw_clrsky_flux_dn_dir_k  = subview_2dk(m_buffer.sw_clrsky_flux_dn_dir_k);
+      auto sw_clnsky_flux_up_k      = subview_2dk(m_buffer.sw_clnsky_flux_up_k);
+      auto sw_clnsky_flux_dn_k      = subview_2dk(m_buffer.sw_clnsky_flux_dn_k);
+      auto sw_clnsky_flux_dn_dir_k  = subview_2dk(m_buffer.sw_clnsky_flux_dn_dir_k);
+      auto lw_clnclrsky_flux_up_k      = subview_2dk(m_buffer.lw_clnclrsky_flux_up_k);
+      auto lw_clnclrsky_flux_dn_k      = subview_2dk(m_buffer.lw_clnclrsky_flux_dn_k);
+      auto lw_clrsky_flux_up_k      = subview_2dk(m_buffer.lw_clrsky_flux_up_k);
+      auto lw_clrsky_flux_dn_k      = subview_2dk(m_buffer.lw_clrsky_flux_dn_k);
+      auto lw_clnsky_flux_up_k      = subview_2dk(m_buffer.lw_clnsky_flux_up_k);
+      auto lw_clnsky_flux_dn_k      = subview_2dk(m_buffer.lw_clnsky_flux_dn_k);
+      auto sw_bnd_flux_up_k  = subview_3dk(m_buffer.sw_bnd_flux_up_k);
+      auto sw_bnd_flux_dn_k  = subview_3dk(m_buffer.sw_bnd_flux_dn_k);
+      auto sw_bnd_flux_dir_k = subview_3dk(m_buffer.sw_bnd_flux_dir_k);
+      auto sw_bnd_flux_dif_k = subview_3dk(m_buffer.sw_bnd_flux_dif_k);
+      auto lw_bnd_flux_up_k  = subview_3dk(m_buffer.lw_bnd_flux_up_k);
+      auto lw_bnd_flux_dn_k  = subview_3dk(m_buffer.lw_bnd_flux_dn_k);
+      auto sfc_flux_dir_vis_k = subview_1dk(m_buffer.sfc_flux_dir_vis_k);
+      auto sfc_flux_dir_nir_k = subview_1dk(m_buffer.sfc_flux_dir_nir_k);
+      auto sfc_flux_dif_vis_k = subview_1dk(m_buffer.sfc_flux_dif_vis_k);
+      auto sfc_flux_dif_nir_k = subview_1dk(m_buffer.sfc_flux_dif_nir_k);
+      auto aero_tau_sw_k     = subview_3dk(m_buffer.aero_tau_sw_k);
+      auto aero_ssa_sw_k     = subview_3dk(m_buffer.aero_ssa_sw_k);
+      auto aero_g_sw_k       = subview_3dk(m_buffer.aero_g_sw_k);
+      auto aero_tau_lw_k     = subview_3dk(m_buffer.aero_tau_lw_k);
+      auto cld_tau_sw_bnd_k  = subview_3dk(m_buffer.cld_tau_sw_bnd_k);
+      auto cld_tau_lw_bnd_k  = subview_3dk(m_buffer.cld_tau_lw_bnd_k);
+      auto cld_tau_sw_gpt_k  = subview_3dk(m_buffer.cld_tau_sw_gpt_k);
+      auto cld_tau_lw_gpt_k  = subview_3dk(m_buffer.cld_tau_lw_gpt_k);
+
+      auto d_tint_k = m_buffer.d_tint_k;
+      auto d_dz_k = m_buffer.d_dz_k;
+#endif
 
       // Set gas concs to "view" only the first ncol columns
+#ifdef RRTMGP_ENABLE_YAKL
       m_gas_concs.ncol = ncol;
       m_gas_concs.concs = subview_3d(gas_concs);
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+      m_gas_concs_k.ncol = ncol;
+      m_gas_concs_k.concs = subview_3dk(gas_concs_k);
+#endif
 
       // Copy data from the FieldManager to the YAKL arrays
       {
