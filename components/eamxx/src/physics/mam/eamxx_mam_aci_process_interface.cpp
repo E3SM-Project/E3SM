@@ -184,7 +184,9 @@ void compute_nucleate_ice_tendencies(
   // Kokkos::parallel_for(
   //     team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
   //       const int icol = team.league_rank();
-  for(int icol = 0; icol < 218; ++icol) {
+  for(int icol = 0; icol < 5; ++icol) {
+    //std::cout<<""<<std::endl;
+    //std::cout<<"ICOL:"<<icol<<" : "<<aitken_dry_dia(icol,62)<<std::endl;
     //---------------------------------------------------------------------
     // Set up surface, pronostics atmosphere, diagnostics, and tendencies
     // classes.
@@ -426,7 +428,9 @@ void call_function_dropmixnuc(
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-
+        std::cout<<""<<std::endl;
+        std::cout<<"icol:"<<icol<<std::endl;
+      //for (int icol=0; icol<5; ++icol){
         mam4::ndrop::View1D raercol_cw_view[mam4::ndrop::pver][2];
         mam4::ndrop::View1D raercol_view[mam4::ndrop::pver][2];
         for(int i = 0; i < mam4::ndrop::pver; ++i) {
@@ -514,6 +518,7 @@ void call_function_dropmixnuc(
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
       });
+      //}
 }
 KOKKOS_INLINE_FUNCTION
 void copy_mam4xx_array_to_scream(const haero::ThreadTeam &team,
@@ -546,7 +551,7 @@ void copy_mam4xx_array_to_scream(haero::ThreadTeamPolicy team_policy,
 void call_hetfrz_compute_tendencies(
     haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
     mam_coupling::DryAtmosphere &dry_atm_,
-    mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum_,
+    mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
     // output
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
@@ -578,10 +583,10 @@ void call_hetfrz_compute_tendencies(
         mam4::Diagnostics diags(nlev);
 
         diags.activation_fraction[accum_idx] =
-            ekat::subview(factnum_, icol, accum_idx);
+            ekat::subview(factnum, icol, accum_idx);
 
         diags.activation_fraction[coarse_idx] =
-            ekat::subview(factnum_, icol, coarse_idx);
+            ekat::subview(factnum, icol, coarse_idx);
 
         // These are the output tendencies from heterogeneous freezing that need
         // to be added correctly to the cloud-micorphysics scheme.
@@ -760,7 +765,7 @@ void MAMAci::set_grids(
   //  SHOC provides it at the midpoints. Verify how it is being used.
 
   // Vertical velocity variance at midpoints
-  add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
+  add_field<Required>("w_variance", scalar3d_layout_int, m2 / s2, grid_name);
 
   // NOTE: "cldfrac_liq" is updated in SHOC. "cldfrac_liq" in C++ code is
   // equivalent to "alst" in the shoc_intr.F90. In the C++ code, it is used as
@@ -774,7 +779,7 @@ void MAMAci::set_grids(
                       grid_name);
 
   // Eddy diffusivity for heat
-  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s, grid_name);
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_int, m2 / s, grid_name);
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
@@ -1133,84 +1138,69 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
+  //for (int kk=0; kk<72; ++kk){
+  //std::cout << "num_cb_accum_top:"<<wet_aero_.cld_aero_nmr[0](0,kk)<< std::endl;
+  //}
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      //KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  //haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  haero::ThreadTeamPolicy team_policy(1, Kokkos::AUTO);
 
-  const int kb = 66;
+  const int kb = 62;
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
-  // std::cout << "T_mid:" << dry_atm_.T_mid(0, kb) << std::endl;
-  // std::cout << "p_mid:" << dry_atm_.p_mid(0, kb) << std::endl;
-  std::cout << "wsec:" << w_sec_(0, kb) << std::endl;
-  std::cout << "w0:" << w0_(0, kb) << std::endl;
-  std::cout << " rho: " << rho_(0, kb) << std::endl;
+  //std::cout << "T_mid:" << dry_atm_.T_mid(0, kb) << std::endl;
+  //std::cout << "p_mid:" << dry_atm_.p_mid(0, kb) << std::endl;
+  //std::cout << "wsec:" << w_sec_(0, kb) << std::endl;
+  //std::cout << "w0:" << w0_(0, kb) << std::endl;
+  //std::cout << " rho: " << rho_(0, kb) << std::endl;
 
   compute_tke_using_w_sec(team_policy, w_sec_, nlev_,
                           // output
                           tke_);
-  const Real tke_b[73] = {
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00060000000000000, 0.00060000000000000, 0.00060000000000000,
-      0.00062854116332895, 0.00067291680645447, 0.00101664413803513,
-      0.00232786652593969, 0.00569557505990274, 0.01000238209664803,
-      0.01519680083369616, 0.02170550249412443, 0.02401690416836010,
-      0.02366486534737443, 0.02153664341694223, 0.01578233182683715,
-      0.01145733753135718, 0.01010923067444657, 0.01243858801725962,
-      0.02323111869706078, 0.04796154961104696, 0.08572647178140329,
-      0.12086080769994784, 0.14941194987050846, 0.15643944255461628,
-      0.14719266313675605};
-  for(int kk = 0; kk < 73; ++kk) tke_(0, kk) = tke_b[kk];
-
-  std::cout << "TKE:" << tke_(0, kb) << std::endl;
+  //std::cout << "TKE:" << tke_(0, kb) << std::endl;
 
   Kokkos::fence();  // wait for for tke_ to be computed.
   const Real &wsubmin = ACIRuntime_.wsubmin;  // runtime variable
   compute_subgrid_scale_velocities(team_policy, tke_, wsubmin, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
-  std::cout << "WSUB:" << wsub_(0, kb) << std::endl;
-  std::cout << "WICE:" << wsubice_(0, kb) << std::endl;
-  std::cout << "WSIG:" << wsig_(0, kb) << std::endl;
+  //std::cout << "WSUB:" << wsub_(0, kb) << std::endl;
+  //std::cout << "WICE:" << wsubice_(0, kb) << std::endl;
+  //std::cout << "WSIG:" << wsig_(0, kb) << std::endl;
 
   Kokkos::fence();  // wait for wsig_ to be computed.
 
-  /* wo  9.784350381198358E-003
- rho:   1.07565908612486
- TKE:  2.323111869706078E-002  4.796154961104696E-002
- wsub:  0.154048334739574
- wsubi:  0.200000000000000
- wsig:  0.154048334739574
- w2:  6.571878680006606E-002*/
+  /* wo  3.343177351577457E-004
+ rho:   1.28186433384113     
+ TKE:  1.666465903934813E-002  6.097664104873541E-002
+ wsub:  0.160873967324407     
+ wsubi:  0.200000000000000     
+ wsig:  0.160873967324407     
+ dgnum_ait:  4.362354500358337E-008
+ naai:   11464.5957222634     
+ naai_hom:   29838.6879763933
+ */
 
   compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
                               // output
                               aitken_dry_dia_);
+  const Real dgnum_ait_e3sm[72] = {  0.20877713336487552E-007,  0.21782230353342090E-007,  0.21688324003865861E-007,  0.21112855042342451E-007,  0.19162058462939536E-007,  0.18102979880838476E-007,  0.17906980715477606E-007,  0.20271254074583327E-007,  0.22698983422181942E-007,  0.24134835117044986E-007,  0.25498156808001372E-007,  0.29796738799905547E-007,  0.35822987394021908E-007,  0.41170963764365215E-007,  0.44892726528330642E-007,  0.47217231342203107E-007,  0.48928661807108766E-007,  0.50170939816128735E-007,  0.51078750853732200E-007,  0.52247333465736065E-007,  0.53190758580174931E-007,  0.53576491941850044E-007,  0.53915614473890715E-007,  0.54510964775236826E-007,  0.55643231691556703E-007,  0.57057811112589899E-007,  0.58177383586181116E-007,  0.58209849180850108E-007,  0.57976751598840998E-007,  0.52000000000000002E-007,  0.50728746567226150E-007,  0.49119902704480870E-007,  0.48212162162050883E-007,  0.49227715213506454E-007,  0.46876827233752246E-007,  0.45360603896257791E-007,  0.49986783979004747E-007,  0.51186879246229022E-007,  0.50009353247048599E-007,  0.48250264542204811E-007,  0.47560278748093609E-007,  0.48298089720730957E-007,  0.49095935613468768E-007,  0.49493024126912931E-007,  0.50250797590476007E-007,  0.51949267668322422E-007,  0.53778727208416418E-007,  0.53563593301099588E-007,  0.51218136771199298E-007,  0.43171429694325200E-007,  0.39019610039033895E-007,  0.36175109143257051E-007,  0.42731638777892750E-007,  0.38060728507221777E-007,  0.44046323901481340E-007,  0.39216732751330010E-007,  0.34842233953609988E-007,  0.34068804733226066E-007,  0.30636043694263528E-007,  0.28302341686131413E-007,  0.33023014309036320E-007,  0.34745748365385196E-007,  0.43623545003583371E-007,  0.48206451795644064E-007,  0.49854490325455530E-007,  0.50346335647724146E-007,  0.50661560988561763E-007,  0.50986261962838767E-007,  0.51256955985111086E-007,  0.51482578449096488E-007,  0.51684364851091471E-007,  0.51849719162939729E-007};
+  for(int icol = 0; icol < 218; ++icol){
+  for(int kk = 0; kk < 72; ++kk){
+    aitken_dry_dia_(icol, kk) = dgnum_ait_e3sm[kk];
+  }}
 
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
-  std::cout << "aitken_dry_dia_:" << aitken_dry_dia_(0, kb) << std::endl;
+  //std::cout << "aitken_dry_dia_:" << aitken_dry_dia_(0, kb) << std::endl;
   // Compute Ice nucleation
   // NOTE: The Fortran version uses "ast" for cloud fraction which is equivalent
   // to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
@@ -1224,6 +1214,9 @@ void MAMAci::run_impl(const double dt) {
                               top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
+
+  //std::cout << "naai_hom_:" << naai_hom_(0, kb) << std::endl;
+  //std::cout << "naai_:" << naai_(0, kb) << std::endl;
 
   // MUST FIXME: save cloud borne aerosols here!!!!
   //-------------------------------------------------------------
@@ -1245,6 +1238,7 @@ void MAMAci::run_impl(const double dt) {
   compute_recipical_pseudo_density(team_policy, dry_atm_.p_del, nlev_,
                                    // output
                                    rpdel_);
+  //std::cout << "rpdel_:" << rpdel_(0, kb) << std::endl;
 
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
@@ -1258,6 +1252,17 @@ void MAMAci::run_impl(const double dt) {
                            raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
+  
+
+  //std::cout << "factnum_:" << factnum_(0, 0, kb)<<" : "<< factnum_(0, 1, kb)<<" : "<<factnum_(0, 2, kb)<<" : "<<factnum_(0, 3, kb)<< std::endl;
+  //std::cout << "tendnd_:" << tendnd_(0, kb)<< std::endl;
+  //for (int ic=9; ic<40; ++ic){
+    //std::cout << "ptend_q_:" <<ic<<": "<< ptend_q_[ic](0, kb)<< std::endl;
+  //}
+  //for (int ic=0; ic<25; ++ic){
+    //std::cout << "qqcw_:" <<ic<<": "<< qqcw_fld_work_[ic](0, kb)<< std::endl;
+  //}
+  std::cout << "num_cb_accum:" <<dry_aero_.cld_aero_nmr[0](0,kb)<<" : "<<wet_aero_.cld_aero_nmr[0](0,kb)<< std::endl;
 
   copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
       team_policy, ptend_q_output_, ptend_q_, nlev_);
@@ -1266,10 +1271,6 @@ void MAMAci::run_impl(const double dt) {
   copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
       team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
 
-  /*    call hetfrz_classnuc_cam_calc(ncol, lchnk, temperature, pmid, rho, ast,
-     &   ! in qc, nc, state_q, aer_cb(:,:,:,lchnk_zb), deltatin, factnum, & ! in
-         frzimm, frzcnt, frzdep) */
-
   call_hetfrz_compute_tendencies(
       team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // output
@@ -1277,6 +1278,10 @@ void MAMAci::run_impl(const double dt) {
       hetfrz_depostion_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
+  std::cout << "hetfrz_immersion_nucleation_tend_:" << hetfrz_immersion_nucleation_tend_(0, kb)<< std::endl;
+  std::cout << "hetfrz_contact_nucleation_tend_:" << hetfrz_contact_nucleation_tend_(0, kb)<< std::endl;
+  std::cout << "hetfrz_depostion_nucleation_tend_:" << hetfrz_depostion_nucleation_tend_(0, kb)<< std::endl;
+  
   Kokkos::fence();  // wait before returning to calling function
 }
 
@@ -1285,3 +1290,78 @@ void MAMAci::finalize_impl() {
 }
 
 }  // namespace scream
+  //tendnd:  -839.404918218856        7289315.36108503        7792958.31201634       1.666666666666667E-003
+  //factnum:  0.998556176544263       0.861689826773470       0.999999999974140       0.000000000000000E+000
+  /*nctend_mixnuc:  -839.404918218856     
+ O3_tend:  0.000000000000000E+000
+ H2O2_tend:  0.000000000000000E+000
+ H2SO4_tend:  0.000000000000000E+000
+ SO2_tend:  0.000000000000000E+000
+ DMS_tend:  0.000000000000000E+000
+ SOAG_tend:  0.000000000000000E+000
+ so4_a1_tend: -1.384310943569190E-014
+ pom_a1_tend: -2.950799002682271E-015
+ soa_a1_tend: -2.283869371271150E-014
+ bc_a1_tend: -2.202672700280516E-016
+ dst_a1_tend: -2.194060414083922E-016
+ ncl_a1_tend: -6.981124745267083E-017
+ mom_a1_tend: -5.662690535048673E-018
+ num_a1_tend:  -1626.38730532537     
+ so4_a2_tend: -2.548707408341951E-017
+ soa_a2_tend: -1.929990276139139E-018
+ ncl_a2_tend: -6.855087738119723E-019
+ mom_a2_tend: -4.571691604185304E-020
+ num_a2_tend:  -111.890330245159     
+ dst_a3_tend: -7.609611333715698E-015
+ ncl_a3_tend: -1.256350252705383E-015
+ so4_a3_tend: -1.320988655880598E-016
+ bc_a3_tend: -1.099586316024402E-018
+ pom_a3_tend: -3.309939677824050E-018
+ soa_a3_tend: -2.767668335981830E-017
+ mom_a3_tend: -2.254911604324925E-019
+ num_a3_tend: -0.406788905791186     
+ pom_a4_tend: -2.375070578317096E-017
+ bc_a4_tend:  4.082479713528180E-017
+ mom_a4_tend: -4.901356204764327E-023
+ num_a4_tend:  -34.4232851017138     
+ so4_c1:    1322558.40616450     
+ pom_c1:   1.233997159684093E-011
+ soa_c1:   2.393397505793018E-012
+ bc_c1:   1.872520079842212E-011
+ dst_c1:   1.922157644491776E-013
+ ncl_c1:   2.530385880698310E-013
+ mom_c1:   8.315014074126540E-014
+ num_c1:   6.895143982427237E-015
+ so4_c2:    142214.467855250     
+ soa_c2:   3.181118913367564E-014
+ ncl_c2:   2.996638282752921E-015
+ mom_c2:   8.055333842809433E-016
+ num_c2:   5.202632275847699E-017
+ dst_c3:    464.524744048298     
+ ncl_c3:   8.814810290885256E-012
+ so4_c3:   1.417415096039318E-012
+ bc_c3:   1.284022582681906E-013
+ pom_c3:   1.081226492056768E-015
+ soa_c3:   3.292708392236485E-015
+ mom_c3:   2.584587804061707E-014
+ num_c3:   2.324887367507579E-016
+ pom_c4:   6.934165370527951E-014
+ bc_c4:   2.703924752644086E-026
+ mom_c4:   3.684880329580097E-027
+ num_c4:   1.049556651713384E-032
+ 
+ frzimm:  5.651860156917002E-006  4.477615226393836E-008  5.607084004653063E-006
+ frzcnt:  0.000000000000000E+000
+ frzdep:  0.000000000000000E+000
+
+ BC:  2.686569135836302E-003  6.811694223739704E-014*  4.327927689273498E-012*
+  8.647238075040541E-013*  6.734058317716400E-012*  2.685810991448475E-014*
+  8.239303776951524E-014*  2.218253512777307E-015****   477478.884677930*     
+  1.000000000000000E-006*
+
+  --BC:  2.686569135836302E-003  6.734058317716400E-012 477478.884677930  4.327927689273498E-012 8.647238075040541E-013 8.239303776951524E-014 6.811694223739704E-014
+  2.685810991448475E-014                1.000000000000000E-006
+  
+  BC:0.00209583 : 6.81169e-14 : 4.32793e-12 : 8.64724e-13 : 6.73406e-12 : 2.68581e-14 : 8.23930e-14 : 2.21825e-15 : 372488. : 1.00000e-06
+
+   */
