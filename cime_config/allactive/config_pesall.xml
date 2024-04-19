@@ -1586,6 +1586,67 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%IcosXISC30E3r7_r%r05_.+">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="S">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcosXISC30E3r7 on 20 nodes pure-MPI, ~7.25 sypd </comment>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_ocn>256</ntasks_ocn>
+          <ntasks_ice>640</ntasks_ice>
+          <ntasks_rof>384</ntasks_rof>
+          <ntasks_lnd>385</ntasks_lnd>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ocn>1024</rootpe_ocn>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_rof>640</rootpe_rof>
+          <rootpe_lnd>640</rootpe_lnd>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcosXISC30E3r7 on 54 nodes pure-MPI, ~17.5 sypd </comment>
+        <ntasks>
+          <ntasks_atm>2752</ntasks_atm>
+          <ntasks_cpl>2752</ntasks_cpl>
+          <ntasks_ocn>704</ntasks_ocn>
+          <ntasks_ice>2048</ntasks_ice>
+          <ntasks_rof>704</ntasks_rof>
+          <ntasks_lnd>704</ntasks_lnd>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ocn>2752</rootpe_ocn>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_rof>2048</rootpe_rof>
+          <rootpe_lnd>2048</rootpe_lnd>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcosXISC30E3r7 on 105 nodes pure-MPI, ~27.7 sypd </comment>
+        <ntasks>
+          <ntasks_atm>5440</ntasks_atm>
+          <ntasks_cpl>5440</ntasks_cpl>
+          <ntasks_ocn>1280</ntasks_ocn>
+          <ntasks_ice>4352</ntasks_ice>
+          <ntasks_rof>1088</ntasks_rof>
+          <ntasks_lnd>1088</ntasks_lnd>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ocn>5440</rootpe_ocn>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_rof>4352</rootpe_rof>
+          <rootpe_lnd>4352</rootpe_lnd>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="XS">
