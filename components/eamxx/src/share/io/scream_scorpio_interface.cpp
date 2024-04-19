@@ -1075,6 +1075,43 @@ void define_time (const std::string& filename, const std::string& units, const s
   define_var(filename,time_name,units,{},"double","double",true);
 }
 
+void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname)
+{
+  auto& f = impl::get_file(filename,"scorpio::mark_dim_as_time");
+  EKAT_REQUIRE_MSG (f.mode==Read,
+      "Error! Cannot interpret dimension as 'time' dim. File not in Read mode.\n"
+      " - filename : " + filename + "\n"
+      " - file mode: " + e2str(f.mode) + "\n");
+
+  if (f.time_dim==nullptr) {
+    EKAT_REQUIRE_MSG (has_dim(filename,dimname),
+        "Error! Cannot interpret dimension as 'time' dim. Dimension not found.\n"
+        " - filename: " + filename + "\n"
+        " - dimname : " + dimname + "\n");
+
+    auto dim = f.dims.at(dimname);
+    f.time_dim = dim;
+
+    // If a var has "time" in its dims (must be the 1st dim!),
+    // remove it. Recall that we only store non-time dims in
+    // the list of var dims.
+    for (auto& it : f.vars) {
+      auto& v = it.second;
+      if (v->dims.size()>0 and v->dims[0]->name==dimname) {
+        v->dims.erase(v->dims.begin());
+        v->size = -1;
+        v->time_dep = true;
+      }
+    }
+  } else {
+    EKAT_REQUIRE_MSG (f.time_dim->name==dimname,
+        "Error! Attempt to change the time dimension.\n"
+        " - filenama    : " + filename + "\n"
+        " - old time dim: " + f.time_dim->name + "\n"
+        " - new time dim: " + dimname + "\n");
+  }
+}
+
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time) {
   const auto& f = impl::get_file(filename,"scorpio::update_time");

@@ -355,7 +355,12 @@ void AtmosphereInput::init_scorpio_structures()
 
   scorpio::register_file(m_filename,scorpio::Read,iotype);
 
+  // Some input files have the "time" dimension as non-unlimited. This messes up our
   // scorpio interface. To avoid trouble, if a dim called 'time' is present we
+  // treat is as unlimited, even though it isn't.
+  if (scorpio::has_dim(m_filename,"time")) {
+    scorpio::pretend_dim_is_unlimited(m_filename,"time");
+  }
 
   // Check variables are in the input file
   for (auto const& name : m_fields_names) {

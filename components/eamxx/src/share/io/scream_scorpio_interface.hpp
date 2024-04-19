@@ -134,6 +134,11 @@ const PIOVar& get_var (const std::string& filename,
 void define_time (const std::string& filename, const std::string& units,
                   const std::string& time_name = default_time_name());
 
+// When we read a file, and there is a "time" dimension that is FIXED rather than UNLIMITED,
+// we may have some issues with our read/write logics. Hence, we can use mark a dimension
+// as if it was the UNLIMITED time dim.
+void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname);
+
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time);
 
