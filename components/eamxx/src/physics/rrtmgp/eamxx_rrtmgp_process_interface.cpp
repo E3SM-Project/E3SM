@@ -223,6 +223,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
+#ifdef RRTMGP_ENABLE_YAKL
   // 1d arrays
   m_buffer.mu0 = decltype(m_buffer.mu0)("mu0", mem, m_col_chunk_size);
   mem += m_buffer.mu0.totElems();
@@ -362,6 +363,151 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_sw_bnd.totElems();
   m_buffer.cld_tau_lw_bnd = decltype(m_buffer.cld_tau_lw_bnd)("cld_tau_lw_bnd", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.cld_tau_lw_bnd.totElems();
+#endif
+
+  mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+#ifdef RRTMGP_ENABLE_KOKKOS
+  // 1d arrays
+  m_buffer.mu0_k = decltype(m_buffer.mu0_k)(mem, m_col_chunk_size);
+  mem += m_buffer.mu0_k.size();
+  m_buffer.sfc_alb_dir_vis_k = decltype(m_buffer.sfc_alb_dir_vis_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_alb_dir_vis_k.size();
+  m_buffer.sfc_alb_dir_nir_k = decltype(m_buffer.sfc_alb_dir_nir_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_alb_dir_nir_k.size();
+  m_buffer.sfc_alb_dif_vis_k = decltype(m_buffer.sfc_alb_dif_vis_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_alb_dif_vis_k.size();
+  m_buffer.sfc_alb_dif_nir_k = decltype(m_buffer.sfc_alb_dif_nir_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_alb_dif_nir_k.size();
+  m_buffer.sfc_flux_dir_vis_k = decltype(m_buffer.sfc_flux_dir_vis_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_flux_dir_vis_k.size();
+  m_buffer.sfc_flux_dir_nir_k = decltype(m_buffer.sfc_flux_dir_nir_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_flux_dir_nir_k.size();
+  m_buffer.sfc_flux_dif_vis_k = decltype(m_buffer.sfc_flux_dif_vis_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_flux_dif_vis_k.size();
+  m_buffer.sfc_flux_dif_nir_k = decltype(m_buffer.sfc_flux_dif_nir_k)(mem, m_col_chunk_size);
+  mem += m_buffer.sfc_flux_dif_nir_k.size();
+  m_buffer.cosine_zenith_k = decltype(m_buffer.cosine_zenith_k)(mem, m_col_chunk_size);
+  mem += m_buffer.cosine_zenith_k.size();
+
+  // 2d arrays
+  m_buffer.p_lay_k = decltype(m_buffer.p_lay_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.p_lay_k.size();
+  m_buffer.t_lay_k = decltype(m_buffer.t_lay_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.t_lay_k.size();
+  m_buffer.z_del_k = decltype(m_buffer.z_del_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.z_del_k.size();
+  m_buffer.p_del_k = decltype(m_buffer.p_del_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.p_del_k.size();
+  m_buffer.qc_k = decltype(m_buffer.qc_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.qc_k.size();
+  m_buffer.nc_k = decltype(m_buffer.nc_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.nc_k.size();
+  m_buffer.qi_k = decltype(m_buffer.qi_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.qi_k.size();
+  m_buffer.cldfrac_tot_k = decltype(m_buffer.cldfrac_tot_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.cldfrac_tot_k.size();
+  m_buffer.eff_radius_qc_k = decltype(m_buffer.eff_radius_qc_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.eff_radius_qc_k.size();
+  m_buffer.eff_radius_qi_k = decltype(m_buffer.eff_radius_qi_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.eff_radius_qi_k.size();
+  m_buffer.tmp2d_k = decltype(m_buffer.tmp2d_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.tmp2d_k.size();
+  m_buffer.lwp_k = decltype(m_buffer.lwp_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.lwp_k.size();
+  m_buffer.iwp_k = decltype(m_buffer.iwp_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.iwp_k.size();
+  m_buffer.sw_heating_k = decltype(m_buffer.sw_heating_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.sw_heating_k.size();
+  m_buffer.lw_heating_k = decltype(m_buffer.lw_heating_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.lw_heating_k.size();
+  m_buffer.p_lev_k = decltype(m_buffer.p_lev_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.p_lev_k.size();
+  m_buffer.t_lev_k = decltype(m_buffer.t_lev_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.t_lev_k.size();
+  m_buffer.d_tint_k = decltype(m_buffer.d_tint_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.d_tint_k.size();
+  m_buffer.d_dz_k  = decltype(m_buffer.d_dz_k )(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.d_dz_k.size();
+  // 3d arrays
+  m_buffer.sw_flux_up_k = decltype(m_buffer.sw_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_flux_up_k.size();
+  m_buffer.sw_flux_dn_k = decltype(m_buffer.sw_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_flux_dn_k.size();
+  m_buffer.sw_flux_dn_dir_k = decltype(m_buffer.sw_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_flux_dn_dir_k.size();
+  m_buffer.lw_flux_up_k = decltype(m_buffer.lw_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_flux_up_k.size();
+  m_buffer.lw_flux_dn_k = decltype(m_buffer.lw_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_flux_dn_k.size();
+  m_buffer.sw_clnclrsky_flux_up_k = decltype(m_buffer.sw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_up_k.size();
+  m_buffer.sw_clnclrsky_flux_dn_k = decltype(m_buffer.sw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_dn_k.size();
+  m_buffer.sw_clnclrsky_flux_dn_dir_k = decltype(m_buffer.sw_clnclrsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnclrsky_flux_dn_dir_k.size();
+  m_buffer.sw_clrsky_flux_up_k = decltype(m_buffer.sw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clrsky_flux_up_k.size();
+  m_buffer.sw_clrsky_flux_dn_k = decltype(m_buffer.sw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clrsky_flux_dn_k.size();
+  m_buffer.sw_clrsky_flux_dn_dir_k = decltype(m_buffer.sw_clrsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clrsky_flux_dn_dir_k.size();
+  m_buffer.sw_clnsky_flux_up_k = decltype(m_buffer.sw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_up_k.size();
+  m_buffer.sw_clnsky_flux_dn_k = decltype(m_buffer.sw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_dn_k.size();
+  m_buffer.sw_clnsky_flux_dn_dir_k = decltype(m_buffer.sw_clnsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.sw_clnsky_flux_dn_dir_k.size();
+  m_buffer.lw_clnclrsky_flux_up_k = decltype(m_buffer.lw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnclrsky_flux_up_k.size();
+  m_buffer.lw_clnclrsky_flux_dn_k = decltype(m_buffer.lw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnclrsky_flux_dn_k.size();
+  m_buffer.lw_clrsky_flux_up_k = decltype(m_buffer.lw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clrsky_flux_up_k.size();
+  m_buffer.lw_clrsky_flux_dn_k = decltype(m_buffer.lw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clrsky_flux_dn_k.size();
+  m_buffer.lw_clnsky_flux_up_k = decltype(m_buffer.lw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnsky_flux_up_k.size();
+  m_buffer.lw_clnsky_flux_dn_k = decltype(m_buffer.lw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.lw_clnsky_flux_dn_k.size();
+  // 3d arrays with nswbands dimension (shortwave fluxes by band)
+  m_buffer.sw_bnd_flux_up_k = decltype(m_buffer.sw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_up_k.size();
+  m_buffer.sw_bnd_flux_dn_k = decltype(m_buffer.sw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dn_k.size();
+  m_buffer.sw_bnd_flux_dir_k = decltype(m_buffer.sw_bnd_flux_dir_k)(mem, m_col_chunk_size, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dir_k.size();
+  m_buffer.sw_bnd_flux_dif_k = decltype(m_buffer.sw_bnd_flux_dif_k)(mem, m_col_chunk_size, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dif_k.size();
+  // 3d arrays with nlwbands dimension (longwave fluxes by band)
+  m_buffer.lw_bnd_flux_up_k = decltype(m_buffer.lw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay+1, m_nlwbands);
+  mem += m_buffer.lw_bnd_flux_up_k.size();
+  m_buffer.lw_bnd_flux_dn_k = decltype(m_buffer.lw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay+1, m_nlwbands);
+  mem += m_buffer.lw_bnd_flux_dn_k.size();
+  // 2d arrays with extra nswbands dimension (surface albedos by band)
+  m_buffer.sfc_alb_dir_k = decltype(m_buffer.sfc_alb_dir_k)(mem, m_col_chunk_size, m_nswbands);
+  mem += m_buffer.sfc_alb_dir_k.size();
+  m_buffer.sfc_alb_dif_k = decltype(m_buffer.sfc_alb_dif_k)(mem, m_col_chunk_size, m_nswbands);
+  mem += m_buffer.sfc_alb_dif_k.size();
+  // 3d arrays with extra band dimension (aerosol optics by band)
+  m_buffer.aero_tau_sw_k = decltype(m_buffer.aero_tau_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.aero_tau_sw_k.size();
+  m_buffer.aero_ssa_sw_k = decltype(m_buffer.aero_ssa_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.aero_ssa_sw_k.size();
+  m_buffer.aero_g_sw_k   = decltype(m_buffer.aero_g_sw_k  )(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.aero_g_sw_k.size();
+  m_buffer.aero_tau_lw_k = decltype(m_buffer.aero_tau_lw_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  mem += m_buffer.aero_tau_lw_k.size();
+  // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
+  m_buffer.cld_tau_sw_gpt_k = decltype(m_buffer.cld_tau_sw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nswgpts);
+  mem += m_buffer.cld_tau_sw_gpt_k.size();
+  m_buffer.cld_tau_lw_gpt_k = decltype(m_buffer.cld_tau_lw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nlwgpts);
+  mem += m_buffer.cld_tau_lw_gpt_k.size();
+  m_buffer.cld_tau_sw_bnd_k = decltype(m_buffer.cld_tau_sw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.cld_tau_sw_bnd_k.size();
+  m_buffer.cld_tau_lw_bnd_k = decltype(m_buffer.cld_tau_lw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  mem += m_buffer.cld_tau_lw_bnd_k.size();
+#endif
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
@@ -403,16 +549,15 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 #endif
 
   // Names of active gases
-  auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
+  auto gas_names_yakl_offset = string1dv(m_ngas);
   m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
   // the lookup function for getting the gas mol weights doesn't work on device
   auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
   for (int igas = 0; igas < m_ngas; igas++) {
     const auto& gas_name = m_gas_names[igas];
 
-    /* Note: YAKL starts the index from 1 */
-    gas_names_yakl_offset(igas+1)   = gas_name;
-    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(gas_name);
+    gas_names_yakl_offset[igas] = gas_name;
+    gas_mol_w_host[igas]        = PC::get_gas_mol_weight(gas_name);
 
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
@@ -422,6 +567,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   std::string coefficients_file_lw = m_params.get<std::string>("rrtmgp_coefficients_file_lw");
   std::string cloud_optics_file_sw = m_params.get<std::string>("rrtmgp_cloud_optics_file_sw");
   std::string cloud_optics_file_lw = m_params.get<std::string>("rrtmgp_cloud_optics_file_lw");
+#ifdef RRTMGP_ENABLE_YAKL
   m_gas_concs.init(gas_names_yakl_offset,m_col_chunk_size,m_nlay);
   rrtmgp::rrtmgp_initialize(
           m_gas_concs,
@@ -429,6 +575,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
           cloud_optics_file_sw, cloud_optics_file_lw,
           m_atm_logger
   );
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+  m_gas_concs_k.init(gas_names_yakl_offset,m_col_chunk_size,m_nlay);
+  rrtmgp::rrtmgp_initialize(
+          m_gas_concs_k,
+          coefficients_file_sw, coefficients_file_lw,
+          cloud_optics_file_sw, cloud_optics_file_lw,
+          m_atm_logger
+  );
+#endif
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0, 500.0,false);
@@ -555,7 +711,12 @@ void RRTMGPRadiation::run_impl (const double dt) {
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
     // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
     // array, to restore at the end inside the m_gast_concs object.
+#ifdef RRTMGP_ENABLE_YAKL
     auto gas_concs = m_gas_concs.concs;
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+    auto gas_concs_k = m_gas_concs_k.concs;
+#endif
 
     // Compute orbital parameters; these are used both for computing
     // the solar zenith angle and also for computing total solar
