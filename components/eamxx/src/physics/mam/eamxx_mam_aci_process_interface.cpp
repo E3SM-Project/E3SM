@@ -693,6 +693,37 @@ void MAMAci::set_grids(
   for(int i = 0; i < dropmix_scratch_; ++i) {
     Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
   }
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
+    // These are temp arrays formatted like mam4xx wants.
+    // Not sure if there is a way to do this with scream.
+    Kokkos::resize(coltend_[i], ncol_, nlev_);
+    Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
+  }
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
+    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
+  }
+  for(int i = 0; i < mam4::ndrop::pver; ++i) {
+    for(int j = 0; j < 2; ++j) {
+      Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+      Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+    }
+  }
+
+  for(int i = 0; i < 42; ++i)
+    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
+
+  // nact : fractional aero. number activation rate [/s]
+  Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+
+  // mact : fractional aero. mass activation rate [/s]
+  Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+
+  // Eddy diffusivity of heat at the interfaces
+  Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
+
+  // Vertical velocity variance at the interfaces
+  Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
+
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -1094,37 +1125,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   }
   state_q_work_ =
       view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
-
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    // These are temp arrays formatted like mam4xx wants.
-    // Not sure if there is a way to do this with scream.
-    Kokkos::resize(coltend_[i], ncol_, nlev_);
-    Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
-  }
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
-  }
-  for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-    }
-  }
-
-  for(int i = 0; i < 42; ++i)
-    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
-
-  // nact : fractional aero. number activation rate [/s]
-  Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // mact : fractional aero. mass activation rate [/s]
-  Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // Eddy diffusivity of heat at the interfaces
-  Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
-
-  // Vertical velocity variance at the interfaces
-  Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
 
   mam4::AeroConfig aero_config;
   // configure the nucleation parameterization
