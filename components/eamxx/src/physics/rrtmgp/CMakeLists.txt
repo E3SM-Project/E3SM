@@ -2,6 +2,14 @@ include(EkatUtils)
 include(EkatSetCompilerFlags)
 include(ScreamUtils)
 
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  add_definitions("-DRRTMGP_ENABLE_YAKL")
+endif()
+
+if (SCREAM_RRTMGP_ENABLE_KOKKOS)
+  add_definitions("-DRRTMGP_ENABLE_KOKKOS")
+endif()
+
 # Copied from EKAT, YAKL is an interface target so requires special
 # handling. Get rid of this once RRTMGP is using kokkos.
 macro (SetCudaFlagsYakl targetName)
@@ -116,6 +124,7 @@ set(EXTERNAL_SRC
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
   ${EAM_RRTMGP_DIR}/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/examples/all-sky/mo_garand_atmos_io.cpp
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 target_compile_definitions(rrtmgp PUBLIC EAMXX_HAS_RRTMGP)
@@ -129,6 +138,8 @@ target_link_libraries(rrtmgp yakl Kokkos::kokkos)
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
+    ${EAM_RRTMGP_DIR}/external/cpp/extensions/cloud_optics
+    ${EAM_RRTMGP_DIR}/external/cpp/examples/all-sky
     ${EAM_RRTMGP_DIR}/external/cpp/rte
     ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
@@ -151,9 +162,6 @@ target_include_directories(rrtmgp PUBLIC
 
 set(SCREAM_RRTMGP_SOURCES_YAKL
   scream_rrtmgp_interface.cpp
-  mo_garand_atmos_io.cpp
-  mo_load_coefficients.cpp
-  mo_load_cloud_coefficients.cpp
 )
 
 add_library(scream_rrtmgp_yakl ${SCREAM_RRTMGP_SOURCES_YAKL})

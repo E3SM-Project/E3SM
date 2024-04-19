@@ -12,7 +12,9 @@
 #include "ekat/ekat_assert.hpp"
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
+#ifdef RRTMGP_ENABLE_YAKL
 #include "YAKL.h"
+#endif
 
 namespace scream {
 
@@ -395,8 +397,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
 
+#ifdef RRTMGP_ENABLE_YAKL
   // Initialize yakl
   yakl_init();
+#endif
 
   // Names of active gases
   auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
@@ -1119,8 +1123,10 @@ void RRTMGPRadiation::finalize_impl  () {
   m_gas_concs.reset();
   rrtmgp::rrtmgp_finalize();
 
+#ifdef RRTMGP_ENABLE_YAKL
   // Finalize YAKL
   yakl_finalize();
+#endif
 }
 // =========================================================================================
 
