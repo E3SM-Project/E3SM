@@ -166,13 +166,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     lev.sync_to_dev();
   } else if (geo_data_source=="IC_FILE"){
     const auto& filename = m_params.get<std::string>("ic_filename");
-    if (scorpio::has_variable(filename,"lat") &&
-        scorpio::has_variable(filename,"lon")) {
+    if (scorpio::has_var(filename,"lat") &&
+        scorpio::has_var(filename,"lon")) {
       load_lat_lon(grid,filename);
     }
 
-    if (scorpio::has_variable(filename,"hyam") &&
-        scorpio::has_variable(filename,"hybm")) {
+    if (scorpio::has_var(filename,"hyam") &&
+        scorpio::has_var(filename,"hybm")) {
       load_vertical_coordinates(grid,filename);
     }
   }

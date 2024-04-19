@@ -96,20 +96,14 @@ Real data_func(const int col, const int vec, const Real pres) {
 // Helper function to create a remap file
 void create_remap_file(const std::string& filename, const int nlevs, const std::vector<std::int64_t>& dofs_p, const std::vector<Real>& p_tgt) 
 {
-
   scorpio::register_file(filename, scorpio::FileMode::Write);
+  scorpio::define_dim(filename,"lev",nlevs);
+  scorpio::define_var(filename,"p_levs",{"lev"},"real");
+  scorpio::enddef(filename);
 
-  scorpio::register_dimension(filename,"lev","lev",nlevs, false);
+  scorpio::write_var(filename,"p_levs",p_tgt.data());
 
-  scorpio::register_variable(filename,"p_levs","p_levs","none",{"lev"},"real","real","Real-lev");
-
-  scorpio::set_dof(filename,"p_levs",dofs_p.size(),dofs_p.data()); 
-  
-  scorpio::eam_pio_enddef(filename);
-
-  scorpio::grid_write_data_array(filename,"p_levs",p_tgt.data(),nlevs);
-
-  scorpio::eam_pio_closefile(filename);
+  scorpio::release_file(filename);
 }
 
 TEST_CASE ("vertical_remap") {
@@ -121,8 +115,7 @@ TEST_CASE ("vertical_remap") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // -------------------------------------- //
   //           Set grid/map sizes           //
@@ -389,7 +382,7 @@ TEST_CASE ("vertical_remap") {
   }
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

@@ -70,7 +70,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 
   // Add tgt pressure levels to the tgt grid
   tgt_grid->set_geometry_data(m_remap_pres);
-  scorpio::eam_pio_closefile(map_file);
+  scorpio::release_file(map_file);
 }
 
 FieldLayout VerticalRemapper::
@@ -154,13 +154,7 @@ set_pressure_levels(const std::string& map_file)
 
   auto remap_pres_scal = m_remap_pres.get_view<Real*,Host>();
 
-  std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
-  std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
-  const std::string decomp_tag = "VR::spl,nlev=" + std::to_string(m_num_remap_levs) + ",file-idx=" + std::to_string(file2idx[map_file]);
-  scorpio::register_variable(map_file, "p_levs", "p_levs", {"lev"}, "real", decomp_tag);
-  scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
+  scorpio::read_var(map_file,"p_levs",remap_pres_scal.data());
 
   m_remap_pres.sync_to_dev();
 }

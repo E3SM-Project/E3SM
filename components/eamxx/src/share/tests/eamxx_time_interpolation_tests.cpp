@@ -139,7 +139,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   // Setup basic test
   printf("   - Test Basics...\n");
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
   auto seed = get_random_test_seed(&comm);
   std::mt19937_64 engine(seed); 
   const auto t0 = init_timestamp();
@@ -229,7 +229,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   printf("                        ... DONE\n");
 
   // All done with IO
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 
   printf("TimeInterpolation - From File Case...DONE\n\n\n");
 } // TEST_CASE eamxx_time_interpolation_data_from_file

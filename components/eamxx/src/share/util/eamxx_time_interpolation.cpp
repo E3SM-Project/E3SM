@@ -1,4 +1,5 @@
 #include "share/util/eamxx_time_interpolation.hpp"
+#include "share/io/scream_io_utils.hpp"
 
 namespace scream{
 namespace util {
@@ -164,15 +165,32 @@ void TimeInterpolation::initialize_data_from_files()
   m_file_data_atm_input.set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
   // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-  float var_fill_value;
   for (auto& name : m_field_names) {
-    scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
     auto& field0 = m_fm_time0->get_field(name);
-    field0.get_header().set_extra_data("mask_value",var_fill_value);
     auto& field1 = m_fm_time1->get_field(name);
-    field1.get_header().set_extra_data("mask_value",var_fill_value);
     auto& field_out = m_interp_fields.at(name);
-    field_out.get_header().set_extra_data("mask_value",var_fill_value);
+
+    auto set_fill_value = [&](const auto var_fill_value) {
+      field0.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+      field1.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+      field_out.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+    };
+
+    const auto& pio_var = scorpio::get_var(triplet_curr.filename,name);
+    if (scorpio::refine_dtype(pio_var.nc_dtype)=="float") {
+      auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
+      set_fill_value(var_fill_value);
+    } else if (scorpio::refine_dtype(pio_var.nc_dtype)=="double") {
+      auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
+      set_fill_value(var_fill_value);
+    } else {
+      EKAT_ERROR_MSG (
+          "Unrecognized/unsupported data type\n"
+          " - filename: " + triplet_curr.filename + "\n"
+          " - varname : " + name + "\n"
+          " - dtype   : " + pio_var.dtype + "\n");
+    }
+
   }
   // Read first snap of data and shift to time0
   read_data();
@@ -253,10 +271,10 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   for (size_t ii=0; ii<list_of_files.size(); ii++) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
-    auto ts_file_start = scorpio::read_timestamp(filename,"case_t0");
+    scorpio::register_file(filename,scorpio::FileMode::Read);
+    auto ts_file_start = read_timestamp(filename,"case_t0");
     // Gather the units of time
-    auto time_units_tmp = scorpio::get_any_attribute(filename,"time","units");
-    auto& time_units = ekat::any_cast<std::string>(time_units_tmp);
+    auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
     int time_mult;
     if (time_units.find("seconds") != std::string::npos) {
       time_mult = 1;
@@ -273,10 +291,9 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     if (ii==0) {
       ts_ref = ts_file_start;
     }
-    scorpio::register_file(filename,scorpio::Read);
     const int ntime = scorpio::get_dimlen(filename,"time");
     for (int tt=0; tt<ntime; tt++) {
-      auto time_snap = scorpio::read_time_at_index_c2f(filename.c_str(),tt+1);
+      auto time_snap = scorpio::get_time(filename,tt);
       TimeStamp ts_snap = ts_file_start;
       if (time_snap>0) {
         ts_snap += (time_snap*time_mult);
@@ -292,6 +309,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
       time_idx_tmp.push_back(tt);
       ++running_idx;
     }
+    scorpio::release_file(filename);
   }
   // Now that we have gathered all of the timesnaps we can arrange them in order as DataFromFileTriplet objects.
   // Taking advantage of maps automatically self-sorting by the first arg.
@@ -323,9 +341,8 @@ void TimeInterpolation::read_data()
     m_file_data_atm_input.set_logger(m_logger);
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-    float var_fill_value;
     for (auto& name : m_field_names) {
-      scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
+      auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
       auto& field = m_fm_time1->get_field(name);
       field.get_header().set_extra_data("mask_value",var_fill_value);
     }
