@@ -99,7 +99,10 @@ TEST_CASE("aodvis") {
     }
     aod_hf.sync_to_dev();
     aod_tf.sync_to_dev();
-    REQUIRE(views_are_equal(aod_hf, aod_tf));
+    // Workaround for non-bfb behavior of view_reduction() in release builds
+    if (SCREAM_BFB_TESTING) { 
+      REQUIRE(views_are_equal(aod_hf, aod_tf));
+    }
   }
 }
 
