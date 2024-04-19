@@ -67,9 +67,10 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d nimey_;
   view_2d naai_hom_;
   view_2d naai_;
+  view_2d kvh_int_;  // Eddy diffusivity of heat at the interfaces
   const_view_2d liqcldf_;
   const_view_2d liqcldf_prev_;
-  const_view_2d kvh_;
+  const_view_2d kvh_mid_;  // Eddy diffusivity of heat at the midpoints
 
   view_2d cloud_frac_;
   view_2d cloud_frac_prev_;
@@ -120,9 +121,10 @@ class MAMAci final : public scream::AtmosphereProcess {
   const int top_lev_ = 6;
 
   // local atmospheric state column variables
-  const_view_2d pdel_;   // pressure thickess of layer [Pa]
-  view_2d rpdel_;        // Inverse of pdel_
-  const_view_2d w_sec_;  // Vertical velocity variance
+  const_view_2d pdel_;       // pressure thickess of layer [Pa]
+  view_2d rpdel_;            // Inverse of pdel_
+  const_view_2d w_sec_mid_;  // Vertical velocity variance at midpoints
+  view_2d w_sec_int_;        // Vertical velocity variance at interfaces
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;

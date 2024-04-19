@@ -236,8 +236,9 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- MAM4xx-ACI -->
     <mam4_aci inherit="atm_proc_base">
-    <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</qwthl2tune>
+      <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
     </mam4_aci>
+
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
