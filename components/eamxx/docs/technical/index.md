@@ -14,9 +14,10 @@ The only configuration of EAMxx that is currently implemented is the convection-
 
 1. a non-hydrostatic version of the **spectral-element dynamical core** used by other E3SM Atmosphere Model versions [@Taylor_et20] with semi-Lagrangian tracer advection as described by [@Bradley_et22]
 2. the **Simple Higher-Order Closure (SHOC)** parameterization from [@Bogenschutz_Krueger13], which handles turbulent diffusion, condensation/evaporation, and liquid cloud fraction
-3. turbulent mountain stress is crudely parameterized following [@Fiedler_Panofsky72] to reduce excessive winds around topography
+3. **turbulent mountain stress** is crudely parameterized following [@Fiedler_Panofsky72] to reduce excessive winds around topography
 4. an **all-or-nothing ice cloud fraction** parameterization that sets ice cloud fraction to 100% whenever cloud ice mass q<sub>i</sub> is less than a user-specified threshold set by default to 1e-5 kg/kg. This scheme also sets the total cloud fraction (used by microphysics) to the maximum of the liquid and ice cloud fraction.
+5. the effects of aerosol are prescribed via the Simple Prescribed Aerosol (SPA) scheme, which is very similar to MACv2-SP [@Stevens_et17]
 5. the **P3 microphysics** scheme from [@Morrison_Milbrandt15] modified as described by [@Caldwell_et21] to assume instantaneous liquid saturation adjustment for consistency with SHOC
 6. **RTE/RRTMGP radiation** from [@Pincus_et19] rewritten in C++ for consistency and performance
 
-These parameterizations are described in more detail in Caldwell et al 2021. The CFMIP Observation Simulator Package (COSP) is also integrated into EAMxx, but currently only the ISCCP output is enabled. As in EAM, dynamics operates on a spectral element grid and all other processes use a finite-volume grid that divides each spectral element into 4 quadrilaterals. This physics grid is described in [@Hannah_et21].
+By default processes are called in this order, but which processes to include and in what order is modifiable at run time. These parameterizations are described in more detail in Caldwell et al 2021. The CFMIP Observation Simulator Package (COSP) is also integrated into EAMxx, but currently only the ISCCP output is enabled. As in EAM, dynamics operates on a spectral element grid and all other processes use a finite-volume grid that divides each spectral element into 4 quadrilaterals. This physics grid is described in [@Hannah_et21].
