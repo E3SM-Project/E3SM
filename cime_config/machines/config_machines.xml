@@ -1113,8 +1113,6 @@
         <command name="load">git</command>
         <command name="load">zlib</command>
         <command name="load">libfabric/1.15.2.0</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       </modules>
     </module_system>
@@ -1125,10 +1123,16 @@
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PKG_CONFIG_PATH">$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="NTASKS_PER_GPU"> </env>
       <env name="GPU_BIND_ARGS"> </env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="NETCDF_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/NETCDF/4.8.0/gcc-12.2.0</env>
+      <env name="HDF5_ROOT">/lustre/orion/cli115/world-shared/frontier/3rdparty/HDF5/1.14.5/cray-mpich-8.1.27/gcc-12.2.0</env>
+      <env name="HDF5_PLUGIN_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/Log_IO_VOL/latest/cray-mpich-8.1.27/gcc-12.2.0/lib</env>
+      <env name="HDF5_VOL_CONNECTOR">LOG under_vol=0;under_info={}</env>
+      <env name="LD_LIBRARY_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/HDF5/1.14.5/cray-mpich-8.1.27/gcc-12.2.0/lib:/lustre/orion/cli115/world-shared/frontier/3rdparty/NETCDF/4.8.0/gcc-12.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
       <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
