@@ -181,62 +181,63 @@ void compute_nucleate_ice_tendencies(
   // from ice nucleation
   //-------------------------------------------------------------
 
-  // Kokkos::parallel_for(
-  //     team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-  //       const int icol = team.league_rank();
-  for(int icol = 0; icol < 5; ++icol) {
-    // std::cout<<""<<std::endl;
-    // std::cout<<"ICOL:"<<icol<<" : "<<aitken_dry_dia(icol,62)<<std::endl;
-    //---------------------------------------------------------------------
-    //  Set up surface, pronostics atmosphere, diagnostics, and tendencies
-    //  classes.
-    //---------------------------------------------------------------------
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        // for(int icol = 0; icol < 5; ++icol) {
+        //  std::cout<<""<<std::endl;
+        //  std::cout<<"ICOL:"<<icol<<" : "<<aitken_dry_dia(icol,62)<<std::endl;
+        //---------------------------------------------------------------------
+        //   Set up surface, pronostics atmosphere, diagnostics, and tendencies
+        //   classes.
+        //---------------------------------------------------------------------
 
-    // For compute_tendecies interface only, this structure is empty
-    haero::Surface surf{};
+        // For compute_tendecies interface only, this structure is empty
+        haero::Surface surf{};
 
-    // Store interstitial and cld borne aerosols in "progrs" struture
-    mam4::Prognostics progs =
-        mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
+        // Store interstitial and cld borne aerosols in "progrs" struture
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aerosol_state, icol);
 
-    // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
-    haero::Atmosphere haero_atm = atmosphere_for_column(dry_atmosphere, icol);
+        // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
+        haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atmosphere, icol);
 
-    // Update the updraft velocity needed by nucleation to be "wsubice"
-    // in the haero_atm object
-    haero_atm.updraft_vel_ice_nucleation = ekat::subview(wsubice, icol);
+        // Update the updraft velocity needed by nucleation to be "wsubice"
+        // in the haero_atm object
+        haero_atm.updraft_vel_ice_nucleation = ekat::subview(wsubice, icol);
 
-    // All the output from this process is diagnotics; creates "diags" with
-    // nlev column length
-    mam4::Diagnostics diags(nlev);
+        // All the output from this process is diagnotics; creates "diags" with
+        // nlev column length
+        mam4::Diagnostics diags(nlev);
 
-    // Aitken mode index
-    const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
-    diags.dry_geometric_mean_diameter_i[aitken_idx] =
-        ekat::subview(aitken_dry_dia, icol);
+        // Aitken mode index
+        const int aitken_idx = static_cast<int>(mam4::ModeIndex::Aitken);
+        diags.dry_geometric_mean_diameter_i[aitken_idx] =
+            ekat::subview(aitken_dry_dia, icol);
 
-    // These are the fields that are updated. Taking subviews means that
-    // the nihf, niim, nidep, nimey, naai_hom, and naai fields are updated
-    // in nucleate_ice.compute_tendencies.
-    diags.icenuc_num_hetfrz = ekat::subview(nihf, icol);
-    diags.icenuc_num_immfrz = ekat::subview(niim, icol);
-    diags.icenuc_num_depnuc = ekat::subview(nidep, icol);
-    diags.icenuc_num_meydep = ekat::subview(nimey, icol);
+        // These are the fields that are updated. Taking subviews means that
+        // the nihf, niim, nidep, nimey, naai_hom, and naai fields are updated
+        // in nucleate_ice.compute_tendencies.
+        diags.icenuc_num_hetfrz = ekat::subview(nihf, icol);
+        diags.icenuc_num_immfrz = ekat::subview(niim, icol);
+        diags.icenuc_num_depnuc = ekat::subview(nidep, icol);
+        diags.icenuc_num_meydep = ekat::subview(nimey, icol);
 
-    // naai and naai_hom are the outputs needed for nucleate_ice and these
-    // are not tendencies.
-    diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
-    diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
+        // naai and naai_hom are the outputs needed for nucleate_ice and these
+        // are not tendencies.
+        diags.num_act_aerosol_ice_nucle_hom = ekat::subview(naai_hom, icol);
+        diags.num_act_aerosol_ice_nucle     = ekat::subview(naai, icol);
 
-    // grab views from the buffer to store tendencies, not used as all
-    // values are store in diags above.
-    const mam4::Tendencies tends(nlev);  // not used
-    const mam4::AeroConfig aero_config;
-    const Real t = 0;  // not used
-    nucleate_ice.compute_tendencies(aero_config, /*team,*/ t, dt, haero_atm,
-                                    surf, progs, diags, tends);
-    //});
-  }
+        // grab views from the buffer to store tendencies, not used as all
+        // values are store in diags above.
+        const mam4::Tendencies tends(nlev);  // not used
+        const mam4::AeroConfig aero_config;
+        const Real t = 0;  // not used
+        nucleate_ice.compute_tendencies(aero_config, /*team,*/ t, dt, haero_atm,
+                                        surf, progs, diags, tends);
+      });
+  //}
 }
 KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
@@ -906,7 +907,7 @@ void MAMAci::set_grids(
   add_field<Computed>("ptend_q", scalar4d_layout_nconst_mid, q_unit, grid_name);
 
   // tendency in droplet number mixing ratio [#/kg/s]
-  add_field<Computed>("tendnd", scalar3d_layout_mid, n_unit / s, grid_name);
+  add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s, grid_name);
 
   // activation fraction for aerosol number [fraction]
   add_field<Computed>("factnum", scalar4d_layout_mid, nondim, grid_name);
@@ -1060,7 +1061,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   naai_            = get_field_out("ni_activated").get_view<Real **>();
   qcld_            = get_field_out("qcld").get_view<Real **>();
   ptend_q_output_  = get_field_out("ptend_q").get_view<Real ***>();
-  tendnd_          = get_field_out("tendnd").get_view<Real **>();
+  tendnd_          = get_field_out("nc_nuceat_tend").get_view<Real **>();
   factnum_         = get_field_out("factnum").get_view<Real ***>();
   ndropcol_        = get_field_out("ndropcol").get_view<Real **>();
   ndropmix_        = get_field_out("ndropmix").get_view<Real **>();
@@ -1275,8 +1276,8 @@ void MAMAci::run_impl(const double dt) {
       0.50661560988561763E-007, 0.50986261962838767E-007,
       0.51256955985111086E-007, 0.51482578449096488E-007,
       0.51684364851091471E-007, 0.51849719162939729E-007};
-  for(int icol = 0; icol < 218; ++icol) {
-    for(int kk = 0; kk < 72; ++kk) {
+  for(int icol = 0; icol < ncol_; ++icol) {
+    for(int kk = 0; kk < nlev_; ++kk) {
       aitken_dry_dia_(icol, kk) = dgnum_ait_e3sm[kk];
     }
   }
@@ -1291,7 +1292,12 @@ void MAMAci::run_impl(const double dt) {
       aitken_dry_dia_, nlev_, dt,
       // output
       nihf_, niim_, nidep_, nimey_, naai_hom_, naai_);
-  std::cout << "naai:" << naai_(0, 62) << std::endl;
+
+  for(int icol = 0; icol < ncol_; ++icol) {
+    for(int kk = 0; kk < nlev_; ++kk) {
+      naai_(icol, kk) =9876.0;
+    }
+  }
 
   store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
@@ -1382,7 +1388,11 @@ void MAMAci::run_impl(const double dt) {
                            raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
-
+  for(int icol = 0; icol < ncol_; ++icol) {
+    for(int kk = 0; kk < nlev_; ++kk) {
+      tendnd_(icol, kk) =1.2345;
+    }
+  }
   // std::cout << "factnum_:" << factnum_(0, 0, kb)<<" : "<< factnum_(0, 1,
   // kb)<<" : "<<factnum_(0, 2, kb)<<" : "<<factnum_(0, 3, kb)<< std::endl;
   // std::cout << "tendnd_:" << tendnd_(0, kb)<< std::endl;
