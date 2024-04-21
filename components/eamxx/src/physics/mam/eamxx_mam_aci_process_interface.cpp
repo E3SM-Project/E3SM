@@ -671,59 +671,14 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   // set grid for all the inputs and outputs
-  grid_ = grids_manager->get_grid("Physics");  // Use physics grid
-  const auto &grid_name = grid_->name();       // Name of the grid
+  // use physics grid
+  grid_ = grids_manager->get_grid("Physics");
+
+  // Name of the grid
+  const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
-
-  // Allocate memory for the class members
-  // Kokkos::resize only works on host to allocates memory
-  Kokkos::resize(rho_, ncol_, nlev_);
-  Kokkos::resize(w0_, ncol_, nlev_);
-  Kokkos::resize(tke_, ncol_, nlev_ + 1);
-  Kokkos::resize(wsub_, ncol_, nlev_);
-  Kokkos::resize(wsubice_, ncol_, nlev_);
-  Kokkos::resize(wsig_, ncol_, nlev_);
-  Kokkos::resize(w2_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_prev_, ncol_, nlev_);
-  Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
-  Kokkos::resize(rpdel_, ncol_, nlev_);
-
-  for(int i = 0; i < dropmix_scratch_; ++i) {
-    Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
-  }
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    // These are temp arrays formatted like mam4xx wants.
-    // Not sure if there is a way to do this with scream.
-    Kokkos::resize(coltend_[i], ncol_, nlev_);
-    Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
-  }
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
-  }
-  for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-    }
-  }
-
-  for(int i = 0; i < 42; ++i)
-    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
-
-  // nact : fractional aero. number activation rate [/s]
-  Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // mact : fractional aero. mass activation rate [/s]
-  Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // Eddy diffusivity of heat at the interfaces
-  Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
-
-  // Vertical velocity variance at the interfaces
-  Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -780,7 +735,7 @@ void MAMAci::set_grids(
   // planetary boundary layer height
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
 
-  // cloud fraction [nondimentional] computed by eamxx_cld_fraction_process
+  // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
   auto m2 = m * m;
@@ -789,7 +744,7 @@ void MAMAci::set_grids(
   s2.set_string("s^2");
 
   // NOTE: w_variance im microp_aero.F90 in EAM is at "itim_old" dynamics time
-  // step Since, we are using SE dycore, itim_old is 1 which is equivalent to
+  // step. Since, we are using SE dycore, itim_old is 1 which is equivalent to
   // the current time step. For other dycores (such as EUL), it may be different
   // and we might need to revisit this.
 
@@ -797,7 +752,7 @@ void MAMAci::set_grids(
   //  SHOC provides it at the midpoints. Verify how it is being used.
 
   // Vertical velocity variance at midpoints
-  add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
+  add_field<Required>("w_variance", scalar3d_layout_int, m2 / s2, grid_name);
 
   // NOTE: "cldfrac_liq" is updated in SHOC. "cldfrac_liq" in C++ code is
   // equivalent to "alst" in the shoc_intr.F90. In the C++ code, it is used as
@@ -811,7 +766,8 @@ void MAMAci::set_grids(
                       grid_name);
 
   // Eddy diffusivity for heat
-  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s, grid_name);
+  // FIXME: It is at mid level in EAMxx, we need to compute it at the interfaces
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_int, m2 / s, grid_name);
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
@@ -907,13 +863,14 @@ void MAMAci::set_grids(
   add_field<Computed>("ptend_q", scalar4d_layout_nconst_mid, q_unit, grid_name);
 
   // tendency in droplet number mixing ratio [#/kg/s]
-  add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s, grid_name);
+  add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s,
+                      grid_name);
 
   // activation fraction for aerosol number [fraction]
   add_field<Computed>("factnum", scalar4d_layout_mid, nondim, grid_name);
 
   // NOTE: Here is a series of internal dropmixnuc variables;
-  // maybe we should move them to diagnostics later
+  // maybe we should move them to diagnostics later (FIXME)
 
   // cloud droplet number mixing ratio [#/kg]
   add_field<Computed>("qcld", scalar3d_layout_mid, n_unit, grid_name);
@@ -1001,7 +958,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ## Runtime options
   // ------------------------------------------------------------------------
 
-  ACIRuntime_.wsubmin = m_params.get<double>("wsubmin");
+  wsubmin_ = m_params.get<double>("wsubmin");
 
   // ------------------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
@@ -1120,6 +1077,54 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  // Allocate memory for the class members
+  // (Kokkos::resize only works on host to allocates memory)
+  Kokkos::resize(rho_, ncol_, nlev_);
+  Kokkos::resize(w0_, ncol_, nlev_);
+  Kokkos::resize(tke_, ncol_, nlev_ + 1);
+  Kokkos::resize(wsub_, ncol_, nlev_);
+  Kokkos::resize(wsubice_, ncol_, nlev_);
+  Kokkos::resize(wsig_, ncol_, nlev_);
+  Kokkos::resize(w2_, ncol_, nlev_);
+  Kokkos::resize(cloud_frac_, ncol_, nlev_);
+  Kokkos::resize(cloud_frac_prev_, ncol_, nlev_);
+  Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
+  Kokkos::resize(rpdel_, ncol_, nlev_);
+
+  for(int i = 0; i < dropmix_scratch_; ++i) {
+    Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
+  }
+  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
+    // These are temp arrays formatted like mam4xx wants.
+    // Not sure if there is a way to do this with scream.
+    // FIXME: Do we need these?
+    Kokkos::resize(coltend_[i], ncol_, nlev_);
+    Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
+  }
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
+    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
+  }
+  for(int i = 0; i < mam4::ndrop::pver; ++i) {
+    for(int j = 0; j < 2; ++j) {
+      Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+      Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+    }
+  }
+
+  for(int i = 0; i < 42; ++i)
+    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
+
+  // nact : fractional aero. number activation rate [/s]
+  Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+
+  // mact : fractional aero. mass activation rate [/s]
+  Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+
+  // Eddy diffusivity of heat at the interfaces
+  Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
+
+  // Vertical velocity variance at the interfaces
+  Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
   // Allocate work arrays
   for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
     qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
@@ -1226,8 +1231,7 @@ void MAMAci::run_impl(const double dt) {
   // std::cout << "TKE:" << tke_(0, kb) << std::endl;
 
   Kokkos::fence();  // wait for for tke_ to be computed.
-  const Real &wsubmin = ACIRuntime_.wsubmin;  // runtime variable
-  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin, top_lev_, nlev_,
+  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
   // std::cout << "WSUB:" << wsub_(0, kb) << std::endl;
@@ -1295,7 +1299,7 @@ void MAMAci::run_impl(const double dt) {
 
   for(int icol = 0; icol < ncol_; ++icol) {
     for(int kk = 0; kk < nlev_; ++kk) {
-      naai_(icol, kk) =9876.0;
+      naai_(icol, kk) = 9876.0;
     }
   }
 
@@ -1388,11 +1392,7 @@ void MAMAci::run_impl(const double dt) {
                            raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
-  for(int icol = 0; icol < ncol_; ++icol) {
-    for(int kk = 0; kk < nlev_; ++kk) {
-      tendnd_(icol, kk) =1.2345;
-    }
-  }
+
   // std::cout << "factnum_:" << factnum_(0, 0, kb)<<" : "<< factnum_(0, 1,
   // kb)<<" : "<<factnum_(0, 2, kb)<<" : "<<factnum_(0, 3, kb)<< std::endl;
   // std::cout << "tendnd_:" << tendnd_(0, kb)<< std::endl;
@@ -1419,8 +1419,15 @@ void MAMAci::run_impl(const double dt) {
       hetfrz_depostion_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
+  const Real ans = hetfrz_immersion_nucleation_tend_(0, kb);
+  if(ans < 5.65184e-06 || ans > 5.65186e-06) {
+    std::cout << "SOmethign changed!!!!  :"
+              << hetfrz_immersion_nucleation_tend_(0, kb) << std::endl;
+    exit(1);
+  }
   std::cout << "hetfrz_immersion_nucleation_tend_:"
-            << hetfrz_immersion_nucleation_tend_(0, kb) << std::endl;
+            << hetfrz_immersion_nucleation_tend_(0, kb) << ":"
+            << hetfrz_immersion_nucleation_tend_(0, 0) << std::endl;
   std::cout << "hetfrz_contact_nucleation_tend_:"
             << hetfrz_contact_nucleation_tend_(0, kb) << std::endl;
   std::cout << "hetfrz_depostion_nucleation_tend_:"

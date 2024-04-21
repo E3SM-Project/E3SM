@@ -36,7 +36,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   // micriphysics and optics codes
 
   // ACI runtime ( or namelist) options
-  mam_coupling::MAM4ACIRuntime ACIRuntime_;
+  Real wsubmin_;
 
   // rho is air density [kg/m3]
   view_2d rho_;
