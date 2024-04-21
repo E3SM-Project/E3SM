@@ -502,7 +502,13 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aerosol_state, const int nlev,
 
-    // ## outputs ##
+    // Following outputs are all diagnostics
+    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
+    MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
+    MAMAci::view_2d wtke, MAMAci::view_3d ccn,
+
+    // ## outputs to be used by other processes ##
     // qqcw_fld_work should be directly assigned to the cloud borne aerosols
     MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
 
@@ -514,12 +520,6 @@ void call_function_dropmixnuc(
 
     // tendnd is used by microphysics scheme (e.g. P3)
     MAMAci::view_2d tendnd,
-
-    // Following outputs are all diagnostics
-    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
-    MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
-    MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
     // ## work arrays ##
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
@@ -1338,9 +1338,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  set_input(w_sec_int_, kvh_int_, ncol_, nlev_);
-
+  // FIXME: Remove set_input and print_input
   const int kb = 62;
+  set_input(w_sec_int_, kvh_int_, ncol_, nlev_);
   print_input(dry_atm_.T_mid(0, kb), dry_atm_.p_mid(0, kb), w_sec_int_(0, kb));
 
   const auto scan_policy = ekat::ExeSpaceUtils<
@@ -1371,10 +1371,11 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();  // wait for wsig_ to be computed.
 
+  // We need dry diameter for only aitken mode
   compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
                               // output
                               aitken_dry_dia_);
-
+  // FIXME:Remove set_dgait
   set_dgait(aitken_dry_dia_, ncol_, nlev_);
 
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
@@ -1386,8 +1387,11 @@ void MAMAci::run_impl(const double dt) {
       nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
       aitken_dry_dia_, nlev_, dt,
       // output
-      nihf_, niim_, nidep_, nimey_, naai_hom_, naai_);
+      nihf_, niim_, nidep_, nimey_, naai_hom_,
+      // ## output to be used by the other processes ##
+      naai_);
 
+  // Compute cloud fractions based on cloud threshold
   store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
                               // output
@@ -1402,9 +1406,10 @@ void MAMAci::run_impl(const double dt) {
   call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_int_, wsub_,
                            cloud_frac_, cloud_frac_prev_, dry_aero_, nlev_,
                            // output
-                           qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
                            coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_,
                            nsource_, wtke_, ccn_,
+                           // ## output to be used by the other processes ##
+                           qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
                            // work arrays
                            raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
@@ -1427,7 +1432,7 @@ void MAMAci::run_impl(const double dt) {
 
   call_hetfrz_compute_tendencies(
       team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
-      // output
+      // ## output to be used by the other processes ##
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
       hetfrz_depostion_nucleation_tend_,
       // work arrays
