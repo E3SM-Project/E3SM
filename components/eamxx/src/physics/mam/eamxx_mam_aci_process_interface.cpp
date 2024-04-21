@@ -476,10 +476,12 @@ void compute_recipical_pseudo_density(const haero::ThreadTeam &team,
                                       const int icol, const int nlev,
                                       // output
                                       MAMAci::view_2d rpdel) {
-  // FIXME: Add an assert to ensure pdel is non-zero
   Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, nlev),
-      KOKKOS_LAMBDA(int kk) { rpdel(icol, kk) = 1 / pdel(icol, kk); });
+      Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) {
+        EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
+                               "Error: pdel should be > 0.\n");
+        rpdel(icol, kk) = 1 / pdel(icol, kk);
+      });
 }
 void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
                                       MAMAci::const_view_2d pdel,
@@ -1403,6 +1405,9 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
+  // Compute activated CCN number tendency (tendnd_) and updated
+  // cloud borne aerosols (stored in a work array) and interstitial
+  // aerosols tendencies
   call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_int_, wsub_,
                            cloud_frac_, cloud_frac_prev_, dry_aero_, nlev_,
                            // output
@@ -1415,21 +1420,13 @@ void MAMAci::run_impl(const double dt) {
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
-  // MUST FIXME: save cloud borne aerosols here!!!!
-  //-------------------------------------------------------------
-  //  Save cloud borne aerosols to be used in the heterozenous
-  //  freezing before they are changed by the droplet activation
-  //  process. This is only a select subset of cloud borne
-  //  aerosols, not all the cloud borne aerosols.
-  //-------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //  NOTE: DO NOT UPDATE cloud borne aerosols using the qqcw_fld_work_ array
+  //  at this point as heterozenous freezing needs to use cloud borne aerosols
+  //  before they are changed by the droplet activation (dropmixnuc) process.
+  //---------------------------------------------------------------------------
 
-  copy_mam4xx_array_to_scream<mam4::aero_model::pcnst>(
-      team_policy, ptend_q_output_, ptend_q_, nlev_);
-  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
-      team_policy, coltend_outp_, coltend_, nlev_);
-  copy_mam4xx_array_to_scream<mam4::ndrop::ncnst_tot>(
-      team_policy, coltend_cw_outp_, coltend_cw_, nlev_);
-
+  // Compute hetrozenous freezing
   call_hetfrz_compute_tendencies(
       team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // ## output to be used by the other processes ##
@@ -1438,6 +1435,7 @@ void MAMAci::run_impl(const double dt) {
       // work arrays
       diagnostic_scratch_);
 
+  // FIXME: Remove the following
   print_output(w0_(0, kb), rho_(0, kb), tke_(0, kb), wsub_(0, kb),
                wsubice_(0, kb), wsig_(0, kb), naai_hom_(0, kb), naai_(0, kb),
                rpdel_(0, kb), factnum_, tendnd_(0, kb), ptend_q_,
