@@ -359,7 +359,9 @@ void compute_nucleate_ice_tendencies(
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
     // output
     MAMAci::view_2d nihf, MAMAci::view_2d niim, MAMAci::view_2d nidep,
-    MAMAci::view_2d nimey, MAMAci::view_2d naai_hom, MAMAci::view_2d naai) {
+    MAMAci::view_2d nimey, MAMAci::view_2d naai_hom,
+    // ## output used by other processes ##
+    MAMAci::view_2d naai) {
   //-------------------------------------------------------------
   // Get number of activated aerosol for ice nucleation (naai)
   // from ice nucleation
@@ -368,9 +370,6 @@ void compute_nucleate_ice_tendencies(
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        // for(int icol = 0; icol < 5; ++icol) {
-        //  std::cout<<""<<std::endl;
-        //  std::cout<<"ICOL:"<<icol<<" : "<<aitken_dry_dia(icol,62)<<std::endl;
         //---------------------------------------------------------------------
         //   Set up surface, pronostics atmosphere, diagnostics, and tendencies
         //   classes.
@@ -421,7 +420,6 @@ void compute_nucleate_ice_tendencies(
         nucleate_ice.compute_tendencies(aero_config, /*team,*/ t, dt, haero_atm,
                                         surf, progs, diags, tends);
       });
-  //}
 }
 KOKKOS_INLINE_FUNCTION
 void store_liquid_cloud_fraction(
@@ -615,8 +613,6 @@ void call_function_dropmixnuc(
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        std::cout << "" << std::endl;
-        std::cout << "icol:" << icol << std::endl;
         // for (int icol=0; icol<5; ++icol){
         mam4::ndrop::View1D raercol_cw_view[mam4::ndrop::pver][2];
         mam4::ndrop::View1D raercol_view[mam4::ndrop::pver][2];
@@ -719,34 +715,6 @@ void call_function_dropmixnuc(
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
       });
-  //}
-}
-KOKKOS_INLINE_FUNCTION
-void copy_mam4xx_array_to_scream(const haero::ThreadTeam &team,
-                                 MAMAci::view_3d scream, MAMAci::view_2d mam4xx,
-                                 const int icol, const int nlev,
-                                 const int view_num) {
-  Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, nlev),
-      KOKKOS_LAMBDA(int kk) { scream(icol, kk, view_num) = mam4xx(icol, kk); });
-}
-template <int len>
-void copy_mam4xx_array_to_scream(haero::ThreadTeamPolicy team_policy,
-                                 MAMAci::view_3d scream,
-                                 MAMAci::view_2d mam4xx[len], const int nlev) {
-  // Localize the input arrays.
-  MAMAci::view_2d mam4xx_loc[len];
-  for(int view_num = 0; view_num < len; ++view_num)
-    mam4xx_loc[view_num] = mam4xx[view_num];
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        for(int view_num = 0; view_num < len; ++view_num) {
-          MAMAci::view_2d mam4xx_view = mam4xx_loc[view_num];
-          copy_mam4xx_array_to_scream(team, scream, mam4xx_view, icol, nlev,
-                                      view_num);
-        }
-      });
 }
 
 // Update cloud borne aerosols
@@ -790,7 +758,6 @@ void update_interstitial_aerosols(
         Kokkos::parallel_for(
             Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
               int s_idx = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
-              ;
               for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
                 for(int a = 0; a < mam4::num_species_mode(m); ++a) {
                   if(dry_aero.int_aero_mmr[m][a].data()) {
@@ -909,7 +876,7 @@ void call_hetfrz_compute_tendencies(
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
-        const Real t = 0;
+        const Real t = 0;  // not used
         hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf,
                                   progs, diags, tends);
       });
@@ -1085,6 +1052,11 @@ void MAMAci::set_grids(
   // ------------------------------------------------------------------------
   // Output from ice nucleation process
   // ------------------------------------------------------------------------
+
+  // number of activated aerosol for ice nucleation[#/kg]
+  add_field<Computed>("ni_activated", scalar3d_layout_mid, n_unit, grid_name);
+
+  // FIXME: Diagnostics output
   const auto m3_inv = 1 / m / m / m;  // inverse of m3
   // number conc of ice nuclei due to heterogeneous freezing [1/m3]
   add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, m3_inv,
@@ -1105,9 +1077,6 @@ void MAMAci::set_grids(
   // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
   add_field<Computed>("num_act_aerosol_ice_nucle_hom", scalar3d_layout_mid,
                       n_unit, grid_name);
-
-  // number of activated aerosol for ice nucleation[#/kg]
-  add_field<Computed>("ni_activated", scalar3d_layout_mid, n_unit, grid_name);
 
   // ------------------------------------------------------------------------
   // Output from droplet activation process (dropmixnuc)
