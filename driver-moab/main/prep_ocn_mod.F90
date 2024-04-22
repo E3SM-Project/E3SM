@@ -1985,6 +1985,9 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
      outfile = 'OcnCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+     if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' error in writing ocean after merging')
+     endif
    endif
 #endif
     if (first_time) then
@@ -2846,7 +2849,17 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     !---------------------------------------------------------------
     ! Description
     ! Create r2x_ox (note that r2x_ox is a local module variable)
-    !
+#ifdef MOABDEBUG   
+    use iMOAB, only : iMOAB_WriteMesh
+    use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
+#endif
+    ! Arguments
+    
+    ! Local Variables
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+    integer         :: ierr
+#endif
     ! Arguments
     character(len=*), intent(in) :: timer
     !
@@ -2858,17 +2871,37 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
+#ifdef MOABDEBUG
+       if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+          write(lnum,"(I0.2)") num_moab_exports
+          outfile = 'OcnCpl_Bef_R2O_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in writing ocean after Rof 2 ocn proj')
+          endif
+       endif
+#endif
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
             fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
-
        call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
             fldlist=seq_flds_r2o_ice_fluxes, norm=.false.)
-
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
                fldlist='Flrr_flood', norm=.true.)
        endif
+#ifdef MOABDEBUG
+       if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+          write(lnum,"(I0.2)") num_moab_exports
+          outfile = 'OcnCpl_Aft_R2O_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in writing ocean after Rof 2 ocn proj')
+          endif
+       endif
+#endif
     enddo
     call t_drvstopf  (trim(timer))
 
