@@ -76,9 +76,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d cloud_frac_prev_;
   view_2d qcld_;
   view_2d tendnd_;
-  // ptend_q_ is just ptend_q_output_ reformatted.
   view_2d ptend_q_[mam4::aero_model::pcnst];
-  view_3d ptend_q_output_;
   view_3d factnum_;
   const_view_3d qqcw_input_;
   view_2d qqcw_[mam4::ndrop::ncnst_tot];
@@ -87,9 +85,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d nsource_;
   view_2d wtke_;
   view_3d ccn_;
-  view_3d coltend_outp_;
   view_2d coltend_[mam4::ndrop::ncnst_tot];
-  view_3d coltend_cw_outp_;
   view_2d coltend_cw_[mam4::ndrop::ncnst_tot];
 
   // raercol_cw_ and raercol_ are work arrays for dropmixnuc, allocated on the

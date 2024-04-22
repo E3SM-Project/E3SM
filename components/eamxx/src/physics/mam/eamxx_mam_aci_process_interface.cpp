@@ -1060,13 +1060,6 @@ void MAMAci::set_grids(
   // Output from droplet activation process (dropmixnuc)
   // ------------------------------------------------------------------------
 
-  constexpr int pcnst = mam4::aero_model::pcnst;
-  FieldLayout scalar4d_layout_nconst_mid{{COL, LEV, MAM_NCNST},
-                                         {ncol_, nlev_, pcnst}};
-
-  // tendencies for interstitial and cloud borne aerosols [kg/kg or #/kg]
-  add_field<Computed>("ptend_q", scalar4d_layout_nconst_mid, q_unit, grid_name);
-
   // tendency in droplet number mixing ratio [#/kg/s]
   add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s,
                       grid_name);
@@ -1095,28 +1088,15 @@ void MAMAci::set_grids(
   // subgrid vertical velocity [m/s]
   add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
 
-  constexpr int num_aero_const = mam4::ndrop::ncnst_tot;
-  FieldLayout scalar4d_layout_naero_const_mid{{COL, LEV, MAM_AERO_NCNST},
-                                              {ncol_, nlev_, num_aero_const}};
-
-  // column tendency for diagnostic output
-  add_field<Computed>("coltend", scalar4d_layout_naero_const_mid, nondim,
-                      grid_name);
-
-  // column tendency
-  add_field<Computed>("coltend_cw", scalar4d_layout_naero_const_mid, nondim,
-                      grid_name);
+  // ------------------------------------------------------------------------
+  // Output from hetrozenous freezing
+  // ------------------------------------------------------------------------
 
   const auto cm = m / 100;
 
   // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
   n_unit.set_string("1(cm^-3 s^-1)");
-
-  // ------------------------------------------------------------------------
-  // Output from hetrozenous freezing
-  // ------------------------------------------------------------------------
-
   // heterogeous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
@@ -1207,17 +1187,15 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
   // Output fields to be used by other processes
   // ------------------------------------------------------------------------
-  naai_            = get_field_out("ni_activated").get_view<Real **>();
-  qcld_            = get_field_out("qcld").get_view<Real **>();
-  ptend_q_output_  = get_field_out("ptend_q").get_view<Real ***>();
-  tendnd_          = get_field_out("nc_nuceat_tend").get_view<Real **>();
-  factnum_         = get_field_out("factnum").get_view<Real ***>();
-  ndropcol_        = get_field_out("ndropcol").get_view<Real **>();
-  ndropmix_        = get_field_out("ndropmix").get_view<Real **>();
-  nsource_         = get_field_out("nsource").get_view<Real **>();
-  wtke_            = get_field_out("wtke").get_view<Real **>();
-  coltend_outp_    = get_field_out("coltend").get_view<Real ***>();
-  coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real ***>();
+  naai_     = get_field_out("ni_activated").get_view<Real **>();
+  qcld_     = get_field_out("qcld").get_view<Real **>();
+  tendnd_   = get_field_out("nc_nuceat_tend").get_view<Real **>();
+  factnum_  = get_field_out("factnum").get_view<Real ***>();
+  ndropcol_ = get_field_out("ndropcol").get_view<Real **>();
+  ndropmix_ = get_field_out("ndropmix").get_view<Real **>();
+  nsource_  = get_field_out("nsource").get_view<Real **>();
+  wtke_     = get_field_out("wtke").get_view<Real **>();
+
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
   hetfrz_contact_nucleation_tend_ =
@@ -1317,7 +1295,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
     // These are temp arrays formatted like mam4xx wants.
     // Not sure if there is a way to do this with scream.
     // FIXME: Do we need these?
+    // column tendency for diagnostic output
     Kokkos::resize(coltend_[i], ncol_, nlev_);
+    // column tendency
     Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
   }
   for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
