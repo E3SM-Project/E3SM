@@ -2860,6 +2860,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     character*32             :: outfile, wopts, lnum
     integer         :: ierr
 #endif
+#ifdef MOABCOMP
+     character*100             :: tagname, mct_field
+     integer :: ent_type
+     real*8 :: difference
+#endif
     ! Arguments
     character(len=*), intent(in) :: timer
     !
@@ -2878,7 +2883,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
           ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
           if (ierr .ne. 0) then
-            call shr_sys_abort(subname//' error in writing ocean after Rof 2 ocn proj')
+            call shr_sys_abort(subname//' error in writing ocean before Rof 2 ocn proj')
           endif
        endif
 #endif
@@ -2896,6 +2901,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           write(lnum,"(I0.2)") num_moab_exports
           outfile = 'OcnCpl_Aft_R2O_'//trim(lnum)//'.h5m'//C_NULL_CHAR
           wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+
+#ifdef MOABCOMP
+          ent_type = 1 ! cell for ocean
+          mct_field = 'Forr_rofi'
+          tagname= 'Forr_rofi'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), r2x_ox(1), mct_field,  mboxid, tagname, ent_type, difference, .true.)
+#endif
+      
           ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
           if (ierr .ne. 0) then
             call shr_sys_abort(subname//' error in writing ocean after Rof 2 ocn proj')
