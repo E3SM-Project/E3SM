@@ -1064,30 +1064,6 @@ void MAMAci::set_grids(
   add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s,
                       grid_name);
 
-  // activation fraction for aerosol number [fraction]
-  add_field<Computed>("factnum", scalar4d_layout_mid, nondim, grid_name);
-
-  // NOTE: Here is a series of internal dropmixnuc variables;
-  // maybe we should move them to diagnostics later (FIXME)
-
-  // cloud droplet number mixing ratio [#/kg]
-  add_field<Computed>("qcld", scalar3d_layout_mid, n_unit, grid_name);
-
-  auto inv_m2 = 1 / m / m;
-  inv_m2.set_string("#/m2");
-
-  // column-integrated droplet number [#/m2]
-  add_field<Computed>("ndropcol", scalar3d_layout_mid, inv_m2, grid_name);
-
-  // droplet number mixing ratio tendency due to mixing [#/kg/s]
-  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s, grid_name);
-
-  // droplet number mixing ratio source tendency [#/kg/s]
-  add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s, grid_name);
-
-  // subgrid vertical velocity [m/s]
-  add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
-
   // ------------------------------------------------------------------------
   // Output from hetrozenous freezing
   // ------------------------------------------------------------------------
@@ -1187,21 +1163,11 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
   // Output fields to be used by other processes
   // ------------------------------------------------------------------------
-  naai_     = get_field_out("ni_activated").get_view<Real **>();
-  qcld_     = get_field_out("qcld").get_view<Real **>();
-  tendnd_   = get_field_out("nc_nuceat_tend").get_view<Real **>();
-  factnum_  = get_field_out("factnum").get_view<Real ***>();
-  ndropcol_ = get_field_out("ndropcol").get_view<Real **>();
-  ndropmix_ = get_field_out("ndropmix").get_view<Real **>();
-  nsource_  = get_field_out("nsource").get_view<Real **>();
-  wtke_     = get_field_out("wtke").get_view<Real **>();
+  // ice nucleation output
+  naai_ = get_field_out("ni_activated").get_view<Real **>();
 
-  hetfrz_immersion_nucleation_tend_ =
-      get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
-  hetfrz_contact_nucleation_tend_ =
-      get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
-  hetfrz_depostion_nucleation_tend_ =
-      get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
+  // droplet activation output
+  tendnd_ = get_field_out("nc_nuceat_tend").get_view<Real **>();
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -1246,6 +1212,14 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  // hetrozenous freezing outputs
+  hetfrz_immersion_nucleation_tend_ =
+      get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
+  hetfrz_contact_nucleation_tend_ =
+      get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
+  hetfrz_depostion_nucleation_tend_ =
+      get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
+
   //---------------------------------------------------------------------------------
   // Allocate memory for the class members
   // (Kokkos::resize only works on host to allocates memory)
@@ -1282,19 +1256,39 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
   Kokkos::resize(naai_hom_, ncol_, nlev_);
 
+  //---------------------------------------------------------------------------------
+  // Diagnotics variables from the droplet activation scheme
+  //---------------------------------------------------------------------------------
+
+  // activation fraction for aerosol number [fraction]
+  const int num_aero_modes = mam_coupling::num_aero_modes();
+  Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
+
+  // cloud droplet number mixing ratio [#/kg]
+  Kokkos::resize(qcld_, ncol_, nlev_);
+
   // number conc of aerosols activated at supersat [#/m^3]
   // NOTE:  activation fraction fluxes are defined as
   // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
   //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
   Kokkos::resize(ccn_, ncol_, nlev_, mam4::ndrop::psat);
 
+  // column-integrated droplet number [#/m2]
+  Kokkos::resize(ndropcol_, ncol_, nlev_);
+
+  // droplet number mixing ratio tendency due to mixing [#/kg/s]
+  Kokkos::resize(ndropmix_, ncol_, nlev_);
+
+  // droplet number mixing ratio source tendency [#/kg/s]
+  Kokkos::resize(nsource_, ncol_, nlev_);
+
+  // subgrid vertical velocity [m/s]
+  Kokkos::resize(wtke_, ncol_, nlev_);
+
   for(int i = 0; i < dropmix_scratch_; ++i) {
     Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
   }
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    // These are temp arrays formatted like mam4xx wants.
-    // Not sure if there is a way to do this with scream.
-    // FIXME: Do we need these?
     // column tendency for diagnostic output
     Kokkos::resize(coltend_[i], ncol_, nlev_);
     // column tendency
@@ -1309,9 +1303,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
       Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
     }
   }
-
-  for(int i = 0; i < 42; ++i)
-    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
 
   // nact : fractional aero. number activation rate [/s]
   Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
@@ -1331,6 +1322,17 @@ void MAMAci::initialize_impl(const RunType run_type) {
   state_q_work_ =
       view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
 
+  //---------------------------------------------------------------------------------
+  // Diagnotics variables from the hetrozenous ice nucleation scheme
+  //---------------------------------------------------------------------------------
+
+  for(int i = 0; i < 42; ++i)
+    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
+
+  //---------------------------------------------------------------------------------
+  // Initialize the processes
+  //---------------------------------------------------------------------------------
+
   mam4::AeroConfig aero_config;
   // configure the nucleation parameterization
   mam4::NucleateIce::Config nucleate_ice_config;
@@ -1340,6 +1342,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
   mam4::Hetfrz::Config hetfrz_config;
   hetfrz_.init(aero_config, hetfrz_config);
 
+  //---------------------------------------------------------------------------------
+  // Setup preprocessing
+  //---------------------------------------------------------------------------------
   // set up our preprocess functor
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
