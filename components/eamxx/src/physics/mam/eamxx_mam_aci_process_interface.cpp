@@ -648,41 +648,45 @@ void call_function_dropmixnuc(
             atmosphere_for_column(dry_atmosphere, icol);
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
-        // FIXME:: Kookos for here??
-        for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
-          Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
-          Real qqcw_at_lev_col[mam4::aero_model::pcnst]    = {};
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
+            KOKKOS_LAMBDA(int klev) {
+              // for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
+              Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
+              Real qqcw_at_lev_col[mam4::aero_model::pcnst]    = {};
 
-          // get state_q at a grid cell (col,lev)
-          // NOTE: The order of species in state_q_at_lev_col
-          // is the same as in E3SM state%q array
-          mam4::utils::extract_stateq_from_prognostics(
-              progs_at_col, haero_atm, state_q_at_lev_col, klev);
+              // get state_q at a grid cell (col,lev)
+              // NOTE: The order of species in state_q_at_lev_col
+              // is the same as in E3SM state%q array
+              mam4::utils::extract_stateq_from_prognostics(
+                  progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
-          // get the start index for aerosols species in the state_q array
-          int istart = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
+              // get the start index for aerosols species in the state_q array
+              int istart = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
 
-          // create colum views of state_q
-          for(int icnst = istart; icnst < mam4::aero_model::pcnst; ++icnst) {
-            state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
-          }
-
-          // get qqcw at a grid cell (col,lev)
-          // NOTE: The layout for qqcw array is based on mam_idx in dropmixnuc
-          // To mimic that, we are using the following for-loops
-          int ind_qqcw = 0;
-          for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-            qqcw_view[ind_qqcw](klev) = dry_aero.cld_aero_nmr[m](icol, klev);
-            ++ind_qqcw;
-            for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-              if(dry_aero.cld_aero_mmr[m][a].data()) {
-                qqcw_view[ind_qqcw](klev) =
-                    dry_aero.cld_aero_mmr[m][a](icol, klev);
-                ++ind_qqcw;
+              // create colum views of state_q
+              for(int icnst = istart; icnst < mam4::aero_model::pcnst;
+                  ++icnst) {
+                state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
               }
-            }
-          }
-        }
+
+              // get qqcw at a grid cell (col,lev)
+              // NOTE: The layout for qqcw array is based on mam_idx in
+              // dropmixnuc To mimic that, we are using the following for-loops
+              int ind_qqcw = 0;
+              for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+                qqcw_view[ind_qqcw](klev) =
+                    dry_aero.cld_aero_nmr[m](icol, klev);
+                ++ind_qqcw;
+                for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+                  if(dry_aero.cld_aero_mmr[m][a].data()) {
+                    qqcw_view[ind_qqcw](klev) =
+                        dry_aero.cld_aero_mmr[m][a](icol, klev);
+                    ++ind_qqcw;
+                  }
+                }
+              }
+            });
 
         mam4::ndrop::dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
