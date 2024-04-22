@@ -1058,9 +1058,6 @@ void MAMAci::set_grids(
 
   // FIXME: Diagnostics output
   const auto m3_inv = 1 / m / m / m;  // inverse of m3
-  // number conc of ice nuclei due to heterogeneous freezing [1/m3]
-  add_field<Computed>("icenuc_num_hetfrz", scalar3d_layout_mid, m3_inv,
-                      grid_name);
 
   // number conc of ice nuclei due to immersionfreezing (hetero nuc) [1/m3]
   add_field<Computed>("icenuc_num_immfrz", scalar3d_layout_mid, m3_inv,
@@ -1235,7 +1232,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // computed updraft velocity
   dry_atm_.w_updraft = buffer_.w_updraft;
 
-  nihf_  = get_field_out("icenuc_num_hetfrz").get_view<Real **>();
   niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();
   nidep_ = get_field_out("icenuc_num_depnuc").get_view<Real **>();
   nimey_ = get_field_out("icenuc_num_meydep").get_view<Real **>();
@@ -1306,6 +1302,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   // Allocate memory for the class members
   // (Kokkos::resize only works on host to allocates memory)
+
+  // number conc of ice nuclei due to heterogeneous freezing [1/m3]
+  Kokkos::resize(nihf_, ncol_, nlev_);
+
   Kokkos::resize(rho_, ncol_, nlev_);
   Kokkos::resize(w0_, ncol_, nlev_);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
