@@ -3290,7 +3290,7 @@ int testTimeInstant(void) {
       LOG_ERROR("TimeMgrTest/TimeInstant: decrement by second interval: FAIL");
    }
 
-   // Test time string generator
+   // Test time string generator and constructor from string
 
    std::string StrDateRef = "2019-07-04_15:16:23.2500";
    std::string StrDateChk = TiGreg.getString(4, 4, "_");
@@ -3300,6 +3300,14 @@ int testTimeInstant(void) {
    } else {
       ++ErrAll;
       LOG_ERROR("TimeMgrTest/TimeInstant: getString: FAIL");
+   }
+
+   OMEGA::TimeInstant TiFromString(&CalGreg, StrDateChk);
+   if (TiFromString == TiGreg) {
+      LOG_INFO("TimeMgrTest/TimeInstant from string: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInstant from string: FAIL");
    }
 
    // Finally, for each calendar, test a 5-year integration in several

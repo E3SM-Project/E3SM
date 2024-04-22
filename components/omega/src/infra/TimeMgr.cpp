@@ -3574,6 +3574,40 @@ TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
 } // end TimeInstant::TimeInstant constructor from yy/mm/dd-hh:mm:ss(real ss)
 
 //------------------------------------------------------------------------------
+// TimeInstant::TimeInstant
+// Constructs a time instant from a string of the general form
+// YYYYY-MM-DD_HH:MM:SS.SSS where the width of the YY and SS fields can
+// be of arbitrary width and the separators can be any non-numeric character
+
+TimeInstant::TimeInstant(Calendar *Cal,          //< [in] Calendar to use
+                         std::string &TimeString //< [in] string with date/time
+) {
+
+   // Set the calendar
+   CalPtr = Cal;
+
+   // Extract variables from string
+   I8 Year;
+   I8 Month;
+   I8 Day;
+   I8 Hour;
+   I8 Minute;
+   R8 RSecond;
+
+   std::istringstream ss(TimeString);
+   char discard;
+   ss >> Year >> discard >> Month >> discard >> Day >> discard >> Hour >>
+       discard >> Minute >> discard >> RSecond;
+
+   // Use the set function to define the Time Instant
+   I4 Err = this->set(Year, Month, Day, Hour, Minute, RSecond);
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInstant constructor from string "
+                "error using set function to construct TimeInstant.");
+
+} // end TimeInstant::TimeInstant constructor from string
+
+//------------------------------------------------------------------------------
 // TimeInstant::~TimeInstant - destructor for time instant
 // Destructor for a time instant. No allocated space so does nothing.
 

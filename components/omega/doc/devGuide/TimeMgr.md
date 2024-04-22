@@ -46,8 +46,8 @@ for a given calendar.
 
 The TimeInstant class represents a moment in time for a particular calendar. It
 consists of a TimeFrac and a pointer to the Calendar in which the time is based.
-There are two constructors for initializing a TimeInstant. One method is with a
-pointer to an initialized Calendar object, five 8-byte integers, and an 8-byte
+There are three constructors for initializing a TimeInstant. One method is with
+a pointer to an initialized Calendar object, five 8-byte integers, and an 8-byte
 real value:
 ```c++
 OMEGA::TimeInstant TI1(&CalGreg, Year, Month, Day, Hour, Minute, RealSecond);
@@ -58,6 +58,15 @@ integers:
 ```c++
 OMEGA::TimeInstant TI2(&CalGreg, Y, M, D, H, M, Whole, Numer, Denom);
 ```
+A final constructor creates a time instant based on a time string that
+conforms roughly to the ISO standard `"YYYYYY-MM-DD_HH:MM:SS.SSSS"` though
+the constructor allows for any single-character non-numeric separator between
+each of the numeric fields and the width of the YY and SS fields can be up
+to the 8-byte standards for integer and floats, respectively.
+```c++
+OMEGA::TimeInstant TI3(&CalGreg, TimeString);
+```
+
 Among the methods defined in the TimeInstant class is `getString` which will
 produce a `std::string` representation of the time conforming to ISO standards,
  e.g. `"YYYYYY-MM-DD HH:MM:SS.SSSSS"`. The `getString` method takes two 4-byte
@@ -68,6 +77,8 @@ string formatted as above is returned with the following call:
 ```c++
 TI1.getString(6, 5, " ");
 ```
+A range of accessor functions can also get/set the TimeInstant in various
+forms.
 
 ### 4. TimeInterval
 
