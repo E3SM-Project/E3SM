@@ -15,19 +15,28 @@
 
 namespace scream {
 
-#ifdef RRTMGP_ENABLE_YAKL
-void yakl_init ()
+void init_kls ()
 {
+#ifdef RRTMGP_ENABLE_YAKL
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+  // Initialize kokkos
+  if(!Kokkos::is_initialized()) { Kokkos::initialize(); }
+#endif
 }
 
-void yakl_finalize()
+void finalize_kls()
 {
+#ifdef RRTMGP_ENABLE_YAKL
   // Finalize YAKL
   yakl::finalize();
-}
 #endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+  Kokkos::finalize();
+#endif
+}
 
 namespace rrtmgp {
 

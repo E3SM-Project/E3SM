@@ -13,8 +13,8 @@
 
 namespace scream {
 
-void yakl_init ();
-void yakl_finalize();
+void init_kls ();
+void finalize_kls();
 
 namespace rrtmgp {
 
@@ -300,12 +300,12 @@ void mixing_ratio_to_cloud_mass(
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template<class T, typename Layout, typename Device, typename Traits>
+template<class View1, class View2, class View3, class View4>
 void mixing_ratio_to_cloud_mass(
-  Kokkos::View<const T**, Layout, Device, Traits> const& mixing_ratio,
-  Kokkos::View<const T**, Layout, Device, Traits> const& cloud_fraction,
-  Kokkos::View<const T**, Layout, Device, Traits> const& dp,
-  Kokkos::View<T**,       Layout, Device, Traits> const& cloud_mass)
+  View1 const& mixing_ratio,
+  View2 const& cloud_fraction,
+  View3 const& dp,
+  View4 const& cloud_mass)
 {
   int ncol = mixing_ratio.extent(0);
   int nlay = mixing_ratio.extent(1);

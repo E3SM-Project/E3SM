@@ -48,16 +48,16 @@ void compute_heating_rate (
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template<class T, typename Layout, typename Device, typename Traits>
+template<class View1, class View2, class View3, class View4>
 void compute_heating_rate (
-  Kokkos::View<const T**, Layout, Device, Traits> const &flux_up,
-  Kokkos::View<const T**, Layout, Device, Traits> const &flux_dn,
-  Kokkos::View<const T**, Layout, Device, Traits> const &pdel   ,
-  Kokkos::View<T**      , Layout, Device, Traits> const &heating_rate)
+  View1 const &flux_up,
+  View2 const &flux_dn,
+  View3 const &pdel   ,
+  View4 const &heating_rate)
 {
   using physconst = scream::physics::Constants<Real>;
-  auto ncol = flux_up.dimension[0];
-  auto nlay = flux_up.dimension[1]-1;
+  auto ncol = flux_up.extent(0);
+  auto nlay = flux_up.extent(1)-1;
   Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -

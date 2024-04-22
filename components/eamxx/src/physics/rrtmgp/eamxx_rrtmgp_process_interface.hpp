@@ -124,13 +124,13 @@ public:
     static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
+    uview_1d<Real> cosine_zenith;
 #ifdef RRTMGP_ENABLE_YAKL
     real1d mu0;
     real1d sfc_alb_dir_vis;
     real1d sfc_alb_dir_nir;
     real1d sfc_alb_dif_vis;
     real1d sfc_alb_dif_nir;
-    uview_1d<Real> cosine_zenith;
     real1d sfc_flux_dir_vis;
     real1d sfc_flux_dir_nir;
     real1d sfc_flux_dif_vis;
@@ -142,7 +142,6 @@ public:
     real1dk sfc_alb_dir_nir_k;
     real1dk sfc_alb_dif_vis_k;
     real1dk sfc_alb_dif_nir_k;
-    uview_1d<Real> cosine_zenith_k;
     real1dk sfc_flux_dir_vis_k;
     real1dk sfc_flux_dir_nir_k;
     real1dk sfc_flux_dif_vis_k;
@@ -150,6 +149,7 @@ public:
 #endif
 
     // 2d size (ncol, nlay)
+    uview_2d<Real> d_dz;
 #ifdef RRTMGP_ENABLE_YAKL
     real2d p_lay;
     real2d t_lay;
@@ -166,7 +166,6 @@ public:
     real2d iwp;
     real2d sw_heating;
     real2d lw_heating;
-    uview_2d<Real> d_dz;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
     real2dk p_lay_k;
@@ -184,10 +183,10 @@ public:
     real2dk iwp_k;
     real2dk sw_heating_k;
     real2dk lw_heating_k;
-    uview_2d<Real> d_dz_k;
 #endif
 
     // 2d size (ncol, nlay+1)
+    uview_2d<Real> d_tint;
 #ifdef RRTMGP_ENABLE_YAKL
     real2d p_lev;
     real2d t_lev;
@@ -211,7 +210,6 @@ public:
     real2d lw_clrsky_flux_dn;
     real2d lw_clnsky_flux_up;
     real2d lw_clnsky_flux_dn;
-    uview_2d<Real> d_tint;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
     real2dk p_lev_k;
@@ -236,7 +234,6 @@ public:
     real2dk lw_clrsky_flux_dn_k;
     real2dk lw_clnsky_flux_up_k;
     real2dk lw_clnsky_flux_dn_k;
-    uview_2d<Real> d_tint_k;
 #endif
 
     // 3d size (ncol, nlay+1, nswbands)
