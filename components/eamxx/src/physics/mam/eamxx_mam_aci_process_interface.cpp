@@ -1056,25 +1056,6 @@ void MAMAci::set_grids(
   // number of activated aerosol for ice nucleation[#/kg]
   add_field<Computed>("ni_activated", scalar3d_layout_mid, n_unit, grid_name);
 
-  // FIXME: Diagnostics output
-  const auto m3_inv = 1 / m / m / m;  // inverse of m3
-
-  // number conc of ice nuclei due to immersionfreezing (hetero nuc) [1/m3]
-  add_field<Computed>("icenuc_num_immfrz", scalar3d_layout_mid, m3_inv,
-                      grid_name);
-
-  // number conc of ice nuclei due to deposition nucleation (hetero nuc)[1/m3]
-  add_field<Computed>("icenuc_num_depnuc", scalar3d_layout_mid, m3_inv,
-                      grid_name);
-
-  // number conc of ice nuclei due to meyers deposition [1/m3]
-  add_field<Computed>("icenuc_num_meydep", scalar3d_layout_mid, m3_inv,
-                      grid_name);
-
-  // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
-  add_field<Computed>("num_act_aerosol_ice_nucle_hom", scalar3d_layout_mid,
-                      n_unit, grid_name);
-
   // ------------------------------------------------------------------------
   // Output from droplet activation process (dropmixnuc)
   // ------------------------------------------------------------------------
@@ -1113,15 +1094,6 @@ void MAMAci::set_grids(
 
   // subgrid vertical velocity [m/s]
   add_field<Computed>("wtke", scalar3d_layout_mid, m / s, grid_name);
-
-  constexpr int psat = mam4::ndrop::psat;
-  FieldLayout scalar4d_layout_psat_mid{{COL, LEV, MAM_PSAT},
-                                       {ncol_, nlev_, psat}};
-  // number conc of aerosols activated at supersat [#/m^3]
-  // NOTE:  activation fraction fluxes are defined as
-  // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
-  //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
-  add_field<Computed>("ccn", scalar4d_layout_psat_mid, m3_inv, grid_name);
 
   constexpr int num_aero_const = mam4::ndrop::ncnst_tot;
   FieldLayout scalar4d_layout_naero_const_mid{{COL, LEV, MAM_AERO_NCNST},
@@ -1232,12 +1204,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // computed updraft velocity
   dry_atm_.w_updraft = buffer_.w_updraft;
 
-  niim_  = get_field_out("icenuc_num_immfrz").get_view<Real **>();
-  nidep_ = get_field_out("icenuc_num_depnuc").get_view<Real **>();
-  nimey_ = get_field_out("icenuc_num_meydep").get_view<Real **>();
-  naai_hom_ =
-      get_field_out("num_act_aerosol_ice_nucle_hom").get_view<Real **>();
-
+  // ------------------------------------------------------------------------
+  // Output fields to be used by other processes
+  // ------------------------------------------------------------------------
   naai_            = get_field_out("ni_activated").get_view<Real **>();
   qcld_            = get_field_out("qcld").get_view<Real **>();
   ptend_q_output_  = get_field_out("ptend_q").get_view<Real ***>();
@@ -1247,7 +1216,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   ndropmix_        = get_field_out("ndropmix").get_view<Real **>();
   nsource_         = get_field_out("nsource").get_view<Real **>();
   wtke_            = get_field_out("wtke").get_view<Real **>();
-  ccn_             = get_field_out("ccn").get_view<Real ***>();
   coltend_outp_    = get_field_out("coltend").get_view<Real ***>();
   coltend_cw_outp_ = get_field_out("coltend_cw").get_view<Real ***>();
   hetfrz_immersion_nucleation_tend_ =
@@ -1300,11 +1268,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  //---------------------------------------------------------------------------------
   // Allocate memory for the class members
   // (Kokkos::resize only works on host to allocates memory)
-
-  // number conc of ice nuclei due to heterogeneous freezing [1/m3]
-  Kokkos::resize(nihf_, ncol_, nlev_);
+  //---------------------------------------------------------------------------------
 
   Kokkos::resize(rho_, ncol_, nlev_);
   Kokkos::resize(w0_, ncol_, nlev_);
@@ -1317,6 +1284,31 @@ void MAMAci::initialize_impl(const RunType run_type) {
   Kokkos::resize(cloud_frac_prev_, ncol_, nlev_);
   Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
   Kokkos::resize(rpdel_, ncol_, nlev_);
+
+  //---------------------------------------------------------------------------------
+  // Diagnotics variables from the ice nucleation scheme
+  //---------------------------------------------------------------------------------
+
+  // number conc of ice nuclei due to heterogeneous freezing [1/m3]
+  Kokkos::resize(nihf_, ncol_, nlev_);
+
+  // number conc of ice nuclei due to immersionfreezing (hetero nuc) [1/m3]
+  Kokkos::resize(niim_, ncol_, nlev_);
+
+  // number conc of ice nuclei due to deposition nucleation (hetero nuc)[1/m3]
+  Kokkos::resize(nidep_, ncol_, nlev_);
+
+  // number conc of ice nuclei due to meyers deposition [1/m3]
+  Kokkos::resize(nimey_, ncol_, nlev_);
+
+  // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
+  Kokkos::resize(naai_hom_, ncol_, nlev_);
+
+  // number conc of aerosols activated at supersat [#/m^3]
+  // NOTE:  activation fraction fluxes are defined as
+  // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
+  //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
+  Kokkos::resize(ccn_, ncol_, nlev_, mam4::ndrop::psat);
 
   for(int i = 0; i < dropmix_scratch_; ++i) {
     Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
