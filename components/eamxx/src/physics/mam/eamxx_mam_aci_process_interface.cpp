@@ -223,37 +223,6 @@ void set_dgait(MAMAci::view_2d aitken_dry_dia_, const int ncol_,
 }
 
 KOKKOS_INLINE_FUNCTION
-void copy_scream_array_to_mam4xx(const haero::ThreadTeam &team,
-                                 const MAMAci::view_2d mam4xx_view,
-                                 MAMAci::const_view_3d scream_view,
-                                 const int icol, const int nlev,
-                                 const int view_num) {
-  Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, 0u, nlev), KOKKOS_LAMBDA(int kk) {
-        mam4xx_view(icol, kk) = scream_view(icol, kk, view_num);
-      });
-}
-
-void copy_scream_array_to_mam4xx(
-    haero::ThreadTeamPolicy team_policy,
-    MAMAci::view_2d mam4xx_views[mam4::ndrop::ncnst_tot],
-    MAMAci::const_view_3d scream_view, const int nlev) {
-  // Localize the input arrays.
-  MAMAci::view_2d mam4xx[mam4::ndrop::ncnst_tot];
-  for(int view_num = 0; view_num < mam4::ndrop::ncnst_tot; ++view_num)
-    mam4xx[view_num] = mam4xx_views[view_num];
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        for(int view_num = 0; view_num < mam4::ndrop::ncnst_tot; ++view_num) {
-          MAMAci::view_2d mam4xx_view = mam4xx[view_num];
-          copy_scream_array_to_mam4xx(team, mam4xx_view, scream_view, icol,
-                                      nlev, view_num);
-        }
-      });
-}
-
-KOKKOS_INLINE_FUNCTION
 void compute_w0_and_rho(const haero::ThreadTeam &team,
                         const MAMAci::const_view_2d omega,
                         const MAMAci::const_view_2d T_mid,
@@ -300,9 +269,6 @@ void compute_tke_using_w_sec(const haero::ThreadTeam &team,
                              const int nlev,
                              // output
                              MAMAci::view_2d tke) {
-  // FIXME Is this the correct boundary condition for tke at the surface?
-  // TKE seems to be at interfaces but w_sec is at cell centers so this
-  // descrepensy needs to be worked out.
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, 0u, nlev + 1),
       KOKKOS_LAMBDA(int kk) { tke(icol, kk) = (3.0 / 2.0) * w_sec(icol, kk); });
@@ -1539,7 +1505,7 @@ void MAMAci::run_impl(const double dt) {
       diagnostic_scratch_);
 
   //---------------------------------------------------------------
-  //----------------- End of all processes ------------------------
+  // Now update interstitial and cllud borne aerosols
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
@@ -1570,104 +1536,3 @@ void MAMAci::run_impl(const double dt) {
 }
 
 }  // namespace scream
-
-/*
-FORTRAN OUTPUT:
-
- ----- OUPUT AT time step:           6           6
- wo  3.343177351577457E-004
- rho:   1.28186433384113
- TKE:  1.666465903934813E-002  6.097664104873541E-002
- wsub:  0.160873967324407
- wsubi:  0.200000000000000
- wsig:  0.160873967324407
- dgnum_ait:  4.362354500358337E-008
- naai:   11464.5957222634
- naai_hom:   29838.6879763933
- aer_cb: so4_c1  4.327927689273498E-012 so4_c1  4.327927689273498E-012
- aer_cb: bc_c1  6.811694223739704E-014 bc_c1  6.811694223739704E-014
- aer_cb: pom_c1  8.647238075040541E-013 pom_c1  8.647238075040541E-013
- aer_cb: soa_c1  6.734058317716400E-012 soa_c1  6.734058317716400E-012
- aer_cb: dst_c1  8.239303776951524E-014 dst_c1  8.239303776951524E-014
- aer_cb: ncl_c1  2.685810991448475E-014 ncl_c1  2.685810991448475E-014
- aer_cb: mom_c1  2.218253512777307E-015 mom_c1  2.218253512777307E-015
- aer_cb: num_c1   477478.884677930      num_c1   477478.884677930
- aer_cb: dst_c3  2.869197497896834E-012 dst_c3  2.869197497896834E-012
- aer_cb: ncl_c3  4.636857908110365E-013 ncl_c3  4.636857908110365E-013
- aer_cb: so4_c3  4.375223642985256E-014 so4_c3  4.375223642985256E-014
- aer_cb: bc_c3  3.674860666928688E-016 bc_c3  3.674860666928688E-016
- aer_cb: pom_c3  1.114802999982066E-015 pom_c3  1.114802999982066E-015
- aer_cb: soa_c3  8.915776993183282E-015 soa_c3  8.915776993183282E-015
- aer_cb: mom_c3  7.802642470782658E-017 mom_c3  7.802642470782658E-017
- aer_cb: num_c3   151.593971049442      num_c3   151.593971049442
- aer_cb: bc_c4  1.127495264613331E-027 bc_c4  1.127495264613331E-027
- aer_cb: pom_c4  8.204883715624573E-027 pom_c4  8.204883715624573E-027
- aer_cb: mom_c4  3.249069782816687E-033 mom_c4  3.249069782816687E-033
- aer_cb: num_c4  1.345885758586041E-013 num_c4  1.345885758586041E-013
- tendnd:  -839.404918218856        7289315.36108503        7792958.31201634
-  1.666666666666667E-003
- factnum:  0.998556176544263       0.861689826773470
-  0.999999999974140       0.000000000000000E+000
- nctend_mixnuc:  -839.404918218856
- O3_tend:  0.000000000000000E+000
- H2O2_tend:  0.000000000000000E+000
- H2SO4_tend:  0.000000000000000E+000
- SO2_tend:  0.000000000000000E+000
- DMS_tend:  0.000000000000000E+000
- SOAG_tend:  0.000000000000000E+000
- so4_a1_tend: -1.384310943569190E-014
- pom_a1_tend: -2.950799002682271E-015
- soa_a1_tend: -2.283869371271150E-014
- bc_a1_tend: -2.202672700280516E-016
- dst_a1_tend: -2.194060414083922E-016
- ncl_a1_tend: -6.981124745267083E-017
- mom_a1_tend: -5.662690535048673E-018
- num_a1_tend:  -1626.38730532537
- so4_a2_tend: -2.548707408341951E-017
- soa_a2_tend: -1.929990276139139E-018
- ncl_a2_tend: -6.855087738119723E-019
- mom_a2_tend: -4.571691604185304E-020
- num_a2_tend:  -111.890330245159
- dst_a3_tend: -7.609611333715698E-015
- ncl_a3_tend: -1.256350252705383E-015
- so4_a3_tend: -1.320988655880598E-016
- bc_a3_tend: -1.099586316024402E-018
- pom_a3_tend: -3.309939677824050E-018
- soa_a3_tend: -2.767668335981830E-017
- mom_a3_tend: -2.254911604324925E-019
- num_a3_tend: -0.406788905791186
- pom_a4_tend: -2.375070578317096E-017
- bc_a4_tend:  4.082479713528180E-017
- mom_a4_tend: -4.901356204764327E-023
- num_a4_tend:  -34.4232851017138
- so4_c1:    1322558.40616450
- pom_c1:   1.233997159684093E-011
- soa_c1:   2.393397505793018E-012
- bc_c1:   1.872520079842212E-011
- dst_c1:   1.922157644491776E-013
- ncl_c1:   2.530385880698310E-013
- mom_c1:   8.315014074126540E-014
- num_c1:   6.895143982427237E-015
- so4_c2:    142214.467855250
- soa_c2:   3.181118913367564E-014
- ncl_c2:   2.996638282752921E-015
- mom_c2:   8.055333842809433E-016
- num_c2:   5.202632275847699E-017
- dst_c3:    464.524744048298
- ncl_c3:   8.814810290885256E-012
- so4_c3:   1.417415096039318E-012
- bc_c3:   1.284022582681906E-013
- pom_c3:   1.081226492056768E-015
- soa_c3:   3.292708392236485E-015
- mom_c3:   2.584587804061707E-014
- num_c3:   2.324887367507579E-016
- pom_c4:   6.934165370527951E-014
- bc_c4:   2.703924752644086E-026
- mom_c4:   3.684880329580097E-027
- num_c4:   1.049556651713384E-032
-
- frzimm:  5.651860156917002E-006
- frzcnt:  0.000000000000000E+000
- frzdep:  0.000000000000000E+000
-
-   */
