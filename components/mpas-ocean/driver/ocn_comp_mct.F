@@ -2689,7 +2689,8 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux
+                                               avgRemovedIceRunoffHeatFlux, &
+                                               avgThermalForcing300m
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
@@ -2753,6 +2754,7 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
      call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
+     call mpas_pool_get_array(forcingPool, 'avgThermalForcing300m', avgThermalForcing300m)
 
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
@@ -2933,6 +2935,8 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
+       o2x_o % rAttr(index_o2x_So_tf300, n) = avgThermalForcing300m(i)
+
 
        !Fyke: test
        !write(stderrUnit,*) 'n=',n

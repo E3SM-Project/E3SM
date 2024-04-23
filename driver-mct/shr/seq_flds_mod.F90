@@ -213,6 +213,7 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2g_states
   character(CXX) :: seq_flds_x2g_states_from_lnd
   character(CXX) :: seq_flds_x2g_states_from_ocn
+  character(CXX) :: seq_flds_x2g_tf_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
   character(CXX) :: seq_flds_x2g_fluxes_from_lnd
 
@@ -348,6 +349,7 @@ contains
     character(CXX) :: x2g_states = ''
     character(CXX) :: x2g_states_from_lnd = ''
     character(CXX) :: x2g_states_from_ocn = ''
+    character(CXX) :: x2g_tf_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
     character(CXX) :: x2g_fluxes_from_lnd = ''
     character(CXX) :: xao_albedo = ''
@@ -2985,6 +2987,16 @@ contains
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
 
+       name = 'So_tf300'
+       call seq_flds_add(o2x_states,trim(name))
+       call seq_flds_add(x2g_states,trim(name))
+       call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
+       longname = 'ocean thermal forcing at 300 m depth'
+       stdname  = 'ocean_thermal_forcing_at_300m'
+       units    = 'C'
+       attname  = name
+       call metadata_set(attname, longname, stdname, units)
+
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))
        call seq_flds_add(x2o_fluxes,trim(name))
@@ -3937,6 +3949,7 @@ contains
     seq_flds_x2g_states = trim(x2g_states)
     seq_flds_x2g_states_from_lnd = trim(x2g_states_from_lnd)
     seq_flds_x2g_states_from_ocn = trim(x2g_states_from_ocn)
+    seq_flds_x2g_tf_states_from_ocn = trim(x2g_tf_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
     seq_flds_xao_diurnl = trim(xao_diurnl)
@@ -4004,6 +4017,7 @@ contains
        write(logunit,*) subname//': seq_flds_x2g_states_from_lnd= ',trim(seq_flds_x2g_states_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_states_to_glc= ',trim(seq_flds_l2x_states_to_glc)
        write(logunit,*) subname//': seq_flds_x2g_states_from_ocn= ',trim(seq_flds_x2g_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_tf_states_from_ocn= ',trim(seq_flds_x2g_tf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_fluxes_from_lnd= ',trim(seq_flds_x2g_fluxes_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_fluxes_to_glc= ',trim(seq_flds_l2x_fluxes_to_glc)
