@@ -11,6 +11,7 @@ This User's Guide describes how to set up and run ELM.
 2. [Customizing runs](customizing-runs)
     1. [Changing monthly output file](changing-monthly-output-file)
     2. [Saving additional output files](saving-additional-output-files)
+3. [Running with FATES (optional)](#running-with-fates)
 
 ## Steps to build and run ELM
 
@@ -83,3 +84,6 @@ Using the above-mentioned settings:
 - Each `*.elm.h3.*.nc` will include 48 values of `TG`, `TV`, and `FSA` at
   each model time step, which is typically is 30 min.
   
+## Running with FATES
+
+[FATES](fates.md) can be run in various modes with ELM through the use of namelist settings.  The [FATES User's Guide section on namelist options](https://fates-users-guide.readthedocs.io/en/latest/user/Namelist-Options-and-Run-Time-Modes.html) provides guidance on enabling these different FATES run modes.
