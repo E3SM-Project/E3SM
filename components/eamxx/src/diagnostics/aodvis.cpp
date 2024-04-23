@@ -21,12 +21,10 @@ void AODVis::set_grids(
 
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
-  // TODO: don't hardcode this!
-  m_swbnd = 14;
 
   // Define layouts we need (both inputs and outputs)
   FieldLayout scalar3d_swband_layout{{COL, SWBND, LEV},
-                                     {m_ncols, m_swbnd, m_nlevs}};
+                                     {m_ncols, m_swbands, m_nlevs}};
   FieldLayout scalar1d_layout{{COL}, {m_ncols}};
 
   // The fields required for this diagnostic to be computed
@@ -48,8 +46,9 @@ void AODVis::compute_diagnostic_impl() {
   const auto aod = m_diagnostic_output.get_view<Real *>();
   // TODO: don't hardcode swbnd 10
   // Get slice of tau at swbnd 10
-  const auto tau_vis =
-      get_field_in("aero_tau_sw").subfield(1, 10).get_view<const Real **>();
+  const auto tau_vis = get_field_in("aero_tau_sw")
+                           .subfield(1, n_vis_bnd)
+                           .get_view<const Real **>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
@@ -57,7 +56,7 @@ void AODVis::compute_diagnostic_impl() {
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         auto tau_icol  = ekat::subview(tau_vis, icol);
-        aod(icol) = ESU::view_reduction(team, 0, num_levs, tau_icol);
+        aod(icol)      = ESU::view_reduction(team, 0, num_levs, tau_icol);
       });
 }
 

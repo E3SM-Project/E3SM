@@ -3,6 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/scream_setup_random_test.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream {
 
@@ -41,8 +42,8 @@ TEST_CASE("aodvis") {
   constexpr int nlevs = 33;
   const int ngcols    = 2 * comm.size();
 
-  // TODO: Don't hardcode this!
-  constexpr int nbnds = 14;
+  int nbnds = eamxx_swbands();
+  int swvis = eamxx_vis_swband_idx();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -93,8 +94,7 @@ TEST_CASE("aodvis") {
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       for(int ilev = 0; ilev < nlevs; ++ilev) {
-        // TODO: Don't hardcode the 10!
-        aod_t(icol) += tau_h(icol, 10, ilev);
+        aod_t(icol) += tau_h(icol, swvis, ilev);
       }
     }
     aod_hf.sync_to_dev();

@@ -2,6 +2,7 @@
 #define EAMXX_AODVIS_DIAG
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream {
 
@@ -29,7 +30,9 @@ class AODVis : public AtmosphereDiagnostic {
 
   int m_ncols;
   int m_nlevs;
-  int m_swbnd;
+
+  int m_swbands = eamxx_swbands();
+  int n_vis_bnd = eamxx_vis_swband_idx();
 };
 
 }  // namespace scream
