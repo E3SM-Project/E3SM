@@ -39,7 +39,7 @@ Purpose:
   to the atmosphere grid, this tool creates land and ocean domain files 
   needed by data model components (ex. datm, dlnd, docn)
 
-  For "tr-grid" configurations of E3SM (land grid is different from atmos/ocn):
+  For "tri-grid" configurations of E3SM (land grid is different from atmos/ocn):
   In addition to running this tool with the ocn->atm map as above,
   a second iteration is needed with a similar ocn->lnd map.
 
@@ -111,7 +111,7 @@ parser.add_option('--set-omask',
 (opts, args) = parser.parse_args()
 #---------------------------------------------------------------------------------------------------
 def main():
-
+  global domain_a_grid_file, domain_b_grid_file, ocn_grid_file, atm_grid_file
   #-------------------------------------------------------------------------------
   # check for valid input arguments
 
@@ -128,7 +128,7 @@ def main():
   # Set date stamp for file name
 
   if opts.date_stamp is None:
-    cdate = datetime.datetime.utcnow().strftime('%Y%m%d')
+    cdate = datetime.datetime.now().strftime('%Y%m%d')
   else:
     cdate = opts.date_stamp
 
@@ -159,11 +159,6 @@ def main():
 
   #-----------------------------------------------------------------------------
   # read grid meta-data from map file
-
-  domain_a_grid_file = 'unknown'
-  domain_b_grid_file = 'unknown'
-  ocn_grid_file      = 'unknown'
-  atm_grid_file      = 'unknown'
 
   if 'domain_a' in ds.attrs.keys(): domain_a_grid_file = ds.attrs['domain_a']
   if 'domain_b' in ds.attrs.keys(): domain_b_grid_file = ds.attrs['domain_b']
@@ -238,8 +233,8 @@ def main():
   # convert to land fraction
   lfrac_min = opts.fmaxval
   lfrac_max = opts.fminval
-  omask = xr.ones_like(ds['area_b'],dtype=int32)
-  lmask = xr.zeros_like(ds['area_b'],dtype=int32)
+  omask = xr.ones_like(ds['area_b'],dtype=np.int32)
+  lmask = xr.zeros_like(ds['area_b'],dtype=np.int32)
   lfrac = 1 - ofrac
   lfrac_min = lfrac.min().values
   lfrac_max = lfrac.max().values
@@ -297,41 +292,42 @@ def main():
 
 #---------------------------------------------------------------------------------------------------
 def add_metadata(ds):
-  # add variable attirbutes
-  ds_out['xc'] = ds_out['xc'].assign_attrs({'long_name':'longitude of grid cell center'})
-  ds_out['xc'] = ds_out['xc'].assign_attrs({'units':'degrees_east'})
-  ds_out['xc'] = ds_out['xc'].assign_attrs({'bounds':'xv'})
+  global domain_a_grid_file, domain_b_grid_file, ocn_grid_file, atm_grid_file
+  # add variable attributes
+  ds['xc'] = ds['xc'].assign_attrs({'long_name':'longitude of grid cell center'})
+  ds['xc'] = ds['xc'].assign_attrs({'units':'degrees_east'})
+  ds['xc'] = ds['xc'].assign_attrs({'bounds':'xv'})
   
-  ds_out['yc'] = ds_out['yc'].assign_attrs({'long_name':'latitude of grid cell center'})
-  ds_out['yc'] = ds_out['yc'].assign_attrs({'units':'degrees_north'})
-  ds_out['yc'] = ds_out['yc'].assign_attrs({'bounds':'yv'})
+  ds['yc'] = ds['yc'].assign_attrs({'long_name':'latitude of grid cell center'})
+  ds['yc'] = ds['yc'].assign_attrs({'units':'degrees_north'})
+  ds['yc'] = ds['yc'].assign_attrs({'bounds':'yv'})
 
-  ds_out['xv'] = ds_out['xv'].assign_attrs({'long_name':'longitude of grid cell verticies'})
-  ds_out['xv'] = ds_out['xv'].assign_attrs({'units':'degrees_east'})
+  ds['xv'] = ds['xv'].assign_attrs({'long_name':'longitude of grid cell verticies'})
+  ds['xv'] = ds['xv'].assign_attrs({'units':'degrees_east'})
 
-  ds_out['yv'] = ds_out['yv'].assign_attrs({'long_name':'latitude of grid cell verticies'})
-  ds_out['yv'] = ds_out['yv'].assign_attrs({'units':'degrees_north'})
+  ds['yv'] = ds['yv'].assign_attrs({'long_name':'latitude of grid cell verticies'})
+  ds['yv'] = ds['yv'].assign_attrs({'units':'degrees_north'})
 
-  ds_out['area'] = ds_out['area'].assign_attrs({'long_name':'area of grid cell in radians squared'})
-  ds_out['area'] = ds_out['area'].assign_attrs({'units':'radian2'})
-  ds_out['area'] = ds_out['area'].assign_attrs({'coordinates':'xc yc'})
+  ds['area'] = ds['area'].assign_attrs({'long_name':'area of grid cell in radians squared'})
+  ds['area'] = ds['area'].assign_attrs({'units':'radian2'})
+  ds['area'] = ds['area'].assign_attrs({'coordinates':'xc yc'})
 
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'long_name':'fraction of grid cell that is active'})
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'units':'unitless'})
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'coordinates':'xc yc'})
-  ds_out['frac'] = ds_out['frac'].assign_attrs({'filter':f'limit frac to [fminval,fmaxval]; fminval={opts.fminval} fmaxval={opts.fmaxval}'})
+  ds['frac'] = ds['frac'].assign_attrs({'long_name':'fraction of grid cell that is active'})
+  ds['frac'] = ds['frac'].assign_attrs({'units':'unitless'})
+  ds['frac'] = ds['frac'].assign_attrs({'coordinates':'xc yc'})
+  ds['frac'] = ds['frac'].assign_attrs({'filter':f'limit frac to [fminval,fmaxval]; fminval={opts.fminval} fmaxval={opts.fmaxval}'})
 
-  ds_out['mask'] = ds_out['mask'].assign_attrs({'long_name':'domain mask'})
-  ds_out['mask'] = ds_out['mask'].assign_attrs({'units':'unitless'})
-  ds_out['mask'] = ds_out['mask'].assign_attrs({'coordinates':'xc yc'})
-  ds_out['mask'] = ds_out['mask'].assign_attrs({'comment':'0 value indicates cell is not active'})
+  ds['mask'] = ds['mask'].assign_attrs({'long_name':'domain mask'})
+  ds['mask'] = ds['mask'].assign_attrs({'units':'unitless'})
+  ds['mask'] = ds['mask'].assign_attrs({'coordinates':'xc yc'})
+  ds['mask'] = ds['mask'].assign_attrs({'comment':'0 value indicates cell is not active'})
 
   # add global attributes
   ds.attrs['title']             = 'E3SM domain data'
   ds.attrs['Conventions']       = 'CF-1.0'
   ds.attrs['source_code']       = source_code_meta
-  ds.attrs['hostname']          = host
-  ds.attrs['history']           = f'created by {user}, '+datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+  ds.attrs['hostname']          = str(host)
+  ds.attrs['history']           = f'created by {user}, '+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
   ds.attrs['source']            = opts.map_file
   ds.attrs['map_domain_a']      = domain_a_grid_file
   ds.attrs['map_domain_b']      = domain_b_grid_file
@@ -355,6 +351,11 @@ def compute_ofrac_on_atm( n_s, ofrac, frac_a, S, row, col ):
   for k in range(n_s):
     ofrac[row[k]] = ofrac[row[k]] + frac_a[col[k]] * S[k]
   return ofrac
+#---------------------------------------------------------------------------------------------------
+domain_a_grid_file = 'unknown'
+domain_b_grid_file = 'unknown'
+ocn_grid_file      = 'unknown'
+atm_grid_file      = 'unknown'  
 #---------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
   main()
