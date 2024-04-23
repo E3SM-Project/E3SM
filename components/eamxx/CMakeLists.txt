@@ -189,6 +189,9 @@ if (SCREAM_DEBUG)
   endif ()
 endif()
 
+set(DEFAULT_RRTMGP_ENABLE_YAKL TRUE)
+set(DEFAULT_RRTMGP_ENABLE_KOKKOS FALSE)
+
 ### Now that reasonable defaults have been computed, set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -203,12 +206,23 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
-# Add RRTMGP debug checks. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
+# Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
 #     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
 # and then adding to scream_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
+
+option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" ${DEFAULT_RRTMGP_ENABLE_YAKL})
+option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" ${DEFAULT_RRTMGP_ENABLE_KOKKOS})
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  add_definitions("-DRRTMGP_ENABLE_YAKL")
+endif()
+
+if (SCREAM_RRTMGP_ENABLE_KOKKOS)
+  add_definitions("-DRRTMGP_ENABLE_KOKKOS")
+endif()
+
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
@@ -618,4 +632,3 @@ print_var(SCREAM_TEST_THREAD_INC)
 print_var(SCREAM_TEST_MAX_RANKS)
 
 message ("**************************************************")
-

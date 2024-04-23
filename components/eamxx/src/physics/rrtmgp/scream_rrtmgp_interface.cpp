@@ -52,12 +52,12 @@ using yakl::intrinsics::merge;
  * declare them here within the rrtmgp namespace.
  */
 #ifdef RRTMGP_ENABLE_YAKL
-extern GasOpticsRRTMGP k_dist_sw;
-extern GasOpticsRRTMGP k_dist_lw;
+GasOpticsRRTMGP k_dist_sw;
+GasOpticsRRTMGP k_dist_lw;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-extern GasOpticsRRTMGPK k_dist_sw_k;
-extern GasOpticsRRTMGPK k_dist_lw_k;
+GasOpticsRRTMGPK k_dist_sw_k;
+GasOpticsRRTMGPK k_dist_lw_k;
 #endif
 
 /*
@@ -66,12 +66,12 @@ extern GasOpticsRRTMGPK k_dist_lw_k;
  * program, so declare here and read data in during rrtmgp_initialize().
  */
 #ifdef RRTMGP_ENABLE_YAKL
-extern CloudOptics cloud_optics_sw;
-extern CloudOptics cloud_optics_lw;
+CloudOptics cloud_optics_sw;
+CloudOptics cloud_optics_lw;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-extern CloudOpticsK cloud_optics_sw_k;
-extern CloudOpticsK cloud_optics_lw_k;
+CloudOpticsK cloud_optics_sw_k;
+CloudOpticsK cloud_optics_lw_k;
 #endif
 
 bool initialized = false;

@@ -3,6 +3,7 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
+#include "cpp/rrtmgp_conversion.h"
 
 #ifdef RRTMGP_ENABLE_YAKL
 #include "YAKL.h"

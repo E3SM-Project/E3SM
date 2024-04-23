@@ -3,7 +3,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
-#include "physics/rrtmgp/mo_load_coefficients.h"
+#include "mo_load_coefficients.h"
 
 #ifdef RRTMGP_ENABLE_YAKL
 #include "YAKL.h"
@@ -880,7 +880,7 @@ TEST_CASE("rrtmgp_test_heating_k") {
 
   // Simple net postive heating; net flux into layer should be 1.0
   // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the device
-  Kokkoks::parallel_for(1, KOKKOS_LAMBDA(int /* dummy */) {
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(int /* dummy */) {
     flux_up(0, 0) = 1.0;
     flux_up(0, 1) = 1.0;
     flux_dn(0, 0) = 1.5;
@@ -907,10 +907,6 @@ TEST_CASE("rrtmgp_test_heating_k") {
   REQUIRE(chc(heating)(0,0) == heating_ref);
 
   // Clean up
-  dp.deallocate();
-  flux_up.deallocate();
-  flux_dn.deallocate();
-  heating.deallocate();
   scream::finalize_kls();
 }
 
@@ -969,10 +965,6 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Clean up
-  dp.deallocate();
-  mixing_ratio.deallocate();
-  cloud_fraction.deallocate();
-  cloud_mass.deallocate();
   scream::finalize_kls();
 }
 
@@ -1005,8 +997,6 @@ TEST_CASE("rrtmgp_test_limit_to_bounds_k") {
   REQUIRE(chc(arr_limited)(0,1) == 2.0);
   REQUIRE(chc(arr_limited)(1,0) == 3.0);
   REQUIRE(chc(arr_limited)(1,1) == 3.5);
-  arr.deallocate();
-  arr_limited.deallocate();
   scream::finalize_kls();
 }
 
@@ -1093,8 +1083,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // Need to initialize RRTMGP with dummy gases
   logger->info("Init gases...\n");
   GasConcsK gas_concs;
-  int ngas = 8;
-  string1d gas_names(ngas) = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
+  string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
   gas_concs.init(gas_names,ncol,nlay);
   logger->info("Init RRTMGP...\n");
   scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
@@ -1237,13 +1226,6 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   logger->info("Free memory...\n");
   scream::rrtmgp::rrtmgp_finalize();
   gas_concs.reset();
-  gas_names.deallocate();
-  sw_bnd_flux_dir.deallocate();
-  sw_bnd_flux_dif.deallocate();
-  sfc_flux_dir_nir.deallocate();
-  sfc_flux_dir_vis.deallocate();
-  sfc_flux_dif_nir.deallocate();
-  sfc_flux_dif_vis.deallocate();
   scream::finalize_kls();
 }
 
@@ -1283,7 +1265,6 @@ TEST_CASE("rrtmgp_test_check_range_k") {
   // At least one value above upper bound
   Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 1) = 1.1;});
   REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
-  dummy.deallocate();
   scream::finalize_kls();
 }
 
@@ -1352,9 +1333,6 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
     }
   }
   // Clean up after test
-  cldfrac.deallocate();
-  cldmask.deallocate();
-  cldfrac_from_mask.deallocate();
   scream::finalize_kls();
 }
 
@@ -1450,9 +1428,6 @@ TEST_CASE("rrtmgp_cloud_area_k") {
   REQUIRE(chc(cldtot)(0) == 0.0);
   scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
-  pmid.deallocate();
-  cldtau.deallocate();
-  cldtot.deallocate();
   scream::finalize_kls();
 }
 
@@ -1647,26 +1622,6 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   REQUIRE(chc(cldfrac_ice_at_cldtop)(0) == 0.7);  // max
 
   // cleanup
-  tmid.deallocate();
-  pmid.deallocate();
-  p_del.deallocate();
-  z_del.deallocate();
-  qc.deallocate();
-  qi.deallocate();
-  rel.deallocate();
-  rei.deallocate();
-  cldfrac_tot.deallocate();
-  nc.deallocate();
-
-  tmid_at_cldtop.deallocate();
-  pmid_at_cldtop.deallocate();
-  cldfrac_ice_at_cldtop.deallocate();
-  cldfrac_liq_at_cldtop.deallocate();
-  cldfrac_tot_at_cldtop.deallocate();
-  cdnc_at_cldtop.deallocate();
-  eff_radius_qc_at_cldtop.deallocate();
-  eff_radius_qi_at_cldtop.deallocate();
-
   scream::finalize_kls();
 }
 #endif

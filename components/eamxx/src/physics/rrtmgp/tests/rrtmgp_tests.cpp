@@ -107,8 +107,9 @@ int run_yakl(int argc, char** argv) {
   real2d t_lay("t_lay", ncol, nlay);
   real2d p_lev("p_lev", ncol, nlay+1);
   real2d t_lev("t_lev", ncol, nlay+1);
+  real2d col_dry;
   GasConcs gas_concs;
-  read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
+  read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
 
     // Initialize absorption coefficients
   logger->info("Initialize RRTMGP...\n");
@@ -391,8 +392,9 @@ int run_kokkos(int argc, char** argv) {
   real2dk t_lay("t_lay", ncol, nlay);
   real2dk p_lev("p_lev", ncol, nlay+1);
   real2dk t_lev("t_lev", ncol, nlay+1);
+  real2dk col_dry;
   GasConcsK gas_concs;
-  read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
+  read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
 
     // Initialize absorption coefficients
   logger->info("Initialize RRTMGP...\n");
