@@ -44,7 +44,7 @@ PointGrid::get_2d_scalar_layout () const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({COL},{get_num_local_dofs()});
+  return FieldLayout({COL},{get_num_local_dofs()}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -54,7 +54,7 @@ PointGrid::get_2d_vector_layout (const int vector_dim, const std::string& vec_di
 
   FieldLayout fl({COL,CMP},{get_num_local_dofs(),vector_dim});
   fl.rename_dim(1,vec_dim_name);
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -75,7 +75,7 @@ PointGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
     fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
   }
 
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -86,7 +86,7 @@ PointGrid::get_3d_scalar_layout (const bool midpoints) const
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({COL,VL},{get_num_local_dofs(),nvl});
+  return FieldLayout({COL,VL},{get_num_local_dofs(),nvl}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -100,7 +100,7 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
 
   FieldLayout fl({COL,CMP,VL},{get_num_local_dofs(),vector_dim,nvl});
   fl.rename_dim(1,vec_dim_name);
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -126,7 +126,7 @@ PointGrid::get_3d_tensor_layout (const bool midpoints,
   }
   fl.append_dim(VL,nvl);
 
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 std::shared_ptr<AbstractGrid>

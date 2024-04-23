@@ -36,7 +36,7 @@ SEGrid::get_2d_scalar_layout () const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
+  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -46,7 +46,7 @@ SEGrid::get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_n
 
   FieldLayout fl({EL,CMP,GP,GP},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp});
   fl.rename_dim(1,vec_dim_name);
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -70,7 +70,7 @@ SEGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
   }
   fl.append_dim(GP,m_num_gp);
 
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -81,7 +81,7 @@ SEGrid::get_3d_scalar_layout (const bool midpoints) const
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl});
+  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -95,7 +95,7 @@ SEGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
 
   FieldLayout fl({EL,CMP,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
   fl.rename_dim(1,vec_dim_name);
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -124,7 +124,7 @@ SEGrid::get_3d_tensor_layout (const bool midpoints,
   fl.append_dim(GP,m_num_gp);
   fl.append_dim(VL,nvl);
 
-  return fl;
+  return fl.rename_dims(m_special_tag_names);
 }
 
 Field SEGrid::get_cg_dofs_gids ()

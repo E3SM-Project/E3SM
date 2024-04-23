@@ -69,8 +69,9 @@ FieldLayout AbstractGrid::
 get_vertical_layout (const bool midpoints) const
 {
   using namespace ShortFieldTagsNames;
-  return midpoints ? FieldLayout ({ LEV},{m_num_vert_levs})
-                   : FieldLayout ({ILEV},{m_num_vert_levs+1});
+  const auto t = midpoints ? LEV : ILEV;
+  const auto d = m_num_vert_levs + (midpoints ? 0 : 1);
+  return FieldLayout({t},{d}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout

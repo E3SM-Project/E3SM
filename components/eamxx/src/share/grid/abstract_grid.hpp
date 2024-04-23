@@ -203,7 +203,6 @@ protected:
   //       since it calls get_2d_scalar_layout.
   void create_dof_fields (const int scalar2d_layout_rank);
 
-private:
 
   // The grid name and type
   GridType     m_type;
