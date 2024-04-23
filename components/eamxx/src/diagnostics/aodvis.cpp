@@ -43,9 +43,7 @@ void AODVis::compute_diagnostic_impl() {
   using MT  = typename KT::MemberType;
   using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  const auto aod = m_diagnostic_output.get_view<Real *>();
-  // TODO: don't hardcode swbnd 10
-  // Get slice of tau at swbnd 10
+  const auto aod     = m_diagnostic_output.get_view<Real *>();
   const auto tau_vis = get_field_in("aero_tau_sw")
                            .subfield(1, n_vis_bnd)
                            .get_view<const Real **>();
