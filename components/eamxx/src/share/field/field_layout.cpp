@@ -78,7 +78,7 @@ FieldTag FieldLayout::get_vector_tag () const {
 std::vector<int> FieldLayout::get_tensor_components_ids () const {
   EKAT_REQUIRE_MSG (is_tensor_layout(),
       "Error! 'get_tensor_dims' available only for tensor layouts.\n"
-      "       Current layout: " + to_string(*this) + "\n"
+      "       Current layout: " + to_string() + "\n"
       "       Layout type   : " + e2str(m_type) + "\n");
 
   using namespace ShortFieldTagsNames;
@@ -95,7 +95,7 @@ std::vector<int> FieldLayout::get_tensor_components_ids () const {
 
   EKAT_REQUIRE_MSG (idx.size()==2,
     "Error! Could not find a two tensor tags in the layout.\n"
-    " - layout: " + to_string(*this) + "\n"
+    " - layout: " + to_string() + "\n"
     " - detected tags indices: " + ekat::join(idx,",") + "\n");
 
   return idx;
@@ -294,18 +294,13 @@ void FieldLayout::compute_type () {
   }
 }
 
-std::string to_string (const FieldLayout& layout)
+std::string FieldLayout::to_string () const
 {
-  if (layout.rank()==0) {
-    return "<>()";
-  }
-
   std::string s;
-  s += "<" + e2str(layout.tags()[0]);
-  for (int dim=1; dim<layout.rank(); ++dim) {
-    s += "," + e2str(layout.tags()[dim]);
-  }
-  s += ">(" + ekat::join(layout.dims(),",") + ")";
+  // Note: I don't know how to pass e2str directly to ekat::join,
+  //       so wrap it in a lambda
+  s += "<" + ekat::join(m_names,",") + ">";
+  s += "(" + ekat::join(m_dims,",") + ")";
 
   return s;
 }

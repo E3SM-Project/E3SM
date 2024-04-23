@@ -742,7 +742,7 @@ void print_field_hyperslab (const Field& f,
 
     f.sync_to_host();
     const int rank = layout.rank();
-    out << "     " << f.name() << to_string(orig_layout) << "\n\n";
+    out << "     " << f.name() << orig_layout.to_string() << "\n\n";
     switch (rank) {
       case 0:
       {
@@ -830,8 +830,7 @@ void print_field_hyperslab (const Field& f,
         EKAT_ERROR_MSG (
             "Unsupported rank in print_field_hyperslab.\n"
             "  - field name  : " + f.name() + "\n"
-            "  - field layout (upon slicing): " + to_string(layout) + "\n");
-
+            "  - field layout (upon slicing): " + layout.to_string() + "\n");
     }
   } else {
     auto tag = tags[curr_idx];
@@ -841,14 +840,14 @@ void print_field_hyperslab (const Field& f,
     EKAT_REQUIRE_MSG (it!=layout.tags().end(),
         "Error! Something went wrong while slicing field.\n"
         "  - field name  : " + f.name() + "\n"
-        "  - field layout: " + to_string(layout) + "\n"
+        "  - field layout: " + layout.to_string() + "\n"
         "  - curr tag    : " + e2str(tag) + "\n");
     auto idim = std::distance(layout.tags().begin(),it);
 
     EKAT_REQUIRE_MSG (idim==0 || idim==1,
         "Error! Cannot subview field for printing.\n"
         "  - field name  : " + f.name() + "\n"
-        "  - field layout: " + to_string(layout) + "\n"
+        "  - field layout: " + layout.to_string() + "\n"
         "  - loc tags    : <" + ekat::join(tags,",") + ">\n"
         "  - loc indices : (" + ekat::join(indices,",") + ")\n");
 

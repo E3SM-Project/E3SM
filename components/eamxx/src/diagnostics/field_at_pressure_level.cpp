@@ -66,12 +66,12 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
       "Error! Field rank not supported by FieldAtPressureLevel.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   // All good, create the diag output
   FieldIdentifier d_fid (m_diag_name,layout.clone().strip_dim(tag),fid.get_units(),fid.get_grid_name());

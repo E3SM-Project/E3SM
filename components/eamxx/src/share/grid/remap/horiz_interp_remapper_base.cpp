@@ -96,7 +96,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
       "[HorizInterpRemapperBase] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(tgt_layout));
+      " - input layout: " + tgt_layout.to_string());
 
   return create_layout (tgt_layout, m_src_grid);
 }
@@ -109,7 +109,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
       "[HorizInterpRemapperBase] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(src_layout));
+      " - input layout: " + src_layout.to_string());
 
   return create_layout (src_layout, m_tgt_grid);
 }
@@ -151,7 +151,7 @@ create_layout (const FieldLayout& fl_in,
       fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims(),tdims_names);
     default:
       EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
-                      " - layout: " + to_string(fl_in) + "\n");
+                      " - layout: " + fl_in.to_string() + "\n");
   }
   return fl_out;
 }
@@ -171,7 +171,7 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
   EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
       "Error! Cannot register a field without COL tag in RefiningRemapperP2P.\n"
       "  - field name: " + src.name() + "\n"
-      "  - field layout: " + to_string(src.get_layout()) + "\n");
+      "  - field layout: " + src.get_layout().to_string() + "\n");
   m_src_fields.push_back(field_type(src));
   m_tgt_fields.push_back(field_type(tgt));
 }

@@ -376,9 +376,9 @@ TEST_CASE("coarsening_remap")
       auto gtgt = all_gather_field(tgt_f[ifield],comm);
 
       const auto& l = gsrc.get_header().get_identifier().get_layout();
-      const auto ls = to_string(l);
+      const auto ls = l.to_string();
       std::string dots (30-ls.size(),'.');
-      auto msg = "   -> Checking field with layout " + to_string(l) + " " + dots;
+      auto msg = "   -> Checking field with layout " + ls + " " + dots;
       root_print (msg + "\n",comm);
       bool ok = true;
       switch (l.type()) {

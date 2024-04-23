@@ -80,7 +80,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
       "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(tgt_layout));
+      " - input layout: " + tgt_layout.to_string());
 
   return create_layout(tgt_layout,m_src_grid);
 }
@@ -92,7 +92,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
       "[VerticalRemapper] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(src_layout));
+      " - input layout: " + src_layout.to_string());
 
   return create_layout(src_layout,m_tgt_grid);
 }
@@ -129,7 +129,7 @@ create_layout (const FieldLayout& fl_in,
       //       that needs to handle a tensor3d quantity, so no need to add it
       EKAT_ERROR_MSG (
         "[VerticalRemapper] Error! Layout not supported by VerticalRemapper.\n"
-        " - input layout: " + to_string(fl_in) + "\n");
+        " - input layout: " + fl_in.to_string() + "\n");
   }
   return fl_out;
 }
@@ -179,7 +179,7 @@ register_vertical_source_field(const Field& src)
   EKAT_REQUIRE_MSG (vert_tag==LEV or vert_tag==ILEV,
       "Error! Input vertical level field does not have a vertical level tag at the end.\n"
       " - field name: " + src.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   if (vert_tag==LEV) {
     m_src_mid = src;

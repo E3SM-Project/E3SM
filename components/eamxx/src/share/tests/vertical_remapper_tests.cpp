@@ -328,9 +328,9 @@ TEST_CASE ("vertical_remap") {
       const auto& lsrc  = fsrc.get_header().get_identifier().get_layout();
       const auto p_v    = lsrc.has_tag(LEV) ? pmid_v : pint_v;
       const int nlevs_p = lsrc.has_tag(LEV) ? nlevs_src : nlevs_src+1;
-      const auto ls     = to_string(lsrc);
+      const auto ls     = lsrc.to_string();
       std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with source layout " + to_string(lsrc) +" " + dots + "\n",comm);
+      print ("   -> Checking field with source layout " + ls +" " + dots + "\n",comm);
 
       f.sync_to_host();
 
@@ -383,7 +383,7 @@ TEST_CASE ("vertical_remap") {
           EKAT_ERROR_MSG ("Unexpected layout.\n");
       }
 
-      print ("   -> Checking field with source layout " + to_string(lsrc) + " " + dots + " OK!\n",comm);
+      print ("   -> Checking field with source layout " + ls + " " + dots + " OK!\n",comm);
     }
     print ("check tgt fields ... done!\n",comm);
   }

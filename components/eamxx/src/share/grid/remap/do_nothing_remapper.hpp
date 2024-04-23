@@ -54,7 +54,7 @@ public:
       default:
         EKAT_ERROR_MSG (
           "[DoNothingRemapper] Error! Input target layout is not valid for this remapper.\n"
-          " - input layout: " + to_string(tgt));
+          " - input layout: " + tgt.to_string());
     }
     return src;
   }
@@ -79,7 +79,7 @@ public:
       default:
         EKAT_ERROR_MSG (
           "[DoNothingRemapper] Error! Input source layout is not valid for this remapper.\n"
-          " - input layout: " + to_string(src));
+          " - input layout: " + src.to_string());
     }
     return tgt;
   }

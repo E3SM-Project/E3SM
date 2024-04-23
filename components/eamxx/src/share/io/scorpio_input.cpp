@@ -138,8 +138,8 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
       auto lay_curr   = field_curr.get_header().get_identifier().get_layout();
       auto lay_new    = field_new.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(lay_curr==lay_new,"ERROR!! AtmosphereInput::set_field_manager - setting new field manager which has different layout for field " << name <<"\n"
-		      << "    Old Layout: " << to_string(lay_curr) << "\n"
-		      << "    New Layout: " << to_string(lay_new) << "\n");
+		      << "    Old Layout: " << lay_curr.to_string() << "\n"
+		      << "    New Layout: " << lay_new.to_string() << "\n");
     }
   }
 

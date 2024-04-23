@@ -136,6 +136,8 @@ public:
   FieldLayout& rename_dim (const int idim, const std::string& n);
   FieldLayout& rename_dim (const FieldTag tag, const std::string& n);
   FieldLayout& reset_dim (const int idim, const int extent);
+  // For printing purposes
+  std::string to_string () const;
 
 protected:
   void compute_type ();
@@ -151,7 +153,6 @@ protected:
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
-std::string to_string (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //
 

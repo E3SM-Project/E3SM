@@ -68,7 +68,7 @@ create_src_layout (const FieldLayout& tgt_layout) const {
 
   EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
       "[PhysicsDynamicsRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(tgt_layout));
+      " - input layout: " + tgt_layout.to_string());
 
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
@@ -102,7 +102,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
 
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
       "[PhysicsDynamicsRemapper] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(src_layout));
+      " - input layout: " + src_layout.to_string());
 
   auto tags = src_layout.tags();
   auto dims = src_layout.dims();

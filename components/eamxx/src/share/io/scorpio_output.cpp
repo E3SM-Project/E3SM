@@ -1462,7 +1462,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       EKAT_ERROR_MSG (
             "Error! Field rank not not supported by AtmosphereOutput.\n"
           "  - field name:   " + field.name() + "\n"
-          "  - field layout: " + to_string(layout) + "\n");
+          "  - field layout: " + layout.to_string() + "\n");
   }
 }
 

@@ -89,12 +89,12 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
       "Error! Field rank not supported by FieldAtHeight.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   // Figure out the z value
   m_z_suffix = tag==LEV ? "_mid" : "_int";

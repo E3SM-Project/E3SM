@@ -133,13 +133,13 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + src.name() + "\n"
-          "  - field layout: " + to_string(f_lt) + "\n"
-          "  - mask layout: " + to_string(m_lt) + "\n");
+          "  - field layout: " + f_lt.to_string() + "\n"
+          "  - mask layout: " + m_lt.to_string() + "\n");
       EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + src.name() + "\n"
-          "  - field layout: " + to_string(f_lt) + "\n"
-          "  - mask layout: " + to_string(m_lt) + "\n");
+          "  - field layout: " + f_lt.to_string() + "\n"
+          "  - mask layout: " + m_lt.to_string() + "\n");
     }
   }
   HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);

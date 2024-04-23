@@ -259,8 +259,8 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
       "Error! Cannot create geometry data, since it already exists.\n"
       "  - grid name: " + this->name() + "\n"
       "  - geo data name: " + name + "\n"
-      "  - geo data layout: " + to_string(m_geo_fields.at(name).get_header().get_identifier().get_layout()) + "\n"
-      "  - input layout: " + to_string(fid.get_layout()) + "\n");
+      "  - geo data layout: " + m_geo_fields.at(name).get_header().get_identifier().get_layout().to_string() + "\n"
+      "  - input layout: " + fid.get_layout().to_string() + "\n");
 
   // Create field and the read only copy as well
   auto& f = m_geo_fields[name] = Field(fid);
