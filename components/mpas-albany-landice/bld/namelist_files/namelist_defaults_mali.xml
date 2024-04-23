@@ -98,7 +98,7 @@
 <config_temperature_profile_variability_period>1.0</config_temperature_profile_variability_period>
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
-<config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
+<config_front_mass_bal_grounded>'ismip6'</config_front_mass_bal_grounded>
 <config_use_3d_thermal_forcing_for_face_melt>.false.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
