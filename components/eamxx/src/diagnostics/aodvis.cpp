@@ -31,7 +31,6 @@ void AODVis::set_grids(
   add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);
 
   // Construct and allocate the aodvis field
-  // We are going to assume we have nondim units here for ease
   FieldIdentifier fid("AerosolOpticalDepth550nm", scalar1d_layout, nondim,
                       grid_name);
   m_diagnostic_output = Field(fid);
@@ -45,7 +44,7 @@ void AODVis::compute_diagnostic_impl() {
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
   const auto tau_vis = get_field_in("aero_tau_sw")
-                           .subfield(1, n_vis_bnd)
+                           .subfield(1, m_vis_bnd)
                            .get_view<const Real **>();
 
   const auto num_levs = m_nlevs;

@@ -32,7 +32,7 @@ class AODVis : public AtmosphereDiagnostic {
   int m_nlevs;
 
   int m_swbands = eamxx_swbands();
-  int n_vis_bnd = eamxx_vis_swband_idx();
+  int m_vis_bnd = eamxx_vis_swband_idx();
 };
 
 }  // namespace scream
