@@ -34,6 +34,7 @@ atmosphere_processes:
       Ckm: 0.1
     mam4_aci:
       wsubmin: 0.001
+      top_level_mam4xx: 6
 
 grids_manager:
   Type: Mesh Free

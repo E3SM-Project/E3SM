@@ -521,9 +521,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
-    MAMAci::view_2d dropmixnuc_scratch_mem[15]) {
-  // FIXME: why can't we use MAMAci::dropmix_scratch_ above instead of 15?
-
+    MAMAci::view_2d dropmixnuc_scratch_mem[MAMAci::dropmix_scratch_]) {
   // Extract atmosphere variables
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
@@ -792,8 +790,9 @@ void call_hetfrz_compute_tendencies(
   mam_coupling::AerosolState dry_aero        = dry_aero_;
   mam_coupling::DryAtmosphere dry_atmosphere = dry_atm_;
 
-  MAMAci::view_2d diagnostic_scratch[43];
-  for(int i = 0; i < 43; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
+  MAMAci::view_2d diagnostic_scratch[MAMAci::hetro_scratch_];
+  for(int i = 0; i < MAMAci::hetro_scratch_; ++i)
+    diagnostic_scratch[i] = diagnostic_scratch_[i];
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
@@ -901,6 +900,9 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   // Asserts for the runtime or namelist options
   EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
                    "ERROR: wsubmin is missing from mam_aci parameter list.");
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("top_level_mam4xx"),
+      "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
 }
 
 // ================================================================
@@ -1124,6 +1126,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
 
   wsubmin_ = m_params.get<double>("wsubmin");
+  top_lev_ = m_params.get<int>("top_level_mam4xx");
 
   // ------------------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
@@ -1339,7 +1342,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------
 
-  for(int i = 0; i < 43; ++i)
+  for(int i = 0; i < hetro_scratch_; ++i)
     Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
 
   //---------------------------------------------------------------------------------
@@ -1492,14 +1495,14 @@ void MAMAci::run_impl(const double dt) {
                qqcw_fld_work_, hetfrz_immersion_nucleation_tend_(0, kb),
                hetfrz_contact_nucleation_tend_(0, kb),
                hetfrz_depostion_nucleation_tend_(0, kb), dry_aero_, kb);
-  std::cout << " FACTNUM-3  :" << factnum_(0, 0, kb) << std::endl;
+  std::cout << " FACTNUM-0  :" << factnum_(0, 0, kb) << std::endl;
   const Real ans = hetfrz_immersion_nucleation_tend_(0, kb);
   if(ans < 5.65184e-06 || ans > 5.65186e-06) {
     std::cout << "Somethign changed!!!!  :"
               << hetfrz_immersion_nucleation_tend_(0, kb) << std::endl;
     exit(1);
   }
-  std::cout << " FACTNUM-4  :" << factnum_(0, 0, kb) << std::endl;
+  std::cout << " FACTNUM-1  :" << factnum_(0, 1, kb) << std::endl;
   if((factnum_(0, 0, kb) < 0.998557 || factnum_(0, 0, kb) > 0.998559) ||
      (factnum_(0, 1, kb) < 0.861768 || factnum_(0, 1, kb) > 0.861770)) {
     std::cout << "Somethign changed FACTNUM!!!!  :" << factnum_(0, 0, kb)

@@ -19,6 +19,12 @@
 namespace scream {
 
 class MAMAci final : public scream::AtmosphereProcess {
+ public:
+  // declare some constant scratch space lengths
+  static constexpr int hetro_scratch_   = 43;
+  static constexpr int dropmix_scratch_ = 15;
+
+ private:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   mam4::NucleateIce nucleate_ice_;
@@ -32,11 +38,16 @@ class MAMAci final : public scream::AtmosphereProcess {
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
 
-  // FIXME: Should the following variables be public? They are like that in
-  // micriphysics and optics codes
-
+  //------------------------------------------------------------------------
   // ACI runtime ( or namelist) options
-  Real wsubmin_;
+  //------------------------------------------------------------------------
+
+  Real wsubmin_;  // Minimum subgrid vertical velocity
+  int top_lev_;   // Top level for MAM4xx
+
+  //------------------------------------------------------------------------
+  // END: ACI runtime ( or namelist) options
+  //------------------------------------------------------------------------
 
   // rho is air density [kg/m3]
   view_2d rho_;
@@ -59,13 +70,17 @@ class MAMAci final : public scream::AtmosphereProcess {
   // aerosol dry diameter
   const_view_3d dgnum_;
 
+  // ice nucleation diagnostic variables
   view_2d nihf_;
   view_2d niim_;
   view_2d nidep_;
   view_2d nimey_;
   view_2d naai_hom_;
+
+  // ice nucleation output for FM
   view_2d naai_;
 
+  // droplet activation inputs and outputs
   view_2d kvh_int_;  // Eddy diffusivity of heat at the interfaces
   const_view_2d liqcldf_;
   const_view_2d liqcldf_prev_;
@@ -74,7 +89,6 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d cloud_frac_;
   view_2d cloud_frac_prev_;
   view_2d qcld_;
-  view_2d tendnd_;
   view_2d ptend_q_[mam4::aero_model::pcnst];
   view_3d factnum_;
   const_view_3d qqcw_input_;
@@ -94,26 +108,21 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   view_3d nact_;
   view_3d mact_;
-
-  static constexpr int dropmix_scratch_ = 15;
   view_2d dropmixnuc_scratch_mem_[dropmix_scratch_];
 
-  view_2d stratiform_cloud_fraction_;
-  view_2d activation_fraction_accum_idx_;
-  view_2d activation_fraction_coarse_idx_;
+  // droplet activation output for the FM
+  view_2d tendnd_;
 
   // These are the output tendencies from heterogeneous freezing that need to be
   // added correctly to the cloud-micorphysics scheme.
   view_2d hetfrz_immersion_nucleation_tend_;
   view_2d hetfrz_contact_nucleation_tend_;
   view_2d hetfrz_depostion_nucleation_tend_;
-  view_2d diagnostic_scratch_[43];
+
+  view_2d diagnostic_scratch_[hetro_scratch_];
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_, w2_;
-  // Top level for troposphere cloud physics
-  // FIXME: This should be read in to make user selectable.
-  const int top_lev_ = 6;
 
   // local atmospheric state column variables
   const_view_2d pdel_;       // pressure thickess of layer [Pa]
