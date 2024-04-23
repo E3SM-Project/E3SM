@@ -1,0 +1,3161 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../user/model_input/">
+      
+      
+        <link rel="next" href="../../user/coarse_nudging/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
+    
+    
+      
+        <title>Runtime parameters - E3SM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.66ac8b77.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#eamxx-runtime-configurable-parameters" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            E3SM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Runtime parameters
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    E3SM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developing Docs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Components
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../EAM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    EAM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            EAM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../EAM/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../EAM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../EAM/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    EAMxx
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            EAMxx
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/model_output/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model output
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/model_input/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model input
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Runtime parameters
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/coarse_nudging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Coarse nudging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../developer/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/style_guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Style Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/kokkos_ekat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kokkos and EKAT
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/source_tree/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Source Tree
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3_6" id="__nav_3_2_3_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Important Data Structures
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            Important Data Structures
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/field/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fields
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/grid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Grids and Remappers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/processes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Atmosphere Processes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/managers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Managers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/io/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    I/O
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3_8" id="__nav_3_2_3_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Testing
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_3_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_8">
+            <span class="md-nav__icon md-icon"></span>
+            Testing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/standalone_testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Standalone
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/cime_testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Full model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/ci_nightly/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI and Nightly Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/aerocom_cldtop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AeroCOM cloud top
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/clean_clear_sky/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Extra radiation calls
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../ELM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    ELM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            ELM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ELM/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ELM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ELM/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../MOSART/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MOSART
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            MOSART
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MOSART/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MOSART/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../MOSART/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/E3SM-Project/screamcommon/eamxx_params.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/E3SM-Project/screamcommon/eamxx_params.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
+    </a>
+  
+
+
+<h1 id="eamxx-runtime-configurable-parameters">EAMxx runtime configurable parameters</h1>
+<h1 id="atmosphere-processes-parameters">Atmosphere Processes Parameters</h1>
+<h2 id="sc_import">sc_import</h2>
+<ul>
+<li>sc_import::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>sc_import::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>sc_import::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>sc_import::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>sc_import::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>sc_import::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="sc_export">sc_export</h2>
+<ul>
+<li>sc_export::prescribed_constants::fields:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>
+<p>sc_export::prescribed_constants::values:  </p>
+<ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(real)  </li>
+</ul>
+</li>
+<li>
+<p>sc_export::prescribed_from_file::fields:  </p>
+<ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>sc_export::prescribed_from_file::files:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>
+<p>sc_export::prescribed_from_file::fields_alt_name:  </p>
+<ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>
+<p>sc_export::number_of_subcycles:  </p>
+<ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>sc_export::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>sc_export::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>sc_export::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>sc_export::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>sc_export::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="homme">homme</h2>
+<ul>
+<li>homme::Moisture:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>homme::BfbHash:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>homme::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>homme::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>homme::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>homme::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>homme::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>homme::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="p3">p3</h2>
+<ul>
+<li>p3::do_prescribed_ccn:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>p3::do_predict_nc:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>p3::enable_column_conservation_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>p3::max_total_ni:  <ul>
+<li>description: maximum total ice concentration (sum of all categories)  </li>
+<li>type: real  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>p3::tables:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(file)  </li>
+</ul>
+</li>
+<li>p3::p3_autoconversion_prefactor:  <ul>
+<li>description: P3 autoconversion_prefactor (scale factor in autoconversion)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_mu_r_constant:  <ul>
+<li>description: P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_spa_to_nc:  <ul>
+<li>description: P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_k_accretion:  <ul>
+<li>description: P3 k_accretion (scaling factor on accretion)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_eci:  <ul>
+<li>description: P3 eci (liquid/ice collision/collection coefficient)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_eri:  <ul>
+<li>description: P3 eri (ice/rain collision/collection coefficient)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_rho_rime_min:  <ul>
+<li>description: P3 rho_rime_min (riming density maximum)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_rho_rime_max:  <ul>
+<li>description: P3 rho_rime_max (riming density minimum)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_a_imm:  <ul>
+<li>description: P3 a_imm (drop freezing exponent )  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_dep_nucleation_exponent:  <ul>
+<li>description: P3 dep_nucleation_exponent (deposition nucleation)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_ice_sed_knob:  <ul>
+<li>description: P3 ice_sed_knob (ice fall speed)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::p3_d_breakup_cutoff:  <ul>
+<li>description: P3 d_breakup_cutoff (rain self collection and breakup)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>p3::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>p3::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>p3::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>p3::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>p3::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>p3::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="shoc">shoc</h2>
+<ul>
+<li>shoc::enable_column_conservation_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>shoc::check_flux_state_consistency:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>shoc::lambda_low:  <ul>
+<li>description: minimum value of stability correction.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::lambda_high:  <ul>
+<li>description: maximum value of stability correction.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::lambda_slope:  <ul>
+<li>description: slope of change from lambda_low to lambda_high.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::lambda_thresh:  <ul>
+<li>description: stability threshold for which to apply more stability correction.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::thl2tune:  <ul>
+<li>description: Temperature variance tuning factor  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::qw2tune:  <ul>
+<li>description: Moisture variance tuning factor  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::qwthl2tune:  <ul>
+<li>description: Temperature moisture covariance  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::w2tune:  <ul>
+<li>description: Vertical velocity variance  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::length_fac:  <ul>
+<li>description: Length scale factor  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::c_diag_3rd_mom:  <ul>
+<li>description: Third moment vertical velocity damping factor  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::Ckh:  <ul>
+<li>description: Eddy diffusivity coefficient for heat  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::Ckm:  <ul>
+<li>description: Eddy diffusivity coefficient for momentum  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>shoc::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>shoc::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>shoc::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>shoc::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>shoc::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>shoc::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="cldfraction">cldFraction</h2>
+<ul>
+<li>cldFraction::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>cldFraction::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>cldFraction::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>cldFraction::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>cldFraction::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>cldFraction::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="mam4_optics">mam4_optics</h2>
+<ul>
+<li>mam4_optics::mam4_mode1_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 1, accumulation mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode2_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 2, Aitken mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode3_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 3, coarse mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mode4_physical_properties_file:  <ul>
+<li>description: File containing optical properties for MAM4 mode 4, p-carbon mode  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_water_refindex_file:  <ul>
+<li>description: File containing optical properties for aerosol water  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_soa_physical_properties_file:  <ul>
+<li>description: File containing optical properties for secondary organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_dust_physical_properties_file:  <ul>
+<li>description: File containing optical properties for dust  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_nacl_physical_properties_file:  <ul>
+<li>description: File containing optical properties for sea salt  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_so4_physical_properties_file:  <ul>
+<li>description: File containing optical properties for sulfate  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_pom_physical_properties_file:  <ul>
+<li>description: File containing optical properties for primary organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_bc_physical_properties_file:  <ul>
+<li>description: File containing optical properties for black carbon  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::mam4_mom_physical_properties_file:  <ul>
+<li>description: File containing optical properties for marine organic aerosol  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_optics::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>mam4_optics::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_optics::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_optics::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>mam4_optics::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>mam4_optics::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="nudging">nudging</h2>
+<ul>
+<li>nudging::nudging_filenames_patterns:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>nudging::nudging_fields:  <ul>
+<li>description: List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>nudging::nudging_timescale:  <ul>
+<li>description: Timescale to apply nudging tendencies, 0: full replacement, &gt;0: actual timescale  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>nudging::use_nudging_weights:  <ul>
+<li>description: Flag for nudging weights option  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>nudging::nudging_weights_file:  <ul>
+<li>description: weights that relax the nudging fields update  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>nudging::skip_vert_interpolation:  <ul>
+<li>description: Flag for skipping vertical interpolation  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>nudging::source_pressure_type:  <ul>
+<li>description: Flag for how source pressure levels are handled in the nudging dataset.     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).  </li>
+<li>type: string  </li>
+<li>valid values: TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE  </li>
+</ul>
+</li>
+<li>nudging::source_pressure_file:  <ul>
+<li>description: If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.     Default is to look for p_levs in the first nudging_filenames_patterns file  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>nudging::nudging_refine_remap_mapfile:  <ul>
+<li>description: Refine-remapping mapfile from the source nudging dataset to the physics grid  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>nudging::nudging_refine_remap_vert_cutoff:  <ul>
+<li>description: A vertical cutoff to go with refine-remap logic (in units of p_mid) where the nudging is turned off above it (closer to the surface)  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>nudging::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>nudging::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>nudging::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>nudging::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>nudging::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>nudging::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="mlcorrection">mlcorrection</h2>
+<ul>
+<li>mlcorrection::ML_model_path_tq:  <ul>
+<li>description: Path to pre-trained ML model for temperature and specific humidity  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>mlcorrection::ML_model_path_uv:  <ul>
+<li>description: Path to pre-trained ML model for wind fields  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>mlcorrection::ML_model_path_sfc_fluxes:  <ul>
+<li>description: Path to pre-trained ML model for surface fluxes  </li>
+<li>type: string  </li>
+</ul>
+</li>
+<li>mlcorrection::ML_output_fields:  <ul>
+<li>description: ML correction output variables, the following variables are supported: T_mid,qv,u,v  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>mlcorrection::ML_correction_unit_test:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mlcorrection::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>mlcorrection::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mlcorrection::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mlcorrection::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>mlcorrection::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>mlcorrection::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="testonly">testOnly</h2>
+<ul>
+<li>testOnly::my_param:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(integer)  </li>
+</ul>
+</li>
+<li>testOnly::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>testOnly::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>testOnly::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>testOnly::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>testOnly::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>testOnly::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="spa">spa</h2>
+<ul>
+<li>spa::spa_remap_file:  <ul>
+<li>description: File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same.  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>spa::spa_data_file:  <ul>
+<li>description: File containing aerosol data. Must be on same grid as the atm, or a coarser one  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>spa::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>spa::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>spa::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>spa::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>spa::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>spa::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="rrtmgp">rrtmgp</h2>
+<ul>
+<li>rrtmgp::rrtmgp_coefficients_file_sw:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>rrtmgp::rrtmgp_coefficients_file_lw:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>rrtmgp::rrtmgp_cloud_optics_file_sw:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>rrtmgp::rrtmgp_cloud_optics_file_lw:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>rrtmgp::column_chunk_size:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::active_gases:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>rrtmgp::ch4vmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::co2vmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::n2ovmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::f11vmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::f12vmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::n2vmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::covmr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::orbital_year:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::orbital_eccentricity:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::orbital_obliquity:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::orbital_mvelp:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::rad_frequency:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>rrtmgp::do_aerosol_rad:  <ul>
+<li>description: Flag to turn on/off considering aerosols in radiation calculations  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::enable_column_conservation_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::extra_clnclrsky_diag:  <ul>
+<li>description: Flag to turn on/off an extra clean-clear-sky (with neither clouds nor aerosols) radiation call  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::extra_clnsky_diag:  <ul>
+<li>description: Flag to turn on/off an extra clean-sky (with no aerosols) radiation call  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::do_subcol_sampling:  <ul>
+<li>description: Flag to turn on/off subcolumn sampling of optical properties; if false treat cells as either completely clear or cloudy  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>rrtmgp::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>rrtmgp::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>rrtmgp::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>rrtmgp::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="mac_aero_mic">mac_aero_mic</h2>
+<ul>
+<li>mac_aero_mic::atm_procs_list:  <ul>
+<li>description: List of atm processes in this atm process group  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>mac_aero_mic::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>mac_aero_mic::Type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>mac_aero_mic::schedule_type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>valid values: Sequential  </li>
+</ul>
+</li>
+<li>mac_aero_mic::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mac_aero_mic::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mac_aero_mic::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>mac_aero_mic::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>mac_aero_mic::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="cosp">cosp</h2>
+<ul>
+<li>cosp::cosp_subcolumns:  <ul>
+<li>description: Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>cosp::cosp_frequency:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>cosp::cosp_frequency_units:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>valid values: steps,hours  </li>
+</ul>
+</li>
+<li>cosp::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>cosp::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>cosp::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>cosp::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>cosp::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>cosp::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="tms">tms</h2>
+<ul>
+<li>tms::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>tms::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>tms::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>tms::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>tms::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>tms::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h2 id="physics">physics</h2>
+<ul>
+<li>physics::atm_procs_list:  <ul>
+<li>description: List of atm processes in this atm process group  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>physics::Type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>physics::schedule_type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>valid values: Sequential  </li>
+</ul>
+</li>
+<li>physics::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>physics::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>physics::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>physics::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>physics::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>physics::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
+<h1 id="initial-conditions-parameters">Initial Conditions Parameters</h1>
+<ul>
+<li>initial_conditions::Filename:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>initial_conditions::topography_filename:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>initial_conditions::phis:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::restart_casename:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::surf_evap:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::precip_liq_surf_mass:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::precip_ice_surf_mass:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::cldfrac_liq:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::sgs_buoy_flux:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::eddy_diff_mom:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::T_prev_micro_step:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::qv_prev_micro_step:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::qr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::nr:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::qm:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::bm:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::ni_activated:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::nc_nuceat_tend:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::tke:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::sfc_alb_dir_vis:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::sfc_alb_dir_nir:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::sfc_alb_dif_vis:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::sfc_alb_dif_nir:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::surf_sens_flux:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::surf_lw_flux_up:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::surf_mom_flux:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(real)  </li>
+</ul>
+</li>
+<li>initial_conditions::qc:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::qi:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::nc:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::ni:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::o3_volume_mix_ratio:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbed_fields:  <ul>
+<li>description: IC fields (with level dimension) to apply a random perturbation to based on the parameters below.  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>initial_conditions::generate_perturbation_random_seed:  <ul>
+<li>description: Whether or not to generate a random seed for perturbation.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_random_seed:  <ul>
+<li>description: Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_limit:  <ul>
+<li>description: Defines a range [1-x, 1+x] which perturbation will be taken from.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>initial_conditions::perturbation_minimum_pressure:  <ul>
+<li>description: Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.  </li>
+<li>type: real  </li>
+</ul>
+</li>
+</ul>
+<h1 id="atmosphere-driver-parameters">Atmosphere Driver Parameters</h1>
+<ul>
+<li>driver_options::atmosphere_dag_verbosity_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>driver_options::atm_log_level:  <ul>
+<li>description: Verbosity level for the atm logger  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn,error  </li>
+</ul>
+</li>
+<li>driver_options::atm_flush_level:  <ul>
+<li>description: Verbosity level that triggers automatic flush of the atm logger  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn,error  </li>
+</ul>
+</li>
+<li>driver_options::output_to_screen:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>driver_options::mass_column_conservation_error_tolerance:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>driver_options::energy_column_conservation_error_tolerance:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>driver_options::column_conservation_checks_fail_handling_type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>driver_options::check_all_computed_fields_for_nans:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>driver_options::property_check_data_fields:  <ul>
+<li>description: list of additional data fields to output in property checks (only for physics grid)  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>driver_options::enable_iop:  <ul>
+<li>description: Enable intensive observation period. Currently the only use case is DP-EAMxx  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+</ul>
+<h1 id="scorpio-parameters">Scorpio Parameters</h1>
+<ul>
+<li>Scorpio::output_yaml_files:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+<li>Scorpio::model_restart::filename_prefix:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+</ul>
+<h1 id="homme-namelist">Homme namelist</h1>
+<ul>
+<li>ctl_nl::cubed_sphere_map:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::disable_diagnostics:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::dt_remap_factor:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: ge 1  </li>
+</ul>
+</li>
+<li>ctl_nl::dt_tracer_factor:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: ge 1  </li>
+</ul>
+</li>
+<li>ctl_nl::hv_ref_profiles:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::hypervis_order:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::hypervis_scaling:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::hypervis_subcycle:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::hypervis_subcycle_tom:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::hypervis_subcycle_q:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::nu:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::nu_top:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::pgrad_correction:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ftype:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>valid values: 0,2  </li>
+</ul>
+</li>
+<li>ctl_nl::se_geometry:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_limiter_option:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ne:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ne_x:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ne_y:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_lx:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_ly:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_nsplit:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_partmethod:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_topology:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::se_tstep:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: real  </li>
+</ul>
+</li>
+<li>ctl_nl::statefreq:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::theta_advect_form:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::theta_hydrostatic_mode:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::tstep_type:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::vert_remap_q_alg:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::transport_alg:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::vtheta_thresh:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
+<li>ctl_nl::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>ctl_nl::mesh_file:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: file  </li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.edit", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.3220b9d7.min.js"></script>
+      
+        <script src="../../../javascript/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
