@@ -140,11 +140,10 @@ init_scorpio(const int atm_id)
   // Init scorpio right away, in case some class (atm procs, grids,...)
   // needs to source some data from NC files during construction,
   // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+  EKAT_REQUIRE_MSG (!scorpio::is_subsystem_inited(),
       "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
       "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+  scorpio::init_subsystem(m_atm_comm,atm_id);
 
   // In CIME runs, gptl is already inited. In standalone runs, it might
   // not be, depending on what scorpio does.
@@ -909,7 +908,7 @@ void AtmosphereDriver::restart_model ()
   }
 
   // Restart the num steps counter in the atm time stamp
-  int nsteps = scorpio::get_attribute<int>(filename,"nsteps");
+  int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
   m_current_ts.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
@@ -917,18 +916,22 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
-
-    auto data = scorpio::get_any_attribute(filename,name);
-    EKAT_REQUIRE_MSG (any->content().type()==data.content().type(),
-        "Error! Type mismatch for restart global attribute.\n"
-        " - file name: " + filename + "\n"
-        " - att  name: " + name + "\n"
-        " - expected type: " + any->content().type().name() + "\n"
-        " - actual type: " + data.content().type().name() + "\n"
-        "NOTE: the above names use type_info::name(), which returns an implementation defined string,\n"
-        "      with no guarantees. In particular, the string can be identical for several types,\n"
-        "      and/or change between invocations of the same program.\n");
-    *any = data;
+    if (any->isType<int>()) {
+      ekat::any_cast<int>(*any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
+    } else if (any->isType<std::int64_t>()) {
+      ekat::any_cast<std::int64_t>(*any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
+    } else if (any->isType<float>()) {
+      ekat::any_cast<float>(*any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
+    } else if (any->isType<double>()) {
+      ekat::any_cast<double>(*any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
+    } else if (any->isType<std::string>()) {
+      ekat::any_cast<std::string>(*any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
+    } else {
+      EKAT_ERROR_MSG (
+          "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
+          " - extra data name  : " + name + "\n"
+          " - extra data typeid: " + any->content().type().name() + "\n");
+    }
   }
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
@@ -1681,9 +1684,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     finalize_gptl();
   }
 
-  // Finalize scorpio
-  if (scorpio::is_eam_pio_subsystem_inited()) {
-    scorpio::eam_pio_finalize();
+  // Finalize scorpio. Check, just in case we're calling finalize after
+  // an exception, thrown before the AD (and scorpio) was inited
+  if (scorpio::is_subsystem_inited()) {
+    scorpio::finalize_subsystem();
   }
 
   m_atm_logger->info("[EAMxx] Finalize ... done!");

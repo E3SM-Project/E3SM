@@ -39,32 +39,13 @@ void read_dimensionless_variable_from_file(const std::string& filename,
                                            const std::string& varname,
                                            T*                 value)
 {
-  EKAT_REQUIRE_MSG(scorpio::has_variable(filename,varname),
-                   "Error! IOP file does not have variable "+varname+".\n");
-
-  int ncid, varid, err1, err2;
-  bool was_open = scorpio::is_file_open_c2f(filename.c_str(),-1);
-  if (not was_open) {
-    scorpio::register_file(filename,scorpio::FileMode::Read);
-  }
-  ncid = scorpio::get_file_ncid_c2f (filename.c_str());
-  err1 = PIOc_inq_varid(ncid,varname.c_str(),&varid);
-  EKAT_REQUIRE_MSG(err1==PIO_NOERR,
-    "Error! Something went wrong while retrieving variable id.\n"
-    " - filename : " + filename + "\n"
-    " - varname  : " + varname + "\n"
-    " - pio error: " + std::to_string(err1) + "\n");
-
-  err2 = PIOc_get_var(ncid, varid, value);
-  EKAT_REQUIRE_MSG(err2==PIO_NOERR,
-    "Error! Something went wrong while retrieving variable.\n"
-    " - filename : " + filename + "\n"
-    " - varname  : " + varname + "\n"
-    " - pio error: " + std::to_string(err2) + "\n");
-
-  if (not was_open) {
-    scorpio::eam_pio_closefile(filename);
-  }
+  scorpio::register_file(filename,scorpio::FileMode::Read);
+  EKAT_REQUIRE_MSG(scorpio::has_var(filename,varname),
+      "Error! IOP file does not have a required variable.\n"
+      "  - filename: " + filename + "\n"
+      "  - varname : " + varname  + "\n");
+  scorpio::read_var(filename,varname,value);
+  scorpio::release_file(filename);
 }
 
 // Read variable with arbitrary number of dimensions from file.
@@ -76,7 +57,7 @@ void read_variable_from_file(const std::string&              filename,
                              const int                       time_idx,
                              T*                              data)
 {
-  EKAT_REQUIRE_MSG(scorpio::has_variable(filename,varname),
+  EKAT_REQUIRE_MSG(scorpio::has_var(filename,varname),
                    "Error! IOP file does not have variable "+varname+".\n");
 
   // Compute total size of data to read
@@ -88,14 +69,8 @@ void read_variable_from_file(const std::string&              filename,
 
   // Read into data
   scorpio::register_file(filename, scorpio::FileMode::Read);
-  std::string io_decomp_tag = varname+","+filename;
-  scorpio::register_variable(filename, varname, varname, dimnames, vartype, io_decomp_tag);
-  std::vector<scorpio::offset_t> dof_offsets(data_size);
-  std::iota(dof_offsets.begin(), dof_offsets.end(), 0);
-  scorpio::set_dof(filename, varname, dof_offsets.size(), dof_offsets.data());
-  scorpio::set_decomp(filename);
-  scorpio::grid_read_data_array(filename, varname, time_idx, data, data_size);
-  scorpio::eam_pio_closefile(filename);
+  scorpio::read_var(filename, varname, data, time_idx);
+  scorpio::release_file(filename);
 }
 }
 
@@ -173,7 +148,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
     bool has_var = false;
     std::string file_varname = "";
     for (auto varname : varnames) {
-      if (scorpio::has_variable(iop_file, varname)) {
+      if (scorpio::has_var(iop_file, varname)) {
         has_var = true;
         file_varname = varname;
         break;
@@ -183,7 +158,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
       // Store if iop file has a different varname than the iop field
       if (iop_varname != file_varname) m_iop_file_varnames.insert({iop_varname, file_varname});
       // Store if variable contains a surface value in iop file
-      if (scorpio::has_variable(iop_file, srf_varname)) {
+      if (scorpio::has_var(iop_file, srf_varname)) {
         m_iop_field_surface_varnames.insert({iop_varname, srf_varname});
       }
       // Store that the IOP variable is found in the IOP file
@@ -291,9 +266,9 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   // Initialize time information
   int bdate;
   std::string bdate_name;
-  if      (scorpio::has_variable(iop_file, "bdate"))    bdate_name = "bdate";
-  else if (scorpio::has_variable(iop_file, "basedate")) bdate_name = "basedate";
-  else if (scorpio::has_variable(iop_file, "nbdate"))   bdate_name = "nbdate";
+  if      (scorpio::has_var(iop_file, "bdate"))    bdate_name = "bdate";
+  else if (scorpio::has_var(iop_file, "basedate")) bdate_name = "basedate";
+  else if (scorpio::has_var(iop_file, "nbdate"))   bdate_name = "nbdate";
   else EKAT_ERROR_MSG("Error! No valid name for bdate in "+iop_file+".\n");
   read_dimensionless_variable_from_file<int>(iop_file, bdate_name, &bdate);
 
@@ -332,7 +307,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   // Store iop file pressure as helper field with dimension lev+1.
   // Load the first lev entries from iop file, the lev+1 entry will
   // be set when reading iop data.
-  EKAT_REQUIRE_MSG(scorpio::has_variable(iop_file, "lev"),
+  EKAT_REQUIRE_MSG(scorpio::has_var(iop_file, "lev"),
                     "Error! Using IOP file requires variable \"lev\".\n");
   const auto file_levs = scorpio::get_dimlen(iop_file, "lev");
   FieldIdentifier fid("iop_file_pressure",
