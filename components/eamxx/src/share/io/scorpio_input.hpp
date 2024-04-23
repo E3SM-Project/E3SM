@@ -77,7 +77,12 @@ public:
                    const std::vector<Field>& fields,
                    const bool skip_grid_checks = false);
 
+  // Due to resource acquisition (in scorpio), avoid copies
+  AtmosphereInput (const AtmosphereInput&) = delete;
   ~AtmosphereInput ();
+
+  // Due to resource acquisition (in scorpio), avoid copies
+  AtmosphereInput& operator= (const AtmosphereInput&) = delete;
 
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.

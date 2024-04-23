@@ -31,8 +31,8 @@ TimeInterpolation::TimeInterpolation(
 void TimeInterpolation::finalize()
 {
   if (m_is_data_from_file) {
-    m_file_data_atm_input.finalize();
-    m_is_data_from_file=false;
+    m_file_data_atm_input = nullptr;
+    m_is_data_from_file = false;
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -114,7 +114,7 @@ void TimeInterpolation::shift_data()
     auto& field1 = m_fm_time1->get_field(name);
     std::swap(field0,field1);
   }
-  m_file_data_atm_input.set_field_manager(m_fm_time1);
+  m_file_data_atm_input->set_field_manager(m_fm_time1);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
@@ -161,8 +161,8 @@ void TimeInterpolation::initialize_data_from_files()
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
   input_params.set("Filename",triplet_curr.filename);
-  m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
-  m_file_data_atm_input.set_logger(m_logger);
+  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+  m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
   // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
   for (auto& name : m_field_names) {
@@ -331,14 +331,13 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
 void TimeInterpolation::read_data()
 {
   const auto triplet_curr = m_file_data_triplets[m_triplet_idx];
-  if (triplet_curr.filename != m_file_data_atm_input.get_filename()) {
+  if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
     // Then we need to close this input stream and open a new one
-    m_file_data_atm_input.finalize();
     ekat::ParameterList input_params;
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
-    m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
-    m_file_data_atm_input.set_logger(m_logger);
+    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+    m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
     for (auto& name : m_field_names) {
@@ -352,7 +351,7 @@ void TimeInterpolation::read_data()
     m_logger->info(m_header);
     m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
   }
-  m_file_data_atm_input.read_variables(triplet_curr.time_idx);
+  m_file_data_atm_input->read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
 }
 /*-----------------------------------------------------------------------------------------------*/
