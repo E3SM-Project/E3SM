@@ -139,6 +139,11 @@ def main():
   domain_file_lnd_on_atm = f'{opts.output_root}/test.domain.lnd.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
   domain_file_ocn_on_atm = f'{opts.output_root}/test.domain.ocn.{opts.lnd_grid}_{opts.ocn_grid}.{cdate}.nc'
 
+  # cosmetic clean up of file names
+  domain_file_ocn_on_ocn = domain_file_ocn_on_ocn.replace('//','/')
+  domain_file_lnd_on_atm = domain_file_lnd_on_atm.replace('//','/')
+  domain_file_ocn_on_atm = domain_file_ocn_on_atm.replace('//','/')
+
   #-----------------------------------------------------------------------------
   # print some informative stuff
 
