@@ -649,6 +649,11 @@
   </compset>
 
   <compset>
+    <alias>I1850WCCNPWFMCROP</alias>
+    <lname>1850_DATM%CPLWCH_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>I20TRWCCNPWFMCROP</alias>
     <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
