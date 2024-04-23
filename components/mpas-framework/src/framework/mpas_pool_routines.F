@@ -930,6 +930,8 @@ module mpas_pool_routines
 !> \details
 !> This routine assumes srcPool and destPool have identical members. It will
 !> copy the data from the members of srcPool into the members of destPool.
+!> The overrideTimeLevels argument enables a given time level of a srcPool
+!> with >1 time level to be copied into a destPool with a single time level.
 !
 !-----------------------------------------------------------------------
    recursive subroutine mpas_pool_copy_pool(srcPool, destPool, overrideTimeLevels)!{{{
