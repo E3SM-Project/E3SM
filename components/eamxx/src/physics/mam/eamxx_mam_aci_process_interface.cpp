@@ -4,23 +4,6 @@ namespace scream {
 
 namespace {
 
-void print_input(const Real t, const Real p, const Real wsec) {
-  std::cout << "T_mid:" << t << std::endl;
-  std::cout << "p_mid:" << p << std::endl;
-  std::cout << "wsec:" << wsec << std::endl;
-}
-void print_bef_ndrop(const mam_coupling::AerosolState &dry_aero, const int kb) {
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    std::cout << "Bef-ndrop-cldbrn_num:" << dry_aero.cld_aero_nmr[m](0, kb)
-              << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      if(dry_aero.cld_aero_mmr[m][a].data()) {
-        std::cout << "Bef-ndrop-cldbrn-mmr:"
-                  << dry_aero.cld_aero_mmr[m][a](0, kb) << std::endl;
-      }
-    }
-  }
-}
 void print_output(const Real w0, const Real rho, const Real tke,
                   const Real wsub, const Real wice, const Real wsig,
                   const Real naai_hom, const Real naai, const Real rpdel,
@@ -90,148 +73,6 @@ void print_output(const Real w0, const Real rho, const Real tke,
             << hetfrz_depostion_nucleation_tend << std::endl;
 }
 
-void set_input(MAMAci::view_2d w_sec_int_, MAMAci::view_2d kvh_int_,
-               const int ncol_, const int nlev_) {
-  const Real w_sec_e3sm[73] = {
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.40000000000000002E-003,
-      0.40000000000000002E-003, 0.44201892319518146E-003,
-      0.77315620137962326E-003, 0.24806301482800117E-002,
-      0.11109772692898754E-001, 0.40651094032490273E-001,
-      0.82156694426095800E-001, 0.12207124453993526E+000,
-      0.15516728994634110E+000, 0.17775318086169636E+000,
-      0.18549817250146838E+000, 0.17184548286554119E+000,
-      0.12741230682196053E+000, 0.65495229516041628E-001,
-      0.26909155217660592E-001};
-
-  for(int icol = 0; icol < ncol_; ++icol) {
-    for(int kk = 0; kk < nlev_; ++kk) {
-      w_sec_int_(icol, kk) = w_sec_e3sm[kk];
-      // w_sec_int_(icol, kk) = w_sec_mid_(icol, kk);
-    }
-    // w_sec_int_(icol, nlev_ + 1) = w_sec_mid_(icol, nlev_);
-    w_sec_int_(icol, nlev_ + 1) = w_sec_e3sm[nlev_ + 1];
-  }
-  const Real kvh_e3sm[73] = {0.25020913575496480E-002, 0.25021052914616470E-002,
-                             0.75991761081225006E-002, 0.12291092068185365E-001,
-                             0.11484807652762415E-001, 0.10856880396302943E-001,
-                             0.10500384508819637E-001, 0.10361486171738229E-001,
-                             0.10333325067964508E-001, 0.10258838031435397E-001,
-                             0.10027325248446619E-001, 0.97784259072973521E-002,
-                             0.96611845055866539E-002, 0.96249746122327937E-002,
-                             0.95773431515696512E-002, 0.95180614513688099E-002,
-                             0.94713233348487150E-002, 0.94503864489758338E-002,
-                             0.94536294366578833E-002, 0.94575972194308883E-002,
-                             0.94403767489615684E-002, 0.93975694769176284E-002,
-                             0.93322843554751022E-002, 0.92777070192527501E-002,
-                             0.92456776697171228E-002, 0.92266924824142716E-002,
-                             0.92123025773060436E-002, 0.91888715633294191E-002,
-                             0.91516797753615851E-002, 0.90958299606649744E-002,
-                             0.89988037524983237E-002, 0.88220984587642423E-002,
-                             0.85231270833157156E-002, 0.81397522619395188E-002,
-                             0.79160421807845088E-002, 0.81206851117902653E-002,
-                             0.86526891616674779E-002, 0.91682975412125615E-002,
-                             0.96043394254592580E-002, 0.10033689085881327E-001,
-                             0.10428656694074272E-001, 0.10715913043864789E-001,
-                             0.10919631245454951E-001, 0.11250937075285789E-001,
-                             0.11829292157343831E-001, 0.12413311776454055E-001,
-                             0.12851317662157077E-001, 0.13175523677700330E-001,
-                             0.13224182907540188E-001, 0.13085937680733115E-001,
-                             0.12615055546741534E-001, 0.11995423733019836E-001,
-                             0.12346556881757400E-001, 0.13433752971524651E-001,
-                             0.13904308240950175E-001, 0.13539811748121957E-001,
-                             0.12555099320041433E-001, 0.11519643673351362E-001,
-                             0.11414071302852231E-001, 0.13409756835238139E-001,
-                             0.24071962815959351E-001, 0.75489419450816414E-001,
-                             0.62082011878960308E+000, 0.63952862312816796E+001,
-                             0.16226857944175123E+002, 0.21882852534279891E+002,
-                             0.24966173574402408E+002, 0.25710753126453692E+002,
-                             0.24069881024271943E+002, 0.19743922403487922E+002,
-                             0.98667814246712027E+001, 0.25633359450143991E+001,
-                             0.14682471685037493E+001};
-  // compute eddy diffusivity of heat at the interfaces
-  for(int icol = 0; icol < ncol_; ++icol) {
-    for(int kk = 0; kk < nlev_; ++kk) {
-      // kvh_int_(icol, kk) = kvh_mid_(icol, kk);
-      kvh_int_(icol, kk) = kvh_e3sm[kk];
-    }
-    // kvh_int_(icol, nlev_ + 1) = kvh_mid_(icol, nlev_);
-    kvh_int_(icol, nlev_ + 1) = kvh_e3sm[nlev_ + 1];
-  }
-}
-void set_dgait(MAMAci::view_2d aitken_dry_dia_, const int ncol_,
-               const int nlev_) {
-  const Real dgnum_ait_e3sm[72] = {
-      0.20877713336487552E-007, 0.21782230353342090E-007,
-      0.21688324003865861E-007, 0.21112855042342451E-007,
-      0.19162058462939536E-007, 0.18102979880838476E-007,
-      0.17906980715477606E-007, 0.20271254074583327E-007,
-      0.22698983422181942E-007, 0.24134835117044986E-007,
-      0.25498156808001372E-007, 0.29796738799905547E-007,
-      0.35822987394021908E-007, 0.41170963764365215E-007,
-      0.44892726528330642E-007, 0.47217231342203107E-007,
-      0.48928661807108766E-007, 0.50170939816128735E-007,
-      0.51078750853732200E-007, 0.52247333465736065E-007,
-      0.53190758580174931E-007, 0.53576491941850044E-007,
-      0.53915614473890715E-007, 0.54510964775236826E-007,
-      0.55643231691556703E-007, 0.57057811112589899E-007,
-      0.58177383586181116E-007, 0.58209849180850108E-007,
-      0.57976751598840998E-007, 0.52000000000000002E-007,
-      0.50728746567226150E-007, 0.49119902704480870E-007,
-      0.48212162162050883E-007, 0.49227715213506454E-007,
-      0.46876827233752246E-007, 0.45360603896257791E-007,
-      0.49986783979004747E-007, 0.51186879246229022E-007,
-      0.50009353247048599E-007, 0.48250264542204811E-007,
-      0.47560278748093609E-007, 0.48298089720730957E-007,
-      0.49095935613468768E-007, 0.49493024126912931E-007,
-      0.50250797590476007E-007, 0.51949267668322422E-007,
-      0.53778727208416418E-007, 0.53563593301099588E-007,
-      0.51218136771199298E-007, 0.43171429694325200E-007,
-      0.39019610039033895E-007, 0.36175109143257051E-007,
-      0.42731638777892750E-007, 0.38060728507221777E-007,
-      0.44046323901481340E-007, 0.39216732751330010E-007,
-      0.34842233953609988E-007, 0.34068804733226066E-007,
-      0.30636043694263528E-007, 0.28302341686131413E-007,
-      0.33023014309036320E-007, 0.34745748365385196E-007,
-      0.43623545003583371E-007, 0.48206451795644064E-007,
-      0.49854490325455530E-007, 0.50346335647724146E-007,
-      0.50661560988561763E-007, 0.50986261962838767E-007,
-      0.51256955985111086E-007, 0.51482578449096488E-007,
-      0.51684364851091471E-007, 0.51849719162939729E-007};
-  for(int icol = 0; icol < ncol_; ++icol) {
-    for(int kk = 0; kk < nlev_; ++kk) {
-      aitken_dry_dia_(icol, kk) = dgnum_ait_e3sm[kk];
-    }
-  }
-}
-
 KOKKOS_INLINE_FUNCTION
 void compute_w0_and_rho(const haero::ThreadTeam &team,
                         const MAMAci::const_view_2d omega,
@@ -270,6 +111,29 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
         compute_w0_and_rho(team, omega, T_mid, p_mid, icol, top_lev, nlev,
                            // output
                            w0, rho);
+      });
+}
+
+void compute_values_at_interfaces(haero::ThreadTeamPolicy team_policy,
+                                  const MAMAci::const_view_2d var_mid,
+                                  const MAMAci::view_2d dz, const int nlev_,
+                                  // output
+                                  MAMAci::view_2d var_int) {
+  using CO = scream::ColumnOps<DefaultDevice, Real>;
+
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+
+        const auto var_mid_col = ekat::subview(var_mid, icol);
+        const auto var_int_col = ekat::subview(var_int, icol);
+        const auto dz_col      = ekat::subview(dz, icol);
+
+        const Real bc_top = var_mid_col(0);
+        const Real bc_bot = var_mid_col(nlev_ - 1);
+
+        CO::compute_interface_values_linear(team, nlev_, var_mid_col, dz_col,
+                                            bc_top, bc_bot, var_int_col);
       });
 }
 
@@ -989,11 +853,8 @@ void MAMAci::set_grids(
   // the current time step. For other dycores (such as EUL), it may be different
   // and we might need to revisit this.
 
-  // FIXME: w_variance in microp_aero_run.F90 is at the interfaces but
-  //  SHOC provides it at the midpoints. Verify how it is being used.
-
   // Vertical velocity variance at midpoints
-  add_field<Required>("w_variance", scalar3d_layout_int, m2 / s2, grid_name);
+  add_field<Required>("w_variance", scalar3d_layout_mid, m2 / s2, grid_name);
 
   // NOTE: "cldfrac_liq" is updated in SHOC. "cldfrac_liq" in C++ code is
   // equivalent to "alst" in the shoc_intr.F90. In the C++ code, it is used as
@@ -1007,8 +868,7 @@ void MAMAci::set_grids(
                       grid_name);
 
   // Eddy diffusivity for heat
-  // FIXME: It is at mid level in EAMxx, we need to compute it at the interfaces
-  add_field<Required>("eddy_diff_heat", scalar3d_layout_int, m2 / s, grid_name);
+  add_field<Required>("eddy_diff_heat", scalar3d_layout_mid, m2 / s, grid_name);
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
@@ -1360,7 +1220,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   hetfrz_.init(aero_config, hetfrz_config);
 
   //---------------------------------------------------------------------------------
-  // Setup preprocessing
+  // Setup preprocessing and post processing
   //---------------------------------------------------------------------------------
   // set up our preprocess  and postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
@@ -1375,14 +1235,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  // FIXME: Remove set_input and print_input
-  const int kb = 62;
-  set_input(w_sec_int_, kvh_int_, ncol_, nlev_);
-  // print_input(dry_atm_.T_mid(0, kb), dry_atm_.p_mid(0, kb), w_sec_int_(0,
-  // kb));
-
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -1390,9 +1245,18 @@ void MAMAci::run_impl(const double dt) {
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
+  const int itop =
+      (dry_atm_.p_mid(0, 0) < dry_atm_.p_mid(0, nlev_ - 1)) ? 0 : nlev_ - 1;
+  std::cout << "ITOP::::::::" << itop << std::endl;
+
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
+
+  // Get w_sec_int_ from w_sec_mid_
+  compute_values_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
+                               // output
+                               w_sec_int_);
 
   compute_tke_using_w_sec(team_policy, w_sec_int_, nlev_,
                           // output
@@ -1409,8 +1273,6 @@ void MAMAci::run_impl(const double dt) {
   compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
                               // output
                               aitken_dry_dia_);
-  // FIXME:Remove set_dgait
-  set_dgait(aitken_dry_dia_, ncol_, nlev_);
 
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
 
@@ -1436,7 +1298,12 @@ void MAMAci::run_impl(const double dt) {
                                    rpdel_);
 
   Kokkos::fence();  // wait for rpdel_ to be computed.
-  // print_bef_ndrop(dry_aero_, kb);
+
+  // Get kvh_int_ from kvh_mid_
+  compute_values_at_interfaces(team_policy, kvh_mid_, dry_atm_.dz, nlev_,
+                               // output
+                               kvh_int_);
+
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
@@ -1466,9 +1333,9 @@ void MAMAci::run_impl(const double dt) {
       hetfrz_depostion_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
-  std::cout << " FACTNUM-2  :" << factnum_(0, 0, kb) << std::endl;
+
   //---------------------------------------------------------------
-  // Now update interstitial and cllud borne aerosols
+  // Now update interstitial and cloud borne aerosols
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
@@ -1483,30 +1350,15 @@ void MAMAci::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
-  Kokkos::fence();
+  Kokkos::fence();  // wait before returning to calling function
 
-  // FIXME: Remove the following
+  const int kb = 62;
   print_output(w0_(0, kb), rho_(0, kb), tke_(0, kb), wsub_(0, kb),
                wsubice_(0, kb), wsig_(0, kb), naai_hom_(0, kb), naai_(0, kb),
                rpdel_(0, kb), factnum_, tendnd_(0, kb), ptend_q_,
                qqcw_fld_work_, hetfrz_immersion_nucleation_tend_(0, kb),
                hetfrz_contact_nucleation_tend_(0, kb),
                hetfrz_depostion_nucleation_tend_(0, kb), dry_aero_, kb);
-  std::cout << " FACTNUM-0  :" << factnum_(0, 0, kb) << std::endl;
-  const Real ans = hetfrz_immersion_nucleation_tend_(0, kb);
-  if(ans < 5.65184e-06 || ans > 5.65186e-06) {
-    std::cout << "Somethign changed!!!!  :"
-              << hetfrz_immersion_nucleation_tend_(0, kb) << std::endl;
-    exit(1);
-  }
-  std::cout << " FACTNUM-1  :" << factnum_(0, 1, kb) << std::endl;
-  if((factnum_(0, 0, kb) < 0.998557 || factnum_(0, 0, kb) > 0.998559) ||
-     (factnum_(0, 1, kb) < 0.861768 || factnum_(0, 1, kb) > 0.861770)) {
-    std::cout << "Somethign changed FACTNUM!!!!  :" << factnum_(0, 0, kb)
-              << std::endl;
-    exit(1);
-  }
-  Kokkos::fence();  // wait before returning to calling function
 }
 
 }  // namespace scream
