@@ -4590,6 +4590,36 @@
     </values>
   </entry>
 
+  <entry id="ocn2glc_tf_smapname"    modify_via_xml="OCN2GLC_TF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for thermal forcing state fields
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smaptype"    modify_via_xml="OCN2GLC_TF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="glc2ice_rmapname"    modify_via_xml="GLC2ICE_RMAPNAME">
     <type>char</type>
     <category>mapping</category>

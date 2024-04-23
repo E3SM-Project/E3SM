@@ -77,6 +77,7 @@ module prep_glc_mod
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
   type(seq_map), pointer :: mapper_So2g
+  type(seq_map), pointer :: mapper_So2g_tf
   type(seq_map), pointer :: mapper_Fo2g
   type(seq_map), pointer :: mapper_Fg2l
 
@@ -179,6 +180,7 @@ contains
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
     allocate(mapper_So2g)
+    allocate(mapper_So2g_tf)
     allocate(mapper_Fo2g)
     allocate(mapper_Fg2l)
 
