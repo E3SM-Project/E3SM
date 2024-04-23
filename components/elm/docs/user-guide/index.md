@@ -22,14 +22,8 @@ The water cycle campaigns of E3SM v1 and v2 used ELM's satellite phenology mode 
 
 The land-only compsets are referred to as "I"-compset and are supported for the following time periods: pre-industrial (1850) and historical transient (20TR). Additionally, multiple atmospheric forcing datasets can be used to drive the ELM simulations. The supported compsets are:
 
-1. `I1850CNPRDCTCBCTOP`: Climatological pre-industrial using Qian atmospheric forcings
-2. `I1850CRUCNPRDCTCBCTOP`: Climatological pre-industrial using CRUNCEP atmospheric forcings
-3. `I1850GSWCNPRDCTCBCTOP`: Climatological pre-industrial using GSWP atmospheric forcings
-4. `I20TRCNPRDCTCBCTOP`: Historical ELM simulation using Qian atmospheric forcings with time varying greenhouse gas forcing and land use, land cover dataset (year 1850-2014).
-5. `I20TRCRUCNPRDCTCBCTOP`: Historical ELM simulation using CRUNCEP atmospheric forcings with time varying greenhouse gas forcing and land use, land cover dataset (year 1850-2014).
-6. `I20TRGSWCNPRDCTCBCTOP`: Historical ELM simulation using GSWP atmospheric forcings with time varying greenhouse gas forcing and land use, land cover dataset (year 1850-2014).
-
-***Should we limit the number of DATMs that are supported? What about SSP compsets? Need to make sure all the compset listed are included within E3SM master.***
+1. `I1850GSWCNPRDCTCBCTOP`: Climatological pre-industrial using GSWP atmospheric forcings
+2. `I20TRGSWCNPRDCTCBCTOP`: Historical ELM simulation using GSWP atmospheric forcings with time varying greenhouse gas forcing and land use, land cover dataset (year 1850-2014).
 
 ### Supported grid
 
