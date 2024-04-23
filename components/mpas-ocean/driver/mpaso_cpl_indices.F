@@ -37,6 +37,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_htv !ocean heat-transfer velocity
   integer :: index_o2x_So_stv !ocean salt-transfer velocity
   integer :: index_o2x_So_rhoeff !ocean effective density
+  integer :: index_o2x_So_tf300 !ocean thermal forcing at 300m
 
 
   ! ocn -> drv  (BGC)
@@ -208,6 +209,7 @@ contains
     index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
     index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
     index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
+    index_o2x_So_tf300      = mct_avect_indexra(o2x,'So_tf300')
 
     index_o2x_So_algae1     = mct_avect_indexra(o2x,'So_algae1',perrWith='quiet')
     index_o2x_So_algae2     = mct_avect_indexra(o2x,'So_algae2',perrWith='quiet')
