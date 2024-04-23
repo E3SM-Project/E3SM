@@ -18,7 +18,7 @@ string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
 string(APPEND CMAKE_CXX_FLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
-string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L/opt/cray/pe/gcc-libs -lgfortran -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L/opt/cray/pe/gcc/11.2.0/snos/lib64/ -lgfortran -L/opt/rocm-5.4.0/lib -lhsa-runtime64 -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa ")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off")
 
