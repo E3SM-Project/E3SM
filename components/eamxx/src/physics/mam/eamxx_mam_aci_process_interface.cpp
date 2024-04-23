@@ -71,6 +71,16 @@ void print_output(const Real w0, const Real rho, const Real tke,
     }
   }
 
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    std::cout << "cld_num:" << dry_aero.cld_aero_nmr[m](0, kb) << std::endl;
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      if(dry_aero.cld_aero_mmr[m][a].data()) {
+        std::cout << "cld-mmr:" << dry_aero.cld_aero_mmr[m][a](0, kb)
+                  << std::endl;
+      }
+    }
+  }
+
   std::cout << "hetfrz_immersion_nucleation_tend_:"
             << hetfrz_immersion_nucleation_tend << ":"
             << hetfrz_immersion_nucleation_tend << std::endl;
@@ -725,26 +735,17 @@ void update_cloud_borne_aerosols(
     const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot], const int nlev,
     // output
     mam_coupling::AerosolState &dry_aero) {
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
-              int ind_qqcw = 0;
-              for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-                dry_aero.cld_aero_nmr[m](icol, kk) =
-                    qqcw_fld_work[ind_qqcw](icol, kk);
-                ++ind_qqcw;
-                for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-                  if(dry_aero.cld_aero_mmr[m][a].data()) {
-                    dry_aero.cld_aero_mmr[m][a](icol, kk) =
-                        qqcw_fld_work[ind_qqcw](icol, kk);
-                    ++ind_qqcw;
-                  }
-                }
-              }
-            });
-      });
+  int ind_qqcw = 0;
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], qqcw_fld_work[ind_qqcw]);
+    ++ind_qqcw;
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      if(dry_aero.cld_aero_mmr[m][a].data()) {
+        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], qqcw_fld_work[ind_qqcw]);
+        ++ind_qqcw;
+      }
+    }
+  }
 }
 
 // Update interstitial aerosols using tendencies
@@ -1381,17 +1382,13 @@ void MAMAci::run_impl(const double dt) {
   // kb));
 
   const auto scan_policy = ekat::ExeSpaceUtils<
-      // KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_,
-      // nlev_);
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
-
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  // haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
-  haero::ThreadTeamPolicy team_policy(1, Kokkos::AUTO);
+  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output

@@ -143,7 +143,6 @@ class MAMAci final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
-  // FIXME: 25 should be a const int
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
 
   // A view to carry interstitial aerosol mmrs/nmrs
