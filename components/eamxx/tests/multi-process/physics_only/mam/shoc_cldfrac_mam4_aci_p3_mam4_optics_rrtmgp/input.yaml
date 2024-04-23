@@ -16,6 +16,9 @@ atmosphere_processes:
     Type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    mam4_aci:
+      wsubmin: 0.001
+      top_level_mam4xx: 6
     p3:
       max_total_ni: 740.0e3
       do_prescribed_ccn: false

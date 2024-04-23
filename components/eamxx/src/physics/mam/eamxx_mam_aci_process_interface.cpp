@@ -1,5 +1,19 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
 
+/* NOTES:
+1. w_variance assumes that we are using SE dycore. If we use EUL
+dycore, we need to get its value from previous dynamic time step
+
+2. w_variance and eddy_diff_heat are at midpoints in EAMxx, we 
+derived their interface values using boundary conditions to be
+the top and botton values of the mid point arrays. We assume that
+this assumption should not cause any issues.
+
+FUTURE WORK:
+1. MAM4xx submodule should point to MAM4xx main branch
+2. Link hetrozenous freezing outputs to microphysics
+*/
+
 namespace scream {
 
 namespace {
@@ -949,15 +963,15 @@ void MAMAci::set_grids(
   // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
   n_unit.set_string("1(cm^-3 s^-1)");
-  // heterogeous freezing by immersion nucleation [cm^-3 s^-1]
+  // heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
 
-  // heterogeous freezing by contact nucleation [cm^-3 s^-1]
+  // heterogeneous freezing by contact nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
 
-  // heterogeous freezing by deposition nucleation [cm^-3 s^-1]
+  // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_depostion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
 }  // function set_grids ends
@@ -1244,10 +1258,6 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
-
-  const int itop =
-      (dry_atm_.p_mid(0, 0) < dry_atm_.p_mid(0, nlev_ - 1)) ? 0 : nlev_ - 1;
-  std::cout << "ITOP::::::::" << itop << std::endl;
 
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
