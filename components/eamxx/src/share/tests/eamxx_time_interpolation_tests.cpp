@@ -350,7 +350,9 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
 
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    int gl_size = fl.size();
+    grid->get_comm().all_reduce(&gl_size,1,MPI_SUM);
+    FID fid("f_"+std::to_string(gl_size),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize (f,engine,my_pdf);
