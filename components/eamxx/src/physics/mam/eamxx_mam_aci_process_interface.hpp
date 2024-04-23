@@ -59,14 +59,13 @@ class MAMAci final : public scream::AtmosphereProcess {
   // aerosol dry diameter
   const_view_3d dgnum_;
 
-  // FIXME: Make sure these output are used somewhere and add comments about
-  // these
   view_2d nihf_;
   view_2d niim_;
   view_2d nidep_;
   view_2d nimey_;
   view_2d naai_hom_;
   view_2d naai_;
+
   view_2d kvh_int_;  // Eddy diffusivity of heat at the interfaces
   const_view_2d liqcldf_;
   const_view_2d liqcldf_prev_;
@@ -108,7 +107,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d hetfrz_immersion_nucleation_tend_;
   view_2d hetfrz_contact_nucleation_tend_;
   view_2d hetfrz_depostion_nucleation_tend_;
-  view_2d diagnostic_scratch_[42];
+  view_2d diagnostic_scratch_[43];
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_, w2_;
@@ -136,7 +135,7 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
   // FIXME: 25 should be a const int
-  view_2d qqcw_fld_work_[25];
+  view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
 
   // A view to carry interstitial aerosol mmrs/nmrs
   view_3d state_q_work_;

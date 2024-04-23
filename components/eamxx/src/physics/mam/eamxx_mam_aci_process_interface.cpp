@@ -417,7 +417,7 @@ void compute_nucleate_ice_tendencies(
         const mam4::Tendencies tends(nlev);  // not used
         const mam4::AeroConfig aero_config;
         const Real t = 0;  // not used
-        nucleate_ice.compute_tendencies(aero_config, /*team,*/ t, dt, haero_atm,
+        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm,
                                         surf, progs, diags, tends);
       });
 }
@@ -792,8 +792,8 @@ void call_hetfrz_compute_tendencies(
   mam_coupling::AerosolState dry_aero        = dry_aero_;
   mam_coupling::DryAtmosphere dry_atmosphere = dry_atm_;
 
-  MAMAci::view_2d diagnostic_scratch[42];
-  for(int i = 0; i < 42; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
+  MAMAci::view_2d diagnostic_scratch[43];
+  for(int i = 0; i < 43; ++i) diagnostic_scratch[i] = diagnostic_scratch_[i];
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
@@ -869,7 +869,16 @@ void call_hetfrz_compute_tendencies(
         diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
         diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
         diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
+        diags.stratiform_cloud_fraction =
+            ekat::subview(diagnostic_scratch[42], icol);
 
+        // assign cloud fraction
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
+            KOKKOS_LAMBDA(int klev) {
+              diags.stratiform_cloud_fraction(klev) =
+                  haero_atm.cloud_fraction(klev);
+            });
         //-------------------------------------------------------------
         // Heterogeneous freezing
         // frzimm, frzcnt, frzdep are the outputs of
@@ -1330,7 +1339,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------
 
-  for(int i = 0; i < 42; ++i)
+  for(int i = 0; i < 43; ++i)
     Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
 
   //---------------------------------------------------------------------------------
@@ -1453,7 +1462,7 @@ void MAMAci::run_impl(const double dt) {
       hetfrz_depostion_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
-
+  std::cout << " FACTNUM-2  :" << factnum_(0, 0, kb) << std::endl;
   //---------------------------------------------------------------
   // Now update interstitial and cllud borne aerosols
   //---------------------------------------------------------------
@@ -1467,7 +1476,7 @@ void MAMAci::run_impl(const double dt) {
   update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
-
+  std::cout << " FACTNUM-1  :" << factnum_(0, 0, kb) << std::endl;
   // FIXME: Remove the following
   print_output(w0_(0, kb), rho_(0, kb), tke_(0, kb), wsub_(0, kb),
                wsubice_(0, kb), wsig_(0, kb), naai_hom_(0, kb), naai_(0, kb),
@@ -1475,11 +1484,18 @@ void MAMAci::run_impl(const double dt) {
                qqcw_fld_work_, hetfrz_immersion_nucleation_tend_(0, kb),
                hetfrz_contact_nucleation_tend_(0, kb),
                hetfrz_depostion_nucleation_tend_(0, kb), dry_aero_, kb);
-
+  std::cout << " FACTNUM-3  :" << factnum_(0, 0, kb) << std::endl;
   const Real ans = hetfrz_immersion_nucleation_tend_(0, kb);
   if(ans < 5.65184e-06 || ans > 5.65186e-06) {
     std::cout << "Somethign changed!!!!  :"
               << hetfrz_immersion_nucleation_tend_(0, kb) << std::endl;
+    exit(1);
+  }
+  std::cout << " FACTNUM-4  :" << factnum_(0, 0, kb) << std::endl;
+  if((factnum_(0, 0, kb) < 0.998557 || factnum_(0, 0, kb) > 0.998559) ||
+     (factnum_(0, 1, kb) < 0.861768 || factnum_(0, 1, kb) > 0.861770)) {
+    std::cout << "Somethign changed FACTNUM!!!!  :" << factnum_(0, 0, kb)
+              << std::endl;
     exit(1);
   }
   Kokkos::fence();  // wait before returning to calling function
