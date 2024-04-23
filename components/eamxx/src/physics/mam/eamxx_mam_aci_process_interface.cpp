@@ -4,7 +4,7 @@
 1. w_variance assumes that we are using SE dycore. If we use EUL
 dycore, we need to get its value from previous dynamic time step
 
-2. w_variance and eddy_diff_heat are at midpoints in EAMxx, we 
+2. w_variance and eddy_diff_heat are at midpoints in EAMxx, we
 derived their interface values using boundary conditions to be
 the top and botton values of the mid point arrays. We assume that
 this assumption should not cause any issues.
