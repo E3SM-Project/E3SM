@@ -1459,6 +1459,14 @@ contains
         call outfld( 'TTPXMLC'  , topflx,                    pcols, lchnk )
     end if
 
+    !!Jinbo Xie
+    !!add new variable
+    call outfld( 'DUSFC_FD'  , dusfc_fd,                   pcols, lchnk )
+    call outfld( 'DVSFC_FD'  , dvsfc_fd,                   pcols, lchnk )
+    call outfld( 'DTAUX3_FD'  , dtaux3_fd,                   pcols, lchnk )
+    call outfld( 'DTAUY3_FD'  , dtauy3_fd,                   pcols, lchnk )
+    !!Jinbo Xie
+
     return
   end subroutine vertical_diffusion_tend
 
