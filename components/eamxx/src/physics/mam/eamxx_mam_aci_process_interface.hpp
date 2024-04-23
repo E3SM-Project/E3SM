@@ -212,9 +212,48 @@ class MAMAci final : public scream::AtmosphereProcess {
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
   };  // MAMAci::Preprocess
 
+  // Atmosphere processes often have a post-processing step prepares output
+  // from this process for the Field Manager. This functor implements this
+  // step, which is called during run_impl.
+  // Postprocessing functor
+  struct Postprocess {
+    Postprocess() = default;
+
+    // on host: initializes postprocess functor with necessary state data
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere &wet_atm,
+                    const mam_coupling::AerosolState &wet_aero,
+                    const mam_coupling::DryAtmosphere &dry_atm,
+                    const mam_coupling::AerosolState &dry_aero) {
+      ncol_post_     = ncol;
+      nlev_post_     = nlev;
+      wet_atm_post_  = wet_atm;
+      wet_aero_post_ = wet_aero;
+      dry_atm_post_  = dry_atm;
+      dry_aero_post_ = dry_aero;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(
+        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int i = team.league_rank();  // column index
+      compute_wet_mixing_ratios(team, dry_atm_post_, dry_aero_post_,
+                                wet_aero_post_, i);
+    }  // operator()
+
+    // number of horizontal columns and vertical levels
+    int ncol_post_, nlev_post_;
+
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_post_;
+    mam_coupling::DryAtmosphere dry_atm_post_;
+    mam_coupling::AerosolState wet_aero_post_, dry_aero_post_;
+  };  // MAMMicrophysics::Postprocess
+
  private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
+  Postprocess postprocess_;
 
 };  // MAMAci
 

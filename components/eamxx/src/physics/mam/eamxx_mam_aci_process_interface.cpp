@@ -1358,9 +1358,13 @@ void MAMAci::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // Setup preprocessing
   //---------------------------------------------------------------------------------
-  // set up our preprocess functor
+  // set up our preprocess  and postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
+
+  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                          dry_aero_);
+
 }  // end function initialize_impl
 
 // ================================================================
@@ -1476,7 +1480,11 @@ void MAMAci::run_impl(const double dt) {
   update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
-  std::cout << " FACTNUM-1  :" << factnum_(0, 0, kb) << std::endl;
+
+  // call post processing to convert dry mixing ratios to wet mixing ratios
+  Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  Kokkos::fence();
+
   // FIXME: Remove the following
   print_output(w0_(0, kb), rho_(0, kb), tke_(0, kb), wsub_(0, kb),
                wsubice_(0, kb), wsig_(0, kb), naai_hom_(0, kb), naai_(0, kb),
