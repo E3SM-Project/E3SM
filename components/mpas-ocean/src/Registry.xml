@@ -4010,6 +4010,9 @@
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
 		/>
+		<var name="avgThermalForcing300m" type="real" dimensions="nCells Time" units="C"
+			description="The time-averaged thermal forcing at 300 m depth"
+		/>
 		<!-- Input fields for data (prescribed) land-ice fluxes -->
 		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			description="Flux of mass through the ocean surface, as read in from a forcing file. Positive into ocean."
