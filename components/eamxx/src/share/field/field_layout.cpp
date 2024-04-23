@@ -114,22 +114,22 @@ std::vector<FieldTag> FieldLayout::get_tensor_tags () const {
   return {m_tags[idx[0]], m_tags[idx[1]]};
 }
 
-FieldLayout& FieldLayout::strip_dim (const FieldTag tag, const bool throw_if_not_found) {
-  auto it = ekat::find(m_tags,tag);
-
-  if (it==m_tags.end()) {
-    // Check if found
-    EKAT_REQUIRE_MSG(not throw_if_not_found, "Error! Tag '" + e2str(tag) + "' not found.\n");
-    return *this;
+FieldLayout& FieldLayout::strip_dim (const FieldTag t, const bool throw_if_not_found) {
+  bool any_match = false;
+  for (int i=0; i<rank(); ++i) {
+    if (m_tags[i] == t) {
+      strip_dim(i);
+      --i;
+      any_match = true;
+    }
   }
 
-  // Check only one tag (no ambiguity)
-  EKAT_REQUIRE_MSG(ekat::count(m_tags,tag)==1,
-                     "Error! Tag '" + e2str(tag) + "' appears multiple times.\n"
-                     "       You must inspect tags() and dims() manually.\n");
+  EKAT_REQUIRE_MSG (any_match or not throw_if_not_found,
+      "Error! No match found when attempting to strip dim.\n"
+      "  - input tag: " + e2str(t) + "\n"
+      "  - layout   : " + to_string() + "\n");
 
-  auto pos = std::distance(m_tags.begin(),it);
-  return strip_dim(pos);
+  return *this;
 }
 
 FieldLayout& FieldLayout::strip_dim (const int idim) {
@@ -179,9 +179,22 @@ FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)
   m_names[idim] = n;
   return *this;
 }
-FieldLayout& FieldLayout::rename_dim (const FieldTag tag, const std::string& n)
+
+FieldLayout& FieldLayout::rename_dim (const FieldTag t, const std::string& n, const bool throw_if_not_found)
 {
-  rename_dim(dim(tag),n);
+  bool any_match = false;
+  for (int i=0; i<rank(); ++i) {
+    if (m_tags[i] == t) {
+      m_names[i] = n;
+      any_match = true;
+    }
+  }
+
+  EKAT_REQUIRE_MSG (any_match or not throw_if_not_found,
+      "Error! No match found when attempting to rename dim.\n"
+      "  - input tag: " + e2str(t) + "\n"
+      "  - layout   : " + to_string() + "\n");
+
   return *this;
 }
 FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
@@ -190,6 +203,28 @@ FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
 
   m_dims[idim] = extent;
   set_extents();
+  return *this;
+}
+
+FieldLayout& FieldLayout::reset_dim (const FieldTag t, const int extent, const bool throw_if_not_found)
+{
+  bool any_match = false;
+  for (int i=0; i<rank(); ++i) {
+    if (m_tags[i] == t) {
+      m_dims[i] = extent;
+      any_match = true;
+    }
+  }
+
+  if (any_match) {
+    set_extents();
+  } else {
+    EKAT_REQUIRE_MSG (not throw_if_not_found,
+        "Error! No match found when attempting to reset dim.\n"
+        "  - input tag: " + e2str(t) + "\n"
+        "  - layout   : " + to_string() + "\n");
+  }
+
   return *this;
 }
 

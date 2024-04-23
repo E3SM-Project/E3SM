@@ -121,21 +121,24 @@ public:
   std::vector<int> get_tensor_dims () const;
   std::vector<FieldTag> get_tensor_tags () const;
 
-  // Returns a copy of this layout with a given dimension stripped
+  // Change this layout by adding/removing a dimension or changing its extent/name
+  // NOTE: the strip_dim/rename_dim/reset_dim overloads with FieldTag will alter *all*
+  //       dimension matching the input tag
   FieldLayout& strip_dim (const FieldTag tag, const bool throw_if_not_found = true);
   FieldLayout& strip_dim (const int idim);
   FieldLayout& append_dim (const FieldTag t, const int extent);
   FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
+  FieldLayout& rename_dim (const int idim, const std::string& n);
+  FieldLayout& rename_dim (const FieldTag tag, const std::string& n, const bool throw_if_not_found = true);
+  FieldLayout& reset_dim (const int idim, const int extent);
+  FieldLayout& reset_dim (const FieldTag t, const int extent, const bool throw_if_not_found = true);
+
   FieldLayout clone() const;
 
   // NOTE: congruent does not check the tags names. It only checks
   //       rank, m_tags, and m_dims. Use operator== if names are important
   bool congruent (const FieldLayout& rhs) const;
 
-  // Change the name of a dimension
-  FieldLayout& rename_dim (const int idim, const std::string& n);
-  FieldLayout& rename_dim (const FieldTag tag, const std::string& n);
-  FieldLayout& reset_dim (const int idim, const int extent);
   // For printing purposes
   std::string to_string () const;
 
