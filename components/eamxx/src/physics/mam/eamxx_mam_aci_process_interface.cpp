@@ -1,6 +1,8 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
 
-/* NOTES:
+/*
+-----------------------------------------------------------------
+NOTES:
 1. w_variance assumes that we are using SE dycore. If we use EUL
 dycore, we need to get its value from previous dynamic time step
 
@@ -12,80 +14,12 @@ this assumption should not cause any issues.
 FUTURE WORK:
 1. MAM4xx submodule should point to MAM4xx main branch
 2. Link hetrozenous freezing outputs to microphysics
+-----------------------------------------------------------------
 */
 
 namespace scream {
 
 namespace {
-
-void print_output(const Real w0, const Real rho, const Real tke,
-                  const Real wsub, const Real wice, const Real wsig,
-                  const Real naai_hom, const Real naai, const Real rpdel,
-                  MAMAci::view_3d factnum, const Real tendnd,
-                  MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
-                  MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
-                  const Real hetfrz_immersion_nucleation_tend,
-                  const Real hetfrz_contact_nucleation_tend,
-                  const Real hetfrz_depostion_nucleation_tend,
-                  const mam_coupling::AerosolState &dry_aero, const int kb) {
-  std::cout << "w0:" << w0 << std::endl;
-  std::cout << " rho: " << rho << std::endl;
-  std::cout << "TKE:" << tke << std::endl;
-  std::cout << "WSUB:" << wsub << std::endl;
-  std::cout << "WICE:" << wice << std::endl;
-  std::cout << "WSIG:" << wsig << std::endl;
-  std::cout << "naai_hom_:" << naai_hom << std::endl;
-  std::cout << "naai_:" << naai << std::endl;
-  std::cout << "rpdel_:" << rpdel << std::endl;
-  std::cout << "factnum_:" << factnum(0, 0, kb) << " : " << factnum(0, 1, kb)
-            << " : " << factnum(0, 2, kb) << " : " << factnum(0, 3, kb)
-            << std::endl;
-  std::cout << "tendnd_:" << tendnd << std::endl;
-  for(int ic = 9; ic < 40; ++ic) {
-    std::cout << "ptend_q_:" << ic << ": " << ptend_q[ic](0, kb) << std::endl;
-  }
-  for(int ic = 0; ic < 25; ++ic) {
-    std::cout << "qqcw_:" << ic << ": " << qqcw_fld_work[ic](0, kb)
-              << std::endl;
-  }
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    std::cout << "cldbrn_num:" << dry_aero.cld_aero_nmr[m](0, kb) << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      if(dry_aero.cld_aero_mmr[m][a].data()) {
-        std::cout << "cldbrn-mmr:" << dry_aero.cld_aero_mmr[m][a](0, kb)
-                  << std::endl;
-      }
-    }
-  }
-
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    std::cout << "inter_num:" << dry_aero.int_aero_nmr[m](0, kb) << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      if(dry_aero.int_aero_mmr[m][a].data()) {
-        std::cout << "inter-mmr:" << dry_aero.int_aero_mmr[m][a](0, kb)
-                  << std::endl;
-      }
-    }
-  }
-
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    std::cout << "cld_num:" << dry_aero.cld_aero_nmr[m](0, kb) << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      if(dry_aero.cld_aero_mmr[m][a].data()) {
-        std::cout << "cld-mmr:" << dry_aero.cld_aero_mmr[m][a](0, kb)
-                  << std::endl;
-      }
-    }
-  }
-
-  std::cout << "hetfrz_immersion_nucleation_tend_:"
-            << hetfrz_immersion_nucleation_tend << ":"
-            << hetfrz_immersion_nucleation_tend << std::endl;
-  std::cout << "hetfrz_contact_nucleation_tend_:"
-            << hetfrz_contact_nucleation_tend << std::endl;
-  std::cout << "hetfrz_depostion_nucleation_tend_:"
-            << hetfrz_depostion_nucleation_tend << std::endl;
-}
 
 KOKKOS_INLINE_FUNCTION
 void compute_w0_and_rho(const haero::ThreadTeam &team,
@@ -1361,14 +1295,6 @@ void MAMAci::run_impl(const double dt) {
   // call post processing to convert dry mixing ratios to wet mixing ratios
   Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
   Kokkos::fence();  // wait before returning to calling function
-
-  const int kb = 62;
-  print_output(w0_(0, kb), rho_(0, kb), tke_(0, kb), wsub_(0, kb),
-               wsubice_(0, kb), wsig_(0, kb), naai_hom_(0, kb), naai_(0, kb),
-               rpdel_(0, kb), factnum_, tendnd_(0, kb), ptend_q_,
-               qqcw_fld_work_, hetfrz_immersion_nucleation_tend_(0, kb),
-               hetfrz_contact_nucleation_tend_(0, kb),
-               hetfrz_depostion_nucleation_tend_(0, kb), dry_aero_, kb);
 }
 
 }  // namespace scream

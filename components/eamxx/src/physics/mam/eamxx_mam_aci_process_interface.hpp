@@ -256,7 +256,7 @@ class MAMAci final : public scream::AtmosphereProcess {
     mam_coupling::WetAtmosphere wet_atm_post_;
     mam_coupling::DryAtmosphere dry_atm_post_;
     mam_coupling::AerosolState wet_aero_post_, dry_aero_post_;
-  };  // MAMMicrophysics::Postprocess
+  };  // Postprocess
 
  private:
   // pre- and postprocessing scratch pads
