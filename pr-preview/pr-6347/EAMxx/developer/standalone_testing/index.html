@@ -1864,9 +1864,9 @@ standalone tests for an EAMxx configuration.</p>
 make baseline
 </code></pre></div>
 <p>The tests will run, automatically using the baseline file, which is located in
-the CMake-configurable path <code>${SCREAM_TEST_DATA_DIR}</code>. By default, this path is
-set to <code>data/</code> within your build directory (which is <code>$RUN_ROOT_DIR</code>, in
-our case).</p>
+the CMake-configurable path <code>${SCREAM_BASELINES_DIR}</code>. By default, this path is
+set to an invalid string. If baselines tests are enabled, we check that a valid
+path has been provided.</p>
 <p>To run all of SCREAM's tests, make sure you're in <code>$RUN_ROOT_DIR</code> and type</p>
 <div class="highlight"><pre><span></span><code>ctest -VV
 </code></pre></div>
