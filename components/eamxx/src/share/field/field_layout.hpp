@@ -130,6 +130,7 @@ public:
   FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
   FieldLayout& rename_dim (const int idim, const std::string& n);
   FieldLayout& rename_dim (const FieldTag tag, const std::string& n, const bool throw_if_not_found = true);
+  FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
   FieldLayout& reset_dim (const int idim, const int extent);
   FieldLayout& reset_dim (const FieldTag t, const int extent, const bool throw_if_not_found = true);
 
