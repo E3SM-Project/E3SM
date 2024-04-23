@@ -80,12 +80,12 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",             scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
-  add_field<Updated>("horiz_winds",     horiz_wind_layout,   m/s,     grid_name, ps);
-  add_field<Updated>("sgs_buoy_flux",   scalar3d_layout_mid, K*(m/s), grid_name, ps);
-  add_field<Updated>("eddy_diff_mom",   scalar3d_layout_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",              scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
-  add_field<Updated>("cldfrac_liq",     scalar3d_layout_mid, nondim,  grid_name, ps);
+  add_field<Updated>("tke",           scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
+  add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
+  add_field<Updated>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s), grid_name, ps);
+  add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, m2/s,    grid_name, ps);
+  add_field<Updated>("qc",            scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, nondim,  grid_name, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",       scalar2d_layout_col, m,           grid_name);

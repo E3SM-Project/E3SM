@@ -13,8 +13,7 @@ CreateADUnitTest(${TEST_BASE_NAME}
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-#SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
-SetVarDependingOnTestSize(NUM_STEPS 1 1 1)  # 1h 4h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
 set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s

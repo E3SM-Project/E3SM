@@ -266,7 +266,7 @@ void Functions<S,D>::shoc_main_internal(
     check_tke(team,nlev,tke);
   }
 
-  // End SHOC parameterization  
+  // End SHOC parameterization
 
   // Use SHOC outputs to update the host model
   // temperature

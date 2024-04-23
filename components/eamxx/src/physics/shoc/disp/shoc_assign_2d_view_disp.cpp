@@ -13,7 +13,7 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Spack>&  input_view,
   const view_2d<Spack>&        output_view)
 {
-  /*using ExeSpace = typename KT::ExeSpace;
+  using ExeSpace = typename KT::ExeSpace;
 
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
@@ -22,7 +22,7 @@ void Functions<Real,DefaultDevice>
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         output_view (i,k) = input_view(i,k);
     });
-  });*/
+  });
 }
 
 } // namespace shoc
