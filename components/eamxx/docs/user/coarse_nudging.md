@@ -5,21 +5,23 @@ Instead, in EAMxx, it is possible to nudge from coarse data.
 This is done by remapping the coarse data provided by the user to the runtime physics grid of EAMxx.
 In order to enable nudging from coarse data, the user must provide nudging data at the coarse resolution desired and an appropriate     ncremap-compatible mapping file.
 
-## Example setup
+## Example setup (current as of April 2024)
 
 A user can produce coarse nudging data from running EAMxx or EAM at a ne30pg2 or any other applicable resolution.
-Additionally, several users in the E3SM projects have produced nudging data at the ne30pg2 resolution from the MERRA2 and ERA5 datasets.
-A limitation for now is that the nudging data must be provided explicitly, either as one file or as a list of files.
-This can be problematic for long list of files, but we are working on a solution to this problem.
-
-Let's say that the nudging data is provided as one file in the following path: `/path/to/nudging_data_ne4pg2_L72.nc`.
-Then, a mapping file is provided as `/another/path/to/mapping_file_ne4pg2_to_ne120pg2.nc`.
-Then if the physics grid is ne120pg2, the user must enable the nudging process, specify the nudging files, and provide the specifies the nudging data and a remap file.
-In other words, the following options are needed:
+Additionally, several users in the E3SM projects have produced nudging data at the ne30pg2 resolution from the MERRA2 and ERA5 datasets. Then, to enable nudging as a process, one must declare it in the `atm_procs_list` runtime parameter.
 
 ```shell
-./atmchange atm_procs_list=(sc_import,nudging,homme,physics,sc_export)
-./atmchange nudging_fields=U,V
-./atmchange nudging_filenames_patterns=/path/to/nudging_data_ne4pg2_L72.nc
-./atmchange nudging_refine_remap_mapfile=/another/path/to/mapping_file_ne4pg2_to_ne120pg2.nc
+    ./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp,nudging"
 ```
+
+The following options are needed to specify the nudging.
+
+```shell
+    ./atmchange nudging::nudging_filenames_patterns="${PSCRATCH}/mo_ne45pg2_nudg_trim_merra/*.nc"
+    ./atmchange nudging::source_pressure_type=TIME_DEPENDENT_3D_PROFILE
+    ./atmchange nudging::nudging_fields=U,V
+    ./atmchange nudging::nudging_timescale=21600 #  6-hr
+    ./atmchange nudging::nudging_refine_remap_mapfile="${PSCRATCH}/map_ne45pg2_to_ne256pg2.trbilin.20240410.nc"
+```
+
+To gain a deeper understanding of these parameters and options, please refer to the overarching nudging documentation.

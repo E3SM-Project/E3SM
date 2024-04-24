@@ -160,7 +160,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name);
   add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name);
   add_field<Computed>("cldfrac_rad"   , scalar3d_layout_mid, nondim, grid_name);
-  // Cloud-top diagnostics following AeroCOM recommendation
+  // Cloud-top diagnostics following AeroCom recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
   add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
   add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name);
@@ -521,7 +521,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);
-  // Outputs for AeroCOM cloud-top diagnostics
+  // Outputs for AeroCom cloud-top diagnostics
   auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
   auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();
   auto d_cldfrac_ice_at_cldtop =
@@ -998,7 +998,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // Get IR 10.5 micron band for COSP
       auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
-      // Compute cloud-top diagnostics following AeroCOM recommendation
+      // Compute cloud-top diagnostics following AeroCom recommendation
       real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);

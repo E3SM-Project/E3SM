@@ -9,6 +9,7 @@ nav:
     - 'Model input': 'user/model_input.md'
     - 'Runtime parameters': 'common/eamxx_params.md'
     - 'Coarse nudging': 'user/coarse_nudging.md'
+    - 'Extra radiation calls': 'user/clean_clear_sky.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
@@ -26,8 +27,7 @@ nav:
       - 'Full model': 'developer/cime_testing.md'
       - 'CI and Nightly Testing': 'developer/ci_nightly.md'
   - 'Technical Guide':
-    - 'AeroCOM cloud top': 'technical/aerocom_cldtop.md'
-    - 'Extra radiation calls': 'technical/clean_clear_sky.md'
+    - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
 
