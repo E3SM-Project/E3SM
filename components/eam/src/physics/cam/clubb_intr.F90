@@ -908,6 +908,17 @@ end subroutine clubb_init_cnst
     call addfld ('VMAGCL',        horiz_only,     'A',             '-', 'CLUBB gustiness enhancement')
     call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
 
+    !=========Jinbo Xie===========
+        call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
+        call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
+        call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
+        call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
+        call add_default('DTAUX3_FD', 1,  ' ')
+        call add_default('DTAUY3_FD', 1,  ' ')
+        call add_default('DUSFC_FD',  1,  ' ')
+        call add_default('DVSFC_FD',  1,  ' ')
+    !=========Jinbo Xie===========
+
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8

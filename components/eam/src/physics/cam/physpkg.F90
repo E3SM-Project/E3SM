@@ -396,6 +396,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        call t_startf('phys_inidat_infld')
        call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh30, found, gridname='physgrid')
+
        call t_stopf('phys_inidat_infld')
 
        if(.not. found) then
