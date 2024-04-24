@@ -3760,7 +3760,11 @@
 			/>
 		</var_array>
 		<var name="landIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			description="Flux of mass through the ocean surface. Positive into ocean."
+			description="Flux of mass through the ocean surface due to interface melt/freeze. Positive into ocean."
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
+		/>
+		<var name="landIceFreshwaterFluxTotal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Total flux of mass through the ocean surface that includes interface melt freeze and column averaged frazil freeze rate. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
@@ -3858,6 +3862,10 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Flux of frazil ice mass through the ocean surface. Negative is defined as mass leaving the ocean."
+			packages="frazilIce"
 		/>
 
 		<!-- Fields for tidal potential forcing -->
