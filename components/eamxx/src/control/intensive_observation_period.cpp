@@ -498,9 +498,8 @@ read_fields_from_file_for_iop (const std::string& file_name,
                      "as first dim tag.\n");
 
     // Set first dimension to match input file
-    auto dims = fm_fid.get_layout().dims();
-    dims[0] = io_grid->get_num_local_dofs();
-    FieldLayout io_fl(fm_fid.get_layout().tags(), dims);
+    FieldLayout io_fl = fm_fid.get_layout();
+    io_fl.reset_dim(0,io_grid->get_num_local_dofs());
     FieldIdentifier io_fid(fm_fid.name(), io_fl, fm_fid.get_units(), io_grid->name());
     Field io_field(io_fid);
     io_field.allocate_view();
