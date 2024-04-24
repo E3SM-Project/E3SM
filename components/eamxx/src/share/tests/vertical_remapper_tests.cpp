@@ -67,13 +67,13 @@ build_src_grid(const ekat::Comm& comm, const int nldofs_src, const int nlevs_src
 Field
 create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
 {
+  using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
-  constexpr auto CMP = FieldTag::Component;
   constexpr auto units = ekat::units::Units::nondimensional();
   auto fl = twod
-          ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
+          ? (vec ? grid->get_2d_vector_layout (vec_dim)
                  : grid->get_2d_scalar_layout ())
-          : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
+          : (vec ? grid->get_3d_vector_layout (mid,vec_dim)
                  : grid->get_3d_scalar_layout (mid));
   FieldIdentifier fid(name,fl,units,grid->name());
   Field f(fid);
@@ -263,7 +263,7 @@ TEST_CASE ("vertical_remap") {
   auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
-    switch (get_layout_type(l.tags())) {
+    switch (l.type()) {
       case LayoutType::Scalar2D:
       {
         const auto v_src = f.get_view<Real*,Host>();
@@ -328,13 +328,13 @@ TEST_CASE ("vertical_remap") {
       const auto& lsrc  = fsrc.get_header().get_identifier().get_layout();
       const auto p_v    = lsrc.has_tag(LEV) ? pmid_v : pint_v;
       const int nlevs_p = lsrc.has_tag(LEV) ? nlevs_src : nlevs_src+1;
-      const auto ls     = to_string(lsrc);
+      const auto ls     = lsrc.to_string();
       std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with source layout " + to_string(lsrc) +" " + dots + "\n",comm);
+      print ("   -> Checking field with source layout " + ls +" " + dots + "\n",comm);
 
       f.sync_to_host();
 
-      switch (get_layout_type(lsrc.tags())) {
+      switch (lsrc.type()) {
         case LayoutType::Scalar2D:
         {
           // This is a flat array w/ no LEV tag so the interpolated value for source and target should match.
@@ -383,7 +383,7 @@ TEST_CASE ("vertical_remap") {
           EKAT_ERROR_MSG ("Unexpected layout.\n");
       }
 
-      print ("   -> Checking field with source layout " + to_string(lsrc) + " " + dots + " OK!\n",comm);
+      print ("   -> Checking field with source layout " + ls + " " + dots + " OK!\n",comm);
     }
     print ("check tgt fields ... done!\n",comm);
   }

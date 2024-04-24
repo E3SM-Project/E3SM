@@ -327,7 +327,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       for (int gp1=0; gp1<ngp; ++gp1) {
         for (int gp2=0; gp2<ngp; ++gp2) {
           expected <<  "  f(" << iel << "," << icmp << "," << gp1 << "," << gp2 << ",:)";
@@ -350,7 +350,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       expected <<  "  f(" << iel << ",:," << igp << "," << jgp << "," << ilev << ")";
       for (int cmp=0; cmp<ncmp; ++cmp) {
         if (cmp % max_per_line == 0) {
@@ -369,7 +369,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       expected <<  "  f(" << ekat::join(loc_idxs,",") << ")\n";
       expected << "    " << v(iel,icmp,igp,jgp,ilev) << ", \n";
 

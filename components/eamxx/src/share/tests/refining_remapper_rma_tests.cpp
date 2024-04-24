@@ -37,7 +37,7 @@ public:
       const auto& fl = fh.get_identifier().get_layout();
       const auto& fap = fh.get_alloc_properties();
       const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
-      REQUIRE (m_col_size[i]==fl.strip_dim(COL).size());
+      REQUIRE (m_col_size[i]==fl.clone().strip_dim(COL).size());
       if (fh.get_parent().lock()) {
         REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
         REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
@@ -76,7 +76,6 @@ public:
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
   const auto u = ekat::units::Units::nondimensional();
-  const auto CMP = ShortFieldTagsNames::CMP;
   const auto& gn = grid.name();
   const auto  ndims = 2;
   Field f;
@@ -84,12 +83,12 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
@@ -120,7 +119,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;

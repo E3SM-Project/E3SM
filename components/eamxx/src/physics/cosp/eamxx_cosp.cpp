@@ -50,41 +50,42 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
-  FieldLayout scalar2d_layout     { {COL},      {m_num_cols}              };
-  FieldLayout scalar3d_layout_mid { {COL,LEV},  {m_num_cols,m_num_levs}   };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
-  FieldLayout scalar4d_layout_ctptau { {COL,ISCCPTAU,ISCCPPRS}, {m_num_cols,m_num_isccptau,m_num_isccpctp} };
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
+                                {m_num_cols,m_num_isccptau,m_num_isccpctp},
+                                {e2str(COL), "ISCCPTAU", "ISCCPPRS"});
 
   // Set of fields used strictly as input
   //                  Name in AD     Layout               Units   Grid       Group
-  add_field<Required>("surf_radiative_T", scalar2d_layout    , K,      grid_name);
-  //add_field<Required>("surfelev",    scalar2d_layout    , m,      grid_name);
-  //add_field<Required>("landmask",    scalar2d_layout    , nondim, grid_name);
-  add_field<Required>("sunlit",           scalar2d_layout    , nondim, grid_name);
-  add_field<Required>("p_mid",             scalar3d_layout_mid, Pa,     grid_name);
-  add_field<Required>("p_int",             scalar3d_layout_int, Pa,     grid_name);
-  //add_field<Required>("height_mid",  scalar3d_layout_mid, m,      grid_name);
-  //add_field<Required>("height_int",  scalar3d_layout_int, m,      grid_name);
-  add_field<Required>("T_mid",            scalar3d_layout_mid, K,      grid_name);
-  add_field<Required>("qv",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qc",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qi",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("cldfrac_rad",      scalar3d_layout_mid, nondim, grid_name);
+  add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
+  //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
+  //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
+  add_field<Required>("sunlit",           scalar2d    , nondim, grid_name);
+  add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
+  add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
+  //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
+  //add_field<Required>("height_int",  scalar3d_int, m,      grid_name);
+  add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
+  add_field<Required>("qv",               scalar3d_mid, Q,      grid_name, "tracers");
+  add_field<Required>("qc",               scalar3d_mid, Q,      grid_name, "tracers");
+  add_field<Required>("qi",               scalar3d_mid, Q,      grid_name, "tracers");
+  add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
   // Optical properties, should be computed in radiation interface
-  add_field<Required>("dtau067",     scalar3d_layout_mid, nondim, grid_name); // 0.67 micron optical depth
-  add_field<Required>("dtau105",     scalar3d_layout_mid, nondim, grid_name); // 10.5 micron optical depth
+  add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
+  add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
   // TODO: should these be meters or microns? Was meters before, but using "m" instead
   // of "micron" seemed to cause prim_model_finalize to throw error with the following:
   // ABORTING WITH ERROR: Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).
   // P3 defines this field with micron instead of meters units, so is this a unit conversion issue?
-  add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, micron,      grid_name);
-  add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, micron,      grid_name);
+  add_field<Required>("eff_radius_qc",     scalar3d_mid, micron,      grid_name);
+  add_field<Required>("eff_radius_qi",     scalar3d_mid, micron,      grid_name);
   // Set of fields used strictly as output
-  add_field<Computed>("isccp_cldtot", scalar2d_layout, percent, grid_name);
-  add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, percent, grid_name, 1);
-  add_field<Computed>("isccp_mask"  , scalar2d_layout, nondim, grid_name);
-
+  add_field<Computed>("isccp_cldtot", scalar2d, percent, grid_name);
+  add_field<Computed>("isccp_ctptau", scalar4d_ctptau, percent, grid_name, 1);
+  add_field<Computed>("isccp_mask"  , scalar2d, nondim, grid_name);
 }
 
 // =========================================================================================

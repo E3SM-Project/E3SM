@@ -89,7 +89,7 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto& col_size = fl.strip_dim(COL).size();
+    const auto& col_size = fl.clone().strip_dim(COL).size();
     m_fields_col_sizes_scan_sum[i+1] = m_fields_col_sizes_scan_sum[i] + col_size;
   }
   auto total_col_size = m_fields_col_sizes_scan_sum.back();

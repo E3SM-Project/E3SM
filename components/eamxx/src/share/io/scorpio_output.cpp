@@ -758,8 +758,8 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     // check tag against m_dims map.  If not in there, then add it.
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
-    auto tag_name = m_io_grid->get_dim_name(tags[i]);
-    if (tags[i]==CMP) {
+    auto tag_name = m_io_grid->get_dim_name(layout,i);
+    if (tag_name=="dim") {
       tag_name += std::to_string(dims[i]);
     }
     auto tag_loc = m_dims.find(tag_name);
@@ -855,7 +855,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   if (m_track_avg_cnt) {
     std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
     for (int ii=0; ii<layout.rank(); ++ii) {
-      auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
+      auto tag_name = m_io_grid->get_dim_name(layout,ii);
       avg_cnt_name += "_" + tag_name;
     }
     if (std::find(m_avg_cnt_names.begin(),m_avg_cnt_names.end(),avg_cnt_name)==m_avg_cnt_names.end()) {
@@ -919,7 +919,7 @@ register_variables(const std::string& filename,
     std::vector<int> range(layout.rank());
     std::iota(range.begin(),range.end(),0);
     auto tag_and_dim = [&](int i) {
-      return m_io_grid->get_dim_name(layout.tag(i)) +
+      return m_io_grid->get_dim_name(layout,i) +
              std::to_string(layout.dim(i));
     };
 
@@ -934,8 +934,8 @@ register_variables(const std::string& filename,
   auto set_vec_of_dims = [&](const FieldLayout& layout) {
     std::vector<std::string> vec_of_dims;
     for (int i=0; i<layout.rank(); ++i) {
-      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
-      if (layout.tag(i)==CMP) {
+      auto tag_name = m_io_grid->get_dim_name(layout,i);
+      if (tag_name=="dim") {
         tag_name += std::to_string(layout.dim(i));
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
@@ -1462,7 +1462,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       EKAT_ERROR_MSG (
             "Error! Field rank not not supported by AtmosphereOutput.\n"
           "  - field name:   " + field.name() + "\n"
-          "  - field layout: " + to_string(layout) + "\n");
+          "  - field layout: " + layout.to_string() + "\n");
   }
 }
 

@@ -92,7 +92,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name,lt.strip_dim(idim),sf_units,id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -121,7 +121,7 @@ get_component (const int i, const bool dynamic) {
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG (layout.is_vector_layout(),
       "Error! 'get_component' available only for vector fields.\n"
-      "       Layout of '" + fname + "': " + e2str(get_layout_type(layout.tags())) + "\n");
+      "       Layout of '" + fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),

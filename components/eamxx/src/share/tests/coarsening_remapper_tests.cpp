@@ -110,26 +110,25 @@ constexpr int tens_dim2 = 4;
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
 {
   const auto u = ekat::units::Units::nondimensional();
-  const auto CMP = ShortFieldTagsNames::CMP;
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,vec_dim),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
     case LayoutType::Tensor2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({CMP,CMP},{tens_dim1,tens_dim2}),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,CMP,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{CMP,CMP},{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -162,7 +161,7 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;
@@ -377,12 +376,12 @@ TEST_CASE("coarsening_remap")
       auto gtgt = all_gather_field(tgt_f[ifield],comm);
 
       const auto& l = gsrc.get_header().get_identifier().get_layout();
-      const auto ls = to_string(l);
+      const auto ls = l.to_string();
       std::string dots (30-ls.size(),'.');
-      auto msg = "   -> Checking field with layout " + to_string(l) + " " + dots;
+      auto msg = "   -> Checking field with layout " + ls + " " + dots;
       root_print (msg + "\n",comm);
       bool ok = true;
-      switch (get_layout_type(l.tags())) {
+      switch (l.type()) {
         case LayoutType::Scalar2D:
         {
           const auto v_src = gsrc.get_view<const Real*,Host>();
