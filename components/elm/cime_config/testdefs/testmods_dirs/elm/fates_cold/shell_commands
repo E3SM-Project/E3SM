@@ -1,2 +1,8 @@
 ./xmlchange TEST_MEMLEAK_TOLERANCE=0.75
 ./xmlchange NTHRDS=1
+
+# Change PIO settings as temporary fix for #6316
+if [ `./xmlquery --value LND_GRID` == 1.9x2.5 ]; then 
+   ./xmlchange PIO_NUMTASKS=4
+   ./xmlchange PIO_STRIDE=-999
+fi
