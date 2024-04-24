@@ -15,3 +15,6 @@ string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero")
 # -em -ef generates modulename.mod (lowercase files) to support
 # Scorpio installs
 string(APPEND CMAKE_Fortran_FLAGS " -em -ef")
+
+# to support Fortran specific compiler intrinsic functions
+set(E3SM_LINK_WITH_FORTRAN "TRUE")
