@@ -99,6 +99,10 @@ parser.add_option('--fmaxval',
                   dest='fmaxval',
                   default=1,
                   help='Maximum allowable land fraction (reset to 1 above fmaxval)')
+parser.add_option('--lfrac-threshold',
+                  dest='lfrac_threshold',
+                  default=1e-10,
+                  help='land fraction threshold above which the land mask will be 1')
 parser.add_option('--set-omask',
                   dest='set_omask',
                   default=False,
@@ -246,7 +250,7 @@ def main():
   lfrac = xr.where( lfrac>opts.fmaxval, 1, lfrac )
   lfrac = xr.where( lfrac<opts.fminval, 0, lfrac )
   ofrac = 1 - lfrac
-  lmask = xr.where( lfrac!=0, 1, lmask )
+  lmask = xr.where( lfrac>opts.lfrac_threshold, 1, lmask )
   omask = xr.where( ofrac==0, 0, omask )
 
   print(f'''
@@ -360,7 +364,7 @@ def compute_ofrac_on_atm( n_s, ofrac, frac_a, S, row, col ):
 domain_a_grid_file = 'unknown'
 domain_b_grid_file = 'unknown'
 ocn_grid_file      = 'unknown'
-atm_grid_file      = 'unknown'  
+atm_grid_file      = 'unknown'
 #---------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
   main()
