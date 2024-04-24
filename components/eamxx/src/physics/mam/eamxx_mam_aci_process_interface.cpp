@@ -473,7 +473,6 @@ void call_function_dropmixnuc(
             KOKKOS_LAMBDA(int klev) {
               // for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
-              Real qqcw_at_lev_col[mam4::aero_model::pcnst]    = {};
 
               // get state_q at a grid cell (col,lev)
               // NOTE: The order of species in state_q_at_lev_col

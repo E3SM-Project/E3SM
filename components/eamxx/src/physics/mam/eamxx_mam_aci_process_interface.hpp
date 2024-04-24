@@ -24,19 +24,21 @@ class MAMAci final : public scream::AtmosphereProcess {
   static constexpr int hetro_scratch_   = 43;
   static constexpr int dropmix_scratch_ = 15;
 
+  // views for multi-column data
+  using view_2d       = scream::mam_coupling::view_2d;
+  using const_view_2d = scream::mam_coupling::const_view_2d;
+  using view_3d       = scream::mam_coupling::view_3d;
+  using const_view_3d = scream::mam_coupling::const_view_3d;
+
  private:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   mam4::NucleateIce nucleate_ice_;
   mam4::Hetfrz hetfrz_;
 
-  // views for single- and multi-column data
+  // views for single-column data
   using view_1d       = scream::mam_coupling::view_1d;
-  using view_2d       = scream::mam_coupling::view_2d;
-  using view_3d       = scream::mam_coupling::view_3d;
   using const_view_1d = scream::mam_coupling::const_view_1d;
-  using const_view_2d = scream::mam_coupling::const_view_2d;
-  using const_view_3d = scream::mam_coupling::const_view_3d;
 
   //------------------------------------------------------------------------
   // ACI runtime ( or namelist) options
@@ -153,19 +155,19 @@ class MAMAci final : public scream::AtmosphereProcess {
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // Process metadata: Return type of the process
-  AtmosphereProcessType MAMAci::type() const {
+  AtmosphereProcessType type() const {
     return AtmosphereProcessType::Physics;
   }
 
   // Return name of the process
-  std::string MAMAci::name() const { return "mam4_aci"; }
+  std::string name() const { return "mam4_aci"; }
 
   // grid
   void set_grids(
       const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
-  size_t MAMAci::requested_buffer_size_in_bytes() const {
+  size_t requested_buffer_size_in_bytes() const {
     return mam_coupling::buffer_size(ncol_, nlev_);
   }
 
