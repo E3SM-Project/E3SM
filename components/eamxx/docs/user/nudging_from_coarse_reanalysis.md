@@ -24,4 +24,4 @@ The following options are needed to specify the nudging.
     ./atmchange nudging::nudging_refine_remap_mapfile="${PSCRATCH}/map_ne45pg2_to_ne256pg2.trbilin.20240410.nc"
 ```
 
-To gain a deeper understanding of these parameters and options, please refer to the overarching nudging documentation.
+To gain a deeper understanding of these parameters and options, please refer to code implementation of the nudging process.
