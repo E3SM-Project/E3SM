@@ -93,16 +93,12 @@ parser.add_option('--date-stamp',
                   help='Creation date stamp for domain files')
 parser.add_option('--fminval',
                   dest='fminval',
-                  default=0, 
+                  default=1e-3,
                   help='Minimum allowable land fraction (reset to 0 below fminval)')
 parser.add_option('--fmaxval',
                   dest='fmaxval',
                   default=1,
                   help='Maximum allowable land fraction (reset to 1 above fmaxval)')
-parser.add_option('--lfrac-threshold',
-                  dest='lfrac_threshold',
-                  default=1e-10,
-                  help='land fraction threshold above which the land mask will be 1')
 parser.add_option('--set-omask',
                   dest='set_omask',
                   default=False,
@@ -250,15 +246,15 @@ def main():
   lfrac = xr.where( lfrac>opts.fmaxval, 1, lfrac )
   lfrac = xr.where( lfrac<opts.fminval, 0, lfrac )
   ofrac = 1 - lfrac
-  lmask = xr.where( lfrac>opts.lfrac_threshold, 1, lmask )
+  lmask = xr.where( lfrac!=0, 1, lmask )
   omask = xr.where( ofrac==0, 0, omask )
 
   print(f'''
     ------------------------------------------------------------------------------------------------
     {clr.RED}IMPORTANT{clr.END}: note original min/max frac and decide if acceptable
-    lfrac clipped below / above : {opts.fminval      :+8.4e} / {opts.fmaxval      :+8.4f}
-    original lfrac min/max      : {lfrac_min         :+8.4e} / {lfrac_max         :+8.4f}
-    final    lfrac min/max      : {lfrac.min().values:+8.4e} / {lfrac.max().values:+8.4f}
+    lfrac clipped below / above : {opts.fminval      :+10.6e} / {opts.fmaxval      :+10.6f}
+    original lfrac min/max      : {lfrac_min         :+10.6e} / {lfrac_max         :+10.6f}
+    final    lfrac min/max      : {lfrac.min().values:+10.6e} / {lfrac.max().values:+10.6f}
     ------------------------------------------------------------------------------------------------
   ''')
 
