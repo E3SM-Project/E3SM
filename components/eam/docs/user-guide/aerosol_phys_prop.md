@@ -21,25 +21,25 @@ Key information
 
 ### Mode properties
 
-- Geometric standard deviation of each lognormal mode 
+- Geometric standard deviation of each lognormal mode
 
-- Nominal geometric mean diameter and its lower/upper bound of values for each mode 
+- Nominal geometric mean diameter and its lower/upper bound of values for each mode
 
-- Coefficients of polynomial expression (lookup-table) for extinction, absorption, and asymmetry parameter calculations. 
+- Coefficients of polynomial expression (lookup-table) for extinction, absorption, and asymmetry parameter calculations.
 
-- Aerosol refractive index table needed for interpolation (lookup-table) calculation (for different wavelengths) 
+- Aerosol refractive index table needed for interpolation (lookup-table) calculation (for different wavelengths)
 
-- Crystalization and deliquesence relative humidity thresholds for aerosol wateruptake calculations 
+- Crystalization and deliquesence relative humidity thresholds for aerosol wateruptake calculations
 
 ### Species properties
 
-- Aerosol refractive index for each species 
+- Aerosol refractive index for each species
 
-- Density for each species 
+- Density for each species
 
-- Aerosol hygroscopicity for each species 
+- Aerosol hygroscopicity for each species
 
-- Note that some of variables in the species property file are for bulk aerosols, so we ignore the description for them. 
+- Note that some of variables in the species property file are for bulk aerosols, so we ignore the description for them.
 
 ## Files
 
@@ -66,7 +66,7 @@ Mode properties
 ## Namelist
 
 ```
- mode_defs		= 'mam5_mode1:accum:=', 
+ mode_defs = 'mam5_mode1:accum:=', 
          'A:num_a1:N:num_c1:num_mr:+',
          'A:so4_a1:N:so4_c1:sulfate:/lcrc/group/e3sm/data/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 
          'A:pom_a1:N:pom_c1:p-organic:/lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ocpho_rrtmg_c130709_kPOM0.04.nc:+',

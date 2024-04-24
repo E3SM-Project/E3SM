@@ -17,5 +17,6 @@ Visioni, D., Tilmes, S., Bardeen, C., Mills, M., MacMartin, D. G., Kravitz, B., 
 Wang, H., Easter, R. C., Zhang, R., Ma, P. L., Singh, B., Zhang, K., ... & Yoon, J. H. (2020). Aerosols in the E3SM Version 1: New developments and their impacts on radiative forcing. Journal of Advances in Modeling Earth Systems, 12(1), e2019MS001851.
 
 ## Namelist parameters
+
 is_output_interactive_volc = .true.
-output stratospheric AOD flag, default value = .false. 
+output stratospheric AOD flag, default value = .false.

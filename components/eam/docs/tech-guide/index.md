@@ -1,28 +1,30 @@
+# EAM Technical Guide
+
 This Technical Guide describes the physics of EAM.
 
-# Dynamics
+## Dynamics
 
 - [HOMME](homme.md): The dynamical core used in EAMv3.
 
-# Physics
+## Physics
 
 ## Microphysics
 
 - [P3](p3.md): The stratiform cloud microphysics scheme in EAMv3.
 
-## Shallow convection / turbulence
+### Shallow convection / turbulence
 
 - [CLUBB](clubb.md): The parameterization of subgrid-scale turbulence and clouds in EAMv3.
 
-## Deep convection
+### Deep convection
 
 - [Zhang-McFarlane](zm.md): The deep convection parameterization in EAMv3.
 
-## Radiation
+### Radiation
 
 - [RRTMG](rrtmg.md): The parameterization of radiation in EAMv3.
 
-## Aerosol
+### Aerosol
 
 - [MAM4](mam4.md): The primary parameterization scheme of aerosols in EAMv3.  
 
@@ -34,11 +36,11 @@ This Technical Guide describes the physics of EAM.
 
 - [OCEANFILMS](oceanfilms.md): The parameterization of sea soray irganic aerosol emissions in EAMv3.
 
-## Chemistry
+### Chemistry
 
-- [chemUCI + Linoz v3](chemUCIlinozv3.md): The parameterization of interactive atmospheric chemistry in EAMv3.
+- [chemUCI + Linoz v3](chemUCIlinozv3.md): The interactive atmospheric chemistry packages in EAMv3.
 
-## Diagnostic outputs
+### Diagnostic outputs
 
 - [COSP](cosp.md): The scheme that allows the model to output satellite simulator output in EAMv3.
 

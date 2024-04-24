@@ -23,10 +23,9 @@ This page documents emissions data for all required aerosols and precursor gases
 Marine organic sea spray aerosol contributions are parameterized following the OCEANFILMS parameterization (E3SMv1; Burrows et al., 2014; 2022).  The input file for this parameterization provides a climatology of the ocean surface concentrations of several groups of organic macromolecules.  Briefly, the Parallel Ocean Program (POP; Maltrud et al., 1998) and its biogeochemical elemental cycling (BEC) routines (Moore et al., 2004) were used to simulate marine biogeochemistry fields, including particulate organic matter (POC), chlorophyll, and zooplankton concentrations; these fields were used to generate maps of the estimated surface distributions of classes of macromolecules following the methods described in Burrows et al. (2014).  The scripts used to accomplish this translation are available [here](https://github.com/E3SM-Project/PreAndPostProcessingScripts/blob/devel/prepare_model_inputfiles/emis/marine_organic_aerosol/JAN_1850_MASTERLANG.jnl).
 
 The file used as an input to E3SM is available here:
+[https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc](https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc)
 
-https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc
-
-And is also published as a citeable dataset on Zenodo: 
+And is also published as a citeable dataset on Zenodo:
 
 Elliott, S. M., Maltrud, M., & Burrows, S. M. (2015). Macromolecule distributions input file for the OCEANFILMS parameterization (Version v1) [Data set]. [Zenodo](https://doi.org/10.5281/zenodo.6320812).
 
@@ -45,7 +44,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
     * 1850-1979: monthly input cycled yearly from 30-year mean (1980-2009)
     * 1980-2014: time-varying MEGAN-MACC data (historical)
     * 2015-2100: monthly input cycled yearly from 30-year mean (1980-2009)
-  * natural emissions from oceans (C2H4, C2H6, C3H8, CO) and soil (NO) are regridded from NCAR CESM2 emission files. Just cycled yearly during the historical period and in the future scenarios. 
+  * natural emissions from oceans (C2H4, C2H6, C3H8, CO) and soil (NO) are regridded from NCAR CESM2 emission files. Just cycled yearly during the historical period and in the future scenarios.
   * E90 emissions?
 
 ## Oxidants file needed for VBS SOA and stratosphere sulfate formation
@@ -55,10 +54,10 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
   * the file for historical simulation is the same as v1 and v2, inherited from CESM
   * files for SSPs are regridded from NCAR CESM2 tracer files
 
-
 ## Namelist setting for emissions input
 
 ### Historical (WCYCL20TR)/AMIP (F20TR)
+
 ```
  ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205_kzm_1850_2014_volcano.nc',

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ARM data-oriented metrics and diagnostics package (ARM Diags) was developed to facilitate the use of ARM data in climate model evaluation and model intercomparison (Zhang et al. 2020). It includes ARM data sets, compiled from multiple ARM data products, and a Python-based analysis toolkit for computation ad visualization. It also includes simulation data from models participating the CMIP, which allows climate-modeling groups to compare a new, candidate version of their model to existing CMIP models. The ARM Diags has been applied in several model evaluation studies to help address a range of issues in climate models (Zheng et al. 2023; Emmenegger et al. 2022; Zhang et al. 2018). The Majority of ARM Diags sets are ported into E3SM Diags (Zhabg et al. 2022) for routine evaluation of the model.
+The ARM data-oriented metrics and diagnostics package (ARM Diags) was developed to facilitate the use of ARM data in climate model evaluation and model intercomparison (Zhang et al. 2020). It includes ARM data sets, compiled from multiple ARM data products, and a Python-based analysis toolkit for computation ad visualization. It also includes simulation data from models participating the CMIP, which allows climate-modeling groups to compare a new, candidate version of their model to existing CMIP models. The ARM Diags has been applied in several model evaluation studies to help address a range of issues in climate models (Zheng et al. 2023; Emmenegger et al. 2022; Zhang et al. 2018). The Majority of ARM Diags sets are ported into E3SM Diags (Zhang et al. 2022) for routine evaluation of the model.
 
 ## To enable the use of ARM Diags
 
@@ -10,16 +10,17 @@ To enable using ARM Diags for a simulation, often, a new tape that output at hig
 
 ```
 fincl7 = 'PS','Q','T','Z3','CLOUD','CONCLD','CLDICE','CLDLIQ','FREQR','REI','REL','PRECT','TMQ','PRECC','TREFHT','QREFHT','OMEGA','CLDTOT','LHFLX','SHFLX','FLDS','FSDS','FLNS','FSNS','FLNSC','FSDSC','FSNSC','AODVIS','AODABS','LS_FLXPRC','LS_FLXSNW','LS_REFFRAIN','ZMFLXPRC','ZMFLXSNW','CCN1','CCN2','CCN3','CCN4','CCN5','num_a1','num_a2','num_a3','num_a4','so4_a1','so4_a2','so4_a3','AREL','TGCLDLWP','AQRAIN','ANRAIN','FREQR','PRECL','RELHUM'
-fincl7lonlat='262.5e_36.6n','204.6e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
+fincl7lonlat='262.5e_36.6n','203.4e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
 ```
 
 Note that in this example fincl7 should set to write output at hourly (`nhtfrq = -1`). And here additional variables are included for ARM simulator analysis. The ARM site information is shown below:
+
 ```
     "sgpc1": ["97.5W 36.4N Oklahoma ARM"],
 
     "nsac1": ["156.6W 71.3N Barrow ARM"],
 
-    "twpc1": "147.4E 2.1S Manus ARM"],
+    "twpc1": ["147.4E 2.1S Manus ARM"],
 
     "twpc2": ["166.9E 0.5S Nauru ARM"],
 
@@ -27,7 +28,6 @@ Note that in this example fincl7 should set to write output at hourly (`nhtfrq =
 
     "enac1": ["28.0E 39.1N Graciosa Island ARM"], 
 ```
-
 
 ## Diagnostics and metrics currently implemented in the ARM Diags
 

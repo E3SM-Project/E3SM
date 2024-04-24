@@ -40,15 +40,15 @@ All of the compsets below run with the complete set of E3SM atmospheric configur
 
 ### Namelist changes
 
-Namelist parameters can be specified in the `user_nl_eam` file. While most can be added at run time, some need to be added before `./case.setup` to have the changes applied in the simulation. 
+Namelist parameters can be specified in the `user_nl_eam` file. While most can be added at run time, some need to be added before `./case.setup` to have the changes applied in the simulation.
 
-Refer to the individual schemes in the [tech-guide](../tech-guide/index.md) for a list of namelist parameters associated with each scheme in the atmosphere.
+Refer to the following page for a table of namelist parameters and the [tech-guide](../tech-guide/index.md) for a description of the atmosphere schemes for which the namelist parameters correspond to.
 
 ### Input datasets
 
 #### Greenhouse gases (non-reacting)
 
-Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014. 
+Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014.
 
 ```
 atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
@@ -74,12 +74,14 @@ Linozv3 uses the ozone tendency, (net production minus loss) calculated from its
  linoz_data_type                = 'INTERP_MISSING_MONTHS'
 ```
 
-Refer to [this page](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3764486280/Production+of+the+Linoz+v3+data) for more details on Linoz v3 input files. 
+Refer to [this page](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3764486280/Production+of+the+Linoz+v3+data) for more details on Linoz v3 input files.
 
 #### Topography
+
 The global elevation on the atmosphere grid is a key input dataset.  The dataset is grid dependent. It contains the geopotential data (on both the GLL dynamics and PG2 physics grids) and two surface roughness quantities, `SGH` and `SGH30`.
 
-EAMv3 NE30 data:  
+EAMv3 NE30 data:
+
 ```
 /lcrc/group/e3sm/data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
 ```
@@ -108,7 +110,7 @@ inputdata/atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc
 
 ### Specifying output (history files)
 
-These are specified in the `user_nl_eam`. 
+These are specified in the `user_nl_eam`.
 
 By default, EAM will output a set of monthly-averaged variables. Additional output files can be specified using the following flags:
 
@@ -120,20 +122,18 @@ By default, EAM will output a set of monthly-averaged variables. Additional outp
 
 `mfilt` - List that sets the number of timesteps to write in a single file before starting a new file.
 
-`avgflag_pertape` - List that sets the type of output to write. Choices are `'A'` for time-averaged output, `'A'` for instantaneous output, `'MIN'` for time-minimum output, and `'MAX'` for time-maximum output. 
-
+`avgflag_pertape` - List that sets the type of output to write. Choices are `'A'` for time-averaged output, `'A'` for instantaneous output, `'MIN'` for time-minimum output, and `'MAX'` for time-maximum output.
 
 #### Example output specification:
 
 ```
- nhtfrq = 0,-24,-6,-3
- mfilt  = 1,30,120,24
- avgflag_pertape = 'A','A','A','I'
+nhtfrq = 0,-24,-6,-3
+mfilt  = 1,30,120,24
+avgflag_pertape = 'A','A','A','I'
 
- fexcl1 = 'U10' # Removes U10 output from monthly files
- fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
+fexcl1 = 'U10' # Removes U10 output from monthly files
+fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
           'TCO','SCO','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
- fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
- fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file
-
- ```
+fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
+fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file
+```
