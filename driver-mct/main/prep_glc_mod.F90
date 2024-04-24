@@ -31,6 +31,7 @@ module prep_glc_mod
 
   public :: prep_glc_init
   public :: prep_glc_mrg_lnd
+  public :: prep_glc_mrg_ocn
 
   public :: prep_glc_accum_lnd
   public :: prep_glc_accum_ocn
@@ -136,7 +137,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc, ocn_c2_glcshelf)
 
     !---------------------------------------------------------------
     ! Description
@@ -145,7 +146,8 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc shelf coupling on
     !
     ! Local Variables
     integer                          :: eli, egi, eoi
@@ -251,8 +253,8 @@ contains
 
     end if
 
-    if (glc_present .and. ocn_c2_glcshelf) then
-
+    ! setup needed for either kind of ocn2glc coupling
+    if (glc_present .and. (ocn_c2_glc .or. ocn_c2_glcshelf)) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
@@ -277,6 +279,21 @@ contains
        x2gacc_gx_cnt = 0
        samegrid_go = .true.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
+    end if
+
+    ! setup needed for ocn2glc (TF) coupling
+    if (glc_present .and. ocn_c2_glc) then
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_So2g_tf'
+       end if
+       call seq_map_init_rcfile(mapper_So2g_tf, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_tf_smapname:','ocn2glc_tf_smaptype:',samegrid_go, &
+       'mapper_So2g_tf initialization',esmf_map_flag)
+    end if
+
+    ! setup needed for ocn2glcshelf coupling
+    if (glc_present .and. ocn_c2_glcshelf) then
        if (iamroot_CPLID) then
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_So2g'
@@ -291,7 +308,6 @@ contains
        call seq_map_init_rcfile(mapper_Fo2g, ocn(1), glc(1), &
        'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
        'mapper_Fo2g initialization',esmf_map_flag)
-
        !Initialize module-level arrays associated with compute_melt_fluxes
        allocate(oceanTemperature(lsize_g))
        allocate(oceanSalinity(lsize_g))
@@ -309,10 +325,9 @@ contains
        ! TODO: Can we allocate these only while used or are we worried about performance hit?
        ! TODO: add deallocates!
 
-       call shr_sys_flush(logunit)
-
     end if
 
+    call shr_sys_flush(logunit)
 
   end subroutine prep_glc_init
 
@@ -525,6 +540,154 @@ contains
 
   !================================================================================================
 
+  subroutine prep_glc_mrg_ocn(infodata, fractions_gx, timer_mrg)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Merge glc inputs
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+    type(mct_aVect)         , intent(in)    :: fractions_gx(:)
+    character(len=*)        , intent(in)    :: timer_mrg
+    !
+    ! Local Variables
+    integer :: egi, eoi, efi
+    type(mct_avect), pointer :: x2g_gx
+    character(*), parameter  :: subname = '(prep_glc_mrg_ocn)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
+    do egi = 1,num_inst_glc
+       ! Use fortran mod to address ensembles in merge
+       eoi = mod((egi-1),num_inst_ocn) + 1
+       efi = mod((egi-1),num_inst_frc) + 1
+
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       call prep_glc_merge_ocn_forcing(o2x_gx(eoi), fractions_gx(efi), x2g_gx)
+    enddo
+    call t_drvstopf  (trim(timer_mrg))
+
+  end subroutine prep_glc_mrg_ocn
+
+  !================================================================================================
+
+  subroutine prep_glc_merge_ocn_forcing( o2x_g, fractions_g, x2g_g )
+
+    !-----------------------------------------------------------------------
+    ! Description
+    ! "Merge" ocean forcing for glc input.
+    !
+    ! State fields are copied directly, meaning that averages are taken just over the
+    ! ocean-covered portion of the glc domain.
+    !
+    ! Flux fields are downweighted by landfrac, which effectively sends a 0 flux from the
+    ! non-ocean-covered portion of the glc domain.
+    !
+    ! Arguments
+    type(mct_aVect), intent(inout)  :: o2x_g  ! input
+    type(mct_aVect), intent(in)     :: fractions_g
+    type(mct_aVect), intent(inout)  :: x2g_g  ! output
+    !-----------------------------------------------------------------------
+
+    integer       :: num_flux_fields
+    integer       :: num_state_fields
+    integer       :: nflds
+    integer       :: i,n
+    integer       :: mrgstr_index
+    integer       :: index_o2x
+    integer       :: index_x2g
+    integer       :: index_ofrac
+    integer       :: lsize
+    logical       :: iamroot
+    logical, save :: first_time = .true.
+    character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(CL) :: field   ! string converted to char
+    character(*), parameter   :: subname = '(prep_glc_merge_ocn_forcing) '
+
+    !-----------------------------------------------------------------------
+
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
+    lsize = mct_aVect_lsize(x2g_g)
+
+    !num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_ocn))
+    num_flux_fields = 0
+    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_tf_states_from_ocn))
+
+    if (first_time) then
+       nflds = num_flux_fields + num_state_fields
+       allocate(mrgstr(nflds))
+    end if
+
+    mrgstr_index = 1
+
+    do i = 1, num_state_fields
+       call seq_flds_getField(field, i, seq_flds_x2g_tf_states_from_ocn)
+       index_o2x = mct_aVect_indexRA(o2x_g, trim(field))
+       index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
+
+       if (first_time) then
+          mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
+               ' = o2x%'//trim(field)
+       end if
+
+       do n = 1, lsize
+          x2g_g%rAttr(index_x2g,n) = o2x_g%rAttr(index_o2x,n)
+       end do
+
+       mrgstr_index = mrgstr_index + 1
+    enddo
+
+    !index_lfrac = mct_aVect_indexRA(fractions_g,"lfrac")
+    !do i = 1, num_flux_fields
+
+    !   call seq_flds_getField(field, i, seq_flds_x2g_fluxes_from_lnd)
+    !   index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
+    !   index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
+
+    !   if (trim(field) == qice_fieldname) then
+
+    !      if (first_time) then
+    !         mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
+    !              ' = l2x%'//trim(field)
+    !      end if
+
+    !      ! treat qice as if it were a state variable, with a simple copy.
+    !      do n = 1, lsize
+    !         x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
+    !      end do
+
+    !   else
+    !      write(logunit,*) subname,' ERROR: Flux fields other than ', &
+    !           qice_fieldname, ' currently are not handled in lnd2glc remapping.'
+    !      write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
+    !      write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
+    !      write(logunit,*) 'in a smooth, conservative manner.'
+    !      call shr_sys_abort(subname//&
+    !           ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
+    !   endif  ! qice_fieldname
+
+    !   mrgstr_index = mrgstr_index + 1
+
+    !end do
+
+    if (first_time) then
+       if (iamroot) then
+          write(logunit,'(A)') subname//' Summary:'
+          do i = 1,nflds
+             write(logunit,'(A)') trim(mrgstr(i))
+          enddo
+       endif
+       deallocate(mrgstr)
+    endif
+
+    first_time = .false.
+
+  end subroutine prep_glc_merge_ocn_forcing
+
+
+  !================================================================================================
+
   subroutine prep_glc_mrg_lnd(infodata, fractions_gx, timer_mrg)
 
     !---------------------------------------------------------------
@@ -606,7 +769,7 @@ contains
     mrgstr_index = 1
 
     do i = 1, num_state_fields
-       call seq_flds_getField(field, i, seq_flds_x2g_states)
+       call seq_flds_getField(field, i, seq_flds_x2g_states_from_lnd)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
@@ -670,13 +833,15 @@ contains
   end subroutine prep_glc_merge_lnd_forcing
 
 
-  subroutine prep_glc_calc_o2x_gx(timer)
+  subroutine prep_glc_calc_o2x_gx(ocn_c2_glc, ocn_c2_glcshelf, timer)
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_gx
 
     ! Arguments
     character(len=*), intent(in) :: timer
+    logical, intent(in) :: ocn_c2_glc
+    logical, intent(in) :: ocn_c2_glcshelf
 
     character(*), parameter :: subname = '(prep_glc_calc_o2x_gx)'
     ! Local Variables
@@ -686,8 +851,14 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
-      call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
+      if (ocn_c2_glc) then
+         call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
+                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
+      end if
+      if (ocn_c2_glcshelf) then
+         call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
                        fldlist=seq_flds_x2g_states_from_ocn,norm=.true.)
+      end if
     enddo
 
     call t_drvstopf  (trim(timer))
