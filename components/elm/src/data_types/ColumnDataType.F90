@@ -5843,20 +5843,22 @@ contains
           avgflag='A', long_name='column-integrated snow freezing rate', &
            ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
 
-    this%qflx_glcice(begc:endc) = spval
-     call hist_addfld1d (fname='QICE',  units='mm/s',  &
-          avgflag='A', long_name='ice growth/melt', &
-           ptr_col=this%qflx_glcice, l2g_scale_type='ice')
+    if (create_glacier_mec_landunit) then
+       this%qflx_glcice(begc:endc) = spval
+       call hist_addfld1d (fname='QICE',  units='mm/s',  &
+            avgflag='A', long_name='ice growth/melt', &
+            ptr_col=this%qflx_glcice, l2g_scale_type='ice')
 
-    this%qflx_glcice_frz(begc:endc) = spval
-     call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
-          avgflag='A', long_name='ice growth', &
-           ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
-    
-    this%qflx_glcice_melt(begc:endc) = spval
-     call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
-          avgflag='A', long_name='ice melt', &
-           ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
+       this%qflx_glcice_frz(begc:endc) = spval
+       call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
+            avgflag='A', long_name='ice growth', &
+            ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
+
+       this%qflx_glcice_melt(begc:endc) = spval
+       call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
+            avgflag='A', long_name='ice melt', &
+            ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
+    endif
 
     ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at any
     ! given time step but only if there is at least one snow layer (for all landunits
