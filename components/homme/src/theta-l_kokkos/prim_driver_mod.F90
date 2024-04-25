@@ -64,7 +64,7 @@ contains
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
-    use iso_c_binding, only : c_loc, c_ptr, c_bool, C_NULL_CHAR
+    use iso_c_binding, only : c_loc, c_ptr, C_NULL_CHAR
     use theta_f2c_mod, only : init_reference_element_c, init_simulation_params_c, &
                               init_time_level_c, init_hvcoord_c, init_elements_c
     use time_mod,      only : TimeLevel_t, nsplit
@@ -73,7 +73,7 @@ contains
                               nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg,  &
                               hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,&
                               hypervis_scaling,                                        &
-                              ftype, prescribed_wind, moisture, disable_diagnostics,   &
+                              ftype, prescribed_wind, use_moisture, disable_diagnostics,   &
                               use_cpstar, transport_alg, theta_hydrostatic_mode,       &
                               dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
@@ -93,6 +93,8 @@ contains
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     character(len=MAX_STRING_LEN), target :: test_name
 
+    integer :: disable_diagnostics_int, theta_hydrostatic_mode_int, use_moisture_int
+
     ! Initialize the C++ reference element structure (i.e., pseudo-spectral deriv matrix and ref element mass matrix)
     dvv = deriv1%dvv
     elem_mp = mp
@@ -100,22 +102,28 @@ contains
 
     ! Fill the simulation params structures in C++
     test_name = TRIM(test_case) // C_NULL_CHAR
+
+    if (disable_diagnostics) disable_diagnostics_int=1
+    if (.not.disable_diagnostics) disable_diagnostics_int=0
+    if (use_moisture) use_moisture_int=1
+    if (.not.use_moisture) use_moisture_int=0
+
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,      &
                                    hypervis_scaling,                                              &
                                    dcmip16_mu, ftype, theta_advect_form,                          &
-                                   LOGICAL(prescribed_wind==1,c_bool),                            &
-                                   LOGICAL(moisture/="dry",c_bool),                               &
-                                   LOGICAL(disable_diagnostics,c_bool),                           &
-                                   LOGICAL(use_cpstar==1,c_bool),                                 &
+                                   prescribed_wind,                                               &
+                                   use_moisture_int,                                              &
+                                   disable_diagnostics_int,                                       &
+                                   use_cpstar,                                                    &
                                    transport_alg,                                                 &
-                                   LOGICAL(theta_hydrostatic_mode,c_bool),                        &
+                                   theta_hydrostatic_mode_int,                                    &
                                    c_loc(test_name),                                              &
                                    dt_remap_factor, dt_tracer_factor,                             &
                                    scale_factor, laplacian_rigid_factor,                          &
                                    nsplit,                                                        &
-                                   LOGICAL(pgrad_correction==1,c_bool),                           &
+                                   pgrad_correction,                                              &
                                    dp3d_thresh, vtheta_thresh, internal_diagnostics_level)
 
     ! Initialize time level structure in C++
@@ -343,22 +351,23 @@ contains
   end subroutine prim_init_elements_views
 
   subroutine prim_init_kokkos_functors (allocate_buffer)
-    use iso_c_binding, only : c_bool
     use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
-
     !
     ! Optional Input
     !
-     logical(kind=c_bool), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+    logical, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+
+    integer :: allocate_buffer_int    
 
     ! Initialize the C++ functors in the C++ context
     ! If no argument allocate_buffer is present,
     ! let Homme internally allocate buffers
+    allocate_buffer_int=1
     if (present(allocate_buffer)) then
-      call init_functors_c (logical(allocate_buffer,c_bool))
-    else
-      call init_functors_c (logical(.true.,c_bool))
+      if (allocate_buffer) allocate_buffer_int=1
+      if (.not.allocate_buffer) allocate_buffer_int=0
     endif
+    call init_functors_c (allocate_buffer_int)
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
