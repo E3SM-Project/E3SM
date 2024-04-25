@@ -18,7 +18,7 @@ This Users's Guide describes how to set up and run EAM.
 
 A step-by-step instruction on how to run E3SM can be found [here](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536).
 
-The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs. 
+The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs.
 
 ## Scientifically supported compsets and grids
 
@@ -40,9 +40,9 @@ All of the compsets below run with the complete set of E3SM atmospheric configur
 
 ### Namelist changes
 
-Namelist parameters can be specified in the `user_nl_eam` file. While most can be added at run time, some need to be added before `./case.setup` to have the changes applied in the simulation.
+Namelist parameters can be specified in the `user_nl_eam` file and unless otherwise noted can be specified at run time.
 
-Refer to the following page for a table of namelist parameters and the [tech-guide](../tech-guide/index.md) for a description of the atmosphere schemes for which the namelist parameters correspond to.
+Refer to the following page for a [table](namelist_parameters.md) of namelist parameters and the [tech-guide](../tech-guide/index.md) for a description of the atmosphere schemes for which the namelist parameters correspond to.
 
 ### Input datasets
 
@@ -50,15 +50,15 @@ Refer to the following page for a table of namelist parameters and the [tech-gui
 
 Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014.
 
-```
-atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
+```text
+inputdata/atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
 ```
 
 #### Aerosol physical properties
 
 The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet activation/ice nucleation schemes. Detailed information on the files and related references can be found [here](aerosol_phys_prop.md).
 
-#### Aerosol and gas emission and oxidant files 
+#### Aerosol and gas emission and oxidant files
 
 Details of the aerosol and gas emission and oxidant files used in various historical, present-day, and future scenario can be found [here](emission_oxidant_files.md).
 
@@ -68,7 +68,7 @@ Linozv3 uses the ozone tendency, (net production minus loss) calculated from its
 
 ##### Historical files
 
-```
+```text
  linoz_data_file                = ‘linv3_1849-2101_CMIP6_Hist_10deg_58km_c20231207.nc’
  linoz_data_path                = '/lcrc/group/e3sm/data/inputdata/atm/cam/chem/trop_mozart/ub'
  linoz_data_type                = 'INTERP_MISSING_MONTHS'
@@ -82,8 +82,8 @@ The global elevation on the atmosphere grid is a key input dataset.  The dataset
 
 EAMv3 NE30 data:
 
-```
-/lcrc/group/e3sm/data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
+```text
+inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
 ```
 
 This file is computed via a complex procedure that starts with high resolution dataset (for EAMv3, we use the GTOPO30, a 30 arc-second resolution data set on a lat-lon grid) that is then downsampled to a 3km cubed-sphere grid (cube3000) and then downsampled to the atmosphere  grid on the (GLL nodes), and then smoothed with the same viscosity operator used by the dycore. The smoothed GLL topography is then mapped to the PG2 grid. Finally, two different surface roughness fields are computed:
@@ -93,18 +93,39 @@ This file is computed via a complex procedure that starts with high resolution d
 
 #### Land-use / land cover change
 
-- <span style="color:red">Info needed on land-use land cover change / land surface data</span>
+Info needed on land-use land cover change / land surface data
+
+Refer to [ELM documentation](../../../elm/docs/index.md).
 
 #### Ocean/sea ice
 
-- <span style="color:red">SST file</span>
-- <span style="color:red">Sea ice fraction</span>
+The sea surface temperature and sea-ice coverage data used in F-case simulations are based on CMIP6 Forcing Datasets provided from the input4MIPs data collection. The file for the `F2010` compset is created from taking a monthly climatology of years 2005-2014. The file for the `F1850` compset is created from taking a monthly climatology of years 1870-1879.*
+
+*[Provenenance for F1850 file](https://acme-climate.atlassian.net/wiki/spaces/ATM/pages/201525378/Provenance+for+CMIP6+DECK+SST+Sea-Ice+input+data+for+E3SM)
+
+`F20TR`
+
+```text
+inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc
+```
+
+`F2010`
+
+```text
+inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc 
+```
+
+`F1850`
+
+```text
+inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc
+```
 
 #### Solar input
 
 As with greenhouse gas emissions, solar input files are taken from the input4MIPs data collection that were prepared for CMIP6 Forcing Datasets.
 
-```
+```text
 inputdata/atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc
 ```
 
@@ -124,9 +145,9 @@ By default, EAM will output a set of monthly-averaged variables. Additional outp
 
 `avgflag_pertape` - List that sets the type of output to write. Choices are `'A'` for time-averaged output, `'A'` for instantaneous output, `'MIN'` for time-minimum output, and `'MAX'` for time-maximum output.
 
-#### Example output specification:
+#### Example output specification
 
-```
+```text
 nhtfrq = 0,-24,-6,-3
 mfilt  = 1,30,120,24
 avgflag_pertape = 'A','A','A','I'

@@ -3,7 +3,7 @@
 
 ## Overview
 
-This page documents emissions data for all required aerosols and precursor gases as well as oxidants input data for running EAMv3, mostly for the MAM4 aerosol scheme, from anthropogenic (i.e., industrial, energy, transportation, domestic, and agriculture activity sectors) and natural (i.e., sea spray, vegetation, fire smoke, volcano) sources. Sulfur from agriculture, domestic, transportation, waste, and shipping sectors is emitted at the surface while sulfur from energy and industry sectors is emitted at 100-300 m above the surface, and sulfur from forest fire and grass fire is emitted at higher elevations (0-6 km). POM and BC from forest fire and grass fire are emitted at 0-6 km, while those from other sources (domestic, energy, industry, transportation, waste, and shipping) are emitted at the surface. Injection height profiles for fire emissions are derived from the corresponding AeroCom profiles (Dentener et al., 2006), which give emissions in 6 altitude ranges (0-0.1, 0.1-0.5, 0.5-1, 1-2, 2-3, and 3-6 km). Otherwise, species emissions are assumed to be at the surface (bottom layer). Number emission fluxes each mode are calculated from mass emission fluxes based on AeroCom prescribed lognormal size distributions.
+This page documents emissions data for all required aerosols and precursor gases as well as oxidants input data for running EAMv3, mostly for the MAM4 aerosol scheme, from anthropogenic (i.e., industrial, energy, transportation, domestic, and agriculture activity sectors) and natural (i.e., sea spray, vegetation, fire smoke, volcano) sources. Sulfur from agriculture, domestic, transportation, waste, and shipping sectors is emitted at the surface while sulfur from energy and industry sectors is emitted at 100-300 m above the surface, and sulfur from forest fire and grass fire is emitted at higher elevations (0-6 km). POM and BC from forest fire and grass fire are emitted at 0-6 km, while those from other sources (domestic, energy, industry, transportation, waste, and shipping) are emitted at the surface. Injection height profiles for fire emissions are derived from the corresponding AeroCom profiles (Dentener et al., 2006) [@dentener_emissions_2006], which give emissions in 6 altitude ranges (0-0.1, 0.1-0.5, 0.5-1, 1-2, 2-3, and 3-6 km). Otherwise, species emissions are assumed to be at the surface (bottom layer). Number emission fluxes each mode are calculated from mass emission fluxes based on AeroCom prescribed lognormal size distributions.
 
 ## Aerosols and gas precursors (common for EAMv1/v2/v3)
 
@@ -20,7 +20,7 @@ This page documents emissions data for all required aerosols and precursor gases
 
 ## Marine organic sea spray
 
-Marine organic sea spray aerosol contributions are parameterized following the OCEANFILMS parameterization (E3SMv1; Burrows et al., 2014; 2022).  The input file for this parameterization provides a climatology of the ocean surface concentrations of several groups of organic macromolecules.  Briefly, the Parallel Ocean Program (POP; Maltrud et al., 1998) and its biogeochemical elemental cycling (BEC) routines (Moore et al., 2004) were used to simulate marine biogeochemistry fields, including particulate organic matter (POC), chlorophyll, and zooplankton concentrations; these fields were used to generate maps of the estimated surface distributions of classes of macromolecules following the methods described in Burrows et al. (2014).  The scripts used to accomplish this translation are available [here](https://github.com/E3SM-Project/PreAndPostProcessingScripts/blob/devel/prepare_model_inputfiles/emis/marine_organic_aerosol/JAN_1850_MASTERLANG.jnl).
+Marine organic sea spray aerosol contributions are parameterized following the OCEANFILMS parameterization (E3SMv1; Burrows et al., 2014; [@burrows_physically_2014] 2022 [@burrows_oceanfilms_2022]).  The input file for this parameterization provides a climatology of the ocean surface concentrations of several groups of organic macromolecules.  Briefly, the Parallel Ocean Program (POP; Maltrud et al., 1998) [@maltrud_global_1998] and its biogeochemical elemental cycling (BEC) routines (Moore et al., 2004) [@moore_upper_2004] were used to simulate marine biogeochemistry fields, including particulate organic matter (POC), chlorophyll, and zooplankton concentrations; these fields were used to generate maps of the estimated surface distributions of classes of macromolecules following the methods described in Burrows et al. (2014) [@burrows_physically_2014].  The scripts used to accomplish this translation are available [here](https://github.com/E3SM-Project/PreAndPostProcessingScripts/blob/devel/prepare_model_inputfiles/emis/marine_organic_aerosol/JAN_1850_MASTERLANG.jnl).
 
 The file used as an input to E3SM is available here:
 [https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc](https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc)
@@ -58,7 +58,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 ### Historical (WCYCL20TR)/AMIP (F20TR)
 
-```
+```text
  ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205_kzm_1850_2014_volcano.nc',
          'SOAG0       -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc',
@@ -102,7 +102,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 ### F2010
 
-```
+```text
  ext_frc_cycle_yr               = 2010
  ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_2010_clim_1.9x2.5_c20230213.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc',
@@ -153,7 +153,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 #### SSP370
 
-```
+```text
 ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240208.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_elev_2015-2100_c210216.nc',
          'SOAG0       -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240208.nc',

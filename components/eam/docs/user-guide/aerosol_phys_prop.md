@@ -5,13 +5,13 @@
 
 Key information
 
-- Original physical properties of aerosols are documented in Liu et al. (2012). Detailed information is included in the supplement.
+- Original physical properties of aerosols are documented in Liu et al. (2012) [@liu_toward_2012]. Detailed information is included in the supplement.
 
-- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020).
+- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020) [@wang_aerosols_2020].
 
-- Marine organic aerosol properties are defined in Burrows et al. (2022).
+- Marine organic aerosol properties are defined in Burrows et al. (2022) [@burrows_oceanfilms_2022].
 
-- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022).
+- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022) [@feng_global_2022].
 
 - BC and POM hygroscopicity values are updated by Shan et al. (2024).
 
@@ -43,9 +43,9 @@ Key information
 
 ## Files
 
-```
 Species properties
 
+```text
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ocpho_rrtmg_c130709_kPOM0.04.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc
@@ -53,9 +53,11 @@ Species properties
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/poly_rrtmg_c130816.nc
+```
 
 Mode properties
 
+```text
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc', 
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc',
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc', 
@@ -65,7 +67,7 @@ Mode properties
 
 ## Namelist
 
-```
+```text
  mode_defs = 'mam5_mode1:accum:=', 
          'A:num_a1:N:num_c1:num_mr:+',
          'A:so4_a1:N:so4_c1:sulfate:/lcrc/group/e3sm/data/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 

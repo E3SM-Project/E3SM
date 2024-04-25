@@ -2,7 +2,7 @@
 
 ## Overview
 
-E3SM (v1-v3) uses the OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) parameterization to represent sea spray organic aerosol emissions.  OCEANFILMS is a physically based model that links sea spray chemistry with ocean biogeochemistry using a Langmuir partitioning approach.  The underlying physical assumptions and parameterization are described in Burrows et al. (2014); the implementation in E3SM and impact on clouds and climate are documented in Burrows et al. (2022).
+E3SM (v1-v3) uses the OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) parameterization to represent sea spray organic aerosol emissions.  OCEANFILMS is a physically based model that links sea spray chemistry with ocean biogeochemistry using a Langmuir partitioning approach.  The underlying physical assumptions and parameterization are described in Burrows et al. (2014); [@burrows_physically_2014] the implementation in E3SM and impact on clouds and climate are documented in Burrows et al. (2022). [@burrows_oceanfilms_2022]
 
 ## Namelist parameters
 
@@ -19,6 +19,6 @@ E3SM (v1-v3) uses the OCEANFILMS (Organic Compounds from Ecosystems to Aerosols:
 | `mam_mom_fixed_tod`  | The time of day (seconds) corresponding to mam_mom_fixed_ymd at which the prescribed aerosol flux data is fixed if mam_mom_type is 'FIXED'. | `0`           |
 | `mam_mom_bubble_thickness`   | Bubble film thickness (in m) for marine organic aerosol emission mechanism.  The physically reasonable range is approximately (0.1 - 1) x 10^ -6. | `0.1e-6`            |
 | `mam_mom_mixing_state`              | Switch to select mixing state assumption in marine organic aerosol code. Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass. | `0` [Note: set to 3 in the atm_in namelist]        |
-| `mam_mom_parameterization`     | Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization; fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; fmoa=4 for
-Rinaldi et al. (JGR, 2013).* | `1`                 |
+| `mam_mom_parameterization`     | Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) [@burrows_physically_2014] parameterization; fmoa=2 for Gantt et al. (2011) [@gantt_wind_2011] parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; [@quinn_contribution_2014] fmoa=4 for Rinaldi et al. (JGR, 2013).* [@rinaldi_is_2013] | `1`                 |
+
 *Note: non-default values have not been carefully tested and may not work as expected.
