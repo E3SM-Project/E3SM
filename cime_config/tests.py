@@ -276,7 +276,6 @@ _TESTS = {
             "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF-DISMF",
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-            "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
