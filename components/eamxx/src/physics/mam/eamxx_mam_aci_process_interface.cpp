@@ -469,9 +469,9 @@ void call_function_dropmixnuc(
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
         Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
-            KOKKOS_LAMBDA(int klev) {
-              // for(int klev = 0; klev < mam4::ndrop::pver; ++klev) {
+                             Kokkos::TeamThreadRange(team, 0u, 72),//mam4::ndrop::pver),
+            [=](int klev) {
+
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
               // get state_q at a grid cell (col,lev)
@@ -570,7 +570,7 @@ void update_interstitial_aerosols(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
+            Kokkos::TeamThreadRange(team, nlev), [=](int kk) {
               int s_idx = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
               for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
                 for(int a = 0; a < mam4::num_species_mode(m); ++a) {
@@ -686,7 +686,7 @@ void call_hetfrz_compute_tendencies(
         // assign cloud fraction
         Kokkos::parallel_for(
             Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
-            KOKKOS_LAMBDA(int klev) {
+            [=](int klev) {
               diags.stratiform_cloud_fraction(klev) =
                   haero_atm.cloud_fraction(klev);
             });
