@@ -87,22 +87,6 @@ const char* aero_mode_name(const int mode) {
   return mode_names[mode];
 }
 
-// Given a MAM aerosol species ID, returns a string denoting the symbolic
-// name of the species.
-KOKKOS_INLINE_FUNCTION
-const char* aero_species_name(const int species_id) {
-  static const char *species_names[num_aero_species()] = {
-    "soa",
-    "so4",
-    "pom",
-    "bc",
-    "nacl",
-    "dst",
-    "mom",
-  };
-  return species_names[species_id];
-}
-
 // Given a MAM aerosol-related gas ID, returns a string denoting the symbolic
 // name of the gas species.
 KOKKOS_INLINE_FUNCTION
@@ -220,7 +204,8 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
   if (!int_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
+      auto aerosol_species_name =mam4::aero_id_short_name(aero_id);
+      concat_3_strings(aerosol_species_name.c_str(),
                        "_a", aero_mode_name(mode),
                        int_aero_mmr_names(mode, species));
     }
@@ -238,7 +223,8 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
   if (!cld_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
+      auto aerosol_species_name =mam4::aero_id_short_name(aero_id);
+      concat_3_strings(aerosol_species_name.c_str(),
                        "_c", aero_mode_name(mode),
                        cld_aero_mmr_names(mode, species));
     }
