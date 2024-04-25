@@ -224,13 +224,12 @@ module ocn_time_integration_fblts
       call mpas_pool_get_array(LTSPool, 'nEdgesInLTSRegion', nEdgesInLTSRegion)
       
       ! Create and retrieve additional pools for LTS
-      call mpas_pool_create_pool(tendSum3rdPool)
-      call mpas_pool_clone_pool(tendPool, tendSum3rdPool, 1)
-      call mpas_pool_create_pool(tendSlowPool)
-      call mpas_pool_clone_pool(tendPool, tendSlowPool, 1)
+      call mpas_pool_get_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
+      call mpas_pool_get_subpool(block % structs, 'tend_slow', tendSlowPool)
 
-      call mpas_pool_add_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
-      call mpas_pool_add_subpool(block % structs, 'tend_slow', tendSlowPool)
+      call mpas_pool_copy_pool(tendPool, tendSum3rdPool, 1)
+      call mpas_pool_copy_pool(tendPool, tendSlowPool, 1)
+
 
       call mpas_pool_get_array(tendSlowPool, 'normalVelocity', &
                                               normalVelocityTendSlow)
@@ -259,47 +258,6 @@ module ocn_time_integration_fblts
       normalVelocityTendSum3rd(:,:) = 0.0_RKIND
       layerThicknessTendSum3rd(:,:) = 0.0_RKIND
       
-      if (associated(block % prev)) then
-         call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)
-         call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)
-      else
-         nullify(prevTendSum3rdPool)
-         nullify(prevTendSlowPool)
-      end if
-
-      if (associated(block % next)) then
-         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_3rd', nextTendSum3rdPool)
-         call mpas_pool_get_subpool(block % next % structs, 'tend_slow', nextTendSlowPool)
-      else
-         nullify(nextTendSum3rdPool)
-         nullify(nextTendSlowPool)
-      end if
-
-      call mpas_pool_get_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
-      call mpas_pool_get_subpool(block % structs, 'tend_slow', tendSlowPool)
-   
-      if (associated(prevTendSum3rdPool) .and. associated(nextTendSum3rdPool)) then
-         call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool, nextTendSum3rdPool)
-      else if (associated(prevTendSum3rdPool)) then
-         call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool)
-      else if (associated(nextTendSum3rdPool)) then
-         call mpas_pool_link_pools(tendSum3rdPool,nextPool=nextTendSum3rdPool)
-      else
-         call mpas_pool_link_pools(tendSum3rdPool)
-      end if
-
-      if (associated(prevTendSlowPool) .and. associated(nextTendSlowPool)) then
-         call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool, nextTendSlowPool)
-      else if (associated(prevTendSlowPool)) then
-         call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool)
-      else if (associated(nextTendSlowPool)) then
-         call mpas_pool_link_pools(tendSlowPool,nextPool=nextTendSlowPool)
-      else
-         call mpas_pool_link_pools(tendSlowPool)
-      end if
-
-      call mpas_pool_link_parinfo(block, tendSum3rdPool)
-      call mpas_pool_link_parinfo(block, tendSlowPool)
 
       call mpas_timer_stop("FB_LTS time-step prep")
       
@@ -1367,12 +1325,6 @@ module ocn_time_integration_fblts
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
                                 verticalMeshPool, scratchPool, tracersPool, 2)
 
-      call mpas_pool_destroy_pool(tendSum3rdPool)
-      call mpas_pool_destroy_pool(tendSlowPool)
-
-      call mpas_pool_remove_subpool(block % structs, 'tend_sum_3rd')
-      call mpas_pool_remove_subpool(block % structs, 'tend_slow')
-
       call mpas_timer_stop("FB_LTS cleanup")
 
    end subroutine ocn_time_integrator_fblts!}}}
@@ -1415,6 +1367,15 @@ module ocn_time_integration_fblts
       
       type (mpas_pool_type), pointer :: &
          LTSPool
+
+      type (mpas_pool_type), pointer :: &
+         tendSlowPool, &
+         tendSum3rdPool, &
+         prevTendSlowPool, nextTendSlowPool, &
+         prevTendSum3rdPool, nextTendSum3rdPool
+
+      type (mpas_pool_type), pointer :: &
+         tendPool
       
       integer, dimension(:), allocatable :: &
          isLTSRegionEdgeAssigned
@@ -1445,6 +1406,58 @@ module ocn_time_integration_fblts
       minMaxLTSRegion(2) = 2
 
       block => domain % blocklist
+      call mpas_pool_get_subpool(block%structs, 'tend', tendPool)
+
+      call mpas_pool_create_pool(tendSum3rdPool)
+      call mpas_pool_clone_pool(tendPool, tendSum3rdPool, 1)
+      call mpas_pool_create_pool(tendSlowPool)
+      call mpas_pool_clone_pool(tendPool, tendSlowPool, 1)
+
+      call mpas_pool_add_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
+      call mpas_pool_add_subpool(block % structs, 'tend_slow', tendSlowPool)
+
+      if (associated(block % prev)) then
+         call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)
+         call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)
+      else
+         nullify(prevTendSum3rdPool)
+         nullify(prevTendSlowPool)
+      end if
+
+      if (associated(block % next)) then
+         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_3rd', nextTendSum3rdPool)
+         call mpas_pool_get_subpool(block % next % structs, 'tend_slow', nextTendSlowPool)
+      else
+         nullify(nextTendSum3rdPool)
+         nullify(nextTendSlowPool)
+      end if
+
+      call mpas_pool_get_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
+      call mpas_pool_get_subpool(block % structs, 'tend_slow', tendSlowPool)
+   
+      if (associated(prevTendSum3rdPool) .and. associated(nextTendSum3rdPool)) then
+         call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool, nextTendSum3rdPool)
+      else if (associated(prevTendSum3rdPool)) then
+         call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool)
+      else if (associated(nextTendSum3rdPool)) then
+         call mpas_pool_link_pools(tendSum3rdPool,nextPool=nextTendSum3rdPool)
+      else
+         call mpas_pool_link_pools(tendSum3rdPool)
+      end if
+
+      if (associated(prevTendSlowPool) .and. associated(nextTendSlowPool)) then
+         call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool, nextTendSlowPool)
+      else if (associated(prevTendSlowPool)) then
+         call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool)
+      else if (associated(nextTendSlowPool)) then
+         call mpas_pool_link_pools(tendSlowPool,nextPool=nextTendSlowPool)
+      else
+         call mpas_pool_link_pools(tendSlowPool)
+      end if
+
+      call mpas_pool_link_parinfo(block, tendSum3rdPool)
+      call mpas_pool_link_parinfo(block, tendSlowPool)
+
       call mpas_pool_get_subpool(block % structs, 'LTS', LTSPool)
 
       call mpas_pool_get_array(LTSPool, 'LTSRegion', LTSRegion)
