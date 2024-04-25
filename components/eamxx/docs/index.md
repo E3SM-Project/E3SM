@@ -1,6 +1,10 @@
 # The E3SM Atmosphere Model in C++ (EAMxx)
 
-EAMxx is an entirely new atmosphere model for E3SM. It is written in C++ using the Kokkos performance portability library to enable it to run efficiently on CPUs, GPUs, and (hopefully) whatever comes next. Currently only the km-scale explicit-convection version called SCREAM (the Simple Cloud-Resolving E3SM Atmosphere Model) is available, but a low-resolution version is in the works.
+EAMxx 
+EAMxx is almost completely different in all ways from the atmosphere model used for E3SM versions 1-3. 
+
+
+EAMxx was built from the ground up using C++ in order to embrace modern software practices and to allow "performance portability" across various supercomputers. The latter goal is achieved by using the Kokkos library. EAMxx is a "clean-start" model with almost no similarity to the E3SM atmosphere model used in versions 1-3.  Currently only the km-scale explicit-convection version called SCREAM (the Simple Cloud-Resolving E3SM Atmosphere Model) is available, but a low-resolution version is in the works.
 
 Like the documentation for other component models, EAMxx documentation is divided into:
 
