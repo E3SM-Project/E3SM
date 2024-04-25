@@ -62,7 +62,7 @@ void run(std::mt19937_64 &engine) {
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_qx(0.0, 1e-3), pdf_pseudodens(1.0, 100.0);
+  RPDF pdf_qx(0.0, 1e-3), pdf_pd(1.0, 100.0);
 
   // A time stamp
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
@@ -118,20 +118,27 @@ void run(std::mt19937_64 &engine) {
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto &qc_f          = input_fields.at("qc");
-    const auto &qc_v          = qc_f.get_view<Real **>();
-    const auto &nc_f          = input_fields.at("nc");
-    const auto &nc_v          = nc_f.get_view<Real **>();
-    const auto &qi_f          = input_fields.at("qi");
-    const auto &qi_v          = qi_f.get_view<Real **>();
-    const auto &ni_f          = input_fields.at("ni");
-    const auto &ni_v          = ni_f.get_view<Real **>();
-    const auto &qr_f          = input_fields.at("qr");
-    const auto &qr_v          = qr_f.get_view<Real **>();
-    const auto &nr_f          = input_fields.at("nr");
-    const auto &nr_v          = nr_f.get_view<Real **>();
-    const auto &pseudo_dens_f = input_fields.at("pseudo_density");
-    const auto &pseudo_dens_v = pseudo_dens_f.get_view<Real **>();
+    const auto &qc_f = input_fields.at("qc");
+    const auto &qc_v = qc_f.get_view<Real **>();
+    const auto &qc_h = qc_f.get_view<Real **, Host>();
+    const auto &nc_f = input_fields.at("nc");
+    const auto &nc_v = nc_f.get_view<Real **>();
+    const auto &nc_h = nc_f.get_view<Real **, Host>();
+    const auto &qi_f = input_fields.at("qi");
+    const auto &qi_v = qi_f.get_view<Real **>();
+    const auto &qi_h = qi_f.get_view<Real **, Host>();
+    const auto &ni_f = input_fields.at("ni");
+    const auto &ni_v = ni_f.get_view<Real **>();
+    const auto &ni_h = ni_f.get_view<Real **, Host>();
+    const auto &qr_f = input_fields.at("qr");
+    const auto &qr_v = qr_f.get_view<Real **>();
+    const auto &qr_h = qr_f.get_view<Real **, Host>();
+    const auto &nr_f = input_fields.at("nr");
+    const auto &nr_v = nr_f.get_view<Real **>();
+    const auto &nr_h = nr_f.get_view<Real **, Host>();
+    const auto &pd_f = input_fields.at("pseudo_density");
+    const auto &pd_v = pd_f.get_view<Real **>();
+    const auto &pd_h = pd_f.get_view<Real **, Host>();
     for(int icol = 0; icol < ncols; icol++) {
       const auto &qc_sub = ekat::subview(qc_v, icol);
       const auto &nc_sub = ekat::subview(nc_v, icol);
@@ -139,30 +146,19 @@ void run(std::mt19937_64 &engine) {
       const auto &ni_sub = ekat::subview(ni_v, icol);
       const auto &qr_sub = ekat::subview(qr_v, icol);
       const auto &nr_sub = ekat::subview(nr_v, icol);
-      const auto &dp_sub = ekat::subview(pseudo_dens_v, icol);
-      ekat::genRandArray(pseudo_density, engine, pdf_pseudodens);
-      Kokkos::deep_copy(dp_sub, pseudo_density);
-
-      ekat::genRandArray(qc, engine, pdf_qx);
-      ekat::genRandArray(nc, engine, pdf_qx);
-      ekat::genRandArray(qi, engine, pdf_qx);
-      ekat::genRandArray(ni, engine, pdf_qx);
-      ekat::genRandArray(qr, engine, pdf_qx);
-      ekat::genRandArray(nr, engine, pdf_qx);
-      Kokkos::deep_copy(qc_sub, qc);
-      Kokkos::deep_copy(nc_sub, nc);
-      Kokkos::deep_copy(qi_sub, qi);
-      Kokkos::deep_copy(ni_sub, ni);
-      Kokkos::deep_copy(qr_sub, qr);
-      Kokkos::deep_copy(nr_sub, nr);
+      const auto &dp_sub = ekat::subview(pd_v, icol);
+      ekat::genRandArray(qc_sub, engine, pdf_qx);
+      ekat::genRandArray(nc_sub, engine, pdf_qx);
+      ekat::genRandArray(qi_sub, engine, pdf_qx);
+      ekat::genRandArray(ni_sub, engine, pdf_qx);
+      ekat::genRandArray(qr_sub, engine, pdf_qx);
+      ekat::genRandArray(nr_sub, engine, pdf_qx);
+      ekat::genRandArray(dp_sub, engine, pdf_pd);
     }
     // Grab views for each of the number path diagnostics
     const auto &lnp   = diags["lnp"]->get_diagnostic();
     const auto &inp   = diags["inp"]->get_diagnostic();
     const auto &rnp   = diags["rnp"]->get_diagnostic();
-    const auto &lnp_v = lnp.get_view<const Real *>();
-    const auto &inp_v = inp.get_view<const Real *>();
-    const auto &rnp_v = rnp.get_view<const Real *>();
     const auto &lnp_h = lnp.get_view<const Real *, Host>();
     const auto &inp_h = inp.get_view<const Real *, Host>();
     const auto &rnp_h = rnp.get_view<const Real *, Host>();
@@ -172,49 +168,26 @@ void run(std::mt19937_64 &engine) {
     }
     // test manual calculation vs one provided by diags
     {
-      Kokkos::parallel_for(
-          "", policy, KOKKOS_LAMBDA(const MemberType &team) {
-            const int icol = team.league_rank();
-            auto dp_icol   = ekat::subview(pseudo_dens_v, icol);
-            // Liquid
-            Real qndc_prod = 0.0;
-            auto qc_icol   = ekat::subview(qc_v, icol);
-            auto nc_icol   = ekat::subview(nc_v, icol);
-            Kokkos::parallel_reduce(
-                Kokkos::TeamVectorRange(team, num_levs),
-                [&](Int idx, Real &lsum) {
-                  lsum += nc_icol(idx) * qc_icol(idx) * dp_icol(idx) / gravit;
-                },
-                qndc_prod);
-            REQUIRE(std::abs(lnp_v(icol) - qndc_prod) < macheps);
-            team.team_barrier();
-            // Ice
-            Real qndi_prod = 0.0;
-            auto qi_icol   = ekat::subview(qi_v, icol);
-            auto ni_icol   = ekat::subview(ni_v, icol);
-            Kokkos::parallel_reduce(
-                Kokkos::TeamVectorRange(team, num_levs),
-                [&](Int idx, Real &lsum) {
-                  lsum += ni_icol(idx) * qi_icol(idx) * dp_icol(idx) / gravit;
-                },
-                qndi_prod);
-            inp.sync_to_host();
-            REQUIRE(std::abs(inp_v(icol) - qndi_prod) < macheps);
-            team.team_barrier();
-            // Rain
-            Real qndr_prod = 0.0;
-            auto qr_icol   = ekat::subview(qr_v, icol);
-            auto nr_icol   = ekat::subview(nr_v, icol);
-            Kokkos::parallel_reduce(
-                Kokkos::TeamVectorRange(team, num_levs),
-                [&](Int idx, Real &lsum) {
-                  lsum += nr_icol(idx) * qr_icol(idx) * dp_icol(idx) / gravit;
-                },
-                qndr_prod);
-            REQUIRE(std::abs(rnp_v(icol) - qndr_prod) < macheps);
-            team.team_barrier();
-          });
-      Kokkos::fence();
+      for(int icol = 0; icol < ncols; icol++) {
+        Real qndc_prod = 0.0;
+        for(int ilev = 0; ilev < num_levs; ++ilev) {
+          qndc_prod +=
+              nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+        }
+        REQUIRE(std::abs(lnp_h(icol) - qndc_prod) < macheps);
+        Real qndi_prod = 0.0;
+        for(int ilev = 0; ilev < num_levs; ++ilev) {
+          qndi_prod +=
+              ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+        }
+        REQUIRE(std::abs(inp_h(icol) - qndi_prod) < macheps);
+        Real qndr_prod = 0.0;
+        for(int ilev = 0; ilev < num_levs; ++ilev) {
+          qndr_prod +=
+              nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+        }
+        REQUIRE(std::abs(rnp_h(icol) - qndr_prod) < macheps);
+      }
     }
   }
 
