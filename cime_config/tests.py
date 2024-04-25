@@ -121,6 +121,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_landice_developer" : {
+        "tests"   : (
+            "SMS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmSMS",
+            "ERS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmERS",
+            )
+        },
+
     "eam_condidiag" : {
         "tests"   : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
@@ -281,7 +288,6 @@ _TESTS = {
             "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF-DISMF",
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-            "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
