@@ -5005,10 +5005,10 @@
     </gridmap>
  
     <gridmap glc_grid="mpas.gis1to10kmR2" lnd_grid="TL319">
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis20km_traave.20240404.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis20km_trbilin.20240404.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis20km_to_TL319_traave.20240404.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis20km_to_TL319_traave.20240404.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis1to10kmR2_traave.20240404.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis1to10kmR2_trbilin.20240404.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_TL319_traave.20240404.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_TL319_traave.20240404.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="EC30to60E2r2">
