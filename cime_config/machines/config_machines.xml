@@ -2959,83 +2959,6 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="lassen">
-    <DESC>LLNL Linux Cluster, Linux, 4 V100 GPUs/node, 44 IBM P9 cpu cores/node</DESC>
-    <NODENAME_REGEX>lassen.*</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>gnugpu</COMPILERS>
-    <MPILIBS>spectrum-mpi</MPILIBS>
-    <PROJECT>cbronze</PROJECT>
-    <CIME_OUTPUT_ROOT>/usr/workspace/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/usr/workspace/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/usr/gdata/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <GMAKE_J>16</GMAKE_J>
-    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="mpi-serial">
-      <executable/>
-    </mpirun>
-    <mpirun mpilib="spectrum-mpi">
-      <executable>jsrun</executable>
-      <arguments>
-        <arg name="exit_on_error">-X 1</arg>
-        <arg name="num_rs">$SHELL{if [ {{ total_tasks }} -eq 1 ];then echo --nrs 1 --rs_per_host 1;else echo --nrs $NUM_RS --rs_per_host $RS_PER_NODE;fi}</arg>
-        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
-        <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
-        <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
-        <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
-        <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
-        <arg name="stdio_mode">--stdio_mode prepended</arg>
-        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
-        <arg name="smpiargs">$ENV{SMPIARGS}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <modules compiler="gnugpu">
-        <command name="--force purge"/>
-        <command name="load">git</command>
-        <command name="load">gcc/8.3.1</command>
-        <command name="load">cuda/11.8.0</command>
-        <command name="load">cmake/3.16.8</command>
-        <command name="load">spectrum-mpi</command>
-        <command name="load">python/3.7.2</command>
-      </modules>
-    </module_system>
-    <RUNDIR>/p/gpfs1/$USER/e3sm_scratch/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables BUILD_THREADED="FALSE">
-      <env name="JSRUN_THREAD_VARS"> </env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
-    </environment_variables>
-    <environment_variables compiler="gnugpu">
-      <env name="LLNL_USE_OMPI_VARS">y</env>
-      <env name="PATH">/usr/gdata/e3sm/netcdf/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/usr/gdata/e3sm/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="NETCDF_PATH">/usr/gdata/e3sm/netcdf</env>
-      <env name="RS_PER_NODE">2</env>
-      <env name="CPU_PER_RS">20</env>
-      <env name="GPU_PER_RS">2</env>
-      <env name="LTC_PRT">gpu-cpu</env>
-      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
-      <env name="SMPIARGS">--smpiargs="-gpu"</env>
-    </environment_variables>
-  </machine>
-
   <machine MACH="ruby">
     <DESC>LLNL Linux Cluster, Linux (pgi), 56 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
@@ -3081,6 +3004,7 @@
         <command name="load">netcdf-fortran/4.6.0</command>
         <command name="load">parallel-netcdf/1.12.3</command>
         <command name="load">screamML-venv/0.0.1</command>
+        <command name="load">subversion</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3136,6 +3060,7 @@
         <command name="load">netcdf-fortran/4.6.0</command>
         <command name="load">parallel-netcdf/1.12.3</command>
         <command name="load">screamML-venv/0.0.1</command>
+        <command name="load">subversion</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
