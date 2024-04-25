@@ -582,6 +582,11 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
           cloud_optics_file_sw, cloud_optics_file_lw,
           m_atm_logger
   );
+  VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_sw, rrtmgp::k_dist_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_lw, rrtmgp::k_dist_lw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_sw, rrtmgp::cloud_optics_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, rrtmgp::cloud_optics_lw_k);
 #endif
 
   // Set property checks for fields in this process
@@ -869,10 +874,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
         return real1dk(v.data(),ncol);
       };
       auto subview_2dk = [&](const real2dk v) -> real2dk {
-        return real2dk(v.data(),ncol,v.extent(0));
+        return real2dk(v.data(),ncol,v.extent(1));
       };
       auto subview_3dk = [&](const real3dk v) -> real3dk {
-        return real3dk(v.data(),ncol,v.extent(0),v.extent(1));
+        return real3dk(v.data(),ncol,v.extent(1),v.extent(2));
       };
 
       auto p_lay_k           = subview_2dk(m_buffer.p_lay_k);
@@ -1057,6 +1062,29 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+          mu0_k(i) = d_mu0(i);
+          sfc_alb_dir_vis_k(i) = d_sfc_alb_dir_vis(icol);
+          sfc_alb_dir_nir_k(i) = d_sfc_alb_dir_nir(icol);
+          sfc_alb_dif_vis_k(i) = d_sfc_alb_dif_vis(icol);
+          sfc_alb_dif_nir_k(i) = d_sfc_alb_dif_nir(icol);
+
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            p_lay_k(i,k)       = d_pmid(icol,k);
+            t_lay_k(i,k)       = d_tmid(icol,k);
+            z_del_k(i,k)       = d_dz(i,k);
+            p_del_k(i,k)       = d_pdel(icol,k);
+            qc_k(i,k)          = d_qc(icol,k);
+            nc_k(i,k)          = d_nc(icol,k);
+            qi_k(i,k)          = d_qi(icol,k);
+            rel_k(i,k)         = d_rel(icol,k);
+            rei_k(i,k)         = d_rei(icol,k);
+            p_lev_k(i,k)       = d_pint(icol,k);
+            t_lev_k(i,k)       = d_tint(i,k);
+          });
+
+          p_lev_k(i,nlay) = d_pint(icol,nlay);
+          t_lev_k(i,nlay) = d_tint(i,nlay);
+
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
           if (do_aerosol_rad) {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
@@ -1089,6 +1117,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
       }
       Kokkos::fence();
+#ifdef RRTMGP_ENABLE_KOKKOS
+      COMPARE_ALL_WRAP(std::vector<real3d>({aero_tau_sw}), //, aero_ssa_sw, aero_g_sw, aero_tau_lw}),
+                       std::vector<real3dk>({aero_tau_sw_k}));//, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k}));
+#endif
+
 
       // Populate GasConcs object to pass to RRTMGP driver
       // set_vmr requires the input array size to have the correct size,
@@ -1130,6 +1163,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
         m_gas_concs_k.set_vmr(name, tmp2d_k);
+        VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
 #endif
       }
 
@@ -1193,6 +1227,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
       }
       Kokkos::fence();
+#ifdef RRTMGP_ENABLE_KOKKOS
+      COMPARE_WRAP(cldfrac_tot, cldfrac_tot_k);
+#endif
+
       // Compute layer cloud mass (per unit area)
 #ifdef RRTMGP_ENABLE_YAKL
       scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
@@ -1201,6 +1239,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #ifdef RRTMGP_ENABLE_KOKKOS
       scream::rrtmgp::mixing_ratio_to_cloud_mass(qc_k, cldfrac_tot_k, p_del_k, lwp_k);
       scream::rrtmgp::mixing_ratio_to_cloud_mass(qi_k, cldfrac_tot_k, p_del_k, iwp_k);
+      COMPARE_ALL_WRAP(std::vector<real2d>({lwp, iwp}),
+                       std::vector<real2dk>({lwp_k, iwp_k}));
 #endif
       // Convert to g/m2 (needed by RRTMGP)
       {
@@ -1237,6 +1277,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         sfc_alb_dir_vis_k, sfc_alb_dir_nir_k,
         sfc_alb_dif_vis_k, sfc_alb_dif_nir_k,
         sfc_alb_dir_k, sfc_alb_dif_k);
+      COMPARE_ALL_WRAP(std::vector<real2d>({sfc_alb_dir, sfc_alb_dif}),
+                       std::vector<real2dk>({sfc_alb_dir_k, sfc_alb_dif_k}));
 #endif
       // Compute cloud optical properties here?
 
@@ -1284,6 +1326,25 @@ void RRTMGPRadiation::run_impl (const double dt) {
         eccf, m_atm_logger,
         m_extra_clnclrsky_diag, m_extra_clnsky_diag
       );
+      COMPARE_ALL_WRAP(std::vector<real2d>({
+        sw_flux_up, sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn,
+        sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir,
+        sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
+        sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+        lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn,
+        lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        lw_clnsky_flux_up, lw_clnsky_flux_dn}),
+                       std::vector<real2dk>({
+        sw_flux_up_k, sw_flux_dn_k, sw_flux_dn_dir_k, lw_flux_up_k, lw_flux_dn_k,
+        sw_clnclrsky_flux_up_k, sw_clnclrsky_flux_dn_k, sw_clnclrsky_flux_dn_dir_k,
+        sw_clrsky_flux_up_k, sw_clrsky_flux_dn_k, sw_clrsky_flux_dn_dir_k,
+        sw_clnsky_flux_up_k, sw_clnsky_flux_dn_k, sw_clnsky_flux_dn_dir_k,
+        lw_clnclrsky_flux_up_k, lw_clnclrsky_flux_dn_k,
+        lw_clrsky_flux_up_k, lw_clrsky_flux_dn_k,
+        lw_clnsky_flux_up_k, lw_clnsky_flux_dn_k}));
+
+      COMPARE_ALL_WRAP(std::vector<real3d>({sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir, lw_bnd_flux_up, lw_bnd_flux_dn}),
+                       std::vector<real3dk>({sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k, lw_bnd_flux_up_k, lw_bnd_flux_dn_k}));
 #endif
 
       // Update heating tendency
@@ -1332,6 +1393,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
       }
       Kokkos::fence();
+      COMPARE_ALL_WRAP(std::vector<real2d>({sw_heating, lw_heating}),
+                       std::vector<real2dk>({sw_heating_k, lw_heating_k}));
 #endif
 
       // Index to surface (bottom of model); used to get surface fluxes below
@@ -1374,6 +1437,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
           sfc_flux_dir_vis_k, sfc_flux_dir_nir_k,
           sfc_flux_dif_vis_k, sfc_flux_dif_nir_k
       );
+      COMPARE_ALL_WRAP(std::vector<real1d>({sfc_flux_dir_vis, sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir}),
+                       std::vector<real1dk>({sfc_flux_dir_vis_k, sfc_flux_dir_nir_k, sfc_flux_dif_vis_k, sfc_flux_dif_nir_k}));
 #endif
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
@@ -1408,6 +1473,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay_k, cld_tau_lw_gpt_k, cldmed_k);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay_k, cld_tau_lw_gpt_k, cldhgh_k);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay_k, cld_tau_lw_gpt_k, cldtot_k);
+      COMPARE_ALL_WRAP(std::vector<real1d>({cldlow, cldmed, cldhgh, cldtot}),
+                       std::vector<real1dk>({cldlow_k, cldmed_k, cldhgh_k, cldtot_k}));
 #endif
 
       // Get visible 0.67 micron band for COSP
@@ -1447,6 +1514,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
           nc_k, T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
           cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
           eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k);
+      COMPARE_ALL_WRAP(std::vector<real1d>({
+            T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
+            cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+            eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop}),
+                       std::vector<real1dk>({
+            T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
+            cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
+            eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k}));
 #endif
 
       // Copy output data back to FieldManager

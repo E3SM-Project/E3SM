@@ -34,7 +34,7 @@ void finalize_kls()
   yakl::finalize();
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-  Kokkos::finalize();
+  //Kokkos::finalize(); We do the kokkos finalization elsewhere
 #endif
 }
 
@@ -527,7 +527,7 @@ void compute_band_by_band_surface_albedos(
   auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
 
   EKAT_ASSERT_MSG(wavenumber_limits.extent(0) == 2,
-                  "Error! 1st dimension for wavenumber_limits should be 2.");
+                  "Error! 1st dimension for wavenumber_limits should be 2. It's " << wavenumber_limits.extent(0));
   EKAT_ASSERT_MSG(wavenumber_limits.extent(1) == static_cast<size_t>(nswbands),
                   "Error! 2nd dimension for wavenumber_limits should be " + std::to_string(nswbands) + " (nswbands).");
 
@@ -1986,16 +1986,9 @@ void compute_cloud_area(
 }
 #endif
 
-#ifdef RRTMGP_ENABLE_YAKL
 int get_wavelength_index_sw(double wavelength) { return get_wavelength_index(k_dist_sw, wavelength); }
 
 int get_wavelength_index_lw(double wavelength) { return get_wavelength_index(k_dist_lw, wavelength); }
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
-int get_wavelength_index_sw(double wavelength) { return get_wavelength_index(k_dist_sw_k, wavelength); }
-
-int get_wavelength_index_lw(double wavelength) { return get_wavelength_index(k_dist_lw_k, wavelength); }
-#endif
 
 #ifdef RRTMGP_ENABLE_YAKL
 int get_wavelength_index(OpticalProps &kdist, double wavelength) {

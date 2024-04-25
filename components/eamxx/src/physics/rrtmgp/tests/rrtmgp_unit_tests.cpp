@@ -261,16 +261,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     // Need to initialize RRTMGP with dummy gases
     logger->info("Init gases...\n");
     GasConcs gas_concs;
-    int ngas = 8;
-    string1d gas_names("gas_names",ngas);
-    gas_names(1) = std::string("h2o");
-    gas_names(2) = std::string("co2");
-    gas_names(3) = std::string("o3" );
-    gas_names(4) = std::string("n2o");
-    gas_names(5) = std::string("co" );
-    gas_names(6) = std::string("ch4");
-    gas_names(7) = std::string("o2" );
-    gas_names(8) = std::string("n2" );
+    string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
     gas_concs.init(gas_names,ncol,nlay);
     logger->info("Init RRTMGP...\n");
     scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
@@ -413,7 +404,6 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     logger->info("Free memory...\n");
     scream::rrtmgp::rrtmgp_finalize();
     gas_concs.reset();
-    gas_names.deallocate();
     sw_bnd_flux_dir.deallocate();
     sw_bnd_flux_dif.deallocate();
     sfc_flux_dir_nir.deallocate();

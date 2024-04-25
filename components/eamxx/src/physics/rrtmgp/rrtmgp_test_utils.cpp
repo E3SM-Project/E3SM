@@ -273,7 +273,7 @@ void write_fluxes(
 // TODO: This function should instead take values, not file names,
 // because for the test we do not want to write to file
 #ifdef RRTMGP_ENABLE_YAKL
-int compare(std::string file1, std::string file2) {
+int compare_y(std::string file1, std::string file2) {
   // Read data from baseline and test file
   real2d sw_flux_up_1;
   real2d sw_flux_dn_1;
@@ -299,7 +299,7 @@ int compare(std::string file1, std::string file2) {
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-int compare(std::string file1, std::string file2) {
+int compare_k(std::string file1, std::string file2) {
   // Read data from baseline and test file
   real2dk sw_flux_up_1;
   real2dk sw_flux_dn_1;
