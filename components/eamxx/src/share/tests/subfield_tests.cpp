@@ -47,32 +47,32 @@ TEST_CASE("field", "") {
   }
 
   SECTION("multi-sliced subfield") {
-    // SECTION("1D multi-slice") {
-    //   // ==============
-    //   /* Rank-1 view */
-    //   // ==============
-    //   std::vector<FieldTag> t1 = {COL};
-    //   std::vector<int> d1 = {11};
-    //   FieldIdentifier fid1("1d", {t1, d1}, m / s, "some_grid");
+    SECTION("1D multi-slice") {
+      // ==============
+      /* Rank-1 view */
+      // ==============
+      std::vector<FieldTag> t1 = {COL};
+      std::vector<int> d1 = {11};
+      FieldIdentifier fid1("1d", {t1, d1}, m / s, "some_grid");
 
-    //   Field f1(fid1);
-    //   f1.allocate_view();
-    //   randomize(f1, engine, pdf);
+      Field f1(fid1);
+      f1.allocate_view();
+      randomize(f1, engine, pdf);
 
-    //   const int idim = {0};
-    //   const int sl_beg = {3};
-    //   const int sl_end = {7};
+      const int idim = {0};
+      const int sl_beg = {3};
+      const int sl_end = {7};
 
-    //   auto v1d_h = f1.get_view<Real*, Host>();
-    //   auto sf = f1.subfield(idim, sl_beg, sl_end);
-    //   auto sv_h = sf.get_strided_view<Real, Host>();
+      auto v1d_h = f1.get_view<Real*, Host>();
+      auto sf = f1.subfield(idim, sl_beg, sl_end);
+      REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
+      auto sv_h = sf.get_strided_view<Real*, Host>();
+      REQUIRE(sv_h.extent_int(idim) == (sl_end - sl_beg));
 
-    //   REQUIRE(sv_h.extent_int(idim) == (sl_end - sl_beg));
-
-    //   for (int i = sl_beg; i < sl_end; i++) {
-    //     REQUIRE(v1d_h(i) == sv_h(i - sl_beg));
-    //   }
-    // }
+      for (int i = sl_beg; i < sl_end; i++) {
+        REQUIRE(v1d_h(i) == sv_h(i - sl_beg));
+      }
+    }
 
     SECTION("2D multi-slice") {
       std::vector<FieldTag> t2 = {COL, CMP};
@@ -145,7 +145,7 @@ TEST_CASE("field", "") {
       // ======================
       auto cmp3 = f3.get_components(sl_beg[1], sl_end[1]);
 
-      auto svc_h = cmp3.get_strided_view<Real, Host>();
+      auto svc_h = cmp3.get_strided_view<Real***, Host>();
       for (int i = 0; i < d3[0]; i++) {
         for (int j = sl_beg[1]; j < sl_end[1]; j++) {
           for (int k = 0; k < d3[2]; k++) {
@@ -263,6 +263,7 @@ TEST_CASE("field", "") {
 
       for (int ens = 0; ens < 6; ens++) {
         auto sf = f6.subfield(idim[ens], sl_beg[ens], sl_end[ens]);
+        REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
         auto sv_h = sf.get_strided_view<Real******, Host>();
         i1 = (ens == 0) ? sl_beg[0] : 0;
         i2 = (ens == 0) ? sl_end[0] : d6[0];

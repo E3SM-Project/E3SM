@@ -318,25 +318,38 @@ protected:
   if_t<(N<=2),
        get_view_type<data_nd_t<T,N-1>,HD>>
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
-    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
+    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
+                    "dimension without losing LayoutRight.\n");
   }
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<((N < MaxRank) and (N > 0)), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+
+  // NOTE: DO NOT USE--this circumvents compile-time issues with
+  // subview slicing in get_strided_view()
+  template<HostOrDevice HD,typename T,int N>
+  auto get_ND_view () const
+    -> if_t<N == 0,get_view_type<data_nd_t<T,N>,HD>>;
+
+  // NOTE: DO NOT USE--it only returns an error and is here to protect
+  // against compiler errors related to sliced subviews in get_strided_view()
+  template<HostOrDevice HD,typename T,int N>
+  auto get_ND_view () const
+    -> if_t<(N >= MaxRank + 1), get_view_type<data_nd_t<T,N>,HD>>;
 
   // Metadata (name, rank, dims, customer/providers, time stamp, ...)
-  std::shared_ptr<header_type>            m_header;
+  std::shared_ptr<header_type> m_header;
 
   // Actual data.
-  dual_view_t<char*>    m_data;
+  dual_view_t<char*> m_data;
 
   // Whether this field is read-only
-  bool                  m_is_read_only = false;
+  bool m_is_read_only = false;
 };
 
 // We use this to find a Field in a std container.

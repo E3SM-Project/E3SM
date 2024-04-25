@@ -90,7 +90,8 @@ auto Field::get_view () const
   using DstView = get_view_type<DT,HD>;
   // The dst value types
   using DstValueType = typename DstView::traits::value_type;
-  // The ViewDimension object from the Dst View (used to check validity of possible compile-time extents)
+  // The ViewDimension object from the Dst View (used to check validity of
+  // possible compile-time extents)
   using dims_type = typename DstView::traits::dimension;
   // We only allow to reshape to a view of the correct rank
   constexpr int DstRank = DstView::rank;
@@ -185,9 +186,7 @@ get_strided_view_type<DT, HD> {
     const int k = info.slice_idx;
     const int k_end = info.slice_idx_end;
 
-    std::cout << "k_end = " << k_end << "\n";
-    std::cout << "sv_alloc_prop.contiguous() = " << sv_alloc_prop.contiguous() << "\n";
-
+    // k_end has not been set by a multi-slice subfield function
     if (k_end == -1) {
       EKAT_REQUIRE_MSG(
           DstRank == 1 && fl.rank() == 1,
@@ -197,8 +196,9 @@ get_strided_view_type<DT, HD> {
           DstRankDynamic == 1,
           "Error! Strided view not allowed with compile-time dimensions.\n");
 
-      // Take 2 dimensional view with normal LayoutRight
-      auto v_np1 = f.get_ND_view<HD, DstValueType, 2>();
+      // Take an (n + 1)-dimensional == DstRank (== 2D, in practice) view
+      // with normal LayoutRight
+      auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
 
       // As of now, we can only single-slice subview at first or second dimension.
       EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
@@ -210,7 +210,7 @@ get_strided_view_type<DT, HD> {
       } else {
         return DstView(ekat::subview_1(v_np1, k));
       }
-    // k_end has been set, so we're multi-slicing, and not contiguous, so we
+    // k_end has been set, so we're multi-slicing
     } else if (k_end > 0) {
       EKAT_REQUIRE_MSG(DstRank == fl.rank(),
                        "Error! Destination view rank must be equal to parent "
@@ -221,61 +221,10 @@ get_strided_view_type<DT, HD> {
           v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim));
     }
   }
-
-  // Not a subfield, so stride=1, and we can create the strided view from the
+  // Not a subfield, so stride == 1, and we can create the strided view from the
   // LayoutRight 1d view.
-  return DstView(get_ND_view<HD, DstValueType, 1>());
+  return DstView(get_ND_view<HD, DstValueType, DstRank>());
 }
-
-// // NOTE: multi-slicing a view is only supported for strided view return type
-// // TODO: N doesn't actually need to be passed in, since the subview must have
-// // the same rank as its parent
-// template <typename DT, int N, HostOrDevice HD>
-// auto Field::get_multi_sliced_view() const
-//     -> get_strided_view_type<data_nd_t<DT, N>, HD> {
-//   // The destination view type on correct mem space
-//   using DstView = get_strided_view_type<data_nd_t<DT, N>, HD>;
-//   // The dst value types
-//   using DstValueType = typename DstView::traits::value_type;
-
-//   // Get src details
-//   const auto& alloc_prop = m_header->get_alloc_properties();
-//   const auto& fl = m_header->get_identifier().get_layout();
-
-//   // Checks
-//   EKAT_REQUIRE_MSG(N == fl.rank(), "Error! Input Rank must be equal to parent "
-//                                    "view's rank for multi-sliced subview.\n");
-//   EKAT_REQUIRE_MSG(
-//       is_allocated(),
-//       "Error! Cannot extract a field's view before allocation happens.\n");
-//   EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<DstValueType>::value,
-//                    "Error! Cannot get a view to non-const data if the field is "
-//                    "read-only.\n");
-//   EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
-//                    "Error! Source field allocation is not compatible with the "
-//                    "requested value type.\n");
-
-//   // get parent header and check if this field is a subview of another field
-//   const auto parent = m_header->get_parent().lock();
-//   EKAT_REQUIRE_MSG(
-//       parent != nullptr,
-//       "Error! Multi-sliced subview is unavailable for non-subfields.\n");
-//   Field f;
-//   // create new field with the header/data from the parent
-//   f.m_header = parent;
-//   f.m_data = m_data;
-
-//   auto v_fullsize = f.get_ND_view<HD, DstValueType, N>();
-
-//   // Now we can subview v_np1 at the correct slice
-//   const auto& info = m_header->get_alloc_properties().get_subview_info();
-//   const int idim = info.dim_idx;
-//   const int k_beg = info.slice_idx;
-//   const int k_end = info.slice_idx_end;
-
-//   return DstView(ekat::subview(
-//       v_fullsize, Kokkos::make_pair<int, int>(k_beg, k_end), idim));
-// }
 
 template<HostOrDevice HD>
 void Field::
@@ -343,7 +292,7 @@ deep_copy_impl (const Field& src) {
   const auto& layout_src = src.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(layout==layout_src,
        "ERROR: Unable to copy field " + src.get_header().get_identifier().name() +
-          " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
+          " to field " + get_header().get_identifier().name() + ".  Layouts don't match.\n");
   const auto  rank = layout.rank();
 
   // For rank 0 view, we only need to copy a single value and return
@@ -778,7 +727,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const ->
-  if_t<(N<MaxRank),get_view_type<data_nd_t<T,N>,HD>>
+  if_t<((N < MaxRank) and (N > 0)),get_view_type<data_nd_t<T,N>,HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -861,6 +810,29 @@ auto Field::get_ND_view () const ->
 
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
   return ret_type (ptr,kl);
+}
+
+// NOTE: DO NOT USE--this circumvents compile-time issues with
+// subview slicing in get_strided_view()
+template<HostOrDevice HD,typename T,int N>
+auto Field::get_ND_view () const ->
+  if_t<N == 0, get_view_type<data_nd_t<T,N>,HD>>
+{
+  EKAT_ERROR_MSG("Error! Cannot call get_ND_view for rank == 0 (scalar).\n"
+                 "This should never be called at run time.\n"
+                 "Please contact developer if this functionality is required\n");
+}
+
+// NOTE: DO NOT USE--this circumvents compile-time issues with
+// subview slicing in get_strided_view()
+template<HostOrDevice HD,typename T,int N>
+auto Field::get_ND_view () const ->
+  if_t<(N >= MaxRank + 1),get_view_type<data_nd_t<T,N>,HD>>
+{
+  EKAT_ERROR_MSG("Error! Cannot call get_ND_view for rank greater than "
+                 "MaxRank = 6.\n"
+                 "This should never be called at run time.\n"
+                 "Please contact developer if this functionality is required\n");
 }
 
 } // namespace scream

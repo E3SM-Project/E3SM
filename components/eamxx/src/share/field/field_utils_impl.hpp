@@ -29,6 +29,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
   f2.sync_to_host();
 
   // Reshape based on the rank, then loop over all entries.
+  // NOTE: because views_are_equal() is only used for testing, we generalize by
+  // always calling get_strided_view(), even if it could be contiguous
   bool same_locally = true;
   const auto& dims = l1.dims();
   switch (l1.rank()) {
@@ -46,8 +48,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v1 = f1.template get_view<ST**,Host>();
-        auto v2 = f2.template get_view<ST**,Host>();
+        auto v1 = f1.template get_strided_view<ST**,Host>();
+        auto v2 = f2.template get_strided_view<ST**,Host>();
         for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; j<dims[1]; ++j) {
             if (v1(i,j) != v2(i,j)) {
@@ -59,8 +61,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v1 = f1.template get_view<ST***,Host>();
-        auto v2 = f2.template get_view<ST***,Host>();
+        auto v1 = f1.template get_strided_view<ST***,Host>();
+        auto v2 = f2.template get_strided_view<ST***,Host>();
         for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; same_locally && j<dims[1]; ++j) {
             for (int k=0; k<dims[2]; ++k) {
@@ -73,8 +75,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v1 = f1.template get_view<ST****,Host>();
-        auto v2 = f2.template get_view<ST****,Host>();
+        auto v1 = f1.template get_strided_view<ST****,Host>();
+        auto v2 = f2.template get_strided_view<ST****,Host>();
         for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; same_locally && j<dims[1]; ++j) {
             for (int k=0; same_locally && k<dims[2]; ++k) {
@@ -88,8 +90,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v1 = f1.template get_view<ST*****,Host>();
-        auto v2 = f2.template get_view<ST*****,Host>();
+        auto v1 = f1.template get_strided_view<ST*****,Host>();
+        auto v2 = f2.template get_strided_view<ST*****,Host>();
         for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; same_locally && j<dims[1]; ++j) {
             for (int k=0; same_locally && k<dims[2]; ++k) {
@@ -104,8 +106,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v1 = f1.template get_view<ST******,Host>();
-        auto v2 = f2.template get_view<ST******,Host>();
+        auto v1 = f1.template get_strided_view<ST******,Host>();
+        auto v2 = f2.template get_strided_view<ST******,Host>();
         for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; same_locally && j<dims[1]; ++j) {
             for (int k=0; same_locally && k<dims[2]; ++k) {
@@ -740,6 +742,9 @@ void print_field_hyperslab (const Field& f,
     const auto dims_left = get_dims_left(orig_layout);
     auto dims_str = get_dims_str(orig_layout);
 
+    // NOTE: because print_field_hyperslab() is only used for testing, we
+    // generalize by always calling get_strided_view(), even if it could be
+    // contiguous
     f.sync_to_host();
     const int rank = layout.rank();
     out << "     " << f.name() << orig_layout.to_string() << "\n\n";
@@ -749,7 +754,7 @@ void print_field_hyperslab (const Field& f,
         out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
         // NOTE: add ", " at the end, to make rank0 behave the same as other ranks,
         //       for the sake of any script trying to manipulate output
-        out << "\n    " << f.get_view<const T,Host>()() << ", \n";
+        out << "\n    " << f.get_strided_view<const T,Host>()() << ", \n";
         break;
       }
       case 1:
@@ -769,7 +774,7 @@ void print_field_hyperslab (const Field& f,
       case 2:
       {
         dims_str[dims_left[1]] = ":";
-        auto v = f.get_view<const T**,Host>();
+        auto v = f.get_strided_view<const T**,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           dims_str[dims_left[0]] = std::to_string(i);
           out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
@@ -786,7 +791,7 @@ void print_field_hyperslab (const Field& f,
       case 3:
       {
         dims_str[dims_left[2]] = ":";
-        auto v = f.get_view<const T***,Host>();
+        auto v = f.get_strided_view<const T***,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           dims_str[dims_left[0]] = std::to_string(i);
           for (int j=0; j<layout.dim(1); ++j) {
@@ -806,7 +811,7 @@ void print_field_hyperslab (const Field& f,
       case 4:
       {
         dims_str[dims_left[3]] = ":";
-        auto v = f.get_view<const T****,Host>();
+        auto v = f.get_strided_view<const T****,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           dims_str[dims_left[0]] = std::to_string(i);
           for (int j=0; j<layout.dim(1); ++j) {
