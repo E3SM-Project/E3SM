@@ -108,6 +108,7 @@ module li_core_interface
       logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
       logical, pointer :: config_write_albany_ascii_mesh
+      logical, pointer :: config_ocean_data_extrapolation
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
@@ -126,6 +127,7 @@ module li_core_interface
       call mpas_pool_get_config(configPool, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
       call mpas_pool_get_config(configPool, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(configPool, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
+      call mpas_pool_get_config(configPool, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
       call mpas_pool_get_config(configPool, 'config_thermal_solver', config_thermal_solver)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
@@ -159,11 +161,13 @@ module li_core_interface
 
       if ( (trim(config_basal_mass_bal_float) == 'ismip6') .or. &
            ((trim(config_front_mass_bal_grounded) == 'ismip6') .and. &
-            (config_use_3d_thermal_forcing_for_face_melt)) ) then
+            (config_use_3d_thermal_forcing_for_face_melt)) .or. &
+            (config_ocean_data_extrapolation) ) then
          ismip6ShelfMeltActive = .true.
          call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
               "'config_basal_mass_bal_float' is set to 'ismip6' or 'config_front_mass_bal_grounded' is set to 'ismip6' // &
-              and 'config_use_3d_thermal_forcing_for_face_melt' is set to .true.")
+              and 'config_use_3d_thermal_forcing_for_face_melt' is set to .true. " // &
+              "or 'config_ocean_data_extrapolation' is set to .true.")
       endif
 
       if ((trim(config_front_mass_bal_grounded) == 'ismip6') .or. (trim(config_calving) == 'ismip6_retreat')) then
