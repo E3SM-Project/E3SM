@@ -65,5 +65,27 @@ std::string find_filename_in_rpointer (
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0);
 
+struct LongNames {
+
+  std::string get_longname (const std::string& name) {
+    if (name_2_longname.count(name)>0) {
+      return name_2_longname.at(name);
+    } else {
+      // TODO: Do we want to print a Warning message?  I'm not sure if its needed.
+      return name;
+    }
+  }
+
+  // Create map of longnames, can be added to as developers see fit.
+  std::map<std::string,std::string> name_2_longname = {
+	  {"lev","hybrid level at midpoints (1000*(A+B))"},
+	  {"hyai","hybrid A coefficient at layer interfaces"},
+          {"hybi","hybrid B coefficient at layer interfaces"},
+          {"hyam","hybrid A coefficient at layer midpoints"},
+          {"hybm","hybrid B coefficient at layer midpoints"}
+  };
+  
+};
+
 } // namespace scream
 #endif // SCREAM_IO_UTILS_HPP
