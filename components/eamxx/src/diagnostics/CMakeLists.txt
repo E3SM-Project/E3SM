@@ -18,6 +18,7 @@ set(DIAGNOSTIC_SRCS
   water_path.cpp
   wind_speed.cpp
   aodvis.cpp
+  number_path.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

@@ -64,4 +64,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Test AODVIS
   CreateDiagTest(aodvis "aodvis_test.cpp")
+
+  # Test "number" paths
+  CreateDiagTest(number_paths "number_paths_tests.cpp")
+
 endif()
