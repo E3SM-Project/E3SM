@@ -87,6 +87,10 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
   const std::string name = field_in.name();
   EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name) and !m_fm_time1->has_field(name),
 		  "Error!! TimeInterpolation:add_field, field + " << name << " has already been added." << "\n");
+  EKAT_REQUIRE_MSG (field_in.data_type()==DataType::FloatType or field_in.data_type()==DataType::DoubleType,
+      "[TimeInterpolation] Error! Input field must have floating-point data type.\n"
+      " - field name: " + field_in.name() + "\n"
+      " - data type : " + e2str(field_in.data_type()) + "\n");
 
   // Clone the field for each field manager to get all the metadata correct.
   auto field0 = field_in.clone();
@@ -171,9 +175,21 @@ void TimeInterpolation::initialize_data_from_files()
     auto& field_out = m_interp_fields.at(name);
 
     auto set_fill_value = [&](const auto var_fill_value) {
-      field0.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
-      field1.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
-      field_out.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+      const auto dt = field_out.data_type();
+      if (dt==DataType::FloatType) {
+        field0.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+        field1.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+        field_out.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+      } else if (dt==DataType::DoubleType) {
+        field0.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+        field1.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+        field_out.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+      } else {
+        EKAT_ERROR_MSG (
+            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
+            " - field name: " + field_out.name() + "\n"
+            " - data type : " + e2str(dt) + "\n");
+      }
     };
 
     const auto& pio_var = scorpio::get_var(triplet_curr.filename,name);
@@ -341,9 +357,20 @@ void TimeInterpolation::read_data()
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
     for (auto& name : m_field_names) {
-      auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
       auto& field = m_fm_time1->get_field(name);
-      field.get_header().set_extra_data("mask_value",var_fill_value);
+      const auto dt = field.data_type();
+      if (dt==DataType::FloatType) {
+        auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
+        field.get_header().set_extra_data("mask_value",var_fill_value);
+      } else if (dt==DataType::DoubleType) {
+        auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
+        field.get_header().set_extra_data("mask_value",var_fill_value);
+      } else {
+        EKAT_ERROR_MSG (
+            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
+            " - field name: " + field.name() + "\n"
+            " - data type : " + e2str(dt) + "\n");
+      }
     }
   }
 

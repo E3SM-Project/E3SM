@@ -465,10 +465,15 @@ update (const Field& x, const ST alpha, const ST beta)
   ST fill_val = constants::DefaultFillValue<ST>().value;
 
   if (x.get_header().has_extra_data("mask_value")) {
-    if (typeid(ST) == typeid(int)) {
+
+    if (dt==DataType::IntType) {
       fill_val = x.get_header().get_extra_data<int>("mask_value");
-    } else {
+    } else if (dt==DataType::FloatType) {
       fill_val = x.get_header().get_extra_data<float>("mask_value");
+    } else if (dt==DataType::DoubleType) {
+      fill_val = x.get_header().get_extra_data<double>("mask_value");
+    } else {
+      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
     }
   }
 
