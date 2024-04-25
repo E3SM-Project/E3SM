@@ -68,12 +68,13 @@ std::cout << "hey BEFORE params.theta_hydrostatic_mode " << params.theta_hydrost
 //    m_process_nh_vars_bool = false;
 //    m_process_nh_vars_bool = !params.theta_hydrostatic_mode;
     if(params.theta_hydrostatic_mode){
-	    m_process_nh_vars = 0;
-           m_process_nh_vars_bool = false;
+    std::cout << "IN ASSIGNMENT hey params.theta_hydrostatic_mode is true \n";
+    m_process_nh_vars = 0;
+    m_process_nh_vars_bool = false;
     }else{
-            m_process_nh_vars = 1;  
-    m_process_nh_vars_bool = true;
-    
+    std::cout << "IN ASSIGNMENT hey params.theta_hydrostatic_mode is false \n";
+    m_process_nh_vars = 1;  
+    m_process_nh_vars_bool = true;  
     }
     std::cout << "hey HOMMEXX_BFB_TESTING is NOT defined \n";
 #endif

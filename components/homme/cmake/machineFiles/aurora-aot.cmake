@@ -7,6 +7,7 @@
 
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
+SET(HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 
 SET(HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
@@ -20,8 +21,9 @@ SET(HOMME_USE_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
-set(KOKKOS_HOME "/home/onguba/kokkos-build/apr03-2024-aot/install" CACHE STRING "")
-#set(KOKKOS_HOME "/home/onguba/kokkos-build/bld-june14-layout/install" CACHE STRING "")
+set(KOKKOS_HOME "/home/onguba/kokkos-build/mar05-aot/install" CACHE STRING "")
+#set(KOKKOS_HOME "/home/onguba/kokkos-build/oct01-jit/install" CACHE STRING "")
+#set(KOKKOS_HOME "/home/onguba/kokkos-build/bld-jit-aug18/install" CACHE STRING "")
 set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
@@ -35,8 +37,14 @@ SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
+# -fsycl-link-huge-device-code for theta to get build
+#JIT flags
+#SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
+#SET(SYCL_LINK_FLAGS "-fsycl -fsycl-link-huge-device-code -fsycl-device-code-split=per_kernel -fsycl-targets=spir64")
+
+#AOT flags
 SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
-SET(SYCL_LINK_FLAGS "-fsycl-max-parallel-link-jobs=32 -fsycl-link-huge-device-code -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
+SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-link-huge-device-code -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")

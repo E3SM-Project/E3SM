@@ -36,7 +36,7 @@ ADD_LIBRARY(preqx_kokkos_ut_lib
 TARGET_INCLUDE_DIRECTORIES(preqx_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(preqx_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(preqx_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
-target_link_libraries(preqx_kokkos_ut_lib Kokkos::kokkos)
+target_link_libraries(preqx_kokkos_ut_lib kokkos)
 TARGET_LINK_LIBRARIES(preqx_kokkos_ut_lib timing csm_share ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)
   TARGET_LINK_LIBRARIES (preqx_kokkos_ut_lib -mkl)
