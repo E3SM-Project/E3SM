@@ -36,7 +36,7 @@
 
 template <typename T>
 void haloExchangeTest(
-    OMEGA::Halo MyHalo,
+    OMEGA::Halo *MyHalo,
     T InitArray,  /// Array initialized based on global IDs of mesh elements
     T &TestArray, /// Array only initialized in owned elements
     const char *Label,                          /// Unique label for test
@@ -50,21 +50,21 @@ void haloExchangeTest(
    OMEGA::I4 NTot = InitArray.size();
    if (NTot != TestArray.size()) {
       LOG_ERROR("HaloTest: {} arrays must be of same size", Label);
+      LOG_INFO("HaloTest: {} exchange test FAIL", Label);
       TotErr += -1;
       return;
    }
 
    // Perform halo exchange
-   IErr = MyHalo.exchangeFullArrayHalo(TestArray, ThisElem);
+   IErr = MyHalo->exchangeFullArrayHalo(TestArray, ThisElem);
    if (IErr != 0) {
       LOG_ERROR("HaloTest: Error during {} halo exchange", Label);
+      LOG_INFO("HaloTest: {} exchange test FAIL", Label);
       TotErr += -1;
       return;
    }
 
    // Collapse arrays to 1D for easy iteration
-   // auto CollapsedInit = InitArray.collapse();
-   // auto CollapsedTest = TestArray.collapse();
    Kokkos::View<typename T::value_type *, typename T::array_layout,
                 typename T::memory_space>
        CollapsedInit(InitArray.data(), InitArray.size());
@@ -93,6 +93,39 @@ void haloExchangeTest(
 } // end haloExchangeTest
 
 //------------------------------------------------------------------------------
+// Initialization routine for Halo tests. Calls all the init routines needed
+// to create the default Halo.
+
+int initHaloTest() {
+
+   OMEGA::I4 IErr{0};
+
+   // Initialize the machine environment and fetch the default environment
+   // pointer and the MPI communicator
+   OMEGA::MachEnv::init(MPI_COMM_WORLD);
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   MPI_Comm DefComm       = DefEnv->getComm();
+
+   // Initialize the IO system
+   IErr = OMEGA::IO::init(DefComm);
+   if (IErr != 0)
+      LOG_ERROR("HaloTest: error initializing parallel IO");
+
+   // Create the default decomposition (initializes the decomposition)
+   IErr = OMEGA::Decomp::init();
+   if (IErr != 0)
+      LOG_ERROR("HaloTest: error initializing default decomposition");
+
+   // Initialize the default halo
+   IErr = OMEGA::Halo::init();
+   if (IErr != 0)
+      LOG_ERROR("HaloTest: error initializing default halo");
+
+   return IErr;
+
+} // end initHaloTest
+
+//------------------------------------------------------------------------------
 // The test driver. Performs halo exchange tests of all index spaces and all
 // supported Kokkos array types. For each test, an initial array is set based on
 // Global IDs of the mesh elements in the given index space for all owned and
@@ -112,28 +145,16 @@ int main(int argc, char *argv[]) {
    Kokkos::initialize();
    {
 
-      // Initialize the machine environment and fetch the default environment
-      // pointer, the MPI communicator and the task ID of the local task
-      OMEGA::MachEnv::init(MPI_COMM_WORLD);
-      OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
-      MPI_Comm DefComm       = DefEnv->getComm();
-      OMEGA::I4 MyTask       = DefEnv->getMyTask();
-
-      // Initialize the IO system
-      IErr = OMEGA::IO::init(DefComm);
+      // Call Halo test initialization routine
+      IErr = initHaloTest();
       if (IErr != 0)
-         LOG_ERROR("DecompTest: error initializing parallel IO");
+         LOG_ERROR("HaloTest: initHaloTest error");
 
-      // Create the default decomposition (initializes the decomposition)
-      IErr = OMEGA::Decomp::init();
-      if (IErr != 0)
-         LOG_ERROR("DecompTest: error initializing default decomposition");
+      // Retrieve pointer to default halo
+      OMEGA::Halo *DefHalo = OMEGA::Halo::getDefault();
 
-      // Retrieve the default decomposition
+      // Retrieve pointer to default decomposition
       OMEGA::Decomp *DefDecomp = OMEGA::Decomp::getDefault();
-
-      // Create the halo exchange object for the given MachEnv and Decomp
-      OMEGA::Halo MyHalo(DefEnv, DefDecomp);
 
       OMEGA::I4 NumOwned;
       OMEGA::I4 NumAll;
@@ -152,7 +173,8 @@ int main(int argc, char *argv[]) {
          Test1DI4Cell(ICell) = -1;
       }
 
-      haloExchangeTest(MyHalo, Init1DI4Cell, Test1DI4Cell, "1DI4 Cell", TotErr);
+      haloExchangeTest(DefHalo, Init1DI4Cell, Test1DI4Cell, "1DI4 Cell",
+                       TotErr);
 
       OMEGA::HostArray1DI4 Init1DI4Edge("Init1DI4Edge", DefDecomp->NEdgesSize);
       OMEGA::HostArray1DI4 Test1DI4Edge("Test1DI4Edge", DefDecomp->NEdgesSize);
@@ -166,7 +188,7 @@ int main(int argc, char *argv[]) {
          Test1DI4Edge(IEdge) = -1;
       }
 
-      haloExchangeTest(MyHalo, Init1DI4Edge, Test1DI4Edge, "1DI4 Edge", TotErr,
+      haloExchangeTest(DefHalo, Init1DI4Edge, Test1DI4Edge, "1DI4 Edge", TotErr,
                        OMEGA::OnEdge);
 
       OMEGA::HostArray1DI4 Init1DI4Vertex("Init1DI4Vertex",
@@ -182,7 +204,7 @@ int main(int argc, char *argv[]) {
       for (int IVertex = NumOwned; IVertex < NumAll; ++IVertex) {
          Test1DI4Vertex(IVertex) = -1;
       }
-      haloExchangeTest(MyHalo, Init1DI4Vertex, Test1DI4Vertex, "1DI4 Vertex",
+      haloExchangeTest(DefHalo, Init1DI4Vertex, Test1DI4Vertex, "1DI4 Vertex",
                        TotErr, OMEGA::OnVertex);
 
       // Declaration of variables for remaining tests
@@ -254,9 +276,9 @@ int main(int argc, char *argv[]) {
          Test1DR8(ICell) = -1;
       }
 
-      haloExchangeTest(MyHalo, Init1DI8, Test1DI8, "1DI8", TotErr);
-      haloExchangeTest(MyHalo, Init1DR4, Test1DR4, "1DR4", TotErr);
-      haloExchangeTest(MyHalo, Init1DR8, Test1DR8, "1DR8", TotErr);
+      haloExchangeTest(DefHalo, Init1DI8, Test1DI8, "1DI8", TotErr);
+      haloExchangeTest(DefHalo, Init1DR4, Test1DR4, "1DR4", TotErr);
+      haloExchangeTest(DefHalo, Init1DR8, Test1DR8, "1DR8", TotErr);
 
       // Initialize and run 2D tests
       for (int ICell = 0; ICell < NumAll; ++ICell) {
@@ -283,10 +305,10 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      haloExchangeTest(MyHalo, Init2DI4, Test2DI4, "2DI4", TotErr);
-      haloExchangeTest(MyHalo, Init2DI8, Test2DI8, "2DI8", TotErr);
-      haloExchangeTest(MyHalo, Init2DR4, Test2DR4, "2DR4", TotErr);
-      haloExchangeTest(MyHalo, Init2DR8, Test2DR8, "2DR8", TotErr);
+      haloExchangeTest(DefHalo, Init2DI4, Test2DI4, "2DI4", TotErr);
+      haloExchangeTest(DefHalo, Init2DI8, Test2DI8, "2DI8", TotErr);
+      haloExchangeTest(DefHalo, Init2DR4, Test2DR4, "2DR4", TotErr);
+      haloExchangeTest(DefHalo, Init2DR8, Test2DR8, "2DR8", TotErr);
 
       // Initialize and run 3D tests
       for (int K = 0; K < N3; ++K) {
@@ -317,10 +339,10 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      haloExchangeTest(MyHalo, Init3DI4, Test3DI4, "3DI4", TotErr);
-      haloExchangeTest(MyHalo, Init3DI8, Test3DI8, "3DI8", TotErr);
-      haloExchangeTest(MyHalo, Init3DR4, Test3DR4, "3DR4", TotErr);
-      haloExchangeTest(MyHalo, Init3DR8, Test3DR8, "3DR8", TotErr);
+      haloExchangeTest(DefHalo, Init3DI4, Test3DI4, "3DI4", TotErr);
+      haloExchangeTest(DefHalo, Init3DI8, Test3DI8, "3DI8", TotErr);
+      haloExchangeTest(DefHalo, Init3DR4, Test3DR4, "3DR4", TotErr);
+      haloExchangeTest(DefHalo, Init3DR8, Test3DR8, "3DR8", TotErr);
 
       // Initialize and run 4D tests
       for (int L = 0; L < N4; ++L) {
@@ -356,10 +378,10 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      haloExchangeTest(MyHalo, Init4DI4, Test4DI4, "4DI4", TotErr);
-      haloExchangeTest(MyHalo, Init4DI8, Test4DI8, "4DI8", TotErr);
-      haloExchangeTest(MyHalo, Init4DR4, Test4DR4, "4DR4", TotErr);
-      haloExchangeTest(MyHalo, Init4DR8, Test4DR8, "4DR8", TotErr);
+      haloExchangeTest(DefHalo, Init4DI4, Test4DI4, "4DI4", TotErr);
+      haloExchangeTest(DefHalo, Init4DI8, Test4DI8, "4DI8", TotErr);
+      haloExchangeTest(DefHalo, Init4DR4, Test4DR4, "4DR4", TotErr);
+      haloExchangeTest(DefHalo, Init4DR8, Test4DR8, "4DR8", TotErr);
 
       // Initialize and run 5D tests
       for (int M = 0; M < N5; ++M) {
@@ -402,10 +424,10 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      haloExchangeTest(MyHalo, Init5DI4, Test5DI4, "5DI4", TotErr);
-      haloExchangeTest(MyHalo, Init5DI8, Test5DI8, "5DI8", TotErr);
-      haloExchangeTest(MyHalo, Init5DR4, Test5DR4, "5DR4", TotErr);
-      haloExchangeTest(MyHalo, Init5DR8, Test5DR8, "5DR8", TotErr);
+      haloExchangeTest(DefHalo, Init5DI4, Test5DI4, "5DI4", TotErr);
+      haloExchangeTest(DefHalo, Init5DI8, Test5DI8, "5DI8", TotErr);
+      haloExchangeTest(DefHalo, Init5DR4, Test5DR4, "5DR4", TotErr);
+      haloExchangeTest(DefHalo, Init5DR8, Test5DR8, "5DR8", TotErr);
 
       // Memory clean up
       OMEGA::Decomp::clear();

@@ -45,6 +45,11 @@ int initHorzMeshTest() {
    if (Err != 0)
       LOG_ERROR("HorzMeshTest: error initializing default decomposition");
 
+   // Initialize the default halo
+   Err = OMEGA::Halo::init();
+   if (Err != 0)
+      LOG_ERROR("HorzMeshTest: error initializing default halo");
+
    // Initialize the default mesh
    Err = OMEGA::HorzMesh::init();
    if (Err != 0)
@@ -648,7 +653,7 @@ int main(int argc, char *argv[]) {
       // Perform halo exhange on owned cell only array and compare
       // read values
       // Tests that halo values are read in correctly
-      OMEGA::Halo MyHalo(DefEnv, DefDecomp);
+      OMEGA::Halo *DefHalo = OMEGA::Halo::getDefault();
       OMEGA::HostArray1DR8 XCellTest("XCellTest", Mesh->NCellsSize);
       // Mesh->XCellH.deep_copy_to(XCellTest);
       OMEGA::deepCopy(XCellTest, Mesh->XCellH);
@@ -656,7 +661,7 @@ int main(int argc, char *argv[]) {
       for (int Cell = Mesh->NCellsOwned; Cell < Mesh->NCellsAll; Cell++) {
          XCellTest(Cell) = 0.0;
       }
-      MyHalo.exchangeFullArrayHalo(XCellTest, OMEGA::OnCell);
+      DefHalo->exchangeFullArrayHalo(XCellTest, OMEGA::OnCell);
 
       count = 0;
       for (int Cell = 0; Cell < Mesh->NCellsAll; Cell++) {
@@ -683,7 +688,7 @@ int main(int argc, char *argv[]) {
       for (int Edge = Mesh->NEdgesOwned; Edge < Mesh->NEdgesAll; Edge++) {
          XEdgeTest(Edge) = 0.0;
       }
-      MyHalo.exchangeFullArrayHalo(XEdgeTest, OMEGA::OnEdge);
+      DefHalo->exchangeFullArrayHalo(XEdgeTest, OMEGA::OnEdge);
 
       count = 0;
       for (int Edge = 0; Edge < Mesh->NEdgesAll; Edge++) {
@@ -711,7 +716,7 @@ int main(int argc, char *argv[]) {
            Vertex++) {
          XVertexTest(Vertex) = 0.0;
       }
-      MyHalo.exchangeFullArrayHalo(XVertexTest, OMEGA::OnVertex);
+      DefHalo->exchangeFullArrayHalo(XVertexTest, OMEGA::OnVertex);
 
       count = 0;
       for (int Vertex = 0; Vertex < Mesh->NVerticesAll; Vertex++) {
