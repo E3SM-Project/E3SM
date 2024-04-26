@@ -188,10 +188,8 @@ public:
   virtual bool check_valid_lid_to_idx () const { return true; }
 
   void reset_field_tag_name (const FieldTag t, const std::string& s) { m_special_tag_names[t] = s; }
-  std::string get_dim_name (const FieldLayout& lt, const int idim) const {
-    const auto t = lt.tag(idim);
-    return m_special_tag_names.count(t)==1 ? m_special_tag_names.at(t) : lt.names()[idim];
-  }
+  bool has_special_tag_name (const FieldTag t) const { return m_special_tag_names.count(t)==1; }
+  std::string get_special_tag_name (const FieldTag t) const { return m_special_tag_names.at(t); }
 
   // This member is used mostly by IO: if a field exists on multiple grids
   // with the same name, IO can use this as a suffix to diambiguate the fields in

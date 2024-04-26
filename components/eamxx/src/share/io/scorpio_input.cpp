@@ -399,10 +399,16 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
   std::vector<std::string> dims_names;
   dims_names.reserve(layout.rank());
   for (int i=0; i<layout.rank(); ++i) {
-    dims_names.push_back(m_io_grid->get_dim_name(layout,i));
-    if (dims_names.back()=="dim") {
-      dims_names.back() += std::to_string(layout.dim(i));
-    }
+    const auto t = layout.tag(i);
+    std::string n = m_io_grid->has_special_tag_name(t)
+                  ? m_io_grid->get_special_tag_name(t)
+                  : layout.names()[i];
+
+    // If t==CMP, and the name stored in the layout is the default ("dim"),
+    // we append also the extent, to allow different vector dims in the file
+    n += n=="dim" ? std::to_string(layout.dim(i)) : "";
+
+    dims_names.push_back(n);
   }
 
   return dims_names;
@@ -431,7 +437,10 @@ void AtmosphereInput::set_decompositions()
 
   // Set the decomposition for the partitioned dimension
   const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-  auto decomp_dim = m_io_grid->get_dim_name(decomp_tag);
+  std::string decomp_dim = m_io_grid->has_special_tag_name(decomp_tag)
+                         ? m_io_grid->get_special_tag_name(decomp_tag)
+                         : e2str(decomp_tag);
+
   auto gids_f = m_io_grid->get_partitioned_dim_gids();
   auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
   auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();

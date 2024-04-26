@@ -754,14 +754,18 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   m_layouts.emplace(fid.name(),layout);
 
   // Now check taht all the dims of this field are already set to be registered.
+  const auto& tags = layout.tags();
+  const auto& dims = layout.dims();
   for (int i=0; i<layout.rank(); ++i) {
     // check tag against m_dims map.  If not in there, then add it.
-    const auto& tags = layout.tags();
-    const auto& dims = layout.dims();
-    auto tag_name = m_io_grid->get_dim_name(layout,i);
-    if (tag_name=="dim") {
-      tag_name += std::to_string(dims[i]);
-    }
+    std::string tag_name = m_io_grid->has_special_tag_name(tags[i])
+                         ? m_io_grid->get_special_tag_name(tags[i])
+                         : layout.names()[i];
+
+    // If t==CMP, and the name stored in the layout is the default ("dim"),
+    // we append also the extent, to allow different vector dims in the file
+    tag_name += tag_name=="dim" ? std::to_string(layout.dim(i)) : "";
+
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     int dim_len = is_partitioned
                 ? m_io_grid->get_partitioned_dim_global_size()
@@ -848,8 +852,16 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   const auto tags = layout.tags();
   if (m_track_avg_cnt) {
     std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
-    for (int ii=0; ii<layout.rank(); ++ii) {
-      auto tag_name = m_io_grid->get_dim_name(layout,ii);
+    for (int i=0; i<layout.rank(); ++i) {
+      const auto t = layout.tag(i);
+      std::string tag_name = m_io_grid->has_special_tag_name(t)
+                           ? m_io_grid->get_special_tag_name(t)
+                           : layout.names()[i];
+
+      // If t==CMP, and the name stored in the layout is the default ("dim"),
+      // we append also the extent, to allow different vector dims in the file
+      tag_name += tag_name=="dim" ? std::to_string(layout.dim(i)) : "";
+
       avg_cnt_name += "_" + tag_name;
     }
     if (std::find(m_avg_cnt_names.begin(),m_avg_cnt_names.end(),avg_cnt_name)==m_avg_cnt_names.end()) {
@@ -906,28 +918,13 @@ register_variables(const std::string& filename,
       "  - supported values: float, single, double, real\n");
 
   // Helper lambdas
-  auto set_decomp_tag = [&](const FieldLayout& layout) {
-    std::string decomp_tag = "dt=real,grid-idx=" + std::to_string(m_io_grid->get_unique_grid_id()) + ",layout=";
-
-    std::vector<int> range(layout.rank());
-    std::iota(range.begin(),range.end(),0);
-    auto tag_and_dim = [&](int i) {
-      return m_io_grid->get_dim_name(layout,i) +
-             std::to_string(layout.dim(i));
-    };
-
-    decomp_tag += ekat::join (range, tag_and_dim,"-");
-
-    if (m_add_time_dim) {
-      decomp_tag += "-time";
-    }
-    return decomp_tag;
-  };
-
   auto set_vec_of_dims = [&](const FieldLayout& layout) {
     std::vector<std::string> vec_of_dims;
     for (int i=0; i<layout.rank(); ++i) {
-      auto tag_name = m_io_grid->get_dim_name(layout,i);
+      const auto t = layout.tag(i);
+      auto tag_name = m_io_grid->has_special_tag_name(t)
+                    ? m_io_grid->get_special_tag_name(t)
+                    : layout.names()[i];
       if (tag_name=="dim") {
         tag_name += std::to_string(layout.dim(i));
       }
@@ -947,7 +944,6 @@ register_variables(const std::string& filename,
     //   We use real here because the data type for the decomp is the one used
     // in the simulation and not the one used in the output file.
     const auto& layout = fid.get_layout();
-    const auto& io_decomp_tag = set_decomp_tag(layout);
     auto vec_of_dims   = set_vec_of_dims(layout);
     std::string units = fid.get_units().get_string();
 
@@ -1035,7 +1031,6 @@ register_variables(const std::string& filename,
   if (m_track_avg_cnt) {
     for (const auto& name : m_avg_cnt_names) {
       const auto layout = m_layouts.at(name);
-      auto io_decomp_tag = set_decomp_tag(layout);
       auto vec_of_dims   = set_vec_of_dims(layout);
       scorpio::define_var(filename, name, "unitless", vec_of_dims,
                           "real",fp_precision, m_add_time_dim);
@@ -1148,7 +1143,9 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
 
   // Set the decomposition for the partitioned dimension
   const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-  auto decomp_dim = m_io_grid->get_dim_name(decomp_tag);
+  std::string decomp_dim = m_io_grid->has_special_tag_name(decomp_tag)
+                         ? m_io_grid->get_special_tag_name(decomp_tag)
+                         : e2str(decomp_tag);
   auto gids_f = m_io_grid->get_partitioned_dim_gids();
   auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
   auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
