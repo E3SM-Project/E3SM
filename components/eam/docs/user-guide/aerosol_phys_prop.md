@@ -15,7 +15,7 @@ Key information
 
 - BC and POM hygroscopicity values are updated by Shan et al. (2024).
 
-- <span style="color:red">Some description/reference about the 5th mode.</span>
+- <!-- markdownlint-disable MD033 --><span style="color:red">Some description/reference about the 5th mode.</span>
 
 ## Included fields
 
