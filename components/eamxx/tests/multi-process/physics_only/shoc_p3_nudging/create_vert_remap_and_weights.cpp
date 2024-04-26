@@ -57,11 +57,14 @@ void create_nudging_weights_ncfile(int ntimes, int ncols, int nlevs, const std::
     }
   }
 
+  // NOTE: we are generating a file with "time" dimension that is not unlimited.
+  //       This should stress test AtmosphereInput, which will 'pretend' that
+  //       a dimension called 'time' is unlimited, even though it isn't in the file
   scorpio::register_file(filename, scorpio::FileMode::Write);
   scorpio::define_dim(filename,"ncol",ncols);
   scorpio::define_dim(filename,"lev", nlevs);
   scorpio::define_dim(filename,"time",ntimes);
-  scorpio::define_var(filename,"nudging_weights",{"lev", "ncol", "time"},"real");
+  scorpio::define_var(filename,"nudging_weights",{"time","ncol","lev"},"real");
   scorpio::enddef(filename);
   scorpio::write_var(filename,"nudging_weights",&weights[0][0][0]);
   scorpio::release_file(filename);
