@@ -222,6 +222,8 @@ struct PeekFile {
     if (not was_open) {
       register_file(filename,Read);
     }
+    auto& s = ScorpioSession::instance();
+    file = &s.files[filename];
   }
 
   ~PeekFile () {
@@ -234,9 +236,10 @@ struct PeekFile {
       release_file(filename);
     }
   }
-private:
-  std::string filename;
-  bool        was_open;
+
+  const PIOFile*  file;
+  std::string     filename;
+  bool            was_open;
 };
 
 PIOFile& get_file (const std::string& filename,
@@ -625,10 +628,8 @@ bool has_dim (const std::string& filename,
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  const auto& f = impl::get_file(filename,"scorpio::has_dim");
-
-  auto it = f.dims.find(dimname);
-  if (it==f.dims.end()) {
+  auto it = pf.file->dims.find(dimname);
+  if (it==pf.file->dims.end()) {
     return false;
   } else if (length==0) {
     return it->second->unlimited;
@@ -648,10 +649,7 @@ int get_dimlen (const std::string& filename, const std::string& dimname)
       " - filename: " + filename + "\n"
       " - dimname : " + dimname + "\n");
 
-  auto& s = ScorpioSession::instance();
-  auto& f = s.files[filename];
-
-  return f.dims.at(dimname)->length;
+  return pf.file->dims.at(dimname)->length;
 }
 
 int get_dimlen_local (const std::string& filename, const std::string& dimname)
@@ -664,10 +662,7 @@ int get_dimlen_local (const std::string& filename, const std::string& dimname)
       " - filename: " + filename + "\n"
       " - dimname : " + dimname + "\n");
 
-  auto& s = ScorpioSession::instance();
-  auto& f = s.files[filename];
-
-  const auto& dim = f.dims.at(dimname);
+  const auto& dim = pf.file->dims.at(dimname);
   return dim->offsets==nullptr ? dim->length : dim->offsets->size();
 }
 
@@ -676,14 +671,12 @@ int get_time_len (const std::string& filename)
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  auto& s = ScorpioSession::instance();
-  auto& f = s.files[filename];
 
-  EKAT_REQUIRE_MSG (f.time_dim,
+  EKAT_REQUIRE_MSG (pf.file->time_dim!=nullptr,
       "Error! Could not inquire time dimension length. The time dimension is not in the file.\n"
       " - filename: " + filename + "\n");
 
-  return f.time_dim->length;
+  return pf.file->time_dim->length;
 }
 
 std::string get_time_name (const std::string& filename)
@@ -691,14 +684,11 @@ std::string get_time_name (const std::string& filename)
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  auto& s = ScorpioSession::instance();
-  auto& f = s.files[filename];
-
-  EKAT_REQUIRE_MSG (f.time_dim,
+  EKAT_REQUIRE_MSG (pf.file->time_dim!=nullptr,
       "Error! Could not inquire time dimension name. The time dimension is not in the file.\n"
       " - filename: " + filename + "\n");
 
-  return f.time_dim->name;
+  return pf.file->time_dim->name;
 }
 
 // =================== Decompositions operations ==================== //
@@ -1031,9 +1021,7 @@ bool has_var (const std::string& filename, const std::string& varname)
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  const auto& f = impl::get_file(filename,"scorpio::has_var");
-
-  return f.vars.count(varname)==1;
+  return pf.file->vars.count(varname)==1;
 }
 
 const PIOVar& get_var (const std::string& filename,
@@ -1108,8 +1096,7 @@ double get_time (const std::string& filename, const int time_index)
 {
   impl::PeekFile pf (filename);
 
-  const auto& f = impl::get_file(filename,"scorpio::get_time");
-  const auto& time_name = f.time_dim->name;
+  const auto& time_name = pf.file->time_dim->name;
   double t;
   read_var(filename,time_name,&t,time_index);
   return t;
@@ -1117,8 +1104,8 @@ double get_time (const std::string& filename, const int time_index)
 
 std::vector<double> get_all_times (const std::string& filename)
 {
-  const auto& f = impl::get_file(filename,"scorpio::get_all_times");
-  const auto& dim = *f.time_dim;
+  impl::PeekFile pf (filename);
+  const auto& dim = *pf.file->time_dim;
 
   std::vector<double> times (dim.length);
   for (int i=0; i<dim.length; ++i) {
@@ -1342,8 +1329,10 @@ bool has_global_attribute (const std::string& filename, const std::string& attna
 
 bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname)
 {
-  register_file(filename,Read);
-  const int ncid = impl::get_file(filename,"scorpio::has_attribute").ncid;
+  // If file wasn't open, open it on the fly. See comment in PeekFile class above.
+  impl::PeekFile pf(filename);
+
+  const int ncid = pf.file->ncid;
 
   // Get var id
   int varid;
@@ -1367,8 +1356,6 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
       " - attname  : " + attname + "\n"
       " - pio error: " + std::to_string(err) + "\n");
 
-  release_file (filename);
-
   return true;
 }
 
@@ -1377,7 +1364,8 @@ T get_attribute (const std::string& filename,
                  const std::string& varname,
                  const std::string& attname)
 {
-  const auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
+  // If file wasn't open, open it on the fly. See comment in PeekFile class above.
+  impl::PeekFile pf(filename);
 
   int varid;
   if (varname=="GLOBAL") {
@@ -1387,7 +1375,7 @@ T get_attribute (const std::string& filename,
   }
 
   T val;
-  int err = PIOc_get_att(f.ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
+  int err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
   check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
 
   return val;
@@ -1413,7 +1401,8 @@ std::string get_attribute (const std::string& filename,
                            const std::string& varname,
                            const std::string& attname)
 {
-  const auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
+  // If file wasn't open, open it on the fly. See comment in PeekFile class above.
+  impl::PeekFile pf(filename);
 
   int varid;
   if (varname=="GLOBAL") {
@@ -1424,12 +1413,12 @@ std::string get_attribute (const std::string& filename,
 
   int err;
   PIO_Offset len;
-  err = PIOc_inq_attlen(f.ncid,varid,attname.c_str(),&len);
+  err = PIOc_inq_attlen(pf.file->ncid,varid,attname.c_str(),&len);
   check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","inq_attlen");
 
   std::string val(len,'\0');
 
-  err = PIOc_get_att(f.ncid,varid,attname.c_str(),val.data());
+  err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),val.data());
   check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
 
   return val;
