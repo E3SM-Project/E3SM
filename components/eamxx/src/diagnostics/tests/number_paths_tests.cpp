@@ -42,7 +42,7 @@ void run(std::mt19937_64 &engine) {
   using view_1d    = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
-  constexpr Real gravit  = PC::gravit;
+  constexpr Real g       = PC::gravit;
   constexpr Real macheps = PC::macheps;
 
   // A world comm
@@ -162,29 +162,41 @@ void run(std::mt19937_64 &engine) {
     const auto &lnp_h = lnp.get_view<const Real *, Host>();
     const auto &inp_h = inp.get_view<const Real *, Host>();
     const auto &rnp_h = rnp.get_view<const Real *, Host>();
-
+    // Sync to host
+    qc_f.sync_to_host();
+    nc_f.sync_to_host();
+    qi_f.sync_to_host();
+    ni_f.sync_to_host();
+    qr_f.sync_to_host();
+    nr_f.sync_to_host();
+    pd_f.sync_to_host();
+    // Compute
     for(const auto &dd : diags) {
       dd.second->compute_diagnostic();
     }
-    // test manual calculation vs one provided by diags
+    // Sync to host
+    lnp.sync_to_host();
+    inp.sync_to_host();
+    rnp.sync_to_host();
+    // Test manual calculation vs one provided by diags
     {
       for(int icol = 0; icol < ncols; icol++) {
         Real qndc_prod = 0.0;
         for(int ilev = 0; ilev < num_levs; ++ilev) {
           qndc_prod +=
-              nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+              nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(lnp_h(icol) - qndc_prod) < macheps);
         Real qndi_prod = 0.0;
         for(int ilev = 0; ilev < num_levs; ++ilev) {
           qndi_prod +=
-              ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+              ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(inp_h(icol) - qndi_prod) < macheps);
         Real qndr_prod = 0.0;
         for(int ilev = 0; ilev < num_levs; ++ilev) {
           qndr_prod +=
-              nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / gravit;
+              nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(rnp_h(icol) - qndr_prod) < macheps);
       }

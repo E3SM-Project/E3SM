@@ -39,9 +39,8 @@ void NumberPathDiagnostic::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  const auto m2 = m * m;
-  auto Q        = kg / kg;
-  Q.set_string("kg/kg");
+  auto out_units = kg / (kg * m * m);
+  out_units.set_string("kg/(kg m2)");
 
   auto grid             = grids_manager->get_grid("Physics");
   const auto &grid_name = grid->name();
@@ -57,7 +56,7 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(name(), scalar2d, 1 / m2, grid_name);
+  FieldIdentifier fid(name(), scalar2d, out_units, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
