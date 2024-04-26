@@ -709,6 +709,14 @@ snowpack conditions on glaciers and ice sheets, including a semi-empirical
 firn densification model.
 </entry>
 
+<entry id="use_firn_percolation_and_compaction" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+This option enables more realistic
+snowpack conditions on glaciers and ice sheets, including a semi-empirical
+firn densification model. uses the same physics as use_extrasnowlayers but
+uses the original 5 snow layer scheme
+</entry>
+
 <entry id="use_noio" type="logical" category="default_settings"
        group="elm_inparm" valid_values="" value=".false." >
 Toggle to turn all history output completely OFF (possibly used for testing)
