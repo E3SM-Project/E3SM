@@ -44,6 +44,7 @@ void read_dimensionless_variable_from_file(const std::string& filename,
       "Error! IOP file does not have a required variable.\n"
       "  - filename: " + filename + "\n"
       "  - varname : " + varname  + "\n");
+  scorpio::change_var_dtype(filename,varname,scorpio::get_dtype<T>());
   scorpio::read_var(filename,varname,value);
   scorpio::release_file(filename);
 }
@@ -69,6 +70,8 @@ void read_variable_from_file(const std::string&              filename,
 
   // Read into data
   scorpio::register_file(filename, scorpio::FileMode::Read);
+  // This allows, e.g., to use double* to read a var with float dtype
+  scorpio::change_var_dtype(filename, varname, scorpio::get_dtype<T>());
   scorpio::read_var(filename, varname, data, time_idx);
   scorpio::release_file(filename);
 }
@@ -127,6 +130,11 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                    "Error! Using IOP requires defining an iop_file parameter.\n");
 
   const auto iop_file = m_params.get<std::string>("iop_file");
+
+  // All the scorpio::has_var call can open the file on the fly, but since there
+  // are a lot of those calls, for performance reasons we just open it now.
+  // All the calls to register_file made on-the-fly inside has_var will be no-op.
+  scorpio::register_file(iop_file,scorpio::FileMode::Read);
 
   // Lambda for allocating space and storing information for potential iop fields.
   // Inputs:
@@ -333,6 +341,8 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
   m_helper_fields.insert({"model_pressure", model_pressure});
+
+  scorpio::release_file(iop_file);
 }
 
 void IntensiveObservationPeriod::
