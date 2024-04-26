@@ -764,7 +764,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 
     // If t==CMP, and the name stored in the layout is the default ("dim"),
     // we append also the extent, to allow different vector dims in the file
-    tag_name += tag_name=="dim" ? std::to_string(layout.dim(i)) : "";
+    tag_name += tag_name=="dim" ? std::to_string(dims[i]) : "";
 
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     int dim_len = is_partitioned
