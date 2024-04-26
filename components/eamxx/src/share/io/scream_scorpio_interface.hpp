@@ -20,6 +20,13 @@
  *   we throw any time scorpio returns something different from PIO_NOERR.
  * - allow using simpler interfaces: by using string/vector and templates,
  *   the host code can have more compact interfaces.
+ *
+ * Most of the "get" interfaces can open a file in read mode on the fly.
+ * This allows easier usage from the user point of view, but has some drawbacks:
+ *  - the file is open/closed every time you query it
+ *  - the file is open with default IOType
+ * If you need to do several queries, you should consider registering the file manually
+ * before doing any query, and release it once you are done.
  */
 
 namespace scream {
@@ -93,6 +100,12 @@ bool has_dim (const std::string& filename,
 int get_dimlen (const std::string& filename, const std::string& dimname);
 int get_dimlen_local (const std::string& filename, const std::string& dimname);
 
+// Checks if the dimension is unlimited
+bool is_dim_unlimited (const std::string& filename,
+                       const std::string& dimname);
+
+// Get len/name of the time dimension (i.e., the unlimited one)
+// NOTE: these throw if time dim is not present. Use has_dim to check first.
 int get_time_len (const std::string& filename);
 std::string get_time_name (const std::string& filename);
 
