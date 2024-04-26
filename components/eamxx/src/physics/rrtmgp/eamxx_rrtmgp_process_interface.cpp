@@ -365,9 +365,9 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_lw_bnd.totElems();
 #endif
 
+#ifdef RRTMGP_ENABLE_KOKKOS
   mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
-#ifdef RRTMGP_ENABLE_KOKKOS
   // 1d arrays
   m_buffer.mu0_k = decltype(m_buffer.mu0_k)(mem, m_col_chunk_size);
   mem += m_buffer.mu0_k.size();

@@ -75,6 +75,7 @@ CloudOpticsK cloud_optics_lw_k;
 #endif
 
 bool initialized = false;
+bool initialized_k = false;
 
 // local functions
 namespace {
@@ -426,13 +427,13 @@ void rrtmgp_initialize(
   const std::shared_ptr<spdlog::logger>& logger)
 {
   // If we've already initialized, just exit
-  if (initialized) {
+  if (initialized_k) {
     if (logger)
       logger->info("RRTMGP is already initialized; skipping\n");
     return;
   }
 
-  // Initialize YAKL
+  // Initialize Kokkos
   if (!Kokkos::is_initialized()) {  Kokkos::initialize(); }
 
   // Load and initialize absorption coefficient data
@@ -443,25 +444,35 @@ void rrtmgp_initialize(
   load_cld_lutcoeff(cloud_optics_sw_k, cloud_optics_file_sw);
   load_cld_lutcoeff(cloud_optics_lw_k, cloud_optics_file_lw);
 
+  // initialize kokkos rrtmgp pool allocator
+  const size_t base_ref = 18000;
+  const size_t ncol = gas_concs.ncol;
+  const size_t nlay = gas_concs.nlay;
+  const size_t nlev = SCREAM_NUM_VERTICAL_LEV;
+  const size_t my_size_ref = ncol * nlay * nlev;
+  conv::MemPoolSingleton::init(2e6 * (float(my_size_ref) / base_ref));
+
   // We are now initialized!
-  initialized = true;
+  initialized_k = true;
 }
 #endif
 
 
 void rrtmgp_finalize() {
-  initialized = false;
 #ifdef RRTMGP_ENABLE_YAKL
+  initialized = false;
   k_dist_sw.finalize();
   k_dist_lw.finalize();
   cloud_optics_sw.finalize(); //~CloudOptics();
   cloud_optics_lw.finalize(); //~CloudOptics();
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+  initialized_k = false;
   k_dist_sw_k.finalize();
   k_dist_lw_k.finalize();
   cloud_optics_sw_k.finalize(); //~CloudOptics();
   cloud_optics_lw_k.finalize(); //~CloudOptics();
+  conv::MemPoolSingleton::finalize();
 #endif
 }
 
@@ -523,7 +534,7 @@ void compute_band_by_band_surface_albedos(
   real1dk &sfc_alb_dif_vis, real1dk &sfc_alb_dif_nir,
   real2dk &sfc_alb_dir,     real2dk &sfc_alb_dif) {
 
-  EKAT_ASSERT_MSG(initialized, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
+  EKAT_ASSERT_MSG(initialized_k, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
   auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
 
   EKAT_ASSERT_MSG(wavenumber_limits.extent(0) == 2,
@@ -1247,7 +1258,7 @@ void rrtmgp_sw(
   auto gas_names = gas_concs.get_gas_names();
   GasConcs gas_concs_day;
   gas_concs_day.init(gas_names, nday, nlay);
-  for (int igas = 1; igas <= ngas; igas++) {
+  for (int igas = 0; igas < ngas; igas++) {
     auto vmr_day = real2d("vmr_day", nday, nlay);
     auto vmr     = real2d("vmr"    , ncol, nlay);
     gas_concs.get_vmr(gas_names[igas], vmr);

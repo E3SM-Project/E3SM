@@ -11,11 +11,13 @@
 
 namespace {
 
+#ifdef RRTMGP_ENABLE_KOKKOS
 template <typename View>
 auto chc(const View& view)
 {
   return Kokkos::create_mirror_view_and_copy(HostDevice(), view);
 }
+#endif
 
 // Names of input files we will need.
 std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";

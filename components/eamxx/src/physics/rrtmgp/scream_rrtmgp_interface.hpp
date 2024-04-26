@@ -49,7 +49,12 @@ extern CloudOpticsK cloud_optics_lw_k;
 /*
  * Flag to indicate whether or not we have initialized RRTMGP
  */
+#ifdef RRTMGP_ENABLE_YAKL
 extern bool initialized;
+#endif
+#ifdef RRTMGP_ENABLE_KOKKOS
+extern bool initialized_k;
+#endif
 
 /*
  * Initialize data for RRTMGP driver
