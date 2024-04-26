@@ -47,7 +47,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
   switch (layout.rank()) {
     case 1:
       {
-        auto v = f.template get_view<const_ST*>();
+        auto v = f.template get_strided_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
           if (ekat::is_invalid(v(i))) {
             result = i;
@@ -57,7 +57,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       break;
     case 2:
       {
-        auto v = f.template get_view<const_ST**>();
+        auto v = f.template get_strided_view<const_ST**>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
@@ -69,7 +69,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       break;
     case 3:
       {
-        auto v = f.template get_view<const_ST***>();
+        auto v = f.template get_strided_view<const_ST***>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
@@ -81,7 +81,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       break;
     case 4:
       {
-        auto v = f.template get_view<const_ST****>();
+        auto v = f.template get_strided_view<const_ST****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
@@ -93,7 +93,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       break;
     case 5:
       {
-        auto v = f.template get_view<const_ST*****>();
+        auto v = f.template get_strided_view<const_ST*****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
@@ -105,7 +105,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       break;
     case 6:
       {
-        auto v = f.template get_view<const_ST******>();
+        auto v = f.template get_strided_view<const_ST******>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
@@ -136,7 +136,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     if (m_grid) {
       // We are storing grid info, and the field is over columns. Get col id and coords.
       col_lid = indices[0];
-      auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
+      auto gids = m_grid->get_dofs_gids().get_strided_view<const AbstractGrid::gid_type*,Host>();
 
       res_and_msg.msg += "  - indices (w/ global column index): (" + std::to_string(gids(col_lid));
       for (size_t i=1; i<indices.size(); ++i) {

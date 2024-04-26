@@ -141,13 +141,13 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
   switch (fl.rank()) {
     case 0:
       {
-        auto v = f.template get_view<ST,Host>();
+        auto v = f.template get_strided_view<ST,Host>();
         v() = pdf(engine);
       }
       break;
     case 1:
       {
-        auto v = f.template get_view<ST*,Host>();
+        auto v = f.template get_strided_view<ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           v(i) = pdf(engine);
         }
@@ -155,7 +155,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
       break;
     case 2:
       {
-        auto v = f.template get_view<ST**,Host>();
+        auto v = f.template get_strided_view<ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             v(i,j) = pdf(engine);
@@ -164,7 +164,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
       break;
     case 3:
       {
-        auto v = f.template get_view<ST***,Host>();
+        auto v = f.template get_strided_view<ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -174,7 +174,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
       break;
     case 4:
       {
-        auto v = f.template get_view<ST****,Host>();
+        auto v = f.template get_strided_view<ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -185,7 +185,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
       break;
     case 5:
       {
-        auto v = f.template get_view<ST*****,Host>();
+        auto v = f.template get_strided_view<ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -197,7 +197,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
       break;
     case 6:
       {
-        auto v = f.template get_view<ST******,Host>();
+        auto v = f.template get_strided_view<ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -235,7 +235,7 @@ void perturb (const Field& f,
     // RNG seed to be the same on every column so that a column will
     // have the same value no matter where it exists in an MPI rank's
     // set of local columns.
-    const auto gids = dof_gids.get_view<const int*, Host>();
+    const auto gids = dof_gids.get_strided_view<const int*, Host>();
 
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
@@ -296,7 +296,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<const ST*,Host>();
+        auto v = f.template get_strided_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           y = std::pow(v(i),2) - c;
           temp = norm + y;
@@ -307,7 +307,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<const ST**,Host>();
+        auto v = f.template get_strided_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             y = std::pow(v(i,j),2) - c;
@@ -319,7 +319,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<const ST***,Host>();
+        auto v = f.template get_strided_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -332,7 +332,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<const ST****,Host>();
+        auto v = f.template get_strided_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -346,7 +346,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<const ST*****,Host>();
+        auto v = f.template get_strided_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -361,7 +361,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<const ST******,Host>();
+        auto v = f.template get_strided_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -403,7 +403,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<const ST*,Host>();
+        auto v = f.template get_strided_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           y = v(i) - c;
           temp = sum + y;
@@ -414,7 +414,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<const ST**,Host>();
+        auto v = f.template get_strided_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             y = v(i,j) - c;
@@ -426,7 +426,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<const ST***,Host>();
+        auto v = f.template get_strided_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -439,7 +439,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<const ST****,Host>();
+        auto v = f.template get_strided_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -453,7 +453,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<const ST*****,Host>();
+        auto v = f.template get_strided_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -468,7 +468,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<const ST******,Host>();
+        auto v = f.template get_strided_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -507,7 +507,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<const ST*,Host>();
+        auto v = f.template get_strided_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           max = std::max(max,v(i));
         }
@@ -515,7 +515,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<const ST**,Host>();
+        auto v = f.template get_strided_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             max = std::max(max,v(i,j));
@@ -524,7 +524,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<const ST***,Host>();
+        auto v = f.template get_strided_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -534,7 +534,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<const ST****,Host>();
+        auto v = f.template get_strided_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -545,7 +545,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<const ST*****,Host>();
+        auto v = f.template get_strided_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -557,7 +557,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<const ST******,Host>();
+        auto v = f.template get_strided_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -593,7 +593,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
   switch (fl.rank()) {
     case 1:
       {
-        auto v = f.template get_view<const ST*,Host>();
+        auto v = f.template get_strided_view<const ST*,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           min = std::min(min,v(i));
         }
@@ -601,7 +601,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 2:
       {
-        auto v = f.template get_view<const ST**,Host>();
+        auto v = f.template get_strided_view<const ST**,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             min = std::min(min,v(i,j));
@@ -610,7 +610,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 3:
       {
-        auto v = f.template get_view<const ST***,Host>();
+        auto v = f.template get_strided_view<const ST***,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -620,7 +620,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 4:
       {
-        auto v = f.template get_view<const ST****,Host>();
+        auto v = f.template get_strided_view<const ST****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -631,7 +631,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 5:
       {
-        auto v = f.template get_view<const ST*****,Host>();
+        auto v = f.template get_strided_view<const ST*****,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {
@@ -643,7 +643,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
       break;
     case 6:
       {
-        auto v = f.template get_view<const ST******,Host>();
+        auto v = f.template get_strided_view<const ST******,Host>();
         for (int i=0; i<fl.dim(0); ++i) {
           for (int j=0; j<fl.dim(1); ++j) {
             for (int k=0; k<fl.dim(2); ++k) {

@@ -324,17 +324,11 @@ protected:
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<((N < MaxRank) and (N > 0)), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
     -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
-
-  // NOTE: DO NOT USE--this circumvents compile-time issues with
-  // subview slicing in get_strided_view()
-  template<HostOrDevice HD,typename T,int N>
-  auto get_ND_view () const
-    -> if_t<N == 0,get_view_type<data_nd_t<T,N>,HD>>;
 
   // NOTE: DO NOT USE--it only returns an error and is here to protect
   // against compiler errors related to sliced subviews in get_strided_view()

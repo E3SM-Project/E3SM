@@ -188,14 +188,6 @@ get_strided_view_type<DT, HD> {
 
     // k_end has not been set by a multi-slice subfield function
     if (k_end == -1) {
-      EKAT_REQUIRE_MSG(
-          DstRank == 1 && fl.rank() == 1,
-          "Error! Single-slice, strided view requires destination subview"
-          " rank to be equal to parent field rank.\n");
-      EKAT_REQUIRE_MSG(
-          DstRankDynamic == 1,
-          "Error! Strided view not allowed with compile-time dimensions.\n");
-
       // Take an (n + 1)-dimensional == DstRank (== 2D, in practice) view
       // with normal LayoutRight
       auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
@@ -727,7 +719,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const ->
-  if_t<((N < MaxRank) and (N > 0)),get_view_type<data_nd_t<T,N>,HD>>
+  if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -810,17 +802,6 @@ auto Field::get_ND_view () const ->
 
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
   return ret_type (ptr,kl);
-}
-
-// NOTE: DO NOT USE--this circumvents compile-time issues with
-// subview slicing in get_strided_view()
-template<HostOrDevice HD,typename T,int N>
-auto Field::get_ND_view () const ->
-  if_t<N == 0, get_view_type<data_nd_t<T,N>,HD>>
-{
-  EKAT_ERROR_MSG("Error! Cannot call get_ND_view for rank == 0 (scalar).\n"
-                 "This should never be called at run time.\n"
-                 "Please contact developer if this functionality is required\n");
 }
 
 // NOTE: DO NOT USE--this circumvents compile-time issues with
