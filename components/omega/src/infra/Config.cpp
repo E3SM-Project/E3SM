@@ -1,5 +1,5 @@
-//===-- infra/Config.cpp - omega configuration implementation ----*- C++
-//-*-===//
+//===- infra/Config.cpp - omega configuration implementation ---*- C++
+////-*-===//
 //
 // The Config capability manages all the input parameters needed to configure
 // and run a simulation using OMEGA. It reads an input configuration file
@@ -24,8 +24,11 @@
 namespace OMEGA {
 
 // Declare some of the Config static variables
-bool Config::IsMasterTask   = false;
-bool Config::NotInitialized = true;
+const int Config::ReadGroupSize = 20;
+bool Config::NotInitialized     = true;
+int Config::ReadGroupID         = -1;
+int Config::NumReadGroups       = 0;
+MPI_Comm Config::ConfigComm;
 Config Config::ConfigAll;
 
 //------------------------------------------------------------------------------
@@ -34,12 +37,24 @@ Config Config::ConfigAll;
 Config::Config(const std::string &InName // [in] name of config, node
 ) {
 
-   // If this is the first Config created, set some of the static
-   // variables
+   // If this is the first Config created, set variables for reading the
+   // input configuration file. In particular, to avoid too many MPI tasks
+   // reading the same input stream, we divide the tasks into groups and
+   // only one group at a time loads the full configuration from a stream
+
    if (NotInitialized) {
-      // Determine master task and create a copy for all configs
-      MachEnv *DefEnv      = MachEnv::getDefaultEnv();
-      Config::IsMasterTask = DefEnv->isMasterTask();
+      // Determine MPI variables
+      MachEnv *DefEnv = MachEnv::getDefaultEnv();
+      I4 NumTasks     = DefEnv->getNumTasks();
+      I4 MyTask       = DefEnv->getMyTask();
+      ConfigComm      = DefEnv->getComm();
+
+      // Set number of groups to read and assign tasks to each
+      // group in a round-robin way
+      NumReadGroups = (NumTasks - 1) / ReadGroupSize + 1;
+      ReadGroupID   = MyTask % NumReadGroups;
+
+      NotInitialized = false; // now initialized for future calls
    }
 
    // Set the name - this is also used as the name of the root YAML node
@@ -55,9 +70,7 @@ Config::Config(const std::string &InName // [in] name of config, node
 // Constructor that creates a completely empty configuration. This should
 // not be used except to initialize the static variable ConfigAll that
 // is created before it can be properly filled.
-Config::Config() {
-   // Do nothing - class members will be filled later
-} // end Config constructor
+Config::Config() {} // end Config constructor
 
 //------------------------------------------------------------------------------
 // Reads the full configuration for omega and stores in it a static
@@ -75,11 +88,16 @@ int Config::readAll(const std::string ConfigFile // [in] input YAML config file
    // top-level omega node from the Root.
    ConfigAll.Name = "omega";
 
-   if (IsMasterTask) {
-      // Read temporary root node
-      YAML::Node RootNode = YAML::LoadFile(ConfigFile);
-      // Extract Omega node
-      ConfigAll.Node = RootNode["omega"];
+   for (int ReadGroup = 0; ReadGroup < Config::NumReadGroups; ++ReadGroup) {
+
+      // If it is this tasks turn, read the configuration file
+      if (Config::ReadGroupID == ReadGroup) {
+         // Read temporary root node
+         YAML::Node RootNode = YAML::LoadFile(ConfigFile);
+         // Extract Omega node
+         ConfigAll.Node = RootNode["omega"];
+      }
+      MPI_Barrier(ConfigComm);
    }
 
    return Err;
@@ -90,18 +108,7 @@ int Config::readAll(const std::string ConfigFile // [in] input YAML config file
 // Retrieval (get) functions
 //------------------------------------------------------------------------------
 // Retrieves the top-level OMEGA config
-Config *Config::getOmegaConfig() {
-
-   Config *retConfig;
-
-   if (Config::IsMasterTask) {
-      retConfig = &ConfigAll;
-   } else {
-      retConfig = nullptr;
-   }
-
-   return retConfig;
-}
+Config *Config::getOmegaConfig() { return &ConfigAll; }
 
 //------------------------------------------------------------------------------
 // Retrieves a sub-configuration from a parent Config. An empty SubConfig must
@@ -109,17 +116,17 @@ Config *Config::getOmegaConfig() {
 // Returns an error code that is non-zero if the group does not exist
 int Config::get(Config &SubConfig // [inout] sub-configuration to retrieve
 ) {
+
    int Err = 0;
-   if (Config::IsMasterTask) {
-      std::string GroupName = SubConfig.Name;
-      if (Node[GroupName]) { // the group exists
-         SubConfig.Node = Node[GroupName];
-      } else {
-         LOG_ERROR("Config get group: could not find group {}", GroupName);
-         Err = -1;
-      }
+
+   std::string GroupName = SubConfig.Name;
+   if (Node[GroupName]) { // the group exists
+      SubConfig.Node = Node[GroupName];
+   } else {
+      LOG_ERROR("Config get group: could not find group {}", GroupName);
+      Err = -1;
    }
-   Broadcast(Err);
+
    return Err;
 }
 
@@ -129,23 +136,16 @@ int Config::get(Config &SubConfig // [inout] sub-configuration to retrieve
 int Config::get(const std::string VarName, // [in] name of variable to get
                 I4 &Value                  // [out] value of the variable
 ) {
-   int Err    = 0;
-   int ValErr = -9999;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Value = Node[VarName].as<OMEGA::I4>();
-      } else {
-         LOG_ERROR("Config get I4: could not find variable {}", VarName);
-         Value = ValErr;
-      }
+   // Extract variable from config
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<OMEGA::I4>();
+   } else {
+      LOG_ERROR("Config get I4: could not find variable {}", VarName);
+      Value = -999;
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   Broadcast(Value);
-   if (Value == ValErr)
-      Err = -1;
 
    return Err;
 }
@@ -156,23 +156,16 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 I8 &Value                  // [out] value of the variable
 ) {
-   int Err   = 0;
-   I8 ValErr = -99999;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Value = Node[VarName].as<OMEGA::I8>();
-      } else {
-         LOG_ERROR("Config get I8: could not find variable {}", VarName);
-         Value = ValErr;
-      }
+   // Extract variable from config
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<OMEGA::I8>();
+   } else {
+      LOG_ERROR("Config get I8: could not find variable {}", VarName);
+      Value = -999;
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   Broadcast(Value);
-   if (Value == ValErr)
-      Err = -1;
 
    return Err;
 }
@@ -183,23 +176,16 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 R4 &Value                  // [out] value of the variable
 ) {
-   int Err   = 0;
-   R4 ValErr = -999.999;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Value = Node[VarName].as<OMEGA::R4>();
-      } else {
-         LOG_ERROR("Config get R4: could not find variable {}", VarName);
-         Value = ValErr;
-      }
+   // Extract variable from config
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<OMEGA::R4>();
+   } else {
+      LOG_ERROR("Config get R4: could not find variable {}", VarName);
+      Value = -999.999;
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   Broadcast(Value);
-   if (Value == ValErr)
-      Err = -1;
 
    return Err;
 }
@@ -210,23 +196,16 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 R8 &Value                  // [out] value of the variable
 ) {
-   int Err   = 0;
-   R8 ValErr = -99999.999;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Value = Node[VarName].as<OMEGA::R8>();
-      } else {
-         LOG_ERROR("Config get R8: could not find variable {}", VarName);
-         Value = ValErr;
-      }
+   // Extract variable from config
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<OMEGA::R8>();
+   } else {
+      LOG_ERROR("Config get R8: could not find variable {}", VarName);
+      Value = -99999.999;
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   Broadcast(Value);
-   if (Value == ValErr)
-      Err = -1;
 
    return Err;
 }
@@ -239,19 +218,14 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 ) {
    int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Value = Node[VarName].as<bool>();
-      } else {
-         LOG_ERROR("Config get bool: could not find variable {}", VarName);
-         Err = -1;
-      }
+   // Extract variable from config
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<bool>();
+   } else {
+      LOG_ERROR("Config get bool: could not find variable {}", VarName);
+      Value = false;
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   Broadcast(Value);
-   Broadcast(Err);
 
    return Err;
 }
@@ -262,27 +236,17 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::string &Value         // [out] value of the variable
 ) {
-   int Err            = 0;
-   std::string ValErr = "ConfigError";
+   int Err = 0;
 
    // Extract variable from config on master task
    std::string TmpVal;
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         TmpVal = Node[VarName].as<std::string>();
-      } else {
-         LOG_ERROR("Config get string: could not find variable {}", VarName);
-         TmpVal = ValErr;
-      }
+   if (Node[VarName]) { // the variable exists
+      Value = Node[VarName].as<std::string>();
+   } else {
+      LOG_ERROR("Config get string: could not find variable {}", VarName);
+      Value = "ConfigError";
+      Err   = -1;
    }
-
-   // Broadcast the value to other tasks
-   // Note that the broadcast will automatically resize TmpVal to fit on
-   // non-master tasks
-   Broadcast(TmpVal);
-   Value = TmpVal;
-   if (Value == ValErr)
-      Err = -1;
 
    return Err;
 }
@@ -293,47 +257,32 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::vector<I4> &Vector    // [out] vector of values retrieved
 ) {
-   int Err     = 0;
-   int VecSize = 0;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            Vector.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               Vector[i] = Sequence[i].as<I4>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get I4 vector: entry not a sequence {}", VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get I4 vector: could not find variable {}", VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          Vector.resize(VecSize);
-      Broadcast(Vector);
-   } else {
-      Err = VecSize;
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            Vector[i] = Sequence[i].as<I4>();
+         }
+
+      } else { // not a sequence (vector) node so log an error
+         LOG_ERROR("Config get I4 vector: entry not a sequence {}", VarName);
+         Err = -2;
+      }
+   } else { // node with that name does not exist
+      LOG_ERROR("Config get I4 vector: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -346,47 +295,32 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::vector<I8> &Vector    // [out] vector of values retrieved
 ) {
-   int Err     = 0;
-   int VecSize = 0;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            Vector.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               Vector[i] = Sequence[i].as<I8>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get I8 vector: entry not a sequence {}", VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get I8 vector: could not find variable {}", VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          Vector.resize(VecSize);
-      Broadcast(Vector);
-   } else {
-      Err = VecSize;
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            Vector[i] = Sequence[i].as<I8>();
+         }
+
+      } else { // not a sequence (vector) so log an error
+         LOG_ERROR("Config get I8 vector: entry not a sequence {}", VarName);
+         Err = -2;
+      }
+   } else { // Node with that name does not exist
+      LOG_ERROR("Config get I8 vector: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -399,47 +333,32 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::vector<R4> &Vector    // [out] vector of values retrieved
 ) {
-   int Err     = 0;
-   int VecSize = 0;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            Vector.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               Vector[i] = Sequence[i].as<R4>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get R4 vector: entry not a sequence {}", VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get R4 vector: could not find variable {}", VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          Vector.resize(VecSize);
-      Broadcast(Vector);
-   } else {
-      Err = VecSize;
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            Vector[i] = Sequence[i].as<R4>();
+         }
+
+      } else { // not a sequence (vector) so log an error
+         LOG_ERROR("Config get R4 vector: entry not a sequence {}", VarName);
+         Err = -2;
+      }
+   } else { // Node with that name does not exist
+      LOG_ERROR("Config get R4 vector: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -452,47 +371,32 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::vector<R8> &Vector    // [out] vector of values retrieved
 ) {
-   int Err     = 0;
-   int VecSize = 0;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            Vector.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               Vector[i] = Sequence[i].as<R8>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get R8 vector: entry not a sequence {}", VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get R8 vector: could not find variable {}", VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          Vector.resize(VecSize);
-      Broadcast(Vector);
-   } else {
-      Err = VecSize;
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            Vector[i] = Sequence[i].as<R8>();
+         }
+
+      } else { // not a sequence (vector) so log an error
+         LOG_ERROR("Config get R8 vector: entry not a sequence {}", VarName);
+         Err = -2;
+      }
+   } else { // Node with that name does not exist
+      LOG_ERROR("Config get R8 vector: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -505,66 +409,32 @@ int Config::get(const std::string VarName, // [in] name of variable to get
 int Config::get(const std::string VarName, // [in] name of variable to get
                 std::vector<bool> &Vector  // [out] vector of values retrieved
 ) {
-   int Err     = 0;
-   int VecSize = 0;
+   int Err = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            Vector.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               Vector[i] = Sequence[i].as<bool>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get bool vector: entry not a sequence {}",
-                      VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get bool vector: could not find variable {}",
-                   VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          Vector.resize(VecSize);
-      // There is currently no boolean vector broadcast so need to
-      // convert to an integer and back
-      std::vector<I4> TmpVector(VecSize);
-      for (int i = 0; i < VecSize; ++i) {
-         if (Vector[i]) {
-            TmpVector[i] = 1;
-         } else {
-            TmpVector[i] = 0;
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            Vector[i] = Sequence[i].as<bool>();
          }
+
+      } else { // not a sequence (vector) so log an error
+         LOG_ERROR("Config get bool vector: entry not a sequence {}", VarName);
+         Err = -2;
       }
-      Broadcast(TmpVector);
-      for (int i = 0; i < VecSize; ++i) {
-         if (TmpVector[i] == 1) {
-            Vector[i] = true;
-         } else {
-            Vector[i] = false;
-         }
-      }
-   } else {
-      Err = VecSize;
+   } else { // Node with that name does not exist
+      LOG_ERROR("Config get bool vector: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -580,49 +450,30 @@ int Config::get(const std::string VarName,     // [in] name of variable to get
    int Err     = 0;
    int VecSize = 0;
 
-   // Extract variable from config on master task
-   if (Config::IsMasterTask) {
+   // Extract variable from config
+   // First check if it exists and verify that it is a sequence node
+   if (Node[VarName]) {                    // the variable exists
+      YAML::Node Sequence = Node[VarName]; // extract as a node
 
-      // First check if it exists and verify that it is a sequence node
-      if (Node[VarName]) {                    // the variable exists
-         YAML::Node Sequence = Node[VarName]; // extract as a node
+      // if it is a sequence node, copy the sequence into a vector
+      if (Sequence.IsSequence()) {
 
-         // if it is a sequence node, copy the sequence into a vector
-         if (Sequence.IsSequence()) {
-
-            // Determine size and resize vector to fit
-            VecSize = Sequence.size();
-            List.resize(VecSize);
-
-            // Now copy the sequence into the vector
-            for (int i = 0; i < VecSize; ++i) {
-               List[i] = Sequence[i].as<std::string>();
-            }
-
-            // otherwise log an error
-         } else {
-            LOG_ERROR("Config get string list: entry not a sequence {}",
-                      VarName);
-            VecSize = -2; // use vector size as error code
-         }
-      } else {
-         LOG_ERROR("Config get string list: could not find variable {}",
-                   VarName);
-         VecSize = -1; // use vector size as error code
-      }
-   }
-
-   // Broadcast the vector size (or error code) to other tasks
-   Broadcast(VecSize);
-   if (VecSize > 0) {
-      if (not Config::IsMasterTask)
+         // Determine size and resize vector to fit
+         int VecSize = Sequence.size();
          List.resize(VecSize);
-      // Must broadcast strings one at a time
-      for (int i = 0; i < VecSize; ++i) {
-         Broadcast(List[i]);
+
+         // Now copy the sequence into the vector
+         for (int i = 0; i < VecSize; ++i) {
+            List[i] = Sequence[i].as<std::string>();
+         }
+
+      } else { // not a sequence (list) so log an error
+         LOG_ERROR("Config get string list: entry not a sequence {}", VarName);
+         Err = -2;
       }
-   } else {
-      Err = VecSize;
+   } else { // Node with that name does not exist
+      LOG_ERROR("Config get string list: could not find variable {}", VarName);
+      Err = -1;
    }
 
    return Err;
@@ -639,16 +490,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set I4: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set I4: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -661,16 +508,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set I8: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set I8: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -683,16 +526,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set R4: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set R4: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -705,16 +544,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set R8: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set R8: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -727,16 +562,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set bool: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set bool: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -749,16 +580,12 @@ int Config::set(const std::string VarName, // [in] name of variable to set
 ) {
    int Err = 0;
 
-   // Config exists on master task
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node[VarName] = Value;
-      } else {
-         LOG_ERROR("Config set string: could not find variable {}", VarName);
-         Err = -1;
-      }
+   if (Node[VarName]) { // the variable exists
+      Node[VarName] = Value;
+   } else {
+      LOG_ERROR("Config set string: could not find variable {}", VarName);
+      Err = -1;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -906,16 +733,13 @@ int Config::add(const Config SubConfig // [in] Config to add
    int Err = 0;
 
    std::string LocName = SubConfig.Name;
-   if (Config::IsMasterTask) {
-      if (Node[LocName]) { // the variable exists
-         LOG_ERROR("Config add group: cannot add, group {} already exists",
-                   LocName);
-         Err = -1;
-      } else {
-         Node[LocName] = SubConfig.Node;
-      }
+   if (Node[LocName]) { // the variable exists
+      LOG_ERROR("Config add group: cannot add, group {} already exists",
+                LocName);
+      Err = -1;
+   } else {
+      Node[LocName] = SubConfig.Node;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -928,16 +752,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR("Config add I4: variable {} already exists use set instead",
-                   VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add I4: variable {} already exists use set instead",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -950,16 +771,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR("Config add I8: variable {} already exists use set instead",
-                   VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add I8: variable {} already exists use set instead",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -972,16 +790,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR("Config add R4: variable {} already exists use set instead",
-                   VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add R4: variable {} already exists use set instead",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -994,16 +809,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR("Config add R8: variable {} already exists use set instead",
-                   VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add R8: variable {} already exists use set instead",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1016,17 +828,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR(
-             "Config add bool: variable {} already exists use set instead",
-             VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add bool: variable {} already exists use set instead",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1039,16 +847,13 @@ int Config::add(const std::string VarName, // [in] name of variable to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         LOG_ERROR("Config add string: variable {} already exists - use set",
-                   VarName);
-         Err = -1;
-      } else {
-         Node[VarName] = Value;
-      }
+   if (Node[VarName]) { // the variable exists
+      LOG_ERROR("Config add string: variable {} already exists - use set",
+                VarName);
+      Err = -1;
+   } else {
+      Node[VarName] = Value;
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1061,23 +866,19 @@ int Config::add(const std::string VarName, // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR(
+          "Config add I4 vector: variable {} already exists use set instead",
+          VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add I4 vector: variable {} already exists use set instead",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            Node[VarName].push_back(Vector[i]);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         Node[VarName].push_back(Vector[i]);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1090,23 +891,19 @@ int Config::add(const std::string VarName, // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR(
+          "Config add I8 vector: variable {} already exists use set instead",
+          VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add I8 vector: variable {} already exists use set instead",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            Node[VarName].push_back(Vector[i]);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         Node[VarName].push_back(Vector[i]);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1119,23 +916,19 @@ int Config::add(const std::string VarName, // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR(
+          "Config add R4 vector: variable {} already exists use set instead",
+          VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add R4 vector: variable {} already exists use set instead",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            Node[VarName].push_back(Vector[i]);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         Node[VarName].push_back(Vector[i]);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1148,23 +941,19 @@ int Config::add(const std::string VarName, // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR(
+          "Config add R8 vector: variable {} already exists use set instead",
+          VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add R8 vector: variable {} already exists use set instead",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            Node[VarName].push_back(Vector[i]);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         Node[VarName].push_back(Vector[i]);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1177,24 +966,19 @@ int Config::add(const std::string VarName, // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR("Config add bool vector: variable {} already exists - use set",
+                VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add bool vector: variable {} already exists - use set",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            bool Tmp = Vector[i];
-            Node[VarName].push_back(Tmp);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         bool Tmp = Vector[i];
+         Node[VarName].push_back(Tmp);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1207,23 +991,18 @@ int Config::add(const std::string VarName,      // [in] name of vector to add
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   if (Node[VarName]) { // the variable already exists
+      LOG_ERROR("Config add string list: variable {} already exists - use set",
+                VarName);
+      Err = -1;
 
-      if (Node[VarName]) { // the variable already exists
-         LOG_ERROR(
-             "Config add string list: variable {} already exists - use set",
-             VarName);
-         Err = -1;
+   } else { // create new sequence node for vector
 
-      } else { // create new sequence node for vector
-
-         int VecSize = Vector.size();
-         for (int i = 0; i < VecSize; ++i) {
-            Node[VarName].push_back(Vector[i]);
-         }
+      int VecSize = Vector.size();
+      for (int i = 0; i < VecSize; ++i) {
+         Node[VarName].push_back(Vector[i]);
       }
    }
-   Broadcast(Err);
 
    return Err;
 }
@@ -1236,10 +1015,8 @@ int Config::remove(const std::string VarName // [in] name of variable to remove
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
-      if (Node[VarName]) { // the variable exists
-         Node.remove(VarName);
-      }
+   if (Node[VarName]) { // the variable exists
+      Node.remove(VarName);
    }
 
    return Err;
@@ -1253,11 +1030,8 @@ int Config::remove(const std::string VarName // [in] name of variable to remove
 bool Config::existsGroup(std::string GroupName // [in] name of group to find
 ) {
    bool result = false;
-   if (Config::IsMasterTask) {
-      if (Node[GroupName])
-         result = true;
-   }
-   Broadcast(result);
+   if (Node[GroupName])
+      result = true;
    return result;
 }
 
@@ -1265,11 +1039,8 @@ bool Config::existsGroup(std::string GroupName // [in] name of group to find
 bool Config::existsVar(std::string VarName // [in] name of variable to find
 ) {
    bool result = false;
-   if (Config::IsMasterTask) {
-      if (Node[VarName])
-         result = true;
-   }
-   Broadcast(result);
+   if (Node[VarName])
+      result = true;
    return result;
 }
 
@@ -1282,7 +1053,8 @@ int Config::write(std::string FileName /// name of file for config
 ) {
    int Err = 0;
 
-   if (Config::IsMasterTask) {
+   MachEnv *DefEnv = MachEnv::getDefaultEnv();
+   if (DefEnv->isMasterTask()) {
       std::ofstream Outfile(FileName);
       if (Outfile.good()) {
          Outfile << Node;

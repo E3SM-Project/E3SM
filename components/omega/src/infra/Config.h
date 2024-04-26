@@ -42,11 +42,13 @@ class Config {
    /// The YAML node containing the configuration.
    YAML::Node Node;
 
-   /// We store the configuration on the master task and broadcast
-   /// as needed to other tasks via the get function. This flag determines
-   /// whether this is the master task and is copied from the default
-   /// MachEnv.
-   static bool IsMasterTask;
+   /// All MPI tasks must read the initial input file but there may
+   /// be a limit to the number of tasks who can simultaneously read
+   /// so only a subset of tasks reads at the same time
+   static const int ReadGroupSize;
+   static int ReadGroupID;
+   static int NumReadGroups;
+   static MPI_Comm ConfigComm;
 
    /// We do not use an initialization routine, so we include this
    /// initialization flag so that the first Config constructed will
