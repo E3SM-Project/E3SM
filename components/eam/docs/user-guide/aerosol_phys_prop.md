@@ -5,17 +5,17 @@
 
 Key information
 
-- Original physical properties of aerosols are documented in Liu et al. (2012) [@liu_toward_2012]. Detailed information is included in the supplement.
+- Original physical properties of aerosols are documented in Liu et al. (2012). [@liu_toward_2012] Detailed information is included in the supplement.
 
-- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020) [@wang_aerosols_2020].
+- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020). [@wang_aerosols_2020]
 
-- Marine organic aerosol properties are defined in Burrows et al. (2022) [@burrows_oceanfilms_2022].
+- Marine organic aerosol properties are defined in Burrows et al. (2022). [@burrows_oceanfilms_2022]
 
-- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022) [@feng_global_2022].
+- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022). [@feng_global_2022]
 
 - BC and POM hygroscopicity values are updated by Shan et al. (2024).
 
-- <!-- markdownlint-disable MD033 --><span style="color:red">Some description/reference about the 5th mode.</span>
+- Physical properties of the fifth mode aerosols are documented by Ke et al. (2024).
 
 ## Included fields
 
@@ -25,7 +25,7 @@ Key information
 
 - Nominal geometric mean diameter and its lower/upper bound of values for each mode
 
-- Coefficients of polynomial expression (lookup-table) for extinction, absorption, and asymmetry parameter calculations.
+- Coefficients of polynomial expression (lookup-table) for extinction, absorption, and asymmetry parameter calculations
 
 - Aerosol refractive index table needed for interpolation (lookup-table) calculation (for different wavelengths)
 
