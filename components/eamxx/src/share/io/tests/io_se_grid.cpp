@@ -47,8 +47,7 @@ TEST_CASE("se_grid_io")
   int num_levs = 2 + SCREAM_PACK_SIZE;
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+  scorpio::init_subsystem(io_comm);
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_my_elems,np,num_levs);
@@ -95,7 +94,7 @@ TEST_CASE("se_grid_io")
   ins_input.finalize();
 
   // All Done 
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 /*===================================================================================================*/

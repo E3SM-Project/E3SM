@@ -613,7 +613,7 @@ run (const std::string& filename,
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
       auto func_start = std::chrono::steady_clock::now();
-      grid_write_data_array(filename,name,view_host.data(),view_host.size());
+      scorpio::write_var(filename,name,view_host.data());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -627,7 +627,7 @@ run (const std::string& filename,
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
       auto func_start = std::chrono::steady_clock::now();
-      grid_write_data_array(filename,name,view_host.data(),view_host.size());
+      scorpio::write_var(filename,name,view_host.data());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -762,23 +762,17 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     if (tag_name=="dim") {
       tag_name += std::to_string(dims[i]);
     }
-    auto tag_loc = m_dims.find(tag_name);
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
-    if (tag_loc == m_dims.end()) {
-      int tag_len = 0;
-      if(is_partitioned) {
-        // This is the dimension that is partitioned across ranks.
-        tag_len = m_io_grid->get_partitioned_dim_global_size();
-      } else {
-        tag_len = layout.dim(i);
-      }
-      m_dims[tag_name] = std::make_pair(tag_len,is_partitioned);
-    } else {
-      EKAT_REQUIRE_MSG(m_dims.at(tag_name).first==dims[i] or is_partitioned,
-        "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths. "
-        "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
-        "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
-    }
+    int dim_len = is_partitioned
+                ? m_io_grid->get_partitioned_dim_global_size()
+                : layout.dim(i);
+    auto it_bool = m_dims.emplace(tag_name,dim_len);
+    EKAT_REQUIRE_MSG(it_bool.second or it_bool.first->second==dim_len,
+      "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths.\n"
+      "  - old length: " + std::to_string(m_dims[tag_name]) + "\n"
+      "  - new length: " + std::to_string(dim_len) + "\n"
+      "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
+      "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
   }
 } // register_dimensions
 /* ---------------------------------------------------------- */
@@ -903,7 +897,6 @@ register_variables(const std::string& filename,
                    const std::string& fp_precision,
                    const scorpio::FileMode mode)
 {
-  using namespace scorpio;
   using namespace ShortFieldTagsNames;
   using strvec_t = std::vector<std::string>;
 
@@ -940,12 +933,6 @@ register_variables(const std::string& filename,
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
-    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
-    // may need to delete this line when switching to fully C++/C implementation.
-    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-    if (m_add_time_dim) {
-      vec_of_dims.push_back("time");  //TODO: See the above comment on time.
-    }
     return vec_of_dims;
   };
 
@@ -971,20 +958,46 @@ register_variables(const std::string& filename,
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
 
-    register_variable(filename, name, longname, units, vec_of_dims,
-                      "real",fp_precision, io_decomp_tag);
+    if (mode==scorpio::FileMode::Append) {
+      // Simply check that the var is in the file, and has the right properties
+      EKAT_REQUIRE_MSG (scorpio::has_var(filename,name),
+          "Error! Cannot append, due to variable missing from the file.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n");
+      const auto& var = scorpio::get_var(filename,name);
+      EKAT_REQUIRE_MSG (var.dim_names()==vec_of_dims,
+          "Error! Cannot append, due to variable dimensions mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var dims : " + ekat::join(vec_of_dims,",") + "\n"
+          "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
+      EKAT_REQUIRE_MSG (var.units==units,
+          "Error! Cannot append, due to variable units mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var units: " + units + "\n"
+          "  - var units from file: " + var.units + "\n");
+      EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
+          "Error! Cannot append, due to time dependency mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
+          "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
+    } else {
+      scorpio::define_var (filename, name, units, vec_of_dims,
+                            "real",fp_precision, m_add_time_dim);
 
-    // Add any extra attributes for this variable
-    if (mode != FileMode::Append ) {
+      scorpio::set_attribute(filename, name, "long_name", longname);
+
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
         double fill_value = m_fill_value;
-        set_variable_metadata(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
       } else {
         float fill_value = m_fill_value;
-        set_variable_metadata(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
       }
 
       // If this is has subfields, add list of its children
@@ -1001,20 +1014,20 @@ register_variables(const std::string& filename,
         children_list.pop_back();
         children_list.pop_back();
         children_list += " ]";
-        set_variable_metadata(filename,name,"sub_fields",children_list);
+        scorpio::set_attribute(filename,name,"sub_fields",children_list);
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
       if (m_track_avg_cnt) {
         const auto lookup = m_field_to_avg_cnt_map.at(name);
-        set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
+        scorpio::set_attribute(filename,name,"averaging_count_tracker",lookup);
       }
 
       // Atm procs may have set some request for metadata.
       using stratts_t = std::map<std::string,std::string>;
       const auto& str_atts = field.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
-        set_variable_metadata(filename,name,att_name,att_val);
+        scorpio::set_attribute(filename,name,att_name,att_val);
       }
     }
   }
@@ -1024,8 +1037,8 @@ register_variables(const std::string& filename,
       const auto layout = m_layouts.at(name);
       auto io_decomp_tag = set_decomp_tag(layout);
       auto vec_of_dims   = set_vec_of_dims(layout);
-      register_variable(filename, name, name, "unitless", vec_of_dims,
-                        "real",fp_precision, io_decomp_tag);
+      scorpio::define_var(filename, name, "unitless", vec_of_dims,
+                          "real",fp_precision, m_add_time_dim);
     }
   }
 } // register_variables
@@ -1112,48 +1125,69 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 
   return var_dof;
 }
-/* ---------------------------------------------------------- */
-void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
+
+void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  using namespace scorpio;
   using namespace ShortFieldTagsNames;
 
-  // Cycle through all fields and set dof.
-  for (auto const& name : m_fields_names) {
-    auto field = get_field(name,"io");
-    const auto& fid  = field.get_header().get_identifier();
-    auto var_dof = get_var_dof_offsets(fid.get_layout());
-    set_dof(filename,name,var_dof.size(),var_dof.data());
-  }
-  // Cycle through the average count fields and set degrees of freedom
-  for (auto const& name : m_avg_cnt_names) {
-    const auto layout = m_layouts.at(name);
-    auto var_dof = get_var_dof_offsets(layout);
-    set_dof(filename,name,var_dof.size(),var_dof.data());
-  }
+  // First, check if any of the vars is indeed partitioned
+  const auto decomp_tag  = m_io_grid->get_partitioned_dim_tag();
 
-  /* TODO:
-   * Gather DOF info directly from grid manager
-  */
-} // set_degrees_of_freedom
-/* ---------------------------------------------------------- */
+  bool has_decomposed_layouts = false;
+  for (const auto& it : m_layouts) {
+    if (it.second.has_tag(decomp_tag)) {
+      has_decomposed_layouts = true;
+      break;
+    }
+  }
+  if (not has_decomposed_layouts) {
+    // If none of the vars are decomposed on this grid,
+    // then there's nothing to do here
+    return;
+  } 
+
+  // Set the decomposition for the partitioned dimension
+  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
+  auto decomp_dim = m_io_grid->get_dim_name(decomp_tag);
+  auto gids_f = m_io_grid->get_partitioned_dim_gids();
+  auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
+  auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
+  std::vector<scorpio::offset_t> offsets(local_dim);
+  for (int idof=0; idof<local_dim; ++idof) {
+    offsets[idof] = gids_h[idof] - min_gid;
+  }
+  scorpio::set_dim_decomp(filename,decomp_dim,offsets);
+}
+
 void AtmosphereOutput::
 setup_output_file(const std::string& filename,
                   const std::string& fp_precision,
                   const scorpio::FileMode mode)
 {
-  using namespace scream::scorpio;
-
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {
-    register_dimension(filename,it.first,it.first,it.second.first,it.second.second);
+    if (mode==scorpio::FileMode::Append) {
+      // Simply check that the dim is in the file, and has the right extent
+      EKAT_REQUIRE_MSG (scorpio::has_dim(filename,it.first),
+          "Error! Cannot append, due to missing dim in the file.\n"
+          "  - filename: " + filename + "\n"
+          "  - dimname : " + it.first + "\n");
+      EKAT_REQUIRE_MSG (scorpio::get_dimlen(filename,it.first)==it.second,
+          "Error! Cannot append, due to mismatch dim length.\n"
+          "  - filename: " + filename + "\n"
+          "  - dimname : " + it.first + "\n"
+          "  - old len : " + std::to_string(scorpio::get_dimlen(filename,it.first)) + "\n"
+          "  - new len : " + std::to_string(it.second) + "\n");
+    } else {
+      scorpio::define_dim(filename,it.first,it.second);
+    }
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
   register_variables(filename,fp_precision,mode);
 
   // Set the offsets of the local dofs in the global vector.
-  set_degrees_of_freedom(filename);
+  set_decompositions(filename);
 }
 /* ---------------------------------------------------------- */
 // This routine will evaluate the diagnostics stored in this

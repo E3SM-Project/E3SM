@@ -250,7 +250,7 @@ void read (const int seed, const ekat::Comm& comm)
 
 TEST_CASE ("io_diags") {
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // Make MyDiag available via diag factory
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
@@ -272,7 +272,7 @@ TEST_CASE ("io_diags") {
   write(seed,comm);
   read(seed,comm);
   print(" PASS\n");
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace

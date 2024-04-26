@@ -123,12 +123,9 @@ protected:
                   const std::map<std::string,FieldLayout>&  layouts);
   void init_scorpio_structures ();
 
-  void register_variables();
-  void set_degrees_of_freedom();
+  void set_decompositions();
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
-  std::string get_io_decomp (const FieldLayout& layout);
-  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
   ekat::ParameterList   m_params;
