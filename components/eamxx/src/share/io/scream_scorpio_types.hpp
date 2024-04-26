@@ -59,11 +59,6 @@ struct PIOFileEntity : public PIOEntity {
   int fid = -1;       // Allow retrieving file from the entity
 };
 
-// struct PIOAtt : public PIOFileEntity {
-//   int       varid = -1;
-//   ekat::any val;
-// };
-
 // A dimension
 struct PIODim : public PIOFileEntity {
   int length       = -1;
@@ -88,24 +83,11 @@ struct PIODecomp : public PIOEntity {
   std::shared_ptr<const PIODim>   dim; 
 };
 
-// // A decomposition of a single dimension
-// struct PIODimDecomp : public PIOEntity {
-//   std::shared_ptr<const PIODim>   dim;      // The dim being decomposed
-//   std::vector<offset_t>           offsets;  // Owned offsets along decomposed dimension
-// };
-
-// // A decomposition of a full variable layout
-// struct PIOVarDecomp : public PIOEntity {
-//   std::shared_ptr<const PIODimDecomp>   dim_decomp; // The decomposition along the dimension
-//   std::vector<offset_t>                 offsets;    // Owned offsets along the full var layout
-// };
-
 // A variable
 struct PIOVar : public PIOFileEntity {
   // Note: if time_dep=true, we will add it to the list of dims passed
   // to scorpio, but the time dim will not appear in this list.
   std::vector<std::shared_ptr<const PIODim>>          dims;
-  // std::map<std::string,std::shared_ptr<const PIOAtt>> atts;
 
   std::vector<std::string> dim_names () const {
     std::vector<std::string> n;
@@ -136,7 +118,6 @@ struct PIOVar : public PIOFileEntity {
 struct PIOFile : public PIOEntity {
   std::map<std::string,std::shared_ptr<PIODim>>   dims;
   std::map<std::string,std::shared_ptr<PIOVar>>   vars;
-  // std::map<std::string,std::shared_ptr<PIOAtt>>   atts;
 
   std::shared_ptr<PIODim> time_dim;
   FileMode mode;
