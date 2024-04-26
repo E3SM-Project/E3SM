@@ -967,7 +967,7 @@ contains
       do iCell=1,nCells
           freshwaterSurfaceFlux(indexRain, iCell) = rainFlux(iCell) / rho_sw
           freshwaterSurfaceFlux(indexSnow, iCell) = snowFlux(iCell) / rho_sw
-          freshwaterSurfaceFlux(indexIceRunoff, iCell) = iceRunoffFlux(iCell) / rho_sw
+          freshwaterSurfaceFluxRunoff(indexIceRunoff, iCell) = iceRunoffFlux(iCell) / rho_sw
           freshwaterSurfaceFluxRunoff(indexRiverRunoff, iCell) = riverRunoffFlux(iCell) / rho_sw
       enddo  !  iCell
       if (associated(indexSeaIceFreshWater)) then
