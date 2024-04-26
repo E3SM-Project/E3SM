@@ -4,6 +4,7 @@
 #include "scream_scorpio_types.hpp"
 
 #include <ekat/mpi/ekat_comm.hpp>
+#include <ekat/ekat_assert.hpp>
 
 #include <string>
 #include <vector>
@@ -32,6 +33,28 @@ inline std::string default_time_name () { return "time"; }
 //  double -> double
 //  real   -> float or double (depending on SCREAM_DOUBLE_PRECISION)
 std::string refine_dtype (const std::string& dtype);
+
+template<typename T>
+std::string get_dtype () {
+  using raw_t = typename std::remove_cv<T>::type;
+  std::string s;
+  if (std::is_same<raw_t,int>::value) {
+    s = "int";
+  } else if  (std::is_same<raw_t,float>::value) {
+    s = "float";
+  } else if  (std::is_same<raw_t,double>::value) {
+    s = "double";
+  } else if  (std::is_integral<raw_t>::value &&
+              std::is_signed<raw_t>::value &&
+              sizeof(raw_t)==sizeof(long long)) {
+    s = "int64";
+  } else if (std::is_same<raw_t,char>::value) {
+    s = "char";
+  } else {
+    EKAT_ERROR_MSG ("Error! Invalid/unsupported data type.\n");
+  }
+  return s;
+}
 
 // =================== Global operations ================= //
 
