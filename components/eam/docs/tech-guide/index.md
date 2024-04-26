@@ -26,9 +26,9 @@ This Technical Guide describes the physics of EAM.
 
 ### Aerosol
 
-- [MAM4](mam4.md): The primary parameterization scheme of aerosols in EAMv3.  
+- [MAM4](mam4.md): The primary parameterization scheme of aerosols in EAMv1 and EAMv2. It has been updated to MAM5 with the inclusion of the coarse-mode stratospheric aerosols in EAMv3.
 
-- [MAM5](mam5.md): The parameterization scheme to represent stratospheric sulfate aerosols in EAMv3.
+- [MAM5](mam5.md): The primary parameterization scheme to represent aerosols in EAMv3. The fifth mode is the stratospheric aerosols mode, which added upon previous MAM4 (above) to represent sulfate aerosols in the stratosphere.
 
 - [VBS](vbs.md): The parameterization of secondary organic aerosols in EAMv3.
 
