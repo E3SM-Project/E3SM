@@ -364,8 +364,10 @@ void AtmosphereInput::init_scorpio_structures()
 
   // Check variables are in the input file
   for (auto const& name : m_fields_names) {
+    const auto& layout = m_layouts.at(name);
+
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
+    auto vec_of_dims   = get_vec_of_dims(layout);
 
     // Check that the variable is in the file.
     EKAT_REQUIRE_MSG (scorpio::has_var(m_filename,name),
@@ -375,11 +377,27 @@ void AtmosphereInput::init_scorpio_structures()
 
     const auto& var = scorpio::get_var(m_filename,name);
     EKAT_REQUIRE_MSG (var.dim_names()==vec_of_dims,
-        "Error! Dimensions mismatch for input file variable.\n"
+        "Error! Layout mismatch for input file variable.\n"
         " - filename: " + m_filename + "\n"
         " - varname : " + name + "\n"
         " - expected dims : " + ekat::join(vec_of_dims,",") + "\n"
         " - dims from file: " + ekat::join(var.dim_names(),",") + "\n");
+
+    // Check that all dims for this var match the ones on file
+    for (int i=0; i<layout.rank(); ++i) {
+      const int file_len  = scorpio::get_dimlen(m_filename,vec_of_dims[i]);
+      const bool partitioned = m_io_grid->get_partitioned_dim_tag()==layout.tag(i);
+      const int eamxx_len = partitioned ? m_io_grid->get_partitioned_dim_global_size()
+                                        : layout.dim(i);
+      EKAT_REQUIRE_MSG (eamxx_len==file_len,
+          "Error! Dimension mismatch for input file variable.\n"
+        " - filename : " + m_filename + "\n"
+        " - varname  : " + name + "\n"
+        " - var dims : " + ekat::join(vec_of_dims,",") + "\n"
+        " - dim name : " + vec_of_dims[i] + "\n"
+        " - expected extent : " + std::to_string(eamxx_len) + "\n"
+        " - extent from file: " + std::to_string(file_len) + "\n");
+    }
 
     // Ensure that we can read the var using Real data type
     scorpio::change_var_dtype (m_filename,name,"real");
