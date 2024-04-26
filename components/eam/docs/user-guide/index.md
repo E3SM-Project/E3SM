@@ -95,7 +95,7 @@ This file is computed via a complex procedure that starts with high resolution d
 
 Info needed on land-use land cover change / land surface data
 
-Refer to [ELM documentation](../../../elm/docs/index.md).
+Refer to [ELM documentation](https://docs.e3sm.org/E3SM/ELM/).
 
 #### Ocean/sea ice
 
