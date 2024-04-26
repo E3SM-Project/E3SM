@@ -52,7 +52,7 @@
 				<var name="rainConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of rain by volume."
 				/>
-				<var name="SeaIceFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				<var name="seaIceFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of sea ice-derived freshwater by volume."
 				/>
 				<var name="icebergFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
@@ -61,7 +61,7 @@
 				<var name="iceRunoffFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
-				<var name="LandIceFreshwaterConcentration" array_group="freshwaterGRP" units="fractional"
+				<var name="landIceFreshwaterConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
 				<var name="riverRunoffFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
@@ -80,7 +80,7 @@
 				<var name="rainTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of rain by volume."
 				/>
-				<var name="SeaIceFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				<var name="seaIceFreshWaterTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of sea ice-derived freshwater by volume."
 				/>
 				<var name="icebergFreshWaterTend" array_group="freshwaterGRP" units="fractional"
@@ -89,7 +89,7 @@
 				<var name="iceRunoffFreshWaterTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
-				<var name="LandIceFreshwaterTend" array_group="freshwaterGRP" units="fractional"
+				<var name="landIceFreshwaterTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
 				<var name="riverRunoffFreshWaterTend" array_group="freshwaterGRP" units="fractional"
@@ -108,7 +108,7 @@
 				<var name="rainSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of rain by volume."
 				/>
-				<var name="SeaIceFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				<var name="seaIceFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of sea ice-derived freshwater by volume."
 				/>
 				<var name="icebergFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
@@ -117,7 +117,7 @@
 				<var name="iceRunoffFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
-				<var name="LandIceFreshwaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				<var name="landIceFreshwaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
 				<var name="riverRunoffFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
@@ -131,7 +131,7 @@
 				<var name="rainSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of rain by volume."
 				/>
-				<var name="SeaIceFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				<var name="seaIceFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of sea ice-derived freshwater by volume."
 				/>
 				<var name="icebergFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
@@ -140,7 +140,7 @@
 				<var name="iceRunoffFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
-				<var name="LandIceFreshwaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				<var name="landIceFreshwaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
 				<var name="riverRunoffFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
@@ -154,7 +154,7 @@
 				<var name="rainSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of rain by volume."
 				/>
-				<var name="SeaIceFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				<var name="seaIceFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of sea ice-derived freshwater by volume."
 				/>
 				<var name="icebergFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
@@ -163,7 +163,7 @@
 				<var name="iceRunoffFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
-				<var name="LandIceFreshwaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				<var name="landIceFreshwaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
 				<var name="riverRunoffFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
