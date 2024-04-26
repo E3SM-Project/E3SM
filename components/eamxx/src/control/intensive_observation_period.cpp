@@ -30,53 +30,6 @@ namespace ekat {
 namespace scream {
 namespace control {
 
-// Helper functions for reading data from .nc file to support
-// cases not currently supported in EAMxx scorpio interface.
-namespace {
-// Read the value of a dimensionless variable from file.
-template<typename T>
-void read_dimensionless_variable_from_file(const std::string& filename,
-                                           const std::string& varname,
-                                           T*                 value)
-{
-  scorpio::register_file(filename,scorpio::FileMode::Read);
-  EKAT_REQUIRE_MSG(scorpio::has_var(filename,varname),
-      "Error! IOP file does not have a required variable.\n"
-      "  - filename: " + filename + "\n"
-      "  - varname : " + varname  + "\n");
-  scorpio::change_var_dtype(filename,varname,scorpio::get_dtype<T>());
-  scorpio::read_var(filename,varname,value);
-  scorpio::release_file(filename);
-}
-
-// Read variable with arbitrary number of dimensions from file.
-template<typename T>
-void read_variable_from_file(const std::string&              filename,
-                             const std::string&              varname,
-                             const std::string&              vartype,
-                             const std::vector<std::string>& dimnames,
-                             const int                       time_idx,
-                             T*                              data)
-{
-  EKAT_REQUIRE_MSG(scorpio::has_var(filename,varname),
-                   "Error! IOP file does not have variable "+varname+".\n");
-
-  // Compute total size of data to read
-  int data_size = 1;
-  for (auto dim : dimnames) {
-    const auto dim_len = scorpio::get_dimlen(filename, dim);
-      data_size *= dim_len;
-  }
-
-  // Read into data
-  scorpio::register_file(filename, scorpio::FileMode::Read);
-  // This allows, e.g., to use double* to read a var with float dtype
-  scorpio::change_var_dtype(filename, varname, scorpio::get_dtype<T>());
-  scorpio::read_var(filename, varname, data, time_idx);
-  scorpio::release_file(filename);
-}
-}
-
 IntensiveObservationPeriod::
 IntensiveObservationPeriod(const ekat::Comm& comm,
                            const ekat::ParameterList& params,
@@ -120,6 +73,13 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   // Use IOP file to initialize parameters
   // and timestepping information
   initialize_iop_file(run_t0, model_nlevs);
+}
+
+IntensiveObservationPeriod::
+~IntensiveObservationPeriod ()
+{
+  const auto iop_file = m_params.get<std::string>("iop_file");
+  scorpio::release_file(iop_file);
 }
 
 void IntensiveObservationPeriod::
@@ -278,7 +238,10 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_var(iop_file, "basedate")) bdate_name = "basedate";
   else if (scorpio::has_var(iop_file, "nbdate"))   bdate_name = "nbdate";
   else EKAT_ERROR_MSG("Error! No valid name for bdate in "+iop_file+".\n");
-  read_dimensionless_variable_from_file<int>(iop_file, bdate_name, &bdate);
+
+  // Just in case bdate_name is stored with a type that is not "int" (e.g., it's int64)
+  scorpio::change_var_dtype(iop_file,bdate_name,"int");
+  scorpio::read_var(iop_file, bdate_name, &bdate);
 
   int yr=bdate/10000;
   int mo=(bdate/100) - yr*100;
@@ -289,11 +252,17 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   if      (scorpio::has_dim(iop_file, "time")) time_dimname = "time";
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
+  
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
-  m_time_info.iop_file_times_in_sec =
-    decltype(m_time_info.iop_file_times_in_sec)("iop_file_times", ntimes);
-  read_variable_from_file(iop_file, "tsec", "int", {time_dimname}, -1,
-                          m_time_info.iop_file_times_in_sec.data());
+  m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
+  // Just in case "tsec" is stored with a different data type
+  scorpio::change_var_dtype(iop_file,"tsec","int");
+  scorpio::read_var(iop_file,"tsec",m_time_info.iop_file_times_in_sec.data());
+
+  // From now on, when we read vars, "time" must be treated as unlimited, to avoid issues
+  if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
+    scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+  }
 
   // Check that lat/lon from iop file match the targets in parameters. Note that
   // longitude may be negtive in the iop file, we convert to positive before checking.
@@ -301,8 +270,13 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   const auto nlons = scorpio::get_dimlen(iop_file, "lon");
   EKAT_REQUIRE_MSG(nlats==1 and nlons==1, "Error! IOP data file requires a single lat/lon pair.\n");
   Real iop_file_lat, iop_file_lon;
-  read_variable_from_file(iop_file, "lat", "real", {"lat"}, -1, &iop_file_lat);
-  read_variable_from_file(iop_file, "lon", "real", {"lon"}, -1, &iop_file_lon);
+
+  // Just in case "lat/lon" are stored with a different data type (e.g., float instead of double)
+  scorpio::change_var_dtype(iop_file,"lat","real");
+  scorpio::change_var_dtype(iop_file,"lon","real");
+  scorpio::read_var(iop_file,"lat",&iop_file_lat);
+  scorpio::read_var(iop_file,"lon",&iop_file_lon);
+
   const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude"))/
                              m_params.get<Real>("target_latitude");
   const Real rel_lon_err = std::fabs(std::fmod(iop_file_lon + 360.0, 360.0)-m_params.get<Real>("target_longitude"))/
@@ -326,7 +300,10 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
-  read_variable_from_file(iop_file, "lev", "real", {"lev"}, -1, data);
+  // Just in case "lev" is stored with a different data type (e.g., float instead of double)
+  scorpio::change_var_dtype(iop_file,"lev","real");
+  scorpio::read_var(iop_file,"lev",data);
+
   // Convert to pressure to millibar (file gives pressure in Pa)
   for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
   iop_file_pressure.sync_to_dev();
@@ -341,8 +318,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
   m_helper_fields.insert({"model_pressure", model_pressure});
-
-  scorpio::release_file(iop_file);
 }
 
 void IntensiveObservationPeriod::
@@ -574,7 +549,10 @@ read_iop_file_data (const util::TimeStamp& current_ts)
   if (has_level_data) {
     // Load surface pressure (Ps) from iop file
     auto ps_data = surface_pressure.get_view<Real, Host>().data();
-    read_variable_from_file(iop_file, "Ps", "real", {"lon","lat"}, iop_file_time_idx, ps_data);
+
+    // Just in case "Ps" is stored with a different data type (e.g., float instead of double)
+    scorpio::change_var_dtype(iop_file,"Ps","real");
+    scorpio::read_var(iop_file,"Ps",ps_data,iop_file_time_idx);
     surface_pressure.sync_to_dev();
 
     // Pre-process file pressures, store number of file levels
@@ -661,7 +639,9 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     if (field.rank()==0) {
       // For scalar data, read iop file variable directly into field data
       auto data = field.get_view<Real, Host>().data();
-      read_variable_from_file(iop_file, file_varname, "real", {"lon","lat"}, iop_file_time_idx, data);
+      // Just in case the var is stored with a different data type (e.g., float instead of double)
+      scorpio::change_var_dtype(iop_file,file_varname,"real");
+      scorpio::read_var(iop_file,file_varname,data,iop_file_time_idx);
       field.sync_to_dev();
     } else if (field.rank()==1) {
       // Create temporary fields for reading iop file variables. We use
@@ -678,7 +658,9 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
       // Read data from iop file.
       std::vector<Real> data(file_levs);
-      read_variable_from_file(iop_file, file_varname, "real", {"lon","lat","lev"}, iop_file_time_idx, data.data());
+      // Just in case the var is stored with a different data type (e.g., float instead of double)
+      scorpio::change_var_dtype(iop_file,file_varname,"real");
+      scorpio::read_var(iop_file,file_varname,data.data(),iop_file_time_idx);
 
       // Copy first adjusted_file_levs-1 values to field
       auto iop_file_v_h = iop_file_field.get_view<Real*,Host>();
@@ -688,7 +670,9 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto has_srf = m_iop_field_surface_varnames.count(fname)>0;
       if (has_srf) {
         const auto srf_varname = m_iop_field_surface_varnames[fname];
-        read_variable_from_file(iop_file, srf_varname, "real", {"lon","lat"}, iop_file_time_idx, &iop_file_v_h(adjusted_file_levs-1));
+        // Just in case the var is stored with a different data type (e.g., float instead of double)
+        scorpio::change_var_dtype(iop_file,srf_varname,"real");
+        scorpio::read_var(iop_file,srf_varname,&iop_file_v_h(adjusted_file_levs-1),iop_file_time_idx);
       } else {
         // No surface value exists, compute surface value
         const auto dx = iop_file_v_h(adjusted_file_levs-2) - iop_file_v_h(adjusted_file_levs-3);
@@ -739,7 +723,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 			     KOKKOS_LAMBDA (const int ilev) {
 			       iop_field_v(ilev) = iop_file_v(0);
 			     });
-	Kokkos::parallel_for(Kokkos::RangePolicy<>(model_end-1, total_nlevs),
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(model_end-1, total_nlevs),
 			     KOKKOS_LAMBDA (const int ilev) {
 			       iop_field_v(ilev) = iop_file_v(adjusted_file_levs-1);
 			     });
@@ -915,5 +899,3 @@ correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
 
 } // namespace control
 } // namespace scream
-
-

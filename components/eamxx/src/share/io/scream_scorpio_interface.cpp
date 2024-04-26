@@ -1018,6 +1018,7 @@ void change_var_dtype (const std::string& filename, const std::string& varname,
   auto& var = impl::get_var(filename,varname,"scorpio::change_var_dtype");
 
   if (refine_dtype(dtype)==refine_dtype(var.dtype)) {
+    // The type is not changing, nothing to do
     return;
   }
 
