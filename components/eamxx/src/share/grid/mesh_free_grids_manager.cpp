@@ -261,9 +261,9 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using PC             = scream::physics::Constants<Real>;
   const Real ps0        = PC::P0;
 
-  auto hya_v = hyam.get_view<const Real*>();
-  auto hyb_v = hybm.get_view<const Real*>();
-  auto lev_v = lev.get_view<Real*>();
+  auto hya_v = hyam.get_view<const Real*,Host>();
+  auto hyb_v = hybm.get_view<const Real*,Host>();
+  auto lev_v = lev.get_view<Real*,Host>();
   for (int ii=0;ii<grid->get_num_vertical_levels();ii++) {
     lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
   }
