@@ -712,7 +712,7 @@ void AtmosphereDriver::initialize_output_managers () {
     }
     om.set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,*it.second);
+      om.add_global(it.first,it.second);
     }
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
@@ -916,21 +916,21 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
-    if (any->isType<int>()) {
-      ekat::any_cast<int>(*any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
-    } else if (any->isType<std::int64_t>()) {
-      ekat::any_cast<std::int64_t>(*any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
-    } else if (any->isType<float>()) {
-      ekat::any_cast<float>(*any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
-    } else if (any->isType<double>()) {
-      ekat::any_cast<double>(*any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
-    } else if (any->isType<std::string>()) {
-      ekat::any_cast<std::string>(*any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
+    if (any.isType<int>()) {
+      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
+    } else if (any.isType<std::int64_t>()) {
+      ekat::any_cast<std::int64_t>(any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
+    } else if (any.isType<float>()) {
+      ekat::any_cast<float>(any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
+    } else if (any.isType<double>()) {
+      ekat::any_cast<double>(any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
+    } else if (any.isType<std::string>()) {
+      ekat::any_cast<std::string>(any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
     } else {
       EKAT_ERROR_MSG (
           "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
           " - extra data name  : " + name + "\n"
-          " - extra data typeid: " + any->content().type().name() + "\n");
+          " - extra data typeid: " + any.content().type().name() + "\n");
     }
   }
 
