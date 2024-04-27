@@ -8,7 +8,7 @@ nav:
     - 'Model output': 'user/model_output.md'
     - 'Model input': 'user/model_input.md'
     - 'Runtime parameters': 'common/eamxx_params.md'
-    - 'Nudging from coarse reanalysis': 'user/nudging_from_coarse_reanalysis.md'
+    - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
