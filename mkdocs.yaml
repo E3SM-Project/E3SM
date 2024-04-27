@@ -52,8 +52,8 @@ markdown_extensions:
 
 plugins:
   - monorepo
-  - bibtex:
   - search
+  - bibtex:
       bib_dir: docs/refs
 
 extra_javascript:
