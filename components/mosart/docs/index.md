@@ -1,4 +1,4 @@
-#Model for Scale Adaptive River Transport (MOSART)
+# Model for Scale Adaptive River Transport (MOSART)
 
 Some introductory text here
 
