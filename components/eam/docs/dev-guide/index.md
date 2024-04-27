@@ -1,1 +1,1 @@
-start of the EAM Developer's Guide
+start of the EAM Developer Guide
