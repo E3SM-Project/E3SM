@@ -107,6 +107,8 @@ contains
     if (.not.disable_diagnostics) disable_diagnostics_int=0
     if (use_moisture) use_moisture_int=1
     if (.not.use_moisture) use_moisture_int=0
+    if(theta_hydrostatic_mode) theta_hydrostatic_mode_int=1
+    if(.not.theta_hydrostatic_mode) theta_hydrostatic_mode_int=0
 
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
@@ -351,23 +353,22 @@ contains
   end subroutine prim_init_elements_views
 
   subroutine prim_init_kokkos_functors (allocate_buffer)
+    use iso_c_binding, only : c_int
     use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
     !
     ! Optional Input
     !
-    logical, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
-
-    integer :: allocate_buffer_int    
-
+    integer, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+    integer(kind=c_int) :: dummy
     ! Initialize the C++ functors in the C++ context
     ! If no argument allocate_buffer is present,
     ! let Homme internally allocate buffers
-    allocate_buffer_int=1
     if (present(allocate_buffer)) then
-      if (allocate_buffer) allocate_buffer_int=1
-      if (.not.allocate_buffer) allocate_buffer_int=0
+       call init_functors_c (allocate_buffer)
+    else
+       dummy=1;
+       call init_functors_c (dummy)
     endif
-    call init_functors_c (allocate_buffer_int)
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
