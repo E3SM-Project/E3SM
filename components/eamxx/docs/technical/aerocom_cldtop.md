@@ -24,7 +24,4 @@ $$c\Phi_{i,k} = \frac{cQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}$$
 
 The thermodynamic phase is used only for cloud properties (e.g., cloud-top cloud droplet number concentration) or cloud content (e.g., cloud liquid content). Further, $X_{i,k}$ is the three-dimensional cloud property of interest which is needed if we are converting a property from three-dimensional ($X$) to its two-dimensional counterpart ($x$). "Other" properties here include temperature and pressure which are not dependent on the thermodynamic phase.
 
-Helpful pointers:
-
-- Räisänen, P., Barker, H. W., Khairoutdinov, M. F., Li, J., & Randall, D. A. (2004). Stochastic generation of subgrid‐scale cloudy columns for large‐scale models. Quarterly Journal of the Royal Meteorological Society: A journal of the atmospheric sciences, applied meteorology and physical oceanography, 130(601), 2047-2067.
-- References in this ECMWF report: Tiedtke, M., Geleyn, J.-F., Hollingsworth, A., and Louis, J.-F.: ECMWF model parameterisation of sub-grid scale processes, Technical Report, ECMWF, Shinfield Park, Reading, 10, 1979.
+Most studies in this topic refer a technical report by Tiedtke et al. (1979)[@tiedtke_ecmwf_1979]. Another more recent general reference that may be of interest is that of Räisänen et al. (2004)[@raisanen2004stochastic].
