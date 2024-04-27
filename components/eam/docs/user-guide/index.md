@@ -1,7 +1,7 @@
 
-# EAM Users's Guide
+# EAM User Guide
 
-This Users's Guide describes how to set up and run EAM.
+This User Guide describes how to set up and run EAM.
 
 ## Table of contents
 

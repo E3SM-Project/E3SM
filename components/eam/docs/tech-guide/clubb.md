@@ -6,10 +6,10 @@ The Cloud Layers Unified By Binormals (CLUBB) parameterization is a parameteriza
 
 ### References
 
-Larson (2022) [@larson_clubb-silhs_2022]
-Bogenschutz et al. (2018) [@bogenschutz_path_2018]
-Larson and Golaz (2005) [@larson_using_2005]
-Golaz et al. (2002) [@golaz_pdf-based_2002]
+- Larson (2022) [@larson_clubb-silhs_2022]
+- Bogenschutz et al. (2018) [@bogenschutz_path_2018]
+- Larson and Golaz (2005) [@larson_using_2005]
+- Golaz et al. (2002) [@golaz_pdf-based_2002]
 
 ## Namelist parameters
 

@@ -6,10 +6,10 @@ EAM using the a dynamical core (dycore)  from the High Order Method Modeling Env
 
 ### References
 
-Taylor et al. (2020) [@taylor_energy_2020]
-Bradley et al. (2022) [@bradley_islet_2022]
-Guba et al. (2014) [@guba_spectral_2014]
-Taylor and Fournier (2010) [@taylor_compatible_2010]
+- Taylor et al. (2020) [@taylor_energy_2020]
+- Bradley et al. (2022) [@bradley_islet_2022]
+- Guba et al. (2014) [@guba_spectral_2014]
+- Taylor and Fournier (2010) [@taylor_compatible_2010]
 
 ## Namelist parameters
 

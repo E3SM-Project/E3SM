@@ -6,10 +6,10 @@ The Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator P
 
 ### References
 
-Zhang et al. (2024) [@zhang_understanding_2024]
-Zhang et al. (2019) [@zhang_evaluation_2019]
-Swales et al. (2018) [@swales_cloud_2018]
-Bodas-Salcedo et al. (2011) [@bodas-salcedo_cosp_2011]
+- Zhang et al. (2024) [@zhang_understanding_2024]
+- Zhang et al. (2019) [@zhang_evaluation_2019]
+- Swales et al. (2018) [@swales_cloud_2018]
+- Bodas-Salcedo et al. (2011) [@bodas-salcedo_cosp_2011]
 
 ## To turn on COSP outputs
 
