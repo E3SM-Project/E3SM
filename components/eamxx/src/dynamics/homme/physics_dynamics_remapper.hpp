@@ -46,7 +46,7 @@ public:
 
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags());
+    return src.type()==tgt.type();
   }
 
 protected:

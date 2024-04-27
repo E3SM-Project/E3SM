@@ -223,9 +223,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf = 0.0; // FIXME: for now
 
-  const auto& tracers = get_group_out("tracers");
-  const auto& tracers_info = tracers.m_info;
-
   // perform any initialization work
   if (run_type==RunType::Initial) {
   }
@@ -324,7 +321,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
     auto z_iface = ekat::subview(dry_atm_.z_iface, icol);
-    Real z_surf = dry_atm_.z_surf;
     Real phis = dry_atm_.phis(icol);
 
     // set surface state data
@@ -365,7 +361,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
 
       constexpr int num_modes = mam4::AeroConfig::num_modes();
-      constexpr int num_aero_ids = mam4::AeroConfig::num_aerosol_ids();
       constexpr int gas_pcnst = mam_coupling::gas_pcnst();
       constexpr int nqtendbb = mam_coupling::nqtendbb();
 

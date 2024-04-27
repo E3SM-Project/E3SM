@@ -73,14 +73,24 @@ public:
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout (const bool midpoints) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
-  virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
-  virtual FieldLayout get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
-                                            const std::vector<int>& cmp_dims) const = 0;
+  virtual FieldLayout get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const = 0;
+  virtual FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims,
+                                            const std::vector<std::string>& cmp_dims_names) const = 0;
   virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;
-  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim,
+                                            const std::string& vec_dim_name) const = 0;
   virtual FieldLayout get_3d_tensor_layout (const bool midpoints,
-                                            const std::vector<FieldTag>& cmp_tags,
-                                            const std::vector<int>& cmp_dims) const = 0;
+                                            const std::vector<int>& cmp_dims,
+                                            const std::vector<std::string>& cmp_dims_names) const = 0;
+
+  // Some shortcut versions of the above ones, where the name of the vector/tensor
+  // components are all equal to e2str(CMP)
+  FieldLayout get_2d_vector_layout (const int vector_dim) const;
+  FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const;
+
+  FieldLayout get_3d_vector_layout (const bool midpoints) const;
+  FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
+  FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
@@ -170,8 +180,9 @@ public:
   virtual bool check_valid_lid_to_idx () const { return true; }
 
   void reset_field_tag_name (const FieldTag t, const std::string& s) { m_special_tag_names[t] = s; }
-  std::string get_dim_name (const FieldTag t) const {
-    return m_special_tag_names.count(t)==1 ? m_special_tag_names.at(t) : e2str(t);
+  std::string get_dim_name (const FieldLayout& lt, const int idim) const {
+    const auto t = lt.tag(idim);
+    return m_special_tag_names.count(t)==1 ? m_special_tag_names.at(t) : lt.names()[idim];
   }
 
   // This member is used mostly by IO: if a field exists on multiple grids
@@ -192,7 +203,6 @@ protected:
   //       since it calls get_2d_scalar_layout.
   void create_dof_fields (const int scalar2d_layout_rank);
 
-private:
 
   // The grid name and type
   GridType     m_type;

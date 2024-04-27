@@ -138,8 +138,8 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
       auto lay_curr   = field_curr.get_header().get_identifier().get_layout();
       auto lay_new    = field_new.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(lay_curr==lay_new,"ERROR!! AtmosphereInput::set_field_manager - setting new field manager which has different layout for field " << name <<"\n"
-		      << "    Old Layout: " << to_string(lay_curr) << "\n"
-		      << "    New Layout: " << to_string(lay_new) << "\n");
+		      << "    Old Layout: " << lay_curr.to_string() << "\n"
+		      << "    New Layout: " << lay_new.to_string() << "\n");
     }
   }
 
@@ -408,11 +408,9 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
   std::vector<std::string> dims_names;
   dims_names.reserve(layout.rank());
   for (int i=0; i<layout.rank(); ++i) {
-    const FieldTag t = layout.tag(i);
-    if (t==CMP) {
-      dims_names.push_back("dim" + std::to_string(layout.dim(i)));
-    } else {
-      dims_names.push_back(m_io_grid->get_dim_name(t));
+    dims_names.push_back(m_io_grid->get_dim_name(layout,i));
+    if (dims_names.back()=="dim") {
+      dims_names.back() += std::to_string(layout.dim(i));
     }
   }
 
@@ -428,7 +426,7 @@ get_io_decomp(const FieldLayout& layout)
   std::vector<int> range(layout.rank());
   std::iota(range.begin(),range.end(),0);
   auto tag_and_dim = [&](int i) {
-    return m_io_grid->get_dim_name(layout.tag(i)) +
+    return m_io_grid->get_dim_name(layout,i) +
            std::to_string(layout.dim(i));
   };
 

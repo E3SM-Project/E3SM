@@ -829,7 +829,6 @@ void convert_work_arrays_to_vmr(const Real q[gas_pcnst()],
       vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
       vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
     } else {
-      int m = static_cast<int>(mode_index);
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
         const Real mw = mam4::aero_species(a).molecular_weight;
@@ -862,7 +861,6 @@ void convert_work_arrays_to_mmr(const Real vmr[gas_pcnst()],
       q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
       qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
     } else {
-      int m = static_cast<int>(mode_index);
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
         const Real mw = mam4::aero_species(a).molecular_weight;
@@ -901,7 +899,6 @@ void transfer_work_arrays_to_prognostics(const Real q[gas_pcnst()],
         progs.q_aero_i[m][a](k) = q[i];
         progs.q_aero_c[m][a](k) = qqcw[i];
       } else { // constituent is a modal number mixing ratio
-        int m = static_cast<int>(mode_index);
         progs.n_mode_i[m](k) = q[i];
         progs.n_mode_c[m](k) = qqcw[i];
       }

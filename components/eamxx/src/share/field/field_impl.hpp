@@ -73,7 +73,7 @@ Field (const identifier_type& id,
   // Create an unmanaged dev view, and its host mirror
   const auto view_dim = alloc_prop.get_alloc_size();
   char* data = reinterpret_cast<char*>(view_d.data());
-  std::cout << "fl: " << to_string(fl) << "\n"
+  std::cout << "fl: " << fl.to_string() << "\n"
             << "view dim: " << view_dim << "\n";
   m_data.d_view = decltype(m_data.d_view)(data,view_dim);
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
@@ -593,8 +593,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       "Error! Incompatible layouts for update_field.\n"
       " - x name: " + x.name() + "\n"
       " - y name: " + name() + "\n"
-      " - x layout: " + to_string(x_l) + "\n"
-      " - y layout: " + to_string(y_l) + "\n");
+      " - x layout: " + x_l.to_string() + "\n"
+      " - y layout: " + y_l.to_string() + "\n");
 
   using device_t = typename Field::get_device<HD>;
   using exec_space = typename device_t::execution_space;
