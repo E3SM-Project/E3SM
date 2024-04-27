@@ -1600,7 +1600,7 @@
 
 <h1 id="dust-aerosol">Dust aerosol</h1>
 <h2 id="overview">Overview</h2>
-<p>Dust-related processes are represented in the E3SM atmosphere and land model components. In E3SMv3, dust deposition will also be coupled with the sea ice and ocean biogeochemistry in the ocean model. Total emission fluxes of dust particles are calculated at each model time step. A new dust emission scheme following Kok et al. (2014) [@kok_improved_2014] is implemented to E3SMv3, replacing the Zender scheme (Zender et al., 2003) [@zender_mineral_2003] in E3SMv1 and v2 as the default option. The new dust emission scheme includes a time-varying soil erodibility factor for dust mobilization, and includes dust sources in high latitudes (e.g., &gt;60 degree N). A manuscript by Feng et al. is in prep to document the performance of the new emission scheme on dust life cycle and radiative effects in E3SMv3. Dust aerosol is represented in the accumulation and coarse aerosol modes of the MAM4 module following emission. Other dust properties such as optical properties and size distribution at emission are documented in Feng et al. (2022). [@feng_global_2022]</p>
+<p>Dust-related processes are represented in the E3SM atmosphere and land model components. In E3SMv3, dust deposition will also be coupled with the sea ice and ocean biogeochemistry in the ocean model. Total emission fluxes of dust particles are calculated at each model time step. A new dust emission scheme following Kok et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> is implemented to E3SMv3, replacing the Zender scheme (Zender et al., 2003) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> in E3SMv1 and v2 as the default option. The new dust emission scheme includes a time-varying soil erodibility factor for dust mobilization, and includes dust sources in high latitudes (e.g., &gt;60 degree N). A manuscript by Feng et al. is in prep to document the performance of the new emission scheme on dust life cycle and radiative effects in E3SMv3. Dust aerosol is represented in the accumulation and coarse aerosol modes of the MAM4 module following emission. Other dust properties such as optical properties and size distribution at emission are documented in Feng et al. (2022). <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
 <table>
 <thead>
@@ -1619,6 +1619,20 @@
 </tbody>
 </table>
 <p>*This parameter is set in <code>user_nl_drv</code></p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>J. F. Kok, N. M. Mahowald, G. Fratini, J. A. Gillies, M. Ishizuka, J. F. Leys, M. Mikami, M.-S. Park, S.-U. Park, R. S. Van Pelt, and T. M. Zobeck. An improved dust emission model – Part 1: Model description and comparison against measurements. <em>Atmospheric Chemistry and Physics</em>, 14(23):13023–13041, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13023/2014/">https://acp.copernicus.org/articles/14/13023/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13023-2014">doi:10.5194/acp-14-13023-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>Charles S. Zender, Huisheng Bian, and David Newman. Mineral Dust Entrainment and Deposition (DEAD) model: Description and 1990s dust climatology. <em>Journal of Geophysical Research: Atmospheres</em>, 108(D14):2002JD002775, July 2003. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2002JD002775">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2002JD002775</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2002JD002775">doi:10.1029/2002JD002775</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Y. Feng, H. Wang, P. J. Rasch, K. Zhang, W. Lin, Q. Tang, S. Xie, D. S. Hamilton, N. Mahowald, and H. Yu. Global Dust Cycle and Direct Radiative Effect in E3SM Version 1: Impact of Increasing Model Resolution. <em>Journal of Advances in Modeling Earth Systems</em>, 14(7):e2021MS002909, July 2022. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021MS002909">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021MS002909</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2021MS002909">doi:10.1029/2021MS002909</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 

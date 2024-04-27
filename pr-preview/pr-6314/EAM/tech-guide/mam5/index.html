@@ -1600,7 +1600,7 @@
 
 <h1 id="five-mode-modal-aerosol-model">Five-mode Modal Aerosol Model</h1>
 <h2 id="overview">Overview</h2>
-<p>The Five-mode Modal Aerosol Model (MAM5) supersedes the MAM4 utilized in previous iterations of E3SM (E3SM-V1 and -V2). MAM5 introduces a fifth mode, specifically designed to represent stratospheric coarse mode aerosols, primarily originating from volcanic eruptions and DMS decomposition. This mode exclusively comprises sulfate aerosols, characterized by a smaller standard deviation (STD) value of 1.2. The STD value denotes the width of the aerosol mode, where a higher STD implies a greater gravitational settling effect (Wang et al., 2020; [@wang_aerosols_2020] Liu et al., 2012 [@liu_toward_2012]). By setting the STD to 1.2, the simulated properties of volcanic aerosols align closely with observational findings (Mills et al., 2016). [@mills_global_2016] MAM5 represents a pioneering aerosol model, effectively segregating tropospheric and stratospheric aerosols (Ke et al., in preparation), thereby mitigating the risk of overestimating dust and sea salt aerosols within the stratosphere in previous MAM4 (Visioni et al., 2021 [@visioni_limitations_2022]). Volcanic eruptions derived from Neely and Schmidt (2016) [@neely_iii_volcaneesm_2016].</p>
+<p>The Five-mode Modal Aerosol Model (MAM5) supersedes the MAM4 utilized in previous iterations of E3SM (E3SM-V1 and -V2). MAM5 introduces a fifth mode, specifically designed to represent stratospheric coarse mode aerosols, primarily originating from volcanic eruptions and DMS decomposition. This mode exclusively comprises sulfate aerosols, characterized by a smaller standard deviation (STD) value of 1.2. The STD value denotes the width of the aerosol mode, where a higher STD implies a greater gravitational settling effect (Wang et al., 2020; <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> Liu et al., 2012 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>). By setting the STD to 1.2, the simulated properties of volcanic aerosols align closely with observational findings (Mills et al., 2016). <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> MAM5 represents a pioneering aerosol model, effectively segregating tropospheric and stratospheric aerosols (Ke et al., in preparation), thereby mitigating the risk of overestimating dust and sea salt aerosols within the stratosphere in previous MAM4 (Visioni et al., 2021 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>). Volcanic eruptions derived from Neely and Schmidt (2016) <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>.</p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
 <table>
 <thead>
@@ -1618,6 +1618,26 @@
 </tr>
 </tbody>
 </table>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Hailong Wang, Richard C. Easter, Rudong Zhang, Po‐Lun Ma, Balwinder Singh, Kai Zhang, Dilip Ganguly, Philip J. Rasch, Susannah M. Burrows, Steven J. Ghan, Sijia Lou, Yun Qian, Yang Yang, Yan Feng, Mark Flanner, L. Ruby Leung, Xiaohong Liu, Manish Shrivastava, Jian Sun, Qi Tang, Shaocheng Xie, and Jin‐Ho Yoon. Aerosols in the E3SM Version 1: New Developments and Their Impacts on Radiative Forcing. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001851, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001851">doi:10.1029/2019MS001851</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>X. Liu, R. C. Easter, S. J. Ghan, R. Zaveri, P. Rasch, X. Shi, J.-F. Lamarque, A. Gettelman, H. Morrison, F. Vitt, A. Conley, S. Park, R. Neale, C. Hannay, A. M. L. Ekman, P. Hess, N. Mahowald, W. Collins, M. J. Iacono, C. S. Bretherton, M. G. Flanner, and D. Mitchell. Toward a minimal representation of aerosols in climate models: description and evaluation in the Community Atmosphere Model CAM5. <em>Geoscientific Model Development</em>, 5(3):709–739, May 2012. URL: <a href="https://gmd.copernicus.org/articles/5/709/2012/">https://gmd.copernicus.org/articles/5/709/2012/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-5-709-2012">doi:10.5194/gmd-5-709-2012</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Michael J. Mills, Anja Schmidt, Richard Easter, Susan Solomon, Douglas E. Kinnison, Steven J. Ghan, Ryan R. Neely, Daniel R. Marsh, Andrew Conley, Charles G. Bardeen, and Andrew Gettelman. Global volcanic aerosol properties derived from emissions, 1990–2014, using CESM1(WACCM). <em>Journal of Geophysical Research: Atmospheres</em>, 121(5):2332–2348, March 2016. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2015JD024290">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2015JD024290</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/2015JD024290">doi:10.1002/2015JD024290</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>Daniele Visioni, Simone Tilmes, Charles Bardeen, Michael Mills, Douglas G. MacMartin, Ben Kravitz, and Jadwiga H. Richter. Limitations of assuming internal mixing between different aerosol species: a case study with sulfate geoengineering simulations. <em>Atmospheric Chemistry and Physics</em>, 22(3):1739–1756, February 2022. URL: <a href="https://acp.copernicus.org/articles/22/1739/2022/">https://acp.copernicus.org/articles/22/1739/2022/</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-22-1739-2022">doi:10.5194/acp-22-1739-2022</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:5">
+<p>R. R. Neely III and A. Schmidt. VolcanEESM: Global volcanic sulphur dioxide (SO2) emissions database from 1850 to present - Version 1.0. 2016. URL: <a href="https://catalogue.ceda.ac.uk/uuid/a8a7e52b299a46c9b09d8e56b283d385">https://catalogue.ceda.ac.uk/uuid/a8a7e52b299a46c9b09d8e56b283d385</a> (visited on 2024-04-25), <a href="https://doi.org/10.5285/76EBDC0B-0EED-4F70-B89E-55E606BCD568">doi:10.5285/76EBDC0B-0EED-4F70-B89E-55E606BCD568</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 
