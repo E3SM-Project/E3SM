@@ -1,6 +1,6 @@
 # EAMxx Technical Guide
 
-The goal of this document is to describe the specific equations, parameterizations, and numerical methods used in the current version of EAMxx. Because our master-branch implementation changes every time we make a new commit, this documentation will also evolve continuously. As such, documentation for master should always be considered to be preliminary and under construction. If you want trustworthy documentation, pull it from an official model release. 
+The goal of this document is to describe the specific equations, parameterizations, and numerical methods used in the current version of EAMxx. Because our master-branch implementation changes every time we make a new commit, this documentation will also evolve continuously. As such, documentation for master should always be considered to be preliminary and under construction. If you want trustworthy documentation, pull it from an official model release.
 
 ## Overview
 
