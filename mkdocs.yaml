@@ -53,8 +53,8 @@ markdown_extensions:
 plugins:
   - monorepo
   - bibtex:
-      bib_file: components/elm/docs/refs.bib
   - search
+      bib_dir: docs/refs
 
 extra_javascript:
   - javascript/mathjax.js
