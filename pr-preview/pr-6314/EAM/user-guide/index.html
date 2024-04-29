@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
     
     
       
@@ -2065,7 +2065,7 @@
 <h3 id="input-datasets">Input datasets</h3>
 <h4 id="greenhouse-gases-non-reacting">Greenhouse gases (non-reacting)</h4>
 <p>Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014.</p>
-<div class="highlight"><pre><span></span><code>inputdata/atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">ggas</span><span class="o">/</span><span class="n">GHG_CMIP</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">0_Annual_Global_0000</span><span class="o">-</span><span class="mi">2014_c20180105</span><span class="p">.</span><span class="n">nc</span>
 </code></pre></div>
 <h4 id="aerosol-physical-properties">Aerosol physical properties</h4>
 <p>The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet activation/ice nucleation schemes. Detailed information on the files and related references can be found <a href="aerosol_phys_prop/">here</a>.</p>
@@ -2074,15 +2074,15 @@
 <h4 id="linoz-v3-input-files">Linoz v3 input files</h4>
 <p>Linozv3 uses the ozone tendency, (net production minus loss) calculated from its climatological mean state (function of month, latitude, altitude) and a first-order Taylor series expansion about the local ozone, temperature, and overhead ozone column. For historical simulation, Linozv3 uses the linozv3 data files with monthly resolution, spanning the dates 1849-01 -- 2014-12.</p>
 <h5 id="historical-files">Historical files</h5>
-<div class="highlight"><pre><span></span><code> linoz_data_file                = ‘linv3_1849-2101_CMIP6_Hist_10deg_58km_c20231207.nc’
- linoz_data_path                = &#39;/lcrc/group/e3sm/data/inputdata/atm/cam/chem/trop_mozart/ub&#39;
- linoz_data_type                = &#39;INTERP_MISSING_MONTHS&#39;
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="n">linoz_data_file</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="err">‘</span><span class="n">linv3_1849</span><span class="o">-</span><span class="mi">2101_CMIP6_Hist_10deg_58km_c20231207</span><span class="p">.</span><span class="n">nc</span><span class="err">’</span>
+<span class="w"> </span><span class="n">linoz_data_path</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/lcrc/group/e3sm/data/inputdata/atm/cam/chem/trop_mozart/ub&#39;</span>
+<span class="w"> </span><span class="n">linoz_data_type</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INTERP_MISSING_MONTHS&#39;</span>
 </code></pre></div>
 <p>Refer to <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3764486280/Production+of+the+Linoz+v3+data">this page</a> for more details on Linoz v3 input files.</p>
 <h4 id="topography">Topography</h4>
 <p>The global elevation on the atmosphere grid is a key input dataset.  The dataset is grid dependent. It contains the geopotential data (on both the GLL dynamics and PG2 physics grids) and two surface roughness quantities, <code>SGH</code> and <code>SGH30</code>.</p>
 <p>EAMv3 NE30 data:</p>
-<div class="highlight"><pre><span></span><code>inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc&#39;
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">topo</span><span class="o">/</span><span class="n">USGS</span><span class="o">-</span><span class="n">gtopo30_ne30np4pg2_x6t</span><span class="o">-</span><span class="n">SGH</span><span class="p">.</span><span class="n">c20210614</span><span class="p">.</span><span class="n">nc</span><span class="err">&#39;</span>
 </code></pre></div>
 <p>This file is computed via a complex procedure that starts with high resolution dataset (for EAMv3, we use the GTOPO30, a 30 arc-second resolution data set on a lat-lon grid) that is then downsampled to a 3km cubed-sphere grid (cube3000) and then downsampled to the atmosphere  grid on the (GLL nodes), and then smoothed with the same viscosity operator used by the dycore. The smoothed GLL topography is then mapped to the PG2 grid. Finally, two different surface roughness fields are computed:</p>
 <ul>
@@ -2096,17 +2096,17 @@
 <p>The sea surface temperature and sea-ice coverage data used in F-case simulations are based on CMIP6 Forcing Datasets provided from the input4MIPs data collection. The file for the <code>F2010</code> compset is created from taking a monthly climatology of years 2005-2014. The file for the <code>F1850</code> compset is created from taking a monthly climatology of years 1870-1879.*</p>
 <p>*<a href="https://acme-climate.atlassian.net/wiki/spaces/ATM/pages/201525378/Provenance+for+CMIP6+DECK+SST+Sea-Ice+input+data+for+E3SM">Provenenance for F1850 file</a></p>
 <p><code>F20TR</code></p>
-<div class="highlight"><pre><span></span><code>inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">ocn</span><span class="o">/</span><span class="n">docn7</span><span class="o">/</span><span class="n">SSTDATA</span><span class="o">/</span><span class="n">sst_ice_CMIP6_DECK_E3SM_1x1_c20180213</span><span class="p">.</span><span class="n">nc</span>
 </code></pre></div>
 <p><code>F2010</code></p>
-<div class="highlight"><pre><span></span><code>inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc 
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">ocn</span><span class="o">/</span><span class="n">docn7</span><span class="o">/</span><span class="n">SSTDATA</span><span class="o">/</span><span class="n">sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
 </code></pre></div>
 <p><code>F1850</code></p>
-<div class="highlight"><pre><span></span><code>inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">ocn</span><span class="o">/</span><span class="n">docn7</span><span class="o">/</span><span class="n">SSTDATA</span><span class="o">/</span><span class="n">sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125</span><span class="p">.</span><span class="n">nc</span>
 </code></pre></div>
 <h4 id="solar-input">Solar input</h4>
 <p>As with greenhouse gas emissions, solar input files are taken from the input4MIPs data collection that were prepared for CMIP6 Forcing Datasets.</p>
-<div class="highlight"><pre><span></span><code>inputdata/atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc
+<div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">solar</span><span class="o">/</span><span class="n">Solar_1850</span><span class="o">-</span><span class="mi">2299_input4MIPS_c20181106</span><span class="p">.</span><span class="n">nc</span>
 </code></pre></div>
 <h3 id="specifying-output-history-files">Specifying output (history files)</h3>
 <p>These are specified in the <code>user_nl_eam</code>.</p>
@@ -2117,15 +2117,18 @@
 <p><code>mfilt</code> - List that sets the number of timesteps to write in a single file before starting a new file.</p>
 <p><code>avgflag_pertape</code> - List that sets the type of output to write. Choices are <code>'A'</code> for time-averaged output, <code>'A'</code> for instantaneous output, <code>'MIN'</code> for time-minimum output, and <code>'MAX'</code> for time-maximum output.</p>
 <h4 id="example-output-specification">Example output specification</h4>
-<div class="highlight"><pre><span></span><code>nhtfrq = 0,-24,-6,-3
-mfilt  = 1,30,120,24
-avgflag_pertape = &#39;A&#39;,&#39;A&#39;,&#39;A&#39;,&#39;I&#39;
+<div class="highlight"><pre><span></span><code><span class="n">nhtfrq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">24</span><span class="p">,</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span>
+<span class="n">mfilt</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">120</span><span class="p">,</span><span class="mi">24</span>
+<span class="n">avgflag_pertape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;A&#39;</span><span class="p">,</span><span class="s1">&#39;A&#39;</span><span class="p">,</span><span class="s1">&#39;A&#39;</span><span class="p">,</span><span class="s1">&#39;I&#39;</span>
 
-fexcl1 = &#39;U10&#39; # Removes U10 output from monthly files
-fincl2 = &#39;PS&#39;, &#39;FLUT&#39;,&#39;PRECT&#39;,&#39;U200&#39;,&#39;V200&#39;,&#39;U850&#39;,&#39;V850&#39;,
-          &#39;TCO&#39;,&#39;SCO&#39;,&#39;TREFHT&#39;,&#39;QREFHT&#39;  # Output files of daily-averaged output, which includes 30 days of output in each file
-fincl3 = &#39;PS&#39;, &#39;PSL&#39;,&#39;PRECT&#39;,&#39;TUQ&#39;,&#39;TVQ&#39;,&#39;UBOT&#39;,&#39;VBOT&#39;,&#39;TREFHT&#39;,&#39;FLUT&#39;,&#39;OMEGA500&#39;,&#39;TBOT&#39;,&#39;U850&#39;,&#39;V850&#39;,&#39;U200&#39;,&#39;V200&#39;,&#39;T200&#39;,&#39;T500&#39;,&#39;Z700&#39;  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
-fincl4 = &#39;PRECT&#39; # Output files of 3-hourly output with 3 days of output in every file
+<span class="n">fexcl1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;U10&#39;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">Removes</span><span class="w"> </span><span class="n">U10</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">monthly</span><span class="w"> </span><span class="n">files</span>
+<span class="n">fincl2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PS&#39;</span><span class="p">,</span><span class="s1">&#39;FLUT&#39;</span><span class="p">,</span><span class="s1">&#39;PRECT&#39;</span><span class="p">,</span><span class="s1">&#39;U200&#39;</span><span class="p">,</span><span class="s1">&#39;V200&#39;</span><span class="p">,</span><span class="s1">&#39;U850&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="s1">&#39;V850&#39;</span><span class="p">,</span><span class="s1">&#39;TCO&#39;</span><span class="p">,</span><span class="s1">&#39;SCO&#39;</span><span class="p">,</span><span class="s1">&#39;TREFHT&#39;</span><span class="p">,</span><span class="s1">&#39;QREFHT&#39;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">Output</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">daily</span><span class="o">-</span><span class="n">averaged</span><span class="w"> </span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">includes</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="k">file</span>
+<span class="n">fincl3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PS&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PSL&#39;</span><span class="p">,</span><span class="s1">&#39;PRECT&#39;</span><span class="p">,</span><span class="s1">&#39;TUQ&#39;</span><span class="p">,</span><span class="s1">&#39;TVQ&#39;</span><span class="p">,</span><span class="s1">&#39;UBOT&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="s1">&#39;VBOT&#39;</span><span class="p">,</span><span class="s1">&#39;TREFHT&#39;</span><span class="p">,</span><span class="s1">&#39;FLUT&#39;</span><span class="p">,</span><span class="s1">&#39;OMEGA500&#39;</span><span class="p">,</span><span class="s1">&#39;TBOT&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="s1">&#39;U850&#39;</span><span class="p">,</span><span class="s1">&#39;V850&#39;</span><span class="p">,</span><span class="s1">&#39;U200&#39;</span><span class="p">,</span><span class="s1">&#39;V200&#39;</span><span class="p">,</span><span class="s1">&#39;T200&#39;</span><span class="p">,</span><span class="s1">&#39;T500&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="s1">&#39;Z700&#39;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">Output</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mi">6</span><span class="o">-</span><span class="n">hour</span><span class="o">-</span><span class="n">averaged</span><span class="w"> </span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">includes</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="k">file</span>
+<span class="n">fincl4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PRECT&#39;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">Output</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mi">3</span><span class="o">-</span><span class="n">hourly</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">every</span><span class="w"> </span><span class="k">file</span>
 </code></pre></div>
 
 

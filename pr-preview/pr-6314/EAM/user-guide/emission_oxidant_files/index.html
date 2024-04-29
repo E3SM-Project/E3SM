@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
     
     
       
@@ -1715,137 +1715,137 @@
 </ul>
 <h2 id="namelist-setting-for-emissions-input">Namelist setting for emissions input</h2>
 <h3 id="historical-wcycl20tramip-f20tr">Historical (WCYCL20TR)/AMIP (F20TR)</h3>
-<div class="highlight"><pre><span></span><code> ext_frc_specifier              = &#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc&#39;,
-         &#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205_kzm_1850_2014_volcano.nc&#39;,
-         &#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc&#39;,
-         &#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc&#39;,
-         &#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc&#39;,
-         &#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1850-2014_c180205.nc&#39;,
-         &#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1850-2014_c180205.nc&#39;,
-         &#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c180205.nc&#39;,
-         &#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc&#39;,
-         &#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc&#39;
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="n">ext_frc_specifier</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205_kzm_1850_2014_volcano.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc&#39;</span>
 
- srf_emis_specifier             = &#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_MTERP_surface_1850-2014_1.9x2.5_c20230126.nc&#39;,
-         &#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H4_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H6_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C3H8_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;CH2O   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH2O_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3CHO_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3COCH3_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;CO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CO_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;DMS    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc&#39;,
-         &#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions_E90_surface_1750-2015_1.9x2.5_c20210408.nc&#39;,
-         &#39;ISOP   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;ISOP_VBS -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc&#39;,
-         &#39;NO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_1850-2014_1.9x2.5_c20220425.nc&#39;,
-         &#39;SO2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1850-2014_c180205.nc&#39;,
-         &#39;SOAG0  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_surf_1850-2014_1.9x2.5_c20230201.nc&#39;,
-         &#39;bc_a4  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1850-2014_c180205.nc&#39;,
-         &#39;num_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1850-2014_c180205.nc&#39;,
-         &#39;num_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1850-2014_c180205.nc&#39;,
-         &#39;num_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1850-2014_c180205.nc&#39;,
-         &#39;pom_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1850-2014_c180205.nc&#39;,
-         &#39;so4_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1850-2014_c180205.nc&#39;,
-         &#39;so4_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1850-2014_c180205.nc&#39;
+<span class="w"> </span><span class="n">srf_emis_specifier</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_MTERP_surface_1850-2014_1.9x2.5_c20230126.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H4_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H6_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C3H8_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH2O   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH2O_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3CHO_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3COCH3_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CO_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;DMS    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions_E90_surface_1750-2015_1.9x2.5_c20210408.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP_VBS -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;NO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_1850-2014_1.9x2.5_c20220425.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_surf_1850-2014_1.9x2.5_c20230201.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1850-2014_c180205.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1850-2014_c180205.nc&#39;</span>
 
- tracer_cnst_datapath           = &#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;
- tracer_cnst_file               = &#39;oxid_1.9x2.5_L26_1850-2015_c20181106.nc&#39;
- tracer_cnst_filelist           = &#39;&#39;
- tracer_cnst_specifier          = &#39;prsd_O3:O3&#39;,&#39;prsd_NO3:NO3&#39;,&#39;prsd_OH:OH&#39;
- tracer_cnst_type               = &#39;INTERP_MISSING_MONTHS&#39;
+<span class="w"> </span><span class="n">tracer_cnst_datapath</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_file</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;oxid_1.9x2.5_L26_1850-2015_c20181106.nc&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_filelist</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_specifier</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;prsd_O3:O3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_NO3:NO3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_OH:OH&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_type</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INTERP_MISSING_MONTHS&#39;</span>
 </code></pre></div>
 <h3 id="f2010">F2010</h3>
-<div class="highlight"><pre><span></span><code> ext_frc_cycle_yr               = 2010
- ext_frc_specifier              = &#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1x1_2010_clim_c20190821.nc&#39;
- ext_frc_type           = &#39;CYCLICAL&#39;
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="n">ext_frc_cycle_yr</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="mi">2010</span>
+<span class="w"> </span><span class="n">ext_frc_specifier</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1x1_2010_clim_c20190821.nc&#39;</span>
+<span class="w"> </span><span class="n">ext_frc_type</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CYCLICAL&#39;</span>
 
- srf_emis_cycle_yr              = 2010
- srf_emis_specifier             = &#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_MTERP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H4_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H6_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C3H8_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;CH2O   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH2O_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3CHO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3COCH3_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;CO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;DMS    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc&#39;,
-         &#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions_E90_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;ISOP   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;ISOP_VBS -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;NO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;SO2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;SOAG0  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_surf_2010_clim_1.9x2.5_c20230213.nc&#39;,
-         &#39;bc_a4  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;num_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;pom_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;so4_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1x1_2010_clim_c20190821.nc&#39;,
-         &#39;so4_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1x1_2010_clim_c20190821.nc&#39;
- srf_emis_type          = &#39;CYCLICAL&#39;
+<span class="w"> </span><span class="n">srf_emis_cycle_yr</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="mi">2010</span>
+<span class="w"> </span><span class="n">srf_emis_specifier</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_MTERP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H4_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C2H6_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_C3H8_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH2O   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH2O_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3CHO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CH3COCH3_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_CO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;DMS    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions_E90_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP   -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP_VBS -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;NO     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_surf_2010_clim_1.9x2.5_c20230213.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1x1_2010_clim_c20190821.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1x1_2010_clim_c20190821.nc&#39;</span>
+<span class="w"> </span><span class="n">srf_emis_type</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CYCLICAL&#39;</span>
 
- tracer_cnst_cycle_yr           = 2015
- tracer_cnst_datapath           = &#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;
- tracer_cnst_file               = &#39;oxid_1.9x2.5_L26_1850-2015_c20181106.nc&#39;
- tracer_cnst_filelist           = &#39;&#39;
- tracer_cnst_specifier          = &#39;prsd_O3:O3&#39;,&#39;prsd_NO3:NO3&#39;,&#39;prsd_OH:OH&#39;
- tracer_cnst_type               = &#39;CYCLICAL&#39;
- ```
+<span class="w"> </span><span class="n">tracer_cnst_cycle_yr</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="mi">2015</span>
+<span class="w"> </span><span class="n">tracer_cnst_datapath</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_file</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;oxid_1.9x2.5_L26_1850-2015_c20181106.nc&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_filelist</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_specifier</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;prsd_O3:O3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_NO3:NO3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_OH:OH&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_type</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CYCLICAL&#39;</span>
+<span class="w"> </span><span class="err">```</span>
 
-### Future Scenarios
+<span class="cp">### Future Scenarios</span>
 
-#### SSP370
+<span class="cp">#### SSP370</span>
 
-```text
-ext_frc_specifier              = &#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_elev_2015-2100_c210216.nc&#39;,
-         &#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_bc_a4_elev_2015-2100_c210216.nc&#39;,
-         &#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a1_elev_2015-2100_c210216.nc&#39;,
-         &#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a2_elev_2015-2100_c210216.nc&#39;,
-         &#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a4_elev_2015-2100_c210216.nc&#39;,
-         &#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_pom_a4_elev_2015-2100_c210216.nc&#39;,
-         &#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a1_elev_2015-2100_c210216.nc&#39;,
-         &#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a2_elev_2015-2100_c210216.nc&#39;
+<span class="err">```</span><span class="n">fortran</span>
+<span class="n">ext_frc_specifier</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;NO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2         -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_bc_a4_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a1_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a2_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a4_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_pom_a4_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a1_elev_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a2_elev_2015-2100_c210216.nc&#39;</span>
 
-srf_emis_specifier             = &#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_MTERP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;CH2O      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH2O_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH3CHO_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH3COCH3_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;CO        -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CO_surface_2015-2100_1.9x2.5_c20240208.nc &#39;,
-         &#39;DMS       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc&#39;,
-         &#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc&#39;,
-         &#39;ISOP      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;ISOP_VBS  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;NO        -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO_surface_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;SO2       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_surf_2015-2100_c210216.nc&#39;,
-         &#39;SOAG0     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240208.nc&#39;,
-         &#39;bc_a4     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_bc_a4_surf_2015-2100_c210216.nc&#39;,
-         &#39;num_a1    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a1_surf_2015-2100_c210216.nc&#39;,
-         &#39;num_a2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a2_surf_2015-2100_c210216.nc&#39;,
-         &#39;num_a4    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a4_surf_2015-2100_c210216.nc&#39;,
-         &#39;pom_a4    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_pom_a4_surf_2015-2100_c210216.nc&#39;,
-         &#39;so4_a1    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a1_surf_2015-2100_c210216.nc&#39;,
-         &#39;so4_a2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a2_surf_2015-2100_c210216.nc&#39;
+<span class="n">srf_emis_specifier</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;C10H16 -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_MTERP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H4      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C2H6      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;C3H8      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH2O      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH2O_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3CHO    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH3CHO_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CH3COCH3  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CH3COCH3_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;CO        -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_CO_surface_2015-2100_1.9x2.5_c20240208.nc &#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;DMS       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;E90       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP      -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;ISOP_VBS  -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;NO        -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO_surface_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SO2       -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;SOAG0     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240208.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;bc_a4     -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_bc_a4_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a1    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a1_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a2_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;num_a4    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_num_a4_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;pom_a4    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_pom_a4_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a1    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a1_surf_2015-2100_c210216.nc&#39;</span><span class="p">,</span>
+<span class="w">         </span><span class="s1">&#39;so4_a2    -&gt; \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so4_a2_surf_2015-2100_c210216.nc&#39;</span>
 
- tracer_cnst_datapath           = &#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;
- tracer_cnst_file               = &#39;oxid_SSP370_1.9x2.5_L70_1849-2101_c20240228.nc&#39;
- tracer_cnst_filelist           = &#39;&#39;
- tracer_cnst_specifier          = &#39;prsd_O3:O3&#39;,&#39;prsd_NO3:NO3&#39;,&#39;prsd_OH:OH&#39;
- tracer_cnst_type               = &#39;INTERP_MISSING_MONTHS&#39;
+<span class="w"> </span><span class="n">tracer_cnst_datapath</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_file</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;oxid_SSP370_1.9x2.5_L70_1849-2101_c20240228.nc&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_filelist</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_specifier</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;prsd_O3:O3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_NO3:NO3&#39;</span><span class="p">,</span><span class="s1">&#39;prsd_OH:OH&#39;</span>
+<span class="w"> </span><span class="n">tracer_cnst_type</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INTERP_MISSING_MONTHS&#39;</span>
 </code></pre></div>
 <div class="footnote">
 <hr />

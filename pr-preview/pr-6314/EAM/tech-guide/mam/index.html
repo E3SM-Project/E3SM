@@ -12,11 +12,11 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
     
     
       
-        <title>Five-mode Modal Aerosol Model - E3SM</title>
+        <title>Modal Aerosol Module - E3SM</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#five-mode-modal-aerosol-model" class="md-skip">
+        <a href="#modal-aerosol-module" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Five-mode Modal Aerosol Model
+              Modal Aerosol Module
             
           </span>
         </div>
@@ -1550,18 +1550,42 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#mam5-overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview
+      MAM5 Overview
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#namelist-parameters" class="md-nav__link">
+  <a href="#mam4-overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Namelist parameters
+      MAM4 Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MAM4 Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sea-salt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sea salt
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mam-namelist-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      MAM Namelist parameters
     </span>
   </a>
   
@@ -1582,7 +1606,7 @@
                   
 
   
-    <a href="https://github.com/E3SM-Project/E3SM/edit/master/components/eam/docs/tech-guide/mam5.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/edit/master/components/eam/docs/tech-guide/mam.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1591,17 +1615,21 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/E3SM/raw/master/components/eam/docs/tech-guide/mam5.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/components/eam/docs/tech-guide/mam.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
   
 
 
-<h1 id="five-mode-modal-aerosol-model">Five-mode Modal Aerosol Model</h1>
-<h2 id="overview">Overview</h2>
-<p>The Five-mode Modal Aerosol Model (MAM5) supersedes the MAM4 utilized in previous iterations of E3SM (E3SM-V1 and -V2). MAM5 introduces a fifth mode, specifically designed to represent stratospheric coarse mode aerosols, primarily originating from volcanic eruptions and DMS decomposition. This mode exclusively comprises sulfate aerosols, characterized by a smaller standard deviation (STD) value of 1.2. The STD value denotes the width of the aerosol mode, where a higher STD implies a greater gravitational settling effect (Wang et al., 2020; <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> Liu et al., 2012 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>). By setting the STD to 1.2, the simulated properties of volcanic aerosols align closely with observational findings (Mills et al., 2016). <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> MAM5 represents a pioneering aerosol model, effectively segregating tropospheric and stratospheric aerosols (Ke et al., in preparation), thereby mitigating the risk of overestimating dust and sea salt aerosols within the stratosphere in previous MAM4 (Visioni et al., 2021 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>). Volcanic eruptions derived from Neely and Schmidt (2016) <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>.</p>
-<h2 id="namelist-parameters">Namelist parameters</h2>
+<h1 id="modal-aerosol-module">Modal Aerosol Module</h1>
+<h2 id="mam5-overview">MAM5 Overview</h2>
+<p>The Five-mode Modal Aerosol Model (MAM5) supersedes the MAM4 utilized in previous iterations of E3SM (E3SM-V1 and -V2). MAM5 introduces a fifth mode, specifically designed to represent stratospheric coarse mode aerosols, primarily originating from volcanic eruptions and DMS decomposition. This mode exclusively comprises sulfate aerosols, characterized by a smaller standard deviation (STD) value of 1.2. The STD value denotes the width of the aerosol mode, where a higher STD implies a greater gravitational settling effect (Wang et al., 2020; <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> Liu et al., 2012 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>). By setting the STD to 1.2, the simulated properties of volcanic aerosols align closely with observational findings (Mills et al., 2016). <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> MAM5 represents a pioneering aerosol model, effectively segregating tropospheric and stratospheric aerosols (Ke et al., in preparation), thereby mitigating the risk of overestimating dust and sea salt aerosols within the stratosphere in previous MAM4 (Visioni et al., 2021). <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> Volcanic eruptions derived from Neely and Schmidt (2016). <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup></p>
+<h2 id="mam4-overview">MAM4 Overview</h2>
+<p>The representation of atmospheric aerosols and their roles in the Earth system by EAMv1/v2/v3 was inherited from the global aerosol-climate model EAMv0 and its four-mode modal aerosol module (MAM4), including Aitken, primary-carbon, accumulation, and coarse modes (Liu et al., 2016). <sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup> It treats a combination of processes, controlling the evolution of aerosols that are either directly emitted or converted from precursor gases from a variety of natural and anthropogenic sources. The processes include transport (by grid-scale wind, subgrid turbulence, convection, and sedimentation), aerosol microphysics (i.e., particle nucleation, condensation/evaporation of trace gases, aging, and coagulation), cloud processing (i.e., aqueous chemistry, scavenging by hydrometeors, resuspension from evaporating hydrometeors, and wet deposition), and dry deposition. Aerosol species in the original MAM4 (Liu et al., 2016) <sup id="fnref2:6"><a class="footnote-ref" href="#fn:6">6</a></sup> include sulfate, primary organic aerosol (POA) or particulate organic matter (POM), secondary organic aerosol (SOA), black carbon (BC), sea salt, and mineral dust. As described by Wang et al. (2020), <sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup> the enhanced MAM4 in EAMv1/v2 added marine organic aerosol (MOA) to all four modes (Burrows et al., 2022). <sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup> In MAM4 of EAMv3, the Aitken mode has sulfate, sea salt, SOA and MOA; the primary-carbon mode has BC, POA and MOA; the accumulation and coarse modes include all seven species. Ammonium (NH4) and nitrate (NO3) aerosols are also explicitly treated in EAMv3 (Wu et al., 2022), <sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup> as an optional feature for research, in which new species (NH4, NO3, Ca, CO3, Na, Cl) are introduced to the Aitken, accumulation and coarse modes. All aerosol species within each of the four individual modes the MAM4 is assumed to be internally mixed and represented by a single number concentration, while particles are externally mixed among the different modes.</p>
+<h3 id="sea-salt">Sea salt</h3>
+<p>In MAM4, sea salt aerosol is represented in the Aitken, accumulation, and coarse mode with particle emission size (diameter) ranges of 0.02-0.08, 0.08-1.0, and 1.0-10.0 μm, respectively. The emission flux of natural sea salt is first divided into 31 size bins, following the parameterization of Mårtensson et al. (2003) <sup id="fnref:9"><a class="footnote-ref" href="#fn:9">9</a></sup> and Monahan et al. (1986), <sup id="fnref:10"><a class="footnote-ref" href="#fn:10">10</a></sup> and then redistributed to the three MAM4 size modes.</p>
+<h2 id="mam-namelist-parameters">MAM Namelist parameters</h2>
 <table>
 <thead>
 <tr>
@@ -1616,13 +1644,28 @@
 <td>Switch for diagnostic output of the stratospheric aerosol optics</td>
 <td><code>.false.</code></td>
 </tr>
+<tr>
+<td><code>mam_amicphys_optaa</code></td>
+<td>Recommended option of the new time-splitting treatment of H2SO4 production and loss</td>
+<td><code>1</code> <!-- markdownlint-disable MD033 --><br> (0 to turn it off)</td>
+</tr>
+<tr>
+<td><code>n_so4_monolayers_pcage</code></td>
+<td>Number of monolayers required to age primary-carbon mode particles</td>
+<td><code>3</code></td>
+</tr>
+<tr>
+<td><code>seasalt_emis_scale</code></td>
+<td>Tuning parameter for sea salt emission</td>
+<td><code>0.55</code></td>
+</tr>
 </tbody>
 </table>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>Hailong Wang, Richard C. Easter, Rudong Zhang, Po‐Lun Ma, Balwinder Singh, Kai Zhang, Dilip Ganguly, Philip J. Rasch, Susannah M. Burrows, Steven J. Ghan, Sijia Lou, Yun Qian, Yang Yang, Yan Feng, Mark Flanner, L. Ruby Leung, Xiaohong Liu, Manish Shrivastava, Jian Sun, Qi Tang, Shaocheng Xie, and Jin‐Ho Yoon. Aerosols in the E3SM Version 1: New Developments and Their Impacts on Radiative Forcing. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001851, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001851">doi:10.1029/2019MS001851</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>Hailong Wang, Richard C. Easter, Rudong Zhang, Po‐Lun Ma, Balwinder Singh, Kai Zhang, Dilip Ganguly, Philip J. Rasch, Susannah M. Burrows, Steven J. Ghan, Sijia Lou, Yun Qian, Yang Yang, Yan Feng, Mark Flanner, L. Ruby Leung, Xiaohong Liu, Manish Shrivastava, Jian Sun, Qi Tang, Shaocheng Xie, and Jin‐Ho Yoon. Aerosols in the E3SM Version 1: New Developments and Their Impacts on Radiative Forcing. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001851, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001851</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001851">doi:10.1029/2019MS001851</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
 <p>X. Liu, R. C. Easter, S. J. Ghan, R. Zaveri, P. Rasch, X. Shi, J.-F. Lamarque, A. Gettelman, H. Morrison, F. Vitt, A. Conley, S. Park, R. Neale, C. Hannay, A. M. L. Ekman, P. Hess, N. Mahowald, W. Collins, M. J. Iacono, C. S. Bretherton, M. G. Flanner, and D. Mitchell. Toward a minimal representation of aerosols in climate models: description and evaluation in the Community Atmosphere Model CAM5. <em>Geoscientific Model Development</em>, 5(3):709–739, May 2012. URL: <a href="https://gmd.copernicus.org/articles/5/709/2012/">https://gmd.copernicus.org/articles/5/709/2012/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-5-709-2012">doi:10.5194/gmd-5-709-2012</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
@@ -1635,6 +1678,21 @@
 </li>
 <li id="fn:5">
 <p>R. R. Neely III and A. Schmidt. VolcanEESM: Global volcanic sulphur dioxide (SO2) emissions database from 1850 to present - Version 1.0. 2016. URL: <a href="https://catalogue.ceda.ac.uk/uuid/a8a7e52b299a46c9b09d8e56b283d385">https://catalogue.ceda.ac.uk/uuid/a8a7e52b299a46c9b09d8e56b283d385</a> (visited on 2024-04-25), <a href="https://doi.org/10.5285/76EBDC0B-0EED-4F70-B89E-55E606BCD568">doi:10.5285/76EBDC0B-0EED-4F70-B89E-55E606BCD568</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:6">
+<p>X. Liu, P.-L. Ma, H. Wang, S. Tilmes, B. Singh, R. C. Easter, S. J. Ghan, and P. J. Rasch. Description and evaluation of a new four-mode version of the Modal Aerosol Module (MAM4) within version 5.3 of the Community Atmosphere Model. <em>Geoscientific Model Development</em>, 9(2):505–522, February 2016. URL: <a href="https://gmd.copernicus.org/articles/9/505/2016/">https://gmd.copernicus.org/articles/9/505/2016/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-9-505-2016">doi:10.5194/gmd-9-505-2016</a>.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:7">
+<p>Susannah M. Burrows, Richard C. Easter, Xiaohong Liu, Po-Lun Ma, Hailong Wang, Scott M. Elliott, Balwinder Singh, Kai Zhang, and Philip J. Rasch. OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) sea spray organic aerosol emissions – implementation in a global climate model and impacts on clouds. <em>Atmospheric Chemistry and Physics</em>, 22(8):5223–5251, April 2022. URL: <a href="https://acp.copernicus.org/articles/22/5223/2022/">https://acp.copernicus.org/articles/22/5223/2022/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-22-5223-2022">doi:10.5194/acp-22-5223-2022</a>.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:8">
+<p>Mingxuan Wu, Hailong Wang, Richard C. Easter, Zheng Lu, Xiaohong Liu, Balwinder Singh, Po‐Lun Ma, Qi Tang, Rahul A. Zaveri, Ziming Ke, Rudong Zhang, Louisa K. Emmons, Simone Tilmes, Jack E. Dibb, Xue Zheng, Shaocheng Xie, and L. Ruby Leung. Development and Evaluation of E3SM‐MOSAIC: Spatial Distributions and Radiative Effects of Nitrate Aerosol. <em>Journal of Advances in Modeling Earth Systems</em>, 14(11):e2022MS003157, November 2022. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003157">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003157</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2022MS003157">doi:10.1029/2022MS003157</a>.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+</li>
+<li id="fn:9">
+<p>E. M. Mårtensson, E. D. Nilsson, G. De Leeuw, L. H. Cohen, and H.‐C. Hansson. Laboratory simulations and parameterization of the primary marine aerosol production. <em>Journal of Geophysical Research: Atmospheres</em>, 108(D9):2002JD002263, May 2003. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2002JD002263">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2002JD002263</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2002JD002263">doi:10.1029/2002JD002263</a>.&#160;<a class="footnote-backref" href="#fnref:9" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+<li id="fn:10">
+<p>E. C. Monahan, D. E. Spiel, and K. L. Davidson. A Model of Marine Aerosol Generation Via Whitecaps and Wave Disruption. In Edward C. Monahan and Gearóid Mac Niocaill, editors, <em>Oceanic Whitecaps: And Their Role in Air-Sea Exchange Processes</em>, pages 167–174. Springer Netherlands, Dordrecht, 1986. URL: <a href="https://doi.org/10.1007/978-94-009-4668-2_16">https://doi.org/10.1007/978-94-009-4668-2_16</a> (visited on 2024-03-29), <a href="https://doi.org/10.1007/978-94-009-4668-2_16">doi:10.1007/978-94-009-4668-2_16</a>.&#160;<a class="footnote-backref" href="#fnref:10" title="Jump back to footnote 10 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

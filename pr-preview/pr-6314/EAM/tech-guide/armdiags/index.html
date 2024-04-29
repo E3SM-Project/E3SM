@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
     
     
       
@@ -1612,21 +1612,30 @@
 <p>The ARM data-oriented metrics and diagnostics package (ARM Diags) was developed to facilitate the use of ARM data in climate model evaluation and model intercomparison (Zhang et al. 2020) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. It includes ARM data sets, compiled from multiple ARM data products, and a Python-based analysis toolkit for computation ad visualization. It also includes simulation data from models participating the CMIP, which allows climate-modeling groups to compare a new, candidate version of their model to existing CMIP models. The ARM Diags has been applied in several model evaluation studies to help address a range of issues in climate models (Zheng et al. 2023 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>; Emmenegger et al. 2022 <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>; Zhang et al. 2018 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>). The Majority of ARM Diags sets are ported into E3SM Diags (Zhang et al. 2022) <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup> for routine evaluation of the model.</p>
 <h2 id="to-enable-the-use-of-arm-diags">To enable the use of ARM Diags</h2>
 <p>To enable using ARM Diags for a simulation, often, a new tape that output at high-frequency over limited-area (nearest grid box to supported ARM site) needs to be included in the namelist file, an example as follows:</p>
-<div class="highlight"><pre><span></span><code>fincl7 = &#39;PS&#39;,&#39;Q&#39;,&#39;T&#39;,&#39;Z3&#39;,&#39;CLOUD&#39;,&#39;CONCLD&#39;,&#39;CLDICE&#39;,&#39;CLDLIQ&#39;,&#39;FREQR&#39;,&#39;REI&#39;,&#39;REL&#39;,&#39;PRECT&#39;,&#39;TMQ&#39;,&#39;PRECC&#39;,&#39;TREFHT&#39;,&#39;QREFHT&#39;,&#39;OMEGA&#39;,&#39;CLDTOT&#39;,&#39;LHFLX&#39;,&#39;SHFLX&#39;,&#39;FLDS&#39;,&#39;FSDS&#39;,&#39;FLNS&#39;,&#39;FSNS&#39;,&#39;FLNSC&#39;,&#39;FSDSC&#39;,&#39;FSNSC&#39;,&#39;AODVIS&#39;,&#39;AODABS&#39;,&#39;LS_FLXPRC&#39;,&#39;LS_FLXSNW&#39;,&#39;LS_REFFRAIN&#39;,&#39;ZMFLXPRC&#39;,&#39;ZMFLXSNW&#39;,&#39;CCN1&#39;,&#39;CCN2&#39;,&#39;CCN3&#39;,&#39;CCN4&#39;,&#39;CCN5&#39;,&#39;num_a1&#39;,&#39;num_a2&#39;,&#39;num_a3&#39;,&#39;num_a4&#39;,&#39;so4_a1&#39;,&#39;so4_a2&#39;,&#39;so4_a3&#39;,&#39;AREL&#39;,&#39;TGCLDLWP&#39;,&#39;AQRAIN&#39;,&#39;ANRAIN&#39;,&#39;FREQR&#39;,&#39;PRECL&#39;,&#39;RELHUM&#39;
-fincl7lonlat=&#39;262.5e_36.6n&#39;,&#39;203.4e_71.3n&#39;,&#39;147.4e_2.0s&#39;,&#39;166.9e_0.5s&#39;,&#39;130.9e_12.4s&#39;,&#39;331.97e_39.09n&#39;
+<div class="highlight"><pre><span></span><code><span class="n">fincl7</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PS&#39;</span><span class="p">,</span><span class="s1">&#39;Q&#39;</span><span class="p">,</span><span class="s1">&#39;T&#39;</span><span class="p">,</span><span class="s1">&#39;Z3&#39;</span><span class="p">,</span><span class="s1">&#39;CLOUD&#39;</span><span class="p">,</span><span class="s1">&#39;CONCLD&#39;</span><span class="p">,</span><span class="s1">&#39;CLDICE&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;CLDLIQ&#39;</span><span class="p">,</span><span class="s1">&#39;FREQR&#39;</span><span class="p">,</span><span class="s1">&#39;REI&#39;</span><span class="p">,</span><span class="s1">&#39;REL&#39;</span><span class="p">,</span><span class="s1">&#39;PRECT&#39;</span><span class="p">,</span><span class="s1">&#39;TMQ&#39;</span><span class="p">,</span><span class="s1">&#39;PRECC&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;TREFHT&#39;</span><span class="p">,</span><span class="s1">&#39;QREFHT&#39;</span><span class="p">,</span><span class="s1">&#39;OMEGA&#39;</span><span class="p">,</span><span class="s1">&#39;CLDTOT&#39;</span><span class="p">,</span><span class="s1">&#39;LHFLX&#39;</span><span class="p">,</span><span class="s1">&#39;SHFLX&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;FLDS&#39;</span><span class="p">,</span><span class="s1">&#39;FSDS&#39;</span><span class="p">,</span><span class="s1">&#39;FLNS&#39;</span><span class="p">,</span><span class="s1">&#39;FSNS&#39;</span><span class="p">,</span><span class="s1">&#39;FLNSC&#39;</span><span class="p">,</span><span class="s1">&#39;FSDSC&#39;</span><span class="p">,</span><span class="s1">&#39;FSNSC&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;AODVIS&#39;</span><span class="p">,</span><span class="s1">&#39;AODABS&#39;</span><span class="p">,</span><span class="s1">&#39;LS_FLXPRC&#39;</span><span class="p">,</span><span class="s1">&#39;LS_FLXSNW&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;LS_REFFRAIN&#39;</span><span class="p">,</span><span class="s1">&#39;ZMFLXPRC&#39;</span><span class="p">,</span><span class="s1">&#39;ZMFLXSNW&#39;</span><span class="p">,</span><span class="s1">&#39;CCN1&#39;</span><span class="p">,</span><span class="s1">&#39;CCN2&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;CCN3&#39;</span><span class="p">,</span><span class="s1">&#39;CCN4&#39;</span><span class="p">,</span><span class="s1">&#39;CCN5&#39;</span><span class="p">,</span><span class="s1">&#39;num_a1&#39;</span><span class="p">,</span><span class="s1">&#39;num_a2&#39;</span><span class="p">,</span><span class="s1">&#39;num_a3&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;num_a4&#39;</span><span class="p">,</span><span class="s1">&#39;so4_a1&#39;</span><span class="p">,</span><span class="s1">&#39;so4_a2&#39;</span><span class="p">,</span><span class="s1">&#39;so4_a3&#39;</span><span class="p">,</span><span class="s1">&#39;AREL&#39;</span><span class="p">,</span><span class="s1">&#39;TGCLDLWP&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;AQRAIN&#39;</span><span class="p">,</span><span class="s1">&#39;ANRAIN&#39;</span><span class="p">,</span><span class="s1">&#39;FREQR&#39;</span><span class="p">,</span><span class="s1">&#39;PRECL&#39;</span><span class="p">,</span><span class="s1">&#39;RELHUM&#39;</span>
+<span class="n">fincl7lonlat</span><span class="o">=</span><span class="s1">&#39;262.5e_36.6n&#39;</span><span class="p">,</span><span class="s1">&#39;203.4e_71.3n&#39;</span><span class="p">,</span><span class="s1">&#39;147.4e_2.0s&#39;</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;166.9e_0.5s&#39;</span><span class="p">,</span><span class="s1">&#39;130.9e_12.4s&#39;</span><span class="p">,</span><span class="s1">&#39;331.97e_39.09n&#39;</span>
 </code></pre></div>
 <p>Note that in this example fincl7 should set to write output at hourly (<code>nhtfrq = -1</code>). And here additional variables are included for ARM simulator analysis. The ARM site information is shown below:</p>
-<div class="highlight"><pre><span></span><code>    &quot;sgpc1&quot;: [&quot;97.5W 36.4N Oklahoma ARM&quot;],
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="s2">&quot;sgpc1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;97.5W 36.4N Oklahoma ARM&quot;</span><span class="p">],</span>
 
-    &quot;nsac1&quot;: [&quot;156.6W 71.3N Barrow ARM&quot;],
+<span class="w">    </span><span class="s2">&quot;nsac1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;156.6W 71.3N Barrow ARM&quot;</span><span class="p">],</span>
 
-    &quot;twpc1&quot;: [&quot;147.4E 2.1S Manus ARM&quot;],
+<span class="w">    </span><span class="s2">&quot;twpc1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;147.4E 2.1S Manus ARM&quot;</span><span class="p">],</span>
 
-    &quot;twpc2&quot;: [&quot;166.9E 0.5S Nauru ARM&quot;],
+<span class="w">    </span><span class="s2">&quot;twpc2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;166.9E 0.5S Nauru ARM&quot;</span><span class="p">],</span>
 
-    &quot;twpc3&quot;: [&quot;130.9E 12.4S Darwin ARM&quot;],
+<span class="w">    </span><span class="s2">&quot;twpc3&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;130.9E 12.4S Darwin ARM&quot;</span><span class="p">],</span>
 
-    &quot;enac1&quot;: [&quot;28.0E 39.1N Graciosa Island ARM&quot;], 
+<span class="w">    </span><span class="s2">&quot;enac1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;28.0E 39.1N Graciosa Island ARM&quot;</span><span class="p">],</span><span class="w"> </span>
 </code></pre></div>
 <h2 id="diagnostics-and-metrics-currently-implemented-in-the-arm-diags">Diagnostics and metrics currently implemented in the ARM Diags</h2>
 <table>
