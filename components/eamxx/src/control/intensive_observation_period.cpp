@@ -239,8 +239,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_var(iop_file, "nbdate"))   bdate_name = "nbdate";
   else EKAT_ERROR_MSG("Error! No valid name for bdate in "+iop_file+".\n");
 
-  // Just in case bdate_name is stored with a type that is not "int" (e.g., it's int64)
-  scorpio::change_var_dtype(iop_file,bdate_name,"int");
   scorpio::read_var(iop_file, bdate_name, &bdate);
 
   int yr=bdate/10000;
@@ -255,8 +253,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
   m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
-  // Just in case "tsec" is stored with a different data type
-  scorpio::change_var_dtype(iop_file,"tsec","int");
   scorpio::read_var(iop_file,"tsec",m_time_info.iop_file_times_in_sec.data());
 
   // From now on, when we read vars, "time" must be treated as unlimited, to avoid issues
@@ -271,9 +267,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   EKAT_REQUIRE_MSG(nlats==1 and nlons==1, "Error! IOP data file requires a single lat/lon pair.\n");
   Real iop_file_lat, iop_file_lon;
 
-  // Just in case "lat/lon" are stored with a different data type (e.g., float instead of double)
-  scorpio::change_var_dtype(iop_file,"lat","real");
-  scorpio::change_var_dtype(iop_file,"lon","real");
   scorpio::read_var(iop_file,"lat",&iop_file_lat);
   scorpio::read_var(iop_file,"lon",&iop_file_lon);
 
@@ -300,8 +293,6 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
-  // Just in case "lev" is stored with a different data type (e.g., float instead of double)
-  scorpio::change_var_dtype(iop_file,"lev","real");
   scorpio::read_var(iop_file,"lev",data);
 
   // Convert to pressure to millibar (file gives pressure in Pa)
@@ -550,8 +541,6 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     // Load surface pressure (Ps) from iop file
     auto ps_data = surface_pressure.get_view<Real, Host>().data();
 
-    // Just in case "Ps" is stored with a different data type (e.g., float instead of double)
-    scorpio::change_var_dtype(iop_file,"Ps","real");
     scorpio::read_var(iop_file,"Ps",ps_data,iop_file_time_idx);
     surface_pressure.sync_to_dev();
 
@@ -639,8 +628,6 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     if (field.rank()==0) {
       // For scalar data, read iop file variable directly into field data
       auto data = field.get_view<Real, Host>().data();
-      // Just in case the var is stored with a different data type (e.g., float instead of double)
-      scorpio::change_var_dtype(iop_file,file_varname,"real");
       scorpio::read_var(iop_file,file_varname,data,iop_file_time_idx);
       field.sync_to_dev();
     } else if (field.rank()==1) {
@@ -658,8 +645,6 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
       // Read data from iop file.
       std::vector<Real> data(file_levs);
-      // Just in case the var is stored with a different data type (e.g., float instead of double)
-      scorpio::change_var_dtype(iop_file,file_varname,"real");
       scorpio::read_var(iop_file,file_varname,data.data(),iop_file_time_idx);
 
       // Copy first adjusted_file_levs-1 values to field
@@ -670,8 +655,6 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto has_srf = m_iop_field_surface_varnames.count(fname)>0;
       if (has_srf) {
         const auto srf_varname = m_iop_field_surface_varnames[fname];
-        // Just in case the var is stored with a different data type (e.g., float instead of double)
-        scorpio::change_var_dtype(iop_file,srf_varname,"real");
         scorpio::read_var(iop_file,srf_varname,&iop_file_v_h(adjusted_file_levs-1),iop_file_time_idx);
       } else {
         // No surface value exists, compute surface value

@@ -1012,11 +1012,12 @@ void define_var (const std::string& filename, const std::string& varname,
   define_var(filename,varname,"",dimensions,dtype,dtype,time_dependent);
 }
 
-void change_var_dtype (const std::string& filename, const std::string& varname,
-                       const std::string& dtype)
+// This overload is not exposed externally. Also, filename is only
+// used to print it in case there are errors
+void change_var_dtype (PIOVar& var,
+                       const std::string& dtype,
+                       const std::string& filename)
 {
-  auto& var = impl::get_var(filename,varname,"scorpio::change_var_dtype");
-
   if (refine_dtype(dtype)==refine_dtype(var.dtype)) {
     // The type is not changing, nothing to do
     return;
@@ -1028,6 +1029,14 @@ void change_var_dtype (const std::string& filename, const std::string& varname,
     var.decomp = nullptr;
     set_var_decomp (var,filename);
   }
+}
+
+void change_var_dtype (const std::string& filename,
+                       const std::string& varname,
+                       const std::string& dtype)
+{
+  auto& var = impl::get_var(filename,varname,"scorpio::change_var_dtype");
+  change_var_dtype(var,dtype,filename);
 }
 
 bool has_var (const std::string& filename, const std::string& varname)
@@ -1142,6 +1151,9 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
   const auto& f = impl::get_file(filename,"scorpio::read_var");
         auto& var = impl::get_var(filename,varname,"scorpio::read_var");
 
+  // If the input pointer type already matches var.dtype, this is a no-op
+  change_var_dtype(var,get_dtype<T>(),filename);
+
   int err;
   int frame = -1;
   if (var.time_dep) {
@@ -1167,18 +1179,6 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
         " - varname      : " + varname + "\n"
         " - first dim idx: " + std::to_string(time_index) + "\n"
         " - first dim len: " + std::to_string(var.dims[0]->length) + "\n");
-  }
-
-  // The user may be using a different data type than the one that is in the file
-  // If that's the case, they should call `change_var_dtype` *before* trying to read it
-  if (get_dtype<T>()!=var.dtype) {
-    EKAT_ERROR_MSG (
-        "Error! You're attempting to read a variable with the wrong data type.\n"
-        "If you want to use a different data type, call change_var_dtype *before* attempting a read.\n"
-        " - filename : " + filename + "\n"
-        " - varname  : " + varname  + "\n"
-        " - var dtype: " + var.dtype + "\n"
-        " - ptr dtype: " + get_dtype<T>() + "\n");
   }
 
   std::string pioc_func;
@@ -1245,6 +1245,10 @@ void write_var (const std::string &filename, const std::string &varname, const T
 
   const auto& f = impl::get_file(filename,"scorpio::write_var");
   auto& var = impl::get_var(filename,varname,"scorpio::write_var");
+
+  // If the input pointer type already matches var.dtype, this is a no-op
+  change_var_dtype(var,get_dtype<T>(),filename);
+
   int err;
 
   if (var.time_dep) {
@@ -1257,17 +1261,6 @@ void write_var (const std::string &filename, const std::string &varname, const T
         " - nrecords: " + std::to_string(var.num_records) + "\n");
     err = PIOc_setframe (f.ncid,var.ncid,var.num_records-1);
     check_scorpio_noerr (err,f.name,"variable",varname,"write_var","setframe");
-  }
-
-  // The user may be using a different data type than the one that is in the file
-  if (get_dtype<T>()!=var.dtype) {
-    EKAT_ERROR_MSG (
-        "Error! You're attempting to write a variable with the wrong data type.\n"
-        "If you want to use a different data type, call change_var_dtype *before* attempting a write.\n"
-        " - filename : " + filename + "\n"
-        " - varname  : " + varname  + "\n"
-        " - var dtype: " + var.dtype + "\n"
-        " - ptr dtype: " + get_dtype<T>() + "\n");
   }
 
   std::string pioc_func;

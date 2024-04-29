@@ -155,6 +155,12 @@ void define_var (const std::string& filename, const std::string& varname,
 
 // This is useful when reading data sets. E.g., if the pio file is storing
 // a var as float, but we need to read it as double, we need to call this.
+// NOTE: read_var/write_var automatically change the dtype if the input
+//       pointer type does not match the var dtype. However, changing dtype
+//       forces a rebuild of the var decomp (if any). Hence, if you know
+//       the var WILL be read/written as decomposed, you should call this method
+//       BEFORE calling set_dim_decomp, so that the decomp is built directly
+//       with the correct data type (PIO decomps depend on var dtype).
 void change_var_dtype (const std::string& filename,
                        const std::string& varname,
                        const std::string& dtype);
