@@ -1420,6 +1420,7 @@
              <command name="load">netcdf-fortran/4.6.0</command>
              <command name="load">parallel-netcdf/1.12.3</command>
              <command name="load">screamML-venv/0.0.1</command>
+             <command name="load">subversion</command>
            </modules>
          </module_system>
          <environment_variables compiler="intel">
@@ -1479,6 +1480,7 @@
              <command name="load">netcdf-fortran/4.6.0</command>
              <command name="load">parallel-netcdf/1.12.3</command>
              <command name="load">screamML-venv/0.0.1</command>
+             <command name="load">subversion</command>
            </modules>
          </module_system>
          <environment_variables compiler="intel">

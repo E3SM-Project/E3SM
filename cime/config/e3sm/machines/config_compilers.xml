@@ -877,6 +877,7 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <ADD_SLIBS>$(shell /usr/gdata/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+  <CXX_LIBS>-lstdc++ </CXX_LIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="ruby">
@@ -890,6 +891,7 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <ADD_SLIBS>$(shell /usr/gdata/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+  <CXX_LIBS>-lstdc++ </CXX_LIBS>
 </compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
