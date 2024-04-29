@@ -1,11 +1,10 @@
 # Nudging in EAMxx
 
 Nudging is supported in EAMxx.
-Currently, it is possible to nudge EAMxx to reference meterological fields at the run resolution or a coarser one.
+Currently, it is possible to nudge EAMxx to the output from a different EAMxx run or to reanalysis. Nudging data can be on your model grid or an arbitrary coarser grid. Inline interpolating of finer-grid nudging data to a coarser model resolution isn't implemented yet but may be in the future. 
 
 ## Example setup (current as of April 2024)
 
-A user can produce nudging data for EAMxx using a model run or by using reanalysis data.
 To enable nudging as a process, one must declare it in the `atm_procs_list` runtime parameter.
 
 ```shell
