@@ -55,10 +55,11 @@
 | `vert_remap_alg` | Algorithm used to remap the vertically lagrangian levels back to the reference levels       | `10` = strict monotonicity applied on top of a 2nd order accurate PPM method  |
 | `se_ftype`       | Controls how physics tendencies are applied.  0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies | `2`          |
 
-## Four-mode Modal Aerosol Module
+## Modal Aerosol Module
 
 | Parameter                | Description                                                                         | Default value               |
 | ------------------------ | ----------------------------------------------------------------------------------- | --------------------------- |
+| `is_output_interactive_volc`    | Switch for diagnostic output of the stratospheric aerosol optics | `.false.`  |
 | `mam_amicphys_optaa`     | Recommended option of the new time-splitting treatment of H2SO4 production and loss | `1` <!-- markdownlint-disable MD033 --><br> (0 to turn it off) |
 | `n_so4_monolayers_pcage` | Number of monolayers required to age primary-carbon mode particles                  | `3`                         |
 | `seasalt_emis_scale`     | Tuning parameter for sea salt emission                                              | `0.55`                      |
@@ -81,12 +82,6 @@
 | `mam_mom_parameterization`     | Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) [@burrows_physically_2014] parameterization; fmoa=2 for Gantt et al. (2011) [@gantt_wind_2011] parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; [@quinn_contribution_2014] fmoa=4 for Rinaldi et al. (JGR, 2013).* [@rinaldi_is_2013] | `1`                 |
 
 *Note: non-default values have not been carefully tested and may not work as expected.
-
-## Five-mode Modal Aerosol Model
-
-| Parameter                       | Description                                                                         | Default value               |
-| ------------------------------- | ----------------------------------------------------------------------------------- | --------------------------- |
-| `is_output_interactive_volc`    | Switch for diagnostic output of the stratospheric aerosol optics | `.false.`  |
 
 ## Predicted Particle Properties
 
