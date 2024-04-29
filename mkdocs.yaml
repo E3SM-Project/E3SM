@@ -1,8 +1,6 @@
 site_name: E3SM
 
 nav:
-  - 'E3SM-Project' : 'http://docs.e3sm.org'
-  - 'e3sm.org' : 'http://e3sm.org'
   - Home: 'index.md'
   - E3SM Basics:
     - Installation: 'installation.md'
@@ -10,6 +8,9 @@ nav:
     - Development: 'development.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
+  - More Information:
+    - 'E3SM-Project' : 'http://docs.e3sm.org'
+    - 'e3sm.org' : 'http://e3sm.org'
 
 repo_name: E3SM-Project/E3SM
 repo_url: https://github.com/E3SM-Project/E3SM
