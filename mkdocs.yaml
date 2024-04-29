@@ -1,8 +1,13 @@
 site_name: E3SM
 
 nav:
-  - Introduction: 'index.md'
-  - 'Developing Docs': 'https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation'
+  - 'E3SM-Project' : 'http://docs.e3sm.org'
+  - 'e3sm.org' : 'http://e3sm.org'
+  - Home: 'index.md'
+  - E3SM Basics:
+    - Installation: 'installation.md'
+    - Usage: 'usage.md'
+    - Development: 'development.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
 
@@ -35,7 +40,6 @@ theme:
     - search.share
     - content.code.select
     - content.code.copy
-    - content.action.edit
     - content.action.view
     - content.tooltips
 
