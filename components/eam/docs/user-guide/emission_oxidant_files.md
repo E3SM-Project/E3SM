@@ -58,7 +58,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 ### Historical (WCYCL20TR)/AMIP (F20TR)
 
-```text
+```fortran
  ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205_kzm_1850_2014_volcano.nc',
          'SOAG0       -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/emissions-cmip6_e3sm_SOAG0_elev_1850-2014_1.9x2.5_c20230201.nc',
@@ -102,7 +102,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 ### F2010
 
-```text
+```fortran
  ext_frc_cycle_yr               = 2010
  ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_2010_clim_1.9x2.5_c20230213.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc',
@@ -153,7 +153,7 @@ E3SM uses a DMS surface concentration dataset developed from a dynamic ocean bio
 
 #### SSP370
 
-```text
+```fortran
 ext_frc_specifier              = 'NO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240208.nc',
          'SO2         -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/cmip6_ssp370_mam4_so2_elev_2015-2100_c210216.nc',
          'SOAG0       -> \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP370_ne30/emissions-cmip6_ssp370_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240208.nc',

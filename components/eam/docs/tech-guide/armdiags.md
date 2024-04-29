@@ -8,14 +8,23 @@ The ARM data-oriented metrics and diagnostics package (ARM Diags) was developed 
 
 To enable using ARM Diags for a simulation, often, a new tape that output at high-frequency over limited-area (nearest grid box to supported ARM site) needs to be included in the namelist file, an example as follows:
 
-```text
-fincl7 = 'PS','Q','T','Z3','CLOUD','CONCLD','CLDICE','CLDLIQ','FREQR','REI','REL','PRECT','TMQ','PRECC','TREFHT','QREFHT','OMEGA','CLDTOT','LHFLX','SHFLX','FLDS','FSDS','FLNS','FSNS','FLNSC','FSDSC','FSNSC','AODVIS','AODABS','LS_FLXPRC','LS_FLXSNW','LS_REFFRAIN','ZMFLXPRC','ZMFLXSNW','CCN1','CCN2','CCN3','CCN4','CCN5','num_a1','num_a2','num_a3','num_a4','so4_a1','so4_a2','so4_a3','AREL','TGCLDLWP','AQRAIN','ANRAIN','FREQR','PRECL','RELHUM'
-fincl7lonlat='262.5e_36.6n','203.4e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
+```fortran
+fincl7 = 'PS','Q','T','Z3','CLOUD','CONCLD','CLDICE',
+   'CLDLIQ','FREQR','REI','REL','PRECT','TMQ','PRECC',
+   'TREFHT','QREFHT','OMEGA','CLDTOT','LHFLX','SHFLX',
+   'FLDS','FSDS','FLNS','FSNS','FLNSC','FSDSC','FSNSC',
+   'AODVIS','AODABS','LS_FLXPRC','LS_FLXSNW',
+   'LS_REFFRAIN','ZMFLXPRC','ZMFLXSNW','CCN1','CCN2',
+   'CCN3','CCN4','CCN5','num_a1','num_a2','num_a3',
+   'num_a4','so4_a1','so4_a2','so4_a3','AREL','TGCLDLWP',
+   'AQRAIN','ANRAIN','FREQR','PRECL','RELHUM'
+fincl7lonlat='262.5e_36.6n','203.4e_71.3n','147.4e_2.0s',
+   '166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
 ```
 
 Note that in this example fincl7 should set to write output at hourly (`nhtfrq = -1`). And here additional variables are included for ARM simulator analysis. The ARM site information is shown below:
 
-```text
+```fortran
     "sgpc1": ["97.5W 36.4N Oklahoma ARM"],
 
     "nsac1": ["156.6W 71.3N Barrow ARM"],

@@ -50,7 +50,7 @@ Refer to the following page for a [table](namelist_parameters.md) of namelist pa
 
 Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014.
 
-```text
+```fortran
 inputdata/atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
 ```
 
@@ -68,7 +68,7 @@ Linozv3 uses the ozone tendency, (net production minus loss) calculated from its
 
 ##### Historical files
 
-```text
+```fortran
  linoz_data_file                = ‘linv3_1849-2101_CMIP6_Hist_10deg_58km_c20231207.nc’
  linoz_data_path                = '/lcrc/group/e3sm/data/inputdata/atm/cam/chem/trop_mozart/ub'
  linoz_data_type                = 'INTERP_MISSING_MONTHS'
@@ -82,7 +82,7 @@ The global elevation on the atmosphere grid is a key input dataset.  The dataset
 
 EAMv3 NE30 data:
 
-```text
+```fortran
 inputdata/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc'
 ```
 
@@ -105,19 +105,19 @@ The sea surface temperature and sea-ice coverage data used in F-case simulations
 
 `F20TR`
 
-```text
+```fortran
 inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc
 ```
 
 `F2010`
 
-```text
+```fortran
 inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc 
 ```
 
 `F1850`
 
-```text
+```fortran
 inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc
 ```
 
@@ -125,7 +125,7 @@ inputdata/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc
 
 As with greenhouse gas emissions, solar input files are taken from the input4MIPs data collection that were prepared for CMIP6 Forcing Datasets.
 
-```text
+```fortran
 inputdata/atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc
 ```
 
@@ -147,14 +147,17 @@ By default, EAM will output a set of monthly-averaged variables. Additional outp
 
 #### Example output specification
 
-```text
+```fortran
 nhtfrq = 0,-24,-6,-3
 mfilt  = 1,30,120,24
 avgflag_pertape = 'A','A','A','I'
 
 fexcl1 = 'U10' # Removes U10 output from monthly files
-fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
-          'TCO','SCO','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
-fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
+fincl2 = 'PS','FLUT','PRECT','U200','V200','U850',
+          'V850','TCO','SCO','TREFHT','QREFHT'  # Output files of daily-averaged output, which includes 30 days of output in each file
+fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT',
+          'VBOT','TREFHT','FLUT','OMEGA500','TBOT',
+          'U850','V850','U200','V200','T200','T500',
+          'Z700'  # Output files of 6-hour-averaged output, which includes 30 days of output in each file
 fincl4 = 'PRECT' # Output files of 3-hourly output with 3 days of output in every file
 ```

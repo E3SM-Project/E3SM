@@ -45,7 +45,7 @@ Key information
 
 Species properties
 
-```text
+```fortran
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ocpho_rrtmg_c130709_kPOM0.04.nc
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc
@@ -57,7 +57,7 @@ Species properties
 
 Mode properties
 
-```text
+```fortran
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc', 
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc',
 /lcrc/group/e3sm/data/inputdata/atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc', 
@@ -67,7 +67,7 @@ Mode properties
 
 ## Namelist
 
-```text
+```fortran
  mode_defs = 'mam5_mode1:accum:=', 
          'A:num_a1:N:num_c1:num_mr:+',
          'A:so4_a1:N:so4_c1:sulfate:/lcrc/group/e3sm/data/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 
