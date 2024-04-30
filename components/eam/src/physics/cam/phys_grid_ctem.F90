@@ -221,6 +221,7 @@ subroutine phys_grid_ctem_init
 
    if (.not.do_tem_diags) return
 
+   call addfld ('PSzm', (/'lev'/), 'A','m s-1',  'Zonal-Mean surface pressure', gridname='ctem_zavg_phys' )
    call addfld ('Uzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean zonal wind', gridname='ctem_zavg_phys' )
    call addfld ('Vzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean meridional wind', gridname='ctem_zavg_phys' )
    call addfld ('Wzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean vertical wind', gridname='ctem_zavg_phys' )
@@ -242,9 +243,13 @@ subroutine phys_grid_ctem_diags(phys_state)
 
    character(len=*), parameter :: prefix = 'phys_grid_ctem_diags: '
 
+   real(r8) :: ps(pcols,pver,begchunk:endchunk)
+
    real(r8) :: u(pcols,pver,begchunk:endchunk)
    real(r8) :: v(pcols,pver,begchunk:endchunk)
    real(r8) :: w(pcols,pver,begchunk:endchunk)
+
+   real(r8) :: pszm(pcols,begchunk:endchunk)
 
    real(r8) :: uzm(pcols,pver,begchunk:endchunk)
    real(r8) :: vzm(pcols,pver,begchunk:endchunk)
@@ -271,40 +276,37 @@ subroutine phys_grid_ctem_diags(phys_state)
    real(r8) :: vthza(nzalat,pver)
    real(r8) :: wthza(nzalat,pver)
 
+   real(r8) :: psza(nzalat)
    real(r8) :: uza(nzalat,pver)
    real(r8) :: vza(nzalat,pver)
    real(r8) :: wza(nzalat,pver)
    real(r8) :: thza(nzalat,pver)
 
-   real(r8) :: mbarv ! molecular weight of dry air (g/mol)
+   ! In CESM/WACCM the variable mbarv is provided by the "air_composition" 
+   ! module, which is not in E3SM, so we just use a rough approximation
+   real(r8) :: mbarv = 28.97 ! molecular weight of dry air (g/mol)
 
    if (.not.do_calc()) return
 
-   ! In CESM/WACCM the variable mbarv is provided by the "air_composition" 
-   ! module, which is not in E3SM, so we just use a rough approximation
-   mbarv = 28.97
-
    do lchnk = begchunk,endchunk
-
       ncol = phys_state(lchnk)%ncol
-
+      ! surface pressure
+      ps(:ncol,lchnk) = phys_state(lchnk)%ps(:ncol)
       ! potential temperature
       theta(:ncol,:,lchnk) = phys_state(lchnk)%t(:ncol,:) * ( 1000e2 / phys_state(lchnk)%pmid(:ncol,:) )**(rair/cpair)
-
       ! vertical pressure velocity
       w(:ncol,:,lchnk) = phys_state(lchnk)%omega(:ncol,:)
-
+      ! horizontal velocity
       u(:ncol,:,lchnk) =  phys_state(lchnk)%u(:ncol,:)
       v(:ncol,:,lchnk) =  phys_state(lchnk)%v(:ncol,:)
-
    end do
 
    ! zonal means evaluated on the physics grid (3D) to be used in the deviations calculation below
-   uzm(:,:,:) = zmean_fld(u(:,:,:))
-   vzm(:,:,:) = zmean_fld(v(:,:,:))
-   wzm(:,:,:) = zmean_fld(w(:,:,:))
-   thzm(:,:,:) = zmean_fld(theta(:,:,:))
-
+   pszm(:,:)   = zmean_fld_2D(ps(:,:))
+   uzm(:,:,:)  = zmean_fld_3D(u(:,:,:))
+   vzm(:,:,:)  = zmean_fld_3D(v(:,:,:))
+   wzm(:,:,:)  = zmean_fld_3D(w(:,:,:))
+   thzm(:,:,:) = zmean_fld_3D(theta(:,:,:))
 
    ! diagnostic output
    do lchnk = begchunk, endchunk
@@ -316,42 +318,44 @@ subroutine phys_grid_ctem_diags(phys_state)
       do k = 1,pver
          ! zonal deviations
          thd(:ncol,k,lchnk) = theta(:ncol,k,lchnk) - thzm(:ncol,k,lchnk)
-         ud(:ncol,k,lchnk) = u(:ncol,k,lchnk) - uzm(:ncol,k,lchnk)
-         vd(:ncol,k,lchnk) = v(:ncol,k,lchnk) - vzm(:ncol,k,lchnk)
-         wd(:ncol,k,lchnk) = w(:ncol,k,lchnk) - wzm(:ncol,k,lchnk)
+         ud(:ncol,k,lchnk)  = u(:ncol,k,lchnk)     - uzm(:ncol,k,lchnk)
+         vd(:ncol,k,lchnk)  = v(:ncol,k,lchnk)     - vzm(:ncol,k,lchnk)
+         wd(:ncol,k,lchnk)  = w(:ncol,k,lchnk)     - wzm(:ncol,k,lchnk)
          ! fluxes
-         uvp(:ncol,k,lchnk) = ud(:ncol,k,lchnk) * vd(:ncol,k,lchnk)
-         uwp(:ncol,k,lchnk) = ud(:ncol,k,lchnk) * wd(:ncol,k,lchnk)
+         uvp(:ncol,k,lchnk)  = ud(:ncol,k,lchnk) * vd(:ncol,k,lchnk)
+         uwp(:ncol,k,lchnk)  = ud(:ncol,k,lchnk) * wd(:ncol,k,lchnk)
          vthp(:ncol,k,lchnk) = vd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
          wthp(:ncol,k,lchnk) = wd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
       end do
    end do
 
    ! evaluate and output fluxes on the zonal-average grid
-   call ZAobj%binAvg(uvp, uvza)
-   call ZAobj%binAvg(uwp, uwza)
+   call ZAobj%binAvg(uvp,  uvza)
+   call ZAobj%binAvg(uwp,  uwza)
    call ZAobj%binAvg(vthp, vthza)
    call ZAobj%binAvg(wthp, wthza)
 
 
-   if (any(abs(uvza)>1.e20_r8)) call endrun(prefix//'bad values in uvza')
-   if (any(abs(uwza)>1.e20_r8)) call endrun(prefix//'bad values in uwza')
+   if (any(abs(uvza)>1.e20_r8))  call endrun(prefix//'bad values in uvza')
+   if (any(abs(uwza)>1.e20_r8))  call endrun(prefix//'bad values in uwza')
    if (any(abs(vthza)>1.e20_r8)) call endrun(prefix//'bad values in vthza')
    if (any(abs(wthza)>1.e20_r8)) call endrun(prefix//'bad values in wthza')
 
-   call ZAobj%binAvg(uzm, uza)
-   call ZAobj%binAvg(vzm, vza)
-   call ZAobj%binAvg(wzm, wza)
+   call ZAobj%binAvg(pszm, psza)
+   call ZAobj%binAvg(uzm,  uza)
+   call ZAobj%binAvg(vzm,  vza)
+   call ZAobj%binAvg(wzm,  wza)
    call ZAobj%binAvg(thzm, thza)
 
-
-   if (any(abs(uza)>1.e20_r8)) call endrun(prefix//'bad values in uza')
-   if (any(abs(vza)>1.e20_r8)) call endrun(prefix//'bad values in vza')
-   if (any(abs(wza)>1.e20_r8)) call endrun(prefix//'bad values in wza')
+   if (any(abs(psza)>1.e20_r8)) call endrun(prefix//'bad values in psza')
+   if (any(abs(uza)>1.e20_r8))  call endrun(prefix//'bad values in uza')
+   if (any(abs(vza)>1.e20_r8))  call endrun(prefix//'bad values in vza')
+   if (any(abs(wza)>1.e20_r8))  call endrun(prefix//'bad values in wza')
    if (any(abs(thza)>1.e20_r8)) call endrun(prefix//'bad values in thza')
 
    ! diagnostic output
    do j = 1,nzalat
+      call outfld('PSzm',psza(j),1,j)
       call outfld('Uzm',uza(j,:),1,j)
       call outfld('Vzm',vza(j,:),1,j)
       call outfld('Wzm',wza(j,:),1,j)
@@ -367,28 +371,32 @@ subroutine phys_grid_ctem_diags(phys_state)
    !------------------------------------------------------------------------------
    ! utility function for evaluating 3D zonal mean fields
    !------------------------------------------------------------------------------
-   function zmean_fld( fld ) result(fldzm)
-
+   function zmean_fld_3D( fld ) result(fldzm)
       real(r8), intent(in) :: fld(pcols,pver,begchunk:endchunk)
-
       real(r8) :: fldzm(pcols,pver,begchunk:endchunk)
-
       real(r8) :: Zonal_Bamp3d(nzmbas,pver)
-
       call ZMobj%calc_amps(fld,Zonal_Bamp3d)
       call ZMobj%eval_grid(Zonal_Bamp3d,fldzm)
+   end function zmean_fld_3D
 
-   end function zmean_fld
+   !------------------------------------------------------------------------------
+   ! utility function for evaluating 2D zonal mean fields
+   !------------------------------------------------------------------------------
+   function zmean_fld_2D( fld ) result(fldzm)
+      real(r8), intent(in) :: fld(pcols,begchunk:endchunk)
+      real(r8) :: fldzm(pcols,begchunk:endchunk)
+      real(r8) :: Zonal_Bamp2d(nzmbas,pver)
+      call ZMobj%calc_amps(fld,Zonal_Bamp2d)
+      call ZMobj%eval_grid(Zonal_Bamp2d,fldzm)
+   end function zmean_fld_2D
 
    !------------------------------------------------------------------------------
    ! utility function returns TRUE when time to update TEM diags
    !------------------------------------------------------------------------------
    logical function do_calc()
-
       integer :: nstep
       nstep = get_nstep()
       do_calc = do_tem_diags .and. mod(nstep,ntimesteps) == 0
-
    end function do_calc
 
 end subroutine phys_grid_ctem_diags
