@@ -469,9 +469,8 @@ void call_function_dropmixnuc(
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
         Kokkos::parallel_for(
-                             Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
+            Kokkos::TeamThreadRange(team, 0u, mam4::ndrop::pver),
             [=](int klev) {
-
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
               // get state_q at a grid cell (col,lev)
