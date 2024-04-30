@@ -145,34 +145,17 @@ TEST_CASE("aerocom_cld") {
 
     diag->initialize(t0, RunType::Initial);
 
-    // Run diag
+    // Case 1: if the cloud fraction is zero, everything is zero
+    cd.deep_copy(0.0);
     diag->compute_diagnostic();
-
-    // Check result
-    qc.sync_to_host();
-    nc.sync_to_host();
     diag->get_diagnostic().sync_to_host();
-
-    const auto qc_h   = qc.get_view<const Real **, Host>();
-    const auto nc_h   = nc.get_view<const Real **, Host>();
-    const auto out_hf = diag->get_diagnostic();
-
-    Field out_tf = diag->get_diagnostic().clone();
-    out_tf.deep_copy<double, Host>(0.0);
-    auto out_t = out_tf.get_view<Real **, Host>();
-
+    Field diag_f = diag->get_diagnostic();
+    auto diag_v = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      for(int ilev = 0; ilev < nlevs; ++ilev) {
-        out_t(icol, 0) += qc_h(icol, ilev);
-        out_t(icol, 1) += nc_h(icol, ilev);
+      for(int idiag = 0; idiag < m_ndiag; ++idiag) {
+        REQUIRE(diag_v(icol, idiag)==0.0);
       }
     }
-    out_hf.sync_to_dev();
-    out_tf.sync_to_dev();
-    // // Workaround for non-bfb behavior of view_reduction() in release builds
-    // if(SCREAM_BFB_TESTING) {
-    //   REQUIRE(views_are_equal(out_hf, out_tf));
-    // }
   }
 }
 
