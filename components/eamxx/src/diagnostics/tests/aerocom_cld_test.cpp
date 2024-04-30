@@ -150,10 +150,10 @@ TEST_CASE("aerocom_cld") {
     diag->compute_diagnostic();
     diag->get_diagnostic().sync_to_host();
     Field diag_f = diag->get_diagnostic();
-    auto diag_v = diag_f.get_view<Real **, Host>();
+    auto diag_v  = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       for(int idiag = 0; idiag < m_ndiag; ++idiag) {
-        REQUIRE(diag_v(icol, idiag)==0.0);
+        REQUIRE(diag_v(icol, idiag) == 0.0);
       }
     }
 
@@ -174,21 +174,21 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      REQUIRE(diag_v(icol, 0)==300.0);
-      REQUIRE(diag_v(icol, 1)==100.0);
-      REQUIRE(diag_v(icol, 2)==0.5);
-      REQUIRE(diag_v(icol, 3)==0.5);
-      REQUIRE(diag_v(icol, 4)>0.0);
-      REQUIRE(diag_v(icol, 5)>0.0);
-      REQUIRE(diag_v(icol, 6)>0.0);
-      REQUIRE(diag_v(icol, 7)==1.0);
+      REQUIRE(diag_v(icol, 0) == 300.0);
+      REQUIRE(diag_v(icol, 1) == 100.0);
+      REQUIRE(diag_v(icol, 2) == 0.5);
+      REQUIRE(diag_v(icol, 3) == 0.5);
+      REQUIRE(diag_v(icol, 4) > 0.0);
+      REQUIRE(diag_v(icol, 5) > 0.0);
+      REQUIRE(diag_v(icol, 6) > 0.0);
+      REQUIRE(diag_v(icol, 7) == 1.0);
     }
 
     // Case 3: test the max overlap (if contiguous cloudy layers, then max)
     cd.deep_copy(0.0);
-    auto cd_v = cd.get_view<Real **, Host>();
+    auto cd_v  = cd.get_view<Real **, Host>();
     cd_v(0, 1) = 0.5;
-    cd_v(0, 2) = 0.7; // ------> max!
+    cd_v(0, 2) = 0.7;  // ------> max!
     cd_v(0, 3) = 0.3;
     cd_v(0, 4) = 0.2;
     cd.sync_to_dev();
@@ -197,6 +197,19 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == 0.7);
+
+    // Case 3xtra: test max overlap again
+    // This case should produce >0.7 due to slight enhancement in the presence
+    // of a local minimum (0.1 is the local minimum between 0.2 and 0.4)
+    cd_v(0, 5) = 0.1;
+    cd_v(0, 6) = 0.4;
+    cd_v(0, 7) = 0.2;
+    cd.sync_to_dev();
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) > 0.7);
   }
 }
 
