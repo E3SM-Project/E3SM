@@ -26,17 +26,12 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  Filename: /qfs/people/sing201/delete/screami_unit_tests_mam4xx_ne2np4L72_LAT_71p9201421331276_LON_286p572525837053.nc
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
   #These should come from the input file
-
-  #we should get the following variables from other processes
-  pbl_height : 1.0
-  dgnum: 4.362354500358337E-008
-  cldfrac_liq_prev: 0.138584624960092
-  eddy_diff_heat: 0.620820118789603 
-  w_variance:  1.110977269289875E-002
+  pbl_height: 1.0
+  dgnum: 0.1
 
 # The parameters for I/O control
 Scorpio:
