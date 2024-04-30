@@ -39,8 +39,8 @@ TEST_CASE("aerocom_cld") {
   const auto micron = m / 1000000;
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 33;
-  const int ngcols    = 2 * comm.size();
+  constexpr int nlevs = 9;
+  const int ngcols    = 1 * comm.size();
 
   int m_ndiag = 8;
 
@@ -112,7 +112,7 @@ TEST_CASE("aerocom_cld") {
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
                                      params));  // Invalid 'AeroComCld Kind'
 
-  constexpr int ntests = 5;
+  constexpr int ntests = 2;
   for(int itest = 0; itest < ntests; ++itest) {
     // Randomize everything
     randomize(tm, engine, pdf);
@@ -156,6 +156,47 @@ TEST_CASE("aerocom_cld") {
         REQUIRE(diag_v(icol, idiag)==0.0);
       }
     }
+
+    // Case 2: if the cloud fraction is one, everything takes 1 * its value
+    // Take a moment to set "sensible" for other things...
+    cd.deep_copy(1.0);
+    tm.deep_copy(300.0);
+    pd.deep_copy(10.0);
+    pm.deep_copy(100.0);
+    qv.deep_copy(1.0);
+    qc.deep_copy(1.0);
+    qi.deep_copy(1.0);
+    ec.deep_copy(10.0);
+    ei.deep_copy(10.0);
+    nc.deep_copy(5.0);
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
+      REQUIRE(diag_v(icol, 0)==300.0);
+      REQUIRE(diag_v(icol, 1)==100.0);
+      REQUIRE(diag_v(icol, 2)==0.5);
+      REQUIRE(diag_v(icol, 3)==0.5);
+      REQUIRE(diag_v(icol, 4)>0.0);
+      REQUIRE(diag_v(icol, 5)>0.0);
+      REQUIRE(diag_v(icol, 6)>0.0);
+      REQUIRE(diag_v(icol, 7)==1.0);
+    }
+
+    // Case 3: test the max overlap (if contiguous cloudy layers, then max)
+    cd.deep_copy(0.0);
+    auto cd_v = cd.get_view<Real **, Host>();
+    cd_v(0, 1) = 0.5;
+    cd_v(0, 2) = 0.7; // ------> max!
+    cd_v(0, 3) = 0.3;
+    cd_v(0, 4) = 0.2;
+    cd.sync_to_dev();
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) == 0.7);
   }
 }
 

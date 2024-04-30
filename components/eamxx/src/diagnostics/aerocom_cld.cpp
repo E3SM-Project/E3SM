@@ -87,16 +87,6 @@ void AeroComCld::compute_diagnostic_impl() {
 
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
-  std::vector<int> level_vector(m_nlevs);
-  for(int i = 1; i < m_nlevs; ++i) {
-    level_vector[i] = m_topbot == "Top" ? i : m_nlevs - i;
-  }
-
-  const auto out = m_diagnostic_output.get_view<Real **>();
-
-  // zero out the outputs
-  Kokkos::deep_copy(out, 0.0);
-
   // Get the input fields
   const auto tmid = get_field_in("T_mid").get_view<const Real **>();
   const auto pden = get_field_in("pseudo_density").get_view<const Real **>();
@@ -122,6 +112,17 @@ void AeroComCld::compute_diagnostic_impl() {
 
   const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
+
+  std::vector<int> level_vector(m_nlevs);
+  for(int i = 1; i < m_nlevs; ++i) {
+    level_vector[i] = m_topbot == "Top" ? i : m_nlevs - i;
+  }
+
+  const auto out = m_diagnostic_output.get_view<Real **>();
+
+  // zero out the outputs
+  Kokkos::deep_copy(out, 0.0);
+
   Kokkos::parallel_for(
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
