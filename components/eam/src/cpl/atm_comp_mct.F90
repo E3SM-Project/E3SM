@@ -550,7 +550,8 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-    call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync )
+    call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync , &
+         day_spec=day_sync, tod_spec=tod_sync)
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval

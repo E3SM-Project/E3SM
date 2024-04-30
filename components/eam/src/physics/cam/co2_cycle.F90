@@ -18,6 +18,7 @@ module co2_cycle
 
 use shr_kind_mod,   only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX, cl =>SHR_KIND_CL
 use co2_data_flux,  only: co2_data_flux_type
+use spmd_utils,      only: masterproc
 
 implicit none
 private
@@ -33,6 +34,7 @@ public co2_init                      ! initialize (history) variables
 public co2_time_interp_ocn           ! time interpolate co2 flux
 public co2_time_interp_fuel          ! time interpolate co2 flux
 public co2_cycle_set_ptend           ! set tendency from aircraft emissions
+public co2_cycle_iac_ptend           ! set tendency from iac model component
 public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local versions of cnst_type
 
 ! Public data
@@ -203,7 +205,7 @@ subroutine co2_register
      end select
      
   end do
-
+  write(102,*)'CO2 register end-s'
 end subroutine co2_register
 
 !================================================================================================
@@ -311,7 +313,7 @@ subroutine co2_init
     if (co2_readFlux_fuel) then
        call co2_data_flux_init ( co2flux_fuel_file, 'CO2_flux', data_flux_fuel )
     end if
- 
+    write(102,*)'CO2 init end--s'
   end subroutine co2_init
 
 !==========================================================================================
@@ -387,6 +389,7 @@ subroutine co2_init_cnst(name, q, gcid)
    character(len=*), intent(in) :: name         ! constituent name
    real(r8), intent(out) :: q(:,:)   !  mass mixing ratio
    integer, intent(in) :: gcid(:)    ! global column id
+   integer, save::i=0
    !-----------------------------------------------------------------------
 
    if (.not. co2_flag) return
@@ -401,7 +404,8 @@ subroutine co2_init_cnst(name, q, gcid)
    case ('CO2')
       q = chem_surfvals_get('CO2MMR')
    end select
-
+   write(102,*)'CO2 initCNST end---s',trim(name),i
+   i=i+1
 end subroutine co2_init_cnst
 !===============================================================================
 
@@ -457,8 +461,67 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
       ptend%q(:ncol,k,co2_fff_glo_ind) = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
       ptend%q(:ncol,k,co2_glo_ind)     = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
    end do
-
+   if(masterproc)write(102,*)'CO2 cycle ptend end----s'
 end subroutine co2_cycle_set_ptend
+
+
+!===============================================================================
+
+subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
+
+   !-------------------------------------------------------------------------------
+   ! Purpose:
+   ! Compute ptend for using the interpolated values from the IAC model component
+   !
+   ! Called by:
+   !    physpkg.F90
+   !-------------------------------------------------------------------------------
+   
+      use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+      use constituents,   only: pcnst
+      use ppgrid,         only: pver
+      use physconst,      only: gravit
+      use iac_coupled_fields,  only: iac_co2_name
+   
+      ! Arguments
+      type(physics_state), intent(in)    :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(physics_ptend), intent(out)   :: ptend     ! indivdual parameterization tendencies
+   
+      ! Local variables
+      logical :: lq(pcnst)
+      integer :: ifld, ncol, klev
+      real(r8), pointer :: iac_co2(:,:)
+      real(r8) :: co2_tend(state%ncol)
+   
+      !----------------------------------------------------------------------------
+      if (.not. co2_flag ) then
+         call physics_ptend_init(ptend, state%psetcols, 'co2_none')
+         return
+      end if
+   
+      ! Update ptend flags
+      lq(:)               = .false. ! by default, do not update any tendencies
+      lq(co2_fff_glo_ind) = .true.  ! update fossil fuel CO2 tendency
+      lq(co2_glo_ind)     = .true.  ! update total CO2 tendency
+   
+      call physics_ptend_init(ptend, state%psetcols, 'co2_cycle_iac_component', lq=lq)
+
+      ifld = pbuf_get_index(iac_co2_name)   
+      call pbuf_get_field(pbuf, ifld, iac_co2)
+   
+      ! [ac_CO2] = 'kg m-2 s-1' FIXME: Is this still true????
+      ! [ptend%q] = 'kg kg-1 s-1'
+      ncol = state%ncol
+      do klev = 1, pver
+         co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_CO2(:ncol,klev)
+         ptend%q(:ncol,klev,co2_fff_glo_ind) = co2_tend(:ncol)
+         ptend%q(:ncol,klev,co2_glo_ind)     = co2_tend(:ncol)
+      end do
+      if(masterproc)write(102,*)'CO2 cycle ptend iac end-----s'
+   end subroutine co2_cycle_iac_ptend
+
 
 !===============================================================================
 
@@ -484,7 +547,8 @@ subroutine co2_cycle_set_cnst_type(cnst_type_loc, cnst_type_val)
    do m = 1, ncnst
       cnst_type_loc(c_i(m)) = cnst_type_val
    end do
-
+   !BSINGH: This is called by many processes, so commenting it out here
+   !if(masterproc)write(102,*)'CO2 cycle set cnst ends.'
 end subroutine co2_cycle_set_cnst_type
 !===============================================================================
  

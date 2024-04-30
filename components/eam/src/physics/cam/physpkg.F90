@@ -149,6 +149,7 @@ subroutine phys_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
+    use iac_coupled_fields, only: iac_coupled_fields_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
     use cospsimulator_intr, only: cospsimulator_intr_register
@@ -292,6 +293,9 @@ subroutine phys_register
        endif
 
        call aircraft_emit_register()
+
+       ! Coupling co2 from iac
+       call iac_coupled_fields_register()
 
        ! deep convection
        call convect_deep_register
@@ -439,9 +443,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
     end if
-! KVC: this is causing a problem
-!    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
-    vmag_gust_idx = 1
+    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
     call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
 
 
@@ -688,6 +690,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
+    use iac_coupled_fields, only: iac_coupled_fields_init
     use prescribed_volcaero,only: prescribed_volcaero_init
     use cloud_fraction,     only: cldfrc_init
     use cldfrc2m,           only: cldfrc2m_init
@@ -825,6 +828,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_aero_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
+
+    call iac_coupled_fields_init(phys_state, pbuf2d)
+
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
@@ -1490,7 +1496,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
@@ -1671,6 +1677,9 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
+    
+    ! add tendency from iac model component
+     call co2_cycle_iac_ptend(state, pbuf, ptend)
     
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
@@ -2812,6 +2821,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_aero,     only: prescribed_aero_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
+  use iac_coupled_fields, only: iac_coupled_fields_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
@@ -2842,6 +2852,8 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
+
+  call iac_coupled_fields_adv(phys_state, pbuf2d)
 
   call t_startf('prescribed_volcaero_adv')
   call prescribed_volcaero_adv(phys_state, pbuf2d)
