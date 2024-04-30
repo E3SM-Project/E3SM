@@ -186,7 +186,7 @@ module seaice_constants
   ! biogeochemistry constants
   real(kind=RKIND), public :: &
        skeletalLayerThickness             = 0.03_RKIND    ,&! (m) skeletal layer thickness
-       gramsCarbonPerMolCarbon   ! g carbon per mol carbon
+       gramsCarbonPerMolCarbon            = 12.0107_RKIND   ! g carbon per mol carbon
 
   ! ocean biogeochemistry ISPOL values
   real(kind=RKIND), parameter, public :: &

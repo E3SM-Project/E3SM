@@ -193,6 +193,7 @@ add_default($nl, 'config_use_floe_size_distribution');
 # Namelist group: biogeochemistry #
 ###################################
 
+add_default($nl, 'config_couple_biogeochemistry_fields');
 add_default($nl, 'config_use_brine');
 add_default($nl, 'config_use_vertical_zsalinity');
 add_default($nl, 'config_use_vertical_biochemistry');
