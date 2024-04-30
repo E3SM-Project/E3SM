@@ -460,6 +460,10 @@
 			    <nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
 							description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
 				/>
+		        <nml_option name="config_invalid_value_TF" type="real" default_value="1.0e36" units="unitless"
+		                    description="value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true"
+		                    possible_values="Any real value"
+                />
                 <nml_option name="config_weight_value_cell" type="real" default_value="0.9" units="unitless"
                             description="weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell"
                             possible_values="any real value between 0 and 1"

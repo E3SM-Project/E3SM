@@ -83,7 +83,7 @@ contains
       ! local variables
       !-----------------------------------------------------------------
       logical, pointer :: config_ocean_data_extrapolation
-      real, pointer :: config_sea_level
+      real(kind=RKIND), pointer :: config_sea_level, invalid_value_TF
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
       real (kind=RKIND) :: layerTop
@@ -136,6 +136,7 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHorizInit', seedOceanMaskHorizInit)
          call mpas_pool_get_array(extrapOceanDataPool, 'TFoceanOld', TFoceanOld)
          call mpas_pool_get_array(extrapOceanDataPool, 'TFocean', TFocean)
+         call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
 
          ! create a 2D mask based on the open ocean + floating ice +  grounded ice mask and n-extra cells into the grounded ice
          allocate(seedOceanMaskHorizOld(nCells+1))
@@ -209,7 +210,7 @@ contains
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
                if ( availOceanMask(iLayer,iCell) == 0 ) then
-                  TFocean(iLayer,iCell) = 1.0e36
+                  TFocean(iLayer,iCell) = invalid_value_TF
                endif
             enddo
          enddo

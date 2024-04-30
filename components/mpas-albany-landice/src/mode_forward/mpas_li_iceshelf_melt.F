@@ -1182,6 +1182,7 @@ module li_iceshelf_melt
       integer :: ksup, kk, kinf
       integer, pointer :: nCellsSolve
       real(kind=RKIND), pointer :: rhoi, rhosw
+      real (kind=RKIND), pointer :: invalid_value_TF
       real(kind=RKIND) :: cste
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool
@@ -1206,6 +1207,7 @@ module li_iceshelf_melt
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhosw)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
       cste = (rhosw*cp_seawater/(rhoi*latent_heat_ice))**2  ! in K^(-2)
 
       allocate(mean_TF(maxNumBasins))
@@ -1267,6 +1269,16 @@ module li_iceshelf_melt
                !        intArgs=(/kinf/))
                !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
                !        intArgs=(/ksup/))
+
+               ! check if any invalid TFocean value is used for calculating TF at the draft
+               if ( (TFocean(kinf, iCell) == invalid_value_TF .or. TFocean(ksup, iCell) == invalid_value_TF) ) then
+                  call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
+                       "ksup=$i kinf=$i TFocean(ksup, iCell)=$r TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
+                       realArgs=(/TFocean(ksup, iCell), TFocean(kinf, iCell) /) )
+                  err = ior(err, 1)
+               endif
+
                TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
                   + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
 
