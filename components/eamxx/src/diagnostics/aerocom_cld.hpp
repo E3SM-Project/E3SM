@@ -33,6 +33,8 @@ class AeroComCld : public AtmosphereDiagnostic {
 
   // Bot or Top
   std::string m_topbot;
+
+  Field m_dz;
 };
 
 }  // namespace scream

@@ -53,6 +53,11 @@ void AeroComCld::set_grids(
   add_field<Required>("cldfrac_tot", scalar2d_layout, nondim, grid_name);
   add_field<Required>("nc", scalar2d_layout, kg / kg, grid_name);
 
+  // Phony field to store dz
+  FieldIdentifier m_dz_fid("dz", scalar2d_layout, m, grid_name);
+  m_dz = Field(m_dz_fid);
+  m_dz.allocate_view();
+
   // Construct and allocate the aodvis field
   FieldIdentifier fid(name(), vector1d_layout, nondim, grid_name);
   m_diagnostic_output = Field(fid);
@@ -99,9 +104,7 @@ void AeroComCld::compute_diagnostic_impl() {
   const auto cld  = get_field_in("cldfrac_tot").get_view<const Real **>();
   const auto nc   = get_field_in("nc").get_view<const Real **>();
 
-  // Hack: phony field to store dz
-  auto dz_f = get_field_in("pseudo_density").clone("dz");
-  auto dz   = dz_f.get_view<Real **>();
+  auto dz   = m_dz.get_view<Real **>();
 
   // Get gravity acceleration constant from constants
   using physconst = scream::physics::Constants<Real>;
@@ -110,7 +113,7 @@ void AeroComCld::compute_diagnostic_impl() {
   // TODO: move tunable constant to namelist
   constexpr auto cldfrac_tot_threshold = 0.001;
 
-  const auto num_levs = m_nlevs;
+  // const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
 
   std::vector<int> level_vector(m_nlevs);
