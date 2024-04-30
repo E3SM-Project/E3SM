@@ -210,6 +210,78 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > 0.7);
+
+    // Case 4: test random overlap
+    // If non-contiguous cloudy layers, then random
+    cd_v(0, 6) = 0.0;
+    cd_v(0, 7) = 0.1;
+    cd.sync_to_dev();
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) > 0.7);  // must be larger than the max!
+
+    // Case 5a: test independence of ice and liq fractions
+    cd_v(0, 3) = 1.0;
+    cd_v(0, 8) = 1.0;
+    cd_v(0, 9) = 0.2;
+    qc.deep_copy(1.0);
+    qi.deep_copy(0.0);  // zero ice!
+    cd.sync_to_dev();
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) == 1.0);
+    REQUIRE(diag_v(0, 3) == 1.0);
+    REQUIRE(diag_v(0, 2) == 0.0);  // zero ice!
+
+    // Case 5b: test independence of ice and liq fractions
+    auto qc_v = qc.get_view<Real **, Host>();
+    auto qi_v = qi.get_view<Real **, Host>();
+    qc.deep_copy(0.0);  // zero liq!
+    qi.deep_copy(1.0);
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) == 1.0);
+    REQUIRE(diag_v(0, 3) == 0.0);  // zero liq!
+    REQUIRE(diag_v(0, 2) == 1.0);
+
+    // Case 6: test independence of ice and liquid fractions
+    // There is NOT complete independence...
+    // Essentially, higher ice clouds mask lower liquid clouds
+    // This can be problematic if the ice clouds are thin...
+    // We will revisit and validate this assumption later
+    cd.deep_copy(0.0);
+    cd_v(0, 1) = 0.5;  // ice
+    cd_v(0, 2) = 0.7;  // ice ------> max!
+    cd_v(0, 3) = 0.3;  // ice
+    // note cd_v(0, 4) is 0.0
+    cd_v(0, 5) = 0.2;  // liq
+    cd_v(0, 6) = 0.5;  // liq ------> not max!
+    cd_v(0, 7) = 0.1;  // liq
+    // note cd_v(0, 8) is 0.0
+    qi.deep_copy(0.0);
+    qi_v(0, 1) = 100;
+    qi_v(0, 2) = 200;
+    qi_v(0, 3) = 50;
+    // note qi_v(0, 4) = 0.0
+    qc.deep_copy(0.0);
+    // note qc_v(0, 4) = 0.0
+    qc_v(0, 5) = 20;
+    qc_v(0, 6) = 50;
+    qc_v(0, 7) = 10;
+
+    diag->compute_diagnostic();
+    diag->get_diagnostic().sync_to_host();
+    diag_f = diag->get_diagnostic();
+    diag_v = diag_f.get_view<Real **, Host>();
+    REQUIRE(diag_v(0, 7) > 0.7);   // unaffected (see test case 4)
+    REQUIRE(diag_v(0, 3) < 0.5);   // not max!
+    REQUIRE(diag_v(0, 2) == 0.7);  // max!
   }
 }
 
