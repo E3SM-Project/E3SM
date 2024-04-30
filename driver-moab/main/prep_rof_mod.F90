@@ -15,7 +15,7 @@ module prep_rof_mod
   use seq_comm_mct,     only: mboxid   
   use seq_comm_mct,     only: mbintxlr ! iMOAB id for intx mesh between land and river
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
-  use dimensions_mod,   only : np     ! for atmosphere degree 
+  !use dimensions_mod,   only : np     ! for atmosphere degree 
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use shr_log_mod     , only: errMsg => shr_log_errMsg
@@ -583,7 +583,7 @@ contains
             else ! this part does not work, anyway
               dm1 = "cgll"//C_NULL_CHAR
               dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
-              orderS = np !  it should be 4
+              orderS = 4 ! np !  it should be 4
             endif
             dm2 = "fv"//C_NULL_CHAR
             dofnameT="GLOBAL_ID"//C_NULL_CHAR
@@ -1035,10 +1035,12 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
     arrsize = nfields_sh_lr * lsize_lm
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2racc_lm)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on land instance ')
-    endif
+    if (arrsize > 0) then
+      ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2racc_lm)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on land instance ')
+      endif
+   endif
 
 #ifdef MOABDEBUG
     if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
@@ -1060,10 +1062,12 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
     arrsize = nfields_sh_ar * lsize_am
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2racc_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on atm instance ')
-    endif
+    if (arrsize > 0) then
+      ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2racc_am)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on atm instance ')
+      endif
+   endif
 #ifdef MOABDEBUG
     if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports
@@ -1083,10 +1087,12 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
     arrsize = nfields_sh_or * lsize_om
     ent_type = 1 ! cell type
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
-    endif
+    if (arrsize > 0 ) then
+      ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om)
+      if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
+      endif
+   endif
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports

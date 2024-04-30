@@ -12,7 +12,6 @@ module prep_ocn_mod
   use seq_comm_mct,     only: CPLID, OCNID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
 
-  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context;
@@ -23,7 +22,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
-  use dimensions_mod,   only : np     ! for atmosphere degree
+  ! use dimensions_mod,   only : np     ! for atmosphere degree
   use seq_comm_mct,     only : mbixid   ! iMOAB for sea-ice migrated to coupler
   use seq_comm_mct,     only : CPLALLICEID
   use seq_comm_mct,     only : seq_comm_iamin
@@ -478,7 +477,7 @@ contains
                else
                   dm1 = "cgll"//C_NULL_CHAR
                   dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
-                  orderS = np !  it should be 4
+                  orderS = 4 ! np !  it should be 4
                endif
                dm2 = "fv"//C_NULL_CHAR
                dofnameT="GLOBAL_ID"//C_NULL_CHAR

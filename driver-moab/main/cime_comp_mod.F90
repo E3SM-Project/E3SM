@@ -129,6 +129,8 @@ module cime_comp_mod
   use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
 #ifdef MOABDEBUG
   use seq_rest_mod, only : write_moab_state
+  use iMOAB, only: iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
+  use component_type_mod, only: component_get_name, component_get_c2x_cc
 #endif
 
   ! flux calc routines
@@ -209,9 +211,7 @@ module cime_comp_mod
   use component_type_mod , only: expose_mct_grid_moab
 #endif
 
-#ifdef MOABCOMP
-    use iso_c_binding
-#endif
+  use iso_c_binding
 
 
   implicit none
@@ -681,7 +681,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(seq_mct_drv)'
+  character(*), parameter :: subname = '(moab_driver)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
@@ -690,6 +690,14 @@ module cime_comp_mod
   character(*), parameter :: FormatD = '(A,": =============== ", A20,I10.8,I8,6x,   " ===============")'
   character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
   character(*), parameter :: FormatQ = '(A,": =============== ", A20,2F10.2,4x," ===============")'
+
+#ifdef MOABDEBUG
+! allocate to get data frpm moab
+  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes 
+  integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), arrsize, ent_type
+  character(100) :: tagname
+  type(mct_aVect) , pointer :: a2x_aa => null()
+#endif
   !===============================================================================
 contains
   !===============================================================================
@@ -1540,6 +1548,7 @@ contains
     call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_iac')
+
 
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
