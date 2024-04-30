@@ -11,10 +11,14 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
     : AtmosphereDiagnostic(comm, params) {
   EKAT_REQUIRE_MSG(
       params.isParameter("AeroComCld Kind"),
-      "Error! NumberPathDiagnostic requires 'AeroComCld Kind' in its "
+      "Error! AeroComCld requires 'AeroComCld Kind' in its "
       "input parameters.\n");
 
   m_topbot = m_params.get<std::string>("AeroComCld Kind");
+  // check if m_topbot is "Bot" or "Top", else error out
+  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
+                    "Error! AeroComCld requires 'AeroComCld Kind' "
+                    "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
 std::string AeroComCld::name() const { return "AeroComCld" + m_topbot; }

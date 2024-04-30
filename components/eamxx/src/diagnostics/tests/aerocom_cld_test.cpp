@@ -25,7 +25,7 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
   return gm;
 }
 
-TEST_CASE("aerocom_cldtop") {
+TEST_CASE("aerocom_cld") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -66,6 +66,12 @@ TEST_CASE("aerocom_cldtop") {
   std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
   register_diagnostics();
+
+  REQUIRE_THROWS(
+      diag_factory.create("AeroComCld", comm, params));  // No 'AeroComCld Kind'
+  params.set<std::string>("AeroComCld Kind", "Foo");
+  REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
+                                     params));  // Invalid 'AeroComCld Kind'
 
   constexpr int ntests = 5;
   for(int itest = 0; itest < ntests; ++itest) {
