@@ -243,7 +243,7 @@ subroutine phys_grid_ctem_diags(phys_state)
 
    character(len=*), parameter :: prefix = 'phys_grid_ctem_diags: '
 
-   real(r8) :: ps(pcols,pver,begchunk:endchunk)
+   real(r8) :: ps(pcols,begchunk:endchunk)
 
    real(r8) :: u(pcols,pver,begchunk:endchunk)
    real(r8) :: v(pcols,pver,begchunk:endchunk)
