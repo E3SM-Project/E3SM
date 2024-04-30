@@ -9,16 +9,15 @@ namespace scream {
 AeroComCld::AeroComCld(const ekat::Comm &comm,
                        const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(
-      params.isParameter("AeroComCld Kind"),
-      "Error! AeroComCld requires 'AeroComCld Kind' in its "
-      "input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("AeroComCld Kind"),
+                   "Error! AeroComCld requires 'AeroComCld Kind' in its "
+                   "input parameters.\n");
 
   m_topbot = m_params.get<std::string>("AeroComCld Kind");
   // check if m_topbot is "Bot" or "Top", else error out
   EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
-                    "Error! AeroComCld requires 'AeroComCld Kind' "
-                    "to be 'Bot' or 'Top' in its input parameters.\n");
+                   "Error! AeroComCld requires 'AeroComCld Kind' "
+                   "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
 std::string AeroComCld::name() const { return "AeroComCld" + m_topbot; }
@@ -59,10 +58,6 @@ void AeroComCld::set_grids(
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
-  for(int i = 1; i < m_nlevs; ++i) {
-    m_level_vector[i] = m_topbot == "Top" ? i : m_nlevs - 1 - i;
-  }
-
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto d         = get_diagnostic();
@@ -91,6 +86,11 @@ void AeroComCld::compute_diagnostic_impl() {
   using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   using PF = scream::PhysicsFunctions<DefaultDevice>;
+
+  std::vector<int> level_vector(m_nlevs);
+  for(int i = 1; i < m_nlevs; ++i) {
+    level_vector[i] = m_topbot == "Top" ? i : m_nlevs - i;
+  }
 
   const auto out = m_diagnostic_output.get_view<Real **>();
 
@@ -151,7 +151,7 @@ void AeroComCld::compute_diagnostic_impl() {
         // highest is assumed to hav no clouds for cldtop, but starting
         // at m_nlevs-1 for cldbot
 
-        for(int ilay : m_level_vector) {
+        for(int ilay : level_vector) {
           // Only do the calculation if certain conditions are met
           if((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
              (cld_icol(ilay) > cldfrac_tot_threshold)) {

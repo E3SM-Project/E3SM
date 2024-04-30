@@ -31,11 +31,8 @@ class AeroComCld : public AtmosphereDiagnostic {
   int m_nlevs;
   int m_ndiag;
 
-  // bool for bot/top
+  // Bot or Top
   std::string m_topbot;
-
-  // vector of levels
-  std::vector<int> m_level_vector;
 };
 
 }  // namespace scream
