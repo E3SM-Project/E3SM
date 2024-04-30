@@ -385,7 +385,7 @@ subroutine phys_grid_ctem_diags(phys_state)
    function zmean_fld_2D( fld ) result(fldzm)
       real(r8), intent(in) :: fld(pcols,begchunk:endchunk)
       real(r8) :: fldzm(pcols,begchunk:endchunk)
-      real(r8) :: Zonal_Bamp2d(nzmbas,pver)
+      real(r8) :: Zonal_Bamp2d(nzmbas)
       call ZMobj%calc_amps(fld,Zonal_Bamp2d)
       call ZMobj%eval_grid(Zonal_Bamp2d,fldzm)
    end function zmean_fld_2D
