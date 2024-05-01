@@ -771,6 +771,12 @@ void MAMAci::set_grids(
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
 
+  auto make_layout = [](const std::vector<int> &extents,
+                        const std::vector<std::string> &names) {
+    std::vector<FieldTag> tags(extents.size(), CMP);
+    return FieldLayout(tags, extents, names);
+  };
+
   using namespace ekat::units;
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   q_unit.set_string("kg/kg");
@@ -846,8 +852,8 @@ void MAMAci::set_grids(
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
-  FieldLayout scalar4d_layout_mid{{COL, NMODES, LEV},
-                                  {ncol_, num_aero_modes, nlev_}};
+  FieldLayout scalar4d_layout_mid =
+      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "NMODES", "LEV"});
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar4d_layout_mid, m, grid_name);

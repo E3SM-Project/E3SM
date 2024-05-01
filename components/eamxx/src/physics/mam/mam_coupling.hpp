@@ -836,19 +836,9 @@ void convert_work_arrays_to_vmr(const Real q[gas_pcnst()],
       vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
       vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
     } else {
-<<<<<<< HEAD
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-=======
       int m = static_cast<int>(mode_index);
-<<<<<<< HEAD
-      if(aero_id != NoAero) {  // constituent is an aerosol species
-        int a         = aerosol_index_for_mode(mode_index, aero_id);
->>>>>>> Modified species order to match E3SM with the folling change in mam4xx
-=======
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
         const Real mw = mam4::aero_species(a).molecular_weight;
         vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
         vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
@@ -879,19 +869,9 @@ void convert_work_arrays_to_mmr(const Real vmr[gas_pcnst()],
       q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
       qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
     } else {
-<<<<<<< HEAD
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-=======
       int m = static_cast<int>(mode_index);
-<<<<<<< HEAD
-      if(aero_id != NoAero) {  // constituent is an aerosol species
-        int a         = aerosol_index_for_mode(mode_index, aero_id);
->>>>>>> Modified species order to match E3SM with the folling change in mam4xx
-=======
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
         const Real mw = mam4::aero_species(a).molecular_weight;
         q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
         qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
@@ -927,17 +907,8 @@ void transfer_work_arrays_to_prognostics(const Real q[gas_pcnst()],
         int a = aerosol_index_for_mode(mode_index, aero_id);
         progs.q_aero_i[m][a](k) = q[i];
         progs.q_aero_c[m][a](k) = qqcw[i];
-<<<<<<< HEAD
-<<<<<<< HEAD
-      } else { // constituent is a modal number mixing ratio
-=======
-      } else {  // constituent is a modal number mixing ratio
-        int m                = static_cast<int>(mode_index);
->>>>>>> Modified species order to match E3SM with the folling change in mam4xx
-=======
       } else { // constituent is a modal number mixing ratio
         int m = static_cast<int>(mode_index);
->>>>>>> Reverted back mam_coupling changes for indexing but added a func to get prog index
         progs.n_mode_i[m](k) = q[i];
         progs.n_mode_c[m](k) = qqcw[i];
       }
