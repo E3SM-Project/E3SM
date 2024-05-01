@@ -144,17 +144,6 @@ TEST_CASE("aerocom_cld") {
     diag->set_required_field(cd);
     diag->set_required_field(nc);
 
-    tm.sync_to_dev();
-    pd.sync_to_dev();
-    pm.sync_to_dev();
-    qv.sync_to_dev();
-    qc.sync_to_dev();
-    qi.sync_to_dev();
-    ec.sync_to_dev();
-    ei.sync_to_dev();
-    cd.sync_to_dev();
-    nc.sync_to_dev();
-
     diag->initialize(t0, RunType::Initial);
 
     // Case 1: if the cloud fraction is zero, everything is zero
