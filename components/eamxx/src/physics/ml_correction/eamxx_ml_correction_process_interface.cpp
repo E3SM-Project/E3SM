@@ -36,9 +36,9 @@ void MLCorrection::set_grids(
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout_mid();
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout_int();
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout_mid(2);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
   if (not m_ML_correction_unit_test) {
     const auto m2 = m*m;
     const auto s2 = s*s;
