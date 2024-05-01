@@ -114,25 +114,36 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   call check_ret(nf_get_var_double (ncidi, varid, top_i), subname)
   call check_ret(nf_close(ncidi), subname)
 
-  ! Read topo dataset
+  ! set mask as 0 when topo data is filled value: -9999
+  allocate(mask_i(ns_i), stat=ier)
+  if (ier /= 0) then
+     write(6,*)'mktoprad allocation error'; call abort()
+  end if
+  
+  mask_i(:) = 1._r8
+  do ni = 1,ns_i
+      if (top_i(ni) < -1000._r8) then
+         mask_i(ni) = 0._r8
+     end if
+  enddo
+
+  ! Read mapping file
   call gridmap_mapread(tgridmap, mapfname)
 
   ! Error checks for domain and map consistencies
-  ! Note that the topo dataset has no landmask - so a unit landmask is assumed
-
   call domain_checksame( tdomain, ldomain, tgridmap )
 
   ! Determine top_o on output grid
-
   top_o(:) = nodata
 
-  call gridmap_areaave(tgridmap, top_i, top_o, nodata=nodata)
+  call gridmap_areaave(tgridmap, top_i, top_o, nodata=nodata, mask_src=mask_i)
 
   ! Deallocate dynamic memory
 
   call domain_clean(tdomain)
   call gridmap_clean(tgridmap)
   deallocate (top_i)
+  deallocate (mask_i)
 
   write (6,*) 'Successfully made topography parameters'
   write (6,*)
