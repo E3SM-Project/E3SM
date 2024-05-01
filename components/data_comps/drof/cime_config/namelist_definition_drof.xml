@@ -205,10 +205,10 @@
       <value stream="rof.ryf9091_jra"          >RAF_9091.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.ryf0304_jra"          >RAF_0304.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.iaf_jra_1p5_ais0rof">
-           JRA.v1.5.runoff.%y.no_rofi_no_rofl.210505.nc
+           JRA.v1.5.runoff.%y.no_rofi_no_rofl.240411.nc
       </value>
       <value stream="rof.iaf_jra_1p5">
-           JRA.v1.5.runoff.%y.210505.nc
+           JRA.v1.5.runoff.%y.240411.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018_ais0ice">
            JRA.v1.4.runoff.%y.no_rofi.190214.nc
