@@ -154,7 +154,7 @@ TEST_CASE("aerocom_cld") {
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
     for(int idiag = 0; idiag < m_ndiag; ++idiag) {
-      REQUIRE(diag_v(0, idiag) == 0.0);
+      REQUIRE(diag_v(0, idiag) == Real(0.0));
     }
 
     // Case 2: if the cloud fraction is one, everything takes 1 * its value

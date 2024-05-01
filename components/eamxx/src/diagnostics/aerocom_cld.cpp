@@ -36,6 +36,39 @@ void AeroComCld::set_grids(
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
   m_ndiag = 8;
+  // Set the attrs maps
+  // T_mid
+  m_index_map["T_mid"]         = 0;
+  m_units_map["T_mid"]         = "K";
+  // p_mid
+  m_index_map["p_mid"]         = 1;
+  m_units_map["p_mid"]         = "Pa";
+  // cldfrac_ice
+  m_index_map["cldfrac_ice"]   = 2;
+  m_units_map["cldfrac_ice"]   = "nondim";
+  // cldfrac_liq
+  m_index_map["cldfrac_liq"]   = 3;
+  m_units_map["cldfrac_liq"]   = "nondim";
+  // cdnc
+  m_index_map["cdnc"]          = 4;
+  m_units_map["cdnc"]          = "#/m3";
+  // eff_radius_qc
+  m_index_map["eff_radius_qc"] = 5;
+  m_units_map["eff_radius_qc"] = "micron";
+  // eff_radius_qi
+  m_index_map["eff_radius_qi"] = 6;
+  m_units_map["eff_radius_qi"] = "micron";
+  // cldfrac_tot
+  m_index_map["cldfrac_tot"]   = 7;
+  m_units_map["cldfrac_tot"]   = "nondim";
+
+  // Ensure m_index_map.size() is the same as m_ndiag
+  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
+                   "Error! Some inconsistency in AeroComCld: index and units "
+                   "maps do not match!\n");
+  EKAT_REQUIRE_MSG(m_index_map.size() == m_ndiag,
+                   "Error! Some inconsistency in AeroComCld: index map doesn't "
+                   "match m_ndiag!\n");
 
   // Define layouts we need (both inputs and outputs)
   FieldLayout scalar2d_layout{{COL, LEV}, {m_ncols, m_nlevs}};
@@ -63,23 +96,15 @@ void AeroComCld::set_grids(
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
-  // Set the attrs maps
-  m_index_map["T_mid"] = 0; m_units_map["T_mid"] = "K";
-  m_index_map["p_mid"] = 1; m_units_map["p_mid"] = "Pa";
-  m_index_map["cldfrac_ice"] = 2; m_units_map["cldfrac_ice"] = "nondim";
-  m_index_map["cldfrac_liq"] = 3; m_units_map["cldfrac_liq"] = "nondim";
-  m_index_map["cdnc"] = 4; m_units_map["cdnc"] = "#/m3";
-  m_index_map["eff_radius_qc"] = 5; m_units_map["eff_radius_qc"] = "micron";
-  m_index_map["eff_radius_qi"] = 6; m_units_map["eff_radius_qi"] = "micron";
-  m_index_map["cldfrac_tot"] = 7; m_units_map["cldfrac_tot"] = "nondim";
-
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto d         = get_diagnostic();
   auto &metadata =
       d.get_header().get_extra_data<stratt_t>("io: string attributes");
-  for (std::map<std::string, int>::iterator it = m_index_map.begin(); it != m_index_map.end(); ++it) {
-      metadata[it->first] = m_index_map[it->first] + " (" + m_units_map[it->first] + ")";
+  for(std::map<std::string, int>::iterator it = m_index_map.begin();
+      it != m_index_map.end(); ++it) {
+    metadata[it->first] =
+        m_index_map[it->first] + " (" + m_units_map[it->first] + ")";
   }
 }
 
@@ -180,7 +205,8 @@ void AeroComCld::compute_diagnostic_impl() {
              * but X and Phase are not always needed */
             out(icol, m_index_map["T_mid"]) += tmid_icol(ilay) * aerocom_wts;
             out(icol, m_index_map["p_mid"]) += pmid_icol(ilay) * aerocom_wts;
-            out(icol, m_index_map["cldfrac_ice"]) += (1.0 - aerocom_phi) * aerocom_wts;
+            out(icol, m_index_map["cldfrac_ice"]) +=
+                (1.0 - aerocom_phi) * aerocom_wts;
             out(icol, m_index_map["cldfrac_liq"]) += aerocom_phi * aerocom_wts;
             // cdnc
             /* We need to convert nc from 1/mass to 1/volume first, and
