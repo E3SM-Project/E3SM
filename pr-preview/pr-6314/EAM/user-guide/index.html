@@ -12,7 +12,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../dev-guide/">
+        <link rel="next" href="namelist_parameters/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>User Guide - E3SM</title>
+        <title>EAM User Guide - E3SM</title>
       
     
     
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              User Guide
+              EAM User Guide
             
           </span>
         </div>
@@ -359,15 +359,11 @@
         
       
         
-          
-        
       
         
           
         
       
-        
-          
         
       
     
@@ -418,254 +414,124 @@
   
   
   
-    <li class="md-nav__item md-nav__item--active">
+    
+    
       
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+        
+          
+        
       
         
       
+        
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2" checked>
+        
           
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
   
   <span class="md-ellipsis">
     User Guide
   </span>
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_1_2" id="__nav_3_1_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="namelist_parameters/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    User Guide
+    Namelist Parameters
   </span>
   
 
       </a>
-      
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+              
+            
+              
+                
   
   
   
-    
   
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      Table of contents
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#steps-to-build-and-run-eam" class="md-nav__link">
-    <span class="md-ellipsis">
-      Steps to build and run EAM
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scientifically-supported-compsets-and-grids" class="md-nav__link">
-    <span class="md-ellipsis">
-      Scientifically supported compsets and grids
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Scientifically supported compsets and grids">
-      <ul class="md-nav__list">
+    <li class="md-nav__item">
+      <a href="aerosol_phys_prop/" class="md-nav__link">
         
-          <li class="md-nav__item">
-  <a href="#compsets" class="md-nav__link">
-    <span class="md-ellipsis">
-      Compsets
-    </span>
-  </a>
   
-</li>
+  <span class="md-ellipsis">
+    Aerosol Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="emission_oxidant_files/" class="md-nav__link">
         
-          <li class="md-nav__item">
-  <a href="#grids" class="md-nav__link">
-    <span class="md-ellipsis">
-      Grids
-    </span>
-  </a>
   
-</li>
-        
-      </ul>
-    </nav>
+  <span class="md-ellipsis">
+    Emission Oxidants
+  </span>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#customizing-runs" class="md-nav__link">
-    <span class="md-ellipsis">
-      Customizing runs
-    </span>
-  </a>
+
+      </a>
+    </li>
   
-    <nav class="md-nav" aria-label="Customizing runs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#namelist-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Namelist changes
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#input-datasets" class="md-nav__link">
-    <span class="md-ellipsis">
-      Input datasets
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Input datasets">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#greenhouse-gases-non-reacting" class="md-nav__link">
-    <span class="md-ellipsis">
-      Greenhouse gases (non-reacting)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aerosol-physical-properties" class="md-nav__link">
-    <span class="md-ellipsis">
-      Aerosol physical properties
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aerosol-and-gas-emission-and-oxidant-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Aerosol and gas emission and oxidant files
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linoz-v3-input-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Linoz v3 input files
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Linoz v3 input files">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#historical-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Historical files
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#topography" class="md-nav__link">
-    <span class="md-ellipsis">
-      Topography
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#land-use-land-cover-change" class="md-nav__link">
-    <span class="md-ellipsis">
-      Land-use / land cover change
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#oceansea-ice" class="md-nav__link">
-    <span class="md-ellipsis">
-      Ocean/sea ice
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#solar-input" class="md-nav__link">
-    <span class="md-ellipsis">
-      Solar input
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#specifying-output-history-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Specifying output (history files)
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Specifying output (history files)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example-output-specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example output specification
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -699,16 +565,332 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../tech-guide/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tech-guide/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Technical Guide
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_4" id="__nav_3_1_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/homme/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    High-Order Methods Modeling Environment
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/p3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Predicted Particle Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/clubb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cloud Layers Unified By Binormals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/zm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Zhang and McFarlane deep convection scheme
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/rrtmg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    RRTMG
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/mam/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modal Aerosol Module
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/vbs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Volatility Basis Set (VBS) approach for SOA
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/dust/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dust aerosol
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/oceanfilms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OCEANFILMS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/chemUCIlinozv3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    chemUCI and Linoz
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/cosp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COSP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/armdiags/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ARM diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1772,6 +1954,113 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../generate_domain_files/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    generate_domain_files
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            generate_domain_files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1797,15 +2086,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      Table of contents
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#steps-to-build-and-run-eam" class="md-nav__link">
@@ -1860,11 +2140,35 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#namelist-changes" class="md-nav__link">
+  <a href="#compile-time-options" class="md-nav__link">
     <span class="md-ellipsis">
-      Namelist changes
+      Compile-time options
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-time-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run-time options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run-time options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tabe-of-namelist-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tabe of Namelist Parameters
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2032,45 +2336,46 @@
 
 <h1 id="eam-user-guide">EAM User Guide</h1>
 <p>This User Guide describes how to set up and run EAM.</p>
-<h2 id="table-of-contents">Table of contents</h2>
-<ol>
-<li><a href="#steps-to-build-and-run-eam">Steps to build and run EAM</a></li>
-<li><a href="#scientifically-supported-compsets-and-grids">Scientifically supported compsets and grids</a><ol>
-<li><a href="#compsets">Compsets</a></li>
-<li><a href="#grids">Grids</a></li>
-</ol>
-</li>
-<li><a href="#customizing-runs">Customizing runs</a><ol>
-<li><a href="#namelist-changes">Namelist changes</a></li>
-<li><a href="#input-datasets">Input datasets</a></li>
-<li><a href="#specifying-output-history-files">Specifying output (history files)</a></li>
-</ol>
-</li>
-</ol>
 <h2 id="steps-to-build-and-run-eam">Steps to build and run EAM</h2>
-<p>A step-by-step instruction on how to run E3SM can be found <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536">here</a>.</p>
-<p>The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs.</p>
+<p>EAM is not available as a standalone model.  Instead, EAM can be run in an atmosphere-only configuration.
+The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to
+change the <em>compset</em> and <em>grid</em>.
+See the
+<a href="https://esmci.github.io/cime/versions/master/html/users_guide/index.html#case-control-system-part-1-basic-usage">Case Control System Basic Usage</a> for general descriptions of compsets and grids.</p>
+<p>Certain namelist paramaters, input data files, and output file specifcations can also be modified.
+These are described below as ways to customize runs.</p>
+<p>Step-by-step instructions on how to run and analyze E3SM with a script can be found at
+<a href="https://docs.e3sm.org/running-e3sm-guide/">E3SM step-by-step guide</a></p>
 <h2 id="scientifically-supported-compsets-and-grids">Scientifically supported compsets and grids</h2>
 <h3 id="compsets">Compsets</h3>
-<p>All of the compsets below run with the complete set of E3SM atmospheric configuration of EAMV3. For more information on the schemes in EAMv3, see the techguide.</p>
+<p>All of the compsets below run with the complete set of E3SM atmospheric configuration of EAMV3. For more information on the schemes in EAMv3, see the <a href="../tech-guide/">Technical Guide</a></p>
 <p><code>F2010</code> - Climatological present day climate (year 2010)</p>
 <p><code>F1850</code> - Climatological pre-industrial-day climate (year 1850)</p>
 <p><code>F20TR</code> - Historical EAM simulation with time varying sea-surface temperatures, aerosol emissions, and greenhouse gas forcings (year 1850-2014)</p>
 <h3 id="grids">Grids</h3>
+<p>Only one grid combination is currently supported for the above compsets:</p>
 <p><code>ne30pg2_r05_IcoswISC30E3r5</code> - ne30pg2 atmosphere, 0.5deg x 0.5deg land grid, and Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5</p>
 <h2 id="customizing-runs">Customizing runs</h2>
-<h3 id="namelist-changes">Namelist changes</h3>
+<h3 id="compile-time-options">Compile-time options</h3>
+<p>Some customizations require making changes before the model is built.</p>
+<h3 id="run-time-options">Run-time options</h3>
+<p>Run-time customization is enabled by a Fortran namelist.</p>
 <p>Namelist parameters can be specified in the <code>user_nl_eam</code> file and unless otherwise noted can be specified at run time.</p>
-<p>Refer to the following page for a <a href="namelist_parameters/">table</a> of namelist parameters and the <a href="../tech-guide/">tech-guide</a> for a description of the atmosphere schemes for which the namelist parameters correspond to.</p>
+<h4 id="tabe-of-namelist-parameters"><a href="namelist_parameters/">Tabe of Namelist Parameters</a></h4>
+<p>Refer to the above table and the <a href="../tech-guide/">tech-guide</a> for a description of the atmosphere schemes for which the namelist parameters correspond to.</p>
 <h3 id="input-datasets">Input datasets</h3>
 <h4 id="greenhouse-gases-non-reacting">Greenhouse gases (non-reacting)</h4>
 <p>Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6 Forcing Datasets provided from the input4MIPs data collection. In addition to what is provided by the input4MIPS, 2015 and 2016 have been added by extrapolating from 2013 and 2014.</p>
 <div class="highlight"><pre><span></span><code><span class="n">inputdata</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">ggas</span><span class="o">/</span><span class="n">GHG_CMIP</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">0_Annual_Global_0000</span><span class="o">-</span><span class="mi">2014_c20180105</span><span class="p">.</span><span class="n">nc</span>
 </code></pre></div>
-<h4 id="aerosol-physical-properties">Aerosol physical properties</h4>
-<p>The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet activation/ice nucleation schemes. Detailed information on the files and related references can be found <a href="aerosol_phys_prop/">here</a>.</p>
-<h4 id="aerosol-and-gas-emission-and-oxidant-files">Aerosol and gas emission and oxidant files</h4>
-<p>Details of the aerosol and gas emission and oxidant files used in various historical, present-day, and future scenario can be found <a href="emission_oxidant_files/">here</a>.</p>
+<h4 id="aerosol-physical-properties"><a href="aerosol_phys_prop/">Aerosol physical properties</a></h4>
+<p>The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for
+each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial
+expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties
+are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet
+activation/ice nucleation schemes.</p>
+<h4 id="aerosol-and-gas-emission-and-oxidant-files"><a href="emission_oxidant_files/">Aerosol and gas emission and oxidant files</a></h4>
+<p>Details of the aerosol and gas emission and oxidant files used in various historical, present-day, and future scenarios.</p>
 <h4 id="linoz-v3-input-files">Linoz v3 input files</h4>
 <p>Linozv3 uses the ozone tendency, (net production minus loss) calculated from its climatological mean state (function of month, latitude, altitude) and a first-order Taylor series expansion about the local ozone, temperature, and overhead ozone column. For historical simulation, Linozv3 uses the linozv3 data files with monthly resolution, spanning the dates 1849-01 -- 2014-12.</p>
 <h5 id="historical-files">Historical files</h5>
