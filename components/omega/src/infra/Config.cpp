@@ -104,6 +104,14 @@ int Config::readAll(const std::string ConfigFile // [in] input YAML config file
 
 } // end Config::readAll
 
+// Iterator for Config
+//------------------------------------------------------------------------------
+// Returns an iterator to the first item in the contained YAML::Node
+Config::Iter Config::begin() const { return Node.begin(); }
+
+// Returns an iterator to the last item in the contained YAML::Node
+Config::Iter Config::end() const { return Node.end(); }
+
 //------------------------------------------------------------------------------
 // Retrieval (get) functions
 //------------------------------------------------------------------------------
@@ -129,6 +137,27 @@ int Config::get(Config &SubConfig // [inout] sub-configuration to retrieve
 
    return Err;
 }
+
+//------------------------------------------------------------------------------
+// Retrieves the name of a configuration or a key in a key:value pair. It is
+// used when iterating through a configuration so takes the iterator as input.
+// This assumes the Config is a name-value pair (map).
+
+int Config::getName(Config::Iter ConfigIter, // [in] input iterator
+                    std::string &ConfigName  // [out] name of a configuration
+){
+
+   // Initialize return values
+   int Err = 0;
+   ConfigName = "unknown";
+
+   ConfigName = ConfigIter->first.as<std::string>();
+
+   if (ConfigName == "unknown") Err = -1;
+
+   return Err;
+
+} // end getName
 
 //------------------------------------------------------------------------------
 // Retrieves a 4-byte integer value from the Config based on name

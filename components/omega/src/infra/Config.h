@@ -69,6 +69,15 @@ class Config {
    /// is created before it can be properly initialized.
    Config();
 
+   /// An iterator is sometimes needed to iterate through the YAML::Node
+   using Iter = YAML::const_iterator;
+
+   /// Returns an iterator to the first item in the contained YAML::Node
+   Iter begin() const;
+
+   /// Returns an iterator to the last item in the contained YAML::Node
+   Iter end() const;
+
    /// Reads the full configuration for omega and stores in it a static
    /// YAML node for later use.  The file must be in YAML format and must be in
    /// the same directory as the executable, though Unix soft links can be used
@@ -93,6 +102,14 @@ class Config {
    int get(Config &SubConfig ///< [inout] sub-configuration to retrieve
    );
 
+   /// Retrieves the name of a configuration (or the key in the key:value
+   /// pair). This is used when iterating through configuration entries so
+   /// takes the iterator as an argument. This assumes the Config is a
+   /// name-value pair (map) and returns an error code if not.
+   static int getName(Iter ConfigIter,        ///< [in] iterator for this entry
+                      std::string &ConfigName ///< [out] name of a configuration
+   );
+   
    /// Retrieves a 4-byte integer value from the Config based on name
    /// Returns a non-zero error code if the variable does not exist
    int get(const std::string VarName, ///< [in] name of variable to get
