@@ -575,7 +575,7 @@ void Functions<S,D>::shoc_main_internal(
                pblh);                          // Output
   
   // Assign tkh to the tkh output variable
-  shoc_assign_2d_view_disp(shcol, nlev, tkh_out,tkh);
+  Kokkos::deep_copy(tkh_out,tkh);
 }
 #endif
 
@@ -654,7 +654,7 @@ Int Functions<S,D>::shoc_main(
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
-    const auto tkh_out_s          = ekat::subview(shoc_output.tkh, i);
+    const auto tkh_out_s      = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
@@ -686,7 +686,7 @@ Int Functions<S,D>::shoc_main(
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
-                       pblh_s, shoc_ql2_s, tkh_out_s,                             // Output
+                       pblh_s, shoc_ql2_s, tkh_out_s,                         // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
