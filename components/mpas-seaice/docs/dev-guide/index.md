@@ -27,6 +27,13 @@ The framework code includes shared modules for fundamental model operation. Sign
 
 Additionally, a number of shared operators exist to perform common operations on model data. These include geometric operations (e.g., length, area, and angle operations on the sphere or the plane), interpolation (linear, barycentric, Wachspress, radial basis functions, spline), vector and tensor operations (e.g., cross products, divergence), and vector reconstruction (e.g., interpolating from cell edges to cell centers). Most operators work on both spherical and planar meshes.
 
+## Coupling of MPAS-seaice within E3SM
+
+Several files within MPAS-SI control the coupling of fields between MPAS-SI and other E3SM components via the coupler. A list of all variables being passed to and from MPAS-SI can be found in ``components/mpas-seaice/driver/mpassi_cpl_indices.F``.
+Variables named with the prefix ``x2i`` are passed from the coupler to MPAS-SI, variables with the prefix ``i2x`` are passed from MPAS-SI to the coupler.
+For example, all coupled variables are named with the following convention:
+``index_i2x_Si_ithick`` refers to a state variable of ice (``Si``) that gets passed from MPAS-SI to the coupler (``i2x``) for the ice thickness (``ithick``). ``index_x2i_So_t`` refers to an ocean state variable (``So``) passed from the the coupler to MPAS-SI (``x2i``) for ocean temperature (``t``).
+
 ## Icepack
 
 For changes to Icepack, please consult the [CICE Consortium's recommendations for code contributions](https://github.com/CICE-Consortium/About-Us/wiki/Contributing).
@@ -313,11 +320,11 @@ $ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.em
 
 To generate MPAS-Analysis plots from the CICE-QC runs and compare:
 
-Copy the scripts in the file above to anvil or chrysalis - PROVIDE FILE
+Copy the scripts in the file [MPAS-Analysis_scripts.zip](./MPAS-Analysis_scripts.zip) to anvil or chrysalis.
 
-Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for the qcPR19 comparison above)
+Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for a QC comparison)
 
 Edit and submit (on chrysalis) the job script 3 times, once for icepack, once for column, and finally for the comparison.
 
-Browse the html output, e.g. navigate to
+Browse the html output by navigating to the location indicated by ``htmlSubdirectory`` in the comparison script, e.g.
 ``https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.eclare/icepack-testing/D12.qcPR19.emc.qcPR19.snicar_active.eclare108213.anvil/mpas_analysis_output/``
