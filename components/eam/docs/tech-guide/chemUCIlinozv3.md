@@ -1,4 +1,4 @@
-# chemUCI and Linoz v3
+# chemUCI and Linoz
 
 ## Overview
 
