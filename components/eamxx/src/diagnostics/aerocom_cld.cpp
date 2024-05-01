@@ -1,6 +1,7 @@
 #include "diagnostics/aerocom_cld.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <string>
 
 #include "share/util/scream_common_physics_functions.hpp"
 
@@ -38,20 +39,20 @@ void AeroComCld::set_grids(
   m_ndiag = 8;
   // Set the attrs maps
   // T_mid
-  m_index_map["T_mid"]         = 0;
-  m_units_map["T_mid"]         = "K";
+  m_index_map["T_mid"] = 0;
+  m_units_map["T_mid"] = "K";
   // p_mid
-  m_index_map["p_mid"]         = 1;
-  m_units_map["p_mid"]         = "Pa";
+  m_index_map["p_mid"] = 1;
+  m_units_map["p_mid"] = "Pa";
   // cldfrac_ice
-  m_index_map["cldfrac_ice"]   = 2;
-  m_units_map["cldfrac_ice"]   = "nondim";
+  m_index_map["cldfrac_ice"] = 2;
+  m_units_map["cldfrac_ice"] = "nondim";
   // cldfrac_liq
-  m_index_map["cldfrac_liq"]   = 3;
-  m_units_map["cldfrac_liq"]   = "nondim";
+  m_index_map["cldfrac_liq"] = 3;
+  m_units_map["cldfrac_liq"] = "nondim";
   // cdnc
-  m_index_map["cdnc"]          = 4;
-  m_units_map["cdnc"]          = "#/m3";
+  m_index_map["cdnc"] = 4;
+  m_units_map["cdnc"] = "#/m3";
   // eff_radius_qc
   m_index_map["eff_radius_qc"] = 5;
   m_units_map["eff_radius_qc"] = "micron";
@@ -59,8 +60,8 @@ void AeroComCld::set_grids(
   m_index_map["eff_radius_qi"] = 6;
   m_units_map["eff_radius_qi"] = "micron";
   // cldfrac_tot
-  m_index_map["cldfrac_tot"]   = 7;
-  m_units_map["cldfrac_tot"]   = "nondim";
+  m_index_map["cldfrac_tot"] = 7;
+  m_units_map["cldfrac_tot"] = "nondim";
 
   // Ensure m_index_map.size() is the same as m_ndiag
   EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
@@ -101,10 +102,9 @@ void AeroComCld::set_grids(
   auto d         = get_diagnostic();
   auto &metadata =
       d.get_header().get_extra_data<stratt_t>("io: string attributes");
-  for(std::map<std::string, int>::iterator it = m_index_map.begin();
-      it != m_index_map.end(); ++it) {
-    metadata[it->first] =
-        m_index_map[it->first] + " (" + m_units_map[it->first] + ")";
+  for(const auto &it : m_index_map) {
+    metadata[it.first] =
+        std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
   }
 }
 
