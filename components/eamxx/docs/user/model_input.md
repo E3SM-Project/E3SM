@@ -10,7 +10,7 @@ The infrastructure for reading inputs into EAMxx involves a few scripts/files:
 1. `atmchange` and `atmquery`: these scripts are located in `SRCDIR/components/eamxx/scripts`,
     and are soft-linked in the case folder. As their names suggest, they can be used to query
     and change the runtime configuration parameter of EAMxx. Since these two scripts are the
-    only scripts thta the average user needs to know and interact with, in the next sections
+    only scripts that the average user needs to know and interact with, in the next sections
     we give a brief overview of how they can be used and how their output can be interpreted.
     Additionally, for both of the scripts a short help can also be obtained using the `-h` flag.
 2. `buildnml`: this script, located in `SRCDIR/components/eamxx/cime_config`, is called by CIME's
@@ -76,7 +76,7 @@ $ ./atmquery --grep sub
     physics::number_of_subcycles: 1
 ```
 
-TODO: This difference between basic and `--grep` is not really intuitive: as pointer out in [this
+TODO: This difference between basic and `--grep` is not really intuitive: as pointed out in [this
 issue](https://github.com/E3SM-Project/scream/issues/2413), we should change this. If we do, don't forget
 to update this following part of the docs.
 Using the `--grep` option has another effect: if the match is not a leaf of the XML tree, all its subelements
