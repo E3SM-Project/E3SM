@@ -144,16 +144,16 @@ TEST_CASE("aerocom_cld") {
     diag->set_required_field(cd);
     diag->set_required_field(nc);
 
-    // tm.sync_to_dev();
-    // pd.sync_to_dev();
-    // pm.sync_to_dev();
-    // qv.sync_to_dev();
-    // qc.sync_to_dev();
-    // qi.sync_to_dev();
-    // ec.sync_to_dev();
-    // ei.sync_to_dev();
-    // cd.sync_to_dev();
-    // nc.sync_to_dev();
+    tm.sync_to_dev();
+    pd.sync_to_dev();
+    pm.sync_to_dev();
+    qv.sync_to_dev();
+    qc.sync_to_dev();
+    qi.sync_to_dev();
+    ec.sync_to_dev();
+    ei.sync_to_dev();
+    cd.sync_to_dev();
+    nc.sync_to_dev();
 
     diag->initialize(t0, RunType::Initial);
 
@@ -185,14 +185,14 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      REQUIRE(diag_v(icol, 0) == 300.0);
-      REQUIRE(diag_v(icol, 1) == 100.0);
-      REQUIRE(diag_v(icol, 2) == 0.5);
-      REQUIRE(diag_v(icol, 3) == 0.5);
-      REQUIRE(diag_v(icol, 4) > 0.0);
-      REQUIRE(diag_v(icol, 5) > 0.0);
-      REQUIRE(diag_v(icol, 6) > 0.0);
-      REQUIRE(diag_v(icol, 7) == 1.0);
+      REQUIRE(diag_v(icol, 0) == Real(300.0));
+      REQUIRE(diag_v(icol, 1) == Real(100.0));
+      REQUIRE(diag_v(icol, 2) == Real(0.5));
+      REQUIRE(diag_v(icol, 3) == Real(0.5));
+      REQUIRE(diag_v(icol, 4) > Real(0.0));
+      REQUIRE(diag_v(icol, 5) > Real(0.0));
+      REQUIRE(diag_v(icol, 6) > Real(0.0));
+      REQUIRE(diag_v(icol, 7) == Real(1.0));
     }
 
     // Case 3: test the max overlap (if contiguous cloudy layers, then max)
@@ -207,7 +207,7 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) == 0.7);
+    REQUIRE(diag_v(0, 7) == Real(0.7));
 
     // Case 3xtra: test max overlap again
     // This case should produce >0.7 due to slight enhancement in the presence
@@ -220,7 +220,7 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) > 0.7);
+    REQUIRE(diag_v(0, 7) > Real(0.7));
 
     // Case 4: test random overlap
     // If non-contiguous cloudy layers, then random
@@ -231,7 +231,7 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) > 0.7);  // must be larger than the max!
+    REQUIRE(diag_v(0, 7) > Real(0.7));  // must be larger than the max!
 
     // Case 5a: test independence of ice and liq fractions
     cd_v(0, 3) = 1.0;
@@ -244,9 +244,9 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) == 1.0);
-    REQUIRE(diag_v(0, 3) == 1.0);
-    REQUIRE(diag_v(0, 2) == 0.0);  // zero ice!
+    REQUIRE(diag_v(0, 7) == Real(1.0));
+    REQUIRE(diag_v(0, 3) == Real(1.0));
+    REQUIRE(diag_v(0, 2) == Real(0.0));  // zero ice!
 
     // Case 5b: test independence of ice and liq fractions
     qc.deep_copy(0.0);  // zero liq!
@@ -255,9 +255,9 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) == 1.0);
-    REQUIRE(diag_v(0, 3) == 0.0);  // zero liq!
-    REQUIRE(diag_v(0, 2) == 1.0);
+    REQUIRE(diag_v(0, 7) == Real(1.0));
+    REQUIRE(diag_v(0, 3) == Real(0.0));  // zero liq!
+    REQUIRE(diag_v(0, 2) == Real(1.0));
 
     // Case 6: test independence of ice and liquid fractions
     // There is NOT complete independence...
@@ -294,9 +294,9 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) > 0.7);   // unaffected (see test case 4)
-    REQUIRE(diag_v(0, 3) < 0.5);   // not max!
-    REQUIRE(diag_v(0, 2) == 0.7);  // max!
+    REQUIRE(diag_v(0, 7) > Real(0.7));   // unaffected (see test case 4)
+    REQUIRE(diag_v(0, 3) < Real(0.5));   // not max!
+    REQUIRE(diag_v(0, 2) == Real(0.7));  // max!
   }
 }
 

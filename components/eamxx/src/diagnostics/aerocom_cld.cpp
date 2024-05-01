@@ -164,7 +164,7 @@ void AeroComCld::compute_diagnostic_impl() {
                 clr_icol *
                 (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
                 (1.0 - ekat::impl::min(cld_icol(ilay - 1),
-                                       1.0 - cldfrac_tot_threshold));
+                                       Real(1.0 - cldfrac_tot_threshold)));
             // Temporary variable for probability "weights"
             auto aerocom_wts = clr_icol - aerocom_tmp;
             // Temporary variable for liquid "phase"
