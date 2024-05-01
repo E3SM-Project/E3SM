@@ -150,7 +150,6 @@ TEST_CASE("aerocom_cld") {
     cd.deep_copy(0.0);
     diag->compute_diagnostic();
     Field diag_f = diag->get_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
     for(int idiag = 0; idiag < m_ndiag; ++idiag) {
@@ -193,8 +192,8 @@ TEST_CASE("aerocom_cld") {
     cd_v(0, 4) = 0.2;
     cd.sync_to_dev();
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(0.7));
 
@@ -206,8 +205,8 @@ TEST_CASE("aerocom_cld") {
     cd_v(0, 7) = 0.2;
     cd.sync_to_dev();
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));
 
@@ -217,8 +216,8 @@ TEST_CASE("aerocom_cld") {
     cd_v(0, 7) = 0.1;
     cd.sync_to_dev();
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));  // must be larger than the max!
 
@@ -230,8 +229,8 @@ TEST_CASE("aerocom_cld") {
     qi.deep_copy(0.0);  // zero ice!
     cd.sync_to_dev();
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
     REQUIRE(diag_v(0, 3) == Real(1.0));
@@ -241,8 +240,8 @@ TEST_CASE("aerocom_cld") {
     qc.deep_copy(0.0);  // zero liq!
     qi.deep_copy(1.0);
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
     REQUIRE(diag_v(0, 3) == Real(0.0));  // zero liq!
@@ -280,8 +279,8 @@ TEST_CASE("aerocom_cld") {
     qc.sync_to_dev();
 
     diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));   // unaffected (see test case 4)
     REQUIRE(diag_v(0, 3) < Real(0.5));   // not max!
