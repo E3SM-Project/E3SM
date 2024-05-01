@@ -293,6 +293,8 @@ module seq_flds_mod
   ! namelist variables
   logical :: nan_check_component_fields
 
+  public moab_set_tag_from_av  ! will be caled usually from data models, to set moab tags from data fields in AVs
+
   !----------------------------------------------------------------------------
 contains
   !----------------------------------------------------------------------------
@@ -4435,4 +4437,32 @@ contains
 
   end subroutine seq_flds_esmf_metadata_get
 
+#ifdef HAVE_MOAB
+  !===============================================================================
+
+  subroutine moab_set_tag_from_av(tagname, avx, index, mbapid, dataarr, lsize)
+
+    ! !DESCRIPTION:  set field method for data atm model
+    use iMOAB,        only: iMOAB_SetDoubleTagStorage
+    use shr_kind_mod    , only: r8 => SHR_KIND_R8
+    implicit none
+
+    integer :: ierr, lsize 
+    character(len=*), intent(in) :: tagname
+    type(mct_aVect), intent(in) :: avx
+    integer, intent(in) :: index
+    integer, intent(in) :: mbapid !  moab app id
+    real(R8), intent(inout) :: dataarr(:)
+
+   !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
+   dataarr(:) = avx%rAttr(index, :)
+   ierr = iMOAB_SetDoubleTagStorage ( mbapid, tagname, lsize, &
+                                       0, & ! data on vertices
+                                       dataarr )
+   if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set tag values for '//tagname)
+
+  end subroutine moab_set_tag_from_av
+
+#endif
 end module seq_flds_mod
