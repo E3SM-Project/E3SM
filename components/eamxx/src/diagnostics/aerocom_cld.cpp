@@ -53,12 +53,12 @@ void AeroComCld::set_grids(
   add_field<Required>("cldfrac_tot", scalar2d_layout, nondim, grid_name);
   add_field<Required>("nc", scalar2d_layout, kg / kg, grid_name);
 
-  // Phony field to store dz
+  // A field to store dz
   FieldIdentifier m_dz_fid("dz", scalar2d_layout, m, grid_name);
   m_dz = Field(m_dz_fid);
   m_dz.allocate_view();
 
-  // Construct and allocate the aodvis field
+  // Construct and allocate the output field
   FieldIdentifier fid(name(), vector1d_layout, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
@@ -83,7 +83,7 @@ void AeroComCld::compute_diagnostic_impl() {
    * based on the AeroCom recommendation. See reference for routine
    * get_subcolumn_mask in rrtmpg, where equation 14 is used for the
    * maximum-random overlap assumption for subcolumn generation. We use
-   * equation 13, the column counterpart. The logic is reversed to calculate
+   * equation 13, the column counterpart. The order is reversed to calculate
    * cloud-bottom properties as well.
    */
   using KT  = KokkosTypes<DefaultDevice>;
@@ -104,7 +104,7 @@ void AeroComCld::compute_diagnostic_impl() {
   const auto cld  = get_field_in("cldfrac_tot").get_view<const Real **>();
   const auto nc   = get_field_in("nc").get_view<const Real **>();
 
-  auto dz   = m_dz.get_view<Real **>();
+  auto dz = m_dz.get_view<Real **>();
 
   // Get gravity acceleration constant from constants
   using physconst = scream::physics::Constants<Real>;
@@ -113,18 +113,15 @@ void AeroComCld::compute_diagnostic_impl() {
   // TODO: move tunable constant to namelist
   constexpr auto cldfrac_tot_threshold = 0.001;
 
-  // const auto num_levs = m_nlevs;
-  const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
-
-  std::vector<int> level_vector(m_nlevs);
-  for(int i = 1; i < m_nlevs; ++i) {
-    level_vector[i] = m_topbot == "Top" ? i : m_nlevs - i;
-  }
+  const auto policy = ESU::get_default_team_policy(m_ncols, m_nlevs);
 
   const auto out = m_diagnostic_output.get_view<Real **>();
 
   // zero out the outputs
   Kokkos::deep_copy(out, 0.0);
+
+  const int nlevs = m_nlevs;
+  bool is_top     = (m_topbot == "Top");
 
   Kokkos::parallel_for(
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
@@ -155,13 +152,13 @@ void AeroComCld::compute_diagnostic_impl() {
         // highest is assumed to hav no clouds for cldtop, but starting
         // at m_nlevs-1 for cldbot
 
-        for(int ilay : level_vector) {
+        auto topbot_calcs = [&](int ilay) {
           // Only do the calculation if certain conditions are met
           if((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
              (cld_icol(ilay) > cldfrac_tot_threshold)) {
-            /* PART I: Probabilistically determining cloud top */
+            /* PART I: Probabilistically determining cloud top/bot */
             // Populate aerocom_tmp as the clear-sky fraction
-            // probability of this level, where aerocom_clr is that of
+            // probability of this level, where clr_icol is that of
             // the previous level
             auto aerocom_tmp =
                 clr_icol *
@@ -176,34 +173,39 @@ void AeroComCld::compute_diagnostic_impl() {
             /* In general, converting a 3D property X to a 2D cloud-top
              * counterpart x follows: x(i) += X(i,k) * weights * Phase
              * but X and Phase are not always needed */
-            // T_mid_at_cldtop
             out(icol, /* T_mid */ 0) += tmid_icol(ilay) * aerocom_wts;
-            // p_mid_at_cldtop
             out(icol, /* p_mid */ 1) += pmid_icol(ilay) * aerocom_wts;
-            // cldfrac_ice_at_cldtop
             out(icol, /* cldfrac_ice */ 2) += (1.0 - aerocom_phi) * aerocom_wts;
-            // cldfrac_liq_at_cldtop
             out(icol, /* cldfrac_liq */ 3) += aerocom_phi * aerocom_wts;
-            // cdnc_at_cldtop
+            // cdnc
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
                         physconst::gravit / cld_icol(ilay);
             out(icol, /* cdnc */ 4) += cdnc * aerocom_phi * aerocom_wts;
-            // eff_radius_qc_at_cldtopbot
             out(icol, /* eff_radius_qc */ 5) +=
                 rel_icol(ilay) * aerocom_phi * aerocom_wts;
-            // eff_radius_qi_at_cldtopbot
             out(icol, /* eff_radius_qi */ 6) +=
                 rei_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
-            // Reset aerocom_clr to aerocom_tmp to accumulate
+            // Reset clr_icol to aerocom_tmp to accumulate
             clr_icol = aerocom_tmp;
           }
+        };
+
+        if(is_top) {
+          for(int ilay = 1; ilay < nlevs; ++ilay) {
+            topbot_calcs(ilay);
+          }
+        } else {
+          for(int ilay = nlevs - 1; ilay > 0; --ilay) {
+            topbot_calcs(ilay);
+          }
         }
+
         // After the serial loop over levels, the cloudy fraction is
-        // defined as (1 - aerocom_clr). This is true because
-        // aerocom_clr is the result of accumulative probabilities
+        // defined as (1 - clr_icol). This is true because
+        // clr_icol is the result of accumulative probabilities
         // (their products)
         out(icol, /* cldfrac_tot */ 7) = 1.0 - clr_icol;
       });
