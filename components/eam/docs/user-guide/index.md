@@ -3,28 +3,25 @@
 
 This User Guide describes how to set up and run EAM.
 
-## Table of contents
-
-1. [Steps to build and run EAM](#steps-to-build-and-run-eam)
-2. [Scientifically supported compsets and grids](#scientifically-supported-compsets-and-grids)
-    1. [Compsets](#compsets)
-    2. [Grids](#grids)
-3. [Customizing runs](#customizing-runs)
-    1. [Namelist changes](#namelist-changes)
-    2. [Input datasets](#input-datasets)
-    3. [Specifying output (history files)](#specifying-output-history-files)
-
 ## Steps to build and run EAM
 
-A step-by-step instruction on how to run E3SM can be found [here](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536).
+EAM is not available as a standalone model.  Instead, EAM can be run in an atmosphere-only configuration.
+The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to
+change the *compset* and *grid*.
+See the
+[Case Control System Basic Usage](https://esmci.github.io/cime/versions/master/html/users_guide/index.html#case-control-system-part-1-basic-usage) for general descriptions of compsets and grids.
 
-The difference when running in atmosphere-only mode (without an interactive ocean or sea-ice) would be to change the compset and grid. Certain namelist paramters, input data files, and output file specifcations can also be modified. These are described below as ways to customize runs.
+Certain namelist paramaters, input data files, and output file specifcations can also be modified.
+These are described below as ways to customize runs.
+
+Step-by-step instructions on how to run and analyze E3SM with a script can be found at
+[E3SM step-by-step guide](https://docs.e3sm.org/running-e3sm-guide/)
 
 ## Scientifically supported compsets and grids
 
 ### Compsets
 
-All of the compsets below run with the complete set of E3SM atmospheric configuration of EAMV3. For more information on the schemes in EAMv3, see the techguide.
+All of the compsets below run with the complete set of E3SM atmospheric configuration of EAMV3. For more information on the schemes in EAMv3, see the [Technical Guide](../tech-guide/index.md)
 
 `F2010` - Climatological present day climate (year 2010)
 
@@ -34,15 +31,25 @@ All of the compsets below run with the complete set of E3SM atmospheric configur
 
 ### Grids
 
+Only one grid combination is currently supported for the above compsets:
+
 `ne30pg2_r05_IcoswISC30E3r5` - ne30pg2 atmosphere, 0.5deg x 0.5deg land grid, and Icosahedral 30 km mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5
 
 ## Customizing runs
 
-### Namelist changes
+### Compile-time options
+
+Some customizations require making changes before the model is built.
+
+### Run-time options
+
+Run-time customization is enabled by a Fortran namelist.
 
 Namelist parameters can be specified in the `user_nl_eam` file and unless otherwise noted can be specified at run time.
 
-Refer to the following page for a [table](namelist_parameters.md) of namelist parameters and the [tech-guide](../tech-guide/index.md) for a description of the atmosphere schemes for which the namelist parameters correspond to.
+#### [Tabe of Namelist Parameters](namelist_parameters.md)
+
+Refer to the above table and the [tech-guide](../tech-guide/index.md) for a description of the atmosphere schemes for which the namelist parameters correspond to.
 
 ### Input datasets
 
@@ -54,13 +61,17 @@ Greenhouse gas concentration inputs of non-reacting species are taken from CMIP6
 inputdata/atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc
 ```
 
-#### Aerosol physical properties
+#### [Aerosol physical properties](aerosol_phys_prop.md)
 
-The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet activation/ice nucleation schemes. Detailed information on the files and related references can be found [here](aerosol_phys_prop.md).
+The aerosol properties files provide aerosol refractive index, density, and aerosol hygroscopicty information for
+each aerosol species, as well as information about lognormal mode definition and lookup tables of polynomial
+expression coefficients for aerosol optics calculation for each mode. These aerosol physical and chemical properties
+are used by the radiation, aerosol microphysics and other related source and sink processes, and droplet
+activation/ice nucleation schemes.
 
-#### Aerosol and gas emission and oxidant files
+#### [Aerosol and gas emission and oxidant files](emission_oxidant_files.md)
 
-Details of the aerosol and gas emission and oxidant files used in various historical, present-day, and future scenario can be found [here](emission_oxidant_files.md).
+Details of the aerosol and gas emission and oxidant files used in various historical, present-day, and future scenarios.
 
 #### Linoz v3 input files
 
