@@ -1574,13 +1574,9 @@ end function chem_is_active
            end if
            ! HHLEE 20210923
            if (history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
-             if( nstep == 0 ) then
                 ftem_layers = 0.0_r8
                 gas_ac_layers = 0.0_r8
-             else
-                ftem_layers = 0.0_r8
-                gas_ac_layers = 0.0_r8
-
+             if( nstep /= 0 ) then
                 gas_ac_idx = pbuf_get_index(gas_ac_name(n))
                 call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
 
@@ -1605,18 +1601,16 @@ end function chem_is_active
                    ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
                    gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
                 end do
-                if (history_gaschmbudget_2D_levels ) then
+             endif
+             if (history_gaschmbudget_2D_levels ) then
                 call outfld(trim(solsym(n))//'_2DMSB_L1', ftem_layers(:ncol,1), pcols, lchnk)
                 call outfld(trim(solsym(n))//'_2DMSB_L2', ftem_layers(:ncol,2), pcols, lchnk)
                 call outfld(trim(solsym(n))//'_2DMSB_L3', ftem_layers(:ncol,3), pcols, lchnk)
                 call outfld(trim(solsym(n))//'_2DMSB_L4', ftem_layers(:ncol,4), pcols, lchnk)
-                endif
              endif
 
-             if( nstep == 0 ) then
-                Diff_layers(:ncol,:) = 0.0_r8
-             else
-                Diff_layers(:ncol,:) = 0.0_r8
+             Diff_layers(:ncol,:) = 0.0_r8
+             if( nstep /= 0 ) then
                 Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
                 Diff_layers(:ncol,2) = (ftem_layers(:ncol,2) - gas_ac_layers(:ncol,2))/dt
                 Diff_layers(:ncol,3) = (ftem_layers(:ncol,3) - gas_ac_layers(:ncol,3))/dt
@@ -1632,25 +1626,20 @@ end function chem_is_active
              ! for the tropospheric budget diagnostics
              if (trim(solsym(n))=='O3' .or. trim(solsym(n))=='O3LNZ' .or. &
                  trim(solsym(n))=='N2OLNZ' .or. trim(solsym(n))=='CH4LNZ') then
-                if( nstep == 0 ) then
-                    ftem_layers = 0.0_r8
-                    gas_ac_layers = 0.0_r8
-                else
-                    ftem_layers = 0.0_r8
-                    gas_ac_layers = 0.0_r8
+                ftem_layers = 0.0_r8
+                gas_ac_layers = 0.0_r8
+                if( nstep /= 0 ) then
                     do k=1,pver
                        ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k) * tropFlagInt(:ncol,k)
                        gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k) * tropFlagInt(:ncol,k)
                     end do
-                    if (history_gaschmbudget_2D_levels ) then
-                    call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
-                    endif
                 endif
-
-                if( nstep == 0 ) then
-                   Diff_layers(:ncol,:) = 0.0_r8
-                else
-                   Diff_layers(:ncol,:) = 0.0_r8
+                if (history_gaschmbudget_2D_levels ) then
+                    call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
+                endif
+                
+                Diff_layers(:ncol,:) = 0.0_r8
+                if( nstep /= 0 ) then
                    Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
                 end if
                         
