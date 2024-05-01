@@ -411,6 +411,7 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
+         if (masterproc)write(102,*)"Calling atm_import from  atm_init_mct StepNo=0----------------------- "
           call atm_import( x2a_a%rattr, cam_in )
 
           call t_startf('CAM_run1')
@@ -419,7 +420,7 @@ CONTAINS
           
           call atm_export( cam_out, a2x_a%rattr )
        else
-
+         if (masterproc)write(102,*)"Calling atm_import from  atm_init_mct----------------------- "
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           call t_stopf('atm_read_srfrest_mct')
@@ -550,6 +551,7 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
+    if (masterproc)write(102,*)"Calling atm_import from  atm_init_run StepNo=0----------------------- "
     call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync , &
          day_spec=day_sync, tod_spec=tod_sync)
     call t_stopf  ('CAM_import')

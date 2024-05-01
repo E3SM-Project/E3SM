@@ -21,7 +21,7 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
-    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_coupled_data
+    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
     use cam_abortutils, only: endrun
@@ -32,7 +32,7 @@ contains
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
-    ! For iac monthly coupling fields
+    ! For IAC monthly coupling fields
     integer, intent(in), optional :: mon_spec        ! Simulation month
     integer, intent(in), optional :: day_spec        ! Simulation day
     integer, intent(in), optional :: tod_spec        ! Simulation time of day [s]
@@ -42,8 +42,8 @@ contains
     integer            :: i,lat,n,c,ig  ! indices
     integer            :: ncols         ! number of columns
     logical, save      :: first_time = .true.
-    integer            :: bnd_beg, bnd_end ! beginning and ending boundary month indices for iac coupling
-    real(r8)           :: tfrac            ! time fraction between boundary months for the iac coupling
+    integer            :: bnd_beg, bnd_end ! beginning and ending boundary month indices for IAC coupling
+    real(r8)           :: tfrac            ! time fraction between boundary months for the IAC coupling
     real(r8)           :: tfrac_complement ! complement of tfrac (i.e., 1.0_r8-tfrac)
     integer, parameter :: ndst = 2
     integer, target    :: spc_ndx(ndst)
@@ -57,11 +57,15 @@ contains
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
 
-    ! Calculate iac boundary month indices and interpolation fraction
-    ! up here, so we don't do it for every column.  We don't set the
-    ! optional time variables during initialization, so we'll switch on
-    ! that
+    !------------------------------------------------------------------------
+    ! Calculate time fraction for interpolating IAC fields
+    
+    ! NOTE: Time fractions for IAC fields should only be computed during the
+    ! runtime. We are checking the presence of "mon_spec" etc., which should only
+    ! be present if atm_import is called during the runtime
+    !------------------------------------------------------------------------
     if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
+      if (masterproc)write(102,*)"atm_import called -----------FROM RUN------------ "
        call iac_coupled_timeinterp (mon_spec, day_spec, tod_spec, & !in
             bnd_beg, bnd_end, tfrac)                                !out
        if (masterproc)write(102,*)" TFRAC computed:",bnd_beg, bnd_end, tfrac, get_nstep()
@@ -149,31 +153,36 @@ contains
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
 
-          ! TRS atm_import is called during init prior to any iac
-          ! coupling, so we look for the optional month argument which
-          ! we only use during atm run
-          !MUST FIXME:B- This should be controlled by a flag set to true by iac, like "flux_from_iac" or somethign similar
-          if (present(mon_spec)) then 
+          !------------------------------------------------------------------------------------------
+          ! Interpolate IAC fields: Interpolate one surface field and two vertical emissions field
+          !
+          ! NOTE: Interpolation should only be done during the runtime. We use the presence of 
+          ! optional argument "mon_spec" to detect runtime as it should only be present if 
+          ! atm_import is called during the runtime
+          !------------------------------------------------------------------------------------------
+          ! MUST FIXME:B- This should be controlled by a flag set to true by IAC, like "flux_from_iac" or something similar
+          ! we also need a flag to detect runtime
+          if (present(mon_spec)) then
+             !if surface flux from IAC exists, interpolate all IAC fields in time
              if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
-                ! TRS - iac co2 coupling
 
-                ! TRS - interpolate iac from monthly values to the simulation time using boundary
-                ! months bnd_beg, bnd_end, and tfrac
-                !FIXME:B- This looks like a surface field, verify it, change the variable name to reflect it
+                ! Compute the tfrac compliment for interpolation
                 tfrac_complement = 1.0_r8 - tfrac
+
+                ! Interpolate IAC to extract values at current simulation time using monthly boundaries (bnd_beg and bnd_end)
                 cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
                      -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
 
-                ! iac air high and low fields have their own structure inside iac_coupled_fields
+                ! IAC air high and low fields have their own structure inside iac_coupled_fields
                 !FIXME:B- Change variable names to reflect vertical emissions and at which height.
-                iac_coupled_data(c)%fco2_low_iac(i) = &
+                iac_vertical_emiss(c)%fco2_low_height(i) = &
                      -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
                      -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac !MUST FIXME:B- why use "co2sfc" here, is it a bug???
 
-                iac_coupled_data(c)%fco2_high_iac(i) = &
+                iac_vertical_emiss(c)%fco2_high_height(i) = &
                      -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
                      -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac!MUST FIXME:B- why use "co2sfc" here, is it a bug???
-                if (masterproc .and. c==begchunk .and. i==1)write(102,*)"Time interpolation done:",iac_coupled_data(c)%fco2_high_iac(i), &
+                if (masterproc .and. c==begchunk .and. i==1)write(102,*)"Time interpolation done:",iac_vertical_emiss(c)%fco2_high_height(i), &
                     x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig), x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig), tfrac, get_nstep()
              endif
           endif

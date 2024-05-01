@@ -36,21 +36,21 @@ module iac_coupled_fields
   public :: iac_coupled_timeinterp
 
   ! Public data types
-  public iac_coupled_data_t             ! Data structure for airhi and airlo
+  public iac_vertical_emiss_t             ! Data structure for airhi and airlo
 
   ! Public data
-  public iac_coupled_data
+  public iac_vertical_emiss
   logical, protected :: iac_present=.false.
 
   !------------------------------------------------
   ! This is the chunked and columnated data from the iac coupling
   !------------------------------------------------
-  type iac_coupled_data_t
+  type iac_vertical_emiss_t
      integer  :: lchnk                   ! chunk index
      integer  :: ncol                    ! number of active columns
-     real(r8), allocatable :: fco2_low_iac(:)   ! co2 flux from iac (low alt)
-     real(r8), allocatable :: fco2_high_iac(:)  ! co2 flux from iac (high alt)
-  end type iac_coupled_data_t
+     real(r8), allocatable :: fco2_low_height(:)   ! co2 flux from iac (low alt)
+     real(r8), allocatable :: fco2_high_height(:)  ! co2 flux from iac (high alt)
+  end type iac_vertical_emiss_t
 
   logical  :: cam_outfld = .false.
   integer, parameter :: huge_int = huge(1)
@@ -59,7 +59,7 @@ module iac_coupled_fields
   real(r8)          :: lev_bnds(2), time_bnds(1), days_in_one_yr
 
   ! This is our internal data structure to hold the chunked airlo and airhi
-  type(iac_coupled_data_t), pointer:: iac_coupled_data(:)
+  type(iac_vertical_emiss_t), pointer:: iac_vertical_emiss(:)
 
 contains
 
@@ -142,30 +142,30 @@ contains
     endif
 
     ! Allocate and initialize the coupled data arrays
-    allocate (iac_coupled_data(begchunk:endchunk), stat=ierror)
+    allocate (iac_vertical_emiss(begchunk:endchunk), stat=ierror)
 
     if ( ierror /= 0 )then
-      write(err_str,*) 'ERROR: Failed to allocate iac_coupled_data, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
+      write(err_str,*) 'ERROR: Failed to allocate iac_vertical_emiss, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
       call endrun(err_str)
     end if
 
     do c = begchunk,endchunk
-       iac_coupled_data(c)%lchnk = c
-       iac_coupled_data(c)%ncol  = get_ncols_p(c)
+       iac_vertical_emiss(c)%lchnk = c
+       iac_vertical_emiss(c)%ncol  = get_ncols_p(c)
 
-       allocate (iac_coupled_data(c)%fco2_low_iac(pcols), stat=ierror)
+       allocate (iac_vertical_emiss(c)%fco2_low_height(pcols), stat=ierror)
        if ( ierror /= 0 ) then
-         write(err_str,*) 'ERROR: Failed to allocate fco2_low_iac, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
+         write(err_str,*) 'ERROR: Failed to allocate fco2_low_height, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
          call endrun(err_str)
        endif
 
-       allocate (iac_coupled_data(c)%fco2_high_iac(pcols), stat=ierror)
+       allocate (iac_vertical_emiss(c)%fco2_high_height(pcols), stat=ierror)
        if ( ierror /= 0 ) then
-         write(err_str,*) 'ERROR: Failed to allocate fco2_high_iac, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
+         write(err_str,*) 'ERROR: Failed to allocate fco2_high_height, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
          call endrun(err_str)
        endif
-       iac_coupled_data(c)%fco2_low_iac (:) = 0._r8
-       iac_coupled_data(c)%fco2_high_iac (:) = 0._r8
+       iac_vertical_emiss(c)%fco2_low_height (:) = 0._r8
+       iac_vertical_emiss(c)%fco2_high_height (:) = 0._r8
     end do
 
     if (masterproc)write(102,*)"Called iac_coupled_fields_init....", get_nstep()
@@ -240,11 +240,11 @@ contains
           do i=1,pver
              ! Check upper layer boundary
              if (state(c)%zi(icol, i+1) < 11000) cycle
-             tmpptr(icol,i) = iac_coupled_data(c)%fco2_high_iac(i)
+             tmpptr(icol,i) = iac_vertical_emiss(c)%fco2_high_height(i)
 
              ! Layers 1 to i-1 now get an even distribution of the co2 in airlo.
-             tmpptr(icol,1:i-1) = iac_coupled_data(c)%fco2_low_iac(i)/(i-1)
-             if (c==begchunk .and. i==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_coupled_data(c)%fco2_low_iac(i), iac_coupled_data(c)%fco2_high_iac(i)
+             tmpptr(icol,1:i-1) = iac_vertical_emiss(c)%fco2_low_height(i)/(i-1)
+             if (c==begchunk .and. i==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(c)%fco2_low_height(i), iac_vertical_emiss(c)%fco2_high_height(i)
 
              ! Exit the vertical loop
              exit
