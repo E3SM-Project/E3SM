@@ -59,6 +59,7 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - footnotes
 
 extra_javascript:
   # - javascript/mathjax.js
@@ -68,5 +69,6 @@ extra_javascript:
 repo_url: https://github.com/E3SM-Project/scream
 
 plugins:
+  - search
   - bibtex:
-      bib_dir: refs
+      bib_dir: docs/refs
