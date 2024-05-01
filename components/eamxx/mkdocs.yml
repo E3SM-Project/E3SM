@@ -66,3 +66,7 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 repo_url: https://github.com/E3SM-Project/scream
+
+plugins:
+  - bibtex:
+      bib_dir: refs

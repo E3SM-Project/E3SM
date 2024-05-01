@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Python deps
         run: |
-          pip install mkdocs pymdown-extensions mkdocs-material mdutils
+          pip install mkdocs pymdown-extensions mkdocs-material mdutils mkdocs-bibtex
   
       - name: Generate EAMxx params docs
         working-directory: components/eamxx/scripts
