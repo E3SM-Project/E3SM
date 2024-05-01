@@ -109,7 +109,7 @@ class Config {
    static int getName(Iter ConfigIter,        ///< [in] iterator for this entry
                       std::string &ConfigName ///< [out] name of a configuration
    );
-   
+
    /// Retrieves a 4-byte integer value from the Config based on name
    /// Returns a non-zero error code if the variable does not exist
    int get(const std::string VarName, ///< [in] name of variable to get

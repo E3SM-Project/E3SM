@@ -914,23 +914,32 @@ int main(int argc, char *argv[]) {
    }
 
    // Test retrieval of values using an iterator
-   Err1 = 0;
-   RefTest = true;
+   Err1      = 0;
+   RefTest   = true;
    int IList = 0;
-   for (auto It = ConfigOmega->begin();  It != ConfigOmega->end(); ++It) {
+   for (auto It = ConfigOmega->begin(); It != ConfigOmega->end(); ++It) {
       std::string NodeName;
-      Err1 = OMEGA::Config::getName(It, NodeName); 
+      Err1 = OMEGA::Config::getName(It, NodeName);
       // Note that iteration order not guaranteed but so far has
       // been consistent with location in the file.
-      if (IList == 0 and NodeName != "Hmix") RefTest = false;
-      if (IList == 1 and NodeName != "Vmix") RefTest = false;
-      if (IList == 2 and NodeName != "VectorI4") RefTest = false;
-      if (IList == 3 and NodeName != "VectorI8") RefTest = false;
-      if (IList == 4 and NodeName != "VectorR4") RefTest = false;
-      if (IList == 5 and NodeName != "VectorR8") RefTest = false;
-      if (IList == 6 and NodeName != "VectorLog") RefTest = false;
-      if (IList == 7 and NodeName != "StrList") RefTest = false;
-      if (IList > 7) RefTest = false;
+      if (IList == 0 and NodeName != "Hmix")
+         RefTest = false;
+      if (IList == 1 and NodeName != "Vmix")
+         RefTest = false;
+      if (IList == 2 and NodeName != "VectorI4")
+         RefTest = false;
+      if (IList == 3 and NodeName != "VectorI8")
+         RefTest = false;
+      if (IList == 4 and NodeName != "VectorR4")
+         RefTest = false;
+      if (IList == 5 and NodeName != "VectorR8")
+         RefTest = false;
+      if (IList == 6 and NodeName != "VectorLog")
+         RefTest = false;
+      if (IList == 7 and NodeName != "StrList")
+         RefTest = false;
+      if (IList > 7)
+         RefTest = false;
       ++IList;
    }
    if (Err1 == 0 && RefTest) {

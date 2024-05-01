@@ -145,15 +145,16 @@ int Config::get(Config &SubConfig // [inout] sub-configuration to retrieve
 
 int Config::getName(Config::Iter ConfigIter, // [in] input iterator
                     std::string &ConfigName  // [out] name of a configuration
-){
+) {
 
    // Initialize return values
-   int Err = 0;
+   int Err    = 0;
    ConfigName = "unknown";
 
    ConfigName = ConfigIter->first.as<std::string>();
 
-   if (ConfigName == "unknown") Err = -1;
+   if (ConfigName == "unknown")
+      Err = -1;
 
    return Err;
 
