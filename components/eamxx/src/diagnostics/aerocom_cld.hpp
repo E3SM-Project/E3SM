@@ -35,6 +35,9 @@ class AeroComCld : public AtmosphereDiagnostic {
   std::string m_topbot;
 
   Field m_dz;
+
+  std::map<std::string, int> m_index_map;
+  std::map<std::string, std::string> m_units_map;
 };
 
 }  // namespace scream

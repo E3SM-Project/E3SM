@@ -63,19 +63,24 @@ void AeroComCld::set_grids(
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
+  // Set the attrs maps
+  m_index_map["T_mid"] = 0; m_units_map["T_mid"] = "K";
+  m_index_map["p_mid"] = 1; m_units_map["p_mid"] = "Pa";
+  m_index_map["cldfrac_ice"] = 2; m_units_map["cldfrac_ice"] = "nondim";
+  m_index_map["cldfrac_liq"] = 3; m_units_map["cldfrac_liq"] = "nondim";
+  m_index_map["cdnc"] = 4; m_units_map["cdnc"] = "#/m3";
+  m_index_map["eff_radius_qc"] = 5; m_units_map["eff_radius_qc"] = "micron";
+  m_index_map["eff_radius_qi"] = 6; m_units_map["eff_radius_qi"] = "micron";
+  m_index_map["cldfrac_tot"] = 7; m_units_map["cldfrac_tot"] = "nondim";
+
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto d         = get_diagnostic();
   auto &metadata =
       d.get_header().get_extra_data<stratt_t>("io: string attributes");
-  metadata["0"] = "T_mid";
-  metadata["1"] = "p_mid";
-  metadata["2"] = "cldfrac_ice";
-  metadata["3"] = "cldfrac_liq";
-  metadata["4"] = "cdnc";
-  metadata["5"] = "eff_radius_qc";
-  metadata["6"] = "eff_radius_qi";
-  metadata["7"] = "cldfrac_tot";
+  for (std::map<std::string, int>::iterator it = m_index_map.begin(); it != m_index_map.end(); ++it) {
+      metadata[it->first] = m_index_map[it->first] + " (" + m_units_map[it->first] + ")";
+  }
 }
 
 void AeroComCld::compute_diagnostic_impl() {
@@ -173,20 +178,20 @@ void AeroComCld::compute_diagnostic_impl() {
             /* In general, converting a 3D property X to a 2D cloud-top
              * counterpart x follows: x(i) += X(i,k) * weights * Phase
              * but X and Phase are not always needed */
-            out(icol, /* T_mid */ 0) += tmid_icol(ilay) * aerocom_wts;
-            out(icol, /* p_mid */ 1) += pmid_icol(ilay) * aerocom_wts;
-            out(icol, /* cldfrac_ice */ 2) += (1.0 - aerocom_phi) * aerocom_wts;
-            out(icol, /* cldfrac_liq */ 3) += aerocom_phi * aerocom_wts;
+            out(icol, m_index_map["T_mid"]) += tmid_icol(ilay) * aerocom_wts;
+            out(icol, m_index_map["p_mid"]) += pmid_icol(ilay) * aerocom_wts;
+            out(icol, m_index_map["cldfrac_ice"]) += (1.0 - aerocom_phi) * aerocom_wts;
+            out(icol, m_index_map["cldfrac_liq"]) += aerocom_phi * aerocom_wts;
             // cdnc
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
                         physconst::gravit / cld_icol(ilay);
-            out(icol, /* cdnc */ 4) += cdnc * aerocom_phi * aerocom_wts;
-            out(icol, /* eff_radius_qc */ 5) +=
+            out(icol, m_index_map["cdnc"]) += cdnc * aerocom_phi * aerocom_wts;
+            out(icol, m_index_map["eff_radius_qc"]) +=
                 rel_icol(ilay) * aerocom_phi * aerocom_wts;
-            out(icol, /* eff_radius_qi */ 6) +=
+            out(icol, m_index_map["eff_radius_qi"]) +=
                 rei_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
             // Reset clr_icol to aerocom_tmp to accumulate
             clr_icol = aerocom_tmp;
@@ -207,7 +212,7 @@ void AeroComCld::compute_diagnostic_impl() {
         // defined as (1 - clr_icol). This is true because
         // clr_icol is the result of accumulative probabilities
         // (their products)
-        out(icol, /* cldfrac_tot */ 7) = 1.0 - clr_icol;
+        out(icol, m_index_map["cldfrac_tot"]) = 1.0 - clr_icol;
       });
 }
 
