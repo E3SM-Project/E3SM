@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
     
     
       
@@ -1706,6 +1706,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coupling-of-mpas-seaice-within-e3sm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coupling of MPAS-seaice within E3SM
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#icepack" class="md-nav__link">
     <span class="md-ellipsis">
       Icepack
@@ -1861,6 +1870,113 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../generate_domain_files/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    generate_domain_files
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            generate_domain_files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1900,6 +2016,15 @@
   <a href="#mpas-framework" class="md-nav__link">
     <span class="md-ellipsis">
       MPAS Framework
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coupling-of-mpas-seaice-within-e3sm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coupling of MPAS-seaice within E3SM
     </span>
   </a>
   
@@ -2067,6 +2192,11 @@
 <li><strong>Online, run-time analysis framework.</strong> A system for defining analysis of model states during run time, reducing the need for post-processing and model output.</li>
 </ul>
 <p>Additionally, a number of shared operators exist to perform common operations on model data. These include geometric operations (e.g., length, area, and angle operations on the sphere or the plane), interpolation (linear, barycentric, Wachspress, radial basis functions, spline), vector and tensor operations (e.g., cross products, divergence), and vector reconstruction (e.g., interpolating from cell edges to cell centers). Most operators work on both spherical and planar meshes.</p>
+<h2 id="coupling-of-mpas-seaice-within-e3sm">Coupling of MPAS-seaice within E3SM</h2>
+<p>Several files within MPAS-SI control the coupling of fields between MPAS-SI and other E3SM components via the coupler. A list of all variables being passed to and from MPAS-SI can be found in <code>components/mpas-seaice/driver/mpassi_cpl_indices.F</code>.
+Variables named with the prefix <code>x2i</code> are passed from the coupler to MPAS-SI, variables with the prefix <code>i2x</code> are passed from MPAS-SI to the coupler.
+For example, all coupled variables are named with the following convention:
+<code>index_i2x_Si_ithick</code> refers to a state variable of ice (<code>Si</code>) that gets passed from MPAS-SI to the coupler (<code>i2x</code>) for the ice thickness (<code>ithick</code>). <code>index_x2i_So_t</code> refers to an ocean state variable (<code>So</code>) passed from the the coupler to MPAS-SI (<code>x2i</code>) for ocean temperature (<code>t</code>).</p>
 <h2 id="icepack">Icepack</h2>
 <p>For changes to Icepack, please consult the <a href="https://github.com/CICE-Consortium/About-Us/wiki/Contributing">CICE Consortium's recommendations for code contributions</a>.</p>
 <p>To access the column physics in Icepack, MPAS-seaice uses methods defined in <code>icepack_intfc.F90</code>. The 'init' and 'query' methods are used to set and retrieve Icepack values. A 'write' method is also available for documenting these values. MPAS-seaice follows the 'icepack_warnings' methodology where <code>icepack_warnings_aborted</code> is checked and <code>icepack_warnings_flush</code> is called after every call to an Icepack method. It does not directly “use” Icepack data, accessing Icepack data only through these interfaces.</p>
@@ -2237,10 +2367,10 @@ $ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.em
 </code></pre></div>
 <h3 id="create-comparison-plots">Create comparison plots</h3>
 <p>To generate MPAS-Analysis plots from the CICE-QC runs and compare:</p>
-<p>Copy the scripts in the file above to anvil or chrysalis - PROVIDE FILE</p>
-<p>Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for the qcPR19 comparison above)</p>
+<p>Copy the scripts in the file <a href="MPAS-Analysis_scripts.zip">MPAS-Analysis_scripts.zip</a> to anvil or chrysalis.</p>
+<p>Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for a QC comparison)</p>
 <p>Edit and submit (on chrysalis) the job script 3 times, once for icepack, once for column, and finally for the comparison.</p>
-<p>Browse the html output, e.g. navigate to
+<p>Browse the html output by navigating to the location indicated by <code>htmlSubdirectory</code> in the comparison script, e.g.
 <code>https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.eclare/icepack-testing/D12.qcPR19.emc.qcPR19.snicar_active.eclare108213.anvil/mpas_analysis_output/</code></p>
 
 
@@ -2297,7 +2427,7 @@ $ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.em
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.edit", "content.action.view", "content.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.3220b9d7.min.js"></script>
+      <script src="../../assets/javascripts/bundle.dd8806f2.min.js"></script>
       
         <script src="../../javascript/mathjax.js"></script>
       
