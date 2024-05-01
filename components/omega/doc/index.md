@@ -70,6 +70,7 @@ design/DataTypes
 design/Decomp
 design/Driver
 design/Halo
+design/HorzMeshClass
 design/Logging
 design/MachEnv
 design/Metadata
@@ -77,10 +78,10 @@ design/IO
 design/IOStreams
 design/Reductions
 design/ShallowWaterOmega0
+design/State
 design/TimeMgr
 design/Timers
 design/Tracers
-design/HorzMeshClass
 
 design/OmegaDesignTemplate
 ```
