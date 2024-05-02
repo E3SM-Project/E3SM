@@ -1325,6 +1325,11 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     diag_name = "NumberPath";
     // split will return the list [X, ''], with X being whatever is before 'NumberPath'
     params.set<std::string>("Number Kind",ekat::split(diag_field_name,"NumberPath").front());
+  } else if (diag_field_name=="AeroComCldTop" or
+             diag_field_name=="AeroComCldBot") {
+    diag_name = "AeroComCld";
+    // split will return the list ['', X], with X being whatever is after 'AeroComCld'
+    params.set<std::string>("AeroComCld Kind",ekat::split(diag_field_name,"AeroComCld").back());
   } else if (diag_field_name=="MeridionalVapFlux" or
              diag_field_name=="ZonalVapFlux") {
     diag_name = "VaporFlux";

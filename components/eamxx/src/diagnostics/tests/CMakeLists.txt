@@ -68,4 +68,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test "number" paths
   CreateDiagTest(number_paths "number_paths_tests.cpp")
 
+  # Test AEROCOM_CLD
+  CreateDiagTest(aerocom_cld "aerocom_cld_test.cpp")
+
 endif()

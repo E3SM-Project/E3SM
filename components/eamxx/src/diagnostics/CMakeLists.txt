@@ -19,6 +19,7 @@ set(DIAGNOSTIC_SRCS
   wind_speed.cpp
   aodvis.cpp
   number_path.cpp
+  aerocom_cld.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

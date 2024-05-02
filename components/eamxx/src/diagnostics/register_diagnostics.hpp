@@ -22,6 +22,7 @@
 #include "diagnostics/wind_speed.hpp"
 #include "diagnostics/aodvis.hpp"
 #include "diagnostics/number_path.hpp"
+#include "diagnostics/aerocom_cld.hpp"
 
 namespace scream {
 
@@ -51,6 +52,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("wind_speed",&create_atmosphere_diagnostic<WindSpeed>);
   diag_factory.register_product("AerosolOpticalDepth550nm",&create_atmosphere_diagnostic<AODVis>);
   diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
+  diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
 }
 
 } // namespace scream
