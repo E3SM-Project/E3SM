@@ -5,13 +5,13 @@
 
 Key information
 
-- Original physical properties of aerosols are documented in Liu et al. (2012). [@liu_toward_2012] Detailed information is included in the supplement.
+- Original physical properties of aerosols are documented in Liu et al. (2012).[@liu_toward_2012] Detailed information is included in the supplement.
 
-- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020). [@wang_aerosols_2020]
+- Physical properties of aerosols used in E3SMv1 are documented in Wang et al. (2020).[@wang_aerosols_2020]
 
-- Marine organic aerosol properties are defined in Burrows et al. (2022). [@burrows_oceanfilms_2022]
+- Marine organic aerosol properties are defined in Burrows et al. (2022).[@burrows_oceanfilms_2022]
 
-- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022). [@feng_global_2022]
+- Dust refractive index and longwave absorption coefficients are updated by Feng et al. (2022).[@feng_global_2022]
 
 - BC and POM hygroscopicity values are updated by Shan et al. (2024).
 
