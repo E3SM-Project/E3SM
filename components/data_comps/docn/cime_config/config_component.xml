@@ -116,8 +116,8 @@
       <value compset="_DOCN%SOM.*_TEST">pop_frc.1x1d.090130.nc</value>
       <value compset="_DOCN%SOMAQP" grid="oi%1.9x2.5">default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.2degFV_c20170421.nc</value>
       <value compset="_DOCN%SOMAQP" grid="oi%0.9x1.25">default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.1degFV_c20170421.nc</value>
-      <value compset="_DOCN%SOMAQP" grid="oi%ne4np4.pg2">SOM-RCE.ne4pg2.qdp_50.bld_30.T_300K.S_34.20240501.nc</value>
-      <value compset="_DOCN%SOMAQP" grid="oi%ne30np4.pg2">SOM-RCE.ne30pg2.qdp_50.bld_30.T_300K.S_34.20240501.nc</value>
+      <value compset="_DOCN%SOMAQP" grid="oi%ne4np4.pg2">SOM-RCE.ne4pg2.qdp_0.bld_30.T_300K.S_34.20240501.nc</value>
+      <value compset="_DOCN%SOMAQP" grid="oi%ne30np4.pg2">SOM-RCE.ne30pg2.qdp_0.bld_30.T_300K.S_34.20240501.nc</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
