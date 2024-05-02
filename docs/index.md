@@ -4,10 +4,15 @@ E3SM is a state-of-the-art fully coupled model of the Earth's climate including 
 and cryospheric processes. It is intended to address the most challenging and demanding climate-change
 research problems and Department of Energy mission needs while efficiently using DOE Leadership Computing Facilities.
 
+!!! note
+    This is the future home for all documentation specific to E3SM and its components. Until complete,
+    some documentation will be found at the project's
+    [Confluence wiki](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
+
 ## E3SM Basics
 
 - [Installation](installation.md)
-- [Usage](usage.md)
+- [User Guide](user-guide/index.md)
 - [Development](development.md)
 
 ## Component Models

@@ -3,8 +3,9 @@ site_name: E3SM
 nav:
   - Home: 'index.md'
   - E3SM Basics:
+    - 'index.md'
     - Installation: 'installation.md'
-    - Usage: 'usage.md'
+    - User Guide: 'user-guide/index.md'
     - Development: 'development.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
@@ -28,6 +29,9 @@ theme:
     toggle:
       icon: material/weather-night
       name: Switch to light mode
+  icon:
+    admonition:
+      note: octicons/tag-16
   features:
     - navigation.indexes
     - navigation.instant
@@ -46,7 +50,9 @@ theme:
 
 
 markdown_extensions:
+  - admonition
   - footnotes
+  - pymdownx.details
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tabbed:
