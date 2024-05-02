@@ -1229,9 +1229,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_self_attraction_loading_smoothing_width" type="real"
+<entry id="config_self_attraction_loading_depth_cutoff" type="real"
 	category="self_attraction_loading" group="self_attraction_loading">
-Defines region over which ssh is smoothed to zero at coasts for SAL calculation.
+Defines depths over which ssh is smoothed to zero for SAL calculation.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1780,11 +1780,19 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_topographic_wave_drag_scheme" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+Which of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or LGF: Local generation formula
+
+Valid values: JSL or ZAE or LGF
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_topographic_wave_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless topographic wave drag coefficient, $c_{topo}$.
 
-Valid values: any positive real, typically 5.0e-4
+Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1793,6 +1801,22 @@ Default: Defined in namelist_defaults.xml
 The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
 
 Valid values: 'harmonic-mean', 'centered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_topographic_wave_drag_cutoff_depth" type="real"
+	category="bottom_drag" group="bottom_drag">
+Specifies minimum depth at which topographic wave drag is applied
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_topographic_wave_drag_cutoff_width" type="real"
+	category="bottom_drag" group="bottom_drag">
+Width over which the topographic wave drag is progressively turned off
+
+Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
