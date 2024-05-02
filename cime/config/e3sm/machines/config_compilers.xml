@@ -866,30 +866,32 @@ for mct, etc.
   <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="intel" MACH="syrah">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <ADD_SLIBS>$(shell /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs)</ADD_SLIBS>
-  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
-</compiler>
-
 <compiler COMPILER="intel" MACH="quartz">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <NETCDF_PATH>/usr/gdata/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <ADD_SLIBS>$(shell /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_SLIBS>$(shell /usr/gdata/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+  <CXX_LIBS>-lstdc++ </CXX_LIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="ruby">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/gdata/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <ADD_SLIBS>$(shell /usr/gdata/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+  <CXX_LIBS>-lstdc++ </CXX_LIBS>
 </compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
