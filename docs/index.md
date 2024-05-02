@@ -21,6 +21,7 @@ research problems and Department of Energy mission needs while efficiently using
 - [EAMxx](./EAMxx/index.md)
 - [ELM](./ELM/index.md)
 - [MOSART](./MOSART/index.md)
+- [MPAS-Ocean](./MPAS-Ocean/index.md)
 
 ## Tools
 
