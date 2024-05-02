@@ -6,8 +6,4 @@ Dust-related processes are represented in the E3SM atmosphere and land model com
 
 ## Namelist parameters
 
-| Parameter                 | Description                                    | Default value                                     |
-| ------------------------- | ---------------------------------------------- | ------------------------------------------------- |
-| `dust_emis_scheme`*        | The v3 dust emission scheme (Kok et al., 2014) | `2` <!-- markdownlint-disable MD033 --><br> (set to 1 to switch to the v1/v2 scheme) |
-
-*This parameter is set in `user_nl_drv`
+[Dust Namelist Parameters](../user-guide/namelist_parameters.md#dust-aerosol)

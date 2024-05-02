@@ -24,35 +24,4 @@ MCSP applies a sinusoidal baroclinic profile in the temperature, moisture, and m
 
 ## Namelist parameters
 
-| ZM Parameters             | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_ke`               | Tunable evaporation efficiency in ZM deep convection scheme       | `2.5E-6`               |
-| `zmconv_tau`              | Relaxation time in ZM deep convection scheme                      | `3600`                 |
-| `zmconv_dmpdz`            | Parcel fractional mass entrainment rate                           | `-0.7E-3`              |
-| `zmconv_alfa`             | Initial downdraft mass flux fraction                              | `0.14D0`               |
-| `zmconv_tiedke_add`       | Temperature perturbation of an air parcel                         | `0.8D0`                |
-| `zmconv_cape_cin`         | Number of negative buoyancy regions that are allowed              | `1`                    |
-
-| dCAPE-ULL Parameters      | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_trigdcape_ull`    | DCAPE trigger along with unrestricted launching level for ZM deep convection scheme        | `.true.`  |
-| `zmconv_trig_dcape_only`  | DCAPE only trigger for ZM deep convection scheme                  | `.false.` <!-- markdownlint-disable MD033 --><br> If true, zmconv_trigdcape_ull must be false to use the dcape only trigger. |
-| `zmconv_trig_ull_only`    | Use unrestricted launching level (ULL) only trigger for ZM deep convection scheme          | `.false.` <!-- markdownlint-disable MD033 --><br> If true, zmconv_trigdcape_ull must be false to use the ull only trigger. |
-
-| Conv. micro. Parameters   | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_microp`           | Convective microphysics option in ZM convection scheme            | `true`                 |
-| `zmconv_auto_fac`         | Cloud droplet-rain autoconversion enhancement factor in the convective microphysics scheme | `7.0`     |
-| `zmconv_accr_fac`         | Cloud droplet-rain accretion enhancement factor in the convective microphysics scheme      | `1.5`     |
-| `zmconv_micro_dcs`        | Autoconversion size threshold for cloud ice to snow (m)           | `150.E-6`                 |
-
-| Mass flux adj. Parameters | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_clos_dyn_adj`     | Apply mass flux adjustment to ZM convection scheme               | `true`                 |
-
-| MCSP Parameters              | Description                                                       | Default value          |
-| ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_mcsp_heat_coeff`     | MCSP heating coefficient                                          | `0.3`                  |
-| `zmconv_mcsp_moisture_coeff` | MCSP moisture coefficient                                         | `0.0`                  |
-| `zmconv_mcsp_uwind_coeff`    | MCSP zonal wind coefficient                                       | `0.0`                  |
-| `zmconv_mcsp_vwind_coeff`    | MCSP meridional wind coefficient                                  | `0.0`                  |
+[ZM Namelist Parameters](../user-guide/namelist_parameters.md#zhang-and-mcfarlane-deep-convection-scheme)

@@ -12,11 +12,6 @@ The representation of atmospheric aerosols and their roles in the Earth system b
 
 In MAM4, sea salt aerosol is represented in the Aitken, accumulation, and coarse mode with particle emission size (diameter) ranges of 0.02-0.08, 0.08-1.0, and 1.0-10.0 μm, respectively. The emission flux of natural sea salt is first divided into 31 size bins, following the parameterization of Mårtensson et al. (2003) [@martensson_laboratory_2003] and Monahan et al. (1986), [@monahan_model_1986] and then redistributed to the three MAM4 size modes.
 
-## MAM Namelist parameters
+## Namelist parameters
 
-| Parameter                | Description                                                                         | Default value               |
-| ------------------------ | ----------------------------------------------------------------------------------- | --------------------------- |
-| `is_output_interactive_volc`    | Switch for diagnostic output of the stratospheric aerosol optics | `.false.`  |
-| `mam_amicphys_optaa`     | Recommended option of the new time-splitting treatment of H2SO4 production and loss | `1` <!-- markdownlint-disable MD033 --><br> (0 to turn it off) |
-| `n_so4_monolayers_pcage` | Number of monolayers required to age primary-carbon mode particles                  | `3`                         |
-| `seasalt_emis_scale`     | Tuning parameter for sea salt emission                                              | `0.55`                      |
+[MAM Namelist Parameters](../user-guide/namelist_parameters.md#modal-aerosol-module)

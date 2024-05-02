@@ -8,12 +8,4 @@ EAM uses the a dynamical core (dycore) from the High Order Method Modeling Envir
 
 Many dynamical core parameters can not be changed independently.  For example, increasing the hyperviscosity coefficient may require reducing the hyperviscosity timestep.   Dycore timesteps are tuned for each resolution and the defaults are close to the CFL stability limit. For complete details, as well as their interactions, see [EAM's HOMME dycore](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1044644202/EAM+s+HOMME+dycore).
 
-| Parameter        | Description                                                                                 | Default value  |
-| ---------------- | ------------------------------------------------------------------------------------------- | -------------- |
-| `se_tstep`       | Main dycore timestep. Additional parameters control the hyper viscsosity, trancer and vertical remap timesteps, which are derived from se_tstep. <!-- markdownlint-disable MD033 --><br> units = seconds | Scales linearly with horizontal resolution. <br> NE30 default: `300` |
-| `nu`             | Tensor hyperviscosity coefficient, independent of spatial resolution. <br> units = 1/s      | `3.4e-8` |
-| `nu_top`         | Scalar viscosity at model top. <br> units = m^2/s                                           | Horizontal resolution dependent <br> NE30 default: `2.5e5` |
-| `transport_alg`  | Select between semi-lagrangian and Eulerian based transport schemes                         | `12` = semi-lagranian method with monotinicity and mass preservation |
-| `statefreq`      | print a varieity of dycore metrics to the atm.log file every “statefreq” timesteps          | `480`          |
-| `vert_remap_alg` | Algorithm used to remap the vertically lagrangian levels back to the reference levels       | `10` = strict monotonicity applied on top of a 2nd order accurate PPM method  |
-| `se_ftype`       | Controls how physics tendencies are applied.  0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies | `2`          |
+[HOMME Namelist Parameters](../user-guide/namelist_parameters.md#homme)
