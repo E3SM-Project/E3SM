@@ -442,6 +442,19 @@
   <lname>20TR_EAM_ELM%CNECACTCBC_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- Slab ocean RCE (aquaplanet w/ uniform ML depth & Q-flux) -->
+
+<compset>
+  <alias>ERCE</alias>
+  <lname>2000_EAM%RCE_SLND_MPASSI_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>ERCE-MMF1</alias>
+  <lname>2000_EAM%RCE-MMF1_SLND_MPASSI_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+</compset>
+
+
 <entries>
 
   <entry id="RUN_STARTDATE">
