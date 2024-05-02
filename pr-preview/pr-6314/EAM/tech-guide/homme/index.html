@@ -695,21 +695,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2167,21 +2152,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2226,14 +2196,7 @@
 
 <h1 id="high-order-methods-modeling-environment">High-Order Methods Modeling Environment</h1>
 <h2 id="overview">Overview</h2>
-<p>EAM using the a dynamical core (dycore)  from the High Order Method Modeling Environment (HOMME).  The EAM dycore solves the atmospheric primitive equations governing the evolution of velocity, density, pressure and temperature, as well as the transport of water species and related hydrometers, aerosols and other atmospheric constituents.  The governing equations are written in a vertically lagrangian terrain following mass coordinate.  They are discretized with second order finite differences in the radial direction and spectral finite elements in the horizontal (surface of the sphere) directions, and advanced in time with a 3rd order accurate 5 stage Runge-Kutta method.   Dissipation is added through the use of monotoncity contraints on some advectiion terms, explicitly added hyperviscosity, and a Laplacian-based sponge layer in the first few layers at the model top.  The transported species  makes use of an efficient interpolatory semi-Lagrangian method.   EAMv3 uses 80 layers in the vertical.   The use of the spectral finite element method allows EAMv3 to run on fully unstructured grids, including the cubed-sphere grid (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/34113147">SE Atmosphere Grid Overview (EAM &amp; CAM)</a>) which provides quasi-uniform resolution over the globe, and regionally refined meshes (RRM) which enhance horizontal resolution in regions of interest (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3690397775">Library of Regionally-Refined Model (RRM) Grids</a>).</p>
-<h3 id="references">References</h3>
-<ul>
-<li>Taylor et al. (2020) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup></li>
-<li>Bradley et al. (2022) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></li>
-<li>Guba et al. (2014) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></li>
-<li>Taylor and Fournier (2010) <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></li>
-</ul>
+<p>EAM uses the a dynamical core (dycore) from the High Order Method Modeling Environment (HOMME).<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup><sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> The EAM dycore solves the atmospheric primitive equations governing the evolution of velocity, density, pressure and temperature, as well as the transport of water species and related hydrometers, aerosols and other atmospheric constituents.  The governing equations are written in a vertically lagrangian terrain following mass coordinate.  They are discretized with second order finite differences in the radial direction and spectral finite elements in the horizontal (surface of the sphere) directions, and advanced in time with a 3rd order accurate 5 stage Runge-Kutta method.  Dissipation is added through the use of monotoncity contraints on some advectiion terms, explicitly added hyperviscosity, and a Laplacian-based sponge layer in the first few layers at the model top.  The transported species  makes use of an efficient interpolatory semi-Lagrangian method.  EAMv3 uses 80 layers in the vertical.  The use of the spectral finite element method allows EAMv3 to run on fully unstructured grids, including the cubed-sphere grid (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/34113147">SE Atmosphere Grid Overview (EAM &amp; CAM)</a>) which provides quasi-uniform resolution over the globe, and regionally refined meshes (RRM) which enhance horizontal resolution in regions of interest (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3690397775">Library of Regionally-Refined Model (RRM) Grids</a>).</p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
 <p>Many dynamical core parameters can not be changed independently.  For example, increasing the hyperviscosity coefficient may require reducing the hyperviscosity timestep.   Dycore timesteps are tuned for each resolution and the defaults are close to the CFL stability limit. For complete details, as well as their interactions, see <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1044644202/EAM+s+HOMME+dycore">EAM's HOMME dycore</a>.</p>
 <table>
@@ -2286,16 +2249,13 @@
 <hr />
 <ol>
 <li id="fn:1">
-<p>Mark A. Taylor, Oksana Guba, Andrew Steyer, Paul A. Ullrich, David M. Hall, and Christopher Eldred. An Energy Consistent Discretization of the Nonhydrostatic Equations in Primitive Variables. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001783, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001783">doi:10.1029/2019MS001783</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>Mark A. Taylor and Aimé Fournier. A compatible and conservative spectral element method on unstructured grids. <em>Journal of Computational Physics</em>, 229(17):5879–5895, August 2010. URL: <a href="https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841">https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841</a> (visited on 2024-03-29), <a href="https://doi.org/10.1016/j.jcp.2010.04.008">doi:10.1016/j.jcp.2010.04.008</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>Andrew M. Bradley, Peter A. Bosler, and Oksana Guba. Islet: interpolation semi-Lagrangian element-based transport. <em>Geoscientific Model Development</em>, 15(16):6285–6310, August 2022. URL: <a href="https://gmd.copernicus.org/articles/15/6285/2022/">https://gmd.copernicus.org/articles/15/6285/2022/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-15-6285-2022">doi:10.5194/gmd-15-6285-2022</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>O. Guba, M. A. Taylor, P. A. Ullrich, J. R. Overfelt, and M. N. Levy. The spectral element method on variable resolution grids: evaluating grid sensitivity and resolution-aware numerical viscosity. preprint, Numerical Methods, June 2014. URL: <a href="https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf">https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmdd-7-4081-2014">doi:10.5194/gmdd-7-4081-2014</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>O. Guba, M. A. Taylor, P. A. Ullrich, J. R. Overfelt, and M. N. Levy. The spectral element method on variable resolution grids: evaluating grid sensitivity and resolution-aware numerical viscosity. preprint, Numerical Methods, June 2014. URL: <a href="https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf">https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmdd-7-4081-2014">doi:10.5194/gmdd-7-4081-2014</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
-</li>
-<li id="fn:4">
-<p>Mark A. Taylor and Aimé Fournier. A compatible and conservative spectral element method on unstructured grids. <em>Journal of Computational Physics</em>, 229(17):5879–5895, August 2010. URL: <a href="https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841">https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841</a> (visited on 2024-03-29), <a href="https://doi.org/10.1016/j.jcp.2010.04.008">doi:10.1016/j.jcp.2010.04.008</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Mark A. Taylor, Oksana Guba, Andrew Steyer, Paul A. Ullrich, David M. Hall, and Christopher Eldred. An Energy Consistent Discretization of the Nonhydrostatic Equations in Primitive Variables. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001783, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001783">doi:10.1029/2019MS001783</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

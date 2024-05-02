@@ -905,21 +905,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2176,21 +2161,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2244,14 +2214,7 @@
 
 <h1 id="cloud-feedback-model-intercomparison-project-cfmip-observation-simulator-package">Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package</h1>
 <h2 id="overview">Overview</h2>
-<p>The Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package (COSP; Bodas-Salcedo et al., 2011; Swales et al., 2018) was developed to improve the consistency between model clouds and satellite observations. COSP contains several independent satellite simulators for better comparing model clouds with satellite measurements collected by the International Satellite Cloud Climatology Project (ISCCP), the Moderate Resolution Imaging Spectroradiometer (MODIS), the Multi-angle Imaging SpectroRadiometer (MISR), Cloud-Aerosol Lidar and Infrared Pathfinder Satellite Observation (CALIPSO), and CloudSat. The use of satellite simulators will not only make a fairer comparison between model clouds and satellite data but also allow a more in-depth analysis of clouds. For example, clouds can be assessed in terms of their optical properties and vertical location, which dictate their radiative effects.</p>
-<h3 id="references">References</h3>
-<ul>
-<li>Zhang et al. (2024) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup></li>
-<li>Zhang et al. (2019) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></li>
-<li>Swales et al. (2018) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></li>
-<li>Bodas-Salcedo et al. (2011) <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></li>
-</ul>
+<p>The Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package (COSP; Bodas-Salcedo et al., 2011 <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>; Swales et al., 2018 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>; Zhang et al., 2019 <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>; Zhang et al., 2024 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>) was developed to improve the consistency between model clouds and satellite observations. COSP contains several independent satellite simulators for better comparing model clouds with satellite measurements collected by the International Satellite Cloud Climatology Project (ISCCP), the Moderate Resolution Imaging Spectroradiometer (MODIS), the Multi-angle Imaging SpectroRadiometer (MISR), Cloud-Aerosol Lidar and Infrared Pathfinder Satellite Observation (CALIPSO), and CloudSat. The use of satellite simulators will not only make a fairer comparison between model clouds and satellite data but also allow a more in-depth analysis of clouds. For example, clouds can be assessed in terms of their optical properties and vertical location, which dictate their radiative effects.</p>
 <h2 id="to-turn-on-cosp-outputs">To turn on COSP outputs</h2>
 <p>Run (add to the run script) the following command before running <code>./case.setup</code></p>
 <p><code>./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'</code></p>
@@ -2322,16 +2285,16 @@
 <hr />
 <ol>
 <li id="fn:1">
-<p>Yuying Zhang, Shaocheng Xie, Yi Qin, Wuyin Lin, Jean-Christophe Golaz, Xue Zheng, Po-Lun Ma, Yun Qian, Qi Tang, Christopher R. Terai, and Meng Zhang. Understanding changes in cloud simulations from E3SM version 1 to version 2. <em>Geoscientific Model Development</em>, 17(1):169–189, January 2024. URL: <a href="https://gmd.copernicus.org/articles/17/169/2024/">https://gmd.copernicus.org/articles/17/169/2024/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-17-169-2024">doi:10.5194/gmd-17-169-2024</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>A. Bodas-Salcedo, M. J. Webb, S. Bony, H. Chepfer, J.-L. Dufresne, S. A. Klein, Y. Zhang, R. Marchand, J. M. Haynes, R. Pincus, and V. O. John. COSP: Satellite simulation software for model assessment. <em>Bulletin of the American Meteorological Society</em>, 92(8):1023–1043, August 2011. URL: <a href="https://journals.ametsoc.org/doi/10.1175/2011BAMS2856.1">https://journals.ametsoc.org/doi/10.1175/2011BAMS2856.1</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/2011BAMS2856.1">doi:10.1175/2011BAMS2856.1</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>Yuying Zhang, Shaocheng Xie, Wuyin Lin, Stephen A. Klein, Mark Zelinka, Po‐Lun Ma, Philip J. Rasch, Yun Qian, Qi Tang, and Hsi‐Yen Ma. Evaluation of Clouds in Version 1 of the E3SM Atmosphere Model With Satellite Simulators. <em>Journal of Advances in Modeling Earth Systems</em>, 11(5):1253–1268, May 2019. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018MS001562">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018MS001562</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2018MS001562">doi:10.1029/2018MS001562</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>Dustin J. Swales, Robert Pincus, and Alejandro Bodas-Salcedo. The Cloud Feedback Model Intercomparison Project Observational Simulator Package: Version 2. <em>Geoscientific Model Development</em>, 11(1):77–81, January 2018. URL: <a href="https://gmd.copernicus.org/articles/11/77/2018/">https://gmd.copernicus.org/articles/11/77/2018/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-11-77-2018">doi:10.5194/gmd-11-77-2018</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Dustin J. Swales, Robert Pincus, and Alejandro Bodas-Salcedo. The Cloud Feedback Model Intercomparison Project Observational Simulator Package: Version 2. <em>Geoscientific Model Development</em>, 11(1):77–81, January 2018. URL: <a href="https://gmd.copernicus.org/articles/11/77/2018/">https://gmd.copernicus.org/articles/11/77/2018/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-11-77-2018">doi:10.5194/gmd-11-77-2018</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>Yuying Zhang, Shaocheng Xie, Wuyin Lin, Stephen A. Klein, Mark Zelinka, Po‐Lun Ma, Philip J. Rasch, Yun Qian, Qi Tang, and Hsi‐Yen Ma. Evaluation of Clouds in Version 1 of the E3SM Atmosphere Model With Satellite Simulators. <em>Journal of Advances in Modeling Earth Systems</em>, 11(5):1253–1268, May 2019. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018MS001562">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018MS001562</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2018MS001562">doi:10.1029/2018MS001562</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>A. Bodas-Salcedo, M. J. Webb, S. Bony, H. Chepfer, J.-L. Dufresne, S. A. Klein, Y. Zhang, R. Marchand, J. M. Haynes, R. Pincus, and V. O. John. COSP: Satellite simulation software for model assessment. <em>Bulletin of the American Meteorological Society</em>, 92(8):1023–1043, August 2011. URL: <a href="https://journals.ametsoc.org/doi/10.1175/2011BAMS2856.1">https://journals.ametsoc.org/doi/10.1175/2011BAMS2856.1</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/2011BAMS2856.1">doi:10.1175/2011BAMS2856.1</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Yuying Zhang, Shaocheng Xie, Yi Qin, Wuyin Lin, Jean-Christophe Golaz, Xue Zheng, Po-Lun Ma, Yun Qian, Qi Tang, Christopher R. Terai, and Meng Zhang. Understanding changes in cloud simulations from E3SM version 1 to version 2. <em>Geoscientific Model Development</em>, 17(1):169–189, January 2024. URL: <a href="https://gmd.copernicus.org/articles/17/169/2024/">https://gmd.copernicus.org/articles/17/169/2024/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmd-17-169-2024">doi:10.5194/gmd-17-169-2024</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
