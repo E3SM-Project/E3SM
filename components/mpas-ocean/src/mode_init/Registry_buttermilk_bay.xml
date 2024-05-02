@@ -1,4 +1,4 @@
-	<nml_record name="buttermilk_bay" mode="init" configuration=="buttermilk_bay">
+	<nml_record name="buttermilk_bay" mode="init" configuration="buttermilk_bay">
 		<nml_option name="config_Buttermilk_bay_vert_levels" type="integer" default_value="1" units="unitless"
 			description="Number of vertical levels in Buttermilk bay problem."
 			possible_values="Any positive integer number greater than 1."
@@ -15,14 +15,14 @@
 			description="Use maximum elevation pixels as subgrid bathymetry on cell edges"
 			possible_values=".true. or .false."
 	        />
-                <nml_option name="config_Buttermilk_bay_subgrid_table_levels" type="integer" default_value="10" units="unitless"
-                        description="Number of levels in suvgrid lookup tables"
-                        possible_values="Any positive integer number"
-                />
-                <nml_option name="config_Buttermilk_bay_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
-                        description="Whether to include thin layer in subgrid tables"
-                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_Buttermilk_bay_subgrid_table_levels" type="integer" default_value="10" units="unitless"
+			description="Number of levels in suvgrid lookup tables"
+			possible_values="Any positive integer number"
+		/>
+		<nml_option name="config_Buttermilk_bay_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
+			description="Whether to include thin layer in subgrid tables"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Buttermilk_bay_topography_source" type="character" default_value="xy_file" units="unitless"
 			description="If 'latlon_file/xy_file', reads in topography from file specified in config_Buttermilk_bay_topography_file"
 			possible_values="'latlon_file' or 'xy_file'"
