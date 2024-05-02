@@ -1121,6 +1121,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_momentum_use_active_wave" type="logical"
+	category="wave_coupling" group="wave_coupling">
+Flag for correcting momentum in ocean due waves. Requires config_use_active_wave = .true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
 	category="wave_coupling" group="wave_coupling">
 Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile

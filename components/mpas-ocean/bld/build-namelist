@@ -698,8 +698,10 @@ if ($ocn_wave eq 'true' ) {
 
 if ($ocn_wave eq 'true' ) {
 	add_default($nl, 'config_use_active_wave', 'val'=>'.true.');
+	add_default($nl, 'config_momentum_use_active_wave', 'val'=>'.true.');
 } else {
 	add_default($nl, 'config_use_active_wave', 'val'=>'.false.');
+	add_default($nl, 'config_momentum_use_active_wave', 'val'=>'.false.');
 }
 add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 

@@ -2467,10 +2467,18 @@ contains
       do i = 1, nCellsSolve
         n = n + 1
         if ( windStressZonalField % isActive ) then
-           windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n) - (x2o_o % rAttr(index_x2o_Faww_Tawx, n) - x2o_o % rAttr(index_x2o_Fwow_Twox, n))
+           if (config_momentum_use_active_wave) then     
+              windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n) - (x2o_o % rAttr(index_x2o_Faww_Tawx, n) - x2o_o % rAttr(index_x2o_Fwow_Twox, n))
+           else
+              windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n)
+           endif
         end if
         if ( windStressMeridionalField % isActive ) then
-           windStressMeridional(i) = x2o_o % rAttr(index_x2o_Foxx_tauy, n) - (x2o_o % rAttr(index_x2o_Faww_Tawy, n) - x2o_o % rAttr(index_x2o_Fwow_Twoy, n))
+           if (config_momentum_use_active_wave) then     
+              windStressMeridional(i) = x2o_o % rAttr(index_x2o_Foxx_tauy, n) - (x2o_o % rAttr(index_x2o_Faww_Tawy, n) - x2o_o % rAttr(index_x2o_Fwow_Twoy, n))
+           else
+              windStressMeridional(i) = x2o_o % rAttr(index_x2o_Foxx_tauy, n)
+           endif
         end if
 
         if ( latentHeatFluxField % isActive ) then
