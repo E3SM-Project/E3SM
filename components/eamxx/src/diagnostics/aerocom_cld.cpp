@@ -45,6 +45,10 @@ void AeroComCld::set_grids(
   EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
                    "Error! Some inconsistency in AeroComCld: index and units "
                    "maps do not match!\n");
+  // Ensure m_index_map and m_ndiag match
+  EKAT_REQUIRE_MSG(static_cast<int>(m_index_map.size()) == m_ndiag,
+                   "Error! Some inconsistency in AeroComCld: index and units "
+                   "maps do not match!\n");
 
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
@@ -133,17 +137,17 @@ void AeroComCld::compute_diagnostic_impl() {
   const int nlevs = m_nlevs;
   bool is_top     = (m_topbot == "Top");
 
-  // Get indices of each call we care about
-  const int T_mid_idx         = m_index_map["T_mid"];
-  const int p_mid_idx         = m_index_map["p_mid"];
-  const int cldfrac_ice_idx   = m_index_map["cldfrac_ice"];
-  const int cldfrac_liq_idx   = m_index_map["cldfrac_liq"];
-  const int cdnc_idx          = m_index_map["cdnc"];
-  const int eff_radius_qc_idx = m_index_map["eff_radius_qc"];
-  const int eff_radius_qi_idx = m_index_map["eff_radius_qi"];
-  const int nc_idx            = m_index_map["nc"];
-  const int ni_idx            = m_index_map["ni"];
-  const int cldfrac_tot_idx   = m_index_map["cldfrac_tot"];
+  // subview the out field for each variable
+  auto o_tmid          = ekat::subview_1(out, m_index_map["T_mid"]);
+  auto o_pmid          = ekat::subview_1(out, m_index_map["p_mid"]);
+  auto o_cldfrac_ice   = ekat::subview_1(out, m_index_map["cldfrac_ice"]);
+  auto o_cldfrac_liq   = ekat::subview_1(out, m_index_map["cldfrac_liq"]);
+  auto o_cdnc          = ekat::subview_1(out, m_index_map["cdnc"]);
+  auto o_eff_radius_qc = ekat::subview_1(out, m_index_map["eff_radius_qc"]);
+  auto o_eff_radius_qi = ekat::subview_1(out, m_index_map["eff_radius_qi"]);
+  auto o_nc            = ekat::subview_1(out, m_index_map["nc"]);
+  auto o_ni            = ekat::subview_1(out, m_index_map["ni"]);
+  auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
 
   Kokkos::parallel_for(
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
@@ -179,42 +183,39 @@ void AeroComCld::compute_diagnostic_impl() {
           if((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
              (cld_icol(ilay) > cldfrac_tot_threshold)) {
             /* PART I: Probabilistically determining cloud top/bot */
-            // Populate aerocom_tmp as the clear-sky fraction
+            // Populate clr_tmp as the clear-sky fraction
             // probability of this level, where clr_icol is that of
             // the previous level
-            auto aerocom_tmp =
+            auto clr_tmp =
                 clr_icol *
                 (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
                 (1.0 - ekat::impl::min(cld_icol(ilay - 1),
                                        Real(1.0 - cldfrac_tot_threshold)));
             // Temporary variable for probability "weights"
-            auto aerocom_wts = clr_icol - aerocom_tmp;
+            auto wts = clr_icol - clr_tmp;
             // Temporary variable for liquid "phase"
-            auto aerocom_phi = qc_icol(ilay) / (qc_icol(ilay) + qi_icol(ilay));
+            auto phi = qc_icol(ilay) / (qc_icol(ilay) + qi_icol(ilay));
             /* PART II: The inferred properties */
             /* In general, converting a 3D property X to a 2D cloud-top
              * counterpart x follows: x(i) += X(i,k) * weights * Phase
              * but X and Phase are not always needed */
-            out(icol, T_mid_idx) += tmid_icol(ilay) * aerocom_wts;
-            out(icol, p_mid_idx) += pmid_icol(ilay) * aerocom_wts;
-            out(icol, cldfrac_ice_idx) += (1.0 - aerocom_phi) * aerocom_wts;
-            out(icol, cldfrac_liq_idx) += aerocom_phi * aerocom_wts;
+            o_tmid(icol) += tmid_icol(ilay) * wts;
+            o_pmid(icol) += pmid_icol(ilay) * wts;
+            o_cldfrac_ice(icol) += (1.0 - phi) * wts;
+            o_cldfrac_liq(icol) += phi * wts;
             // cdnc
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
                         physconst::gravit / cld_icol(ilay);
-            out(icol, cdnc_idx) += cdnc * aerocom_phi * aerocom_wts;
-            out(icol, nc_idx) += nc_icol(ilay) * aerocom_phi * aerocom_wts;
-            out(icol, ni_idx) +=
-                ni_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
-            out(icol, eff_radius_qc_idx) +=
-                rel_icol(ilay) * aerocom_phi * aerocom_wts;
-            out(icol, eff_radius_qi_idx) +=
-                rei_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
-            // Reset clr_icol to aerocom_tmp to accumulate
-            clr_icol = aerocom_tmp;
+            o_cdnc(icol) += cdnc * phi * wts;
+            o_nc(icol) += nc_icol(ilay) * phi * wts;
+            o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;
+            o_eff_radius_qc(icol) += rel_icol(ilay) * phi * wts;
+            o_eff_radius_qi(icol) += rei_icol(ilay) * (1.0 - phi) * wts;
+            // Reset clr_icol to clr_tmp to accumulate
+            clr_icol = clr_tmp;
           }
         };
 
@@ -232,7 +233,7 @@ void AeroComCld::compute_diagnostic_impl() {
         // defined as (1 - clr_icol). This is true because
         // clr_icol is the result of accumulative probabilities
         // (their products)
-        out(icol, cldfrac_tot_idx) = 1.0 - clr_icol;
+        o_cldfrac_tot(icol) = 1.0 - clr_icol;
       });
 }
 

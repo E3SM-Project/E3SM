@@ -12,7 +12,7 @@ class AeroComCldDiagUtil {
   unsigned int size;
 
   AeroComCldDiagUtil() {
-    // Start (post)incrementing size from 0
+    // Start (post) incrementing size from 0
     size = 0;
 
     // T_mid
