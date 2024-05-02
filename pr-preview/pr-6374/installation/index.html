@@ -12,7 +12,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../usage/">
+        <link rel="next" href="../user-guide/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -30,6 +30,14 @@
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--note:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');}</style>
+
 
 
     
@@ -283,7 +291,13 @@
     
       
         
+          
+        
       
+        
+      
+        
+          
         
       
         
@@ -303,16 +317,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     E3SM Basics
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
@@ -320,6 +342,8 @@
             E3SM Basics
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -359,11 +383,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/" class="md-nav__link">
+      <a href="../user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Usage
+    User Guide
   </span>
   
 
@@ -1885,17 +1909,21 @@
 
 <h1 id="installation-guide">Installation Guide</h1>
 <p>E3SM is not available as a pre-compiled binary.  You install
-E3SM by cloning the source code and building the executable on your local
-platform.</p>
+E3SM by cloning the source code using <a href="https://git-scm.com/">git</a>
+and building the executable on your local platform after making some
+choices on model configuration (addressed in the <a href="../user-guide/">User Guide</a>).</p>
 <p>It is recommended that you install E3SM on a supported platform.
 (See <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/4116447351/Hardware+Software+Configuration">Hardware/Software Configuration</a>)</p>
 <p>The E3SM Project can not assist with installation on an un-supported platform but can point you in the right direction.
 If you wish to port E3SM to your machine, first check that the target machine has
 the software prerequisites detailed in
 <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/4116447351/Hardware+Software+Configuration#Software-prerequisites">Hardware/Software Configuration</a>.</p>
-<p>E3SM uses the CIME Case Control System (CCS) and the machines must be described to the CCS
+<p>E3SM uses the CIME Case Control System (CCS) and a machine must be described to the CCS
 in order to build and run E3SM.  See the
 <a href="https://esmci.github.io/cime/versions/master/html/users_guide/porting-cime.html">CIME Porting Guide</a>.</p>
+<p>Once you are on a supported machine, clone the source code by following the first steps (2-4 and 6)
+in the <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide">Development Getting Started Guide</a>.</p>
+<p>To start configuration cases and building the model, see the User Guide</p>
 
 
 

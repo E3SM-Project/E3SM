@@ -20,7 +20,7 @@
     
     
       
-        <title>Usage - E3SM</title>
+        <title>User Guide - E3SM</title>
       
     
     
@@ -30,6 +30,14 @@
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--note:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');}</style>
+
 
 
     
@@ -72,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usage-guide" class="md-skip">
+        <a href="#user-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Usage
+              User Guide
             
           </span>
         </div>
@@ -283,7 +291,13 @@
     
       
         
+          
+        
       
+        
+      
+        
+          
         
       
         
@@ -303,16 +317,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     E3SM Basics
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
@@ -320,6 +342,8 @@
             E3SM Basics
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -358,15 +382,63 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
-    Usage
+    User Guide
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-coupled-compsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Coupled Compsets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported resolution
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1859,6 +1931,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-coupled-compsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Coupled Compsets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported resolution
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1876,14 +1974,14 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/usage.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/user-guide/index.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
   
 
 
-<h1 id="usage-guide">Usage Guide</h1>
+<h1 id="user-guide">User Guide</h1>
 <p>E3SM is not just one climate model but a modeling system that allows
 many different configurations of atmosphere, ocean, land and other
 components with both full model and data model options. Also, the configurations of model
@@ -1900,6 +1998,76 @@ cases, compsets and grids by reading the
 <a href="https://esmci.github.io/cime/versions/master/html/users_guide/index.html#case-control-system-part-1-basic-usage">Case Control System Basic Usage</a></p>
 <p>A <a href="https://docs.e3sm.org/running-e3sm-guide/">step-by-step guide</a> for running E3SM with a run script
 is available.</p>
+<h2 id="supported-coupled-compsets">Supported Coupled Compsets</h2>
+<p>A <em>fully coupled</em> compset is one which has active components for at least the atmosphere, ocean, land surface, ocean and
+sea-ice all interacting.  The fully coupled compsets supported in this version of E3SM are:</p>
+<table>
+<thead>
+<tr>
+<th>Compset Alias</th>
+<th>TIME</th>
+<th>ATM</th>
+<th>LND</th>
+<th>Sea ice</th>
+<th>Ocean</th>
+<th>River</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCYCL1850</td>
+<td>1850SOI</td>
+<td>EAM</td>
+<td>ELM</td>
+<td>MPAS-Seaice</td>
+<td>MPAS-Ocean</td>
+<td>MOSART</td>
+</tr>
+<tr>
+<td>WCYCL1850-1pcCO2</td>
+<td>1850SOI</td>
+<td>EAM</td>
+<td>ELM</td>
+<td>MPAS-Seaice</td>
+<td>MPAS-Ocean</td>
+<td>MOSART</td>
+</tr>
+<tr>
+<td>WCYCL1850-4xCO2</td>
+<td>1850SOI</td>
+<td>EAM</td>
+<td>ELM</td>
+<td>MPAS-Seaice</td>
+<td>MPAS-Ocean</td>
+<td>MOSART</td>
+</tr>
+<tr>
+<td>WCYCL20TR</td>
+<td>20TRSOI</td>
+<td>EAM</td>
+<td>ELM</td>
+<td>MPAS-Seaice</td>
+<td>MPAS-Ocean</td>
+<td>MOSART</td>
+</tr>
+<tr>
+<td>WCYCL1950</td>
+<td>1950SOI</td>
+<td>EAM</td>
+<td>ELM</td>
+<td>MPAS-Seaice</td>
+<td>MPAS-Ocean</td>
+<td>MOSART</td>
+</tr>
+</tbody>
+</table>
+<p>Additional compsets are available for the component models. See the User Guides for the components for more information.</p>
+<h2 id="supported-resolution">Supported resolution</h2>
+<p>Only one grid set is supported for the above compsets.</p>
+<p><code>ne30pg2_r05_IcoswISC30E3r5</code> - For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km
+resolution, the land and river
+are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km
+resolution icosohedral mesh with ice shelf cavities (wISC) around Antarctica.</p>
 
 
 
