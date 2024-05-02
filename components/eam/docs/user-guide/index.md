@@ -63,7 +63,7 @@ By default, EAM will output a set of monthly-averaged variables. Additional outp
 
 `mfilt` - List that sets the number of timesteps to write in a single file before starting a new file.
 
-`avgflag_pertape` - List that sets the type of output to write. Choices are `'A'` for time-averaged output, `'A'` for instantaneous output, `'MIN'` for time-minimum output, and `'MAX'` for time-maximum output.
+`avgflag_pertape` - List that sets the type of output to write. Choices are `'A'` for time-averaged output, `'A'` for instantaneous output, `'M'` for time-minimum output, and `'X'` for time-maximum output.
 
 #### Example output specification
 
