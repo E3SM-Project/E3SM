@@ -10,6 +10,7 @@
 #include "utilities/TestUtils.hpp"
 
 #include <random>
+#include <iostream>
 
 TEST_CASE("remap_interface", "vertical remap") {
 

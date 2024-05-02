@@ -8,6 +8,7 @@
 #include "utilities/TestUtils.hpp"
 
 #include <random>
+#include <iostream>
 
 using namespace Homme;
 

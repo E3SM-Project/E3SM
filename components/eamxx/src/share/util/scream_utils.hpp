@@ -11,6 +11,7 @@
 #include <list>
 #include <algorithm>
 #include <map>
+#include <iostream>
 
 namespace scream {
 

@@ -447,18 +447,22 @@ if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 ENDIF ()
 
-# If we don't need kokkos we don't need EKAT, and if
-# Homme is built in EAMxx EKAT is already built
-IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
-  # Add ekat's cmake/pkg_build folder to cmake path
+IF (HOMME_USE_KOKKOS)
+  # Add ekat's cmake scripts folders to cmake path
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
   set (EKAT_CMAKE_PATH ${EKAT_SOURCE_DIR}/cmake)
   list(APPEND CMAKE_MODULE_PATH
-       ${EKAT_CMAKE_PATH}
-       ${EKAT_CMAKE_PATH}/pkg_build
-       ${EKAT_CMAKE_PATH}/tpls
+    ${EKAT_CMAKE_PATH}
+    ${EKAT_CMAKE_PATH}/tpls
   )
-  include (EkatBuildKokkos)
+
+  # We first try to use find_package. If that doesn't work, build from EKAT's submodule
+  include (EkatFindKokkos)
+  if (NOT Kokkos_FOUND)
+    # The following script checks if Kokkos is already available as a target, and if so does nothing.
+    # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
+    include (EkatBuildKokkos)
+  endif()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
