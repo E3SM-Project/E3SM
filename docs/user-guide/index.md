@@ -43,4 +43,3 @@ Only one grid set is supported for the above compsets.
 resolution, the land and river
 are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km
 resolution icosohedral mesh with ice shelf cavities (wISC) around Antarctica.
-
