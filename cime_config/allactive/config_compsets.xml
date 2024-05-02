@@ -446,12 +446,12 @@
 
 <compset>
   <alias>ERCE</alias>
-  <lname>2000_EAM%RCE_SLND_MPASSI_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+  <lname>2000_EAM%RCE_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>ERCE-MMF1</alias>
-  <lname>2000_EAM%RCE-MMF1_SLND_MPASSI_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
+  <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%SOMAQP_SROF_SGLC_SWAV</lname>
 </compset>
 
 
