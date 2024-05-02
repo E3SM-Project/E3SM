@@ -2196,49 +2196,9 @@
 
 <h1 id="cloud-layers-unified-by-binormals">Cloud Layers Unified By Binormals</h1>
 <h2 id="overview">Overview</h2>
-<p>The Cloud Layers Unified By Binormals (CLUBB) parameterization is a parameterization of subgrid-scale turbulence and clouds. <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup><sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup><sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> It prognoses turbulent fluxes of heat, moisture, and momentum, and it diagnoses the liquid cloud fraction and liquid water mixing ratio.  To do so, it prognoses higher-order turbulence moments and closes those prognostic equations by use of an assumed double-Gaussian shape of the subgrid probability density function.  CLUBB operates throughout the troposphere, but it contributes especially to the planetary boundary layer and low-cloud regimes, including stratocumulus and shallow cumulus regimes.  </p>
+<p>The Cloud Layers Unified By Binormals (CLUBB) parameterization is a parameterization of subgrid-scale turbulence and clouds.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup><sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup><sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> It prognoses turbulent fluxes of heat, moisture, and momentum, and it diagnoses the liquid cloud fraction and liquid water mixing ratio.  To do so, it prognoses higher-order turbulence moments and closes those prognostic equations by use of an assumed double-Gaussian shape of the subgrid probability density function.  CLUBB operates throughout the troposphere, but it contributes especially to the planetary boundary layer and low-cloud regimes, including stratocumulus and shallow cumulus regimes.  </p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>gamma_coef</code></td>
-<td>Width of vertical velocity within a Gaussian PDF component at low skewness</td>
-<td><code>0.12</code></td>
-</tr>
-<tr>
-<td><code>gamma_coefb</code></td>
-<td>Width of vertical velocity within a Gaussian PDF component at high skewness</td>
-<td><code>0.28</code></td>
-</tr>
-<tr>
-<td><code>C8</code></td>
-<td>Coefficient of damping of third moment of vertical velocity, w’3</td>
-<td><code>5.2</code></td>
-</tr>
-<tr>
-<td><code>C1</code></td>
-<td>Coefficient of damping of second vertical moment of vertical velocity, w’2, at low skewness</td>
-<td><code>2.4</code></td>
-</tr>
-<tr>
-<td><code>C14</code></td>
-<td>Coefficient of damping of second horizontal moments of vertical velocity, u’2 and v’2</td>
-<td><code>2.0</code></td>
-</tr>
-<tr>
-<td><code>c_k10</code></td>
-<td>Ratio of diffusivity of momentum to heat</td>
-<td><code>0.35</code></td>
-</tr>
-</tbody>
-</table>
+<p><a href="../../user-guide/namelist_parameters/#cloud-layers-unified-by-binormals">CLUBB Namelist Parameters</a></p>
 <div class="footnote">
 <hr />
 <ol>

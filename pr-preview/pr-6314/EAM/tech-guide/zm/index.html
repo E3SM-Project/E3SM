@@ -2280,194 +2280,53 @@
 
 <h1 id="zhang-and-mcfarlane-deep-convection-scheme">Zhang and McFarlane deep convection scheme</h1>
 <h2 id="overview">Overview</h2>
-<p>The ZM scheme (Zhang and McFarlane 1995) used in E3SMv3 is a bulk mass flux-type scheme; it has three components: a trigger for convection initiation, a cloud model including both updrafts and downdrafts, and a closure. The original CAPE-based trigger for convection was replaced by a trigger function based on dynamic CAPE generation by Xie et al. (2019) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> (see dCAPE-ULL description below for more details). The closure predicts cloud base mass flux using dilute CAPE (Neale et al., 2008). <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> The updraft model is a bulk entraining plume model. Both updrafts and downdrafts are assumed saturated, with downdraft mass flux at the downdraft initiation level set proportional to the updraft cloud base mass flux. The microphysical processes inside the updrafts are represented by a convective microphysics scheme (see ZM convective microphysics description below). An additional adjustment is made to cloud base mass flux to incorporate the effect of large-scale circulation (see mass flux adjustment description below).</p>
+<p>The ZM scheme (Zhang and McFarlane, 1995)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> used in E3SMv3 is a bulk mass flux-type scheme; it has three components: a trigger for convection initiation, a cloud model including both updrafts and downdrafts, and a closure. The original CAPE-based trigger for convection was replaced by a trigger function based on dynamic CAPE generation by Xie et al. (2019)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> (see dCAPE-ULL description below for more details). The closure predicts cloud base mass flux using dilute CAPE (Neale et al., 2008).<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> The updraft model is a bulk entraining plume model. Both updrafts and downdrafts are assumed saturated, with downdraft mass flux at the downdraft initiation level set proportional to the updraft cloud base mass flux. The microphysical processes inside the updrafts are represented by a convective microphysics scheme (see ZM convective microphysics description below). An additional adjustment is made to cloud base mass flux to incorporate the effect of large-scale circulation (see mass flux adjustment description below).</p>
 <h3 id="dcape-ull">dCAPE-ULL</h3>
-<p>A notable update related to clouds and precipitation in E3SMv2 is the use of a new convective trigger function described by Xie et al. (2019) <sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup> in ZM to improve the simulation of precipitation and its diurnal cycle. The new convective trigger named as dCAPE-ULL uses the dynamic CAPE (dCAPE) trigger developed by Xie and Zhang (2000) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> with an unrestricted air parcel launch level (ULL) approach used by Wang et al. (2015). <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> It was designed to address the unrealistically strong coupling of convection to the surface heating in ZM that often results in unrealistically too active model convection during the day in summer season over lands and improve the model capability to capture mid-level convection for nocturnal precipitation.</p>
+<p>A notable update related to clouds and precipitation in E3SMv2 is the use of a new convective trigger function described by Xie et al. (2019)<sup id="fnref2:2"><a class="footnote-ref" href="#fn:2">2</a></sup> in ZM to improve the simulation of precipitation and its diurnal cycle. The new convective trigger named as dCAPE-ULL uses the dynamic CAPE (dCAPE) trigger developed by Xie and Zhang (2000)<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> with an unrestricted air parcel launch level (ULL) approach used by Wang et al. (2015).<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup> It was designed to address the unrealistically strong coupling of convection to the surface heating in ZM that often results in unrealistically too active model convection during the day in summer season over lands and improve the model capability to capture mid-level convection for nocturnal precipitation.</p>
 <h3 id="zm-convective-microphysics">ZM convective microphysics</h3>
-<p>The convective microphysics scheme is based on the work of Song and Zhang (2011) <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup> to improve the representation of microphysical processes in convective clouds and their interaction with aerosol and stratiform clouds in GCMs. It explicitly treats the mass mixing ratio and number concentration of five hydrometeor species (cloud water, cloud ice, rain, snow, and graupel). The scheme is linked to stratiform cloud microphysics parameterization through convective detrainment of cloud liquid/ice water content and droplet/crystal number concentration, and to aerosols through cloud droplet activation and ice nucleation processes. Previous evaluations of the scheme showed that it improved the simulation of convective cloud properties and cloud hydrological cycle (Song et al., 2012; <sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup> Storer et al., 2015 <sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup>). The assessment demonstrates that the convective microphysics scheme not only significantly improves the simulation of tropical variability across multiple scales but also enhances the simulation of climatological mean states.</p>
+<p>The convective microphysics scheme is based on the work of Song and Zhang (2011)<sup id="fnref:6"><a class="footnote-ref" href="#fn:6">6</a></sup> to improve the representation of microphysical processes in convective clouds and their interaction with aerosol and stratiform clouds in GCMs. It explicitly treats the mass mixing ratio and number concentration of five hydrometeor species (cloud water, cloud ice, rain, snow, and graupel). The scheme is linked to stratiform cloud microphysics parameterization through convective detrainment of cloud liquid/ice water content and droplet/crystal number concentration, and to aerosols through cloud droplet activation and ice nucleation processes. Previous evaluations of the scheme showed that it improved the simulation of convective cloud properties and cloud hydrological cycle (Song et al., 2012;<sup id="fnref:7"><a class="footnote-ref" href="#fn:7">7</a></sup> Storer et al., 2015<sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup>). The assessment demonstrates that the convective microphysics scheme not only significantly improves the simulation of tropical variability across multiple scales but also enhances the simulation of climatological mean states.</p>
 <h3 id="mass-flux-adjustment">Mass flux adjustment</h3>
-<p>The convective mass flux adjustment (MAdj) is designed to represent the dynamical effects of large-scale vertical motion on convection. With MAdj, convection is enhanced (suppressed) when there is large-scale ascending (descending) motion at the planetary boundary layer top. The coupling of convection with the large-scale circulation significantly improves the simulation of climate variability across multiple scales from diurnal cycle, convectively coupled equatorial waves, to Madden-Julian oscillations (Song et al., 2023). <sup id="fnref:8"><a class="footnote-ref" href="#fn:8">8</a></sup></p>
+<p>The convective mass flux adjustment (MAdj) is designed to represent the dynamical effects of large-scale vertical motion on convection. With MAdj, convection is enhanced (suppressed) when there is large-scale ascending (descending) motion at the planetary boundary layer top. The coupling of convection with the large-scale circulation significantly improves the simulation of climate variability across multiple scales from diurnal cycle, convectively coupled equatorial waves, to Madden-Julian oscillations (Song et al., 2023).<sup id="fnref:9"><a class="footnote-ref" href="#fn:9">9</a></sup></p>
 <h3 id="mcsp">MCSP</h3>
 <p>Due to inadequate model resolution, organized mesoscale convection cannot be resolved in general circulation models and thus needs to be parameterized. The Multiscale Coherent Structure Parameterization (MCSP) aims at representing the dynamical and physical effects of organized mesoscale convection.</p>
-<p>MCSP applies a sinusoidal baroclinic profile in the temperature, moisture, and momentum fields to represent the impact. Moncrieff et al. (2017) <sup id="fnref:9"><a class="footnote-ref" href="#fn:9">9</a></sup> and Chen et al. (2021) <sup id="fnref:10"><a class="footnote-ref" href="#fn:10">10</a></sup> have found that by adding MCSP, the both the representation of large-scale precipitation systems and the modes of variability from Tropical waves are improved.</p>
+<p>MCSP applies a sinusoidal baroclinic profile in the temperature, moisture, and momentum fields to represent the impact. Moncrieff et al. (2017)<sup id="fnref:10"><a class="footnote-ref" href="#fn:10">10</a></sup> and Chen et al. (2021)<sup id="fnref:11"><a class="footnote-ref" href="#fn:11">11</a></sup> have found that by adding MCSP, the both the representation of large-scale precipitation systems and the modes of variability from Tropical waves are improved.</p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
-<table>
-<thead>
-<tr>
-<th>ZM Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_ke</code></td>
-<td>Tunable evaporation efficiency in ZM deep convection scheme</td>
-<td><code>2.5E-6</code></td>
-</tr>
-<tr>
-<td><code>zmconv_tau</code></td>
-<td>Relaxation time in ZM deep convection scheme</td>
-<td><code>3600</code></td>
-</tr>
-<tr>
-<td><code>zmconv_dmpdz</code></td>
-<td>Parcel fractional mass entrainment rate</td>
-<td><code>-0.7E-3</code></td>
-</tr>
-<tr>
-<td><code>zmconv_alfa</code></td>
-<td>Initial downdraft mass flux fraction</td>
-<td><code>0.14D0</code></td>
-</tr>
-<tr>
-<td><code>zmconv_tiedke_add</code></td>
-<td>Temperature perturbation of an air parcel</td>
-<td><code>0.8D0</code></td>
-</tr>
-<tr>
-<td><code>zmconv_cape_cin</code></td>
-<td>Number of negative buoyancy regions that are allowed</td>
-<td><code>1</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>dCAPE-ULL Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_trigdcape_ull</code></td>
-<td>DCAPE trigger along with unrestricted launching level for ZM deep convection scheme</td>
-<td><code>.true.</code></td>
-</tr>
-<tr>
-<td><code>zmconv_trig_dcape_only</code></td>
-<td>DCAPE only trigger for ZM deep convection scheme</td>
-<td><code>.false.</code> <!-- markdownlint-disable MD033 --><br> If true, zmconv_trigdcape_ull must be false to use the dcape only trigger.</td>
-</tr>
-<tr>
-<td><code>zmconv_trig_ull_only</code></td>
-<td>Use unrestricted launching level (ULL) only trigger for ZM deep convection scheme</td>
-<td><code>.false.</code> <!-- markdownlint-disable MD033 --><br> If true, zmconv_trigdcape_ull must be false to use the ull only trigger.</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Conv. micro. Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_microp</code></td>
-<td>Convective microphysics option in ZM convection scheme</td>
-<td><code>true</code></td>
-</tr>
-<tr>
-<td><code>zmconv_auto_fac</code></td>
-<td>Cloud droplet-rain autoconversion enhancement factor in the convective microphysics scheme</td>
-<td><code>7.0</code></td>
-</tr>
-<tr>
-<td><code>zmconv_accr_fac</code></td>
-<td>Cloud droplet-rain accretion enhancement factor in the convective microphysics scheme</td>
-<td><code>1.5</code></td>
-</tr>
-<tr>
-<td><code>zmconv_micro_dcs</code></td>
-<td>Autoconversion size threshold for cloud ice to snow (m)</td>
-<td><code>150.E-6</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Mass flux adj. Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_clos_dyn_adj</code></td>
-<td>Apply mass flux adjustment to ZM convection scheme</td>
-<td><code>true</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>MCSP Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_mcsp_heat_coeff</code></td>
-<td>MCSP heating coefficient</td>
-<td><code>0.3</code></td>
-</tr>
-<tr>
-<td><code>zmconv_mcsp_moisture_coeff</code></td>
-<td>MCSP moisture coefficient</td>
-<td><code>0.0</code></td>
-</tr>
-<tr>
-<td><code>zmconv_mcsp_uwind_coeff</code></td>
-<td>MCSP zonal wind coefficient</td>
-<td><code>0.0</code></td>
-</tr>
-<tr>
-<td><code>zmconv_mcsp_vwind_coeff</code></td>
-<td>MCSP meridional wind coefficient</td>
-<td><code>0.0</code></td>
-</tr>
-</tbody>
-</table>
+<p><a href="../../user-guide/namelist_parameters/#zhang-and-mcfarlane-deep-convection-scheme">ZM Namelist Parameters</a></p>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>Shaocheng Xie, Yi‐Chi Wang, Wuyin Lin, Hsi‐Yen Ma, Qi Tang, Shuaiqi Tang, Xue Zheng, Jean‐Christophe Golaz, Guang J. Zhang, and Minghua Zhang. Improved Diurnal Cycle of Precipitation in E3SM With a Revised Convective Triggering Function. <em>Journal of Advances in Modeling Earth Systems</em>, 11(7):2290–2310, July 2019. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001702">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001702</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001702">doi:10.1029/2019MS001702</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>G.J. Zhang and Norman A. McFarlane. Sensitivity of climate simulations to the parameterization of cumulus convection in the Canadian climate centre general circulation model. <em>Atmosphere-Ocean</em>, 33(3):407–446, September 1995. URL: <a href="http://www.tandfonline.com/doi/abs/10.1080/07055900.1995.9649539">http://www.tandfonline.com/doi/abs/10.1080/07055900.1995.9649539</a> (visited on 2024-03-29), <a href="https://doi.org/10.1080/07055900.1995.9649539">doi:10.1080/07055900.1995.9649539</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>Richard B. Neale, Jadwiga H. Richter, and Markus Jochum. The Impact of Convection on ENSO: From a Delayed Oscillator to a Series of Events. <em>Journal of Climate</em>, 21(22):5904–5924, November 2008. URL: <a href="https://journals.ametsoc.org/view/journals/clim/21/22/2008jcli2244.1.xml">https://journals.ametsoc.org/view/journals/clim/21/22/2008jcli2244.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/2008JCLI2244.1">doi:10.1175/2008JCLI2244.1</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>Shaocheng Xie, Yi‐Chi Wang, Wuyin Lin, Hsi‐Yen Ma, Qi Tang, Shuaiqi Tang, Xue Zheng, Jean‐Christophe Golaz, Guang J. Zhang, and Minghua Zhang. Improved Diurnal Cycle of Precipitation in E3SM With a Revised Convective Triggering Function. <em>Journal of Advances in Modeling Earth Systems</em>, 11(7):2290–2310, July 2019. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001702">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001702</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001702">doi:10.1029/2019MS001702</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Shaocheng Xie and Minghua Zhang. Impact of the convection triggering function on single‐column model simulations. <em>Journal of Geophysical Research: Atmospheres</em>, 105(D11):14983–14996, June 2000. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2000JD900170">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2000JD900170</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2000JD900170">doi:10.1029/2000JD900170</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>Richard B. Neale, Jadwiga H. Richter, and Markus Jochum. The Impact of Convection on ENSO: From a Delayed Oscillator to a Series of Events. <em>Journal of Climate</em>, 21(22):5904–5924, November 2008. URL: <a href="https://journals.ametsoc.org/view/journals/clim/21/22/2008jcli2244.1.xml">https://journals.ametsoc.org/view/journals/clim/21/22/2008jcli2244.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/2008JCLI2244.1">doi:10.1175/2008JCLI2244.1</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>Yi-Chi Wang, Hua-Lu Pan, and Huang-Hsiung Hsu. Impacts of the triggering function of cumulus parameterization on warm-season diurnal rainfall cycles at the Atmospheric Radiation Measurement Southern Great Plains site: CONVECTIVE TRIGGER ON SGP NOCTURNAL RAIN. <em>Journal of Geophysical Research: Atmospheres</em>, 120(20):10,681–10,702, October 2015. URL: <a href="http://doi.wiley.com/10.1002/2015JD023337">http://doi.wiley.com/10.1002/2015JD023337</a> (visited on 2024-03-29), <a href="https://doi.org/10.1002/2015JD023337">doi:10.1002/2015JD023337</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Shaocheng Xie and Minghua Zhang. Impact of the convection triggering function on single‐column model simulations. <em>Journal of Geophysical Research: Atmospheres</em>, 105(D11):14983–14996, June 2000. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2000JD900170">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2000JD900170</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2000JD900170">doi:10.1029/2000JD900170</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 <li id="fn:5">
-<p>Xiaoliang Song and Guang J. Zhang. Microphysics parameterization for convective clouds in a global climate model: Description and single-column model tests. <em>Journal of Geophysical Research</em>, 116(D2):D02201, January 2011. URL: <a href="http://doi.wiley.com/10.1029/2010JD014833">http://doi.wiley.com/10.1029/2010JD014833</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2010JD014833">doi:10.1029/2010JD014833</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+<p>Yi-Chi Wang, Hua-Lu Pan, and Huang-Hsiung Hsu. Impacts of the triggering function of cumulus parameterization on warm-season diurnal rainfall cycles at the Atmospheric Radiation Measurement Southern Great Plains site: CONVECTIVE TRIGGER ON SGP NOCTURNAL RAIN. <em>Journal of Geophysical Research: Atmospheres</em>, 120(20):10,681–10,702, October 2015. URL: <a href="http://doi.wiley.com/10.1002/2015JD023337">http://doi.wiley.com/10.1002/2015JD023337</a> (visited on 2024-03-29), <a href="https://doi.org/10.1002/2015JD023337">doi:10.1002/2015JD023337</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 <li id="fn:6">
-<p>Xiaoliang Song, Guang J. Zhang, and J.-L. F. Li. Evaluation of Microphysics Parameterization for Convective Clouds in the NCAR Community Atmosphere Model CAM5. <em>Journal of Climate</em>, 25(24):8568–8590, December 2012. URL: <a href="http://journals.ametsoc.org/doi/10.1175/JCLI-D-11-00563.1">http://journals.ametsoc.org/doi/10.1175/JCLI-D-11-00563.1</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JCLI-D-11-00563.1">doi:10.1175/JCLI-D-11-00563.1</a>.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+<p>Xiaoliang Song and Guang J. Zhang. Microphysics parameterization for convective clouds in a global climate model: Description and single-column model tests. <em>Journal of Geophysical Research</em>, 116(D2):D02201, January 2011. URL: <a href="http://doi.wiley.com/10.1029/2010JD014833">http://doi.wiley.com/10.1029/2010JD014833</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2010JD014833">doi:10.1029/2010JD014833</a>.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
 </li>
 <li id="fn:7">
-<p>Rachel L. Storer, Guang J. Zhang, and Xiaoliang Song. Effects of Convective Microphysics Parameterization on Large-Scale Cloud Hydrological Cycle and Radiative Budget in Tropical and Midlatitude Convective Regions. <em>Journal of Climate</em>, 28(23):9277–9297, December 2015. URL: <a href="https://journals.ametsoc.org/view/journals/clim/28/23/jcli-d-15-0064.1.xml">https://journals.ametsoc.org/view/journals/clim/28/23/jcli-d-15-0064.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JCLI-D-15-0064.1">doi:10.1175/JCLI-D-15-0064.1</a>.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+<p>Xiaoliang Song, Guang J. Zhang, and J.-L. F. Li. Evaluation of Microphysics Parameterization for Convective Clouds in the NCAR Community Atmosphere Model CAM5. <em>Journal of Climate</em>, 25(24):8568–8590, December 2012. URL: <a href="http://journals.ametsoc.org/doi/10.1175/JCLI-D-11-00563.1">http://journals.ametsoc.org/doi/10.1175/JCLI-D-11-00563.1</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JCLI-D-11-00563.1">doi:10.1175/JCLI-D-11-00563.1</a>.&#160;<a class="footnote-backref" href="#fnref:7" title="Jump back to footnote 7 in the text">&#8617;</a></p>
 </li>
 <li id="fn:8">
-<p>Xiaoliang Song, Guang Zhang, Hui Wan, and Shaocheng Xie. Incorporating the Effect of Large‐Scale Vertical Motion on Convection Through Convective Mass Flux Adjustment in E3SMv2. <em>Journal of Advances in Modeling Earth Systems</em>, 15(10):e2022MS003553, October 2023. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003553">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003553</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2022MS003553">doi:10.1029/2022MS003553</a>.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+<p>Rachel L. Storer, Guang J. Zhang, and Xiaoliang Song. Effects of Convective Microphysics Parameterization on Large-Scale Cloud Hydrological Cycle and Radiative Budget in Tropical and Midlatitude Convective Regions. <em>Journal of Climate</em>, 28(23):9277–9297, December 2015. URL: <a href="https://journals.ametsoc.org/view/journals/clim/28/23/jcli-d-15-0064.1.xml">https://journals.ametsoc.org/view/journals/clim/28/23/jcli-d-15-0064.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JCLI-D-15-0064.1">doi:10.1175/JCLI-D-15-0064.1</a>.&#160;<a class="footnote-backref" href="#fnref:8" title="Jump back to footnote 8 in the text">&#8617;</a></p>
 </li>
 <li id="fn:9">
-<p>Mitchell W. Moncrieff, Changhai Liu, and Peter Bogenschutz. Simulation, Modeling, and Dynamically Based Parameterization of Organized Tropical Convection for Global Climate Models. <em>Journal of the Atmospheric Sciences</em>, 74(5):1363–1380, May 2017. URL: <a href="https://journals.ametsoc.org/view/journals/atsc/74/5/jas-d-16-0166.1.xml">https://journals.ametsoc.org/view/journals/atsc/74/5/jas-d-16-0166.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JAS-D-16-0166.1">doi:10.1175/JAS-D-16-0166.1</a>.&#160;<a class="footnote-backref" href="#fnref:9" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+<p>Xiaoliang Song, Guang Zhang, Hui Wan, and Shaocheng Xie. Incorporating the Effect of Large‐Scale Vertical Motion on Convection Through Convective Mass Flux Adjustment in E3SMv2. <em>Journal of Advances in Modeling Earth Systems</em>, 15(10):e2022MS003553, October 2023. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003553">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2022MS003553</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2022MS003553">doi:10.1029/2022MS003553</a>.&#160;<a class="footnote-backref" href="#fnref:9" title="Jump back to footnote 9 in the text">&#8617;</a></p>
 </li>
 <li id="fn:10">
-<p>C.‐C. Chen, J. H. Richter, C. Liu, M. W. Moncrieff, Q. Tang, W. Lin, S. Xie, and P. J. Rasch. Effects of Organized Convection Parameterization on the MJO and Precipitation in E3SMv1. Part I: Mesoscale Heating. <em>Journal of Advances in Modeling Earth Systems</em>, 13(6):e2020MS002401, June 2021. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020MS002401">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020MS002401</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2020MS002401">doi:10.1029/2020MS002401</a>.&#160;<a class="footnote-backref" href="#fnref:10" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+<p>Mitchell W. Moncrieff, Changhai Liu, and Peter Bogenschutz. Simulation, Modeling, and Dynamically Based Parameterization of Organized Tropical Convection for Global Climate Models. <em>Journal of the Atmospheric Sciences</em>, 74(5):1363–1380, May 2017. URL: <a href="https://journals.ametsoc.org/view/journals/atsc/74/5/jas-d-16-0166.1.xml">https://journals.ametsoc.org/view/journals/atsc/74/5/jas-d-16-0166.1.xml</a> (visited on 2024-03-29), <a href="https://doi.org/10.1175/JAS-D-16-0166.1">doi:10.1175/JAS-D-16-0166.1</a>.&#160;<a class="footnote-backref" href="#fnref:10" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+</li>
+<li id="fn:11">
+<p>C.‐C. Chen, J. H. Richter, C. Liu, M. W. Moncrieff, Q. Tang, W. Lin, S. Xie, and P. J. Rasch. Effects of Organized Convection Parameterization on the MJO and Precipitation in E3SMv1. Part I: Mesoscale Heating. <em>Journal of Advances in Modeling Earth Systems</em>, 13(6):e2020MS002401, June 2021. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020MS002401">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2020MS002401</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2020MS002401">doi:10.1029/2020MS002401</a>.&#160;<a class="footnote-backref" href="#fnref:11" title="Jump back to footnote 11 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

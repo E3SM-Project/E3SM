@@ -2196,97 +2196,17 @@
 
 <h1 id="oceanfilms">OCEANFILMS</h1>
 <h2 id="overview">Overview</h2>
-<p>E3SM (v1-v3) uses the OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) parameterization to represent sea spray organic aerosol emissions.  OCEANFILMS is a physically based model that links sea spray chemistry with ocean biogeochemistry using a Langmuir partitioning approach.  The underlying physical assumptions and parameterization are described in Burrows et al. (2014); <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> the implementation in E3SM and impact on clouds and climate are documented in Burrows et al. (2022). <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></p>
+<p>E3SM (v1-v3) uses the OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) parameterization to represent sea spray organic aerosol emissions.  OCEANFILMS is a physically based model that links sea spray chemistry with ocean biogeochemistry using a Langmuir partitioning approach.  The underlying physical assumptions and parameterization are described in Burrows et al. (2014);<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> the implementation in E3SM and impact on clouds and climate are documented in Burrows et al. (2022).<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></p>
 <h2 id="namelist-parameters">Namelist parameters</h2>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>mam_mom_cycle_yr</code></td>
-<td></td>
-<td><code>1</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_datapath</code></td>
-<td>Full pathname of the directory that contains the files specified in mam_mom_filelist</td>
-<td><code>'atm/cam/chem/trop_mam/marine_BGC/'</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_filename</code></td>
-<td>Filename of file that contains a sequence of filenames for prescribed marine organic matter ocean concentrations.  The filenames in this file are relative to the directory specified by mam_mom_datapath.</td>
-<td><code>'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_rmfile</code></td>
-<td>Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed.</td>
-<td><code>FALSE</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_specifier</code></td>
-<td>Names of variables containing aerosol data in the prescribed aerosol datasets.</td>
-<td><code>'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_datatype</code></td>
-<td>Type of time interpolation for data in mam_mom files. Can be set to <code>'CYCLICAL'</code>, <code>'SERIAL'</code>, <code>'INTERP_MISSING_MONTHS'</code>, or <code>'FIXED'</code>.</td>
-<td><code>'CYCLICAL'</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_cycle_yr</code></td>
-<td>The  cycle year of the prescribed aerosol flux data if mam_mom_type is <code>'CYCLICAL'</code>. Format: YYYY</td>
-<td><code>1</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_fixed_ymd</code></td>
-<td>The date at which the prescribed aerosol flux data is fixed if mam_mom_type is <code>'FIXED'</code>. Format: YYYYMMDD</td>
-<td><code>0</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_fixed_tod</code></td>
-<td>The time of day (seconds) corresponding to mam_mom_fixed_ymd at which the prescribed aerosol flux data is fixed if mam_mom_type is 'FIXED'.</td>
-<td><code>0</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_bubble_thickness</code></td>
-<td>Bubble film thickness (in m) for marine organic aerosol emission mechanism.  The physically reasonable range is approximately (0.1 - 1) x 10^ -6.</td>
-<td><code>0.1e-6</code></td>
-</tr>
-<tr>
-<td><code>mam_mom_mixing_state</code></td>
-<td>Switch to select mixing state assumption in marine organic aerosol code. Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.</td>
-<td><code>0</code> [Note: set to 3 in the atm_in namelist]</td>
-</tr>
-<tr>
-<td><code>mam_mom_parameterization</code></td>
-<td>Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) <sup id="fnref2:1"><a class="footnote-ref" href="#fn:1">1</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup></td>
-<td><code>1</code></td>
-</tr>
-</tbody>
-</table>
-<p>*Note: non-default values have not been carefully tested and may not work as expected.</p>
+<p><a href="../../user-guide/namelist_parameters/#oceanfilms">OCEANFILMS Namelist Parameters</a></p>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
 <p>Susannah M. Burrows, Richard C. Easter, Xiaohong Liu, Po-Lun Ma, Hailong Wang, Scott M. Elliott, Balwinder Singh, Kai Zhang, and Philip J. Rasch. OCEANFILMS (Organic Compounds from Ecosystems to Aerosols: Natural Films and Interfaces via Langmuir Molecular Surfactants) sea spray organic aerosol emissions – implementation in a global climate model and impacts on clouds. <em>Atmospheric Chemistry and Physics</em>, 22(8):5223–5251, April 2022. URL: <a href="https://acp.copernicus.org/articles/22/5223/2022/">https://acp.copernicus.org/articles/22/5223/2022/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-22-5223-2022">doi:10.5194/acp-22-5223-2022</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
-</li>
-<li id="fn:3">
-<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
-</li>
-<li id="fn:4">
-<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
-</li>
-<li id="fn:5">
-<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

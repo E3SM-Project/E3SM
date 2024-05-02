@@ -908,18 +908,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#to-turn-on-cosp-outputs" class="md-nav__link">
+  <a href="#namelist-parameters" class="md-nav__link">
     <span class="md-ellipsis">
-      To turn on COSP outputs
+      Namelist parameters
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#namelist-parameters" class="md-nav__link">
+  <a href="#to-turn-on-cosp-outputs" class="md-nav__link">
     <span class="md-ellipsis">
-      Namelist parameters
+      To turn on COSP outputs
     </span>
   </a>
   
@@ -2164,18 +2164,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#to-turn-on-cosp-outputs" class="md-nav__link">
+  <a href="#namelist-parameters" class="md-nav__link">
     <span class="md-ellipsis">
-      To turn on COSP outputs
+      Namelist parameters
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#namelist-parameters" class="md-nav__link">
+  <a href="#to-turn-on-cosp-outputs" class="md-nav__link">
     <span class="md-ellipsis">
-      Namelist parameters
+      To turn on COSP outputs
     </span>
   </a>
   
@@ -2214,27 +2214,12 @@
 
 <h1 id="cloud-feedback-model-intercomparison-project-cfmip-observation-simulator-package">Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package</h1>
 <h2 id="overview">Overview</h2>
-<p>The Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package (COSP; Bodas-Salcedo et al., 2011 <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>; Swales et al., 2018 <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>; Zhang et al., 2019 <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>; Zhang et al., 2024 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>) was developed to improve the consistency between model clouds and satellite observations. COSP contains several independent satellite simulators for better comparing model clouds with satellite measurements collected by the International Satellite Cloud Climatology Project (ISCCP), the Moderate Resolution Imaging Spectroradiometer (MODIS), the Multi-angle Imaging SpectroRadiometer (MISR), Cloud-Aerosol Lidar and Infrared Pathfinder Satellite Observation (CALIPSO), and CloudSat. The use of satellite simulators will not only make a fairer comparison between model clouds and satellite data but also allow a more in-depth analysis of clouds. For example, clouds can be assessed in terms of their optical properties and vertical location, which dictate their radiative effects.</p>
+<p>The Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package (COSP; Bodas-Salcedo et al., 2011;<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> Swales et al., 2018;<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> Zhang et al., 2019;<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> Zhang et al., 2024<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>) was developed to improve the consistency between model clouds and satellite observations. COSP contains several independent satellite simulators for better comparing model clouds with satellite measurements collected by the International Satellite Cloud Climatology Project (ISCCP), the Moderate Resolution Imaging Spectroradiometer (MODIS), the Multi-angle Imaging SpectroRadiometer (MISR), Cloud-Aerosol Lidar and Infrared Pathfinder Satellite Observation (CALIPSO), and CloudSat. The use of satellite simulators will not only make a fairer comparison between model clouds and satellite data but also allow a more in-depth analysis of clouds. For example, clouds can be assessed in terms of their optical properties and vertical location, which dictate their radiative effects.</p>
+<h2 id="namelist-parameters">Namelist parameters</h2>
+<p><a href="../../user-guide/namelist_parameters/#cloud-feedback-model-intercomparison-project-cfmip-observation-simulator-package">COSP Namelist Parameters</a></p>
 <h2 id="to-turn-on-cosp-outputs">To turn on COSP outputs</h2>
 <p>Run (add to the run script) the following command before running <code>./case.setup</code></p>
 <p><code>./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'</code></p>
-<h2 id="namelist-parameters">Namelist parameters</h2>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>cosp_lite</code></td>
-<td>This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).</td>
-<td><code>false</code></td>
-</tr>
-</tbody>
-</table>
 <table>
 <thead>
 <tr>
