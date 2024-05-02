@@ -5,7 +5,7 @@ The E3SM documentation is organized into sections for each component model and a
 ## Component Models
 
 - [EAM](./EAM/index.md)
-- [EAMxx](./EAMxx/index.md)
+- [EAMxx](https://E3SM-project.github.io/scream)
 - [ELM](./ELM/index.md)
 - [MOSART](./MOSART/index.md)
 
