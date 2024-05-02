@@ -1,0 +1,5 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #2726. It simply changes one mpaso namelist variable,
+    config_land_ice_flux_mode
+from its default value to 'coupled'.
+This tests the ocn/glcshelf coupling.
