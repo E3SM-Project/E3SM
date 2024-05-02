@@ -6,4 +6,5 @@ control system](https://esmci.github.io/cime/versions/master/html/users_guide/in
 that the user knows how to create a case, and what the `case.setup`, `case.build`, and `case.submit` commands do.
 
 
-For the time being, see our [public confluence EAMxx user guide](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3858890786/EAMxx+User+s+Guide)
+This user guide is still under construction. In the meantime, in case you can't find the information you need,
+you may visit our public confluence [EAMxx user guide](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3858890786/EAMxx+User+s+Guide).
