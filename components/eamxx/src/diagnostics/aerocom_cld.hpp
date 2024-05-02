@@ -34,10 +34,12 @@ class AeroComCld : public AtmosphereDiagnostic {
   // Bot or Top
   std::string m_topbot;
 
-  Field m_dz;
-
+  // Attribute maps for self-documentation
   std::map<std::string, int> m_index_map;
   std::map<std::string, std::string> m_units_map;
+
+  // Set a field for dz
+  Field m_dz;
 };
 
 }  // namespace scream

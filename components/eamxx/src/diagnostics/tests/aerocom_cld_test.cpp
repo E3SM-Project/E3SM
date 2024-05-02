@@ -1,4 +1,5 @@
 #include "catch2/catch.hpp"
+#include "diagnostics/aerocom_cld_util.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -42,7 +43,9 @@ TEST_CASE("aerocom_cld") {
   constexpr int nlevs = 9;
   const int ngcols    = 1 * comm.size();
 
-  int m_ndiag = 8;
+  // See how many diags we are calculating
+  AeroComCldDiagUtil aercom_util;
+  int ndiags = aercom_util.size;
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -62,7 +65,8 @@ TEST_CASE("aerocom_cld") {
   FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron,
                          grid->name());
   FieldIdentifier cd_fid("cldfrac_tot", scalar2d_layout, nondim, grid->name());
-  FieldIdentifier nc_fid("nc", scalar2d_layout, kg / kg, grid->name());
+  FieldIdentifier nc_fid("nc", scalar2d_layout, 1 / kg, grid->name());
+  FieldIdentifier ni_fid("ni", scalar2d_layout, 1 / kg, grid->name());
 
   Field tm(tm_fid);
   tm.allocate_view();
@@ -94,6 +98,9 @@ TEST_CASE("aerocom_cld") {
   Field nc(nc_fid);
   nc.allocate_view();
   nc.get_header().get_tracking().update_time_stamp(t0);
+  Field ni(ni_fid);
+  ni.allocate_view();
+  ni.get_header().get_tracking().update_time_stamp(t0);
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
@@ -126,6 +133,7 @@ TEST_CASE("aerocom_cld") {
     randomize(ei, engine, pdf);
     randomize(cd, engine, pdf);
     randomize(nc, engine, pdf);
+    randomize(ni, engine, pdf);
 
     // Create and set up the diagnostic
     params.set<std::string>("AeroComCld Kind", "Top");
@@ -143,6 +151,7 @@ TEST_CASE("aerocom_cld") {
     diag->set_required_field(ei);
     diag->set_required_field(cd);
     diag->set_required_field(nc);
+    diag->set_required_field(ni);
 
     diag->initialize(t0, RunType::Initial);
 
@@ -152,7 +161,7 @@ TEST_CASE("aerocom_cld") {
     Field diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
-    for(int idiag = 0; idiag < m_ndiag; ++idiag) {
+    for(int idiag = 0; idiag < ndiags; ++idiag) {
       REQUIRE(diag_v(0, idiag) == Real(0.0));
     }
 
@@ -168,6 +177,7 @@ TEST_CASE("aerocom_cld") {
     ec.deep_copy(10.0);
     ei.deep_copy(10.0);
     nc.deep_copy(5.0);
+    ni.deep_copy(1.0);
     diag->compute_diagnostic();
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
@@ -273,11 +283,9 @@ TEST_CASE("aerocom_cld") {
     qc_v(0, 5) = 20;
     qc_v(0, 6) = 50;
     qc_v(0, 7) = 10;
-
     cd.sync_to_dev();
     qi.sync_to_dev();
     qc.sync_to_dev();
-
     diag->compute_diagnostic();
     diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();

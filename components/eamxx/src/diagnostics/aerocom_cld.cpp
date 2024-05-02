@@ -3,6 +3,7 @@
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <string>
 
+#include "diagnostics/aerocom_cld_util.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 namespace scream {
@@ -34,42 +35,20 @@ void AeroComCld::set_grids(
   const auto nondim = Units::nondimensional();
   const auto micron = m / 1000000;
 
-  m_ncols = grid->get_num_local_dofs();
-  m_nlevs = grid->get_num_vertical_levels();
-  m_ndiag = 8;
-  // Set the attrs maps
-  // T_mid
-  m_index_map["T_mid"] = 0;
-  m_units_map["T_mid"] = "K";
-  // p_mid
-  m_index_map["p_mid"] = 1;
-  m_units_map["p_mid"] = "Pa";
-  // cldfrac_ice
-  m_index_map["cldfrac_ice"] = 2;
-  m_units_map["cldfrac_ice"] = "nondim";
-  // cldfrac_liq
-  m_index_map["cldfrac_liq"] = 3;
-  m_units_map["cldfrac_liq"] = "nondim";
-  // cdnc
-  m_index_map["cdnc"] = 4;
-  m_units_map["cdnc"] = "#/m3";
-  // eff_radius_qc
-  m_index_map["eff_radius_qc"] = 5;
-  m_units_map["eff_radius_qc"] = "micron";
-  // eff_radius_qi
-  m_index_map["eff_radius_qi"] = 6;
-  m_units_map["eff_radius_qi"] = "micron";
-  // cldfrac_tot
-  m_index_map["cldfrac_tot"] = 7;
-  m_units_map["cldfrac_tot"] = "nondim";
+  // Set the index map and units map
+  AeroComCldDiagUtil aercom_util;
+  m_index_map = aercom_util.index_map;
+  m_units_map = aercom_util.units_map;
+  m_ndiag     = aercom_util.size;
 
   // Ensure m_index_map.size() is the same as m_ndiag
   EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
                    "Error! Some inconsistency in AeroComCld: index and units "
                    "maps do not match!\n");
-  EKAT_REQUIRE_MSG(m_index_map.size() == m_ndiag,
-                   "Error! Some inconsistency in AeroComCld: index map doesn't "
-                   "match m_ndiag!\n");
+
+  m_ncols = grid->get_num_local_dofs();
+  m_nlevs = grid->get_num_vertical_levels();
+  // m_ndiag = m_index_map.size();
 
   // Define layouts we need (both inputs and outputs)
   FieldLayout scalar2d_layout{{COL, LEV}, {m_ncols, m_nlevs}};
@@ -85,7 +64,8 @@ void AeroComCld::set_grids(
   add_field<Required>("eff_radius_qc", scalar2d_layout, micron, grid_name);
   add_field<Required>("eff_radius_qi", scalar2d_layout, micron, grid_name);
   add_field<Required>("cldfrac_tot", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("nc", scalar2d_layout, kg / kg, grid_name);
+  add_field<Required>("nc", scalar2d_layout, 1 / kg, grid_name);
+  add_field<Required>("ni", scalar2d_layout, 1 / kg, grid_name);
 
   // A field to store dz
   FieldIdentifier m_dz_fid("dz", scalar2d_layout, m, grid_name);
@@ -133,15 +113,16 @@ void AeroComCld::compute_diagnostic_impl() {
   const auto rei  = get_field_in("eff_radius_qi").get_view<const Real **>();
   const auto cld  = get_field_in("cldfrac_tot").get_view<const Real **>();
   const auto nc   = get_field_in("nc").get_view<const Real **>();
+  const auto ni   = get_field_in("ni").get_view<const Real **>();
 
   auto dz = m_dz.get_view<Real **>();
 
   // Get gravity acceleration constant from constants
   using physconst = scream::physics::Constants<Real>;
-  // TODO: move tunable constant to namelist
-  constexpr auto q_threshold = 0.0;
-  // TODO: move tunable constant to namelist
-  constexpr auto cldfrac_tot_threshold = 0.001;
+
+  // Set two potentially tunable parameters
+  auto q_threshold           = q_thresh_set();
+  auto cldfrac_tot_threshold = cldfrac_tot_thresh_set();
 
   const auto policy = ESU::get_default_team_policy(m_ncols, m_nlevs);
 
@@ -167,9 +148,9 @@ void AeroComCld::compute_diagnostic_impl() {
         auto rei_icol  = ekat::subview(rei, icol);
         auto cld_icol  = ekat::subview(cld, icol);
         auto nc_icol   = ekat::subview(nc, icol);
+        auto ni_icol   = ekat::subview(ni, icol);
 
         // We need dz too
-        // TODO: deduce dz_icol type, etc. on the spot here w/o field cloning?
         auto dz_icol = ekat::subview(dz, icol);
         PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol,
                          dz_icol);
@@ -215,6 +196,10 @@ void AeroComCld::compute_diagnostic_impl() {
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
                         physconst::gravit / cld_icol(ilay);
             out(icol, m_index_map["cdnc"]) += cdnc * aerocom_phi * aerocom_wts;
+            out(icol, m_index_map["nc"]) +=
+                nc_icol(ilay) * aerocom_phi * aerocom_wts;
+            out(icol, m_index_map["ni"]) +=
+                ni_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
             out(icol, m_index_map["eff_radius_qc"]) +=
                 rel_icol(ilay) * aerocom_phi * aerocom_wts;
             out(icol, m_index_map["eff_radius_qi"]) +=
