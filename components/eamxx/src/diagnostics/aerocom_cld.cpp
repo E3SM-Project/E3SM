@@ -41,14 +41,13 @@ void AeroComCld::set_grids(
   m_units_map = aercom_util.units_map;
   m_ndiag     = aercom_util.size;
 
-  // Ensure m_index_map.size() is the same as m_ndiag
+  // Ensure m_index_map and m_units_map match
   EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
                    "Error! Some inconsistency in AeroComCld: index and units "
                    "maps do not match!\n");
 
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
-  // m_ndiag = m_index_map.size();
 
   // Define layouts we need (both inputs and outputs)
   FieldLayout scalar2d_layout{{COL, LEV}, {m_ncols, m_nlevs}};
@@ -134,6 +133,18 @@ void AeroComCld::compute_diagnostic_impl() {
   const int nlevs = m_nlevs;
   bool is_top     = (m_topbot == "Top");
 
+  // Get indices of each call we care about
+  const int T_mid_idx         = m_index_map["T_mid"];
+  const int p_mid_idx         = m_index_map["p_mid"];
+  const int cldfrac_ice_idx   = m_index_map["cldfrac_ice"];
+  const int cldfrac_liq_idx   = m_index_map["cldfrac_liq"];
+  const int cdnc_idx          = m_index_map["cdnc"];
+  const int eff_radius_qc_idx = m_index_map["eff_radius_qc"];
+  const int eff_radius_qi_idx = m_index_map["eff_radius_qi"];
+  const int nc_idx            = m_index_map["nc"];
+  const int ni_idx            = m_index_map["ni"];
+  const int cldfrac_tot_idx   = m_index_map["cldfrac_tot"];
+
   Kokkos::parallel_for(
       "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
@@ -184,25 +195,23 @@ void AeroComCld::compute_diagnostic_impl() {
             /* In general, converting a 3D property X to a 2D cloud-top
              * counterpart x follows: x(i) += X(i,k) * weights * Phase
              * but X and Phase are not always needed */
-            out(icol, m_index_map["T_mid"]) += tmid_icol(ilay) * aerocom_wts;
-            out(icol, m_index_map["p_mid"]) += pmid_icol(ilay) * aerocom_wts;
-            out(icol, m_index_map["cldfrac_ice"]) +=
-                (1.0 - aerocom_phi) * aerocom_wts;
-            out(icol, m_index_map["cldfrac_liq"]) += aerocom_phi * aerocom_wts;
+            out(icol, T_mid_idx) += tmid_icol(ilay) * aerocom_wts;
+            out(icol, p_mid_idx) += pmid_icol(ilay) * aerocom_wts;
+            out(icol, cldfrac_ice_idx) += (1.0 - aerocom_phi) * aerocom_wts;
+            out(icol, cldfrac_liq_idx) += aerocom_phi * aerocom_wts;
             // cdnc
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
             auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
                         physconst::gravit / cld_icol(ilay);
-            out(icol, m_index_map["cdnc"]) += cdnc * aerocom_phi * aerocom_wts;
-            out(icol, m_index_map["nc"]) +=
-                nc_icol(ilay) * aerocom_phi * aerocom_wts;
-            out(icol, m_index_map["ni"]) +=
+            out(icol, cdnc_idx) += cdnc * aerocom_phi * aerocom_wts;
+            out(icol, nc_idx) += nc_icol(ilay) * aerocom_phi * aerocom_wts;
+            out(icol, ni_idx) +=
                 ni_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
-            out(icol, m_index_map["eff_radius_qc"]) +=
+            out(icol, eff_radius_qc_idx) +=
                 rel_icol(ilay) * aerocom_phi * aerocom_wts;
-            out(icol, m_index_map["eff_radius_qi"]) +=
+            out(icol, eff_radius_qi_idx) +=
                 rei_icol(ilay) * (1.0 - aerocom_phi) * aerocom_wts;
             // Reset clr_icol to aerocom_tmp to accumulate
             clr_icol = aerocom_tmp;
@@ -223,7 +232,7 @@ void AeroComCld::compute_diagnostic_impl() {
         // defined as (1 - clr_icol). This is true because
         // clr_icol is the result of accumulative probabilities
         // (their products)
-        out(icol, m_index_map["cldfrac_tot"]) = 1.0 - clr_icol;
+        out(icol, cldfrac_tot_idx) = 1.0 - clr_icol;
       });
 }
 

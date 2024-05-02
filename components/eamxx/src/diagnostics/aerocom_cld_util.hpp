@@ -9,41 +9,42 @@ class AeroComCldDiagUtil {
  public:
   std::map<std::string, int> index_map;
   std::map<std::string, std::string> units_map;
-  int size;
+  unsigned int size;
 
   AeroComCldDiagUtil() {
+    // Start (post)incrementing size from 0
+    size = 0;
+
     // T_mid
-    index_map["T_mid"] = 0;
+    index_map["T_mid"] = size++;
     units_map["T_mid"] = "K";
     // p_mid
-    index_map["p_mid"] = 1;
+    index_map["p_mid"] = size++;
     units_map["p_mid"] = "Pa";
     // cldfrac_ice
-    index_map["cldfrac_ice"] = 2;
+    index_map["cldfrac_ice"] = size++;
     units_map["cldfrac_ice"] = "nondim";
     // cldfrac_liq
-    index_map["cldfrac_liq"] = 3;
+    index_map["cldfrac_liq"] = size++;
     units_map["cldfrac_liq"] = "nondim";
     // cdnc
-    index_map["cdnc"] = 4;
+    index_map["cdnc"] = size++;
     units_map["cdnc"] = "#/m3";
     // eff_radius_qc
-    index_map["eff_radius_qc"] = 5;
+    index_map["eff_radius_qc"] = size++;
     units_map["eff_radius_qc"] = "micron";
     // eff_radius_qi
-    index_map["eff_radius_qi"] = 6;
+    index_map["eff_radius_qi"] = size++;
     units_map["eff_radius_qi"] = "micron";
     // cldfrac_tot
-    index_map["cldfrac_tot"] = 7;
+    index_map["cldfrac_tot"] = size++;
     units_map["cldfrac_tot"] = "nondim";
     // nc
-    index_map["nc"] = 8;
+    index_map["nc"] = size++;
     units_map["nc"] = "1/kg";
     // ni
-    index_map["ni"] = 9;
+    index_map["ni"] = size++;
     units_map["ni"] = "1/kg";
-
-    size = index_map.size();
   }
 };
 

@@ -27,8 +27,11 @@ class AeroComCld : public AtmosphereDiagnostic {
 #endif
   void compute_diagnostic_impl();
 
+  // Grid info
   int m_ncols;
   int m_nlevs;
+
+  // How many diags we have
   int m_ndiag;
 
   // Bot or Top
