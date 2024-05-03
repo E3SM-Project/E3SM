@@ -1034,19 +1034,19 @@ void AtmosphereDriver::set_initial_conditions ()
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
       if (fname == "phis") {
-        // The eamxx field "phis" corresponds to the name
-        // "PHIS_d" on the GLL and Point grids and "PHIS"
-        // on the PG2 grid in the topography file.
+        // For GLL points, phis corresponds to "PHIS_d" in the
+        // topography file. On PG2 grid, dynamics will take care
+        // of computing phis, so do not add to initialized fields.
         if (grid_name == "Physics PG2") {
-          this_grid_topo_file_fnames.push_back("PHIS");
+          // Skip
         } else if (grid_name == "Physics GLL" ||
                    grid_name == "Point Grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
+          this_grid_topo_eamxx_fnames.push_back(fname);
+          fields_inited[grid_name].push_back(fname);
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back(fname);
-	fields_inited[grid_name].push_back(fname);
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
