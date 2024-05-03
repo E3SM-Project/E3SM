@@ -487,6 +487,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
+    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+    <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
