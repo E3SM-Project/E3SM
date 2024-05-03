@@ -23,23 +23,23 @@ is available.
 ## Supported Coupled Compsets
 
 A *fully coupled* compset is one which has active components for at least the atmosphere, ocean, land surface, ocean and
-sea-ice all interacting.  Each compset is associated with a specific forcing condition (time period). 
-The fully coupled compsets supported in this version of E3SM are:
+sea-ice all interacting.  Each compset is associated with a specific forcing condition.
+Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  `water cycle change and impacts`, `human-earth system feedbacks`, and `polar processes, sea-level rise and coastal impacts`. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for `water cycle change and impacts` simulation campaign.
+Below list the standard configuration compsets supported in the current version of E3SM:
 
-| Compset Alias  |   TIME     | ATM    | LND | Sea ice     | Ocean      | River |
-| -------- |         ----     | ---    | --- | ---------   | ------     | ----- |
-|WCYCL1850          | 1850 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCL1850-1pcCO2   | 1850 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCL1850-4xCO2    | 1850 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCL1950          | 1950 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCL20TR          | 20TR | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCLSSP245        | SSP245 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCLSSP370        | SSP370 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
-|WCYCLSSP585        | SSP585 | EAM    | ELM | MPAS-Seaice | MPAS-Ocean | MOSART |
+|Compset alias | Description |
+|:-----------  |:----------- |
+|`WCYCL1850` | Standard configuration with pre-industrial climatological forcings |
+|`WCYCL1850-4xCO2` | Same as `WCYCL1850` except with abrupt (then persistent) 4xCO2 forcing. |
+|`WCYCL1850-1pctCO2` | Same as `WCYCL1850` except with 1 percent per year increase of CO2 concentration |
+|`WCYCL1950` | Standard configuration with perpetual 1950 forcings |
+|`WCYCL20TR` | Standard configuration with prescribed transient forcings over the historical period (1850-2014) |
+|`WCYCLSSP245` | Standard configuration with prescribed SSP-245 forcings |
+|`WCYCLSSP370` | Standard configuration with prescribed SSP-370 forcings |
+|`WCYCLSSP585` | Standard configuration with prescribed SSP-585 forcings |
 
-Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  `water cycle change and impacts`, `human-earth system feedbacks`, and `polar processes, sea-level rise and coastal impacts`. The above compsets with prognostic atmosphere, land, river, ocean and sea-ice components form the base physical
-coupled system and are mainly designed for `water cycle change and impacts` simulation campaign. The compsets for the other two science simulation campaigns 
-are being finalized, with additional components and/or features. The compset naming follows the same convention, e.g., `CRYO1850` and `CRYO1850-4xCO2` are with prognostic ice-shelf melt fluxes for the `polar processes` simulation campaign.
+The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features. 
+The compset naming follows the same convention, e.g., `CRYO1850` and `CRYO1850-4xCO2` are with prognostic ice-shelf melt fluxes for the `polar processes` simulation campaign.
 
 Compsets are also available for standalone component model configurations, See the User Guides for the components for more information.
 
@@ -56,7 +56,7 @@ resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.|
 
 ## Input data
 
-Inputdata for coupled compsets at component model levels are the same as for the standalone compnent configurations
+Inputdata for coupled compsets at component model levels are the same as for the standalone component configurations
 for a given forcing scenario (e.g., `1850` for the pre-industrial period,  `20TR` for the historical period, `2010`
 for present-day condition, and `SSPs` for Shared Socioeconomic Pathways of climate change scenarios).
 Between the coupled compsets, the differences are in the prescribed solar forcing, volcanic emissions,
