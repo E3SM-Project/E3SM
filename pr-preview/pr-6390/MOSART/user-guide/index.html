@@ -2523,14 +2523,37 @@ vai <code>rtmhist_mfilt</code>.</p>
 <li>Each <code>*.mosart.h2.*.nc</code> will include 24 hourly average values of <code>RIVER_DISCHARGE_OVER_LAND_LIQ</code></li>
 </ul>
 <h3 id="additional-options">Additional options</h3>
-<p>The table below lists avaiable options defined by users through <code>user_nl_mosart</code>
-| Variable Name     | Description                                                                          |
-|-------------------|--------------------------------------------------------------------------------------|
-| <code>routingmethod</code>   | <code>1</code> for kenematic wave routing (default); <code>2</code> for diffusion wave routing             |
-| <code>wrmflag</code>         | <code>.true.</code> for active water management; <code>.false.</code> for no water management (default)    |
-| <code>inundflag</code>       | <code>.true.</code> for active flood inundation; <code>.false.</code> for no flood inundation (default)    |
-| <code>sediflag</code>        | <code>.true.</code> for active sediment transport; <code>.false.</code> for no sediment transport (default)|
-| <code>heatflag</code>        | <code>.true.</code> for active heat transport; <code>.false.</code> for no heat transport (default)        |</p>
+<p>The table below lists avaiable options defined by users through <code>user_nl_mosart</code></p>
+<table>
+<thead>
+<tr>
+<th>Variable Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>routingmethod</code></td>
+<td><code>1</code> for kenematic wave routing (default); <code>2</code> for diffusion wave routing</td>
+</tr>
+<tr>
+<td><code>wrmflag</code></td>
+<td><code>.true.</code> for active water management; <code>.false.</code> for no water management (default)</td>
+</tr>
+<tr>
+<td><code>inundflag</code></td>
+<td><code>.true.</code> for active flood inundation; <code>.false.</code> for no flood inundation (default)</td>
+</tr>
+<tr>
+<td><code>sediflag</code></td>
+<td><code>.true.</code> for active sediment transport; <code>.false.</code> for no sediment transport (default)</td>
+</tr>
+<tr>
+<td><code>heatflag</code></td>
+<td><code>.true.</code> for active heat transport; <code>.false.</code> for no heat transport (default)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="additional-mosart-features">Additional MOSART features</h2>
 <p>There are some options only made available for specific features. They can be defined through <code>user_nl_mosart</code>.</p>
 <h3 id="water-management">Water management</h3>
