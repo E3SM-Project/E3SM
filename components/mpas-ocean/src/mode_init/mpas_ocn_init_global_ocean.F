@@ -20,18 +20,19 @@
 
 module ocn_init_global_ocean
 
+   use shr_kind_mod, only: SHR_KIND_R8
+   use shr_const_mod
+
    use mpas_kind_types
    use mpas_io_units
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
    use mpas_io
    use mpas_io_streams
    use mpas_stream_manager
    use mpas_timekeeping
    use mpas_dmpar
 
-   use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
    use ocn_init_cell_markers
@@ -632,8 +633,8 @@ contains
        call MPAS_closeStream(topographyStream)
 
        if (config_global_ocean_topography_latlon_degrees) then
-          topoLat % array(:) = topoLat % array(:) * pii / 180.0_RKIND
-          topoLon % array(:) = topoLon % array(:) * pii / 180.0_RKIND
+          topoLat % array(:) = topoLat % array(:) * SHR_CONST_PI / 180.0_RKIND
+          topoLon % array(:) = topoLon % array(:) * SHR_CONST_PI / 180.0_RKIND
        end if
 
     end subroutine ocn_init_setup_global_ocean_read_topo!}}}
@@ -825,26 +826,26 @@ contains
                  call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
                                                            topoIC % array, nLonTopo, nLatTopo, &
                                                            lonCell, latCell, bottomDepthObserved, nCells, &
-                                                           inXPeriod = 2.0_RKIND * pii)
+                                                           inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
                  if (config_global_ocean_topography_has_ocean_frac) then
                     call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
                                                               oceanFracIC % array, nLonTopo, nLatTopo, &
                                                               lonCell, latCell, oceanFracObserved, nCells, &
-                                                              inXPeriod = 2.0_RKIND * pii)
+                                                              inXPeriod = 2.0_RKIND * SHR_CONST_PI)
                  end if
 
               elseif (config_global_ocean_topography_method == "bilinear_interpolation") then
                  call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
                                                             topoIC % array, nLonTopo, nLatTopo, &
                                                             lonCell, latCell, bottomDepthObserved, nCells, &
-                                                            inXPeriod = 2.0_RKIND * pii)
+                                                            inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
                  if (config_global_ocean_topography_has_ocean_frac) then
                     call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
                                                                oceanFracIC % array, nLonTopo, nLatTopo, &
                                                                lonCell, latCell, oceanFracObserved, nCells, &
-                                                               inXPeriod = 2.0_RKIND * pii)
+                                                               inXPeriod = 2.0_RKIND * SHR_CONST_PI)
                  end if
 
               else
@@ -1642,11 +1643,11 @@ contains
 
        if (config_global_ocean_tracer_latlon_degrees) then
           do iLat = 1, nLatTracer
-             tracerLat % array(iLat) = tracerLat % array(iLat) * pii / 180.0_RKIND
+             tracerLat % array(iLat) = tracerLat % array(iLat) * SHR_CONST_PI / 180.0_RKIND
           end do
 
           do iLon = 1, nLonTracer
-             tracerLon % array(iLon) = tracerLon % array(iLon) * pii / 180.0_RKIND
+             tracerLon % array(iLon) = tracerLon % array(iLon) * SHR_CONST_PI / 180.0_RKIND
           end do
        end if
 
@@ -1714,11 +1715,11 @@ contains
 
        if (config_global_ocean_swData_latlon_degrees) then
           do iLat = 1, nLatSW
-             swDataLat % array(iLat) = swDataLat % array(iLat) * pii / 180.0_RKIND
+             swDataLat % array(iLat) = swDataLat % array(iLat) * SHR_CONST_PI / 180.0_RKIND
           end do
 
           do iLon = 1, nLonSW
-             swDataLon % array(iLon) = swDataLon % array(iLon) * pii / 180.0_RKIND
+             swDataLon % array(iLon) = swDataLon % array(iLon) * SHR_CONST_PI / 180.0_RKIND
           end do
        end if
 
@@ -1801,11 +1802,11 @@ contains
 
        if (config_global_ocean_ecosys_latlon_degrees) then
           do iLat = 1, nLatEcosys
-             tracerLat % array(iLat) = tracerLat % array(iLat) * pii / 180.0_RKIND
+             tracerLat % array(iLat) = tracerLat % array(iLat) * SHR_CONST_PI / 180.0_RKIND
           end do
 
           do iLon = 1, nLonEcosys
-             tracerLon % array(iLon) = tracerLon % array(iLon) * pii / 180.0_RKIND
+             tracerLon % array(iLon) = tracerLon % array(iLon) * SHR_CONST_PI / 180.0_RKIND
           end do
        end if
 
@@ -2072,13 +2073,13 @@ contains
             call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
                  tracerIC % array, nLonTracer, nLatTracer, &
                  lonCell, latCell, interpTracer, nCells, &
-                 inXPeriod = 2.0_RKIND * pii)
+                 inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
             call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
                  tracerIC % array, nLonTracer, nLatTracer, &
                  lonCell, latCell, interpTracer, nCells, &
-                 inXPeriod = 2.0_RKIND * pii)
+                 inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          else
             call mpas_log_write( 'Invalid choice of config_global_ocean_tracer_method.', MPAS_LOG_CRIT)
@@ -2239,13 +2240,13 @@ contains
              call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
                   ecosysForcingIC % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
                   lonCell, latCell, ecosysForcingField, nCells, &
-                  inXPeriod = 2.0_RKIND * pii)
+                  inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
           elseif (config_global_ocean_ecosys_method .eq. "bilinear_interpolation") then
              call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
                   ecosysForcingIC % array(:,:,timeCounter), nLonEcosys, nLatEcosys, &
                   lonCell, latCell, ecosysForcingField, nCells, &
-                  inXPeriod = 2.0_RKIND * pii)
+                  inXPeriod = 2.0_RKIND * SHR_CONST_PI)
           else
              call mpas_log_write( 'Invalid choice of config_global_ocean_ecosys_method.', MPAS_LOG_CRIT)
              iErr = 1
@@ -2449,33 +2450,33 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
          call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
                                                    chlorophyllIC % array, nLonSW, nLatSW, &
                                                    lonCell, latCell, chlorophyllData, nCells, &
-                                                   inXPeriod = 2.0_RKIND * pii)
+                                                   inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
                                                    zenithAngleIC % array, nLonSW, nLatSW, &
                                                    lonCell, latCell, zenithAngle, nCells, &
-                                                   inXPeriod = 2.0_RKIND * pii)
+                                                   inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
                                                    clearSKYIC % array, nLonSW, nLatSW, &
                                                    lonCell, latCell, clearSkyRadiation, nCells, &
-                                                   inXPeriod = 2.0_RKIND * pii)
+                                                   inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
       elseif (config_global_ocean_swData_method .eq. "bilinear_interpolation") then
          call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
                                                     chlorophyllIC % array, nLonSW, nLatSW, &
                                                     lonCell, latCell, chlorophyllData, nCells, &
-                                                    inXPeriod = 2.0_RKIND * pii)
+                                                    inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
                                                     zenithAngleIC % array, nLonSW, nLatSW, &
                                                     lonCell, latCell, zenithAngle, nCells, &
-                                                    inXPeriod = 2.0_RKIND * pii)
+                                                    inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
          call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
                                                     clearSKYIC % array, nLonSW, nLatSW, &
                                                     lonCell, latCell, clearSkyRadiation, nCells, &
-                                                    inXPeriod = 2.0_RKIND * pii)
+                                                    inXPeriod = 2.0_RKIND * SHR_CONST_PI)
      else
          call mpas_log_write( 'Invalid choice of config_global_ocean_swData_method.', MPAS_LOG_CRIT)
          iErr = 1
@@ -2603,8 +2604,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        call MPAS_closeStream(windstressStream)
 
        if (config_global_ocean_windstress_latlon_degrees) then
-          windLat % array(:) = windLat % array(:) * pii / 180.0_RKIND
-          windLon % array(:) = windLon % array(:) * pii / 180.0_RKIND
+          windLat % array(:) = windLat % array(:) * SHR_CONST_PI / 180.0_RKIND
+          windLon % array(:) = windLon % array(:) * SHR_CONST_PI / 180.0_RKIND
        end if
 
     end subroutine ocn_init_setup_global_ocean_read_windstress!}}}
@@ -2657,23 +2658,23 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
              call ocn_init_interpolation_nearest_horiz(windLon % array, windLat % array, &
                                                        zonalWindIC % array, nLonWind, nLatWind, &
                                                        lonCell, latCell, windStressZonal, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                                                       inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
              call ocn_init_interpolation_nearest_horiz(windLon % array, windLat % array, &
                                                        meridionalWindIC % array, nLonWind, nLatWind, &
                                                        lonCell, latCell, windStressMeridional, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                                                       inXPeriod = 2.0_RKIND * SHR_CONST_PI)
 
           elseif (config_global_ocean_windstress_method .eq. "bilinear_interpolation") then
              call ocn_init_interpolation_bilinear_horiz(windLon % array, windLat % array, &
                                                        zonalWindIC % array, nLonWind, nLatWind, &
                                                        lonCell, latCell, windStressZonal, nCells, &
-                                                       inXPeriod = 2.0_RKIND*pii)
+                                                       inXPeriod = 2.0_RKIND*SHR_CONST_PI)
 
              call ocn_init_interpolation_bilinear_horiz(windLon % array, windLat % array, &
                                                        meridionalWindIC % array, nLonWind, nLatWind, &
                                                        lonCell, latCell, windStressMeridional, nCells, &
-                                                       inXPeriod = 2.0_RKIND*pii)
+                                                       inXPeriod = 2.0_RKIND*SHR_CONST_PI)
 
           else
              call mpas_log_write( 'Invalid choice of config_global_ocean_windstress_method.', MPAS_LOG_CRIT)
