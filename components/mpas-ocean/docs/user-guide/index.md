@@ -3,16 +3,6 @@
 
 This MPAS-Ocean Quick Start Guide describes how to set up and run MPAS-Ocean within E3SM. More details can be found in the [MPAS-Ocean User's Guide](https://zenodo.org/records/11098080), as well as instructions on running the stand-alone ocean model.
 
-## Table of contents
-
-1. [Steps to build and run MPAS-Ocean](#steps-to-build-and-run-mpas-ocean)
-2. [Scientifically supported compsets and meshes](#scientifically-supported-compsets-and-meshes)
-    1. [Compsets](#compsets)
-    2. [Meshes](#meshes)
-3. [Customizing runs](#customizing-runs)
-    1. [Namelist changes](#namelist-changes)
-    2. [Configuring input and output for MPAS-Ocean](#configuring-input-and-output-for-mpas-ocean)
-
 ## Steps to build and run MPAS-Ocean
 
 Step-by-step instructions on how to run E3SM can be found at [https://docs.e3sm.org/running-e3sm-guide](https://docs.e3sm.org/running-e3sm-guide).
