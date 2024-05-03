@@ -13,43 +13,43 @@ These are the prescribed inputdata specifically for the SSP245 scenario, in plac
 ## Elevated external forcings
 
 ```fortran
-no2_ext_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240219.nc 
-so2_ext_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_volc_elev_2015-2100_c240331.nc 
-soag0_ext_file       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240219.nc 
-bc_a4_ext_file       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_elev_2015-2100_c200716.nc 
-mam7_num_a1_ext_file \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_elev_2015-2100_c200716.nc 
-num_a2_ext_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_elev_2015-2100_c200716.nc 
-mam7_num_a3_ext_file \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_elev_2015-2100_c200716.nc 
-pom_a4_ext_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_elev_2015-2100_c200716.nc 
-so4_a1_ext_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_elev_2015-2100_c200716.nc 
-so4_a2_ext_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_elev_2015-2100_c200716.nc 
+NO2         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240219.nc 
+SO2         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_volc_elev_2015-2100_c240331.nc 
+SOAG0       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240219.nc 
+bc_a4       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_elev_2015-2100_c200716.nc 
+num_a1      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_elev_2015-2100_c200716.nc 
+num_a2      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_elev_2015-2100_c200716.nc 
+num_a4      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_elev_2015-2100_c200716.nc 
+pom_a4      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_elev_2015-2100_c200716.nc 
+so4_a1      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_elev_2015-2100_c200716.nc 
+so4_a2      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_elev_2015-2100_c200716.nc 
 ```
 
 ## Surface emissions
 
 ```fortran
-c2h4_emis_file        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240219.nc 
-c2h6_emis_file        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240219.nc 
-c3h8_emis_file        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240219.nc 
-ch2o_emis_file        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH2O_surface_2015-2100_1.9x2.5_c20240219.nc 
-ch3cho_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3CHO_surface_2015-2100_1.9x2.5_c20240219.nc 
-ch3coch3_emis_file    \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3COCH3_surface_2015-2100_1.9x2.5_c20240219.nc 
-co_emis_file          \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CO_surface_2015-2100_1.9x2.5_c20240219.nc 
-isop_emis_file        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc 
-isop_vbs_emis_file    \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc 
-c10h16_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_MTERP_surface_2015-2100_1.9x2.5_c20240219.nc 
-nox_emis_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO_surface_2015-2100_1.9x2.5_c20240219.nc 
-dms_emis_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc
-so2_emis_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_surf_2015-2100_c200716.nc 
-soag0_emis_file       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240219.nc 
-bc_a4_emis_file       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_surf_2015-2100_c200716.nc 
-mam7_num_a1_emis_file \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_surf_2015-2100_c200716.nc 
-num_a2_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_surf_2015-2100_c200716.nc 
-mam7_num_a3_emis_file \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_surf_2015-2100_c200716.nc 
-pom_a4_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_surf_2015-2100_c200716.nc 
-so4_a1_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_surf_2015-2100_c200716.nc 
-so4_a2_emis_file      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_surf_2015-2100_c200716.nc 
-e90_emis_file         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc 
+C2H4        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240219.nc 
+C2H6        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240219.nc 
+C3H8        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240219.nc 
+CH2O        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH2O_surface_2015-2100_1.9x2.5_c20240219.nc 
+CH3CHO      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3CHO_surface_2015-2100_1.9x2.5_c20240219.nc 
+CH3COCH3    \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3COCH3_surface_2015-2100_1.9x2.5_c20240219.nc 
+CO          \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CO_surface_2015-2100_1.9x2.5_c20240219.nc 
+ISOP        \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc 
+ISOP_VBS    \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc 
+C10H16      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_MTERP_surface_2015-2100_1.9x2.5_c20240219.nc 
+NOX         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO_surface_2015-2100_1.9x2.5_c20240219.nc 
+DMS         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc
+SO2         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_surf_2015-2100_c200716.nc 
+SOAG0       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240219.nc 
+bc_a4       \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_surf_2015-2100_c200716.nc 
+num_a1      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_surf_2015-2100_c200716.nc 
+num_a2      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_surf_2015-2100_c200716.nc 
+num_a4      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_surf_2015-2100_c200716.nc 
+pom_a4      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_surf_2015-2100_c200716.nc 
+so4_a1      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_surf_2015-2100_c200716.nc 
+so4_a2      \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_surf_2015-2100_c200716.nc 
+E90         \$DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc 
 ```
 
 ## Prescribed oxidant for aerosol chemistry
