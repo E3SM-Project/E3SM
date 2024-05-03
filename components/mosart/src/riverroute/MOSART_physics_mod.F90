@@ -64,6 +64,7 @@ MODULE MOSART_physics_mod
     implicit none    
     
     integer :: iunit, idam, m, k, unitUp, cnt, ier, dd, nSubStep   !local index
+    integer  :: damID
     real(r8) :: temp_erout, localDeltaT, temp_haout, temp_Tt, temp_Tr, temp_T, temp_ha
     real(r8) :: mud_erout, san_erout, temp_ehexch, temp_etexch, temp_erexch
     real(r8) :: negchan 
@@ -287,10 +288,15 @@ MODULE MOSART_physics_mod
           !      !TRunoff%erowm_regi(iunit,nt) = TRunoff%erowm_regi(iunit,nt) + TRunoff%erlateral(iunit,nt)
           !   enddo
           !      
-          !   call res_trapping_t(iunit,nt_nmud)
-          !   Tres%wres_t(iunit,nt_nmud) = Tres%wres_t(iunit,nt_nmud) + Tres%dwres_t(iunit,nt_nmud) * localDeltaT
-          !   call res_trapping_t(iunit,nt_nsan)
-          !   Tres%wres_t(iunit,nt_nsan) = Tres%wres_t(iunit,nt_nsan) + Tres%dwres_t(iunit,nt_nsan) * localDeltaT
+          !   if(Tres_para%Eff_trapping(iunit)>TINYVALUE) then
+          !       damID = WRMUnit%INVicell(iunit)
+          !       if (StorWater%active_stage(damID)>0) then
+          !           call res_trapping_t(iunit,nt_nmud)
+          !           Tres%wres_t(iunit,nt_nmud) = Tres%wres_t(iunit,nt_nmud) + Tres%dwres_t(iunit,nt_nmud) * localDeltaT
+          !           call res_trapping_t(iunit,nt_nsan)
+          !           Tres%wres_t(iunit,nt_nsan) = Tres%wres_t(iunit,nt_nsan) + Tres%dwres_t(iunit,nt_nsan) * localDeltaT
+          !       end if
+          !   end if
           !    
           !   do nt=nt_nmud,nt_nsan
           !     !TRunoff%erowm_regf(iunit,nt) = TRunoff%erowm_regf(iunit,nt) + TRunoff%erlateral(iunit,nt)
@@ -632,18 +638,24 @@ MODULE MOSART_physics_mod
 
              ! first round of trapping, for those main channel reservoirs that both regulate flow and trap sediment
              if(Tres_para%Eff_trapping(iunit)>TINYVALUE) then            
-                 call res_trapping(iunit,nt_nmud)
-                 Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
-                 call res_trapping(iunit,nt_nsan)
-                 Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+                 damID = WRMUnit%INVicell(iunit)
+                 if (StorWater%active_stage(damID)>0) then
+                     call res_trapping(iunit,nt_nmud)
+                     Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
+                     call res_trapping(iunit,nt_nsan)
+                     Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+                 end if
              end if
 
              !! TODO: second round of trapping, for those main-channel reservoirs that trap sediment only
              !if(Tres_para%Eff_trapping_r(iunit)>TINYVALUE) then             
-             !    call res_trapping_r(iunit,nt_nmud)
-             !    Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
-             !    call res_trapping_r(iunit,nt_nsan)
-             !    Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+             !    damID = WRMUnit%INVicell(iunit)
+             !    if (StorWater%active_stage(damID)>0) then
+             !        call res_trapping_r(iunit,nt_nmud)
+             !        Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
+             !        call res_trapping_r(iunit,nt_nsan)
+             !        Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+             !    end if
              !end if
 
              do nt=nt_nmud,nt_nsan
@@ -800,9 +812,9 @@ MODULE MOSART_physics_mod
     real(r8), intent(in) :: theDeltaT
     character(len=*),parameter :: subname = '(subnetworkRouting)'
 
-    if(TUnit%tlen(iunit) <= TUnit%hlen(iunit)) then ! if no tributaries, not subnetwork channel routing
-        TRunoff%etout(iunit,nt) = -TRunoff%etin(iunit,nt)
-    else
+    !if(TUnit%tlen(iunit) <= TUnit%hlen(iunit)) then ! if no tributaries, not subnetwork channel routing
+    !    TRunoff%etout(iunit,nt) = -TRunoff%etin(iunit,nt)
+    !else
         if(nt == nt_nliq) then
     !   !     !TRunoff%vt(iunit,nt) = CRVRMAN(TUnit%tslp(iunit), TUnit%nt(iunit), TRunoff%rt(iunit,nt))
             TRunoff%vt(iunit,nt) = CRVRMAN_nosqrt(TUnit%tslpsqrt(iunit), TUnit%nt(iunit), TRunoff%rt(iunit,nt))
@@ -820,7 +832,7 @@ MODULE MOSART_physics_mod
               TRunoff%etout(iunit,nt) = -(TRunoff%etin(iunit,nt) + TRunoff%wt(iunit,nt)/theDeltaT)
             end if
         end if
-    end if
+    !end if
     TRunoff%dwt(iunit,nt) = TRunoff%etin(iunit,nt) + TRunoff%etout(iunit,nt)
 
 ! check stability

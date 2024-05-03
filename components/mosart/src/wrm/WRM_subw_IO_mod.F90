@@ -12,7 +12,7 @@ MODULE WRM_subw_IO_mod
                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp
   use RtmFileUtils  , only : getfil, getavu, relavu
-  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
+  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile, ncd_inqfdims
   use RtmTimeManager, only : get_curr_date, is_new_month
   use rof_cpl_indices, only : nt_rtm
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
@@ -77,6 +77,8 @@ MODULE WRM_subw_IO_mod
      character(len=350) :: paraFile, demandPath, DemandVariableName
      integer :: ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
         ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
+
+     logical :: iswm2d = .true. ! if the wm input file is structured or unstructured
 
      namelist /wrm_inparm/  &
         paraFile, demandPath, DemandVariableName, &
@@ -170,11 +172,17 @@ MODULE WRM_subw_IO_mod
      !-------------------
 
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraFile), 0)
+     call ncd_inqfdims(ncid, iswm2d, dsizes(1), dsizes(2), gsize) ! determin if the WM input file is structured or unstructured
+     if (iswm2d) then
+        ndims = 2
+     else
+        ndims = 1
+     endif
      call shr_sys_flush(iulog)
-     ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
-     ier = pio_inq_vardimid(ncid, vardesc, dids)
-     ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
-     ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
+     !ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
+     !ier = pio_inq_vardimid(ncid, vardesc, dids)
+     !ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
+     !ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
 
      write(iulog,FORMI) subname,' lnumr = ',iam,rtmCTL%lnumr,begr,endr
      write(iulog,FORMI) subname,' gindex = ',iam,minval(rtmCTL%gindex),maxval(rtmCTL%gindex)
@@ -197,15 +205,15 @@ MODULE WRM_subw_IO_mod
      write(iulog,FORMI) subname,' gindex = ',iam,minval(gindex),maxval(gindex)
      call shr_sys_flush(iulog)
 
-     gsize = dsizes(1)*dsizes(2)
+     !gsize = dsizes(1)*dsizes(2)
      call mct_gsMap_init(gsMap_wg, gindex, mpicom_rof, ROFID, lsize, gsize )
      call mct_aVect_init(aVect_wg, rList='fld1',lsize=lsize)
      write(iulog,FORMI) subname,' gsmap_wg lsize = ',iam,mct_gsMap_lsize(gsMap_wg,mpicom_rof)
      write(iulog,FORMI) subname,' avect_wg lsize = ',iam,mct_aVect_lsize(aVect_wg)
      call shr_sys_flush(iulog)
 
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, gindex, iodesc_dbl_grd2grd)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, gindex, iodesc_int_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), gindex, iodesc_dbl_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), gindex, iodesc_int_grd2grd)
      deallocate(gindex)
 
      !-------------------

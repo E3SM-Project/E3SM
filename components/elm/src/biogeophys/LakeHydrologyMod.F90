@@ -200,6 +200,7 @@ contains
          qflx_surf            =>  col_wf%qflx_surf          , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)
          qflx_drain           =>  col_wf%qflx_drain         , & ! Output: [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
          qflx_infl            =>  col_wf%qflx_infl          , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)
+         qflx_infl_excess     =>  col_wf%qflx_infl_excess   , & ! Output: [real(r8) (:)   ]  infiltration excess (mm H2O /s)
          qflx_qrgwl           =>  col_wf%qflx_qrgwl         , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes
          qflx_runoff          =>  col_wf%qflx_runoff        , & ! Output: [real(r8) (:)   ]  total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_irrig           =>  veg_wf%qflx_irrig_patch   , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)
@@ -710,6 +711,7 @@ contains
          qflx_h2osfc_surf(c)   = 0._r8
          qflx_rsub_sat(c)      = 0._r8
          qflx_infl(c)          = 0._r8
+         qflx_infl_excess(c)   = 0._r8
          qflx_surf(c)          = 0._r8
          qflx_drain(c)         = 0._r8
          qflx_irrig(p)         = 0._r8

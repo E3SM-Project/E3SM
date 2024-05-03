@@ -90,7 +90,7 @@ contains
     real(r8) :: Crsd, Clai, PCT_gnd                        ! ground cover calculated from residue and LAI
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
-    real(r8) :: Qs, Qss, Qg, Ptot, Ie, Dl                  ! water fluxes
+    real(r8) :: Qs, Qs_tot, Qss, Qg, Ptot, Ie, Dl          ! water fluxes
     real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD, cheight      ! temporaries 
     real(r8) :: Es_Qcrp, Es_Pcrp                           ! cropland temporaries
     real(r8) :: stxt(4)                                    ! soil texture including gravel
@@ -127,6 +127,8 @@ contains
          tfactor          =>    sedflux_vars%tfactor_col            , & ! Input: [real(r8) (:) ] transport capacity scaling factor
 
          qflx_surf        =>    col_wf%qflx_surf                    , & ! Input: [real(r8) (:) ] surface runoff (mm/s)
+         qflx_infl_excess =>    col_wf%qflx_infl_excess             , & ! Input: [real(r8) (:) ] infiltration excess (mm/s)
+         qflx_h2osfc_surf =>    col_wf%qflx_h2osfc_surf             , & ! Input: [real(r8) (:) ] surface runoff from h2osfc (mm/s)
          qflx_qrgwl       =>    col_wf%qflx_qrgwl                   , & ! Input: [real(r8) (:) ] glacier runoff (mm/s) 
          qflx_dirct_rain  =>    veg_wf%qflx_dirct_rain              , & ! Input: [real(r8) (:) ] direct throughfall rain (mm/s)
          qflx_leafdrip    =>    veg_wf%qflx_leafdrip                , & ! Input: [real(r8) (:) ] leaf rain drip (mm/s)
@@ -235,13 +237,13 @@ contains
             Es_Pcrp = 1.e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_Pcrp  ! kg/m2/s
 
             ! snow scaling factor from T factor of BQART
-            Qs = 8.64e4_r8 * qflx_surf(c)                ! mm/d
-            Qss = (1._r8 - 0.7846_r8*frac_sno(c)) * Qs   ! mm/d
+            Qs = 8.64e4_r8 * (qflx_surf(c) + qflx_infl_excess(c))       ! mm/d
+            Qs_tot = 8.64e4_r8 * (qflx_surf(c) + qflx_h2osfc_surf(c))   ! mm/d
 
             Es_Q = 0._r8
             Es_Qcrp = 0._r8
             Tc = 0._r8
-            if (Qs>0._r8) then
+            if (Qs_tot>0._r8) then
                frac_slp = 1.0_r8 / DBLE(nlevslp-1)
                fslp = 0._r8
                fslp_tc = 0._r8
@@ -284,7 +286,7 @@ contains
                end do
 
                Tc = 19.1_r8 * tfactor(c) * fslp_tc * fsr * ftillage_tc * &
-                  flitho * fglacier * Qs**2._r8
+                  flitho * fglacier * Qs_tot**2._r8
             end if
             Es_Q = 1.e-7_r8 / 8.64_r8 * Es_Q        ! kg/m2/s
             Es_Qcrp = 1.e-7_r8 / 8.64_r8 * Es_Qcrp  ! kg/m2/s

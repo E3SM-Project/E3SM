@@ -1845,9 +1845,7 @@ contains
 
     if (sediflag .and. wrmflag) then
        call t_startf('mosarti_reservoir_sed_init')
-       if (sediflag) then
-          call MOSART_reservoir_sed_init()
-       endif
+       call MOSART_reservoir_sed_init()
        call t_stopf('mosarti_reservoir_sed_init')
     end if
     
@@ -2371,34 +2369,34 @@ contains
     ! rtmCTL%flood is m3/s here
     !-----------------------------------
 
-    if (.not.inundflag) then
-       call t_startf('mosartr_flood')
-       nt = 1 
-       rtmCTL%flood = 0._r8
-       do nr = rtmCTL%begr,rtmCTL%endr
-          ! initialize rtmCTL%flood to zero
-          if (rtmCTL%mask(nr) == 1) then
-             if (rtmCTL%volr(nr,nt) > rtmCTL%fthresh(nr)) then 
-                ! determine flux that is sent back to the land
-                ! this is in m3/s
-                rtmCTL%flood(nr) = &
-                     (rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / (delt_coupling)
-
-                ! rtmCTL%flood will be sent back to land - so must subtract this 
-                ! from the input runoff from land
-                ! tcraig, comment - this seems like an odd approach, you
-                !   might create negative forcing.  why not take it out of
-                !   the volr directly?  it's also odd to compute this
-                !   at the initial time of the time loop.  why not do
-                !   it at the end or even during the run loop as the
-                !   new volume is computed.  fluxout depends on volr, so
-                !   how this is implemented does impact the solution.
-                TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) - rtmCTL%flood(nr)
-             endif
-          endif
-       enddo
-       call t_stopf('mosartr_flood')
-    endif
+    !if (.not.inundflag) then
+    !   call t_startf('mosartr_flood')
+    !   nt = 1 
+    !   rtmCTL%flood = 0._r8
+    !   do nr = rtmCTL%begr,rtmCTL%endr
+    !      ! initialize rtmCTL%flood to zero
+    !      if (rtmCTL%mask(nr) == 1) then
+    !         if (rtmCTL%volr(nr,nt) > rtmCTL%fthresh(nr)) then 
+    !            ! determine flux that is sent back to the land
+    !            ! this is in m3/s
+    !            rtmCTL%flood(nr) = &
+    !                 (rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / (delt_coupling)
+!
+    !            ! rtmCTL%flood will be sent back to land - so must subtract this 
+    !            ! from the input runoff from land
+    !            ! tcraig, comment - this seems like an odd approach, you
+    !            !   might create negative forcing.  why not take it out of
+    !            !   the volr directly?  it's also odd to compute this
+    !            !   at the initial time of the time loop.  why not do
+    !            !   it at the end or even during the run loop as the
+    !            !   new volume is computed.  fluxout depends on volr, so
+    !            !   how this is implemented does impact the solution.
+    !            TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) - rtmCTL%flood(nr)
+    !         endif
+    !      endif
+    !   enddo
+    !   call t_stopf('mosartr_flood')
+    !endif
 
     !-----------------------------------
     ! DIRECT sMAT transfer to outlet point using sMat
@@ -4585,6 +4583,7 @@ contains
            else
               TUnit%tlen(iunit) = TUnit%area(iunit) / TUnit%rlen(iunit) / 2._r8 - TUnit%hlen(iunit)
            end if
+           TUnit%tlen(iunit) = 1000.0_r8
   
            if(TUnit%twidth(iunit) < 0._r8) then
               TUnit%twidth(iunit) = 0._r8
