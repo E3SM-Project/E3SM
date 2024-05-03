@@ -527,7 +527,7 @@ contains
                 !-----------------------------------------------------------------------
                 fail_cnt = fail_cnt + 1
                 nstep = get_nstep()
-                ! to reduce the unnecessary imp_sol printing in production runs
+                ! reduce the frequency of warning printing
                 ! but this message is still important for debug runs 
                 !write(iulog,'('' imp_sol: Time step '',1p,e21.13,'' failed to converge @ (lchnk,lev,col,nstep) = '',4i6)') &
                 !     dt,lchnk,lev,i,nstep
