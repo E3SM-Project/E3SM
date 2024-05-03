@@ -49,12 +49,13 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
   - md_in_html
+  - tables
 
 plugins:
   - monorepo
-  - bibtex:
-      bib_file: components/elm/docs/refs.bib
   - search
+  - bibtex:
+      bib_dir: docs/refs
 
 extra_javascript:
   - javascript/mathjax.js
