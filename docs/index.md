@@ -2,6 +2,8 @@
 
 The E3SM documentation is organized into sections for each component model and additional sections for shared tools and general guides.
 
+## [Coupled E3SM](coupled/index.md)
+
 ## Component Models
 
 - [EAM](./EAM/index.md)
