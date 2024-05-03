@@ -133,6 +133,25 @@
     <alias>I1850CNPRDCTCBCTOP</alias>
     <lname>1850_DATM%QIA_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
+  <!---I E3SMv3 forcing for v3 land spinup compsets-->
+  <compset>
+    <alias>I1850E3SMv3CNTOP</alias>
+    <lname>1850_DATM%E3SMv3_ELM%CNRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>I1850E3SMv3CNPTOP</alias>
+    <lname>1850_DATM%E3SMv3_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <!---I GSWP3v1 forcing for v3 land spinup compsets-->
+  <compset>
+    <alias>I1850GSWP3v1CNTOP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset> 
+  <compset>
+    <alias>I1850GSWP3v1CNPTOP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
 
   <compset>
     <alias>ICB1850CRDCTCBC</alias>
@@ -778,7 +797,7 @@
 
   <compset>
     <alias>IGELM_MLI</alias>
-    <lname>2000_DATM%QIA_ELM%SP_SICE_SOCN_MOSART_MALI_SWAV</lname>
+    <lname>2000_DATM%QIA_ELM%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV</lname>
   </compset>
 
   <compset>

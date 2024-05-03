@@ -128,6 +128,7 @@
       <value compset="_ELM%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
+      <value compset="_ELM%[^_]*CNRDCTCBCTOP" >-bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>
       <value compset="_ELM%[^_]*CNPRDCTCBCTOP">-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>
 
 
