@@ -67,4 +67,3 @@ as well as the present-day condition are described in [the EAM User's Guide](htt
 ### [SSP370 forcing data](ssp370-forcings.md)
 
 ### [SSP585 forcing data](ssp585-forcings.md)
-
