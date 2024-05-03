@@ -27,7 +27,6 @@ The compsets for such configurations are listed below.
 
 |Compset alias | Description |
 |:-----------  |:----------- |
-
 |`WCYCL1850` | Standard configuration with pre-industrial climatological forcings |
 |`WCYCL1850-4xCO2` | Same as `WCYCL1850` except with abrupt (then persistent) 4xCO2 forcing. |
 |`WCYCL1850-1pctCO2` | Same as `WCYCL1850` except with 1 percent per year increase of CO2 concentration |
@@ -44,7 +43,6 @@ with additional components and/or features. The compset naming follows the same 
 
 |Compset alias | Description |
 |:-----------  |:----------- |
-
 |`ne30pg2_r05_IcoswISC30E3r5` | E3SMv3 standard low-resolution tri-grid, with ne30pg2 (110 km) atmosphere, 0.5deg x 0.5deg land and river, and Icosahedral 30 km ocean/seaice mesh with ice shelves cavities (wISC), E3SMv3 (E3) revision r5 |
 |`northamericax4v1pg2_r025_IcoswISC30E3r5` |  North America regionally refined (110 to 25 km) atmosphere, 0.25deg x 0.25deg land and river, and the same ocean/seaice mesh for the low-resolution tri-grid. |
 |`ne120pg2_r025_IcoswISC30E3r5` |  High-resolution tri-grid, with ne120pg2 (25 km) atmosphere, 0.25deg x 0.25deg land and river. The ocean and seaice mesh to be updated with a variable 18 to 6 km mesh. |
@@ -56,8 +54,8 @@ for a given forcing scenario (e.g., `1850` for the pre-industrial period,  `20TR
 for present-day condition, and `SSPs` for Shared Socioeconomiuc Pathways of climate change scenarios).
 Between the coupled compsets, the differences are in the prescribed solar forcing, volcanic emissions,
 atmospheric forcing data, and land use and land cover. The required inputdata for the pre-industrial and the historical periods
-as well as the present-day condition are described in [the EAM User's Guide](../../EAM/docs/user-guide/index.md) and
-[the ELM's User's Guide](../../ELM/docs/user-guide/index.md). Below are the prescribed forcing data for SSP scenarios.
+as well as the present-day condition are described in [the EAM User's Guide](https://E3SM-Project.github.io/E3SM/EAM) and
+[the ELM's User's Guide](https://E3SM-Project.github.io/E3SM/ELM). Below are the prescribed forcing data for SSP scenarios.
 
 ### [SSP245 forcing data](ssp245-forcings.md)
 
