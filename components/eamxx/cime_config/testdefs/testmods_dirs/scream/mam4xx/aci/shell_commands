@@ -3,8 +3,21 @@
 #Set total number of tracers to 41. We are using append here as last entry wins while parsing xml options
 ./xmlchange --append SCREAM_CMAKE_OPTIONS="SCREAM_NUM_TRACERS 41"
 
+#modify initial condition file to get aerosol species ICs
 $CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
+
+# Add spa as RRTMG needs spa
 $CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,spa,rrtmgp" -b
+
+# Replace spa with mam4_aci to invoke mam4 aci scheme
 $CIMEROOT/../components/eamxx/scripts/atmchange mac_aero_mic::atm_procs_list="tms,shoc,cldFraction,mam4_aci,p3" -b
+
+#Set precribed ccn to false so that P3 uses input from ACI
+$CIMEROOT/../components/eamxx/scripts/atmchange p3::do_prescribed_ccn=false -b
+
+#Set predicted ccn to true so that P3 uses input from ACI
+$CIMEROOT/../components/eamxx/scripts/atmchange p3::do_predict_nc=true -b
+
+
 
 
