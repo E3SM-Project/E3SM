@@ -433,16 +433,24 @@ contains
            ( co2_print_diags_monthly .and. is_end_curr_month() ) .or. & 
            ( co2_print_diags_total .and. is_last_step() ) ) then
          call gmean(tc, tc_glob, c_num_var)
+      else
+         tc_glob(:) = 1.e36
       end if
 
       if ( co2_print_diags_timestep) then
          call gmean(flux_ts,  flux_ts_glob,  f_ts_num_var)
+      else
+         flux_ts_glob(:) = 0._r8
       end if
       if ( co2_print_diags_monthly .and. is_end_curr_month() ) then
          call gmean(flux_mon, flux_mon_glob, f_mon_num_var)
+      else
+         flux_mon_glob(:) = 0._r8
       end if
       if ( co2_print_diags_total .and. is_last_step() ) then
          call gmean(flux_run, flux_run_glob, f_run_num_var)
+      else
+         flux_run_glob(:) = 0._r8
       end if
 
       ! assign global means to readable variables
