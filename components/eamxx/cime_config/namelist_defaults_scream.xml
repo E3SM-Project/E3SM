@@ -554,6 +554,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
     <iop_nudge_uv type="logical" doc="Nudge winds to those in the IOP file.">false</iop_nudge_uv>
     <iop_nudge_tq type="logical" doc="Nudge thermodynamics to those in the IOP file.">false</iop_nudge_tq>
+    <iop_nudge_tq_low type="real" doc="Lowest layer to apply nudging for t and q (pressure in hPa).">1100</iop_nudge_tq_low>
+    <iop_nudge_tq_high type="real" doc="Highest layer to apply nudging for t and q (pressure in hPa).">0</iop_nudge_tq_high>
     <iop_nudge_tscale type="real" doc="Time scale to nudge thermodynamics or winds to.">10800</iop_nudge_tscale>
     <iop_coriolis type="logical" doc="Apply coriolis forcing to winds based on large scale winds in IOP file.">false</iop_coriolis>
   </iop_options>
