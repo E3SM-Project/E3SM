@@ -1144,9 +1144,14 @@ void AtmosphereDriver::set_initial_conditions ()
   if (m_iop) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
+    // We use a single topo file for both GLL and PG2 runs. All
+    // lat/lon data in topo file is defined in terms of PG2 grid,
+    // so if we have a topo field on GLL grid, we need to setup
+    // io info using the IC file (which is always GLL).
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (ic_fields_names[grid_name].size() > 0) {
+      if (ic_fields_names[grid_name].size() > 0 or
+	  topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
                                 ic_pl.get<std::string>("Filename")
