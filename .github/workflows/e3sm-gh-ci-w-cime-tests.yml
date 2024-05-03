@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ master ]
     paths-ignore:
+      - 'mkdocs.yaml'
       - 'docs/**'
       - 'components/*/docs/**'
       - 'components/*/mkdocs.yml'
