@@ -119,12 +119,17 @@
 
 <compset>
   <alias>WCYCLSSP585</alias>
-  <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP585SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCLSSP370</alias>
-  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCLSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM v1 science compsets -->
@@ -449,6 +454,7 @@
       <value  compset="20TR_EAM">1850-01-01</value>
       <value  compset="SSP585.*_EAM">2015-01-01</value>
       <value  compset="SSP370.*_EAM">2015-01-01</value>
+      <value  compset="SSP245.*_EAM">2015-01-01</value>
     </values>
   </entry>
 
