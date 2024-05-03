@@ -12,11 +12,11 @@
         <link rel="prev" href="../dev-guide/">
       
       
-        <link rel="next" href="../../generate_domain_files/">
+        <link rel="next" href="../../MPAS-Ocean/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.20">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.21">
     
     
       
@@ -30,6 +30,14 @@
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--note:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');}</style>
+
 
 
     
@@ -72,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#mosart-tech-guide" class="md-skip">
+        <a href="#mosart-technical-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -262,7 +270,7 @@
         
   
   <span class="md-ellipsis">
-    Introduction
+    Home
   </span>
   
 
@@ -273,20 +281,134 @@
     
       
       
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    E3SM Basics
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            E3SM Basics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Developing Docs
+    Installation
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -301,6 +423,8 @@
   
     
     
+      
+        
       
         
       
@@ -1969,15 +2093,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#table-of-conents" class="md-nav__link">
-    <span class="md-ellipsis">
-      Table of Conents
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#physics" class="md-nav__link">
     <span class="md-ellipsis">
       Physics
@@ -1993,12 +2108,172 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-parameters-required-in-the-mosart-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main parameters required in the MOSART parameter file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-required-by-additional-mosart-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters required by additional MOSART features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../MPAS-Ocean/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MPAS-Ocean
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            MPAS-Ocean
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -2126,6 +2401,101 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    More Information
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            More Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://docs.e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    E3SM-Project
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    e3sm.org
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -2153,15 +2523,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#table-of-conents" class="md-nav__link">
-    <span class="md-ellipsis">
-      Table of Conents
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#physics" class="md-nav__link">
     <span class="md-ellipsis">
       Physics
@@ -2176,6 +2537,30 @@
       Parameters
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-parameters-required-in-the-mosart-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main parameters required in the MOSART parameter file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-required-by-additional-mosart-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters required by additional MOSART features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2194,11 +2579,6 @@
                   
 
   
-    <a href="https://github.com/E3SM-Project/E3SM/edit/master/components/mosart/docs/tech-guide/index.md" title="Edit this page" class="md-content__button md-icon">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
-    </a>
-  
   
     
       
@@ -2210,19 +2590,25 @@
   
 
 
-<h1 id="mosart-tech-guide">MOSART Tech Guide</h1>
-<p>This Tech Guide includes some technical details about MOSART.</p>
-<h2 id="table-of-conents">Table of Conents</h2>
-<ol>
-<li><a href="#physics">Physics</a></li>
-<li><a href="#parameters">Parameters</a></li>
-</ol>
+<h1 id="mosart-technical-guide">MOSART Technical Guide</h1>
+<p>This guide provides scientific and technical details about MOSART.</p>
 <h2 id="physics">Physics</h2>
+<p>MOSART is a one-dimension river transport model that is designed for river routing at local, regional, and global scales (<a href="https://doi.org/10.1175/JHM-D-12-015.1">Li et al., 2013</a>). Its primary function is to supply freshwater inputs to ocean models within coupled Earth System Models. </p>
+<p>MOSART divides each spatial unit, such as a latitude/longitude grid or a sub-basin, into three hydrologic categories: hillslopes, tributaries, and a main channel (see figure below). The hillslopes receive runoff and send into tributaries, which then converge into a single main channel. This main channel connects adjacent upstream and downstream units through the river network. MOSART simplifies the multiple tributaries within a spatial unit into a single hypothetical sub-network channel, which has a transport capacity equivalent to all combined tributaries.</p>
+<p><img alt="alt text" src="../figures/mosart_concept.png" /></p>
 <ul>
-<li>to be added</li>
+<li>
+<p>Hillslope Routing: Within each spatial unit, surface runoff is directed as overland flow to the sub-network channel, while subsurface runoff enters the sub-network channel directly.</p>
+</li>
+<li>
+<p>Sub-network Channel Routing: This channel aggregates water from the hillslopes, routes it through the channel system, and discharges it into the main channel.</p>
+</li>
+<li>
+<p>Main Channel Routing: The main channel collects water from the sub-network channel and any inflow from upstream spatial units, eventually discharging the accumulated water downstream to the next spatial unit or directly to the ocean.</p>
+</li>
 </ul>
 <h2 id="parameters">Parameters</h2>
-<p>The following table includes the main parameters required in the MOSART parameter file.</p>
+<h3 id="main-parameters-required-in-the-mosart-parameter-file">Main parameters required in the MOSART parameter file</h3>
 <table>
 <thead>
 <tr>
@@ -2309,6 +2695,8 @@
 </tr>
 </tbody>
 </table>
+<h3 id="parameters-required-by-additional-mosart-features">Parameters required by additional MOSART features</h3>
+<p>Coming soon.</p>
 
 
 
@@ -2361,10 +2749,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.edit", "content.action.view", "content.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a7c05c9e.min.js"></script>
       
         <script src="../../javascript/mathjax.js"></script>
       
