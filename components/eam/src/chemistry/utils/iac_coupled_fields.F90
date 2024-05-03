@@ -84,7 +84,7 @@ contains
     ! Register the co2 field with the pbuf
     call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)!FIXME:B what is this idx, do we need it, do we need to capture the error?
 
-    if (masterproc)write(102,*)"Called IAC cpl fld register....", get_nstep()
+    if (masterproc)write(102,*)"Rgstr iac_CO2 PBUF;iac_coupled_fields_register ts:", get_nstep()
 
     ! If we add as a tracer, make a call to cnst_add() here
   end subroutine iac_coupled_fields_register
@@ -107,7 +107,7 @@ contains
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     !Local vars
-    integer :: c        ! chunk index
+    integer :: ichunk        ! chunk index
     integer :: ierror   ! Error code
     character(len=cxx)  :: err_str
 
@@ -149,26 +149,26 @@ contains
       call endrun(err_str)
     end if
 
-    do c = begchunk,endchunk
-       iac_vertical_emiss(c)%lchnk = c
-       iac_vertical_emiss(c)%ncol  = get_ncols_p(c)
+    do ichunk = begchunk,endchunk
+       iac_vertical_emiss(ichunk)%lchnk = ichunk
+       iac_vertical_emiss(ichunk)%ncol  = get_ncols_p(ichunk)
 
-       allocate (iac_vertical_emiss(c)%fco2_low_height(pcols), stat=ierror)
+       allocate (iac_vertical_emiss(ichunk)%fco2_low_height(pcols), stat=ierror)
        if ( ierror /= 0 ) then
          write(err_str,*) 'ERROR: Failed to allocate fco2_low_height, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
          call endrun(err_str)
        endif
 
-       allocate (iac_vertical_emiss(c)%fco2_high_height(pcols), stat=ierror)
+       allocate (iac_vertical_emiss(ichunk)%fco2_high_height(pcols), stat=ierror)
        if ( ierror /= 0 ) then
          write(err_str,*) 'ERROR: Failed to allocate fco2_high_height, allocation error: ', ierror,',',errmsg(__FILE__, __LINE__)
          call endrun(err_str)
        endif
-       iac_vertical_emiss(c)%fco2_low_height (:) = 0._r8
-       iac_vertical_emiss(c)%fco2_high_height (:) = 0._r8
+       iac_vertical_emiss(ichunk)%fco2_low_height (:) = 0._r8
+       iac_vertical_emiss(ichunk)%fco2_high_height (:) = 0._r8
     end do
 
-    if (masterproc)write(102,*)"Called iac_coupled_fields_init....", get_nstep()
+    if (masterproc)write(102,*)"Alloc iac_vertical_emiss-hh-ll; iac_coupled_fields_init-ts:", get_nstep()
 
   end subroutine iac_coupled_fields_init
 
@@ -176,7 +176,7 @@ contains
   subroutine iac_coupled_fields_adv( state, pbuf2d)
     !-------------------------------------------------------------------
     ! Update pbuf2d with the iac coupled fields (just co2, for now)
-    ! called by: phys_timestep_init (in physpkg.F90)
+    ! called by: phys_timestep_init at every time step (in physpkg.F90)
     !-------------------------------------------------------------------
 
     use perf_mod,     only: t_startf, t_stopf
@@ -197,7 +197,7 @@ contains
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
-    integer  :: ind, c, ncol, i, icol, caseid, m, pbuf_ndx
+    integer  :: ind, ichunk, ncol, i, icol, caseid, m, pbuf_ndx
     real(r8) :: to_mmr(pcols,pver)
     real(r8),pointer :: tmpptr(:,:)
     character(len = cs) :: units_spc
@@ -208,16 +208,10 @@ contains
     if (.not. iac_present) return
     call t_startf('iac_coupled_fields_adv')
 
-    ! Here is where the magic happens - we've time interpolated on import, and the
-    ! surfexch fields are properly chunked and on the column grid.  So this is
-    ! mostly about converrting airlo and airhi to a vertical distribution, and
-    ! stuffing the values into the pbuf.
 
-    !
-    !$OMP PARALLEL DO PRIVATE (IC, NCOL, tmpptr, pbuf_chnk)
-    do c = begchunk,endchunk
-       ncol = state(c)%ncol
-       pbuf_chnk => pbuf_get_chunk(pbuf2d, c)
+    do ichunk = begchunk,endchunk
+       ncol = state(ichunk)%ncol
+       pbuf_chnk => pbuf_get_chunk(pbuf2d, ichunk)
        call pbuf_get_field(pbuf_chnk, iac_co2_pbuf_ndx, tmpptr )
 
        ! So tmpptr(col,h) is where we put our data.
@@ -239,12 +233,13 @@ contains
           ! Find the layer containing 11 km
           do i=1,pver
              ! Check upper layer boundary
-             if (state(c)%zi(icol, i+1) < 11000) cycle
-             tmpptr(icol,i) = iac_vertical_emiss(c)%fco2_high_height(i)
+             if (state(ichunk)%zi(icol, i+1) < 11000) cycle
+             tmpptr(icol,i) = iac_vertical_emiss(ichunk)%fco2_high_height(i)
 
              ! Layers 1 to i-1 now get an even distribution of the co2 in airlo.
-             tmpptr(icol,1:i-1) = iac_vertical_emiss(c)%fco2_low_height(i)/(i-1)
-             if (c==begchunk .and. i==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(c)%fco2_low_height(i), iac_vertical_emiss(c)%fco2_high_height(i)
+             tmpptr(icol,1:i-1) = iac_vertical_emiss(ichunk)%fco2_low_height(i)/(i-1)
+             !if (ichunk==begchunk .and. i==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(i), iac_vertical_emiss(ichunk)%fco2_high_height(i)
+             write(104,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(i), iac_vertical_emiss(ichunk)%fco2_high_height(i)
 
              ! Exit the vertical loop
              exit
@@ -253,7 +248,7 @@ contains
     enddo
 
     call t_stopf('iac_coupled_fields_adv')
-    if (masterproc)write(102,*)"Called iac_coupled_fields_adv....", get_nstep()
+    if (masterproc)write(102,*)"Asgn PBUF iac_CO2 v-intrp; iac_coupled_fields_adv ts:", get_nstep()
   end subroutine iac_coupled_fields_adv
 
   subroutine iac_coupled_timeinterp(mon_spec, day_spec, tod_spec, & !input

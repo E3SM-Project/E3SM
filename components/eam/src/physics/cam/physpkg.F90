@@ -847,6 +847,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! co2 cycle            
     if (co2_transport()) then
+       if(masterproc)write(103,*)'CALLING co2_init'
        call co2_init()
     end if
     call co2_diags_init(phys_state)
@@ -1347,7 +1348,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
-            fsds(1,c))
+            fsds(1,c),c==begchunk)
 
        call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
        if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
@@ -1446,7 +1447,7 @@ end subroutine phys_final
 subroutine tphysac (ztodt,   cam_in,  &
        sgh,     sgh30,                                     &
        cam_out,  state,   tend,    pbuf,            &
-       fsds    )
+       fsds, is_begc    )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1514,6 +1515,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
+    logical:: is_begc
 
     !
     !---------------------------Local workspace-----------------------------
@@ -1679,7 +1681,9 @@ if (l_tracer_aero) then
          cam_in%cflx)
     
     ! add tendency from iac model component
-     call co2_cycle_iac_ptend(state, pbuf, ptend)
+     call co2_cycle_iac_ptend(state, pbuf, ptend,is_begc)
+     call physics_update(state, ptend, ztodt, tend)
+     !FIXMEB: Do we need to call "get_carbon_air_fluxes" here???
     
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)

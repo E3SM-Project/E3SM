@@ -164,7 +164,7 @@ subroutine co2_cycle_readnl(nlfile)
       call endrun(trim(err_str)//errmsg(__FILE__,__LINE__))
    end if
    
-
+   if(masterproc)write(102,*)'Read co2 namelist;co2_cycle_readnl'
 end subroutine co2_cycle_readnl
 
 !================================================================================================
@@ -205,7 +205,7 @@ subroutine co2_register
      end select
      
   end do
-  write(102,*)'CO2 register end-s'
+  if(masterproc)write(102,*)'Add co2 const; co2_register'
 end subroutine co2_register
 
 !================================================================================================
@@ -313,7 +313,8 @@ subroutine co2_init
     if (co2_readFlux_fuel) then
        call co2_data_flux_init ( co2flux_fuel_file, 'CO2_flux', data_flux_fuel )
     end if
-    write(102,*)'CO2 init end--s'
+    if(masterproc)write(103,*)'CALLED co2_init'
+    if(masterproc)write(102,*)'addfld for co2; co2_init; FFfile, OCNfile', co2_readFlux_fuel, co2_readFlux_ocn
   end subroutine co2_init
 
 !==========================================================================================
@@ -404,7 +405,7 @@ subroutine co2_init_cnst(name, q, gcid)
    case ('CO2')
       q = chem_surfvals_get('CO2MMR')
    end select
-   write(102,*)'CO2 initCNST end---s',trim(name),i
+   if(masterproc)write(102,*)'Set cnst ICs; co2_init_cnst,cnst name, num:',trim(name),i
    i=i+1
 end subroutine co2_init_cnst
 !===============================================================================
@@ -461,13 +462,13 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
       ptend%q(:ncol,k,co2_fff_glo_ind) = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
       ptend%q(:ncol,k,co2_glo_ind)     = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
    end do
-   if(masterproc)write(102,*)'CO2 cycle ptend end----s'
+   if(masterproc)write(102,*)'co2_cycle_set_ptend- WE SHOULD NOT BE HERE'
 end subroutine co2_cycle_set_ptend
 
 
 !===============================================================================
 
-subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
+subroutine co2_cycle_iac_ptend(state, pbuf, ptend, is_begc)
 
    !-------------------------------------------------------------------------------
    ! Purpose:
@@ -488,6 +489,7 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
       type(physics_state), intent(in)    :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       type(physics_ptend), intent(out)   :: ptend     ! indivdual parameterization tendencies
+      logical:: is_begc
    
       ! Local variables
       logical :: lq(pcnst)
@@ -519,7 +521,7 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
          ptend%q(:ncol,klev,co2_fff_glo_ind) = co2_tend(:ncol)
          ptend%q(:ncol,klev,co2_glo_ind)     = co2_tend(:ncol)
       end do
-      if(masterproc)write(102,*)'CO2 cycle ptend iac end-----s'
+      if(masterproc .and. is_begc)write(102,*)'Update ptend using PBUF; co2_cycle_iac_ptend'
    end subroutine co2_cycle_iac_ptend
 
 

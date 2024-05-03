@@ -51,7 +51,7 @@ contains
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
-    if (masterproc)write(102,*)"atm_import called ----------------------- "
+    if (masterproc)write(102,*)"TOP of atm_import "
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
@@ -65,10 +65,9 @@ contains
     ! be present if atm_import is called during the runtime
     !------------------------------------------------------------------------
     if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
-      if (masterproc)write(102,*)"atm_import called -----------FROM RUN------------ "
        call iac_coupled_timeinterp (mon_spec, day_spec, tod_spec, & !in
             bnd_beg, bnd_end, tfrac)                                !out
-       if (masterproc)write(102,*)" TFRAC computed:",bnd_beg, bnd_end, tfrac, get_nstep()
+       if (masterproc)write(102,*)" tfrac computed; atm_import:",bnd_beg, bnd_end, tfrac, get_nstep()
     endif
 
 
@@ -163,7 +162,7 @@ contains
           ! MUST FIXME:B- This should be controlled by a flag set to true by IAC, like "flux_from_iac" or something similar
           ! we also need a flag to detect runtime
           if (present(mon_spec)) then
-             !if surface flux from IAC exists, interpolate all IAC fields in time
+             !if surface flux from IAC exists for this month, interpolate all IAC fields in time
              if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
 
                 ! Compute the tfrac compliment for interpolation
@@ -173,16 +172,16 @@ contains
                 cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
                      -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
 
-                ! IAC air high and low fields have their own structure inside iac_coupled_fields
-                !FIXME:B- Change variable names to reflect vertical emissions and at which height.
+                ! Interpolate IAC vertical emissions at high and low fields at the current simulation time
                 iac_vertical_emiss(c)%fco2_low_height(i) = &
                      -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
-                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac !MUST FIXME:B- why use "co2sfc" here, is it a bug???
+                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac 
 
                 iac_vertical_emiss(c)%fco2_high_height(i) = &
                      -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
-                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac!MUST FIXME:B- why use "co2sfc" here, is it a bug???
-                if (masterproc .and. c==begchunk .and. i==1)write(102,*)"Time interpolation done:",iac_vertical_emiss(c)%fco2_high_height(i), &
+                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
+               
+                if (masterproc .and. c==begchunk .and. i==1)write(102,*)"Time interpolation done; atm_import:",iac_vertical_emiss(c)%fco2_high_height(i), &
                     x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig), x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig), tfrac, get_nstep()
              endif
           endif
@@ -220,36 +219,23 @@ contains
              
              ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn 
              if (index_x2a_Faoo_fco2_ocn /= 0) then
+                !FIXMEB: Instead of using hardwired numbers, 1,2 etc, can't we use integer parameters for c_i indices?
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
              else if (co2_readFlux_ocn) then 
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
-! The below section involves a temporary workaround for fluxes from data (read in from a file)
-! There is an issue with infld that does not allow time-varying 2D files to be read correctly.
-! The work around involves adding a singleton 3rd dimension offline and reading the files as 
-! 3D fields.  Once this issue is corrected, the old implementation can be reinstated.
-! This is the case for both data_flux_ocn and data_flux_fuel
-!++BEH  vvv old implementation vvv
-!                cam_in(c)%cflx(i,c_i(1)) = &
-!                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
-!                     *mwco2*1.0e-3_r8
-!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
                 cam_in(c)%cflx(i,c_i(1)) = &
                      -data_flux_ocn%co2flx(i,1,c)*(1._r8- cam_in(c)%landfrac(i)) &
                      *mwco2*1.0e-3_r8
-!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(1)) = 0._r8
              end if
              
              ! co2 flux from fossil fuel
-             if (index_x2a_Fazz_co2sfc_iac(1) /= 0) then
-             !   cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
+             if ( present(mon_spec) .and. index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+                if (masterproc .and. i==1 .and. c==begchunk)write(102,*)'FF surf flux applied; atm_import:',cam_in(c)%fco2_surface_iac(i)
+                cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
              else if (co2_readFlux_fuel) then
-!++BEH  vvv old implementation vvv
-!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
-!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
-!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
              end if
