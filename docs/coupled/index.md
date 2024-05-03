@@ -29,9 +29,9 @@ with additional components and/or features included.
 `WCYCL1850-1pctCO2` - Same as `WCYCL1850` except with 1 percent per year increase of CO2 concentration
 `WCYCL1950` - Standard configuration with perpetual 1950 forcings
 `WCYCL20TR` - Standard configuration with prescribed transient forcings over the historical period (1850-2014)
-`SSP245` - Standard configuration with prescribed SSP-245 forcings
-`SSP370` - Standard configuration with prescribed SSP-370 forcings
-`SSP585` - Standard configuration with prescribed SSP-585 forcings
+`WCYCLSSP245` - Standard configuration with prescribed SSP-245 forcings
+`WCYCLSSP370` - Standard configuration with prescribed SSP-370 forcings
+`WCYCLSSP585` - Standard configuration with prescribed SSP-585 forcings
 
 ### Grids
 
