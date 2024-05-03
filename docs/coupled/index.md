@@ -56,8 +56,8 @@ for a given forcing scenario (e.g., `1850` for the pre-industrial period,  `20TR
 for present-day condition, and `SSPs` for Shared Socioeconomiuc Pathways of climate change scenarios).
 Between the coupled compsets, the differences are in the prescribed solar forcing, volcanic emissions,
 atmospheric forcing data, and land use and land cover. The required inputdata for the pre-industrial and the historical periods
-as well as the present-day condition are described in [the EAM User's Guide](../EAM/docs/user-guide/index.md) and
-[the ELM's User's Guide](../ELM/docs/user-guide/index.md). Below are the prescribed forcing data for SSP scenarios.
+as well as the present-day condition are described in [the EAM User's Guide](../../EAM/docs/user-guide/index.md) and
+[the ELM's User's Guide](../../ELM/docs/user-guide/index.md). Below are the prescribed forcing data for SSP scenarios.
 
 ### [SSP245 forcing data](ssp245-forcings.md)
 
