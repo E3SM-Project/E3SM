@@ -60,6 +60,7 @@ as well as the present-day condition are described in [the EAM User's Guide](../
 [the ELM's User's Guide](../ELM/docs/user-guide/index.md). Below are the prescribed forcing data for SSP scenarios.
 
 ### [SSP245 forcing data](ssp245-forcings.md)
-### [SSP370 forcing data](ssp370-forcings.md)
-### [SSP585 forcing data](ssp585-forcings.md)
 
+### [SSP370 forcing data](ssp370-forcings.md)
+
+### [SSP585 forcing data](ssp585-forcings.md)

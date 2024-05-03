@@ -12,7 +12,7 @@ These are the prescribed inputdata specifically for the SSP245 scenario, in plac
 
 ## Elevated external forcings
 
-```
+```fortran
 no2_ext_file         $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240219.nc 
 so2_ext_file         $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_volc_elev_2015-2100_c240331.nc 
 soag0_ext_file       $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240219.nc 
@@ -27,7 +27,7 @@ so4_a2_ext_file      $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP2
 
 ## Surface emissions
 
-```
+```fortran
 c2h4_emis_file       $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240219.nc 
 c2h6_emis_file       $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240219.nc 
 c3h8_emis_file       $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240219.nc 
@@ -58,7 +58,7 @@ e90_emis_file        $DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_sur
 
 ## Stratospheric ozone (linoz) and chlorine loading data
 
-```
+```fortran
 $DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_Hist_SSP245_0003-2503_c20200808.nc
 $DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/linv3_1849-2101_CMIP6_Hist_SSP245_10deg_58km_c20230705.nc
 ```
