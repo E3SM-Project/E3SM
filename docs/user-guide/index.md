@@ -38,7 +38,7 @@ Below list the standard configuration compsets supported in the current version 
 |`WCYCLSSP370` | Standard configuration with prescribed SSP-370 forcings |
 |`WCYCLSSP585` | Standard configuration with prescribed SSP-585 forcings |
 
-The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features. 
+The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
 The compset naming follows the same convention, e.g., `CRYO1850` and `CRYO1850-4xCO2` are with prognostic ice-shelf melt fluxes for the `polar processes` simulation campaign.
 
 Compsets are also available for standalone component model configurations, See the User Guides for the components for more information.
@@ -49,9 +49,7 @@ Currently two grid sets are supported for the above compsets, including a nomina
 
 | Grid Alias  |  Description  |
 | ----------- |  ------------ |
-|ne30pg2_r05_IcoswISC30E3r5 | For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km
-resolution, the land and river are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km
-resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.|
+|ne30pg2_r05_IcoswISC30E3r5 | For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km resolution, the land and river are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.|
 |northamericax4v1pg2_r025_IcoswISC30E3r5 | The atmosphere for this grid set uses North America regionally refined mesh from about 110 km down to 25 km over the refined region. The land and river are on 0.25deg x 0.25deg structured grid. The ocean and sea ice are on the same icosahedral mesh as for `ne30pg2_r05_IcoswISC30E3r5`.|
 
 ## Input data
