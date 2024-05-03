@@ -1,17 +1,17 @@
 include (ScreamUtils)
 
-set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_dp)
+set (TEST_BASE_NAME homme_shoc_cld_spa_p3_rrtmgp_pg2_dp)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   128   10)
+CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver;shoc;cld;spa;p3;rrtmgp;physics;dp")
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_dp "homme_shoc_cld_spa_p3_rrtmgp_dp.cpp"
+set (TEST_LABELS "dynamics;driver;tms;shoc;cld;spa;p3;rrtmgp;physics;dp")
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2_dp "homme_shoc_cld_spa_p3_rrtmgp_pg2_dp.cpp"
   LABELS ${TEST_LABELS}
-  LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
+  LIBS cld_fraction tms shoc spa p3 scream_rrtmgp ${dynLibName} scream_control diagnostics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -61,8 +61,8 @@ set (HOMME_TEST_MOISTURE notdry)
 set (HOMME_THETA_HY_MODE false)
 
 # Vert coord settings
-set (HOMME_TEST_VCOORD_INT_FILE acme-128i.ascii)
-set (HOMME_TEST_VCOORD_MID_FILE acme-128m.ascii)
+set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
+set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
 configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta-dp.nl
@@ -70,7 +70,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta-dp.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  scream/init/${EAMxx_tests_IC_FILE_128lev}
+  scream/init/${EAMxx_tests_IC_FILE_72lev}
   cam/topo/${EAMxx_tests_TOPO_FILE}
   cam/scam/iop/CASS_iopfile_4scam.nc
 )
@@ -85,7 +85,7 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS dynamics physics shoc cld spa p3 rrtmgp dp
+  LABELS dynamics physics tms shoc cld spa p3 rrtmgp dp pg2
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
 
