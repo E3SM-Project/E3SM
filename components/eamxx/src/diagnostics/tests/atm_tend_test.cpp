@@ -26,7 +26,7 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
   return gm;
 }
 
-TEST_CASE("extraaci") {
+TEST_CASE("atm_tend") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -36,11 +36,9 @@ TEST_CASE("extraaci") {
   // A time stamp
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
-  const auto nondim = Units::nondimensional();
-
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 5;
-  const int ngcols    = 1 * comm.size();
+  constexpr int nlevs = 25;
+  const int ngcols    = 25 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -51,11 +49,11 @@ TEST_CASE("extraaci") {
 
   Field qc(qc_fid);
   qc.allocate_view();
-  qc.get_header().get_tracking().update_time_stamp(t0);
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0, 0.05);
+  RPDF pdf(0.0, 200.0);
+
   auto engine = scream::setup_random_test();
 
   // Construct the Diagnostics
@@ -65,47 +63,46 @@ TEST_CASE("extraaci") {
 
   ekat::ParameterList params;
   REQUIRE_THROWS(
-      diag_factory.create("AtmTendDiag", comm, params));  // No 'Tend Name'
+      diag_factory.create("AtmTendDiag", comm, params));  // No 'Field Name'
 
-  //   TODO: The diag currently doesn't throw when given a phony name, need
-  //   hardening! params.set<std::string>("Tend Name", "NoWay"); REQUIRE_THROWS
-  //   (diag_factory.create("AtmTendDiag",comm,params)); // Bad 'Tend Name'
+  Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
-  // Randomize
+  // Set time for qc and randomize its values
+  qc.get_header().get_tracking().update_time_stamp(t0);
   randomize(qc, engine, pdf);
+
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
-  params.set<std::string>("Tend Name", "qc");
+  params.set<std::string>("Field Name", "qc");
   auto diag = diag_factory.create("AtmTendDiag", comm, params);
   diag->set_grids(gm);
   diag->set_required_field(qc);
   diag->initialize(t0, RunType::Initial);
 
-  auto qc_v  = qc.get_view<Real **, Host>();
-  qc_v(0, 0) = 5.0;
-  qc.sync_to_dev();
-
   // Run diag
   diag->compute_diagnostic();
   auto diag_f = diag->get_diagnostic();
-
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
   // Check result: diag should be filled with var_fill_value
   auto some_field = qc.clone();
   some_field.deep_copy(var_fill_value);
   REQUIRE(views_are_equal(diag_f, some_field));
 
-  util::TimeStamp t1({2024, 1, 2}, {0, 0, 0});  // a day later?
+  some_field.deep_copy(qc);
+
+  util::TimeStamp t1({2024, 1, 2}, {0, 0, 0});  // a day later
+  const Real a_day = 24.0 * 60.0 * 60.0;        // seconds
   qc.get_header().get_tracking().update_time_stamp(t1);
-  qc_v(0, 0) = 29.0;
-  qc.sync_to_dev();
-  // diag->initialize(t1, RunType::Initial);
-  // diag->update(t1, RunType::Initial);
+  randomize(qc, engine, pdf);
+
+  // Run diag again
   diag->compute_diagnostic();
-  diag_f      = diag->get_diagnostic();
-  auto diag_v = diag_f.get_view<Real **, Host>();
-  REQUIRE(diag_v(0, 0) == 1.0 / 3600.0);
+  some_field.update(qc, 1.0 / a_day, -1.0 / a_day);
+  REQUIRE(views_are_equal(diag_f, some_field));
+
+  // This should fail (return false):
+  some_field.update(qc, 1.0 / a_day, -1.0 / a_day);
+  REQUIRE_FALSE(views_are_equal(diag_f, some_field));
 }
 
 }  // namespace scream

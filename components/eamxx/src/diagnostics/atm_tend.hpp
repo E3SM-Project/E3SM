@@ -38,10 +38,7 @@ class AtmTendDiag : public AtmosphereDiagnostic {
   std::string m_name;
 
   // Store the previous field
-  Field m_field_prev;
-
-  // Store a time stamp
-  util::TimeStamp m_ts;
+  Field m_f_prev;
 
 };  // class AtmTendDiag
 
