@@ -2,17 +2,6 @@
 
 This User's Guide describes how to set up and run ELM.
 
-## Table of Conents
-
-1. [Steps to build and run ELM](#steps-to-build-and-run-elm)
-    1. [Scientifically supported compsets](#scientifically-supported-compsets)
-    2. [Supported grids](#supported-grid)
-    3. [Model spin-up for pre-industrial condition](model-spin-up-for-pre-industrial-condition)
-2. [Customizing runs](customizing-runs)
-    1. [Changing monthly output file](changing-monthly-output-file)
-    2. [Saving additional output files](saving-additional-output-files)
-3. [Running with FATES (optional)](#running-with-fates)
-
 ## Steps to build and run ELM
 
 A step-by-step instruction on how to run fully coupled E3SM can be found [here](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2309226536). Here we describe running ELM driven by atmospheric forcings provided via the data atmosphere (DATM) model for configurations that are used in the E3SM water cycle v3 campaign.
@@ -83,7 +72,9 @@ Using the above-mentioned settings:
 - Each `*.elm.h2.*.nc` will include 24 hourly average values of `TV`
 - Each `*.elm.h3.*.nc` will include 48 values of `TG`, `TV`, and `FSA` at
   each model time step, which is typically is 30 min.
-  
+
 ## Running with FATES
 
-[FATES](fates.md) can be run in various modes with ELM through the use of namelist settings.  The [FATES User's Guide section on namelist options](https://fates-users-guide.readthedocs.io/en/latest/user/Namelist-Options-and-Run-Time-Modes.html) provides guidance on enabling these different FATES run modes.
+[FATES](fates.md) can be run in various modes with ELM through the use of namelist settings.
+The [FATES User's Guide section on namelist options](https://fates-users-guide.readthedocs.io/en/latest/user/Namelist-Options-and-Run-Time-Modes.html)
+provides guidance on enabling these different FATES run modes.
