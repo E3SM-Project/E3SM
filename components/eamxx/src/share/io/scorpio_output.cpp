@@ -1324,6 +1324,14 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     diag_name = "VaporFlux";
     // split will return the list [X, ''], with X being whatever is before 'VapFlux'
     params.set<std::string>("Wind Component",ekat::split(diag_field_name,"VapFlux").front());
+  } else if (diag_field_name=="PotentialTemperature" or
+             diag_field_name=="LiqPotentialTemperature") {
+    diag_name = "PotentialTemperature";
+    if (diag_field_name == "LiqPotentialTemperature") {
+      params.set<std::string>("Temperature Kind", "Liq");
+    } else {
+      params.set<std::string>("Temperature Kind", "Base");
+    }
   } else {
     diag_name = diag_field_name;
   }
