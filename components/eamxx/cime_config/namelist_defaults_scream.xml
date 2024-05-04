@@ -489,6 +489,31 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
     <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum>
+        <bc_c1 type="real">0.0</bc_c1>
+    <bc_c3 type="real">0.0</bc_c3>
+    <bc_c4 type="real">0.0</bc_c4>
+    <dst_c1 type="real">0.0</dst_c1>
+    <dst_c3 type="real">0.0</dst_c3>
+    <so4_c1 type="real">0.0</so4_c1>
+    <so4_c2 type="real">0.0</so4_c2>
+    <so4_c3 type="real">0.0</so4_c3>
+    <pom_c1 type="real">0.0</pom_c1>
+    <pom_c3 type="real">0.0</pom_c3>
+    <pom_c4 type="real">0.0</pom_c4>
+    <soa_c1 type="real">0.0</soa_c1>
+    <soa_c2 type="real">0.0</soa_c2>
+    <soa_c3 type="real">0.0</soa_c3>
+    <nacl_c1 type="real">0.0</nacl_c1>
+    <nacl_c2 type="real">0.0</nacl_c2>
+    <nacl_c3 type="real">0.0</nacl_c3>
+    <mom_c1 type="real">0.0</mom_c1>
+    <mom_c2 type="real">0.0</mom_c2>
+    <mom_c3 type="real">0.0</mom_c3>
+    <mom_c4 type="real">0.0</mom_c4>
+    <num_c1 type="real">0.0</num_c1>
+    <num_c2 type="real">0.0</num_c2>
+    <num_c3 type="real">0.0</num_c3>
+    <num_c4 type="real">0.0</num_c4>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
