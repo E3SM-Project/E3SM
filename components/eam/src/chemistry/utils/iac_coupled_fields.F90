@@ -81,22 +81,20 @@ contains
 
   end subroutine iac_coupled_fields_register
 
-  subroutine iac_coupled_fields_init(state, pbuf2d)
+  subroutine iac_coupled_fields_init(state)
     !-------------------------------------------------------------------
     ! **** Initialize the iac_co2 data handling ****
     ! called by: phys_init (in physpkg.F90)
     !-------------------------------------------------------------------
     use physics_buffer,   only: pbuf_get_index
-    use physics_buffer,   only: pbuf_add_field, dtype_r8, physics_buffer_desc
-    use ppgrid,           only: begchunk, endchunk, pcols, pver
-    use phys_grid,        only: get_ncols_p, phys_grid_initialized
+    use ppgrid,           only: begchunk, endchunk, pcols
+    use phys_grid,        only: get_ncols_p
     use physics_types,    only: physics_state
 
     implicit none
 
     !arguments
     type(physics_state), intent(in)    :: state(begchunk:endchunk)
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     !Local vars
     integer :: ichunk        ! chunk index
