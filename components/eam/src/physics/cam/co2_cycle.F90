@@ -517,7 +517,7 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend, is_begc)
       ! [ptend%q] = 'kg kg-1 s-1'
       ncol = state%ncol
       do klev = 1, pver
-         co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_CO2(:ncol,klev)
+         co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_co2(:ncol,klev)
          ptend%q(:ncol,klev,co2_fff_glo_ind) = co2_tend(:ncol)
          ptend%q(:ncol,klev,co2_glo_ind)     = co2_tend(:ncol)
       end do

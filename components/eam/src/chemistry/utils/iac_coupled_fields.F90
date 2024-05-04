@@ -11,20 +11,15 @@ module iac_coupled_fields
   ! for other species and iac for co2, so I want to keep things as
   ! similar as possible.
   !
-  ! Authors: Tim Shippert, May 2023
+  ! Authors: Tim Shippert, May 2023 and Balwinder Singh
   !-----------------------------------------------------------------------
 
-  use cam_abortutils, only: endrun
-  use shr_kind_mod,     only: r8 => shr_kind_r8, cx =>SHR_KIND_CX, cl =>SHR_KIND_CL, &
-       cs =>SHR_KIND_CS, cxx =>SHR_KIND_CXX
   use cam_abortutils,   only: endrun
   use spmd_utils,       only: masterproc
-  use tracer_data,      only: trfld, trfile
-  use cam_logfile,      only: iulog
-  use shr_log_mod ,     only: errMsg => shr_log_errMsg
-  use input_data_utils, only: time_coordinate
-  use time_manager,     only: set_time_float_from_date, get_curr_date
   use time_manager,     only: get_nstep
+  use shr_kind_mod,     only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX
+  use shr_log_mod ,     only: errMsg => shr_log_errMsg
+  use time_manager,     only: set_time_float_from_date, get_curr_date
 
   implicit none
   private
@@ -52,11 +47,11 @@ module iac_coupled_fields
      real(r8), allocatable :: fco2_high_height(:)  ! co2 flux from iac (high alt)
   end type iac_vertical_emiss_t
 
-  logical  :: cam_outfld = .false.
-  integer, parameter :: huge_int = huge(1)
-  character(len=16), parameter, public :: iac_co2_name = 'iac_CO2'!FIXME:B change to all lower case name
+  character(len=16), parameter, public :: iac_co2_name = 'iac_co2'
   integer           :: iac_co2_pbuf_ndx = -1
-  real(r8)          :: lev_bnds(2), time_bnds(1), days_in_one_yr
+
+  !Number of days in a year can be a real number
+  real(r8)          :: days_in_one_yr
 
   ! This is our internal data structure to hold the chunked airlo and airhi
   type(iac_vertical_emiss_t), pointer:: iac_vertical_emiss(:)
@@ -70,11 +65,9 @@ contains
     ! called by: phys_register (in physpkg.F90)
     !------------------------------------------------------------------
     use physics_buffer, only: pbuf_add_field, dtype_r8
-    !use tracer_data,    only: incr_filename
-    !use constituents,   only: cnst_add
     use ppgrid,         only: pver, pcols
 
-    integer            :: i,idx, mm, ind, n
+    integer            :: idx
 
     ! BFIXME: Hardwire it true for now - I don't know if this is an infodata or namelist
     ! variable or some other way of setting this for non-iac coupled runs.
@@ -84,9 +77,8 @@ contains
     ! Register the co2 field with the pbuf
     call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)!FIXME:B what is this idx, do we need it, do we need to capture the error?
 
-    if (masterproc)write(102,*)"Rgstr iac_CO2 PBUF;iac_coupled_fields_register ts:", get_nstep()
+    if (masterproc)write(102,*)"Rgstr iac_co2 PBUF;iac_coupled_fields_register ts:", get_nstep()
 
-    ! If we add as a tracer, make a call to cnst_add() here
   end subroutine iac_coupled_fields_register
 
   subroutine iac_coupled_fields_init(state, pbuf2d)
@@ -197,10 +189,9 @@ contains
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
-    integer  :: ind, ichunk, ncol, i, icol, caseid, m, pbuf_ndx
+    integer  :: ind, ichunk, ncol, klev, icol, caseid, m, pbuf_ndx
     real(r8) :: to_mmr(pcols,pver)
     real(r8),pointer :: tmpptr(:,:)
-    character(len = cs) :: units_spc
 
     !------------------------------------------------------------------
     ! Return if no iac coupling
@@ -231,15 +222,15 @@ contains
           tmpptr(icol,:) = 0._r8
 
           ! Find the layer containing 11 km
-          do i=1,pver
+          do klev = 1, pver
              ! Check upper layer boundary
-             if (state(ichunk)%zi(icol, i+1) < 11000) cycle
-             tmpptr(icol,i) = iac_vertical_emiss(ichunk)%fco2_high_height(i)
+             if (state(ichunk)%zi(icol, klev+1) < 11000) cycle
+             tmpptr(icol,klev) = iac_vertical_emiss(ichunk)%fco2_high_height(klev)
 
-             ! Layers 1 to i-1 now get an even distribution of the co2 in airlo.
-             tmpptr(icol,1:i-1) = iac_vertical_emiss(ichunk)%fco2_low_height(i)/(i-1)
-             !if (ichunk==begchunk .and. i==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(i), iac_vertical_emiss(ichunk)%fco2_high_height(i)
-             write(104,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(i), iac_vertical_emiss(ichunk)%fco2_high_height(i)
+             ! Layers 1 to klev-1 now get an even distribution of the co2 in airlo.
+             tmpptr(icol,1:klev-1) = iac_vertical_emiss(ichunk)%fco2_low_height(klev)/(klev-1)
+             !if (ichunk==begchunk .and. klev==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(klev), iac_vertical_emiss(ichunk)%fco2_high_height(klev)
+             write(104,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(klev), iac_vertical_emiss(ichunk)%fco2_high_height(klev)
 
              ! Exit the vertical loop
              exit
@@ -248,7 +239,7 @@ contains
     enddo
 
     call t_stopf('iac_coupled_fields_adv')
-    if (masterproc)write(102,*)"Asgn PBUF iac_CO2 v-intrp; iac_coupled_fields_adv ts:", get_nstep()
+    if (masterproc)write(102,*)"Asgn PBUF iac_co2 v-intrp; iac_coupled_fields_adv ts:", get_nstep()
   end subroutine iac_coupled_fields_adv
 
   subroutine iac_coupled_timeinterp(mon_spec, day_spec, tod_spec, & !input
