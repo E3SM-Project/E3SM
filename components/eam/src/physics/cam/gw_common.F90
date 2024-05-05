@@ -768,8 +768,8 @@ pblh_get_level_idx = -1
 found=.False.
           
 do i = 1, pver
-        if((pblheight >= height_array(i).and.pblheight <height_array(i+1)))then
-                pblh_get_level_idx =  i           
+        if((pblheight >= height_array(i+1).and.pblheight <height_array(i)))then
+                pblh_get_level_idx =  pver+1-i           
                 found=.True.
                 return
         endif
@@ -1782,8 +1782,12 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
              exit
           ENDIF
        enddo
-       if((xland1(i)-1.5_r8).le.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
-          if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
+
+       !if((xland1(i)-1.5_r8).le.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
+        if(xland1(i).gt.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
+          !if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
+           if(thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
+!write(iulog,*)"Jinbo Xie in calculate of br1(i)",br1(i)
             cleff    = sqrt(dxy(i)**2_r8 + dxyp(i)**2_r8)
             cleff    = 2.0_r8 * max(dxmax_ss,cleff)
             coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
@@ -1805,9 +1809,15 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
               tauwavey0=0._r8
             endif
 !
+
+!write(iulog,*)"Jinbo Xie kts,kpbl(i)",kts,kpbl(i)
+
             do k=kts,kpbl(i) !MIN(kpbl2+1,kte-1)
               utendwave(i,k)=-1._r8*tauwavex0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
               vtendwave(i,k)=-1._r8*tauwavey0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
+!write(iulog,*)"Jinbo Xie k",k
+!write(iulog,*)"Jinbo Xie calculate utendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)",utendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)
+!write(iulog,*)"Jinbo Xie calculate vtendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)",vtendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)
             enddo
           endif
        endif
@@ -1850,7 +1860,8 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
    ENDIF
 
    DO i=its,ite
-      IF ((xland1(i)-1.5) .le. 0.) then
+      !IF ((xland1(i)-1.5) .le. 0.) then
+       IF (xland1(i) .gt. 0.) then
           a1=0.00026615161_r8*var(i)**2_r8
           a2=a1*0.005363_r8
          DO k=kts,kte
@@ -1993,7 +2004,7 @@ endif
    endif
 
 ENDIF !END LARGE-SCALE TAU CALCULATION
-!===============================================================
+!===============================================================
 !COMPUTE BLOCKING COMPONENT 
 !===============================================================
 IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
@@ -2137,7 +2148,7 @@ enddo
 
 
 !#Jinbo get base flux
-!#if 0
+#if 0
 do i = its,ite
 !dusfc_ss(i)=wdir1_xjb(i)
 !dvsfc_ss(i)=ol(i)
@@ -2160,8 +2171,9 @@ dtaux2d_ss(i,16)=yn(i)
 dtaux2d_ss(i,17)=dtfac(i)
 dtaux2d_ss(i,18)=ulow(i)
 dtaux2d_ss(i,19)=kblk_xjb(i)
+dtaux2d_ss(i,20)=br1(i)
 enddo
-!#endif
+#endif
 !stop
 #if 0
 do i = its,ite
@@ -2172,103 +2184,6 @@ enddo
 
    return
    end subroutine gwdo2d
-!-------------------------------------------------------------------
-
-
-#if 0
-!-------------------------------------------------------------------
-     subroutine bulk_ri(lchnk, ncol,            &
-       th      ,t       ,q       ,z       ,zi      , &
-       pmid    ,u       ,v       ,taux    ,tauy    , &
-       shflx   ,qflx    ,obklen  ,ustar   ,pblh    , &
-       kvm     ,kvh     ,kvq     ,cgh     ,cgs     , &
-       tpert   ,qpert   ,tke     , &
-       ri      , &
-       eddy_scheme)
-    !!
-    use pbl_utils, only: virtem, calc_ustar, calc_obklen
-    !!
-    ! Input arguments
-    !
-    integer, intent(in) :: lchnk                      ! chunk index (for debug only)
-    integer, intent(in) :: ncol                       ! number of atmospheric columns
-    !
-    real(r8), intent(in)  :: th(pcols,pver)           ! potential temperature [K]
-    real(r8), intent(in)  :: t(pcols,pver)            ! temperature (used for density)
-    real(r8), intent(in)  :: q(pcols,pver)            ! specific humidity [kg/kg]
-    real(r8), intent(in)  :: z(pcols,pver)            ! height above surface [m]
-    real(r8), intent(in)  :: zi(pcols,pverp)          ! height above surface [m]
-    real(r8), intent(in)  :: u(pcols,pver)            ! zonal velocity
-    real(r8), intent(in)  :: v(pcols,pver)            ! meridional velocity
-    real(r8), intent(in)  :: taux(pcols)              ! zonal stress [N/m2]
-    real(r8), intent(in)  :: tauy(pcols)              ! meridional stress [N/m2]
-    real(r8), intent(in)  :: shflx(pcols)             ! sensible heat flux
-    real(r8), intent(in)  :: qflx(pcols)              ! water vapor flux
-    real(r8), intent(in)  :: pmid(pcols,pver)         ! midpoint pressures
-    character(len=16), intent(in) :: eddy_scheme
-
-    !
-    ! Output arguments
-    !
-    real(r8), intent(out) :: kvm(pcols,pverp)         ! eddy diffusivity for momentum [m2/s]
-    real(r8), intent(out) :: kvh(pcols,pverp)         ! eddy diffusivity for heat [m2/s]
-    real(r8), intent(out) :: kvq(pcols,pverp)         ! eddy diffusivity for constituents [m2/s]
-    real(r8), intent(out) :: cgh(pcols,pverp)         ! counter-gradient term for heat [J/kg/m]
-    real(r8), intent(out) :: cgs(pcols,pverp)         ! counter-gradient star (cg/flux)
-    real(r8), intent(out) :: tpert(pcols)             ! convective temperature excess
-    real(r8), intent(out) :: qpert(pcols)             ! convective humidity excess
-    real(r8), intent(out) :: ustar(pcols)             ! surface friction velocity [m/s]
-    real(r8), intent(out) :: obklen(pcols)            ! Obukhov length
-    real(r8), intent(out) :: pblh(pcols)              ! boundary-layer height [m]
-    real(r8), intent(out) :: tke(pcols,pverp)         ! turbulent kinetic energy (estimated)
-    real(r8), intent(out) :: ri(pcols,pver)           ! richardson number: n2/s2
-    !
-    !---------------------------Local workspace-----------------------------
-    !
-    real(r8) :: thv(pcols,pver)         ! virtual temperature
-    real(r8) :: rrho(pcols)             ! 1./bottom level density
-    real(r8) :: wstar(pcols)            ! convective velocity scale [m/s]
-    real(r8) :: kqfs(pcols)             ! kinematic surf constituent flux (kg/m2/s)
-    real(r8) :: khfs(pcols)             ! kinimatic surface heat flux 
-    real(r8) :: kbfs(pcols)             ! surface buoyancy flux 
-    real(r8) :: kvf(pcols,pverp)        ! free atmospheric eddy diffsvty [m2/s]
-    real(r8) :: s2(pcols,pver)          ! shear squared
-    real(r8) :: n2(pcols,pver)          ! brunt vaisaila frequency
-    real(r8) :: bge(pcols)              ! buoyancy gradient enhancment
-    integer  :: ktopbl(pcols)           ! index of first midpoint inside pbl
-    !!
-    ! virtual temperature
-    thv(:ncol,ntop_turb:) = virtem(th(:ncol,ntop_turb:),q(:ncol,ntop_turb:))
-
-    ! Compute ustar, Obukhov length, and kinematic surface fluxes.
-    call calc_ustar(t(:ncol,pver),pmid(:ncol,pver),taux(:ncol),tauy(:ncol), &
-         rrho(:ncol),ustar(:ncol))
-    call calc_obklen(th(:ncol,pver), thv(:ncol,pver), qflx(:ncol),  &
-                     shflx(:ncol),   rrho(:ncol),     ustar(:ncol), &
-                     khfs(:ncol),    kqfs(:ncol),     kbfs(:ncol),  &
-                     obklen(:ncol))
-    ! Calculate s2, n2, and Richardson number.
-    call trbintd(ncol    ,                            &
-         thv     ,z       ,u       ,v       , &
-         s2      ,n2      ,ri      )
-    !
-    ! Initialize time dependent variables that do depend on pbl height
-    !
-    !call  pblintd(ncol    ,                            &
-    !     thv     ,z       ,u       ,v       , &
-    !     ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
-    !     zi      ,cldn    ,ocnfrac ,bge     )
-    call pblintd_ri(ncol    ,                            &
-       thv     ,z       ,u       ,v       , &
-       ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
-       bge     ,rino_bulk)
-    !!
-
-    !!================Jinbo Xie============
-    !rino_bulk(:)=rino(:,pver)
-    return
-    end subroutine bulk_ri
-#endif
 !-------------------------------------------------------------------
 
 end module gw_common

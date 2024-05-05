@@ -1075,6 +1075,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         g=gravit
 	!transform adding the pressure
         !transfer from surface to sea level
+!#if 0
         do k=1,pver
                 do i=1,ncol
                 ztop(i,k)=ztop(i,k)+state%phis(i)/g
@@ -1084,17 +1085,20 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
                 dz(i,k)=ztop(i,k)-zbot(i,k)
                 end do
         end do
+!#endif
         !reverse to keep good format in scheme
         ztop=ztop(:,pver:1:-1)
         zbot=zbot(:,pver:1:-1)
         !=======Jinbo Xie=========================
         !get the layer index of pblh in layer
-        call pbuf_get_field(pbuf, pblh_idx,     pblh)
+        call pbuf_get_field(pbuf, pblh_idx, pblh)
         !!
         kpbl2d_in=0_r8
         do i=1,pcols
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-state%phis(i)/g,pblh(i))
+        pblh(i)=pblh(i)+(state%phis(i)/g)!!used for gwd_ss only, need to add lower boundary
+        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:),pblh(i))
         end do
+        !switch to index from bottom up
         !=========================================
 	!================
 	!p3d as state%pmid
@@ -1137,7 +1141,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-        gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
+        gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=0 )
 	! z and dz all above surface and sea level, no need to add a new layer
 	! (just need an empty),gwd_opt(no need in my, take out 33 option))
 	!(itimestep just needs an empty, number of timestep,0)

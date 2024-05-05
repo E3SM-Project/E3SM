@@ -3186,6 +3186,7 @@ end subroutine clubb_init_cnst
 
 
    !!=====Jinbo Xie add calculation of ribulk here=====
+   kbfs_pcol=0.0_r8
    do i=1,ncol
         call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
@@ -3193,6 +3194,8 @@ end subroutine clubb_init_cnst
    enddo
    call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
+
+   write(iulog,*),"Jinbo Xie calculate ribulk",state%ribulk
    !!=====Jinbo Xie=====
     rztodt                 = 1._r8/ztodt
     ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
