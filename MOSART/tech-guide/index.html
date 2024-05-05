@@ -79,6 +79,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#mosart-technical-guide" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -2050,6 +2055,19 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -2060,6 +2078,67 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#physics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Physics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-parameters-required-in-the-mosart-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main parameters required in the MOSART parameter file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-required-by-additional-mosart-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters required by additional MOSART features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -2595,6 +2674,58 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#physics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Physics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-parameters-required-in-the-mosart-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main parameters required in the MOSART parameter file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-required-by-additional-mosart-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters required by additional MOSART features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -2620,9 +2751,113 @@
   
 
 
-  <h1>Technical Guide</h1>
-
-<p>start of the MOSART Technical Guide</p>
+<h1 id="mosart-technical-guide">MOSART Technical Guide</h1>
+<p>This guide provides scientific and technical details about MOSART.</p>
+<h2 id="physics">Physics</h2>
+<p>MOSART is a one-dimension river transport model that is designed for river routing at local, regional, and global scales (<a href="https://doi.org/10.1175/JHM-D-12-015.1">Li et al., 2013</a>). Its primary function is to supply freshwater inputs to ocean models within coupled Earth System Models.</p>
+<p>MOSART divides each spatial unit, such as a latitude/longitude grid or a sub-basin, into three hydrologic categories: hillslopes, tributaries, and a main channel (see figure below). The hillslopes receive runoff and send into tributaries, which then converge into a single main channel. This main channel connects adjacent upstream and downstream units through the river network. MOSART simplifies the multiple tributaries within a spatial unit into a single hypothetical sub-network channel, which has a transport capacity equivalent to all combined tributaries.</p>
+<p><img alt="alt text" src="../figures/mosart_concept.png" /></p>
+<ul>
+<li>
+<p>Hillslope Routing: Within each spatial unit, surface runoff is directed as overland flow to the sub-network channel, while subsurface runoff enters the sub-network channel directly.</p>
+</li>
+<li>
+<p>Sub-network Channel Routing: This channel aggregates water from the hillslopes, routes it through the channel system, and discharges it into the main channel.</p>
+</li>
+<li>
+<p>Main Channel Routing: The main channel collects water from the sub-network channel and any inflow from upstream spatial units, eventually discharging the accumulated water downstream to the next spatial unit or directly to the ocean.</p>
+</li>
+</ul>
+<h2 id="parameters">Parameters</h2>
+<h3 id="main-parameters-required-in-the-mosart-parameter-file">Main parameters required in the MOSART parameter file</h3>
+<table>
+<thead>
+<tr>
+<th>Variable Name</th>
+<th>Description [unit]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fdir</td>
+<td>Flow direction [unitless]</td>
+</tr>
+<tr>
+<td>lat</td>
+<td>Latitude at cell center [degree]</td>
+</tr>
+<tr>
+<td>lon</td>
+<td>Longitude at cell center [degree]</td>
+</tr>
+<tr>
+<td>frac</td>
+<td>fraction of the unit draining to the outlet [0-1]</td>
+</tr>
+<tr>
+<td>rslp</td>
+<td>main channel slope [unitless]</td>
+</tr>
+<tr>
+<td>rlen</td>
+<td>main channel length [m]</td>
+</tr>
+<tr>
+<td>tslp</td>
+<td>mean tributary channel slope averaged through the unit [unitless]</td>
+</tr>
+<tr>
+<td>area</td>
+<td>local drainage area [m^2]</td>
+</tr>
+<tr>
+<td>areaTotal</td>
+<td>total upstream drainage area, local unit included; multi flow direction [m^2]</td>
+</tr>
+<tr>
+<td>areaTotal2</td>
+<td>total upstream drainage area, local unit included; single flow direction [m^2]</td>
+</tr>
+<tr>
+<td>rdep</td>
+<td>bankfull depth of main channel [m]</td>
+</tr>
+<tr>
+<td>rwid</td>
+<td>bankfull width of main channel [m]</td>
+</tr>
+<tr>
+<td>rwid0</td>
+<td>floodplain width linked to main channel [m]</td>
+</tr>
+<tr>
+<td>gxr</td>
+<td>drainage density [m^-1]</td>
+</tr>
+<tr>
+<td>hslp</td>
+<td>topographic slope [unitless]</td>
+</tr>
+<tr>
+<td>twid</td>
+<td>bankfull width of local tributaries [m]</td>
+</tr>
+<tr>
+<td>nr</td>
+<td>Manning''s roughness coefficient for main channel flow [unitless]</td>
+</tr>
+<tr>
+<td>nt</td>
+<td>Manning''s roughness coefficient for tributary channel flow [unitless]</td>
+</tr>
+<tr>
+<td>nh</td>
+<td>Manning''s roughness coefficient for overland flow [unitless]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameters-required-by-additional-mosart-features">Parameters required by additional MOSART features</h3>
+<p>Coming soon.</p>
 
 
 
