@@ -62,6 +62,7 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
 // =========================================================================================
 void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
 {
+  bool is_liq = (m_ptype=="LiqPotentialTemperature");
 
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   auto theta = m_diagnostic_output.get_view<Pack**>();
@@ -75,9 +76,9 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
       const int icol  = idx / npacks;
       const int jpack = idx % npacks;
       auto temp = PF::calculate_theta_from_T(T_mid(icol,jpack),p_mid(icol,jpack));
-      if (m_ptype=="LiqPotentialTemperature") {
+      if (is_liq) {
         // Liquid potential temperature (consistent with how it is calculated in SHOC)
-        theta(icol,jpack) = temp - (temp/T_mid(icol,jpack))*(C::LatVap/C::Cpair)*q_mid(icol,jpack);
+        theta(icol,jpack) = PF::calculate_thetal_from_theta(temp,T_mid(icol,jpack),q_mid(icol,jpack));
       } else {
         // The regular potential temperature
         theta(icol,jpack) = temp;
