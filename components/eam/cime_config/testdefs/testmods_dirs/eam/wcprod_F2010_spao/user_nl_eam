@@ -48,7 +48,7 @@ fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500
 fincl4 = 'PRECT'
 fincl5 = 'O3_SRF'
 fincl6 = 'CO_2DMSD','NO2_2DMSD','NO_2DMSD','O3_2DMSD','O3_2DMSD_trop'
-fincl7 = 'PS', 'CCN3', 'MODAL_AER_TAU_SW', 'MODAL_AER_SSA_SW', 'MODAL_AER_G_SW', 'MODAL_AER_TAU_LW' ! change CCN3 to CCN3MAIR once #6319 is merged
+fincl7 = 'PS', 'CCN3MAIR', 'MODAL_AER_TAU_SW', 'MODAL_AER_SSA_SW', 'MODAL_AER_G_SW', 'MODAL_AER_TAU_LW'
 
 ! -- chemUCI settings ------------------
 history_chemdyg_summary = .true.
