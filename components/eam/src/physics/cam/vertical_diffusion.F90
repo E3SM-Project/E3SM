@@ -920,6 +920,7 @@ contains
         dvsfc_fd=0_r8
         !
         call grid_size(state,dx,dy)
+        write(iulog,*)"Jinbo Xie in vertical diffusion"
         !
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&

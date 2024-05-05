@@ -877,8 +877,11 @@ subroutine pblintd_ri(ncol    ,                            &
        end do
     end do
     !!================Jinbo Xie============
+    !calculate bulk richardson number in the surface layer
     do i=1,ncol
-    rino_bulk(i)=rino(i,pver)
+    vvk = (u(i,k) - u(i,pver))**2 + (v(i,k) - v(i,pver))**2 + fac*ustar(i)**2
+    vvk = max(vvk,tiny)
+    rino_bulk(i)=g*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
     enddo
     !!================Jinbo Xie============
     return

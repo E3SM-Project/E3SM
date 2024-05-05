@@ -1095,8 +1095,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         !!
         kpbl2d_in=0_r8
         do i=1,pcols
-        pblh(i)=pblh(i)+(state%phis(i)/g)!!used for gwd_ss only, need to add lower boundary
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:),pblh(i))
+        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/g),pblh(i))
         end do
         !switch to index from bottom up
         !=========================================

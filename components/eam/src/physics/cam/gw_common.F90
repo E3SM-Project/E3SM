@@ -1783,11 +1783,8 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
           ENDIF
        enddo
 
-       !if((xland1(i)-1.5_r8).le.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
         if(xland1(i).gt.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
-          !if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
-           if(thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
-!write(iulog,*)"Jinbo Xie in calculate of br1(i)",br1(i)
+          if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
             cleff    = sqrt(dxy(i)**2_r8 + dxyp(i)**2_r8)
             cleff    = 2.0_r8 * max(dxmax_ss,cleff)
             coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
@@ -1810,14 +1807,9 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
             endif
 !
 
-!write(iulog,*)"Jinbo Xie kts,kpbl(i)",kts,kpbl(i)
-
             do k=kts,kpbl(i) !MIN(kpbl2+1,kte-1)
               utendwave(i,k)=-1._r8*tauwavex0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
               vtendwave(i,k)=-1._r8*tauwavey0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
-!write(iulog,*)"Jinbo Xie k",k
-!write(iulog,*)"Jinbo Xie calculate utendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)",utendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)
-!write(iulog,*)"Jinbo Xie calculate vtendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)",vtendwave(i,k),1._r8-za(i,k)/hpbl2,hpbl2,za(i,k)
             enddo
           endif
        endif
