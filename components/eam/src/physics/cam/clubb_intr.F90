@@ -3194,8 +3194,6 @@ end subroutine clubb_init_cnst
    enddo
    call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
-
-   write(iulog,*),"Jinbo Xie calculate ribulk",state%ribulk
    !!=====Jinbo Xie=====
     rztodt                 = 1._r8/ztodt
     ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
