@@ -3090,6 +3090,9 @@ end subroutine clubb_init_cnst
     use constituents,           only: pcnst, cnst_get_ind, cnst_type
     use co2_cycle,              only: co2_cycle_set_cnst_type
     use camsrfexch,             only: cam_in_t
+    !!=============Jinbo Xie===============
+    use hb_diff,                   only: pblintd_ri
+    !!=============Jinbo Xie===============
 
     implicit none
 
@@ -3178,6 +3181,10 @@ end subroutine clubb_init_cnst
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
 
+   !!=====Jinbo Xie add calculation of ribulk here=====
+   call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
+                ustar, obklen, kbfs, state%ribulk)
+   !!=====Jinbo Xie=====
     rztodt                 = 1._r8/ztodt
     ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
     tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)

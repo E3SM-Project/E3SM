@@ -775,8 +775,7 @@ end subroutine init_hb_diff
   !=============================
 subroutine pblintd_ri(ncol    ,                            &
        thv     ,z       ,u       ,v       , &
-       ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
-       bge     ,rino_bulk)
+       ustar   ,obklen  ,kbfs    ,rino_bulk)
     !!
     use pbl_utils, only: virtem, calc_ustar, calc_obklen
     !!
@@ -792,9 +791,9 @@ subroutine pblintd_ri(ncol    ,                            &
     !!
     ! Output arguments
     !
-    real(r8), intent(out) :: wstar(pcols)            ! convective sclae velocity [m/s]
-    real(r8), intent(out) :: pblh(pcols)             ! boundary-layer height [m]
-    real(r8), intent(out) :: bge(pcols)              ! buoyancy gradient enhancment
+    real(r8)     :: wstar(pcols)            ! convective sclae velocity [m/s]
+    real(r8)     :: pblh(pcols)             ! boundary-layer height [m]
+    real(r8)     :: bge(pcols)              ! buoyancy gradient enhancment
     real(r8), intent(out) :: rino_bulk(pcols)        ! bulk Richardson no. surface level
     !!
     !---------------------------Local parameters----------------------------
