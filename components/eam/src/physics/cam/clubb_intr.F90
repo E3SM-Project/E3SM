@@ -3127,6 +3127,9 @@ end subroutine clubb_init_cnst
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
+    !!=====Jinbo Xie======
+    real(r8) :: kbfs_pcol(pcols)
+    !!=====Jinbo Xie======
     real(r8) :: tmp1(pcols)
     real(r8) :: rztodt                                          ! 1./ztodt
     integer  :: m
@@ -3181,9 +3184,15 @@ end subroutine clubb_init_cnst
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
 
+
    !!=====Jinbo Xie add calculation of ribulk here=====
+   do i=1,ncol
+        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
+                        kinheat, kinwat, kbfs, obklen(i) )
+        kbfs_pcol(i)=kbfs
+   enddo
    call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
-                ustar, obklen, kbfs, state%ribulk)
+                ustar, obklen, kbfs_pcol, state%ribulk)
    !!=====Jinbo Xie=====
     rztodt                 = 1._r8/ztodt
     ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
