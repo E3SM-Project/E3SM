@@ -40,7 +40,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
-void run(std::mt19937_64& engine, std::string ptype)
+void run(std::mt19937_64& engine, int int_ptype)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
@@ -86,6 +86,7 @@ void run(std::mt19937_64& engine, std::string ptype)
   ekat::ParameterList params;
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  std::string ptype = int_ptype == 0 ? "Base" : "Liq";
   params.set("Temperature Kind", ptype);
   auto diag = diag_factory.create("PotentialTemperature",comm,params);
   diag->set_grids(gm);
@@ -141,7 +142,7 @@ void run(std::mt19937_64& engine, std::string ptype)
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
         auto theta = PF::calculate_theta_from_T(T_mid_v(icol,jpack),p_mid_v(icol,jpack));
-        if (ptype=="Liq") {
+        if (int_ptype==1) {
           theta_v(icol,jpack) = theta - (theta/T_mid_v(icol,jpack)) * (PC::LatVap/PC::Cpair) * q_mid_v(icol,jpack);
         } else { theta_v(icol,jpack) = theta; }
       });
@@ -169,8 +170,8 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    for (const auto& ptype : {"Base","Liq"}) {
-    run<Device>(engine, ptype);
+    for (const int int_ptype : {0,1}) {
+    run<Device>(engine, int_ptype);
   }
   }
   printf("ok!\n");
