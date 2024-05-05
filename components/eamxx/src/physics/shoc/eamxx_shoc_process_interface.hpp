@@ -107,8 +107,12 @@ public:
         qw(i,k) = qv(i,k) + qc(i,k);
 
         // Temperature
+        // NOTE: vtheta (thv) is inconsistent with one in HOMME
+        // SEE gh issue #2813 and gh pr #2812
         const auto theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
+        // TODO? Can use PF::calculate_thetal_from_theta instead? (added in gh pr #2812)
         thlm(i,k) = theta_zt-(theta_zt/T_mid(i,k))*(latvap/cpair)*qc(i,k);
+        // TODO? Can use PF::calculate_virtual_temperature instead? (also be consistent with HOMME)
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
         // Vertical layer thickness

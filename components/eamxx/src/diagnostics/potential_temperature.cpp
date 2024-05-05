@@ -12,7 +12,7 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm
   
   auto pt_type = params.get<std::string>("Temperature Kind");
 
-  if (pt_type=="Base"){
+  if (pt_type=="Tot"){
     m_ptype = "PotentialTemperature";
   } else if (pt_type=="Liq") {
     m_ptype = "LiqPotentialTemperature";
@@ -20,7 +20,7 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm
     EKAT_ERROR_MSG (
         "Error! Invalid choice for 'TemperatureKind' in PotentialTemperatureDiagnostic.\n"
         "  - input value: " + pt_type + "\n"
-        "  - valid values: Base, Liq\n");
+        "  - valid values: Tot, Liq\n");
   }
 }
 
@@ -80,7 +80,7 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
         // Liquid potential temperature (consistent with how it is calculated in SHOC)
         theta(icol,jpack) = PF::calculate_thetal_from_theta(temp,T_mid(icol,jpack),q_mid(icol,jpack));
       } else {
-        // The regular potential temperature
+        // The total potential temperature
         theta(icol,jpack) = temp;
       }
   });

@@ -1330,7 +1330,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     if (diag_field_name == "LiqPotentialTemperature") {
       params.set<std::string>("Temperature Kind", "Liq");
     } else {
-      params.set<std::string>("Temperature Kind", "Base");
+      params.set<std::string>("Temperature Kind", "Tot");
     }
   } else {
     diag_name = diag_field_name;

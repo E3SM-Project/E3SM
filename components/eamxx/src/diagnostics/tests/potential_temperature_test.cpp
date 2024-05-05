@@ -86,7 +86,7 @@ void run(std::mt19937_64& engine, int int_ptype)
   ekat::ParameterList params;
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  std::string ptype = int_ptype == 0 ? "Base" : "Liq";
+  std::string ptype = int_ptype == 0 ? "Tot" : "Liq";
   params.set("Temperature Kind", ptype);
   auto diag = diag_factory.create("PotentialTemperature",comm,params);
   diag->set_grids(gm);
