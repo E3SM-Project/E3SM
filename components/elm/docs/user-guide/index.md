@@ -12,8 +12,11 @@ The water cycle campaigns of E3SM v1 and v2 used ELM's satellite phenology mode 
 
 The land-only compsets are referred to as "I"-compset and are supported for the following time periods: pre-industrial (1850) and historical transient (20TR). Additionally, multiple atmospheric forcing datasets can be used to drive the ELM simulations. The supported compsets are:
 
-1. `I1850GSWCNPRDCTCBCTOP`: Climatological pre-industrial using GSWP atmospheric forcings
+1. `I1850GSWCNPRDCTCBCTOP`: Pre-industrial ELM simulation using atmospheric forcings from GSWP3 reanalysis dataset
 2. `I20TRGSWCNPRDCTCBCTOP`: Historical ELM simulation using GSWP atmospheric forcings with time varying greenhouse gas forcing and land use, land cover dataset (year 1850-2014).
+3. `I1850E3SMCNP`: Pre-industrial ELM simulation using atmospheric forcings from E3SM coupler output
+
+The E3SM coupler output forcings are most commonly used as an offline land model spinup step, in preparation for a fully-coupled E3SM experiment. 
 
 ### Supported grid
 
