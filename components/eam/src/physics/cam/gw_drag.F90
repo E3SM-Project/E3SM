@@ -686,6 +686,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use gw_common,  only: gwdo_gsd,pblh_get_level_idx,grid_size
   use physconst,          only: gravit,rair
   !====Jinbo Xie=====
+  use pbl_utils, only: virtem, calc_ustar, calc_obklen
+  use hb_diff  , only: pblintd_ri
+  !====Jinbo Xie=====
 
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
@@ -1096,6 +1099,27 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-state%phis(i)/g,pblh(i))
         end do
         !=========================================
+        !calculate for ss gwd bulk richardson number Jinbo Xie
+	!virtual temperature
+        thv(:ncol,ntop_turb:) = virtem(th(:ncol,ntop_turb:),q(:ncol,ntop_turb:))
+        ! Compute ustar, Obukhov length, and kinematic surface fluxes.
+        call calc_ustar(t(:ncol,pver),pmid(:ncol,pver),taux(:ncol),tauy(:ncol), &
+                rrho(:ncol),ustar(:ncol))
+        call calc_obklen(th(:ncol,pver), thv(:ncol,pver), qflx(:ncol),  &
+                        shflx(:ncol),   rrho(:ncol),     ustar(:ncol), &
+                        khfs(:ncol),    kqfs(:ncol),     kbfs(:ncol),  &
+                        obklen(:ncol))
+        !
+        ! Initialize time dependent variables that do depend on pbl height
+        !
+        call  pblintd(ncol    ,                            &
+                thv     ,z       ,u       ,v       , &
+                ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
+                zi      ,cldn    ,ocnfrac ,bge     )
+	call  pblintd_ri(ncol    ,                            &
+                thv     ,z       ,u       ,v       , &
+                ustar   ,obklen  ,kbfs    ,pblh    ,wstar   , &
+                bge     ,rino_bulk)
 	!================
 	!p3d as state%pmid
 	!p3di as state%pint

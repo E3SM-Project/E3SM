@@ -36,6 +36,9 @@ module hb_diff
   public init_hb_diff
   public compute_hb_diff
   public pblintd
+  !!=====Jinbo Xie====
+  public pblintd_ri
+  !!=====Jinbo Xie====
   !
   ! PBL limits
   !

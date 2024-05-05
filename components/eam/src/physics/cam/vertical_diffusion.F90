@@ -857,6 +857,7 @@ contains
     ! within the iteration loop of the PBL scheme. 
 
     if( do_tms ) then
+
         call compute_tms( pcols      , pver     , ncol    ,              &
                           state%u    , state%v  , state%t , state%pmid , & 
                           state%exner, state%zm , sgh     , ksrftms    , & 
@@ -869,6 +870,8 @@ contains
       ! computation in this module.   
         !tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
         !tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
+        tautotx(:ncol) = taux(:ncol)
+        tautoty(:ncol) = tauy(:ncol)
         !================Jinbo Xie=======================
 	 ztop= 0.0_r8            ! top interface height asl(m)
     	 zbot= 0.0_r8            ! bottom interface height asl(m)
