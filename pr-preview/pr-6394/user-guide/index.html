@@ -436,6 +436,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#input-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Input data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssp245-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP245 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssp370-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP370 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssp585-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP585 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2675,6 +2717,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#input-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Input data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssp245-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP245 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssp370-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP370 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssp585-forcing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSP585 forcing data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2708,7 +2792,7 @@ components with both full model and data model options. Also, the configurations
 components can run at different resolutions.  Some configurations
 can run easily on a laptop.  Other's require the most powerful
 supercomputers.</p>
-<p>Using the model requires fist deciding what configuration to use and creating
+<p>Using the model requires first deciding what configuration to use and creating
 a case with that configuration.
 The configuration options are managed by the Case Control System (CCS)
 within the
@@ -2720,74 +2804,85 @@ cases, compsets and grids by reading the
 is available.</p>
 <h2 id="supported-coupled-compsets">Supported Coupled Compsets</h2>
 <p>A <em>fully coupled</em> compset is one which has active components for at least the atmosphere, ocean, land surface, ocean and
-sea-ice all interacting.  The fully coupled compsets supported in this version of E3SM are:</p>
+sea-ice all interacting.  Each compset is associated with a specific forcing condition.
+Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  <code>water cycle change and impacts</code>, <code>human-earth system feedbacks</code>, and <code>polar processes, sea-level rise and coastal impacts</code>. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for <code>water cycle change and impacts</code> simulation campaign.
+Below list the standard configuration compsets supported in the current version of E3SM:</p>
 <table>
 <thead>
 <tr>
-<th>Compset Alias</th>
-<th>TIME</th>
-<th>ATM</th>
-<th>LND</th>
-<th>Sea ice</th>
-<th>Ocean</th>
-<th>River</th>
+<th style="text-align: left;">Compset alias</th>
+<th style="text-align: left;">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>WCYCL1850</td>
-<td>1850SOI</td>
-<td>EAM</td>
-<td>ELM</td>
-<td>MPAS-Seaice</td>
-<td>MPAS-Ocean</td>
-<td>MOSART</td>
+<td style="text-align: left;"><code>WCYCL1850</code></td>
+<td style="text-align: left;">Standard configuration with pre-industrial climatological forcings</td>
 </tr>
 <tr>
-<td>WCYCL1850-1pcCO2</td>
-<td>1850SOI</td>
-<td>EAM</td>
-<td>ELM</td>
-<td>MPAS-Seaice</td>
-<td>MPAS-Ocean</td>
-<td>MOSART</td>
+<td style="text-align: left;"><code>WCYCL1850-4xCO2</code></td>
+<td style="text-align: left;">Same as <code>WCYCL1850</code> except with abrupt (then persistent) 4xCO2 forcing.</td>
 </tr>
 <tr>
-<td>WCYCL1850-4xCO2</td>
-<td>1850SOI</td>
-<td>EAM</td>
-<td>ELM</td>
-<td>MPAS-Seaice</td>
-<td>MPAS-Ocean</td>
-<td>MOSART</td>
+<td style="text-align: left;"><code>WCYCL1850-1pctCO2</code></td>
+<td style="text-align: left;">Same as <code>WCYCL1850</code> except with 1 percent per year increase of CO2 concentration</td>
 </tr>
 <tr>
-<td>WCYCL20TR</td>
-<td>20TRSOI</td>
-<td>EAM</td>
-<td>ELM</td>
-<td>MPAS-Seaice</td>
-<td>MPAS-Ocean</td>
-<td>MOSART</td>
+<td style="text-align: left;"><code>WCYCL1950</code></td>
+<td style="text-align: left;">Standard configuration with perpetual 1950 forcings</td>
 </tr>
 <tr>
-<td>WCYCL1950</td>
-<td>1950SOI</td>
-<td>EAM</td>
-<td>ELM</td>
-<td>MPAS-Seaice</td>
-<td>MPAS-Ocean</td>
-<td>MOSART</td>
+<td style="text-align: left;"><code>WCYCL20TR</code></td>
+<td style="text-align: left;">Standard configuration with prescribed transient forcings over the historical period (1850-2014)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCLSSP245</code></td>
+<td style="text-align: left;">Standard configuration with prescribed SSP-245 forcings</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCLSSP370</code></td>
+<td style="text-align: left;">Standard configuration with prescribed SSP-370 forcings</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCLSSP585</code></td>
+<td style="text-align: left;">Standard configuration with prescribed SSP-585 forcings</td>
 </tr>
 </tbody>
 </table>
-<p>Additional compsets are available for the component models. See the User Guides for the components for more information.</p>
+<p>The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
+The compset naming follows the same convention, e.g., <code>CRYO1850</code> and <code>CRYO1850-4xCO2</code> are with prognostic ice-shelf melt fluxes for the <code>polar processes</code> simulation campaign.</p>
+<p>Compsets are also available for standalone component model configurations, See the User Guides for the components for more information.</p>
 <h2 id="supported-resolution">Supported resolution</h2>
-<p>Only one grid set is supported for the above compsets.</p>
-<p><code>ne30pg2_r05_IcoswISC30E3r5</code> - For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km
-resolution, the land and river
-are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km
-resolution icosohedral mesh with ice shelf cavities (wISC) around Antarctica.</p>
+<p>Currently two grid sets are supported for the above compsets, including a nominal low-resosluton confiuguration and one regionally refined mesh. Additional regionally refined meshes and a high-resolution grid will become available in the near future.</p>
+<table>
+<thead>
+<tr>
+<th>Grid Alias</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ne30pg2_r05_IcoswISC30E3r5</td>
+<td>For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km resolution, the land and river are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.</td>
+</tr>
+<tr>
+<td>northamericax4v1pg2_r025_IcoswISC30E3r5</td>
+<td>The atmosphere for this grid set uses North America regionally refined mesh from about 110 km down to 25 km over the refined region. The land and river are on 0.25deg x 0.25deg structured grid. The ocean and sea ice are on the same icosahedral mesh as for <code>ne30pg2_r05_IcoswISC30E3r5</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="input-data">Input data</h2>
+<p>Inputdata for coupled compsets at component model levels are the same as for the standalone component configurations
+for a given forcing scenario (e.g., <code>1850</code> for the pre-industrial period,  <code>20TR</code> for the historical period, <code>2010</code>
+for present-day condition, and <code>SSPs</code> for Shared Socioeconomic Pathways of climate change scenarios).
+Between the coupled compsets, the differences are in the prescribed solar forcing, volcanic emissions,
+atmospheric forcing data, and land use and land cover. The required inputdata for the pre-industrial and the historical periods
+as well as the present-day condition are described in <a href="https://e3sm-project.github.io/E3SM/EAM">the EAM User's Guide</a> and
+<a href="https://e3sm-project.github.io/E3SM/ELM">the ELM's User's Guide</a>. Below are the prescribed forcing data for the SSP scenarios.</p>
+<h3 id="ssp245-forcing-data"><a href="ssp245-forcings/">SSP245 forcing data</a></h3>
+<h3 id="ssp370-forcing-data"><a href="ssp370-forcings/">SSP370 forcing data</a></h3>
+<h3 id="ssp585-forcing-data"><a href="ssp585-forcings/">SSP585 forcing data</a></h3>
 
 
 
