@@ -12908,6 +12908,8 @@ contains
   subroutine init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
     use icepack_intfc, only: icepack_init_zbgc
+    use icepack_intfc, only: icepack_init_zbgc_tracer_indices
+    use icepack_intfc, only: icepack_init_parameters
     use icepack_intfc, only: icepack_query_parameters
 
     type(domain_type), intent(in) :: &
@@ -13252,90 +13254,7 @@ contains
     allocate(tracerObject % index_dissolvedIronConcLayer(maxIronType))
     tracerObject % nDissolvedIronIndex = nDissolvedIron
 
-    call icepack_init_zbgc(&
-         nblyr=nBioLayers, &
-         nilyr=nIceLayers, &
-         nslyr=nSnowLayers, &
-         n_algae_in=nAlgae, &
-         n_zaero_in=nzAerosols, &
-         n_doc_in=nDOC, &
-         n_dic_in=nDIC, &
-         n_don_in=nDON, &
-         n_fed_in=nDissolvedIron, &
-         n_fep_in=nParticulateIron, &
-         trcr_base=tracerObject % firstAncestorMask, &
-         trcr_depend=tracerObject % parentIndex, &
-         n_trcr_strata=tracerObject % ancestorNumber, &
-         nt_strata=tracerObject % ancestorIndices, &
-         nbtrcr_sw_out=tracerObject % nBioTracersShortwave, &
-         tr_brine_in=config_use_brine, &
-         nt_fbri_out=tracerObject % index_brineFraction,&
-         ntrcr_out=tracerObject % nTracers, &
-         nbtrcr_out=tracerObject % nBioTracers, &
-         ntrcr_o_out=tracerObject % nTracersNotBio, &
-         nt_bgc_Nit_out=tracerObject % index_nitrateConc, &
-         nt_bgc_Am_out=tracerObject % index_ammoniumConc, &
-         nt_bgc_Sil_out=tracerObject % index_silicateConc, &
-         nt_bgc_DMS_out=tracerObject % index_DMSConc, &
-         nt_bgc_PON_out=tracerObject % index_nonreactiveConc, &
-         nt_bgc_N_out=tracerObject % index_algaeConc, &
-         nt_bgc_C_out=tracerObject % index_algalCarbon, &
-         nt_bgc_chl_out=tracerObject % index_algalChlorophyll, &
-         nt_bgc_DOC_out=tracerObject % index_DOCConc, &
-         nt_bgc_DON_out=tracerObject % index_DONConc, &
-         nt_bgc_DIC_out=tracerObject % index_DICConc, &
-         nt_zaero_out=tracerObject % index_verticalAerosolsConc, &
-         nt_bgc_DMSPp_out=tracerObject % index_DMSPpConc, &
-         nt_bgc_DMSPd_out=tracerObject % index_DMSPdConc, &
-         nt_bgc_Fed_out=tracerObject % index_dissolvedIronConc, &
-         nt_bgc_Fep_out=tracerObject % index_particulateIronConc, &
-         nt_zbgc_frac_out=tracerObject % index_mobileFraction, &
-         tr_bgc_Nit_in=config_use_nitrate, &
-         tr_bgc_Am_in=config_use_ammonium, &
-         tr_bgc_Sil_in=config_use_silicate, &
-         tr_bgc_DMS_in=config_use_DMS, &
-         tr_bgc_PON_in=config_use_nonreactive, &
-         tr_bgc_N_in=use_nitrogen, &
-         tr_bgc_C_in=config_use_carbon, &
-         tr_bgc_chl_in=config_use_chlorophyll, &
-         tr_bgc_DON_in=config_use_DON, &
-         tr_bgc_Fe_in=config_use_iron,&
-         tr_zaero_in=config_use_zaerosols, &
-         nlt_zaero_sw_out=tracerObject % index_verticalAerosolsConcShortwave, &
-         nlt_chl_sw_out=tracerObject % index_chlorophyllShortwave, &
-         nlt_bgc_N_out=tracerObject % index_algaeConcLayer, &
-         nlt_bgc_Nit_out=tracerObject % index_nitrateConcLayer, &
-         nlt_bgc_Am_out=tracerObject % index_ammoniumConcLayer, &
-         nlt_bgc_Sil_out=tracerObject % index_silicateConcLayer, &
-         nlt_bgc_DMS_out=tracerObject % index_DMSConcLayer, &
-         nlt_bgc_DMSPp_out=tracerObject % index_DMSPpConcLayer, &
-         nlt_bgc_DMSPd_out=tracerObject % index_DMSPdConcLayer, &
-         nlt_bgc_C_out=tracerObject % index_algalCarbonLayer, &
-         nlt_bgc_chl_out=tracerObject % index_algalChlorophyllLayer, &
-         nlt_bgc_DIC_out=tracerObject % index_DICConcLayer, &
-         nlt_bgc_DOC_out=tracerObject % index_DOCConcLayer, &
-         nlt_bgc_PON_out=tracerObject % index_nonreactiveConcLayer, &
-         nlt_bgc_DON_out=tracerObject % index_DONConcLayer, &
-         nlt_bgc_Fed_out=tracerObject % index_dissolvedIronConcLayer, &
-         nlt_bgc_Fep_out=tracerObject % index_particulateIronConcLayer, &
-         nlt_zaero_out=tracerObject % index_verticalAerosolsConcLayer, &
-         nt_bgc_hum_out=tracerObject % index_humicsConc, &
-         nlt_bgc_hum_out=tracerObject % index_humicsConcLayer, &
-         tr_bgc_hum_in=config_use_humics, &
-         skl_bgc_in=config_use_skeletal_biochemistry, &
-         z_tracers_in=config_use_vertical_tracers, &
-         dEdd_algae_in=config_use_shortwave_bioabsorption, &
-         solve_zbgc_in=config_use_vertical_biochemistry, &
-         bio_index_o_out=tracerObject % index_LayerIndexToDataArray, &
-         bio_index_out=tracerObject % index_LayerIndexToBioIndex, &
-         frazil_scav_in=config_fraction_biotracer_in_frazil, &
-         initbio_frac_in=config_new_ice_fraction_biotracer, &
-         max_algae_in=maxAlgaeType, &
-         max_doc_in=maxDOCType, &
-         max_dic_in=maxDICType, &
-         max_don_in=maxDONType, &
-         max_fe_in=maxIronType, &
-         max_aero_in=maxAerosolType, &
+    call icepack_init_parameters(&
          ratio_Si2N_diatoms_in=config_ratio_Si_to_N_diatoms, &
          ratio_Si2N_sp_in=config_ratio_Si_to_N_small_plankton, &
          ratio_Si2N_phaeo_in=config_ratio_Si_to_N_phaeocystis, &
@@ -13430,8 +13349,89 @@ contains
          dmspdtype_in=config_mobility_type_DMSPd, &
          silicatetype_in=config_mobility_type_silicate, &
          humtype_in=config_mobility_type_humics, &
+         frazil_scav_in=config_fraction_biotracer_in_frazil, &
+         initbio_frac_in=config_new_ice_fraction_biotracer, &
          tau_min_in=config_rapid_mobile_to_stationary_time, &
          tau_max_in=config_long_mobile_to_stationary_time)
+
+    call icepack_init_zbgc_tracer_indices(&
+         nilyr_in=nIceLayers, &
+         nslyr_in=nSnowLayers, &
+         nblyr_in=nBioLayers, &
+         n_algae_in=nAlgae, &
+         n_zaero_in=nzAerosols, &
+         n_doc_in=nDOC, &
+         n_dic_in=nDIC, &
+         n_don_in=nDON, &
+         n_fed_in=nDissolvedIron, &
+         n_fep_in=nParticulateIron, &
+         trcr_base=tracerObject % firstAncestorMask, &
+         trcr_depend=tracerObject % parentIndex, &
+         n_trcr_strata=tracerObject % ancestorNumber, &
+         nt_strata=tracerObject % ancestorIndices, &
+         nbtrcr_sw_out=tracerObject % nBioTracersShortwave, &
+         tr_brine_in=config_use_brine, &
+         nt_fbri_out=tracerObject % index_brineFraction,&
+         ntrcr_out=tracerObject % nTracers, &
+         nbtrcr_out=tracerObject % nBioTracers, &
+         ntrcr_o_out=tracerObject % nTracersNotBio, &
+         nt_bgc_Nit_out=tracerObject % index_nitrateConc, &
+         nt_bgc_Am_out=tracerObject % index_ammoniumConc, &
+         nt_bgc_Sil_out=tracerObject % index_silicateConc, &
+         nt_bgc_DMS_out=tracerObject % index_DMSConc, &
+         nt_bgc_PON_out=tracerObject % index_nonreactiveConc, &
+         nt_bgc_N_out=tracerObject % index_algaeConc, &
+         nt_bgc_C_out=tracerObject % index_algalCarbon, &
+         nt_bgc_chl_out=tracerObject % index_algalChlorophyll, &
+         nt_bgc_DOC_out=tracerObject % index_DOCConc, &
+         nt_bgc_DON_out=tracerObject % index_DONConc, &
+         nt_bgc_DIC_out=tracerObject % index_DICConc, &
+         nt_zaero_out=tracerObject % index_verticalAerosolsConc, &
+         nt_bgc_DMSPp_out=tracerObject % index_DMSPpConc, &
+         nt_bgc_DMSPd_out=tracerObject % index_DMSPdConc, &
+         nt_bgc_Fed_out=tracerObject % index_dissolvedIronConc, &
+         nt_bgc_Fep_out=tracerObject % index_particulateIronConc, &
+         nt_zbgc_frac_out=tracerObject % index_mobileFraction, &
+         tr_bgc_Nit_in=config_use_nitrate, &
+         tr_bgc_Am_in=config_use_ammonium, &
+         tr_bgc_Sil_in=config_use_silicate, &
+         tr_bgc_DMS_in=config_use_DMS, &
+         tr_bgc_PON_in=config_use_nonreactive, &
+         tr_bgc_N_in=use_nitrogen, &
+         tr_bgc_C_in=config_use_carbon, &
+         tr_bgc_chl_in=config_use_chlorophyll, &
+         tr_bgc_DON_in=config_use_DON, &
+         tr_bgc_Fe_in=config_use_iron,&
+         tr_zaero_in=config_use_zaerosols, &
+         nlt_zaero_sw_out=tracerObject % index_verticalAerosolsConcShortwave, &
+         nlt_chl_sw_out=tracerObject % index_chlorophyllShortwave, &
+         nlt_bgc_N_out=tracerObject % index_algaeConcLayer, &
+         nlt_bgc_Nit_out=tracerObject % index_nitrateConcLayer, &
+         nlt_bgc_Am_out=tracerObject % index_ammoniumConcLayer, &
+         nlt_bgc_Sil_out=tracerObject % index_silicateConcLayer, &
+         nlt_bgc_DMS_out=tracerObject % index_DMSConcLayer, &
+         nlt_bgc_DMSPp_out=tracerObject % index_DMSPpConcLayer, &
+         nlt_bgc_DMSPd_out=tracerObject % index_DMSPdConcLayer, &
+         nlt_bgc_C_out=tracerObject % index_algalCarbonLayer, &
+         nlt_bgc_chl_out=tracerObject % index_algalChlorophyllLayer, &
+         nlt_bgc_DIC_out=tracerObject % index_DICConcLayer, &
+         nlt_bgc_DOC_out=tracerObject % index_DOCConcLayer, &
+         nlt_bgc_PON_out=tracerObject % index_nonreactiveConcLayer, &
+         nlt_bgc_DON_out=tracerObject % index_DONConcLayer, &
+         nlt_bgc_Fed_out=tracerObject % index_dissolvedIronConcLayer, &
+         nlt_bgc_Fep_out=tracerObject % index_particulateIronConcLayer, &
+         nlt_zaero_out=tracerObject % index_verticalAerosolsConcLayer, &
+         nt_bgc_hum_out=tracerObject % index_humicsConc, &
+         nlt_bgc_hum_out=tracerObject % index_humicsConcLayer, &
+         tr_bgc_hum_in=config_use_humics, &
+         skl_bgc_in=config_use_skeletal_biochemistry, &
+         z_tracers_in=config_use_vertical_tracers, &
+         dEdd_algae_in=config_use_shortwave_bioabsorption, &
+         solve_zbgc_in=config_use_vertical_biochemistry, &
+         bio_index_o_out=tracerObject % index_LayerIndexToDataArray, &
+         bio_index_out=tracerObject % index_LayerIndexToBioIndex)
+
+    call icepack_init_zbgc()
 
     ! check calculated tracer array size
     if (nTracers_temp /= tracerObject % nTracers) then
