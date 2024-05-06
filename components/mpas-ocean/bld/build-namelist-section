@@ -522,6 +522,12 @@ add_default($nl, 'config_manufactured_solution_wavelength_x');
 add_default($nl, 'config_manufactured_solution_wavelength_y');
 add_default($nl, 'config_manufactured_solution_amplitude');
 
+#####################################
+# Namelist group: init_mode_subgrid #
+#####################################
+
+add_default($nl, 'config_subgrid_table_levels');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################

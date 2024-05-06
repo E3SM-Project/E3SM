@@ -2640,6 +2640,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- init_mode_subgrid -->
+
+<entry id="config_subgrid_table_levels" type="integer"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Number of levels in subgrid lookup tables
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"
