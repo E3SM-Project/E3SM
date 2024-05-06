@@ -2774,19 +2774,19 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                     nlev,  nlev,  num_qtracers, nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
-                                    nlev,  nlev,  nlev,         nlevi, nlevi,
+                                    nlevi, nlev,  nlev,         nlevi, nlevi,
                                     nlevi, nlevi, nlevi,        nlevi, nlevi,
                                     nlevi, nlevi, nlev,         nlev,  nlev};
 
   std::vector<const Real*> ptr_array_1d = {host_dx, host_dy, wthl_sfc, wqw_sfc,
                                            uw_sfc,  vw_sfc,  phis};
-  std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,        presi,        pdel,
-                                           thv,       w_field,  wtracer_sfc, inv_exner,        host_dse,
-                                           tke,       thetal,   qw,          u_wind,       v_wind,
-                                           wthv_sec,  tk,       shoc_cldfrac, shoc_ql,
-                                           shoc_ql2,  tkh,      shoc_mix, w_sec,       thl_sec,      qw_sec,
-                                           qwthl_sec, wthl_sec, wqw_sec,     wtke_sec,     uw_sec,
-                                           vw_sec,    w3,       wqls_sec,    brunt,        isotropy};
+  std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,          presi,        pdel,
+                                           thv,       w_field,  wtracer_sfc,   inv_exner,    host_dse,
+                                           tke,       thetal,   qw,            u_wind,       v_wind,
+                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,  
+					   tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
+                                           qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
+                                           vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
 
   ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array_2d, dim1_2d_sizes, dim2_2d_sizes, temp_2d_d, true);
