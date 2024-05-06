@@ -258,17 +258,31 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto layout_mid = phys_grid->get_vertical_layout(true);
     auto layout_int = phys_grid->get_vertical_layout(false);
     const auto nondim = ekat::units::Units::nondimensional();
+    auto lev_unit = ekat::units::Units::nondimensional();;
+    lev_unit.set_string("mb");
 
     auto hyai = phys_grid->create_geometry_data("hyai",layout_int,nondim);
     auto hybi = phys_grid->create_geometry_data("hybi",layout_int,nondim);
     auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,nondim);
     auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,nondim);
+    auto lev  = phys_grid->create_geometry_data("lev",  layout_mid, lev_unit);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
       f.sync_to_host();
     }
+  
+    // Build lev from hyam and hybm
+    const Real ps0        = 100000.0;
+  
+    auto hya_v = hyam.get_view<const Real*,Host>();
+    auto hyb_v = hybm.get_view<const Real*,Host>();
+    auto lev_v = lev.get_view<Real*,Host>();
+    for (int ii=0;ii<phys_grid->get_num_vertical_levels();ii++) {
+      lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
+    }
+    lev.sync_to_dev();
   }
 
   if (is_planar_geometry_f90()) {

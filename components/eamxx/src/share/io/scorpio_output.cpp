@@ -964,11 +964,14 @@ register_variables(const std::string& filename,
     auto vec_of_dims   = set_vec_of_dims(layout);
     std::string units = fid.get_units().get_string();
 
+    // Gather longname
+    auto longname = m_longnames.get_longname(name);
+
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
 
-    register_variable(filename, name, name, units, vec_of_dims,
+    register_variable(filename, name, longname, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
 
     // Add any extra attributes for this variable
