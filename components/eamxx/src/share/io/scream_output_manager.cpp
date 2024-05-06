@@ -264,6 +264,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   {
     // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
     m_output_control.next_write_ts = m_run_t0;
+    // This is in case some diags need to init the timestep. Most likely, their output
+    // is meaningless at t0, but they may still require the start-of-step timestamp to be valid
+    init_timestep(m_run_t0);
     this->run(m_run_t0);
   }
 
@@ -281,6 +284,22 @@ add_global (const std::string& name, const ekat::any& global) {
 }
 
 /*===============================================================================================*/
+void OutputManager::init_timestep (const util::TimeStamp& start_of_step)
+{
+  // In case output is disabled, no point in doing anything else
+  if (not m_output_control.output_enabled()) {
+    return;
+  }
+
+  if (m_atm_logger) {
+    m_atm_logger->debug("[OutputManager::init_timestep] filename_prefix: " + m_filename_prefix + "\n");
+  }
+
+  for (auto s : m_output_streams) {
+    s->init_timestep(start_of_step);
+  }
+}
+
 void OutputManager::run(const util::TimeStamp& timestamp)
 {
   // In case output is disabled, no point in doing anything else

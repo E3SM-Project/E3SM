@@ -139,6 +139,8 @@ public:
   void reset_dev_views();
   void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
   void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
+
+  void init_timestep (const util::TimeStamp& start_of_step);
   void run (const std::string& filename,
             const bool output_step, const bool checkpoint_step,
             const int nsteps_since_last_output,

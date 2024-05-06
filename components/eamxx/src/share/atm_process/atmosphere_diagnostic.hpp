@@ -51,6 +51,8 @@ public:
   // Getting the diagnostic output
   Field get_diagnostic () const;
 
+  virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
+
   void compute_diagnostic (const double dt = 0);
 protected:
 

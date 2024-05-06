@@ -362,6 +362,14 @@ void AtmosphereOutput::init()
 }
 
 void AtmosphereOutput::
+init_timestep (const util::TimeStamp& start_of_step)
+{
+  for (auto& it : m_diagnostics) {
+    it.second->init_timestep(start_of_step);
+  }
+}
+
+void AtmosphereOutput::
 run (const std::string& filename,
      const bool output_step, const bool checkpoint_step,
      const int nsteps_since_last_output,
