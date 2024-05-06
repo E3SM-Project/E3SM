@@ -920,7 +920,6 @@ contains
         dvsfc_fd=0_r8
         !
         call grid_size(state,dx,dy)
-        write(iulog,*)"Jinbo Xie in vertical diffusion"
         !
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
@@ -1465,10 +1464,10 @@ contains
 
     !!Jinbo Xie
     !!add new variable
-    call outfld( 'DUSFC_FD'  , dusfc_fd,                   pcols, lchnk )
-    call outfld( 'DVSFC_FD'  , dvsfc_fd,                   pcols, lchnk )
-    call outfld( 'DTAUX3_FD'  , dtaux3_fd,                   pcols, lchnk )
-    call outfld( 'DTAUY3_FD'  , dtauy3_fd,                   pcols, lchnk )
+    !call outfld( 'DUSFC_FD'  , dusfc_fd,                   pcols, lchnk )
+    !call outfld( 'DVSFC_FD'  , dvsfc_fd,                   pcols, lchnk )
+    !call outfld( 'DTAUX3_FD'  , dtaux3_fd,                   pcols, lchnk )
+    !call outfld( 'DTAUY3_FD'  , dtauy3_fd,                   pcols, lchnk )
     !!Jinbo Xie
 
     return
