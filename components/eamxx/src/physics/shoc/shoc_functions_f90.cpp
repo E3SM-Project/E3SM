@@ -2774,7 +2774,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                     nlev,  nlev,  num_qtracers, nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
-                                    nlevi, nlev,  nlev,         nlevi, nlevi,
+                                    nlev,  nlev,  nlev,         nlevi, nlevi,
                                     nlevi, nlevi, nlevi,        nlevi, nlevi,
                                     nlevi, nlevi, nlev,         nlev,  nlev};
 
@@ -2784,7 +2784,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                            thv,       w_field,  wtracer_sfc,   inv_exner,    host_dse,
                                            tke,       thetal,   qw,            u_wind,       v_wind,
                                            wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,  
-					   tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
+                                           tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
                                            qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
                                            vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
 
@@ -2909,7 +2909,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     tabs    ("shoc_tabs", shcol, nlev_packs),
     dz_zt   ("dz_zt",   shcol, nlevi_packs),
     dz_zi   ("dz_zi",   shcol, nlevi_packs),
-    tkhv    ("tkh",     shcol, nlevi_packs);
+    tkhv    ("tkh",     shcol, nlev_packs);
 
   SHF::SHOCTemporaries shoc_temporaries{
     se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
