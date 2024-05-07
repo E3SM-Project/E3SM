@@ -25,6 +25,16 @@
   </compset>	  
 
   <compset>
+    <alias>IERA5ELM</alias>
+    <lname>2000_DATM%ERA5_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>IERA56HRELM</alias>
+    <lname>2000_DATM%ERA56HR_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>IELM</alias>
     <lname>2000_DATM%QIA_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
