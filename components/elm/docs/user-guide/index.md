@@ -21,10 +21,6 @@ The E3SM coupler output forcings are most commonly used as an offline land model
 
 The `r05_r05` is the supported grid resolution for performing offline ELM simulation.
 
-### Model spin-up for pre-industrial condition
-
-***Add notes on how to spin-up the model.***
-
 ## Customizing runs
 
 Few useful changes to `user_nl_elm`
