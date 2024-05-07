@@ -2021,6 +2021,16 @@
       <mask>oQU240wLI</mask>
     </model_grid>
 
+    <model_grid alias="TL319_oQU240wLI_ais8to30" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">oQU240wLI</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.ais8to30km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240wLI</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg2_r05_IcoswISC30E3r5_ais8to30" compset="_MALI">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
@@ -5706,6 +5716,17 @@
       <map name="LND2GLC_SMAPNAME"></map>
       <map name="GLC2LND_FMAPNAME"></map>
       <map name="GLC2LND_SMAPNAME"></map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais8to30km" ocn_grid="oQU240wLI">
+      <map name="OCN2GLC_FMAPNAME"></map>
+      <map name="OCN2GLC_SMAPNAME"></map>
+      <map name="GLC2ICE_FMAPNAME"></map>
+      <map name="GLC2ICE_SMAPNAME"></map>
+      <map name="GLC2OCN_FMAPNAME"></map>
+      <map name="GLC2OCN_SMAPNAME"></map>
+      <map name="GLC2OCN_LIQ_RMAPNAME"></map>
+      <map name="GLC2OCN_ICE_RMAPNAME"></map>
     </gridmap>
 
     <gridmap glc_grid="mpas.ais8to30km" ocn_grid="IcoswISC30E3r5">
