@@ -1,11 +1,20 @@
 # Model output
 
 EAMxx allows the user to configure the desired model output via [YAML](https://yaml.org/) files,
-with each YAML file associated to a different output file.
+with each YAML file associated to a different output file. In order to add an output stream,
+one needs to run `atmchange output_yaml_files+=/path/to/my/output/yaml` (more information on how
+to use `atmchange` can be found [here](./model_input.md#changing-model-inputs-atmchange)).
+During the `buildnml` phase of the case management system, a copy of these YAML files will be copied
+into the RUNDIR/data folder. During this process, the files will be parsed, and any CIME-related
+variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files in RUNDIR/data,
+since upon `buildnml` execution, all the CIME vars will no longer be available in the YAML file,
+making it harder to tweak it, and even harder to share with other users/cases. Another consequence
+of this is that the user should not modify the yaml files in RUNDIR/data, since any modification will
+be lost on the next run of `buildnml`.
 
-## Basic output YAML file syntax
+## Basic output
 
-The following is an example of a simple output request.
+The following is a basic example of an output request.
 
 ```yaml
 %YAML 1.1
@@ -30,7 +39,7 @@ output_control:
 Notice that lists can be equivalently specified in YAML as `Field Names: [f1, f2, f3]`.
 The user can specify fields to be outputted from any of the grids used in the simulation.
 In the example above, we requested fields from both the Physics and Dynamics grid.
-The other parameters are
+The meaning of the other parameters is as follows:
 
 - `Averaging Type`: how the fields are integrated in time before being saved. Valid
   options are
@@ -61,7 +70,7 @@ request to output derived quantities, which will be computed on the fly by the
 I/O interface of EAMxx. There are two types of diagnostic outputs:
 
 - quantities computed as a function of EAMxx fields. These are simply physical quantities
-  that EAMxx does not keep in persistent storage. As of August 2023, the available
+  that EAMxx does not keep in persistent storage. As of May 2024, the available
   derived quantities are (case sensitive):
 
     - `PotentialTemperature`
@@ -89,6 +98,12 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
     - `precip_ice_surf_mass_flux`
     - `precip_total_surf_mass_flux`
     - `surface_upward_latent_heat_flux`
+    - `wind_speed`
+    - `AerosolOpticalDepth550nm`
+    - `NumberPath`
+    - `AeroComCld`
+
+  TODO: add some information about what each diagnostic is, perhaps a formula
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
@@ -120,34 +135,11 @@ they are computed on.
   where `ngp` is the number of Gauss points along each axis in the 2d spectral element.
   Note: this feature cannot be used along with the horizontal/vertical remapper.
 
-## Add output stream to a CIME case
+## Tendencies output
 
-In order to tell EAMxx that a new output stream is needed, one must add the name of
-the yaml file to be used to the list of yaml files that EAMxx will process. From the
-case folder, after `case.setup` has run, one can do
+EXPLAIN how to request tendencies on a per-process basis
 
-```shell
-./atmchange output_yaml_files=/path/to/my/yaml/file
-```
+## Additional options
 
-to specify a single yaml file, or
+LIST ADDITIONAL OPTIONS, like flush_frequency, file_max_storage_type, etc.
 
-```shell
-./atmchange output_yaml_files+=/path/to/my/yaml/file
-```
-
-to append to the list of yaml files.
-
-### Important notes
-
-- The user should not specify a path to a file in `$RUNDIR/data`. EAMxx will
-put a copy of the specified yaml files in that directory, pruning any existing copy
-of that file. This happens every time that `buildnml` runs; in particular, it happens
-during `case.submit`.
-- As a consequence of the above, the user should not modify the generated yaml files
-  that are in `$RUNDIR/data`, since any modification will be lost on the next run
-  of `buildnml`. To modify output parmeters, the user should modify the yaml file
-  that was specified with the `atmchange` command.
-- EAMxx will parse the yaml file and expand any string of the form $VAR, by looking
-  for the value of the variable VAR in the CIME case. If VAR is not a valid CIME
-  variable, an error will be raised.
