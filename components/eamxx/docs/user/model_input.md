@@ -1,5 +1,4 @@
-Model inputs
-=====================================
+# Model inputs
 
 This section explains how input parameters are passed to EAMxx, and how the user can
 change their value. The full list of the currently configuraable runtime parameters for
@@ -35,7 +34,7 @@ The infrastructure for reading inputs into EAMxx involves a few scripts/files:
     Since these files are automatically generated when `buildnml` runs, users should not manually modify them.
     Any manual modification will be lost the next time `buildnml` runs (e.g., at `case.submit` time).
 
-# Querying parameters with `atmquery`
+## Querying model inputs: atmquery
 
 This script is the simplest way for the user to check the value and properties of EAMxx input parameters.
 A basic usage of the script is
@@ -131,7 +130,7 @@ $ ./atmquery --listall
     ...
 ```
 
-# Changing model inputs via `atmchange`
+## Changing model inputs: atmchange
 
 When `buildnml` runs, the model inputs are deduced from the case configuration settings (e.g., the grid,
 the compset, etc.) and the `namelist_scream_defaults.xml` file, located in the eamxx source tree.
@@ -238,7 +237,7 @@ $ ./atmquery homme::compute_tendencies --full
         valid values: []
 ```
 
-# Modifying the list of atmosphere processes
+### Modifying the list of atmosphere processes
 
 The `atmchange` script can be used to change any of the runtime parameters of EAMxx. In particular, it can
 be used to add, remove, or reorder atmosphere processes. When adding an atmosphere process, we must first
