@@ -50,6 +50,7 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   add_field<Required>("T_mid",          scalar3d_layout_mid, K,  grid_name, ps);
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
   // Only needed for LiqPotentialTemperature, but put it here for ease
+  // TODO: only request it if it is needed
   add_field<Required>("qc",             scalar3d_layout_mid, Q,  grid_name, ps);
 
   // Construct and allocate the diagnostic field

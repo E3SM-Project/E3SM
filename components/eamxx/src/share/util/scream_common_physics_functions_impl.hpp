@@ -123,10 +123,8 @@ KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_thetal_from_theta(const ScalarT& theta, const ScalarT& temperature, const ScalarT& qc)
 {
   using C = scream::physics::Constants<Real>;
-  static constexpr auto cpair = C::Cpair;
-  static constexpr auto latvap = C::LatVap;
 
-  return theta - (theta / temperature) * (latvap/cpair) * qc;
+  return theta - (theta / temperature) * (C::LatVap/C::Cpair) * qc;
 }
 
 template<typename DeviceT>
@@ -144,13 +142,13 @@ void PhysicsFunctions<DeviceT>::calculate_theta_from_T(const MemberType& team,
 }
 
 template<typename DeviceT>
-template<typename ScalarT, typename InputProviderT, typename InputProviderP>
+template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_thetal_from_theta(const MemberType& team,
-                                                       const InputProviderT& theta,
-                                                       const InputProviderT& temperature,
-                                                       const InputProviderP& qc,
-                                                       const view_1d<ScalarT>& thetal)
+                                                            const InputProviderTheta& theta,
+                                                            const InputProviderT& temperature,
+                                                            const InputProviderQ& qc,
+                                                            const view_1d<ScalarT>& thetal)
 {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team,thetal.extent(0)),
                        [&] (const int k) {

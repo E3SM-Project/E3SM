@@ -91,7 +91,6 @@ void run(std::mt19937_64& engine, int int_ptype)
   auto diag = diag_factory.create("PotentialTemperature",comm,params);
   diag->set_grids(gm);
 
-
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag->get_required_field_requests()) {

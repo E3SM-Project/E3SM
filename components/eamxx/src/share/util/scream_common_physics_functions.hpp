@@ -133,14 +133,8 @@ struct PhysicsFunctions
   static ScalarT calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv);
 
   //-----------------------------------------------------------------------------------------------//
-  // FIXME: this comment is different from what's actually happening in the code:
-  // FIXME: T_virtual = temperature * ( one + c1*qv ) where c1 = - one + one/ep_2
-  // FIXME: The code seems to be correct, and the comment is wrong.
-  // FIXME: ep_2 = 0.622, so the comment produces vpt = pt * (0.75) for qv = 0.5
-  // FIXME: but the code produces vpt = pt * (1.30) for qv = 0.5
-  // XREFS: pr #1059, issue #2812
   // Compute virtual temperature
-  //   T_virtual = temperature * (qv+ep_2)/(qv+1)
+  //   T_virtual = temperature * (1+(-1+1/ep_2)*qv)
   // where
   //   ep_2        is ratio of molecular mass of water to the molecular mass of dry air
   //   temperature is the atmospheric temperature.  Units in [K].
@@ -411,12 +405,12 @@ struct PhysicsFunctions
                                       const InputProviderP& pressure,
                                       const view_1d<ScalarT>& theta);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderP>
+  template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION
   static void calculate_thetal_from_theta(const MemberType& team,
-                                      const InputProviderT& theta,
+                                      const InputProviderTheta& theta,
                                       const InputProviderT& temperature,
-                                      const InputProviderP& qc,
+                                      const InputProviderQ& qc,
                                       const view_1d<ScalarT>& thetal);  
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
