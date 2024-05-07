@@ -35,7 +35,7 @@
 <omega>0.0</omega>
 
 <!-- NOTE: solar zenith angle, sfc albedo, and min sfc wind are set via user mods -->
-<!-- see: cam/cime_config/usermods_dirs/rcemip/user_nl_cpl -->
+<!-- see: components/eam/cime_config/usermods_dirs/rcemip/user_nl_cpl -->
 
 <!-- ======================================================================= -->
 <!-- Constant hydrometeor number -->
