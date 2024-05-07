@@ -847,7 +847,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! co2 cycle            
     if (co2_transport()) then
-       if(masterproc)write(103,*)'CALLING co2_init'
        call co2_init()
     end if
     call co2_diags_init(phys_state)

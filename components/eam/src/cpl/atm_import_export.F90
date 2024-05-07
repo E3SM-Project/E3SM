@@ -51,7 +51,6 @@ contains
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
-    if (masterproc)write(102,*)"TOP of atm_import "
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
@@ -67,7 +66,6 @@ contains
     if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
        call iac_coupled_timeinterp (mon_spec, day_spec, tod_spec, & !in
             bnd_beg, bnd_end, tfrac)                                !out
-       if (masterproc)write(102,*)" tfrac computed; atm_import:",bnd_beg, bnd_end, tfrac, get_nstep()
     endif
 
 
@@ -180,9 +178,6 @@ contains
                 iac_vertical_emiss(c)%fco2_high_height(i) = &
                      -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
                      -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
-               
-                if (masterproc .and. c==begchunk .and. i==1)write(102,*)"Time interpolation done; atm_import:",iac_vertical_emiss(c)%fco2_high_height(i), &
-                    x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig), x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig), tfrac, get_nstep()
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
@@ -232,7 +227,6 @@ contains
              
              ! co2 flux from fossil fuel
              if ( present(mon_spec) .and. index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
-                if (masterproc .and. i==1 .and. c==begchunk)write(102,*)'FF surf flux applied; atm_import:',cam_in(c)%fco2_surface_iac(i)
                 cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
              else if (co2_readFlux_fuel) then
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)

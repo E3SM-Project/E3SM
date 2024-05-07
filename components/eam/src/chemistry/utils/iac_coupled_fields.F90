@@ -76,9 +76,6 @@ contains
 
     ! Register the co2 field with the pbuf
     call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)
-
-    if (masterproc)write(102,*)"Rgstr iac_co2 PBUF;iac_coupled_fields_register ts:", get_nstep()
-
   end subroutine iac_coupled_fields_register
 
   subroutine iac_coupled_fields_init(state)
@@ -157,9 +154,6 @@ contains
        iac_vertical_emiss(ichunk)%fco2_low_height (:) = 0._r8
        iac_vertical_emiss(ichunk)%fco2_high_height (:) = 0._r8
     end do
-
-    if (masterproc)write(102,*)"Alloc iac_vertical_emiss-hh-ll; iac_coupled_fields_init-ts:", get_nstep()
-
   end subroutine iac_coupled_fields_init
 
 
@@ -247,7 +241,6 @@ contains
     enddo
 
     call t_stopf('iac_coupled_fields_adv')
-    if (masterproc)write(102,*)"Asgn PBUF iac_co2 v-intrp; iac_coupled_fields_adv ts:", get_nstep()
   end subroutine iac_coupled_fields_adv
 
   subroutine iac_coupled_timeinterp(mon_spec, day_spec, tod_spec, & !input
