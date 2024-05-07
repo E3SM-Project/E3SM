@@ -31,4 +31,4 @@ seq_flux_mct_albdif = 0.07
 seq_flux_mct_albdir = 0.07
 seq_flux_atmocn_minwind = 1
 
-constant_zenith_deg = 42.05
+constant_zenith_deg = 42.04
