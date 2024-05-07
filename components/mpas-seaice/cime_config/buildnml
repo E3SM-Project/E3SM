@@ -129,6 +129,7 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '160929'
         grid_prefix = 'cice.QU240wLI'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.oQU240wLI.20240404.nc'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
