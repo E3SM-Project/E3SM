@@ -1005,6 +1005,12 @@ add_default($nl, 'config_manufactured_solution_wavelength_x');
 add_default($nl, 'config_manufactured_solution_wavelength_y');
 add_default($nl, 'config_manufactured_solution_amplitude');
 
+#####################################
+# Namelist group: init_mode_subgrid #
+#####################################
+
+add_default($nl, 'config_subgrid_table_levels');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1775,6 +1781,7 @@ my @groups = qw(run_modes
                 transport_tests
                 init_mode_vert_levels
                 manufactured_solution
+                init_mode_subgrid
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
