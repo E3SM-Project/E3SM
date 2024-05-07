@@ -1,4 +1,5 @@
 CASEDIR=`./xmlquery CASEROOT --value`
 SRCROOT=`./xmlquery SRCROOT --value`
+DIN_LOC_ROOT=`./xmlquery DIN_LOC_ROOT --value`
 cp $SRCROOT/components/elm/cime_config/testdefs/testmods_dirs/elm/era56hr/user_datm.* $CASEDIR
-
+sed 's@DIN_LOC_ROOT@'"$DIN_LOC_ROOT"'@' -i $CASEDIR/user_datm.*
