@@ -76,7 +76,7 @@ constexpr int num_aero_tracers() {
 
 // Given a MAM aerosol mode index, returns a string denoting the symbolic
 // name of the mode.
-KOKKOS_INLINE_FUNCTION
+inline
 const char* aero_mode_name(const int mode) {
   static const char *mode_names[num_aero_modes()] = {
     "1",
@@ -89,7 +89,7 @@ const char* aero_mode_name(const int mode) {
 
 // Given a MAM aerosol-related gas ID, returns a string denoting the symbolic
 // name of the gas species.
-KOKKOS_INLINE_FUNCTION
+inline
 const char* gas_species_name(const int gas_id) {
   static const char *species_names[num_aero_gases()] = {
     "O3",
@@ -110,14 +110,14 @@ constexpr int max_field_name_len() {
   return 128;
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 size_t gpu_strlen(const char* s) {
   size_t l = 0;
   while (s[l]) ++l;
   return l;
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 void concat_2_strings(const char *s1, const char *s2, char *concatted) {
   size_t len1 = gpu_strlen(s1);
   for (size_t i = 0; i < len1; ++i)
@@ -128,7 +128,7 @@ void concat_2_strings(const char *s1, const char *s2, char *concatted) {
   concatted[len1+len2] = 0;
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 void concat_3_strings(const char *s1, const char *s2, const char *s3, char *concatted) {
   size_t len1 = gpu_strlen(s1);
   for (size_t i = 0; i < len1; ++i)
@@ -142,31 +142,31 @@ void concat_3_strings(const char *s1, const char *s2, const char *s3, char *conc
   concatted[len1+len2+len3] = 0;
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 char* int_aero_nmr_names(int mode) {
   static char int_aero_nmr_names_[num_aero_modes()][max_field_name_len()] = {};
   return int_aero_nmr_names_[mode];
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 char* cld_aero_nmr_names(int mode) {
   static char cld_aero_nmr_names_[num_aero_modes()][max_field_name_len()] = {};
   return cld_aero_nmr_names_[mode];
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 char* int_aero_mmr_names(int mode, int species) {
   static char int_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
   return int_aero_mmr_names_[mode][species];
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 char* cld_aero_mmr_names(int mode, int species) {
   static char cld_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
   return cld_aero_mmr_names_[mode][species];
 }
 
-KOKKOS_INLINE_FUNCTION
+inline
 char* gas_mmr_names(int gas_id) {
   static char gas_mmr_names_[num_aero_gases()][max_field_name_len()] = {};
   return gas_mmr_names_[gas_id];
@@ -176,7 +176,7 @@ char* gas_mmr_names(int gas_id) {
 
 // Given a MAM aerosol mode index, returns the name of the related interstitial
 // modal number mixing ratio field in EAMxx ("num_a<1-based-mode-index>")
-KOKKOS_INLINE_FUNCTION
+inline
 const char* int_aero_nmr_field_name(const int mode) {
   if (!int_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_a", aero_mode_name(mode), int_aero_nmr_names(mode));
@@ -186,7 +186,7 @@ const char* int_aero_nmr_field_name(const int mode) {
 
 // Given a MAM aerosol mode index, returns the name of the related cloudborne
 // modal number mixing ratio field in EAMxx ("num_c<1-based-mode-index>>")
-KOKKOS_INLINE_FUNCTION
+inline
 const char* cld_aero_nmr_field_name(const int mode) {
   if (!cld_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_c", aero_mode_name(mode), cld_aero_nmr_names(mode));
@@ -199,7 +199,7 @@ const char* cld_aero_nmr_field_name(const int mode) {
 // field in EAMxx. The form of the field name is "<species>_a<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
-KOKKOS_INLINE_FUNCTION
+inline
 const char* int_aero_mmr_field_name(const int mode, const int species) {
   if (!int_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
@@ -218,7 +218,7 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
 // field in EAMxx. The form of the field name is "<species>_c<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
-KOKKOS_INLINE_FUNCTION
+inline
 const char* cld_aero_mmr_field_name(const int mode, const int species) {
   if (!cld_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
@@ -234,7 +234,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 
 // Given a MAM aerosol-related gas identifier, returns the name of its mass
 // mixing ratio field in EAMxx
-KOKKOS_INLINE_FUNCTION
+inline
 const char* gas_mmr_field_name(const int gas) {
   return const_cast<const char*>(gas_species_name(gas));
 }
