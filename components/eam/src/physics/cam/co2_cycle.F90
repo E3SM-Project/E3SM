@@ -513,7 +513,7 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend, is_begc)
       ifld = pbuf_get_index(iac_co2_name)   
       call pbuf_get_field(pbuf, ifld, iac_co2)
    
-      ! [ac_CO2] = 'kg m-2 s-1' FIXME: Is this still true????
+      ! [ac_CO2] = 'kg m-2 s-1'
       ! [ptend%q] = 'kg kg-1 s-1'
       ncol = state%ncol
       do klev = 1, pver

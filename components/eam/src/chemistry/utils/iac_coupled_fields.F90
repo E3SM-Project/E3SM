@@ -69,13 +69,13 @@ contains
 
     integer            :: idx
 
-    ! BFIXME: Hardwire it true for now - I don't know if this is an infodata or namelist
+    ! FIXMEB: Hardwire it true for now - I don't know if this is an infodata or namelist
     ! variable or some other way of setting this for non-iac coupled runs.
     iac_present=.true.
     if (.not. iac_present) return
 
     ! Register the co2 field with the pbuf
-    call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)!FIXME:B what is this idx, do we need it, do we need to capture the error?
+    call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)
 
     if (masterproc)write(102,*)"Rgstr iac_co2 PBUF;iac_coupled_fields_register ts:", get_nstep()
 
@@ -127,7 +127,7 @@ contains
     iac_co2_pbuf_ndx = pbuf_get_index(iac_co2_name,ierror)
 
     if(ierror < 0 ) then
-       write(err_str,*)'ERROR:failed to get pbuf index for species:',iac_co2_name,' errorcode is:',ierror,',',errmsg(__FILE__, __LINE__)
+       write(err_str,*)'ERROR:failed to get pbuf index for species:',trim(iac_co2_name),' errorcode is:',ierror,',',errmsg(__FILE__, __LINE__)
        call endrun(err_str)
     endif
 
@@ -170,15 +170,9 @@ contains
     !-------------------------------------------------------------------
 
     use perf_mod,     only: t_startf, t_stopf
-    use tracer_data,  only: advance_trcdata
     use physics_types,only: physics_state
     use ppgrid,       only: begchunk, endchunk
     use ppgrid,       only: pcols, pver
-    use string_utils, only: to_lower, GLC
-    use cam_history,  only: outfld
-    use physconst,    only: mwdry       ! molecular weight dry air ~ kg/kmole
-    use physconst,    only: boltz                ! J/K/molecule
-    ! C.-C. Chen
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
 
     implicit none
@@ -187,9 +181,13 @@ contains
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
-    integer  :: ind, ichunk, ncol, klev, icol, caseid, m, pbuf_ndx
-    real(r8) :: to_mmr(pcols,pver)
-    real(r8),pointer :: tmpptr(:,:)
+    character(len=cxx)  :: err_str
+    integer, parameter :: HIGH_LAYER = 11000 !Height at which fco2_high should be released [m]
+    integer, parameter :: iac_low_height_option = 1 !FIXMEB: This should be a namelist option
+
+    integer  :: ichunk, ncol, klev, icol, high_lev
+    real(r8), pointer :: tmpptr(:,:) ! pointer for storing CO2 values [kg/m2/s]
+    real(r8) :: denominator, dist_amount
 
     !------------------------------------------------------------------
     ! Return if no iac coupling
@@ -199,40 +197,52 @@ contains
 
 
     do ichunk = begchunk,endchunk
-       ncol = state(ichunk)%ncol
+       ncol = state(ichunk)%ncol !number of columns in this chunk
        pbuf_chnk => pbuf_get_chunk(pbuf2d, ichunk)
-       call pbuf_get_field(pbuf_chnk, iac_co2_pbuf_ndx, tmpptr )
+       call pbuf_get_field(pbuf_chnk, iac_co2_pbuf_ndx, tmpptr )! get tmpptr point to the iac field
 
-       ! So tmpptr(col,h) is where we put our data.
-       ! We have coupled "low" and "high" aircraft fields from iac.  The structure
-       ! of the typical aircraft files used in aircraft_emit.F90 to prescribe co2
-       ! generally have some positive values at ~11km and either values all 0.0
-       ! below or some positive values for every level below.  To mimic this
-       ! structure, we will put the "airhi" values at the 11km layer and evenly spread
-       ! the "airlo" values across all layers from the surface up to 11km.  To get a
-       ! finer vertical structure, we'll need to either use a standard file as a
-       ! template to scale to total values, or calculate and couple more fields from
-       ! iac.
+       ! In the following do-loop, we will populate tmpptr with the CO2 values read in from
+       ! iac_vertical_emiss. iac_vertical_emiss has CO2 at two heights, the high height and the low 
+       ! height. The value at high height are assigned to the layer at HIGH_LAYER. There are several 
+       ! options for distributing the low height values. The select-case block implements all those
+       ! options
 
        ! Loop over columns in this chunk
        do icol = 1, ncol
           ! init all vertical layers to 0
           tmpptr(icol,:) = 0._r8
 
-          ! Find the layer containing 11 km
+          ! Find the layer containing HIGH_LAYER value
           do klev = 1, pver
-             ! Check upper layer boundary
-             if (state(ichunk)%zi(icol, klev+1) < 11000) cycle
-             tmpptr(icol,klev) = iac_vertical_emiss(ichunk)%fco2_high_height(klev)
+            if (state(ichunk)%zi(icol, klev+1) > HIGH_LAYER) cycle
+            high_lev = klev !found the level at HIGH_LAYER
+            exit
+          enddo
+          !assign the fco2_high_height to the "high_lev" level
+          tmpptr(icol,high_lev) = iac_vertical_emiss(ichunk)%fco2_high_height(icol)
 
-             ! Layers 1 to klev-1 now get an even distribution of the co2 in airlo.
-             tmpptr(icol,1:klev-1) = iac_vertical_emiss(ichunk)%fco2_low_height(klev)/(klev-1)
-             !if (ichunk==begchunk .and. klev==65 .and. icol ==1 .and. masterproc)write(102,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(klev), iac_vertical_emiss(ichunk)%fco2_high_height(klev)
-             write(104,*)"Called iac_coupled_fields_adv loop:",get_nstep(),":",iac_vertical_emiss(ichunk)%fco2_low_height(klev), iac_vertical_emiss(ichunk)%fco2_high_height(klev)
+          !For the fco2_low_height, we have several options in the following select case statement
+          select case (iac_low_height_option)
+             case (1)
+              !Distribut the fco2_low_height equally among all the levels below "high_lev"
+              
+              !Divide by zero check
+              denominator = (pver - high_lev+1)
+              if (denominator < 1.e-11 .and. denominator > -1.e-11) then !Checking if denominator is zero
+                write(err_str,*) 'ERROR: possible divide by zero, denominator is: ',denominator ,',',errmsg(__FILE__, __LINE__)
+                call endrun(err_str)
+              end if
+              !Amount of CO2 to distribute
+              dist_amount = iac_vertical_emiss(ichunk)%fco2_low_height(icol)/(pver - high_lev+1)
+              do klev = high_lev+1, pver
+                tmpptr(icol,klev) = dist_amount
+              enddo
 
-             ! Exit the vertical loop
-             exit
-          end do
+             !Default case
+             case default
+                write(err_str,*) 'ERROR: Invalid fco2_low_height distribution option : ',iac_low_height_option,',',errmsg(__FILE__, __LINE__)
+                call endrun(err_str)
+          end select
        end do
     enddo
 
