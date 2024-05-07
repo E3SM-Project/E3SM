@@ -1925,6 +1925,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="TL319_oQU240wLI_ais20" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">oQU240wLI</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240wLI</mask>
+    </model_grid>
+
     <!-- new runoff grids for data runoff model DROF -->
 
     <model_grid alias="T31_g37_rx1" compset="_DROF">
@@ -5416,6 +5426,17 @@
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_f09_TO_ais20km_bilin.151005.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_aave.151005.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_aave.151005.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU240wLI">
+      <map name="OCN2GLC_FMAPNAME"></map>
+      <map name="OCN2GLC_SMAPNAME"></map>
+      <map name="GLC2ICE_FMAPNAME"></map>
+      <map name="GLC2ICE_SMAPNAME"></map>
+      <map name="GLC2OCN_FMAPNAME"></map>
+      <map name="GLC2OCN_SMAPNAME"></map>
+      <map name="GLC2OCN_LIQ_RMAPNAME"></map>
+      <map name="GLC2OCN_ICE_RMAPNAME"></map>
     </gridmap>
 
     <!-- ======================================================== -->
