@@ -868,8 +868,9 @@ contains
       ! taux and tautmsx are fully implicitly treated within compute_vdiff.
       ! However, 'tautotx, tautoty' are not used in the actual numerical
       ! computation in this module.   
-        !tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
-        !tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
+        tautotx(:ncol) = taux(:ncol) + tautmsx(:ncol)
+        tautoty(:ncol) = tauy(:ncol) + tautmsy(:ncol)
+#if 0
         tautotx(:ncol) = taux(:ncol)
         tautoty(:ncol) = tauy(:ncol)
         !================Jinbo Xie=======================
@@ -945,6 +946,7 @@ contains
         tautotx(:ncol) = tautotx(:ncol)+dusfc_fd(:ncol)!taux(:ncol) + tautmsx(:ncol)
         tautoty(:ncol) = tautoty(:ncol)+dvsfc_fd(:ncol)!tauy(:ncol) + tautmsy(:ncol)
         !!=============Jinbo Xie=====================
+#endif
     else
         ksrftms(:ncol) = 0._r8
         tautotx(:ncol) = taux(:ncol)

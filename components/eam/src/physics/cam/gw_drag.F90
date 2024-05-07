@@ -1131,11 +1131,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
         dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
         dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
-        dtaux3d_fd=dtaux3_fd(:ncol,pver:1:-1),dtauy3d_fd=dtauy3_fd(:ncol,pver:1:-1),&
         dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
         dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
         dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
-        dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
         xland=cam_in%landfrac,br=state%ribulk(:ncol),&
         var2d=state%var(:ncol),oc12d=state%oc(:ncol),&
         oa2d=state%oadir(:ncol,:),&
@@ -1147,7 +1145,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-        gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=1 )
+        gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=0 )
 	! z and dz all above surface and sea level, no need to add a new layer
 	! (just need an empty),gwd_opt(no need in my, take out 33 option))
 	!(itimestep just needs an empty, number of timestep,0)
@@ -1166,16 +1164,16 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
     call outfld ('DTAUY3_BL', dtauy3_bl,  pcols, lchnk)
     call outfld ('DTAUX3_SS', dtaux3_ss,  pcols, lchnk)
     call outfld ('DTAUY3_SS', dtauy3_ss,  pcols, lchnk)
-call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
-call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
+!call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
+!call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
     call outfld ('DUSFC_LS', dusfc_ls,  pcols, lchnk)
     call outfld ('DVSFC_LS', dvsfc_ls,  pcols, lchnk)
     call outfld ('DUSFC_BL', dusfc_bl,  pcols, lchnk)
     call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
     call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
     call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
-call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
-call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
+!call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
+!call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
 !==========================================================================
 !  Jinbo Xie4 Modification
 !  Present moment, use the profile adjustment in the code rather than cam's
