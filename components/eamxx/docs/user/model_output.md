@@ -114,7 +114,8 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
     - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
     - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
       specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
-    - `X_at_Ym`: interpolates the field `X` at a vertical height of `Y` meters.
+    - `X_at_Ym_above_Z`: interpolates the field `X` at a vertical height of `Y` meters above
+      `Z`, with `Z=surface` or `Z=sealevel`.
 
 ## Remapped output
 
@@ -142,21 +143,22 @@ they are computed on.
 
 ## Tendencies output
 
-It is also possible to request tendencies of fields that are computed by atmosphere processes,
-on a per-process basis. Since the term "tendency" can be used with slightly different connotations,
+It is also possible to request tendencies of fields that are updated by atmosphere processes,
+on a per-process basis (here, "updated" means that the field is both an input as well as an output
+of the atmosphere process). Since the term "tendency" can be used with slightly different connotations,
 we clarify what we mean by that when it comes to model output: if process P updates field A,
 by the tendency of A from process P we mean `(A_after_P - A_before_P) / dt`, where `dt` is
 the atmosphere timestep.
 
-As of today, the user needs two things in order to get tendencies from a process. E.g., to get
+As of May 2024, the user needs two things in order to get tendencies from a process. E.g., to get
 the tendencies of `T_mid` and `horiz_winds` from the process `shoc`, one needs:
 
-- `atmchange shoc::compute_tendencies=T_mid,horiz_winds`
-- add `shoc_T_mid_tend` and `shoc_horiz_winds_tend` to the list of fields in the output YAML file
+- `atmchange shoc::compute_tendencies=T_mid,horiz_winds`;
+- add `shoc_T_mid_tend` and `shoc_horiz_winds_tend` to the list of fields in the desired output YAML file.
 
 ## Additional options
 
-There YAML file shown at the top of this section, together with the remap options in the following
+The YAML file shown at the top of this section, together with the remap options in the following
 section, covers most of the options used in a typical run. There are however particular use cases
 that require some less common options, which we list here (in parentheses, the location in the YAML
 file and the type of the parameter value).
