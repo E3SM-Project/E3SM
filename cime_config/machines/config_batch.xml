@@ -291,7 +291,6 @@
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes={{ num_nodes }}</directive>
       <directive> --output={{ job_id }}.%j </directive>
-      <directive> --exclusive </directive>
     </directives>
   </batch_system>
 
