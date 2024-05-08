@@ -15,3 +15,5 @@ The following operators are currently implemented:
 - `GradientOnEdge`
 - `CurlOnVertex`
 - `TangentialReconOnEdge`
+
+There are no user-configurable options.

@@ -23,7 +23,7 @@ inside a parallel loop over mesh elements, for example
 ```c++
     auto mesh = OMEGA::HorzMesh::getDefault();
     DivergenceOnCell DivOnCell(mesh);
-    parallel_for(mesh->NCellsOwned, YAKL_LAMBDA(Int ICell) {
+    parallelFor({mesh->NCellsOwned}, KOKKOS_LAMBDA(Int ICell) {
         Real Div = DivOnCell(ICell, Vec); // computes divergence of Vec over cell with index ICell
     });
 ```
