@@ -13,11 +13,9 @@ file and it's requirements are described in the
 Within the model, the paradigm should be that a given module will extract
 its configuration from the full configuration as part of the module's
 initialization and store it in private class or module variables to be used
-later. This is partly for performance reasons. In the current implementation,
-the configuration is read in and owned by the master MPI task and the
-retrieval from the full configuration into module variables involves a
-broadcast to the rest of the tasks. In addition, this paradigm will allow
-the deletion of the configuration at the end of initialization to free memory.
+later. This paradigm keeps variables close to the code that uses them and
+will allow the deletion of the configuration at the end of initialization
+to free memory.
 
 The configuration is built around the yaml-cpp library. Each configuration
 contains a ``YAML::Node`` and a name for the configuration.
@@ -83,6 +81,40 @@ written using the write function with a filename supplied as in
 ```c++
 Err = OmegaConfig.write("FileName");
 ```
+
+In some cases, the variable or group name is not known prior to reading.
+For example, users can define an arbitrary number of IO streams in the
+Config file. In these cases, a module must loop through the entries,
+retrieving the name of each entry. Then the variable or sub-configuration
+can be retrieved by name for further processing. The streams example might
+then look like:
+```c++
+// extract streams sub-configuration from full Omega config
+OMEGA::Config StreamsConfig; // creates an empty config for streams
+OmegaConfig->get("Streams",StreamsConfig);
+
+// The iterator here is a Config::Iter (we use auto to save space)
+for (auto It=StreamsConfig->begin(); It != StreamsConfig->end(); ++It) {
+   std::string NodeName;
+   Err = OMEGA::Config::getName(It, NodeName);
+
+   // Now we can get the specific configuration of each stream by name
+   // and use it to process each stream
+   OMEGA::Config ThisStreamConfig;
+   Err = StreamsConfig->get(NodeName, ThisStreamConfig);
+
+   // Extract info from ThisStreamConfig as needed
+}
+```
+The Config iterator is identical to a `YAML::const_iterator` which in
+turn behaves like the `std::map` iterator and they can be used in a
+similar manner. For example, you can retrive the key and value of a
+YAML map node entry using `Iter->first.as<std::string>()` (for the key) and
+`Iter->second.as<DataType>()` (for the value). Generally, the other
+interfaces described in this section are preferred after retrieving the
+name with the getName interface as shown above, but this iterator functionality
+is available if needed when iterating through Configuration entries that
+are not known in advance.
 
 While the focus is on reading a configuration, a new configuration can be
 built up from scratch by creating an empty Config instance using the
