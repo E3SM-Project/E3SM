@@ -63,28 +63,28 @@ enum class EdgeOrientation { Normal, Tangential };
 
 template <class Functor>
 void computeVecFieldEdge(const Functor &Fun, const Array1DReal &VecFieldArr,
-                         EdgeOrientation EdgeOrient, const HorzMesh *mesh) {
-   auto XEdge = createDeviceMirrorCopy(mesh->XEdgeH);
-   auto YEdge = createDeviceMirrorCopy(mesh->YEdgeH);
-   auto ZEdge = createDeviceMirrorCopy(mesh->ZEdgeH);
+                         EdgeOrientation EdgeOrient, const HorzMesh *Mesh) {
+   auto XEdge = createDeviceMirrorCopy(Mesh->XEdgeH);
+   auto YEdge = createDeviceMirrorCopy(Mesh->YEdgeH);
+   auto ZEdge = createDeviceMirrorCopy(Mesh->ZEdgeH);
 
-   auto XCell = createDeviceMirrorCopy(mesh->XCellH);
-   auto YCell = createDeviceMirrorCopy(mesh->YCellH);
-   auto ZCell = createDeviceMirrorCopy(mesh->ZCellH);
+   auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
+   auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
+   auto ZCell = createDeviceMirrorCopy(Mesh->ZCellH);
 
-   auto XVertex = createDeviceMirrorCopy(mesh->XVertexH);
-   auto YVertex = createDeviceMirrorCopy(mesh->YVertexH);
-   auto ZVertex = createDeviceMirrorCopy(mesh->ZVertexH);
+   auto XVertex = createDeviceMirrorCopy(Mesh->XVertexH);
+   auto YVertex = createDeviceMirrorCopy(Mesh->YVertexH);
+   auto ZVertex = createDeviceMirrorCopy(Mesh->ZVertexH);
 
-   auto LonEdge = createDeviceMirrorCopy(mesh->LonEdgeH);
-   auto LatEdge = createDeviceMirrorCopy(mesh->LatEdgeH);
+   auto LonEdge = createDeviceMirrorCopy(Mesh->LonEdgeH);
+   auto LatEdge = createDeviceMirrorCopy(Mesh->LatEdgeH);
 
-   auto &AngleEdge      = mesh->AngleEdge;
-   auto &CellsOnEdge    = mesh->CellsOnEdge;
-   auto &VerticesOnEdge = mesh->VerticesOnEdge;
+   auto &AngleEdge      = Mesh->AngleEdge;
+   auto &CellsOnEdge    = Mesh->CellsOnEdge;
+   auto &VerticesOnEdge = Mesh->VerticesOnEdge;
 
    parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           Real VecFieldEdge;
 #ifdef HORZOPERATORS_TEST_PLANE
           const Real XE = XEdge(IEdge);
@@ -337,17 +337,17 @@ int testDivergence(Real RTol) {
    int Err;
    TestSetup Setup;
 
-   const auto &mesh = HorzMesh::getDefault();
+   const auto &Mesh = HorzMesh::getDefault();
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
+   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
 
    computeVecFieldEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, mesh);
+       VecEdge, EdgeOrientation::Normal, Mesh);
 
    // Perform halo exchange
    auto MyHalo   = Halo::getDefault();
@@ -356,23 +356,23 @@ int testDivergence(Real RTol) {
    deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   auto XCell = createDeviceMirrorCopy(mesh->XCellH);
-   auto YCell = createDeviceMirrorCopy(mesh->YCellH);
+   auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
+   auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
 #else
-   auto XCell = createDeviceMirrorCopy(mesh->LonCellH);
-   auto YCell = createDeviceMirrorCopy(mesh->LatCellH);
+   auto XCell = createDeviceMirrorCopy(Mesh->LonCellH);
+   auto YCell = createDeviceMirrorCopy(Mesh->LatCellH);
 #endif
-   auto &AreaCell = mesh->AreaCell;
+   auto &AreaCell = Mesh->AreaCell;
 
    // Compute element-wise errors
-   Array1DReal LInfCell("LInfCell", mesh->NCellsOwned);
-   Array1DReal L2Cell("L2Cell", mesh->NCellsOwned);
+   Array1DReal LInfCell("LInfCell", Mesh->NCellsOwned);
+   Array1DReal L2Cell("L2Cell", Mesh->NCellsOwned);
 
-   Array1DReal LInfScaleCell("LInfScaleCell", mesh->NCellsOwned);
-   Array1DReal L2ScaleCell("L2ScaleCell", mesh->NCellsOwned);
-   DivergenceOnCell DivergenceCell(mesh);
+   Array1DReal LInfScaleCell("LInfScaleCell", Mesh->NCellsOwned);
+   Array1DReal L2ScaleCell("L2ScaleCell", Mesh->NCellsOwned);
+   DivergenceOnCell DivergenceCell(Mesh);
    parallelFor(
-       {mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
+       {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
           // Numerical result
           const Real DivCellNum = DivergenceCell(ICell, VecEdge);
 
@@ -427,19 +427,19 @@ int testGradient(Real RTol) {
    int Err;
    TestSetup Setup;
 
-   const auto &mesh = HorzMesh::getDefault();
+   const auto &Mesh = HorzMesh::getDefault();
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XCell = createDeviceMirrorCopy(mesh->XCellH);
-   const auto YCell = createDeviceMirrorCopy(mesh->YCellH);
+   const auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
+   const auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
 #else
-   const auto XCell = createDeviceMirrorCopy(mesh->LonCellH);
-   const auto YCell = createDeviceMirrorCopy(mesh->LatCellH);
+   const auto XCell = createDeviceMirrorCopy(Mesh->LonCellH);
+   const auto YCell = createDeviceMirrorCopy(Mesh->LatCellH);
 #endif
 
    // Prepare operator input
-   Array1DReal ScalarCell("ScalarCell", mesh->NCellsSize);
+   Array1DReal ScalarCell("ScalarCell", Mesh->NCellsSize);
    parallelFor(
-       {mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
+       {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
           const Real X      = XCell(ICell);
           const Real Y      = YCell(ICell);
           ScalarCell(ICell) = Setup.exactScalar(X, Y);
@@ -452,24 +452,24 @@ int testGradient(Real RTol) {
    deepCopy(ScalarCell, ScalarCellH);
 
    // Compute exact result
-   Array1DReal ExactGradEdge("ExactGradEdge", mesh->NEdgesOwned);
+   Array1DReal ExactGradEdge("ExactGradEdge", Mesh->NEdgesOwned);
    computeVecFieldEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactGradScalarX(X, Y);
           VecField[1] = Setup.exactGradScalarY(X, Y);
        },
-       ExactGradEdge, EdgeOrientation::Normal, mesh);
+       ExactGradEdge, EdgeOrientation::Normal, Mesh);
 
-   const auto &DcEdge = mesh->DcEdge;
-   const auto &DvEdge = mesh->DvEdge;
+   const auto &DcEdge = Mesh->DcEdge;
+   const auto &DvEdge = Mesh->DvEdge;
    // Compute element-wise errors
-   Array1DReal LInfEdge("LInfEdge", mesh->NEdgesOwned);
-   Array1DReal L2Edge("L2Edge", mesh->NEdgesOwned);
-   Array1DReal LInfScaleEdge("LInfScaleEdge", mesh->NEdgesOwned);
-   Array1DReal L2ScaleEdge("L2ScaleEdge", mesh->NEdgesOwned);
-   GradientOnEdge GradientEdge(mesh);
+   Array1DReal LInfEdge("LInfEdge", Mesh->NEdgesOwned);
+   Array1DReal L2Edge("L2Edge", Mesh->NEdgesOwned);
+   Array1DReal LInfScaleEdge("LInfScaleEdge", Mesh->NEdgesOwned);
+   Array1DReal L2ScaleEdge("L2ScaleEdge", Mesh->NEdgesOwned);
+   GradientOnEdge GradientEdge(Mesh);
    parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           // Numerical result
           const Real GradScalarNum = GradientEdge(IEdge, ScalarCell);
 
@@ -521,17 +521,17 @@ int testGradient(Real RTol) {
 int testCurl(Real RTol) {
    int Err;
    TestSetup Setup;
-   const auto &mesh = HorzMesh::getDefault();
+   const auto &Mesh = HorzMesh::getDefault();
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
+   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
 
    computeVecFieldEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, mesh);
+       VecEdge, EdgeOrientation::Normal, Mesh);
 
    // Perform halo exchange
    auto MyHalo   = Halo::getDefault();
@@ -540,22 +540,22 @@ int testCurl(Real RTol) {
    deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
-   const auto XVertex = createDeviceMirrorCopy(mesh->XVertexH);
-   const auto YVertex = createDeviceMirrorCopy(mesh->YVertexH);
+   const auto XVertex = createDeviceMirrorCopy(Mesh->XVertexH);
+   const auto YVertex = createDeviceMirrorCopy(Mesh->YVertexH);
 #else
-   const auto XVertex = createDeviceMirrorCopy(mesh->LonVertexH);
-   const auto YVertex = createDeviceMirrorCopy(mesh->LatVertexH);
+   const auto XVertex = createDeviceMirrorCopy(Mesh->LonVertexH);
+   const auto YVertex = createDeviceMirrorCopy(Mesh->LatVertexH);
 #endif
-   const auto &AreaTriangle = mesh->AreaTriangle;
+   const auto &AreaTriangle = Mesh->AreaTriangle;
 
    // Compute element-wise errors
-   Array1DReal LInfVertex("LInfVertex", mesh->NVerticesOwned);
-   Array1DReal LInfScaleVertex("LInfScaleVertex", mesh->NVerticesOwned);
-   Array1DReal L2Vertex("L2Vertex", mesh->NVerticesOwned);
-   Array1DReal L2ScaleVertex("L2ScaleVertex", mesh->NVerticesOwned);
-   CurlOnVertex CurlVertex(mesh);
+   Array1DReal LInfVertex("LInfVertex", Mesh->NVerticesOwned);
+   Array1DReal LInfScaleVertex("LInfScaleVertex", Mesh->NVerticesOwned);
+   Array1DReal L2Vertex("L2Vertex", Mesh->NVerticesOwned);
+   Array1DReal L2ScaleVertex("L2ScaleVertex", Mesh->NVerticesOwned);
+   CurlOnVertex CurlVertex(Mesh);
    parallelFor(
-       {mesh->NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
+       {Mesh->NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
           // Numerical result
           const Real CurlNum = CurlVertex(IVertex, VecEdge);
 
@@ -612,17 +612,17 @@ int testRecon(Real RTol) {
    int Err;
    TestSetup Setup;
 
-   const auto &mesh = HorzMesh::getDefault();
+   const auto &Mesh = HorzMesh::getDefault();
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", mesh->NEdgesSize);
+   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
 
    computeVecFieldEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, mesh);
+       VecEdge, EdgeOrientation::Normal, Mesh);
 
    // Perform halo exchange
    auto MyHalo   = Halo::getDefault();
@@ -631,26 +631,26 @@ int testRecon(Real RTol) {
    deepCopy(VecEdge, VecEdgeH);
 
    // Compute exact result
-   Array1DReal ExactReconEdge("ExactReconEdge", mesh->NEdgesOwned);
+   Array1DReal ExactReconEdge("ExactReconEdge", Mesh->NEdgesOwned);
 
    computeVecFieldEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       ExactReconEdge, EdgeOrientation::Tangential, mesh);
+       ExactReconEdge, EdgeOrientation::Tangential, Mesh);
 
-   const auto &DcEdge = mesh->DcEdge;
-   const auto &DvEdge = mesh->DvEdge;
+   const auto &DcEdge = Mesh->DcEdge;
+   const auto &DvEdge = Mesh->DvEdge;
 
    // Compute element-wise errors
-   Array1DReal LInfEdge("LInfEdge", mesh->NEdgesOwned);
-   Array1DReal LInfScaleEdge("LInfScaleEdge", mesh->NEdgesOwned);
-   Array1DReal L2Edge("L2Edge", mesh->NEdgesOwned);
-   Array1DReal L2ScaleEdge("L2ScaleEdge", mesh->NEdgesOwned);
-   TangentialReconOnEdge TanReconEdge(mesh);
+   Array1DReal LInfEdge("LInfEdge", Mesh->NEdgesOwned);
+   Array1DReal LInfScaleEdge("LInfScaleEdge", Mesh->NEdgesOwned);
+   Array1DReal L2Edge("L2Edge", Mesh->NEdgesOwned);
+   Array1DReal L2ScaleEdge("L2ScaleEdge", Mesh->NEdgesOwned);
+   TangentialReconOnEdge TanReconEdge(Mesh);
    parallelFor(
-       {mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           // Numerical result
           const Real VecReconNum = TanReconEdge(IEdge, VecEdge);
 

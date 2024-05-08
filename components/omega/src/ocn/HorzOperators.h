@@ -8,7 +8,7 @@ namespace OMEGA {
 
 class DivergenceOnCell {
  public:
-   DivergenceOnCell(HorzMesh const *mesh);
+   DivergenceOnCell(HorzMesh const *Mesh);
 
    KOKKOS_FUNCTION Real operator()(int ICell,
                                    const Array1DReal &VecEdge) const {
@@ -32,7 +32,7 @@ class DivergenceOnCell {
 
 class GradientOnEdge {
  public:
-   GradientOnEdge(HorzMesh const *mesh);
+   GradientOnEdge(HorzMesh const *Mesh);
 
    KOKKOS_FUNCTION Real operator()(int IEdge,
                                    const Array1DReal &ScalarCell) const {
@@ -51,7 +51,7 @@ class GradientOnEdge {
 
 class CurlOnVertex {
  public:
-   CurlOnVertex(HorzMesh const *mesh);
+   CurlOnVertex(HorzMesh const *Mesh);
 
    KOKKOS_FUNCTION Real operator()(int IVertex,
                                    const Array1DReal &VecEdge) const {
@@ -76,7 +76,7 @@ class CurlOnVertex {
 
 class TangentialReconOnEdge {
  public:
-   TangentialReconOnEdge(HorzMesh const *mesh);
+   TangentialReconOnEdge(HorzMesh const *Mesh);
 
    KOKKOS_FUNCTION Real operator()(int IEdge,
                                    const Array1DReal &VecEdge) const {

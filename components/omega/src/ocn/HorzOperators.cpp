@@ -4,21 +4,21 @@
 
 namespace OMEGA {
 
-DivergenceOnCell::DivergenceOnCell(HorzMesh const *mesh)
-    : NEdgesOnCell(mesh->NEdgesOnCell), EdgesOnCell(mesh->EdgesOnCell),
-      DvEdge(mesh->DvEdge), AreaCell(mesh->AreaCell),
-      EdgeSignOnCell(mesh->EdgeSignOnCell) {}
+DivergenceOnCell::DivergenceOnCell(HorzMesh const *Mesh)
+    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell) {}
 
-GradientOnEdge::GradientOnEdge(HorzMesh const *mesh)
-    : CellsOnEdge(mesh->CellsOnEdge), DcEdge(mesh->DcEdge) {}
+GradientOnEdge::GradientOnEdge(HorzMesh const *Mesh)
+    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge) {}
 
-CurlOnVertex::CurlOnVertex(HorzMesh const *mesh)
-    : VertexDegree(mesh->VertexDegree), EdgesOnVertex(mesh->EdgesOnVertex),
-      DcEdge(mesh->DcEdge), AreaTriangle(mesh->AreaTriangle),
-      EdgeSignOnVertex(mesh->EdgeSignOnVertex) {}
+CurlOnVertex::CurlOnVertex(HorzMesh const *Mesh)
+    : VertexDegree(Mesh->VertexDegree), EdgesOnVertex(Mesh->EdgesOnVertex),
+      DcEdge(Mesh->DcEdge), AreaTriangle(Mesh->AreaTriangle),
+      EdgeSignOnVertex(Mesh->EdgeSignOnVertex) {}
 
-TangentialReconOnEdge::TangentialReconOnEdge(HorzMesh const *mesh)
-    : NEdgesOnEdge(mesh->NEdgesOnEdge), EdgesOnEdge(mesh->EdgesOnEdge),
-      WeightsOnEdge(mesh->WeightsOnEdge) {}
+TangentialReconOnEdge::TangentialReconOnEdge(HorzMesh const *Mesh)
+    : NEdgesOnEdge(Mesh->NEdgesOnEdge), EdgesOnEdge(Mesh->EdgesOnEdge),
+      WeightsOnEdge(Mesh->WeightsOnEdge) {}
 
 } // namespace OMEGA
