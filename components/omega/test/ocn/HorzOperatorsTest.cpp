@@ -206,34 +206,34 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.00450897496974901352;
    Real ExpectedReconErrorL2   = 0.00417367308684470691;
 
-   KOKKOS_INLINE_FUNCTION Real exactScalar(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactScalar(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactGradScalarX(Real X, Real Y) const {
       return 2 * Pi / Lx * std::cos(2 * Pi * X / Lx) *
              std::sin(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactGradScalarY(Real X, Real Y) const {
       return 2 * Pi / Ly * std::sin(2 * Pi * X / Lx) *
              std::cos(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecX(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactVecX(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecY(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactVecY(Real X, Real Y) const {
       return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactDivVec(Real X, Real Y) const {
       return 2 * Pi * (1. / Lx + 1. / Ly) * std::cos(2 * Pi * X / Lx) *
              std::cos(2 * Pi * Y / Ly);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real exactCurlVec(Real X, Real Y) const {
       return 2 * Pi * (-1. / Lx + 1. / Ly) * std::sin(2 * Pi * X / Lx) *
              std::sin(2 * Pi * Y / Ly);
    }
@@ -258,33 +258,33 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.0206375134079833517;
    Real ExpectedReconErrorL2   = 0.00692590524910695858;
 
-   KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return Radius * std::cos(Lon) * std::pow(std::cos(Lat), 4);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const {
       return -std::sin(Lon) * std::pow(std::cos(Lat), 3);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
       return -4 * std::cos(Lon) * std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecY(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactVecY(Real Lon, Real Lat) const {
       return -4 * Radius * std::sin(Lon) * std::cos(Lon) *
              std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactDivVec(Real Lon, Real Lat) const {
       return std::sin(Lon) * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
              (20 * std::pow(std::sin(Lat), 2) - 6);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
       return -4 * std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 2) *
              std::sin(Lat);
    }
@@ -309,29 +309,25 @@ struct TestSetup {
    Real ExpectedReconErrorLInf = 0.0254271921029878764;
    Real ExpectedReconErrorL2   = 0.00419630561428921064;
 
-   KOKKOS_INLINE_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lat), 2);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const {
-      return 0;
-   }
+   KOKKOS_FUNCTION Real exactGradScalarX(Real Lon, Real Lat) const { return 0; }
 
-   KOKKOS_INLINE_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactGradScalarY(Real Lon, Real Lat) const {
       return -2 * std::sin(Lat) * std::cos(Lat);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactVecX(Real Lon, Real Lat) const {
       return std::cos(Lat);
    }
 
-   KOKKOS_INLINE_FUNCTION Real exactVecY(Real Lon, Real Lat) const { return 0; }
+   KOKKOS_FUNCTION Real exactVecY(Real Lon, Real Lat) const { return 0; }
 
-   KOKKOS_INLINE_FUNCTION Real exactDivVec(Real Lon, Real Lat) const {
-      return 0;
-   }
+   KOKKOS_FUNCTION Real exactDivVec(Real Lon, Real Lat) const { return 0; }
 
-   KOKKOS_INLINE_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real exactCurlVec(Real Lon, Real Lat) const {
       return 2 * std::sin(Lat) / Radius;
    }
 };
