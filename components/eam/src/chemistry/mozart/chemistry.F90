@@ -1759,7 +1759,20 @@ end function chem_is_active
                 !write(iulog,*)'kzm_h2ofire_loca ', clat(it)/(3.1415_r8)*180.0_r8, clon(it)/(3.1415_r8)*180.0_r8
              !endif
          ! enddo
-          ptend%q(:ncol,:,1) = ptend%q(:ncol,:,1) + ptend%q(:ncol,:,n)
+           do it = 1,pcols
+              ptend%q(it,:,1) = 0.0_r8 ! no q tend from other mechanism
+              do k = 1,pver+1 ! not the surface layer
+                 ! find the locations has positive plume water tend
+                 ! add plume water tend to q
+                 ! remove same tend to q at surface
+                 ! keep the q tend neutral
+                 if (ptend%q(it,k,n) > 1.0e-15_r8 )then
+                    ptend%q(it,k,1) =  ptend%q(it,k,1) + ptend%q(it,k,n) ! only tend from plume water
+                    ptend%q(it,pver,1) = ptend%q(it,pver,1) - ptend%q(it,k,n) ! remove same water at surface
+                 endif
+              end do
+           end do  
+           ptend%q(:ncol,:,n) = 0.0_r8 ! remove the plume water tend; no plume water accumulation
       endif 
     end do
 
