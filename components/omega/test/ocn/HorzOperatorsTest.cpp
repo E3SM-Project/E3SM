@@ -354,9 +354,9 @@ int testDivergence(Real RTol) {
        VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
-   Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
+   auto MyHalo   = Halo::getDefault();
    auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
+   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
    deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
@@ -450,9 +450,9 @@ int testGradient(Real RTol) {
        });
 
    // Perform halo exchange
-   Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
+   auto MyHalo      = Halo::getDefault();
    auto ScalarCellH = createHostMirrorCopy(ScalarCell);
-   MyHalo.exchangeFullArrayHalo(ScalarCellH, OnCell);
+   MyHalo->exchangeFullArrayHalo(ScalarCellH, OnCell);
    deepCopy(ScalarCell, ScalarCellH);
 
    // Compute exact result
@@ -538,9 +538,9 @@ int testCurl(Real RTol) {
        VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
-   Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
+   auto MyHalo   = Halo::getDefault();
    auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
+   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
    deepCopy(VecEdge, VecEdgeH);
 
 #ifdef HORZOPERATORS_TEST_PLANE
@@ -629,9 +629,9 @@ int testRecon(Real RTol) {
        VecEdge, EdgeOrientation::Normal, mesh);
 
    // Perform halo exchange
-   Halo MyHalo(MachEnv::getDefaultEnv(), Decomp::getDefault());
+   auto MyHalo   = Halo::getDefault();
    auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo.exchangeFullArrayHalo(VecEdgeH, OnEdge);
+   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
    deepCopy(VecEdge, VecEdgeH);
 
    // Compute exact result
@@ -731,6 +731,11 @@ int initOperatorsTest(int argc, char *argv[]) {
       LOG_ERROR("HorzMeshTest: error initializing default decomposition");
    }
 
+   Err = Halo::init();
+   if (Err != 0) {
+      LOG_ERROR("HorzMeshTest: error initializing default halo");
+   }
+
    Err = HorzMesh::init();
    if (Err != 0) {
       LOG_ERROR("HorzMeshTest: error initializing default mesh");
@@ -741,6 +746,7 @@ int initOperatorsTest(int argc, char *argv[]) {
 
 void finalizeOperatorsTest() {
    HorzMesh::clear();
+   Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();
    Kokkos::finalize();
