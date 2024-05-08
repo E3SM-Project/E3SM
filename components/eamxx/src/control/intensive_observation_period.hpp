@@ -115,13 +115,6 @@ public:
   //       data.
   void correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr);
 
-  // Store grid spacing for use in SHOC ad interface
-  void set_grid_spacing (const Real dx_short) {
-    m_dynamics_dx_size = dx_short*1000;
-  }
-
-  Real get_dynamics_dx_size () { return m_dynamics_dx_size; }
-
   ekat::ParameterList& get_params() { return m_params; }
 
   bool has_iop_field(const std::string& fname) {

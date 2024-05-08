@@ -199,9 +199,6 @@ setup_iop ()
                                                        hyam,
                                                        hybm);
 
-  auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
-
   // Set IOP object in atm processes
   m_atm_process_group->set_iop(m_iop);
 }
