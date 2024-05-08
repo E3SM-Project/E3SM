@@ -79,6 +79,7 @@ design/IOStreams
 design/Reductions
 design/ShallowWaterOmega0
 design/State
+design/Tendency
 design/TimeMgr
 design/Timers
 design/Tracers
