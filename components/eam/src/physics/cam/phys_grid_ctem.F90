@@ -22,7 +22,7 @@ module phys_grid_ctem
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use ppgrid,        only: begchunk, endchunk, pcols, pver
 use physics_types, only: physics_state
-use cam_history,   only: addfld, outfld
+use cam_history,   only: addfld, outfld, horiz_only
 use zonal_mean_mod,only: ZonalAverage_t, ZonalMean_t
 use physconst,     only: pi
 use cam_logfile,   only: iulog
@@ -221,7 +221,7 @@ subroutine phys_grid_ctem_init
 
    if (.not.do_tem_diags) return
 
-   call addfld ('PSzm', (/'lev'/), 'A','m s-1',  'Zonal-Mean surface pressure', gridname='ctem_zavg_phys' )
+   call addfld ('PSzm',horiz_only, 'A','m s-1',  'Zonal-Mean surface pressure', gridname='ctem_zavg_phys' )
    call addfld ('Uzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean zonal wind', gridname='ctem_zavg_phys' )
    call addfld ('Vzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean meridional wind', gridname='ctem_zavg_phys' )
    call addfld ('Wzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean vertical wind', gridname='ctem_zavg_phys' )
