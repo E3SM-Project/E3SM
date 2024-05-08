@@ -715,7 +715,7 @@ int initOperatorsTest(int argc, char *argv[]) {
 
    Err = IO::init(DefComm);
    if (Err != 0) {
-      LOG_ERROR("HorzMeshTest: error initializing parallel IO");
+      LOG_ERROR("OperatorsTest: error initializing parallel IO");
    }
 
 #ifdef HORZOPERATORS_TEST_PLANE
@@ -724,17 +724,17 @@ int initOperatorsTest(int argc, char *argv[]) {
    Err = Decomp::init("OmegaSphereMesh.nc");
 #endif
    if (Err != 0) {
-      LOG_ERROR("HorzMeshTest: error initializing default decomposition");
+      LOG_ERROR("OperatorsTest: error initializing default decomposition");
    }
 
    Err = Halo::init();
    if (Err != 0) {
-      LOG_ERROR("HorzMeshTest: error initializing default halo");
+      LOG_ERROR("OperatorsTest: error initializing default halo");
    }
 
    Err = HorzMesh::init();
    if (Err != 0) {
-      LOG_ERROR("HorzMeshTest: error initializing default mesh");
+      LOG_ERROR("OperatorsTest: error initializing default mesh");
    }
 
    return Err;
