@@ -155,21 +155,24 @@ void HommeGridsManager::build_dynamics_grid () {
   auto dg_dofs = dyn_grid->get_dofs_gids();
   auto cg_dofs = dyn_grid->get_cg_dofs_gids();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
+  auto elgids  = dyn_grid->get_partitioned_dim_gids ();
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
   auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
   auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
   auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
   auto elgpgp_h  = elgpgp.get_view<int**,Host>();
+  auto elgids_h  = elgids.get_view<int*,Host>();
   auto lat_h     = lat.get_view<Real***,Host>();
   auto lon_h     = lon.get_view<Real***,Host>();
 
   // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(), lat_h.data(), lon_h.data());
+  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(),elgids_h.data(), lat_h.data(), lon_h.data());
 
   dg_dofs.sync_to_dev();
   cg_dofs.sync_to_dev();
   elgpgp.sync_to_dev();
+  elgids.sync_to_dev();
   lat.sync_to_dev();
   lon.sync_to_dev();
 

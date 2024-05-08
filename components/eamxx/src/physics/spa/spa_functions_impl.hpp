@@ -83,7 +83,7 @@ create_horiz_remapper (
   const int ncols_data = scorpio::get_dimlen(spa_data_file,"ncol");
   const int nswbands   = scorpio::get_dimlen(spa_data_file,"swband");
   const int nlwbands   = scorpio::get_dimlen(spa_data_file,"lwband");
-  scorpio::eam_pio_closefile(spa_data_file);
+  scorpio::release_file(spa_data_file);
 
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of code)

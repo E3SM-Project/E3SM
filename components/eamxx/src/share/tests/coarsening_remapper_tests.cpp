@@ -236,22 +236,15 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"n_a", "n_a", ngdofs_src, true);
-  scorpio::register_dimension(filename,"n_b", "n_b", ngdofs_tgt, true);
-  scorpio::register_dimension(filename,"n_s", "n_s", nnz, true);
+  scorpio::define_dim(filename,"n_a", ngdofs_src);
+  scorpio::define_dim(filename,"n_b", ngdofs_tgt);
+  scorpio::define_dim(filename,"n_s", nnz);
 
-  scorpio::register_variable(filename,"col","col","none",{"n_s"},"int","int","int-nnz");
-  scorpio::register_variable(filename,"row","row","none",{"n_s"},"int","int","int-nnz");
-  scorpio::register_variable(filename,"S","S","none",{"n_s"},"double","double","Real-nnz");
+  scorpio::define_var(filename,"col",{"n_s"},"int");
+  scorpio::define_var(filename,"row",{"n_s"},"int");
+  scorpio::define_var(filename,"S"  ,{"n_s"},"double");
 
-  std::vector<scorpio::offset_t> dofs(nnz);
-  std::iota(dofs.begin(),dofs.end(),0);
-
-  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
-  
-  scorpio::eam_pio_enddef(filename);
+  scorpio::enddef(filename);
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz,0.5);
@@ -262,11 +255,11 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
     col[2*i+1] = i+1;
   }
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),nnz);
-  scorpio::grid_write_data_array(filename,"col",col.data(),nnz);
-  scorpio::grid_write_data_array(filename,"S",    S.data(),nnz);
+  scorpio::write_var(filename,"row",row.data());
+  scorpio::write_var(filename,"col",col.data());
+  scorpio::write_var(filename,"S",    S.data());
 
-  scorpio::eam_pio_closefile(filename);
+  scorpio::release_file(filename);
 }
 
 TEST_CASE("coarsening_remap")
@@ -288,8 +281,7 @@ TEST_CASE("coarsening_remap")
   root_print (" |   Testing coarsening remapper   |\n",comm);
   root_print (" +---------------------------------+\n\n",comm);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
   auto engine = setup_random_test (&comm);
 
   // -------------------------------------- //
@@ -507,7 +499,7 @@ TEST_CASE("coarsening_remap")
   }
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

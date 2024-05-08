@@ -223,6 +223,26 @@ get_global_max_dof_gid () const ->gid_type
   return m_global_max_dof_gid;
 }
 
+auto AbstractGrid::
+get_global_min_partitioned_dim_gid () const ->gid_type
+{
+  // Lazy calculation
+  if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
+    m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
+  }
+  return m_global_min_partitioned_dim_gid;
+}
+
+auto AbstractGrid::
+get_global_max_partitioned_dim_gid () const ->gid_type
+{
+  // Lazy calculation
+  if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
+    m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
+  }
+  return m_global_max_partitioned_dim_gid;
+}
+
 Field
 AbstractGrid::get_dofs_gids () const {
   return m_dofs_gids.get_const();
@@ -231,6 +251,16 @@ AbstractGrid::get_dofs_gids () const {
 Field
 AbstractGrid::get_dofs_gids () {
   return m_dofs_gids;
+}
+
+Field
+AbstractGrid::get_partitioned_dim_gids () {
+  return m_partitioned_dim_gids;
+}
+
+Field
+AbstractGrid::get_partitioned_dim_gids () const {
+  return m_partitioned_dim_gids.get_const();
 }
 
 Field
@@ -521,8 +551,10 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
 {
   if (shallow) {
     m_dofs_gids = src.m_dofs_gids;
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids;
   } else {
     m_dofs_gids = src.m_dofs_gids.clone();
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone();
   }
 
   if (shallow) {

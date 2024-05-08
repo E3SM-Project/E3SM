@@ -70,10 +70,12 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   se_grid->setSelfPointer(se_grid);
 
   // Set up the degrees of freedom.
-  auto dof_gids = se_grid->get_dofs_gids();
-  auto lid2idx  = se_grid->get_lid_to_idx_map();
+  auto dof_gids  = se_grid->get_dofs_gids();
+  auto elem_gids = se_grid->get_partitioned_dim_gids();
+  auto lid2idx   = se_grid->get_lid_to_idx_map();
 
   auto host_dofs    = dof_gids.template get_view<AbstractGrid::gid_type*,Host>();
+  auto host_elems   = elem_gids.template get_view<AbstractGrid::gid_type*,Host>();
   auto host_lid2idx = lid2idx.template get_view<int**,Host>();
 
   // Count unique local dofs. On all elems except the very last one (on rank N),
@@ -82,6 +84,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   int offset = num_local_dofs*m_comm.rank();
 
   for (int ie = 0; ie < num_local_elems; ++ie) {
+    host_elems[ie] = ie + num_local_elems*m_comm.rank();
     for (int igp = 0; igp < num_gp; ++igp) {
       for (int jgp = 0; jgp < num_gp; ++jgp) {
         int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
@@ -96,6 +99,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
 
   // Sync to device
   dof_gids.sync_to_dev();
+  elem_gids.sync_to_dev();
   lid2idx.sync_to_dev();
 
   se_grid->m_short_name = "se";
@@ -162,13 +166,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     lev.sync_to_dev();
   } else if (geo_data_source=="IC_FILE"){
     const auto& filename = m_params.get<std::string>("ic_filename");
-    if (scorpio::has_variable(filename,"lat") &&
-        scorpio::has_variable(filename,"lon")) {
+    if (scorpio::has_var(filename,"lat") &&
+        scorpio::has_var(filename,"lon")) {
       load_lat_lon(grid,filename);
     }
 
-    if (scorpio::has_variable(filename,"hyam") &&
-        scorpio::has_variable(filename,"hybm")) {
+    if (scorpio::has_var(filename,"hyam") &&
+        scorpio::has_var(filename,"hybm")) {
       load_vertical_coordinates(grid,filename);
     }
   }

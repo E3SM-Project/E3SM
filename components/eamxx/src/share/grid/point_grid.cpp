@@ -15,6 +15,9 @@ PointGrid (const std::string& grid_name,
 {
   create_dof_fields (get_2d_scalar_layout().rank());
 
+  // The partitioned dim is the COL dim, which concide with the dofs
+  m_partitioned_dim_gids = m_dofs_gids;
+
   // The lid->idx map is the identity map.
   auto lid2idx = get_lid_to_idx_map();
   auto h_lid_to_idx = lid2idx.get_view<int**,Host>();

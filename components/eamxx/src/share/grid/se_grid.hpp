@@ -43,8 +43,8 @@ public:
   }
 
   // Retrieve list of the CG grid dofs. Const version returns a read-only field
-  Field get_cg_dofs_gids ();
-  Field get_cg_dofs_gids () const;
+  Field get_cg_dofs_gids ()       { return m_cg_dofs_gids;             }
+  Field get_cg_dofs_gids () const { return m_cg_dofs_gids.get_const(); }
 
   std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                        const bool shallow) const override;
@@ -58,6 +58,10 @@ protected:
   int       m_num_local_elem;
   int       m_num_global_elem;
   int       m_num_gp;
+
+  // The max/min elem GID across all ranks. Mutable, to allow for lazy calculation
+  mutable gid_type  m_global_min_elem_gid =  std::numeric_limits<gid_type>::max();
+  mutable gid_type  m_global_max_elem_gid = -std::numeric_limits<gid_type>::max();
 
   // The dofs gids for a CG version of this grid
   Field m_cg_dofs_gids;

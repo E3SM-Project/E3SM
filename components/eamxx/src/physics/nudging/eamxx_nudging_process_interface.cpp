@@ -355,7 +355,7 @@ void Nudging::run_impl (const double dt)
     Real var_fill_value = constants::DefaultFillValue<Real>().value;
     // Query the helper field for the fill value, if not present use default
     if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<float>("mask_value");
+      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
     }
 
     const int ncols = fl.dim(0);

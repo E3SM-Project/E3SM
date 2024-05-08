@@ -212,7 +212,7 @@ void read (const int seed, const ekat::Comm& comm)
 
 TEST_CASE ("io_monthly") {
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   auto seed = get_random_test_seed(&comm);
 
@@ -224,7 +224,7 @@ TEST_CASE ("io_monthly") {
   if (comm.am_i_root()) {
     std::cout << "   -> Testing output with one file per month ... PASS\n";
   }
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace

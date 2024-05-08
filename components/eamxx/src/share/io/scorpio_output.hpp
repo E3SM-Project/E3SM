@@ -165,7 +165,7 @@ protected:
 
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
-  void set_degrees_of_freedom(const std::string& filename);
+  void set_decompositions(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const std::string& mode) const;
@@ -200,7 +200,7 @@ protected:
   std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
   std::map<std::string,std::string>                     m_field_to_avg_cnt_suffix;
   std::map<std::string,FieldLayout>                     m_layouts;
-  std::map<std::string,std::pair<int,bool>>             m_dims;
+  std::map<std::string,int>                             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
