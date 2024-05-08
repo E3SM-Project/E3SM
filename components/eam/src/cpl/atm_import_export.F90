@@ -226,13 +226,15 @@ contains
              end if
              
              ! co2 flux from fossil fuel
-             if ( present(mon_spec) .and. index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
-                cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
-             else if (co2_readFlux_fuel) then
-                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
-             else
-                cam_in(c)%cflx(i,c_i(2)) = 0._r8
-             end if
+             if ( present(mon_spec)) then
+               if( index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
+               else if (co2_readFlux_fuel) then
+                   cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
+               else
+                   cam_in(c)%cflx(i,c_i(2)) = 0._r8
+               end if
+            endif
              
              ! co2 flux from land (cpl already multiplies flux by land fraction)
              if (index_x2a_Fall_fco2_lnd /= 0) then
