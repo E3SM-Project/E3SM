@@ -225,6 +225,7 @@ OpticalProps2str get_subsampled_clouds(
       seeds(icol) = 1e9 * (p_lay(icol,nlay) - int(p_lay(icol,nlay)));
     });
   auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
+
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
   parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
@@ -273,7 +274,7 @@ OpticalProps2strK get_subsampled_clouds(
   // use decimal part of pressure for this, consistent with the implementation in EAM
   auto seeds = int1dk("seeds", ncol);
   Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
-    seeds(icol) = 1e9 * (p_lay(icol,nlay) - int(p_lay(icol,nlay)));
+    seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
   });
   auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
   // Assign optical properties to subcolumns (note this implements MCICA)
@@ -367,7 +368,7 @@ OpticalProps1sclK get_subsampled_clouds(
   // seed values for longwave and shortwave
   auto seeds = int1dk("seeds", ncol);
   Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
-    seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
+    seeds(icol) = 1e9 * (p_lay(icol,nlay-2) - int(p_lay(icol,nlay-2)));
   });
   auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
   // Assign optical properties to subcolumns (note this implements MCICA)
@@ -1115,16 +1116,25 @@ int3dk get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d
     // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
     //
     // First, fill cldx with random numbers. Need to use a unique seed for each column!
-    auto seeds_host = Kokkos::create_mirror_view(seeds);
-    Kokkos::deep_copy(seeds_host, seeds);
-    for (int icol = 0; icol < ncol; ++icol) {
-      Kokkos::Random_XorShift64_Pool<> random_pool(seeds_host(icol));
-      Kokkos::parallel_for(conv::get_mdrp<2>({ngpt, nlay}), KOKKOS_LAMBDA(int igpt, int ilay) {
-        auto generator = random_pool.get_state();
-        cldx(icol,ilay,igpt) = generator.drand(0., 1.);
-        random_pool.free_state(generator);
-      });
-    }
+    // auto seeds_host = Kokkos::create_mirror_view(seeds);
+    // Kokkos::deep_copy(seeds_host, seeds);
+    // for (int icol = 0; icol < ncol; ++icol) {
+    //   Kokkos::Random_XorShift64_Pool<> random_pool(seeds_host(icol));
+    //   Kokkos::parallel_for(conv::get_mdrp<2>({ngpt, nlay}), KOKKOS_LAMBDA(int igpt, int ilay) {
+    //     auto generator = random_pool.get_state();
+    //     cldx(icol,ilay,igpt) = generator.drand(0., 1.);
+    //     random_pool.free_state(generator);
+    //   });
+    // }
+    Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+      yakl::Random rand(seeds(icol));
+      for (int igpt = 0; igpt < ngpt; igpt++) {
+        for (int ilay = 0; ilay < nlay; ilay++) {
+          cldx(icol,ilay,igpt) = rand.genFP<Real>();
+        }
+      }
+    });
+
     // Step down columns and apply algorithm from eq (14)
     Kokkos::parallel_for(conv::get_mdrp<2>({ngpt,ncol}), KOKKOS_LAMBDA(int igpt, int icol) {
       for (int ilay = 1; ilay < nlay; ilay++) {
@@ -1227,6 +1237,7 @@ void rrtmgp_sw(
       dayIndices_h(nday) = icol;
     }
   }
+
   // Copy data back to the device
   dayIndices_h.deep_copy_to(dayIndices);
   if (nday == 0) {
@@ -1338,7 +1349,6 @@ void rrtmgp_sw(
     k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_limited, gas_concs_day, optics_no_aerosols, toa_flux);
   }
 
-
 #ifdef SCREAM_RRTMGP_DEBUG
   // Check gas optics
   check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_sw:optics.tau");
@@ -1369,6 +1379,7 @@ void rrtmgp_sw(
 
   // Compute clearsky (gas + aerosol) fluxes on daytime columns
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
+
   // Expand daytime fluxes to all columns
   parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
       int icol = dayIndices(iday);
@@ -1478,9 +1489,8 @@ void rrtmgp_sw(
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(int, int& nday_inner) {
     for (int icol = 0; icol < ncol; ++icol) {
       if (mu0(icol) > 0) {
-        ++nday_inner;
+        dayIndices(nday_inner++) = icol;
       }
-      dayIndices(nday_inner) = icol;
     }
   }, Kokkos::Sum<int>(nday));
 
@@ -1627,6 +1637,7 @@ void rrtmgp_sw(
 
   // Compute clearsky (gas + aerosol) fluxes on daytime columns
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
+
   // Expand daytime fluxes to all columns
   Kokkos::parallel_for(conv::get_mdrp<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
     const int icol = dayIndices(iday);
