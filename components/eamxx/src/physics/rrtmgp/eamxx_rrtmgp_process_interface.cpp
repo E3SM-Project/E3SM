@@ -365,6 +365,10 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_lw_bnd.totElems();
 #endif
 
+  // During the transition to kokkos, the buffer views/arrays will point to the same memory,
+  // so care is needed to avoid repeating calculations in such a way that answers change.
+  // Example: buff_view(x) += foo;
+  // Stuff like this cannot be done twice when both kokkos and yakl are enabled
 #ifdef RRTMGP_ENABLE_KOKKOS
   mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
@@ -870,14 +874,22 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      // For now, we need to duplicate this data. In the future, these should be
+      // unmanaged views.
       auto subview_1dk = [&](const real1dk v) -> real1dk {
-        return real1dk(v.data(),ncol);
+        real1dk rv(v.label(),ncol);
+        Kokkos::deep_copy(rv, v);
+        return rv;
       };
       auto subview_2dk = [&](const real2dk v) -> real2dk {
-        return real2dk(v.data(),ncol,v.extent(1));
+        real2dk rv(v.label(),ncol,v.extent(1));
+        Kokkos::deep_copy(rv, v);
+        return rv;
       };
       auto subview_3dk = [&](const real3dk v) -> real3dk {
-        return real3dk(v.data(),ncol,v.extent(1),v.extent(2));
+        real3dk rv(v.label(),ncol,v.extent(1),v.extent(2));
+        Kokkos::deep_copy(rv, v);
+        return rv;
       };
 
       auto p_lay_k           = subview_2dk(m_buffer.p_lay_k);
@@ -1254,8 +1266,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
           iwp(i+1,k+1) *= 1e3;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+#ifndef RRTMGP_ENABLE_YAKL
+          // lwp and lwp_k point to the same memory
           lwp_k(i,k) *= 1e3;
           iwp_k(i,k) *= 1e3;
+#endif
 #endif
         });
       });
