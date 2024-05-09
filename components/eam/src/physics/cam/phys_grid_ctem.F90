@@ -282,10 +282,6 @@ subroutine phys_grid_ctem_diags(phys_state)
    real(r8) :: wza(nzalat,pver)
    real(r8) :: thza(nzalat,pver)
 
-   ! In CESM/WACCM the variable mbarv is provided by the "air_composition" 
-   ! module, which is not in E3SM, so we just use a rough approximation
-   real(r8) :: mbarv = 28.97 ! molecular weight of dry air (g/mol)
-
    if (.not.do_calc()) return
 
    do lchnk = begchunk,endchunk
