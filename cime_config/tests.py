@@ -48,14 +48,14 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
-            "ERS.f19_g16.IERA5ELM.elm-era5",
-            "ERS.f19_g16.IERA56HRELM.elm-era56hr",
             )
         },
 
     "e3sm_land_exenoshare" : {
         "time"  : "0:45:00",
         "tests" : (
+            "ERS.f19_g16.IERA5ELM.elm-era5",
+            "ERS.f19_g16.IERA56HRELM.elm-era56hr",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
