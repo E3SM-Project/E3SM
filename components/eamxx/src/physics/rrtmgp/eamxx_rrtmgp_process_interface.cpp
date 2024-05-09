@@ -804,6 +804,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
       // as the fastest index. For this reason we must copy the data.
+      // JGF: this doesn't appear to be copying the data, just returning a new array
+      // pointing to the same memory.
 #ifdef RRTMGP_ENABLE_YAKL
       auto subview_1d = [&](const real1d v) -> real1d {
         return real1d(v.label(),v.myData,ncol);
@@ -1360,6 +1362,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       COMPARE_ALL_WRAP(std::vector<real3d>({sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir, lw_bnd_flux_up, lw_bnd_flux_dn}),
                        std::vector<real3dk>({sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k, lw_bnd_flux_up_k, lw_bnd_flux_dn_k}));
+      VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
 #endif
 
       // Update heating tendency
@@ -1492,13 +1495,13 @@ void RRTMGPRadiation::run_impl (const double dt) {
                        std::vector<real1dk>({cldlow_k, cldmed_k, cldhgh_k, cldtot_k}));
 #endif
 
+      // Compute cloud-top diagnostics following AeroCOM recommendation
+#ifdef RRTMGP_ENABLE_YAKL
       // Get visible 0.67 micron band for COSP
       auto idx_067 = rrtmgp::get_wavelength_index_sw(0.67e-6);
       // Get IR 10.5 micron band for COSP
       auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
-      // Compute cloud-top diagnostics following AeroCOM recommendation
-#ifdef RRTMGP_ENABLE_YAKL
       real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
@@ -1515,6 +1518,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
           eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      // Get visible 0.67 micron band for COSP
+      auto idx_067_k = rrtmgp::get_wavelength_index_sw_k(0.67e-6);
+      // Get IR 10.5 micron band for COSP
+      auto idx_105_k = rrtmgp::get_wavelength_index_lw_k(10.5e-6);
+
       real1dk T_mid_at_cldtop_k (d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1dk p_mid_at_cldtop_k (d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1dk cldfrac_ice_at_cldtop_k (d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
@@ -1619,8 +1627,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
         // Extract optical properties for COSP
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
-          d_dtau067(icol,k) = cld_tau_sw_bnd_k(i,k,idx_067);
-          d_dtau105(icol,k) = cld_tau_lw_bnd_k(i,k,idx_105);
+          d_dtau067(icol,k) = cld_tau_sw_bnd_k(i,k,idx_067_k);
+          d_dtau105(icol,k) = cld_tau_lw_bnd_k(i,k,idx_105_k);
         });
         if (d_sw_clrsky_flux_dn(icol,0) > 0) {
             d_sunlit(icol) = 1.0;
@@ -1636,7 +1644,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
     m_gas_concs.concs = gas_concs;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    m_gas_concs_k.concs = gas_concs_k;
+    VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
 #endif
   } // update_rad
 

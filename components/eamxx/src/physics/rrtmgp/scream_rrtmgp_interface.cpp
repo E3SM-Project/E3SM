@@ -1127,7 +1127,7 @@ int3dk get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d
     //   });
     // }
     Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
-      yakl::Random rand(seeds(icol));
+      conv::Random rand(seeds(icol));
       for (int igpt = 0; igpt < ngpt; igpt++) {
         for (int ilay = 0; ilay < nlay; ilay++) {
           cldx(icol,ilay,igpt) = rand.genFP<Real>();
@@ -2008,9 +2008,17 @@ void compute_cloud_area(
 }
 #endif
 
+#ifdef RRTMGP_ENABLE_YAKL
 int get_wavelength_index_sw(double wavelength) { return get_wavelength_index(k_dist_sw, wavelength); }
 
 int get_wavelength_index_lw(double wavelength) { return get_wavelength_index(k_dist_lw, wavelength); }
+#endif
+
+#ifdef RRTMGP_ENABLE_KOKKOS
+int get_wavelength_index_sw_k(double wavelength) { return get_wavelength_index(k_dist_sw_k, wavelength); }
+
+int get_wavelength_index_lw_k(double wavelength) { return get_wavelength_index(k_dist_lw_k, wavelength); }
+#endif
 
 #ifdef RRTMGP_ENABLE_YAKL
 int get_wavelength_index(OpticalProps &kdist, double wavelength) {

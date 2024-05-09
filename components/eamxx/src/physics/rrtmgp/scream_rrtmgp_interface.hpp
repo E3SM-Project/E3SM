@@ -356,13 +356,15 @@ void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) 
 
 #ifdef RRTMGP_ENABLE_YAKL
 int get_wavelength_index(OpticalProps &kdist, double wavelength);
+int get_wavelength_index_sw(double wavelength);
+int get_wavelength_index_lw(double wavelength);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 int get_wavelength_index(OpticalPropsK &kdist, double wavelength);
+int get_wavelength_index_sw_k(double wavelength);
+int get_wavelength_index_lw_k(double wavelength);
 #endif
 
-int get_wavelength_index_sw(double wavelength);
-int get_wavelength_index_lw(double wavelength);
 
 } // namespace rrtmgp
 } // namespace scream
