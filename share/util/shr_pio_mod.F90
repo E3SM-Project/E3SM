@@ -730,7 +730,8 @@ contains
     if(pio_stride == 1 .and. .not. pio_async_interface) then
        pio_root = 0
     endif
-    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
+    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX .and.&
+        pio_rearranger .ne. PIO_REARR_ANY) then
        write(shr_log_unit,*) 'pio_rearranger value, ',pio_rearranger,&
             ', not supported - using PIO_REARR_BOX'
        pio_rearranger = PIO_REARR_BOX

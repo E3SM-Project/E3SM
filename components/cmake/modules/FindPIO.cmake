@@ -18,6 +18,9 @@ endif()
 if (PIO_VERSION STREQUAL 2)
   # This is a pio2 library
   set(PIOLIBS "${PIO_LIBDIR}/libpiof.a;${PIO_LIBDIR}/libpioc.a")
+  if (DEFINED ENV{ADIOS2_ROOT})
+    list(APPEND PIOLIBS "${PIO_LIBDIR}/libadios2pio-nm-lib.a")
+  endif()
 else()
   # This is a pio1 library
   set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
