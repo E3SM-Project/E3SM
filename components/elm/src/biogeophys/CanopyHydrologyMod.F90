@@ -783,7 +783,7 @@ contains
      ! !USES:
      use shr_const_mod   , only : shr_const_pi
      use shr_spfn_mod    , only : erf => shr_spfn_erf
-     use landunit_varcon , only : istsoil, istcrop, ispolygon
+     use landunit_varcon , only : istsoil, istcrop
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)           :: bounds           
@@ -839,25 +839,25 @@ contains
 
                 if (lun_pp%ispolygon(l)) then
                     ! calculate water depth and inundation fraction if column is polygonal
-                    swc = h2osfc(c)/1000 ! convert to m
+                    swc = h2osfc(c)/1000_r8 ! convert to m
 
-                    if (swc > iwp_microrel - iwp_exclvol) then
-                        d = swc + iwp_exclvol
+                    if (swc > iwp_microrel(c) - iwp_exclvol(c)) then
+                        d = swc + iwp_exclvol(c)
                     else
                         d = 0.0
                         do k=1,10
-                            fd = (2_r8*iwp_exclvol - iwp_microrel) * (d/iwp_microrel)**3_r8 &
-                                 + (2_r8*iwp_microrel - 3_r8*iwp_exclvol) * (d/iwp_microrel)**2_r8 &
+                            fd = (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**3_r8 &
+                                 + (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))**2_r8 &
                                  - swc
-                            dfdd = (3_r8/iwp_microrel) * (2_r8*iwp_exclvol - iwp_microrel) * (d/iwp_microrel)**2_r8 &
-                                   + (2_r8/iwp_microrel) * (2_r8*iwp_microrel - 3_r8*iwp_exclvol) * (d/iwp_microrel)
+                            dfdd = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
+                                   + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
                             d = d - fd/dfdd
                         enddo
                     endif
 
                     !--  update the submerged areal fraction using the new d value
-                    frac_h2osfc(c) = (3_r8/iwp_microrel) * (2_r8*iwp_exclvol - iwp_microrel) * (d/iwp_microrel)**2_r8 &
-                                     + (2_r8/iwp_microrel) * (2_r8*iwp_microrel - 3_r8*iwp_exclvol) * (d/iwp_microrel)
+                    frac_h2osfc(c) = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
+                                     + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
 
                 else ! calculate water depth and inudation fraction if column is non-polygonal
                     d=0.0
