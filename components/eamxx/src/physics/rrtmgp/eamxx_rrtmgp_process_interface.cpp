@@ -962,6 +962,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       m_gas_concs.concs = subview_3d(gas_concs);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      assert(m_gas_concs.ncol == ncol); // I think a lot of this code only works if chunk_size==ncol
       m_gas_concs_k.ncol = ncol;
       m_gas_concs_k.concs = subview_3dk(gas_concs_k);
 #endif
