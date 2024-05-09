@@ -119,7 +119,7 @@ add_omega_test(
     HORZOPERATORS_PLANE_TEST
     testHorzOperatorsPlane.exe
     ocn/HorzOperatorsTest.cpp
-    "-n;8"
+    "-n 8;--cpu-bind=cores"
 )
 target_compile_definitions(
   testHorzOperatorsPlane.exe
@@ -131,7 +131,7 @@ add_omega_test(
   HORZOPERATORS_SPHERE_TEST
     testHorzOperatorsSphere.exe
     ocn/HorzOperatorsTest.cpp
-    "-n;8"
+    "-n 8;--cpu-bind=cores"
 )
 target_compile_definitions(
   testHorzOperatorsSphere.exe
