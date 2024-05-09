@@ -58,6 +58,10 @@ program cime_driver
   !--------------------------------------------------------------------------
   ! Setup and initialize the communications and logging.
   !--------------------------------------------------------------------------
+
+  write(logunit,*)'****************************************'
+  write(logunit,*)'Hello E3SM World! The model starts here!'
+  write(logunit,*)'****************************************'
   beg_count = shr_sys_irtc(irtc_rate)
 
   call cime_pre_init1(esmf_logfile_option)
