@@ -2876,17 +2876,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
-#ifdef MOABDEBUG
-       if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-          write(lnum,"(I0.2)") num_moab_exports
-          outfile = 'OcnCpl_Bef_R2O_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-          if (ierr .ne. 0) then
-            call shr_sys_abort(subname//' error in writing ocean before Rof 2 ocn proj')
-          endif
-       endif
-#endif
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
             fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
@@ -2896,25 +2885,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
                fldlist='Flrr_flood', norm=.true.)
        endif
-#ifdef MOABDEBUG
-       if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-          write(lnum,"(I0.2)") num_moab_exports
-          outfile = 'OcnCpl_Aft_R2O_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-
-#ifdef MOABCOMP
-          ent_type = 1 ! cell for ocean
-          mct_field = 'Forr_rofi'
-          tagname= 'Forr_rofi'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), r2x_ox(1), mct_field,  mboxid, tagname, ent_type, difference, .true.)
-#endif
-      
-          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-          if (ierr .ne. 0) then
-            call shr_sys_abort(subname//' error in writing ocean after Rof 2 ocn proj')
-          endif
-       endif
-#endif
     enddo
     call t_drvstopf  (trim(timer))
 
