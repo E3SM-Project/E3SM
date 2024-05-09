@@ -1987,7 +1987,9 @@ contains
       oceanAmmoniumConcField,           &
       oceanDMSConcField,                &
       oceanDMSPConcField,               &
-      oceanHumicsConcField
+      oceanHumicsConcField,             &
+      atmosWetDustFluxField,            &
+      atmosDryDustFluxField
 
    type (field2DReal), pointer ::       &
       oceanAlgaeConcField,              &
@@ -2033,7 +2035,9 @@ contains
       oceanHumicsConc,             &
       carbonToNitrogenRatioAlgae,  &
       carbonToNitrogenRatioDON,    &
-      DOCPoolFractions
+      DOCPoolFractions,            &
+      atmosWetDustFlux,            &
+      atmosDryDustFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       oceanAlgaeConc,              &
@@ -2116,6 +2120,8 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
          call mpas_pool_get_array(biogeochemistry, 'atmosBlackCarbonFlux', atmosBlackCarbonFlux)
          call mpas_pool_get_array(biogeochemistry, 'atmosDustFlux', atmosDustFlux)
+         call mpas_pool_get_array(biogeochemistry, "atmosWetDustFlux", atmosWetDustFlux)
+         call mpas_pool_get_array(biogeochemistry, "atmosDryDustFlux", atmosDryDustFlux)
       endif
       if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
 
@@ -2234,6 +2240,14 @@ contains
            oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
            oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
            oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
+           atmosWetDustFlux(i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstwet4, n)
+           atmosDryDustFlux(i) = x2i_i % rAttr(index_x2i_Faxa_dstdry1, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n) &
+                               + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
            if (config_use_modal_aerosols) then
               atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n) &
                                         + x2i_i % rAttr(index_x2i_Faxa_bcphidry, n)
@@ -2348,6 +2362,8 @@ contains
    if (config_use_zaerosols) then
       call mpas_pool_get_field(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFluxField)
       call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
+      call mpas_pool_get_field(biogeochemistry, "atmosWetDustFlux", atmosWetDustFluxField)
+      call mpas_pool_get_field(biogeochemistry, "atmosDryDustFlux", atmosDryDustFluxField)
       call mpas_pool_get_field(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConcField)
    endif
    if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
@@ -2398,6 +2414,8 @@ contains
    if (config_use_zaerosols) then
       call mpas_dmpar_exch_halo_field(atmosBlackCarbonFluxField)
       call mpas_dmpar_exch_halo_field(atmosDustFluxField)
+      call mpas_dmpar_exch_halo_field(atmosDryDustFluxField)
+      call mpas_dmpar_exch_halo_field(atmosWetDustFluxField)
       call mpas_dmpar_exch_halo_field(oceanZAerosolConcField)
    endif
    if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
@@ -3555,7 +3573,9 @@ contains
       oceanAmmoniumConcField,           &
       oceanDMSConcField,                &
       oceanDMSPConcField,               &
-      oceanHumicsConcField
+      oceanHumicsConcField,             &
+      atmosWetDustFluxField,            &
+      atmosDryDustFluxField
 
    type (field2DReal), pointer ::       &
       oceanAlgaeConcField,              &
@@ -3600,7 +3620,9 @@ contains
       oceanDMSPConc,               &
       oceanHumicsConc,             &
       carbonToNitrogenRatioAlgae,  &
-      carbonToNitrogenRatioDON
+      carbonToNitrogenRatioDON,    &
+      atmosWetDustFlux,            &
+      atmosDryDustFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       oceanAlgaeConc,              &
@@ -3721,6 +3743,8 @@ contains
          if (config_use_zaerosols) then
             call mpas_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
             call mpas_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
+            call mpas_pool_get_array(biogeochemistry, "atmosWetDustFlux", atmosWetDustFlux)
+            call mpas_pool_get_array(biogeochemistry, "atmosDryDustFlux", atmosDryDustFlux)
          endif
       endif
 
@@ -3837,6 +3861,14 @@ contains
            oceanZAerosolConc(6,i)        = 0.0_RKIND
            ! set aerosols, if configured
            if (config_use_zaerosols) then
+              atmosWetDustFlux(i) = x2i_im(n,index_x2i_Faxa_dstwet1) &
+                                  + x2i_im(n,index_x2i_Faxa_dstwet2) &
+                                  + x2i_im(n,index_x2i_Faxa_dstwet3) &
+                                  + x2i_im(n,index_x2i_Faxa_dstwet4)
+              atmosDryDustFlux(i) = x2i_im(n,index_x2i_Faxa_dstdry1) &
+                                  + x2i_im(n,index_x2i_Faxa_dstdry2) &
+                                  + x2i_im(n,index_x2i_Faxa_dstdry3) &
+                                  + x2i_im(n,index_x2i_Faxa_dstdry4)
               if (config_use_modal_aerosols) then
                  atmosBlackCarbonFlux(1,i) = x2i_im(n,index_x2i_Faxa_bcphodry) &
                                            + x2i_im(n,index_x2i_Faxa_bcphidry)
@@ -3946,6 +3978,8 @@ contains
       if (config_use_zaerosols) then
          call mpas_pool_get_field(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFluxField)
          call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
+         call mpas_pool_get_field(biogeochemistry, "atmosWetDustFlux", atmosWetDustFluxField)
+         call mpas_pool_get_field(biogeochemistry, "atmosDryDustFlux", atmosDryDustFluxField)
       endif
    endif
 
@@ -3995,6 +4029,8 @@ contains
       if (config_use_zaerosols) then
          call mpas_dmpar_exch_halo_field(atmosBlackCarbonFluxField)
          call mpas_dmpar_exch_halo_field(atmosDustFluxField)
+         call mpas_dmpar_exch_halo_field(atmosWetDustFluxField)
+         call mpas_dmpar_exch_halo_field(atmosDryDustFluxField)
       endif
    endif
 

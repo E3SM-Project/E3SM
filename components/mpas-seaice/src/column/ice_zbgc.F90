@@ -182,9 +182,9 @@
          vsurp = hsurp * aicen_init(n)
          vbrin(n) = vbrin(n) + vsurp
          vice_new = vicen_init(n) + vsurp
-         if (tr_brine .and. vice_new > c0) then ! NJvicen(n) > c0) then
-            brine_frac_init(n) = trcrn(nt_fbri,n) !NJ
-            trcrn(nt_fbri,n) = vbrin(n)/vice_new   !NJ vicen(n)
+         if (tr_brine .and. vice_new > c0) then
+            brine_frac_init(n) = trcrn(nt_fbri,n)
+            trcrn(nt_fbri,n) = vbrin(n)/vice_new
          elseif (tr_brine .and. vicen(n) <= c0) then
             trcrn(nt_fbri,n) = c1
          endif
