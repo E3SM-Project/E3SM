@@ -242,9 +242,9 @@ contains
           if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
           if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
        case (p_inf)
-          if (get_nstep() == 1) update_state_beg = .true.
           update_state_end = .true.
        end select
+       if (get_nstep() == 1) update_state_beg = .true.
 
        if (update_state_beg) then
           nf = s_w_beg     ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
