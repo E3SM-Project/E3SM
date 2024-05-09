@@ -1136,34 +1136,21 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: year_prev, month_prev, day_prev, sec_prev
-    integer :: year_curr, month_curr, day_curr, sec_curr
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
+    associate(                                          &
          begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          tcs_month_beg_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
-      call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
 
       ! If at the beginning of a simulation, save grid-level TCS based on
       ! 'begcb' from the current time step
-      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
+      if ( day_prev == 1 .and. sec_prev == 0 .and. get_nstep() <= 1 ) then
          call c2g( bounds, &
               begcb(bounds%begc:bounds%endc), &
-              tcs_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'unity', l2g_scale_type='unity' )
-      endif
-
-      ! If multiple steps into a simulation and the last time step was the
-      ! end of a month, save grid-level TCS based on 'endcb' from the last
-      ! time step
-      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
-         call c2g( bounds, &
-              endcb(bounds%begc:bounds%endc), &
               tcs_month_beg_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'unity', l2g_scale_type='unity' )
       endif
@@ -1198,8 +1185,7 @@ contains
     integer :: year, month, day, sec
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
-         begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+    associate(                                          &
          endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          tcs_month_end_grc =>    grc_cs%tcs_month_end   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the ending of a month
          )
