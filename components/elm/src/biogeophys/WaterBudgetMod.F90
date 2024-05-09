@@ -695,32 +695,19 @@ contains
     integer :: year_curr, month_curr, day_curr, sec_curr
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
+    associate(                                          &
          begwb             =>    col_ws%begwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
-         endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          tws_month_beg_grc =>    grc_ws%tws_month_beg   & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
-      call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
-
 
       ! If at the beginning of a simulation, save grid-level TWS based on
       ! 'begwb' from the current time step
-      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
+      if ( day_prev == 1 .and. sec_prev == 0 .and. get_nstep() <= 1 ) then
          call c2g( bounds, &
               begwb(bounds%begc:bounds%endc), &
-              tws_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-      endif
-
-      ! If multiple steps into a simulation and the last time step was the
-      ! end of a month, save grid-level TWS based on 'endwb' from the last
-      ! time step
-      if ( get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
-         call c2g( bounds, &
-              endwb(bounds%begc:bounds%endc), &
               tws_month_beg_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
       endif
@@ -747,13 +734,14 @@ contains
     integer  :: year, mon, day, sec
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
+    associate(                                          &
          endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass at end of the time step
          tws_month_end_grc =>    grc_ws%tws_month_end   & ! Output: [real(r8) (:)   ]  grid-level water mass at the end of a month
          )
 
       ! If this is the end of a month, save grid-level total water storage
-        call get_curr_date(year, mon, day, sec);
+      call get_curr_date(year, mon, day, sec);
+
       if (get_nstep() >= 1 .and. (day == 1 .and. sec == 0)) then
          call c2g( bounds, &
               endwb(bounds%begc:bounds%endc), &
