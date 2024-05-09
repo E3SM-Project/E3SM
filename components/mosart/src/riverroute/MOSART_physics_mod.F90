@@ -682,8 +682,8 @@ MODULE MOSART_physics_mod
 
 ! check for negative channel storage
     if (negchan < -1.e-10) then
-       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
-!       call shr_sys_abort('mosart: negative channel storage')
+       write(iulog,*) 'Error: Negative channel storage found! ',negchan
+       call shr_sys_abort('mosart: negative channel storage')
     endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
     TRunoff%erowm_regi(:,nt_nmud:nt_nsan) = TRunoff%erowm_regi(:,nt_nmud:nt_nsan) / Tctl%DLevelH2R
