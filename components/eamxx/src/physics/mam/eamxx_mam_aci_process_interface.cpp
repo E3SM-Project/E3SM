@@ -1101,15 +1101,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // hetrozenous freezing outputs
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
-  Kokkos::deep_copy(hetfrz_immersion_nucleation_tend_, 0.0); //init to zero
 
   hetfrz_contact_nucleation_tend_ =
       get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
-  Kokkos::deep_copy(hetfrz_contact_nucleation_tend_, 0.0); //init to zero
 
   hetfrz_depostion_nucleation_tend_ =
       get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
-  Kokkos::deep_copy(hetfrz_depostion_nucleation_tend_, 0.0); //init to zero
 
   //---------------------------------------------------------------------------------
   // Allocate memory for the class members
