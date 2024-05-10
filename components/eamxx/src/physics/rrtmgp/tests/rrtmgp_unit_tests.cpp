@@ -1093,10 +1093,10 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   auto sw_bnd_flux_dif = real3dk("sw_bnd_flux_dif", ncol, nlay+1, nbnd);
   logger->info("Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
   Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
-    if (ibnd < 10) {
+    if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
-    } else if (ibnd == 10) {
+    } else if (ibnd == 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
     } else {
@@ -1115,20 +1115,20 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   const double tol = 1e-10;  // tolerance on floating point inequality for assertions
-  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(1) - 0.5) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(1) - 0.5) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(1) - 0.5) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(1) - 0.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 0.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 0.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 0.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - 0.5) < tol);
   // ---------------------------------
 
   // ---------------------------------
   // Test case, only flux in NIR bands
   logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
   Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
-    if (ibnd < 10) {
+    if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
-    } else if (ibnd == 10) {
+    } else if (ibnd == 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
     } else {
@@ -1146,20 +1146,20 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   );
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
-  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(1) - 9.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(1) - 0.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(1) - 9.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(1) - 0.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 9.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 0.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 9.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - 0.0) < tol);
   // ---------------------------------
 
   // ---------------------------------
   // Test case, only flux in VIS bands
   logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
   Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
-    if (ibnd < 10) {
+    if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
-    } else if (ibnd == 10) {
+    } else if (ibnd == 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
     } else {
@@ -1177,20 +1177,20 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   );
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
-  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(1) - 0.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(1) - 4.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(1) - 0.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(1) - 4.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 0.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 4.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 0.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - 4.0) < tol);
   // ---------------------------------
 
   // ---------------------------------
   // Test case, only flux in all bands
   logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
   Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
-    if (ibnd < 10) {
+    if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1.0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 2.0;
-    } else if (ibnd == 10) {
+    } else if (ibnd == 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 3.0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 4.0;
     } else {
@@ -1208,10 +1208,10 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   );
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
-  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(1) - 10.5) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(1) - 21.5) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(1) - 20.0) < tol);
-  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(1) - 26.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 10.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 21.5) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 20.0) < tol);
+  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - 26.0) < tol);
   // ---------------------------------
 
   // Finalize YAKL
@@ -1252,10 +1252,10 @@ TEST_CASE("rrtmgp_test_check_range_k") {
   Kokkos::deep_copy(dummy, 0.1);
   REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == true);
   // At least one value below lower bound
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 1) = -0.1;});
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 0) = -0.1;});
   REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
   // At least one value above upper bound
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 1) = 1.1;});
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 0) = 1.1;});
   REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
   scream::finalize_kls();
 }

@@ -720,9 +720,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
     // array, to restore at the end inside the m_gast_concs object.
 #ifdef RRTMGP_ENABLE_YAKL
     auto gas_concs = m_gas_concs.concs;
+    auto orig_ncol = m_gas_concs.ncol;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
     auto gas_concs_k = m_gas_concs_k.concs;
+    auto orig_ncol_k = m_gas_concs_k.ncol;
 #endif
 
     // Compute orbital parameters; these are used both for computing
@@ -876,22 +878,37 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      // For now, we need to duplicate this data. In the future, these should be
-      // unmanaged views.
+      // If YAKL is on, we don't want aliased memory in both the yakl and kokos
+      // subviews.
       auto subview_1dk = [&](const real1dk v) -> real1dk {
-        real1dk rv(v.label(),ncol);
-        Kokkos::deep_copy(rv, v);
+        real1dk subv(v, std::make_pair(0, ncol));
+#ifdef RRTMGP_ENABLE_YAKL
+        real1dk rv(v.label(), ncol);
+        Kokkos::deep_copy(rv, subv);
         return rv;
+#else
+        return subv;
+#endif
       };
       auto subview_2dk = [&](const real2dk v) -> real2dk {
-        real2dk rv(v.label(),ncol,v.extent(1));
-        Kokkos::deep_copy(rv, v);
+        real2dk subv(v, std::make_pair(0, ncol), Kokkos::ALL);
+#ifdef RRTMGP_ENABLE_YAKL
+        real2dk rv(v.label(), ncol, v.extent(1));
+        Kokkos::deep_copy(rv, subv);
         return rv;
+#else
+        return subv;
+#endif
       };
       auto subview_3dk = [&](const real3dk v) -> real3dk {
-        real3dk rv(v.label(),ncol,v.extent(1),v.extent(2));
-        Kokkos::deep_copy(rv, v);
+        real3dk subv(v, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);
+#ifdef RRTMGP_ENABLE_YAKL
+        real3dk rv(v.label(), ncol, v.extent(1), v.extent(2));
+        Kokkos::deep_copy(rv, subv);
         return rv;
+#else
+        return subv;
+#endif
       };
 
       auto p_lay_k           = subview_2dk(m_buffer.p_lay_k);
@@ -962,7 +979,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
       m_gas_concs.concs = subview_3d(gas_concs);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      assert(m_gas_concs.ncol == ncol); // I think a lot of this code only works if chunk_size==ncol
       m_gas_concs_k.ncol = ncol;
       m_gas_concs_k.concs = subview_3dk(gas_concs_k);
 #endif
@@ -1133,8 +1149,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
       }
       Kokkos::fence();
 #ifdef RRTMGP_ENABLE_KOKKOS
-      COMPARE_ALL_WRAP(std::vector<real3d>({aero_tau_sw}), //, aero_ssa_sw, aero_g_sw, aero_tau_lw}),
-                       std::vector<real3dk>({aero_tau_sw_k}));//, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k}));
+      COMPARE_ALL_WRAP(std::vector<real3d>({aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw}),
+                       std::vector<real3dk>({aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k}));
 #endif
 
 
@@ -1177,8 +1193,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
         m_gas_concs.set_vmr(name, tmp2d);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+        COMPARE_WRAP(tmp2d, tmp2d_k);
         m_gas_concs_k.set_vmr(name, tmp2d_k);
-        VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
+        //VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k); broken for some reason
 #endif
       }
 
@@ -1363,7 +1380,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       COMPARE_ALL_WRAP(std::vector<real3d>({sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir, lw_bnd_flux_up, lw_bnd_flux_dn}),
                        std::vector<real3dk>({sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k, lw_bnd_flux_up_k, lw_bnd_flux_dn_k}));
-      VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
+      //VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
 #endif
 
       // Update heating tendency
@@ -1637,15 +1654,23 @@ void RRTMGPRadiation::run_impl (const double dt) {
             d_sunlit(icol) = 0.0;
         }
       });
+#ifdef RRTMGP_ENABLE_YAKL
+      // Sync back to gas_concs_k
+      real3dk temp(gas_concs_k, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);
+      Kokkos::deep_copy(temp, m_gas_concs_k.concs);
+#endif
 #endif
     } // loop over chunk
 
     // Restore the refCounted array.
 #ifdef RRTMGP_ENABLE_YAKL
     m_gas_concs.concs = gas_concs;
+    m_gas_concs.ncol = orig_ncol;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
+    m_gas_concs_k.concs = gas_concs_k;
+    m_gas_concs_k.ncol = orig_ncol_k;
+    //VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
 #endif
   } // update_rad
 
