@@ -35,9 +35,9 @@ public:
     //Do nothing
   }
 
-  std::string name() const { return "MyDiag"; }
+  std::string name() const override { return "MyDiag"; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void set_grids (const std::shared_ptr<const GridsManager> gm) override {
     using namespace ekat::units;
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
@@ -64,13 +64,13 @@ public:
     m_one.deep_copy(1.0);
   }
 
-  void init_timestep (const util::TimeStamp& start_of_step) {
+  void init_timestep (const util::TimeStamp& start_of_step) override {
     m_t_beg = start_of_step;
   }
 
 protected:
 
-  void compute_diagnostic_impl () {
+  void compute_diagnostic_impl () override {
     const auto& f_in  = get_field_in(m_f_in);
 
     const auto& t = f_in.get_header().get_tracking().get_time_stamp();
@@ -80,12 +80,12 @@ protected:
     m_diagnostic_output.update(m_one,dt,2.0);
   }
 
-  void initialize_impl (const RunType /* run_type */ ) {
+  void initialize_impl (const RunType /* run_type */ ) override {
     m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
   }
 
   // Clean up
-  void finalize_impl ( /* inputs */ ) {}
+  void finalize_impl ( /* inputs */ ) override {}
 
   // Internal variables
   int m_num_cols, m_num_levs;
