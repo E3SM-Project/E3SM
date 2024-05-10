@@ -57,6 +57,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   scorpio::init_subsystem(io_comm);
   const int ncols_src = 64*io_comm.size();
   const int nlevs_src = 2*packsize + 1;
+  const int dt = 10;
+
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   // Setup for target levels.
@@ -234,7 +236,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
   om_source.setup(io_comm,source_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_source.run(t0);
+  om_source.init_timestep(t0,dt);
+  om_source.run(t0+dt);
   om_source.finalize();
   print ("    -> source data ... done\n",io_comm);
 
@@ -242,7 +245,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
   om_vert.setup(io_comm,vert_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_vert.run(t0);
+  om_vert.init_timestep(t0,dt);
+  om_vert.run(t0+dt);
   om_vert.finalize();
   print ("    -> vertical remap ... done\n",io_comm);
 
@@ -250,7 +254,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
   om_horiz.setup(io_comm,horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_horiz.run(t0);
+  om_horiz.init_timestep(t0,dt);
+  om_horiz.run(t0+dt);
   om_horiz.finalize();
   print ("    -> horizontal remap ... done\n",io_comm);
 
@@ -258,7 +263,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
   om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_vert_horiz.run(t0);
+  om_vert_horiz.init_timestep(t0,dt);
+  om_vert_horiz.run(t0+dt);
   om_vert_horiz.finalize();
   print ("    -> vertical-horizontal remap ... done\n",io_comm);
   print (" -> Create output ... done\n",io_comm);

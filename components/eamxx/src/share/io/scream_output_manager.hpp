@@ -112,6 +112,8 @@ public:
       m_atm_logger = atm_logger;
   }
   void add_global (const std::string& name, const ekat::any& global);
+
+  void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 

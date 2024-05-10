@@ -138,6 +138,7 @@ void write (const int seed, const ekat::Comm& comm)
   const int nsteps = 11;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
     // Update time
     t += dt;
 

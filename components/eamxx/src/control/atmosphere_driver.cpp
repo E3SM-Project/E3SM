@@ -1605,6 +1605,16 @@ void AtmosphereDriver::run (const int dt) {
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
 
+  // Tell the output managers that we're starting a timestep. This is usually
+  // a no-op, but some diags *may* require to do something. E.g., a diag that
+  // computes tendency of an arbitrary quantity may want to store a copy of
+  // that quantity at the beginning of the timestep. Or they may need to store
+  // the timestamp at the beginning of the timestep, so that we can compute
+  // dt at the end.
+  for (auto it : m_output_managers) {
+    it.init_timestep(m_current_ts,dt);
+  }
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);

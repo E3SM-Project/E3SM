@@ -264,6 +264,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   {
     // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
     m_output_control.next_write_ts = m_run_t0;
+    // This is in case some diags need to init the timestep. Their output may be meaningless
+    // at t0 (e.g., if their input fields are not in the initial condition fields set,
+    // and have yet to be computed), but they may still require the start-of-step timestamp to be valid
+    init_timestep(m_run_t0,0);
     this->run(m_run_t0);
   }
 
@@ -281,12 +285,46 @@ add_global (const std::string& name, const ekat::any& global) {
 }
 
 /*===============================================================================================*/
+void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const Real dt)
+{
+  // In case output is disabled, no point in doing anything else
+  if (not m_output_control.output_enabled()) {
+    return;
+  }
+
+  // Check if the end of this timestep will correspond to an output step. If not, there's nothing to do
+  const auto& end_of_step = start_of_step+dt;
+
+  // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
+  //       Since we *always* write a history restart file, we can have a non-full checkpoint, if the average
+  //       type is Instant and/or the frequency is every step. A non-full checkpoint will simply write some
+  //       global attribute, such as the time of last write.
+  const bool is_output_step          = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
+  const bool is_checkpoint_step      = m_checkpoint_control.is_write_step(end_of_step);
+  const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant;
+  if (not is_output_step and not (is_checkpoint_step and has_checkpoint_data) ) {
+    return;
+  }
+
+  if (m_atm_logger) {
+    m_atm_logger->debug("[OutputManager::init_timestep] filename_prefix: " + m_filename_prefix + "\n");
+  }
+
+  for (auto s : m_output_streams) {
+    s->init_timestep(start_of_step);
+  }
+}
+
 void OutputManager::run(const util::TimeStamp& timestamp)
 {
   // In case output is disabled, no point in doing anything else
   if (not m_output_control.output_enabled()) {
     return;
   }
+
+  // Update counters
+  ++m_output_control.nsamples_since_last_write;
+  ++m_checkpoint_control.nsamples_since_last_write;
 
   if (m_atm_logger) {
     m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
@@ -296,10 +334,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
-
-  // Check if we need to open a new file
-  ++m_output_control.nsamples_since_last_write;
-  ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
   // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.

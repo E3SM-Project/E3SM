@@ -127,6 +127,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   om.setup(comm,om_pl,fm,gm,t0,t0,false);
 
   // Run output manager
+  om.init_timestep(t0,0);
   om.run (t0);
 
   // Close file and cleanup
