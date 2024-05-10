@@ -264,8 +264,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   {
     // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
     m_output_control.next_write_ts = m_run_t0;
-    // This is in case some diags need to init the timestep. Most likely, their output
-    // is meaningless at t0, but they may still require the start-of-step timestamp to be valid
+    // This is in case some diags need to init the timestep. Their output may be meaningless
+    // at t0 (e.g., if their input fields are not in the initial condition fields set,
+    // and have yet to be computed), but they may still require the start-of-step timestamp to be valid
     init_timestep(m_run_t0,0);
     this->run(m_run_t0);
   }
