@@ -292,14 +292,17 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  // Update counters
-  ++m_output_control.nsamples_since_last_write;
-  ++m_checkpoint_control.nsamples_since_last_write;
-
   // Check if the end of this timestep will correspond to an output step. If not, there's nothing to do
   const auto& end_of_step = start_of_step+dt;
-  const bool will_be_output_step = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
-  if (not will_be_output_step) {
+
+  // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
+  //       Since we *always* write a history restart file, we can have a non-full checkpoint, if the average
+  //       type is Instant and/or the frequency is every step. A non-full checkpoint will simply write some
+  //       global attribute, such as the time of last write.
+  const bool is_output_step          = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
+  const bool is_checkpoint_step      = m_checkpoint_control.is_write_step(end_of_step);
+  const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant;
+  if (not is_output_step and not (is_checkpoint_step and has_checkpoint_data) ) {
     return;
   }
 
@@ -318,6 +321,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   if (not m_output_control.output_enabled()) {
     return;
   }
+
+  // Update counters
+  ++m_output_control.nsamples_since_last_write;
+  ++m_checkpoint_control.nsamples_since_last_write;
 
   if (m_atm_logger) {
     m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
