@@ -809,7 +809,7 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
-            <var name="origOceanMaskHoriz" />
+                        <var name="origOceanMaskHoriz" packages="extrapOceanData" />
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -914,7 +914,16 @@
                         <var name="ismip6RunoffCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcingCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
-            <var name="origOceanMaskHoriz" />
+		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
+			<var name="origOceanMaskHoriz" packages="extrapOceanData" />
+			<var name="validOceanMask" packages="extrapOceanData" />
+			<var name="validOceanMaskOrig" packages="extrapOceanData" />
+			<var name="availOceanMask" packages="extrapOceanData" />
+			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
+			<var name="seedOceanMaskHoriz" packages="extrapOceanData" />
+			<var name="seedOceanMaskHorizInit" packages="extrapOceanData" />
+			<var name="TFoceanOld" packages="extrapOceanData" />
+			<var name="TFocean" packages="extrapOceanData" />
 		</stream>
 
 
@@ -1190,9 +1199,6 @@ is the value of that variable from the *previous* time level!
 
 	<!--  Variables related to ice sheet geometry -->
         <var_struct name="geometry" time_levs="1">
-                <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
-                     description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
-                />
                 <var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
                      description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
                 />
@@ -1672,9 +1678,9 @@ is the value of that variable from the *previous* time level!
 
     <!-- Variables related to the ocean-forcing re-extrapolation -->
         <var_struct name="extrapOceanData" time_levs="1">
-<!--                 <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
+                <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
                      description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
-                /> -->
+                />
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
                      description="3D mask for indicating where ocean data is present (i.e., seed mask)"
                 />

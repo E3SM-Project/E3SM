@@ -117,6 +117,7 @@ module li_core_interface
       logical, pointer :: ismip6ShelfMeltActive
       logical, pointer :: ismip6GroundedFaceMeltActive
       logical, pointer :: thermalActive
+      logical, pointer :: extrapOceanDataActive
 
       ierr = 0
 
@@ -137,6 +138,7 @@ module li_core_interface
       call mpas_pool_get_package(packagePool, 'ismip6ShelfMeltActive', ismip6ShelfMeltActive)
       call mpas_pool_get_package(packagePool, 'ismip6GroundedFaceMeltActive', ismip6GroundedFaceMeltActive)
       call mpas_pool_get_package(packagePool, 'thermalActive', thermalActive)
+      call mpas_pool_get_package(packagePool, 'extrapOceanDataActive', extrapOceanDataActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -157,6 +159,12 @@ module li_core_interface
          observationsActive = .true.
          call mpas_log_write("The 'observations' package and assocated variables have been enabled because " // &
               "'config_write_albany_ascii_mesh' is set to .true.")
+      endif
+
+      if (config_ocean_data_extrapolation) then
+         extrapOceanDataActive = .true.
+         call mpas_log_write("The 'extrapOceanDataActive' package and assocated variables have been enabled because " // &
+              "'config_ocean_data_extrapolation' is set to .true.")
       endif
 
       if ( (trim(config_basal_mass_bal_float) == 'ismip6') .or. &

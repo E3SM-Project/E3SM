@@ -127,7 +127,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
-         call mpas_pool_get_array(geometryPool, 'origOceanMaskHoriz', origOceanMaskHoriz)
+         call mpas_pool_get_array(extrapOceanDataPool, 'origOceanMaskHoriz', origOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMaskOrig', validOceanMaskOrig)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
