@@ -207,7 +207,7 @@ void write (const int seed, const ekat::Comm& comm)
     f.get_header().get_tracking().update_time_stamp(t0+dt);
     f.update(one,1.0,1.0);
   }
-  om.init_timestep(t0);
+  om.init_timestep(t0,dt);
   om.run (t0+dt);
 
   // Close file and cleanup

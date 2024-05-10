@@ -1612,7 +1612,7 @@ void AtmosphereDriver::run (const int dt) {
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
   for (auto it : m_output_managers) {
-    it.init_timestep(m_current_ts);
+    it.init_timestep(m_current_ts,dt);
   }
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to

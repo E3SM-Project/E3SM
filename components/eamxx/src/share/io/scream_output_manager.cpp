@@ -266,7 +266,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_output_control.next_write_ts = m_run_t0;
     // This is in case some diags need to init the timestep. Most likely, their output
     // is meaningless at t0, but they may still require the start-of-step timestamp to be valid
-    init_timestep(m_run_t0);
+    init_timestep(m_run_t0,0);
     this->run(m_run_t0);
   }
 
@@ -284,10 +284,21 @@ add_global (const std::string& name, const ekat::any& global) {
 }
 
 /*===============================================================================================*/
-void OutputManager::init_timestep (const util::TimeStamp& start_of_step)
+void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const Real dt)
 {
   // In case output is disabled, no point in doing anything else
   if (not m_output_control.output_enabled()) {
+    return;
+  }
+
+  // Update counters
+  ++m_output_control.nsamples_since_last_write;
+  ++m_checkpoint_control.nsamples_since_last_write;
+
+  // Check if the end of this timestep will correspond to an output step. If not, there's nothing to do
+  const auto& end_of_step = start_of_step+dt;
+  const bool will_be_output_step = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
+  if (not will_be_output_step) {
     return;
   }
 
@@ -315,10 +326,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
-
-  // Check if we need to open a new file
-  ++m_output_control.nsamples_since_last_write;
-  ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
   // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
