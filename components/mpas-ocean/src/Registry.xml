@@ -480,6 +480,14 @@
 					description="Background vertical diffusion applied to tracer quantities"
 					possible_values="Any positive real value."
 		/>
+		<nml_option name="config_cvmix_background_diffusion_passive" type="real" default_value="1.0e-5" units="m^2 s^-1"
+					description="Background vertical diffusion applied to passive tracer quantities"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_background_diffusion_passive_enable" type="logical" default_value=".false."
+					description="flag to enable using a different background vertical diffusion for passive tracers"
+					possible_values=".true. or .false."
+					/>
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^-1"
 					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
@@ -3176,6 +3184,10 @@
 		/>
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="vertDiffPassiveTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
+			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically) for passive tracers"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="1"
