@@ -104,7 +104,7 @@ void MLCorrection::run_impl(const double dt) {
   const auto &v               = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
 
   // For precipitation adjustment we need to track the change in column integrated 'qv'
-  auto qv_told = Kokkos::create_mirror_view(qv);
+  host_view2d_type qv_told("",qv.extent(0),qv.extent(1));
   Kokkos::deep_copy(qv_told,qv);
 
 
@@ -149,7 +149,7 @@ void MLCorrection::run_impl(const double dt) {
   ekat::enable_fpes(fpe_mask);   
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
-  if (not (m_ML_model_path_tq == "None")) {
+  if (m_ML_model_path_tq != "None") {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;
@@ -168,12 +168,12 @@ void MLCorrection::run_impl(const double dt) {
       auto qold_icol = ekat::subview(qv_told,icol);
       auto qnew_icol = ekat::subview(qv_tnew,icol);
       auto rho_icol  = ekat::subview(pseudo_density,icol);
-      Real wvp = 0;
+      Real net_column_moistening = 0;
       // Compute WaterVaporPath Difference
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs),
                               [&] (const int& ilev, Real& lsum) {
         lsum += (qnew_icol(ilev)-qold_icol(ilev)) * rho_icol(ilev) / g;
-      },wvp);
+      },net_column_moistening);
       team.team_barrier();
       // Adjust Precipitation
       //  - Note, we subtract the water vapor path because positive precip represents
@@ -181,24 +181,32 @@ void MLCorrection::run_impl(const double dt) {
       auto tot_precip = precip_liq_surf_mass(icol)+precip_ice_surf_mass(icol);
       if (tot_precip>0) {
         // adjust precip by weighted avg of both phases
-        auto liq_w = precip_liq_surf_mass(icol)/tot_precip;
-        auto ice_w = precip_ice_surf_mass(icol)/tot_precip;
-        precip_liq_surf_mass(icol) -= liq_w*wvp;
-        precip_ice_surf_mass(icol) -= ice_w*wvp;
+        Kokkos::single(Kokkos::PerTeam(team), [&] {
+          auto liq_frac = precip_liq_surf_mass(icol)/tot_precip;
+          auto ice_frac = precip_ice_surf_mass(icol)/tot_precip;
+          precip_liq_surf_mass(icol) -= liq_frac*net_column_moistening;
+          precip_ice_surf_mass(icol) -= ice_frac*net_column_moistening;
+	});
       } else {
         // Apply all the adjustment to a single phase based on surface temperature
-        auto T_icol = ekat::subview(T_mid,icol);
-        if (T_icol(m_num_levs-1)>273.15) {
-          precip_liq_surf_mass(icol) -= wvp;
-        } else {
-          precip_ice_surf_mass(icol) -= wvp;
-        }
+        Kokkos::single(Kokkos::PerTeam(team), [&] {
+          auto T_icol = ekat::subview(T_mid,icol);
+          if (T_icol(m_num_levs-1)>273.15) {
+            precip_liq_surf_mass(icol) -= net_column_moistening;
+          } else {
+            precip_ice_surf_mass(icol) -= net_column_moistening;
+          }
+	});
       }
       if (precip_liq_surf_mass(icol)<0) {
-        precip_liq_surf_mass(icol) = 0.0;
+        Kokkos::single(Kokkos::PerTeam(team), [&] {
+          precip_liq_surf_mass(icol) = 0.0;
+	});
       }
       if (precip_ice_surf_mass(icol)<0) {
-        precip_ice_surf_mass(icol) = 0.0;
+        Kokkos::single(Kokkos::PerTeam(team), [&] {
+          precip_ice_surf_mass(icol) = 0.0;
+	});
       }
     });
   }
