@@ -167,6 +167,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   const int nsteps = num_output_steps*freq;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
     // Update time
     t += dt;
 

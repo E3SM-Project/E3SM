@@ -45,6 +45,7 @@ TEST_CASE("se_grid_io")
   int num_my_elems = 2;
   int np = 4;
   int num_levs = 2 + SCREAM_PACK_SIZE;
+  int dt = 10;
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(io_comm);
@@ -70,7 +71,8 @@ TEST_CASE("se_grid_io")
 
   OutputManager om;
   om.setup(io_comm,params,fm0,gm,t0,t0,false);
-  om.run(t0);
+  om.init_timestep(t0,dt);
+  om.run(t0+dt);
   om.finalize();
 
   // Get a fresh new field manager, and set fields to NaN

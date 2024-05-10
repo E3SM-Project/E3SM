@@ -99,6 +99,7 @@ TEST_CASE("output_restart","io")
     // The output restart data is written every 5 time steps, while the output freq is 10.
     auto time = run_t0;
     for (int i=0; i<nsteps; ++i) {
+      output_manager.init_timestep(time,dt);
       time_advance(*fm,out_fields,dt);
       time += dt;
       output_manager.run(time);
