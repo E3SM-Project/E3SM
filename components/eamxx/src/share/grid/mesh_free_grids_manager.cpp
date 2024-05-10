@@ -70,10 +70,12 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   se_grid->setSelfPointer(se_grid);
 
   // Set up the degrees of freedom.
-  auto dof_gids = se_grid->get_dofs_gids();
-  auto lid2idx  = se_grid->get_lid_to_idx_map();
+  auto dof_gids  = se_grid->get_dofs_gids();
+  auto elem_gids = se_grid->get_partitioned_dim_gids();
+  auto lid2idx   = se_grid->get_lid_to_idx_map();
 
   auto host_dofs    = dof_gids.template get_view<AbstractGrid::gid_type*,Host>();
+  auto host_elems   = elem_gids.template get_view<AbstractGrid::gid_type*,Host>();
   auto host_lid2idx = lid2idx.template get_view<int**,Host>();
 
   // Count unique local dofs. On all elems except the very last one (on rank N),
@@ -82,6 +84,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   int offset = num_local_dofs*m_comm.rank();
 
   for (int ie = 0; ie < num_local_elems; ++ie) {
+    host_elems[ie] = ie + num_local_elems*m_comm.rank();
     for (int igp = 0; igp < num_gp; ++igp) {
       for (int jgp = 0; jgp < num_gp; ++jgp) {
         int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
@@ -96,6 +99,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
 
   // Sync to device
   dof_gids.sync_to_dev();
+  elem_gids.sync_to_dev();
   lid2idx.sync_to_dev();
 
   se_grid->m_short_name = "se";
@@ -144,28 +148,31 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
     const auto units = ekat::units::Units::nondimensional();
 
-    auto lat  = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
-    auto lon  = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
-    auto hyam  = grid->create_geometry_data("hyam" , layout_mid, units);
-    auto hybm  = grid->create_geometry_data("hybm" , layout_mid, units);
+    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), units);
+    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), units);
+    auto hyam = grid->create_geometry_data("hyam" , layout_mid, units);
+    auto hybm = grid->create_geometry_data("hybm" , layout_mid, units);
+    auto lev  = grid->create_geometry_data("lev" ,  layout_mid, units);
 
     lat.deep_copy(ekat::ScalarTraits<Real>::invalid());
     lon.deep_copy(ekat::ScalarTraits<Real>::invalid());
     hyam.deep_copy(ekat::ScalarTraits<Real>::invalid());
     hybm.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    lev.deep_copy(ekat::ScalarTraits<Real>::invalid());
     lat.sync_to_dev();
     lon.sync_to_dev();
     hyam.sync_to_dev();
     hybm.sync_to_dev();
+    lev.sync_to_dev();
   } else if (geo_data_source=="IC_FILE"){
     const auto& filename = m_params.get<std::string>("ic_filename");
-    if (scorpio::has_variable(filename,"lat") &&
-        scorpio::has_variable(filename,"lon")) {
+    if (scorpio::has_var(filename,"lat") &&
+        scorpio::has_var(filename,"lon")) {
       load_lat_lon(grid,filename);
     }
 
-    if (scorpio::has_variable(filename,"hyam") &&
-        scorpio::has_variable(filename,"hybm")) {
+    if (scorpio::has_var(filename,"hyam") &&
+        scorpio::has_var(filename,"hybm")) {
       load_vertical_coordinates(grid,filename);
     }
   }
@@ -225,9 +232,12 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using namespace ShortFieldTagsNames;
   FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
   const auto units = ekat::units::Units::nondimensional();
+  auto lev_unit = ekat::units::Units::nondimensional();;
+  lev_unit.set_string("mb");
 
   auto hyam = grid->create_geometry_data("hyam", layout_mid, units);
   auto hybm = grid->create_geometry_data("hybm", layout_mid, units);
+  auto lev  = grid->create_geometry_data("lev",  layout_mid, lev_unit);
 
   // Create host mirrors for reading in data
   std::map<std::string,geo_view_host> host_views = {
@@ -251,9 +261,21 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 
+  // Build lev from hyam and hybm
+  using PC             = scream::physics::Constants<Real>;
+  const Real ps0        = PC::P0;
+
+  auto hya_v = hyam.get_view<const Real*,Host>();
+  auto hyb_v = hybm.get_view<const Real*,Host>();
+  auto lev_v = lev.get_view<Real*,Host>();
+  for (int ii=0;ii<grid->get_num_vertical_levels();ii++) {
+    lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
+  }
+
   // Sync to dev
   hyam.sync_to_dev();
   hybm.sync_to_dev();
+  lev.sync_to_dev();
 
 #ifndef NDEBUG
   for (auto f : {hyam, hybm}) {

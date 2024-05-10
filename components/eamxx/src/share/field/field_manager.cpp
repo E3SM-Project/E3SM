@@ -525,13 +525,13 @@ void FieldManager::registration_ends ()
         const auto& id = f->get_header().get_identifier();
         if (lt==LayoutType::Invalid) {
          f_layout = id.get_layout();
-         lt = get_layout_type(f_layout.tags());
+         lt = f_layout.type();
         } else {
-          EKAT_REQUIRE_MSG (lt==get_layout_type(id.get_layout().tags()),
+          EKAT_REQUIRE_MSG (lt==id.get_layout().type(),
               "Error! Found a group to bundle containing fields with different layouts.\n"
               "       Group name: " + cluster_name + "\n"
               "       Layout 1: " + e2str(lt) + "\n"
-              "       Layout 2: " + e2str(get_layout_type(id.get_layout().tags())) + "\n");
+              "       Layout 2: " + e2str(id.get_layout().type()) + "\n");
         }
       }
 
@@ -540,9 +540,9 @@ void FieldManager::registration_ends ()
 
       FieldLayout c_layout = FieldLayout::invalid();
       if (lt==LayoutType::Scalar2D) {
-        c_layout = m_grid->get_2d_vector_layout(CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_2d_vector_layout(cluster_ordered_fields.size());
       } else {
-        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,cluster_ordered_fields.size());
       }
 
       // The units for the bundled field are nondimensional, cause checking whether
@@ -651,13 +651,13 @@ void FieldManager::registration_ends ()
     // whether they are 2d or 3d.
     auto f1 = m_fields.at(info.m_fields_names.front());
     auto f1_layout = f1->get_header().get_identifier().get_layout();
-    auto lt = get_layout_type(f1_layout.tags());
+    auto lt = f1_layout.type();
     FieldLayout g_layout = FieldLayout::invalid();
     if (lt==LayoutType::Scalar2D) {
-      g_layout = m_grid->get_2d_vector_layout(CMP,size);
+      g_layout = m_grid->get_2d_vector_layout(size);
     } else {
       bool mid = f1_layout.tags().back()==LEV;
-      g_layout = m_grid->get_3d_vector_layout(mid,CMP,size);
+      g_layout = m_grid->get_3d_vector_layout(mid,size,e2str(CMP));
     }
 
     FieldIdentifier g_fid(gname,g_layout,nondim,m_grid->name());
@@ -736,7 +736,7 @@ void FieldManager::add_field (const Field& f) {
       "Error! Input field to 'add_field' has a layout not compatible with the stored grid.\n"
       "  - input field name : " + f.name() + "\n"
       "  - field manager grid: " + m_grid->name() + "\n"
-      "  - input field layout:   " + to_string(f.get_header().get_identifier().get_layout()) + "\n");
+      "  - input field layout:   " + f.get_header().get_identifier().get_layout().to_string() + "\n");
   EKAT_REQUIRE_MSG (not has_field(f.name()),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");

@@ -2080,7 +2080,7 @@ void compute_aerocom_cloudtop(
   real1d &cldfrac_tot_at_cldtop, real1d &cdnc_at_cldtop,
   real1d &eff_radius_qc_at_cldtop, real1d &eff_radius_qi_at_cldtop) {
   /* The goal of this routine is to calculate properties at cloud top
-   * based on the AeroCOM recommendation. See reference for routine
+   * based on the AeroCom recommendation. See reference for routine
    * get_subcolumn_mask above, where equation 14 is used for the
    * maximum-random overlap assumption for subcolumn generation. We use
    * equation 13, the column counterpart.
@@ -2270,5 +2270,105 @@ void compute_aerocom_cloudtop(
 }
 #endif
 
+<<<<<<< HEAD
 }  // namespace rrtmgp
+=======
+        void compute_aerocom_cloudtop(
+            int ncol, int nlay, const real2d &tmid, const real2d &pmid,
+            const real2d &p_del, const real2d &z_del, const real2d &qc,
+            const real2d &qi, const real2d &rel, const real2d &rei,
+            const real2d &cldfrac_tot, const real2d &nc,
+            real1d &T_mid_at_cldtop, real1d &p_mid_at_cldtop,
+            real1d &cldfrac_ice_at_cldtop, real1d &cldfrac_liq_at_cldtop,
+            real1d &cldfrac_tot_at_cldtop, real1d &cdnc_at_cldtop,
+            real1d &eff_radius_qc_at_cldtop, real1d &eff_radius_qi_at_cldtop) {
+          /* The goal of this routine is to calculate properties at cloud top
+           * based on the AeroCom recommendation. See reference for routine
+           * get_subcolumn_mask above, where equation 14 is used for the
+           * maximum-random overlap assumption for subcolumn generation. We use
+           * equation 13, the column counterpart.
+           */
+          // Set outputs to zero
+          memset(T_mid_at_cldtop, 0.0);
+          memset(p_mid_at_cldtop, 0.0);
+          memset(cldfrac_ice_at_cldtop, 0.0);
+          memset(cldfrac_liq_at_cldtop, 0.0);
+          memset(cldfrac_tot_at_cldtop, 0.0);
+          memset(cdnc_at_cldtop, 0.0);
+          memset(eff_radius_qc_at_cldtop, 0.0);
+          memset(eff_radius_qi_at_cldtop, 0.0);
+          // Initialize the 1D "clear fraction" as 1 (totally clear)
+          auto aerocom_clr = real1d("aerocom_clr", ncol);
+          memset(aerocom_clr, 1.0);
+          // Get gravity acceleration constant from constants
+          using physconst = scream::physics::Constants<Real>;
+          // TODO: move tunable constant to namelist
+          constexpr real q_threshold = 0.0;  // BAD_CONSTANT!
+          // TODO: move tunable constant to namelist
+          constexpr real cldfrac_tot_threshold = 0.001;  // BAD_CONSTANT!
+          // Loop over all columns in parallel
+          yakl::fortran::parallel_for(
+              SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                // Loop over all layers in serial (due to accumulative
+                // product), starting at 2 (second highest) layer because the
+                // highest is assumed to hav no clouds
+                for(int ilay = 2; ilay <= nlay; ++ilay) {
+                  // Only do the calculation if certain conditions are met
+                  if((qc(icol, ilay) + qi(icol, ilay)) > q_threshold &&
+                     (cldfrac_tot(icol, ilay) > cldfrac_tot_threshold)) {
+                    /* PART I: Probabilistically determining cloud top */
+                    // Populate aerocom_tmp as the clear-sky fraction
+                    // probability of this level, where aerocom_clr is that of
+                    // the previous level
+                    auto aerocom_tmp =
+                        aerocom_clr(icol) *
+                        (1.0 - ekat::impl::max(cldfrac_tot(icol, ilay - 1),
+                                               cldfrac_tot(icol, ilay))) /
+                        (1.0 - ekat::impl::min(cldfrac_tot(icol, ilay - 1),
+                                               1.0 - cldfrac_tot_threshold));
+                    // Temporary variable for probability "weights"
+                    auto aerocom_wts = aerocom_clr(icol) - aerocom_tmp;
+                    // Temporary variable for liquid "phase"
+                    auto aerocom_phi =
+                        qc(icol, ilay) / (qc(icol, ilay) + qi(icol, ilay));
+                    /* PART II: The inferred properties */
+                    /* In general, converting a 3D property X to a 2D cloud-top
+                     * counterpart x follows: x(i) += X(i,k) * weights * Phase
+                     * but X and Phase are not always needed */
+                    // T_mid_at_cldtop
+                    T_mid_at_cldtop(icol) += tmid(icol, ilay) * aerocom_wts;
+                    // p_mid_at_cldtop
+                    p_mid_at_cldtop(icol) += pmid(icol, ilay) * aerocom_wts;
+                    // cldfrac_ice_at_cldtop
+                    cldfrac_ice_at_cldtop(icol) +=
+                        (1.0 - aerocom_phi) * aerocom_wts;
+                    // cldfrac_liq_at_cldtop
+                    cldfrac_liq_at_cldtop(icol) += aerocom_phi * aerocom_wts;
+                    // cdnc_at_cldtop
+                    /* We need to convert nc from 1/mass to 1/volume first, and
+                     * from grid-mean to in-cloud, but after that, the
+                     * calculation follows the general logic */
+                    auto cdnc = nc(icol, ilay) * p_del(icol, ilay) /
+                                z_del(icol, ilay) / physconst::gravit /
+                                cldfrac_tot(icol, ilay);
+                    cdnc_at_cldtop(icol) += cdnc * aerocom_phi * aerocom_wts;
+                    // eff_radius_qc_at_cldtop
+                    eff_radius_qc_at_cldtop(icol) +=
+                        rel(icol, ilay) * aerocom_phi * aerocom_wts;
+                    // eff_radius_qi_at_cldtop
+                    eff_radius_qi_at_cldtop(icol) +=
+                        rei(icol, ilay) * (1.0 - aerocom_phi) * aerocom_wts;
+                    // Reset aerocom_clr to aerocom_tmp to accumulate
+                    aerocom_clr(icol) = aerocom_tmp;
+                  }
+                }
+                // After the serial loop over levels, the cloudy fraction is
+                // defined as (1 - aerocom_clr). This is true because
+                // aerocom_clr is the result of accumulative probabilities
+                // (their products)
+                cldfrac_tot_at_cldtop(icol) = 1.0 - aerocom_clr(icol);
+              });
+        }
+    }  // namespace rrtmgp
+>>>>>>> origin/master
 }  // namespace scream

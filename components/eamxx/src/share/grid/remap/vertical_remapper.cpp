@@ -70,7 +70,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 
   // Add tgt pressure levels to the tgt grid
   tgt_grid->set_geometry_data(m_remap_pres);
-  scorpio::eam_pio_closefile(map_file);
+  scorpio::release_file(map_file);
 }
 
 FieldLayout VerticalRemapper::
@@ -80,7 +80,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
       "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(tgt_layout));
+      " - input layout: " + tgt_layout.to_string());
 
   return create_layout(tgt_layout,m_src_grid);
 }
@@ -92,7 +92,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
       "[VerticalRemapper] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(src_layout));
+      " - input layout: " + src_layout.to_string());
 
   return create_layout(src_layout,m_tgt_grid);
 }
@@ -101,15 +101,12 @@ FieldLayout VerticalRemapper::
 create_layout (const FieldLayout& fl_in,
                const grid_ptr_type& grid_out) const
 {
-  using namespace ShortFieldTagsNames;
-
   // NOTE: for the vert remapper, it doesn't really make sense to distinguish
   //       between midpoints and interfaces: we're simply asking for a quantity
   //       at a given set of pressure levels. So we choose to have fl_out
   //       to *always* have LEV as vertical tag.
-  const auto lt = get_layout_type(fl_in.tags());
-  auto fl_out = FieldLayout::invalid();
-  switch (lt) {
+        auto fl_out = FieldLayout::invalid();
+  switch (fl_in.type()) {
     case LayoutType::Scalar0D: [[ fallthrough ]];
     case LayoutType::Vector0D: [[ fallthrough ]];
     case LayoutType::Scalar2D: [[ fallthrough ]];
@@ -125,18 +122,14 @@ create_layout (const FieldLayout& fl_in,
       fl_out = grid_out->get_3d_scalar_layout(true);
       break;
     case LayoutType::Vector3D:
-    {
-      const auto vec_tag = fl_in.get_vector_tag();
-      const auto vec_dim = fl_in.dim(vec_tag);
-      fl_out = grid_out->get_3d_vector_layout(true,vec_tag,vec_dim);
+      fl_out = grid_out->get_3d_vector_layout(true,fl_in.get_vector_dim());
       break;
-    }
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc
       //       that needs to handle a tensor3d quantity, so no need to add it
       EKAT_ERROR_MSG (
-          "Layout not supported by VerticalRemapper.\n"
-          " - input layout: " + to_string(fl_in) + "\n");
+        "[VerticalRemapper] Error! Layout not supported by VerticalRemapper.\n"
+        " - input layout: " + fl_in.to_string() + "\n");
   }
   return fl_out;
 }
@@ -161,13 +154,7 @@ set_pressure_levels(const std::string& map_file)
 
   auto remap_pres_scal = m_remap_pres.get_view<Real*,Host>();
 
-  std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
-  std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
-  const std::string decomp_tag = "VR::spl,nlev=" + std::to_string(m_num_remap_levs) + ",file-idx=" + std::to_string(file2idx[map_file]);
-  scorpio::register_variable(map_file, "p_levs", "p_levs", {"lev"}, "real", decomp_tag);
-  scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
-  scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
+  scorpio::read_var(map_file,"p_levs",remap_pres_scal.data());
 
   m_remap_pres.sync_to_dev();
 }
@@ -186,7 +173,7 @@ register_vertical_source_field(const Field& src)
   EKAT_REQUIRE_MSG (vert_tag==LEV or vert_tag==ILEV,
       "Error! Input vertical level field does not have a vertical level tag at the end.\n"
       " - field name: " + src.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   if (vert_tag==LEV) {
     m_src_mid = src;
@@ -218,7 +205,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   // Note, for vertical remapper we set all target fields as having LEV as the vertical dimension.  So we check that all other tags
   // between source and target match if source has ILEV
   if (has_ilev) {
-    EKAT_REQUIRE_MSG(src_layout.strip_dim(ILEV).tags()==tgt_layout.strip_dim(LEV).tags(),
+    EKAT_REQUIRE_MSG(src_layout.clone().strip_dim(ILEV).tags()==tgt_layout.clone().strip_dim(LEV).tags(),
         "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same set of field tags");
   } else {
     EKAT_REQUIRE_MSG(src_layout.tags()==tgt_layout.tags(),
@@ -250,7 +237,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     auto tags = src_lay.tags();
     for (auto tag : tags) {
       if (tag != COL && tag != LEV && tag != ILEV) {
-        src_lay = src_lay.strip_dim(tag);
+        src_lay.strip_dim(tag);
       }
     }
     const auto  lname  = src.get_header().get_identifier().get_id_string()+"_mask";

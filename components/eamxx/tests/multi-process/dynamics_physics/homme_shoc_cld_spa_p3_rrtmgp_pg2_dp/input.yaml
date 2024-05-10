@@ -6,10 +6,13 @@ driver_options:
 
 iop_options:
   doubly_periodic_mode: true
-  iop_file: ${IOP_DATA_DIR}/DYCOMSrf01_iopfile_4scam.nc
-  target_latitude: 31.5
-  target_longitude: 238.5
+  iop_file: ${IOP_DATA_DIR}/CASS_iopfile_4scam.nc
+  target_latitude: 36.605
+  target_longitude: 262.515
   iop_dosubsidence: true
+  iop_coriolis: true
+  iop_nudge_tq: true
+  iop_nudge_uv: true
   iop_srf_prop: true
 
 time_stepping:
@@ -18,7 +21,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -41,7 +44,7 @@ atmosphere_processes:
     schedule_type: Sequential
     Type: Group
     mac_aero_mic:
-      atm_procs_list: [shoc,CldFraction,spa,p3]
+      atm_procs_list: [tms,shoc,CldFraction,spa,p3]
       Type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
@@ -75,7 +78,7 @@ atmosphere_processes:
 
 grids_manager:
   Type: Homme
-  physics_grid_type: GLL
+  physics_grid_type: PG2
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 

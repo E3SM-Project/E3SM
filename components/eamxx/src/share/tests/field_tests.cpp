@@ -26,17 +26,17 @@ TEST_CASE("field_layout", "") {
 
   FieldLayout fl1 ({COL},{1});
   FieldLayout fl2 ({COL,CMP},{1,1});
-  FieldLayout fl3 ({COL,SWBND,LWBND},{1,1,1});
+  FieldLayout fl3 ({COL,CMP,CMP},{1,3,4});
   FieldLayout fl4 ({COL,LEV},{1,1});
   FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
-  FieldLayout fl6 ({COL,ISCCPTAU,ISCCPPRS,ILEV},{1,1,1,1});
+  FieldLayout fl6 ({COL,CMP,CMP,ILEV},{1,5,6,1});
 
-  REQUIRE (get_layout_type(fl1.tags())==LayoutType::Scalar2D);
-  REQUIRE (get_layout_type(fl2.tags())==LayoutType::Vector2D);
-  REQUIRE (get_layout_type(fl3.tags())==LayoutType::Tensor2D);
-  REQUIRE (get_layout_type(fl4.tags())==LayoutType::Scalar3D);
-  REQUIRE (get_layout_type(fl5.tags())==LayoutType::Vector3D);
-  REQUIRE (get_layout_type(fl6.tags())==LayoutType::Tensor3D);
+  REQUIRE (fl1.type()==LayoutType::Scalar2D);
+  REQUIRE (fl2.type()==LayoutType::Vector2D);
+  REQUIRE (fl3.type()==LayoutType::Tensor2D);
+  REQUIRE (fl4.type()==LayoutType::Scalar3D);
+  REQUIRE (fl5.type()==LayoutType::Vector3D);
+  REQUIRE (fl6.type()==LayoutType::Tensor3D);
 
   REQUIRE (not fl1.is_vector_layout());
   REQUIRE (    fl2.is_vector_layout());
@@ -59,10 +59,10 @@ TEST_CASE("field_layout", "") {
   REQUIRE (fl2.get_vector_dim()==1);
   REQUIRE (fl5.get_vector_dim()==1);
 
-  REQUIRE (fl3.get_tensor_tags()==TVec{SWBND,LWBND});
-  REQUIRE (fl6.get_tensor_tags()==TVec{ISCCPTAU,ISCCPPRS});
-  REQUIRE (fl3.get_tensor_dims()==IVec{1,2});
-  REQUIRE (fl6.get_tensor_dims()==IVec{1,2});
+  REQUIRE (fl3.get_tensor_tags()==TVec{CMP,CMP});
+  REQUIRE (fl6.get_tensor_components_ids()==IVec{1,2});
+  REQUIRE (fl3.get_tensor_dims()==IVec{3,4});
+  REQUIRE (fl6.get_tensor_dims()==IVec{5,6});
 }
 
 TEST_CASE("field_identifier", "") {
@@ -166,6 +166,9 @@ TEST_CASE("field", "") {
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
     REQUIRE_THROWS (f1.get_view<P16***>());
+
+    // Can't get non-const data type view from a read-only field
+    REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
   SECTION ("equivalent") {
@@ -299,6 +302,10 @@ TEST_CASE("field", "") {
         for (int k=0; k<d1[3]; ++k) {
           REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
+
+    // Subfields of read-only fields must be read-only
+    auto f3 = f1.get_const().subfield(idim,ivar);
+    REQUIRE (f3.is_read_only());
   }
 
   // Dynamic Subfields

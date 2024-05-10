@@ -56,8 +56,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto molmol = mol/mol;
   molmol.set_string("mol/mol");
 
-  using namespace ShortFieldTagsNames;
-
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
@@ -80,49 +78,49 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Set up dimension layouts
   m_nswgpts = m_params.get<int>("nswgpts",112);
   m_nlwgpts = m_params.get<int>("nlwgpts",128);
-  FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND,LEV}, {m_ncol, m_nswbands, m_nlay} };
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND,LEV}, {m_ncol, m_nlwbands, m_nlay} };
-  FieldLayout scalar3d_swgpts_layout { {COL,SWGPT,LEV}, {m_ncol, m_nswgpts, m_nlay} };
-  FieldLayout scalar3d_lwgpts_layout { {COL,LWGPT,LEV}, {m_ncol, m_nlwgpts, m_nlay} };
+  FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(true,m_nswbands,"swband");
+  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(true,m_nlwbands,"lwband");
+  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(true,m_nswgpts,"swgpt");
+  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(true,m_nlwgpts,"lwgpt");
 
   // Set required (input) fields here
-  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid_name);
-  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
-  add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid_name);
-  add_field<Required>("nc", scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid_name);
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
-  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid_name);
-  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid_name);
-  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid_name);
-  add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
+  add_field<Required>("p_mid" , scalar3d_mid, Pa, grid_name);
+  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
+  add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dir_nir", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dif_vis", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dif_nir", scalar2d, nondim, grid_name);
+  add_field<Required>("qc", scalar3d_mid, kgkg, grid_name);
+  add_field<Required>("nc", scalar3d_mid, 1/kg, grid_name);
+  add_field<Required>("qi", scalar3d_mid, kgkg, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("eff_radius_qc", scalar3d_mid, micron, grid_name);
+  add_field<Required>("eff_radius_qi", scalar3d_mid, micron, grid_name);
+  add_field<Required>("qv",scalar3d_mid,kgkg,grid_name);
+  add_field<Required>("surf_lw_flux_up",scalar2d,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Required>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
+      add_field<Required>(it + "_volume_mix_ratio", scalar3d_mid, molmol, grid_name);
     } else {
       // the rest are computed by RRTMGP from prescribed surface values
       // NOTE: this may change at some point
-      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name);
+      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_mid, molmol, grid_name);
     }
   }
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
   if (m_do_aerosol_rad) {
-    add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);
-    add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name);
-    add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name);
-    add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
+    add_field<Required>("aero_tau_sw", scalar3d_swband, nondim, grid_name);
+    add_field<Required>("aero_ssa_sw", scalar3d_swband, nondim, grid_name);
+    add_field<Required>("aero_g_sw"  , scalar3d_swband, nondim, grid_name);
+    add_field<Required>("aero_tau_lw", scalar3d_lwband, nondim, grid_name);
   }
 
   // Whether we do extra clean/clear sky calculations
@@ -130,47 +128,47 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", false);
 
   // Set computed (output) fields
-  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnsky_flux_up", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_layout_int, Wm2, grid_name);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name);
+  add_field<Updated >("T_mid"     , scalar3d_mid, K  , grid_name);
+  add_field<Computed>("SW_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
+  add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
+  add_field<Computed>("cldhgh"        , scalar2d, nondim, grid_name);
+  add_field<Computed>("cldtot"        , scalar2d, nondim, grid_name);
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
-  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name);
-  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name);
-  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name);
-  add_field<Computed>("cldfrac_rad"   , scalar3d_layout_mid, nondim, grid_name);
-  // Cloud-top diagnostics following AeroCOM recommendation
-  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
-  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name);
-  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name);
-  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name);
+  add_field<Computed>("dtau067"       , scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("dtau105"       , scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("sunlit"        , scalar2d    , nondim, grid_name);
+  add_field<Computed>("cldfrac_rad"   , scalar3d_mid, nondim, grid_name);
+  // Cloud-top diagnostics following AeroCom recommendation
+  add_field<Computed>("T_mid_at_cldtop", scalar2d, K, grid_name);
+  add_field<Computed>("p_mid_at_cldtop", scalar2d, Pa, grid_name);
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d, nondim, grid_name);
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d, nondim, grid_name);
+  add_field<Computed>("cdnc_at_cldtop", scalar2d, 1 / (m * m * m), grid_name);
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -183,19 +181,19 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, Wm2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
-    add_field<Computed>("vapor_flux", scalar2d_layout, kg/m2/s, grid_name);
-    add_field<Computed>("water_flux", scalar2d_layout, m/s,     grid_name);
-    add_field<Computed>("ice_flux",   scalar2d_layout, m/s,     grid_name);
-    add_field<Computed>("heat_flux",  scalar2d_layout, W/m2,    grid_name);
+    add_field<Computed>("vapor_flux", scalar2d, kg/m2/s, grid_name);
+    add_field<Computed>("water_flux", scalar2d, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   scalar2d, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  scalar2d, W/m2,    grid_name);
   }
 }  // RRTMGPRadiation::set_grids
 
@@ -688,7 +686,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);
-  // Outputs for AeroCOM cloud-top diagnostics
+  // Outputs for AeroCom cloud-top diagnostics
   auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
   auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();
   auto d_cldfrac_ice_at_cldtop =
@@ -1520,6 +1518,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // Get IR 10.5 micron band for COSP
       auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
+      // Compute cloud-top diagnostics following AeroCom recommendation
       real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
       real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);

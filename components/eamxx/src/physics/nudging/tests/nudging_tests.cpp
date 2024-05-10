@@ -44,7 +44,7 @@ TEST_CASE("nudging_tests") {
   };
 
   // Init scorpio
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // A refined grid, with one extra node in between each of the coarse ones
   const int ngcols_fine = 2*ngcols_data - 1;
@@ -295,7 +295,7 @@ TEST_CASE("nudging_tests") {
       int ncols = fid.get_layout().dim(0);
       comm.all_reduce(&ncols,1,MPI_SUM);
 
-      FieldLayout glb_layout = fid.get_layout().clone_with_different_extent(0,ncols);
+      FieldLayout glb_layout = fid.get_layout().clone().reset_dim(0,ncols);
       FieldIdentifier glb_fid(fid.name(),glb_layout,fid.get_units(),fid.get_grid_name());
       Field glb(glb_fid);
       glb.allocate_view();
@@ -462,5 +462,5 @@ TEST_CASE("nudging_tests") {
   }
 
   // Clean up scorpio
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }

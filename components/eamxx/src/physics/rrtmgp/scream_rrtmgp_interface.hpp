@@ -248,7 +248,7 @@ void compute_cloud_area(
 #endif
 
 /*
- * Return select cloud-top diagnostics following AeroCOM recommendation
+ * Return select cloud-top diagnostics following AeroCom recommendation
  */
 #ifdef RRTMGP_ENABLE_YAKL
 void compute_aerocom_cloudtop(
@@ -364,7 +364,6 @@ int get_wavelength_index(OpticalPropsK &kdist, double wavelength);
 int get_wavelength_index_sw_k(double wavelength);
 int get_wavelength_index_lw_k(double wavelength);
 #endif
-
 
 } // namespace rrtmgp
 } // namespace scream

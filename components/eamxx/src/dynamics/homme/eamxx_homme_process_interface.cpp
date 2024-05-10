@@ -52,7 +52,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  auto homme_nsteps = std::make_shared<ekat::any>(-1);
+  ekat::any homme_nsteps;
+  homme_nsteps.reset<int>(-1);
   m_restart_extra_data["homme_nsteps"] = homme_nsteps;
 
   if (!is_parallel_inited_f90()) {
@@ -108,7 +109,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using FL  = FieldLayout;
 
   constexpr int NGP = HOMMEXX_NP;
   constexpr int NTL = HOMMEXX_NUM_TIME_LEVELS;
@@ -119,7 +119,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  const int ncols = m_phys_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int nlev_mid = m_dyn_grid->get_num_vertical_levels();
   const int nlev_int = nlev_mid+1;
@@ -168,18 +167,22 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Note: qv is needed to transform T<->Theta
 
   const auto& pgn = m_phys_grid->name();
-  add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   pgn,N);
-  add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     pgn,N);
-  add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("pseudo_density_dry",FL({COL, LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    pgn);
-  add_field<Updated >("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     pgn,"tracers",N);
-  add_field<Updated >("phis",          FL({COL         },{ncols           }),m2/s2, pgn);
-  add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_int",     FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_mid",     FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  pgn,N);
+  auto pg_scalar2d     = m_phys_grid->get_2d_scalar_layout();
+  auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(true);
+  auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(false);
+  auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(true,2);
+  add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
+  add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
+  add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("pseudo_density_dry", pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Updated> ("ps",                 pg_scalar2d    , Pa,    pgn);
+  add_field<Updated >("qv",                 pg_scalar3d_mid, Q,     pgn,"tracers",N);
+  add_field<Updated >("phis",               pg_scalar2d    , m2/s2, pgn);
+  add_field<Computed>("p_int",              pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_mid",              pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
@@ -188,15 +191,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // doing so may conflict with additional IC mechanisms in the AD, e.g.,
     // init'ing a field to a constant.
     const auto& rgn = m_cgll_grid->name();
-    const auto nc = m_cgll_grid->get_num_local_dofs();
-    add_field<Required>("horiz_winds",   FL({COL,CMP, LEV},{nc,2,nlev_mid}),m/s,   rgn,N);
-    add_field<Required>("T_mid",         FL({COL,     LEV},{nc,  nlev_mid}),K,     rgn,N);
-    add_field<Required>("ps",            FL({COL         },{nc           }),Pa,    rgn);
-    add_field<Required>("phis",          FL({COL         },{nc           }),m2/s2, rgn);
+    auto rg_scalar2d     = m_cgll_grid->get_2d_scalar_layout();
+    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(true);
+    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(true,2);
+
+    add_field<Required>("horiz_winds",   rg_vector3d_mid,m/s,   rgn,N);
+    add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
+    add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
+    add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, Bundling::Required, DerivationType::Import, "tracers", pgn);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
-    add_field<Computed>("pseudo_density",FL({COL,     LEV},{nc,  nlev_mid}),Pa,    rgn,N);
+    add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
 
   // Dynamics grid states
@@ -511,7 +517,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]);
     nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
@@ -769,7 +775,7 @@ create_helper_field (const std::string& name,
   using namespace ekat::units;
   FieldIdentifier id(name,FieldLayout{tags,dims},Units::nondimensional(),grid);
 
-  const auto lt = get_layout_type(id.get_layout().tags());
+  const auto lt = id.get_layout().type();
 
   // Only request packed field for 3d quantities
   int pack_size = 1;
@@ -950,7 +956,7 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_ptr_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+  const auto& nstep = ekat::any_ptr_cast<int>(m_restart_extra_data["homme_nsteps"]);
   tl.nstep = *nstep;
   set_homme_param("num_steps",*nstep);
 
@@ -1130,7 +1136,7 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
+  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();

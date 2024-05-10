@@ -54,10 +54,11 @@ TEST_CASE("io_remap_test","io_remap_test")
 
 
   print (" -> Test Setup ...\n",io_comm);
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+  scorpio::init_subsystem(io_comm);
   const int ncols_src = 64*io_comm.size();
   const int nlevs_src = 2*packsize + 1;
+  const int dt = 10;
+
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   // Setup for target levels.
@@ -81,7 +82,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   print (" -> Create remap file ... \n",io_comm);
   const int ncols_tgt_l = ncols_src_l/2;
   const int ncols_tgt = ncols_src/2;
-  std::vector<Real> col, row, S;
+  std::vector<int> col, row;
+  std::vector<Real> S;
   const Real wgt = 0.4;
   for (int ii=0; ii<ncols_tgt_l; ii++) {
     const int src_col = 2*ii + ncols_src_l*io_comm.rank();
@@ -92,13 +94,9 @@ TEST_CASE("io_remap_test","io_remap_test")
     S.push_back(wgt);
     S.push_back(1.0-wgt);
   }
-  std::vector<std::int64_t> dofs_cols (ncols_src_l);
-  std::iota(dofs_cols.begin(),dofs_cols.end(),io_comm.rank()*ncols_src_l);
   // For vertical remapping we will prokject onto a set of equally
   // spaced pressure levels from p_top to b_bot that is nearly half
   // the number of source columns.
-  std::vector<std::int64_t> dofs_levs(nlevs_tgt);
-  std::iota(dofs_levs.begin(),dofs_levs.end(),0);
   std::vector<Real> p_tgt;
   for (int ii=0; ii<nlevs_tgt; ++ii) {
     p_tgt.push_back(set_pressure(p_top, p_bot, nlevs_tgt, ii));
@@ -108,29 +106,25 @@ TEST_CASE("io_remap_test","io_remap_test")
   const std::string remap_filename = "remap_weights_np"+std::to_string(io_comm.size())+".nc";
   scorpio::register_file(remap_filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(remap_filename,"n_a",  "n_a",    ncols_src, true);
-  scorpio::register_dimension(remap_filename,"n_b",  "n_b",    ncols_tgt, true);
-  scorpio::register_dimension(remap_filename,"n_s",  "n_s",    ncols_src, true);
-  scorpio::register_dimension(remap_filename,"lev",  "lev",    nlevs_tgt, false);
+  scorpio::define_dim(remap_filename,"n_a",ncols_src);
+  scorpio::define_dim(remap_filename,"n_b",ncols_tgt);
+  scorpio::define_dim(remap_filename,"n_s",ncols_src);
+  scorpio::define_dim(remap_filename,"lev",nlevs_tgt);
 
-  scorpio::register_variable(remap_filename,"col","col","none",{"n_s"},"real","int","int-nnz");
-  scorpio::register_variable(remap_filename,"row","row","none",{"n_s"},"real","int","int-nnz");
-  scorpio::register_variable(remap_filename,"S","S","none",{"n_s"},"real","real","Real-nnz");
-  scorpio::register_variable(remap_filename,"p_levs","p_levs","none",{"lev"},"real","real","Real-lev");
+  scorpio::define_var(remap_filename,"col",   {"n_s"},"int");
+  scorpio::define_var(remap_filename,"row",   {"n_s"},"int");
+  scorpio::define_var(remap_filename,"S",     {"n_s"},"real");
+  scorpio::define_var(remap_filename,"p_levs",{"lev"},"real");
 
-  scorpio::set_dof(remap_filename,"col",dofs_cols.size(),dofs_cols.data());
-  scorpio::set_dof(remap_filename,"row",dofs_cols.size(),dofs_cols.data());
-  scorpio::set_dof(remap_filename,"S",  dofs_cols.size(),dofs_cols.data());
-  scorpio::set_dof(remap_filename,"p_levs",dofs_levs.size(),dofs_levs.data()); 
-  
-  scorpio::eam_pio_enddef(remap_filename);
+  scorpio::set_dim_decomp(remap_filename,"n_s",io_comm.rank()*ncols_src_l,ncols_src_l);
+  scorpio::enddef(remap_filename);
 
-  scorpio::grid_write_data_array(remap_filename,"row",row.data(),ncols_src);
-  scorpio::grid_write_data_array(remap_filename,"col",col.data(),ncols_src);
-  scorpio::grid_write_data_array(remap_filename,"S",    S.data(),ncols_src);
-  scorpio::grid_write_data_array(remap_filename,"p_levs",p_tgt.data(),nlevs_tgt);
+  scorpio::write_var(remap_filename,"row",   row.data());
+  scorpio::write_var(remap_filename,"col",   col.data());
+  scorpio::write_var(remap_filename,"S",     S.data());
+  scorpio::write_var(remap_filename,"p_levs",p_tgt.data());
 
-  scorpio::eam_pio_closefile(remap_filename);
+  scorpio::release_file(remap_filename);
   print (" -> Create remap file ... done\n",io_comm);
 
   /*
@@ -242,7 +236,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
   om_source.setup(io_comm,source_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_source.run(t0);
+  om_source.init_timestep(t0,dt);
+  om_source.run(t0+dt);
   om_source.finalize();
   print ("    -> source data ... done\n",io_comm);
 
@@ -250,7 +245,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
   om_vert.setup(io_comm,vert_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_vert.run(t0);
+  om_vert.init_timestep(t0,dt);
+  om_vert.run(t0+dt);
   om_vert.finalize();
   print ("    -> vertical remap ... done\n",io_comm);
 
@@ -258,7 +254,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
   om_horiz.setup(io_comm,horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_horiz.run(t0);
+  om_horiz.init_timestep(t0,dt);
+  om_horiz.run(t0+dt);
   om_horiz.finalize();
   print ("    -> horizontal remap ... done\n",io_comm);
 
@@ -266,7 +263,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
   om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
-  om_vert_horiz.run(t0);
+  om_vert_horiz.init_timestep(t0,dt);
+  om_vert_horiz.run(t0+dt);
   om_vert_horiz.finalize();
   print ("    -> vertical-horizontal remap ... done\n",io_comm);
   print (" -> Create output ... done\n",io_comm);
@@ -296,11 +294,11 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string att_val;
     const auto& filename = vert_in.get<std::string>("Filename");
     for (auto& fname : fnames) {
-      scorpio::get_variable_metadata(filename,fname,"test",att_val);
+      att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
     }
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
-    scorpio::get_variable_metadata(filename,f_at_lev_name,"test",att_val);
+    att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
 
     test_input.finalize();
@@ -366,11 +364,11 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string att_val;
     const auto& filename = horiz_in.get<std::string>("Filename");
     for (auto& fname : fnames) {
-      scorpio::get_variable_metadata(filename,fname,"test",att_val);
+      att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
     }
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
-    scorpio::get_variable_metadata(filename,f_at_lev_name,"test",att_val);
+    att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
     test_input.finalize();
 
@@ -452,11 +450,11 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string att_val;
     const auto& filename = vh_in.get<std::string>("Filename");
     for (auto& fname : fnames) {
-      scorpio::get_variable_metadata(filename,fname,"test",att_val);
+      att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
     }
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
-    scorpio::get_variable_metadata(filename,f_at_lev_name,"test",att_val);
+    att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
     test_input.finalize();
 
@@ -551,7 +549,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   // ------------------------------------------------------------------------------------------------------
   // All Done 
   print (" -> Test Remapped Output ... done\n",io_comm);
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 
 }
 /*==========================================================================================================*/
