@@ -186,7 +186,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt, &m_buffer.tkh
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
   };
 
@@ -374,7 +374,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.tabs = m_buffer.tabs;
   temporaries.dz_zt = m_buffer.dz_zt;
   temporaries.dz_zi = m_buffer.dz_zi;
-  temporaries.tkh = m_buffer.tkh;
 #endif
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,

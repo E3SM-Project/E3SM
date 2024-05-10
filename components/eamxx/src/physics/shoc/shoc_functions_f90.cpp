@@ -2908,12 +2908,11 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     shoc_qv ("shoc_qv", shcol, nlevi_packs),
     tabs    ("shoc_tabs", shcol, nlev_packs),
     dz_zt   ("dz_zt",   shcol, nlevi_packs),
-    dz_zi   ("dz_zi",   shcol, nlevi_packs),
-    tkhv    ("tkh",     shcol, nlev_packs);
+    dz_zi   ("dz_zi",   shcol, nlevi_packs);
 
   SHF::SHOCTemporaries shoc_temporaries{
     se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
-    rho_zt, shoc_qv, tabs, dz_zt, dz_zi, tkhv};
+    rho_zt, shoc_qv, tabs, dz_zt, dz_zi};
 #endif
 
   // Create local workspace
