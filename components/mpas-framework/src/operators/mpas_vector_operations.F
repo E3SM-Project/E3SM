@@ -342,6 +342,16 @@ contains
 
       integer :: iEdge, cell1, cell2
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, zonalCell, meridionalCell, &
+      !$acc            zonalEdge, meridionalEdge) &
+      !$acc    private(cell1, cell2)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp    private(cell1, cell2)
+#endif
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
@@ -351,6 +361,10 @@ contains
         meridionalEdge(iEdge) = 0.5_RKIND * (meridionalCell(cell1) + &
                                              meridionalCell(cell2))
       end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
    end subroutine mpas_vector_cell_to_edge_anisotropic!}}}
 
@@ -415,6 +429,17 @@ contains
 
       real (kind=RKIND) :: area, areaSum, zonal, meridional
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc    present(verticesOnEdge, cellsOnVertex, kiteAreasOnVertex, &
+      !$acc            zonalCell, meridionalCell, &
+      !$acc            zonalEdge, meridionalEdge) &
+      !$acc    private(areaSum, area, v, c, iVert, iCell)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp    private(areaSum, area, v, c, iVert, iCell)
+#endif
       do iEdge = 1, nEdges
          zonalEdge(iEdge) = 0.0_RKIND
          meridionalEdge(iEdge) = 0.0_RKIND
@@ -437,6 +462,10 @@ contains
          zonalEdge(iEdge) = zonalEdge(iEdge) / areaSum
          meridionalEdge(iEdge) = meridionalEdge(iEdge) / areaSum
       end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
    end subroutine mpas_vector_cell_to_edge_isotropic!}}}
 
