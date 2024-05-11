@@ -1,7 +1,6 @@
 #include "vertical_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
@@ -16,12 +15,13 @@
 
 namespace scream
 {
+
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file,
-                  const Field& lev_prof,
-                  const Field& ilev_prof)
-  : VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,constants::DefaultFillValue<float>::value)
+                  const Field& pmid_src,
+                  const Field& pint_src)
+  : VerticalRemapper(src_grid,map_file,pmid_src,pint_src,constants::DefaultFillValue<float>::value)
 {
   // Nothing to do here
 }
@@ -29,8 +29,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file,
-                  const Field& lev_prof,
-                  const Field& ilev_prof,
+                  const Field& pmid_src,
+                  const Field& pint_src,
                   const Real mask_val)
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
@@ -55,21 +55,21 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // as the source field, but will have a different number of 
   // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  m_num_remap_levs = scorpio::get_dimlen(map_file,"lev");
+  auto nlevs_tgt = scorpio::get_dimlen(map_file,"lev");
 
   auto tgt_grid = src_grid->clone("vertical_remap_tgt_grid",true);
-  tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
+  tgt_grid->reset_num_vertical_lev(nlevs_tgt);
   this->set_grids(src_grid,tgt_grid);
 
   // Set the LEV and ILEV vertical profiles for interpolation from
-  register_vertical_source_field(lev_prof);
-  register_vertical_source_field(ilev_prof);
+  set_source_pressure_fields(pmid_src,pint_src);
 
   // Gather the pressure level data for vertical remapping
   set_pressure_levels(map_file);
 
   // Add tgt pressure levels to the tgt grid
-  tgt_grid->set_geometry_data(m_remap_pres);
+  tgt_grid->set_geometry_data(m_tgt_pressure);
+
   scorpio::release_file(map_file);
 }
 
@@ -144,269 +144,404 @@ set_pressure_levels(const std::string& map_file)
   }
 
   using namespace ShortFieldTagsNames;
-  std::vector<FieldTag> tags = {LEV};
-  std::vector<int>      dims = {m_num_remap_levs};
-  FieldLayout layout(tags,dims);
+  auto layout = m_tgt_grid->get_vertical_layout(true);
   FieldIdentifier fid("p_levs",layout,ekat::units::Pa,m_tgt_grid->name());
-  m_remap_pres = Field(fid);
-  m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
-  m_remap_pres.allocate_view();
+  m_tgt_pressure = Field(fid);
+  // Just in case input fields are packed
+  m_tgt_pressure.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+  m_tgt_pressure.allocate_view();
 
-  auto remap_pres_scal = m_remap_pres.get_view<Real*,Host>();
+  auto remap_pres_data = m_tgt_pressure.get_view<Real*,Host>().data();
+  scorpio::read_var(map_file,"p_levs",remap_pres_data);
 
-  scorpio::read_var(map_file,"p_levs",remap_pres_scal.data());
-
-  m_remap_pres.sync_to_dev();
+  m_tgt_pressure.sync_to_dev();
 }
 
 void VerticalRemapper::
-register_vertical_source_field(const Field& src)
+set_source_pressure_fields(const Field& pmid, const Field& pint)
 {
   using namespace ShortFieldTagsNames;
 
-  EKAT_REQUIRE_MSG(src.is_allocated(),
-      "Error! Vertical level source field is not yet allocated.\n"
-      " - field name: " + src.name() + "\n");
+  EKAT_REQUIRE_MSG(pmid.is_allocated(),
+      "Error! Source midpoint pressure field is not yet allocated.\n"
+      " - field name: " + pmid.name() + "\n");
 
-  const auto& layout = src.get_header().get_identifier().get_layout();
-  const auto vert_tag = layout.tags().back();
-  EKAT_REQUIRE_MSG (vert_tag==LEV or vert_tag==ILEV,
-      "Error! Input vertical level field does not have a vertical level tag at the end.\n"
-      " - field name: " + src.name() + "\n"
-      " - field layout: " + layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(pint.is_allocated(),
+      "Error! Source interface pressure field is not yet allocated.\n"
+      " - field name: " + pint.name() + "\n");
 
-  if (vert_tag==LEV) {
-    m_src_mid = src;
-    m_mid_set = true; 
-   } else {
-    m_src_int = src;
-    m_int_set = true; 
-  }
+  const auto& pmid_layout = pmid.get_header().get_identifier().get_layout();
+  const auto& pint_layout = pint.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG(pmid_layout.congruent(m_src_grid->get_3d_scalar_layout(true)),
+      "Error! Source midpoint pressure field has the wrong layout.\n"
+      " - field name: " + pmid.name() + "\n"
+      " - field layout: " + pmid_layout.to_string() + "\n"
+      " - expected layout: " + m_src_grid->get_3d_scalar_layout(true).to_string() + "\n");
+  EKAT_REQUIRE_MSG(pint_layout.congruent(m_src_grid->get_3d_scalar_layout(false)),
+      "Error! Source interface pressure field has the wrong layout.\n"
+      " - field name: " + pint.name() + "\n"
+      " - field layout: " + pint_layout.to_string() + "\n"
+      " - expected layout: " + m_src_grid->get_3d_scalar_layout(false).to_string() + "\n");
+
+  m_src_pmid = pmid;
+  m_src_pint = pint;
 }
 
 void VerticalRemapper::
 do_register_field (const identifier_type& src, const identifier_type& tgt)
 {
-  m_src_fields.push_back(field_type(src));
-  field_type tgt_f(tgt);
-  m_tgt_fields.push_back(tgt_f);
+  using namespace ShortFieldTagsNames;
+
+  // Note, for vertical remapper we set all target fields as having LEV as the vertical dimension.
+  // So we check that all other tags between source and target match, but skip vert tag (since we
+  // could have src with ILEV and tgt with LEV)
+  auto src_layout = src.get_layout().clone();
+  auto tgt_layout = tgt.get_layout().clone();
+  EKAT_REQUIRE_MSG(src_layout.strip_dims({ILEV,LEV}).congruent(tgt_layout.strip_dims({LEV})),
+    "[VerticalRemapper] Error! Once vertical level tag is stripped, src/tgt layouts are incompatible.\n"
+    "  - src field name: " + src.name() + "\n"
+    "  - tgt field name: " + tgt.name() + "\n"
+    "  - src field layout: " + src_layout.to_string() + "\n"
+    "  - tgt field layout: " + tgt_layout.to_string() + "\n");
+
+  m_src_fields.emplace_back(src);
+  m_tgt_fields.emplace_back(tgt);
 }
 
 void VerticalRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   using namespace ShortFieldTagsNames;
-  auto name = src.name();
-  auto src_layout = src.get_header().get_identifier().get_layout();
-  auto tgt_layout = tgt.get_header().get_identifier().get_layout();
-  const bool has_ilev = src_layout.has_tag(ILEV);
-  EKAT_REQUIRE_MSG(src_layout.rank()==tgt_layout.rank(),
-      "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same rank");
-  // Note, for vertical remapper we set all target fields as having LEV as the vertical dimension.  So we check that all other tags
-  // between source and target match if source has ILEV
-  if (has_ilev) {
-    EKAT_REQUIRE_MSG(src_layout.clone().strip_dim(ILEV).tags()==tgt_layout.clone().strip_dim(LEV).tags(),
-        "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same set of field tags");
-  } else {
-    EKAT_REQUIRE_MSG(src_layout.tags()==tgt_layout.tags(),
-        "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same set of field tags");
-  } 
-
-  EKAT_REQUIRE_MSG (
-      src_layout.rank()>1 ||
-      src.get_header().get_alloc_properties().get_padding()==0,
-      "Error! vert_remap:do_bind_field:check_src:" + name + ", We don't support 2d scalar fields that are padded.\n");
-  EKAT_REQUIRE_MSG (
-      tgt_layout.rank()>1 ||
-      tgt.get_header().get_alloc_properties().get_padding()==0,
-      "Error! vert_remap:do_bind_field:check_tgt:" + name + ", We don't support 2d scalar fields that are padded.\n");
+  using PackT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
 
-  // Add mask tracking to the target field
-  using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
-  auto nondim = Units::nondimensional();
-  if (src_layout.has_tag(LEV) || src_layout.has_tag(ILEV)) {
-    auto& f_tgt = m_tgt_fields[ifield];
+  // Clone src layout, since we may strip dims later for mask creation
+  auto src_layout = src.get_header().get_identifier().get_layout().clone();
+
+  auto& f_tgt = m_tgt_fields[ifield]; // Nonconst, since we need to set extra data in the header
+  if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV)) {
+    // Determine if this field can be handled with packs, and whether it's at midpoints
+    // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
+    // bounds of the src pressure field, and hence cannot be recovered by interpolation
+    auto& ft = m_field2type[src.name()];
+    ft.midpoints = src.get_header().get_identifier().get_layout().has_tag(LEV);
+    ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
+                   tgt.get_header().get_alloc_properties().is_compatible<PackT>();
+
     // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
     //       and that fields with multiple components will have the same masking for each component
     //       at a specific COL,LEV
-    auto src_lay = src_layout;
-    auto tags = src_lay.tags();
-    for (auto tag : tags) {
-      if (tag != COL && tag != LEV && tag != ILEV) {
-        src_lay.strip_dim(tag);
-      }
-    }
-    const auto  lname  = src.get_header().get_identifier().get_id_string()+"_mask";
-    bool found = false;
-    // Check if a field with lname has already been created:
-    for (unsigned ii=0; ii<m_src_masks.size(); ii++) {
-      const auto src_fld = m_src_masks[ii];
-      if (lname == src_fld.name()) {
-        auto& mask_tgt_fld = m_tgt_masks[ii];
-        f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      // We have to create this mask field and add it to the map so we can assign it to this tgt field as an extra data
-      FieldIdentifier mask_src_fid (lname, src_lay, nondim, m_src_grid->name() );
-      Field           mask_src_fld (mask_src_fid);
-      mask_src_fld.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-      mask_src_fld.allocate_view();
-      const auto& tgt_lay = create_tgt_layout(src_lay);
-      FieldIdentifier mask_tgt_fid (lname, tgt_lay, nondim, m_tgt_grid->name() );
-      Field           mask_tgt_fld (mask_tgt_fid);
-      mask_tgt_fld.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-      mask_tgt_fld.allocate_view();
+    src_layout.strip_dims({CMP});
+
+    // Check if this mask has already been created
+    const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
+    if (m_field2type.count(mask_name)==0) {
+      auto nondim = ekat::units::Units::nondimensional();
+      // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
+
+      FieldIdentifier src_mask_fid (mask_name, src_layout, nondim, m_src_grid->name() );
+      FieldIdentifier tgt_mask_fid = create_tgt_fid(src_mask_fid);
+
+      Field  src_mask (src_mask_fid);
+      Field  tgt_mask (tgt_mask_fid);
+
+      src_mask.allocate_view();
+      tgt_mask.allocate_view();
+
       EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
-          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
-      f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
+          "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
+          " - tgt field name: " + tgt.name() + "\n");
       EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+          "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
+          " - tgt field name: " + tgt.name() + "\n");
+
+      f_tgt.get_header().set_extra_data("mask_data",tgt_mask);
       f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
-      m_src_masks.push_back(mask_src_fld);
-      m_tgt_masks.push_back(mask_tgt_fld);
+      m_src_masks.push_back(src_mask);
+      m_tgt_masks.push_back(tgt_mask);
+
+      auto& mt = m_field2type[src_mask_fid.name()];
+      mt.packed = false;
+      mt.midpoints = src_layout.has_tag(LEV);
     }
   } else {
     // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
+    // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
     // In those cases we want to copy that mask tracking to the target field.
-    // Note, we still make a new field to ensure it is defined on the target grid.
     if (src.get_header().has_extra_data("mask_data")) {
-      auto f_src_mask = src.get_header().get_extra_data<Field>("mask_data");
-      FieldIdentifier mask_tgt_fid (f_src_mask.name(), f_src_mask.get_header().get_identifier().get_layout(), nondim, m_tgt_grid->name() );
-      Field           mask_tgt_fld (mask_tgt_fid);
-      mask_tgt_fld.allocate_view();
-      mask_tgt_fld.deep_copy(f_src_mask);
-
-      auto& f_tgt    = m_tgt_fields[ifield];
       EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
-          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
-      f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-          "ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
-      f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
+          "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
+          " - tgt field name: " + tgt.name() + "\n");
+      auto src_mask = src.get_header().get_extra_data<Field>("mask_data");
+      f_tgt.get_header().set_extra_data("mask_data",src_mask);
     }
+    if (src.get_header().has_extra_data("mask_value")) {
+      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+          "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
+          " - tgt field name: " + tgt.name() + "\n");
+      auto src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+      f_tgt.get_header().set_extra_data("mask_data",src_mask_val);
+    }
+  }
+
+  if (this->m_num_bound_fields==this->m_num_registered_fields) {
+    create_lin_interp ();
   }
 }
 
 void VerticalRemapper::do_registration_ends ()
 {
-  // Check that the vertical profiles for the source data have been set
-  EKAT_REQUIRE_MSG(m_mid_set,"Error::VerticalRemapper:registration_ends,\n"
-    "Field for vertical profile of the source data for layout LEV has not been set.\n");
-  EKAT_REQUIRE_MSG(m_int_set,"Error::VerticalRemapper:registration_ends,\n"
-    "Field for vertical profile of the source data for layout ILEV has not been set.\n");
+  if (this->m_num_bound_fields==this->m_num_registered_fields) {
+    create_lin_interp ();
+  }
+}
+
+void VerticalRemapper::create_lin_interp()
+{
+  // Count number fields for each packed-midpoints value
+  auto beg = m_field2type.begin();
+  auto end = m_field2type.end();
+
+  int num_packed_mid =
+    std::count_if(beg,end,[](const std::pair<std::string,FType>& it)
+        {
+          return it.second.midpoints and it.second.packed;
+        });
+  int num_packed_int =
+    std::count_if(beg,end,[](const std::pair<std::string,FType>& it)
+        {
+          return not it.second.midpoints and it.second.packed;
+        });
+  int num_scalar_mid =
+    std::count_if(beg,end,[](const std::pair<std::string,FType>& it)
+        {
+          return it.second.midpoints and not it.second.packed;
+        });
+  int num_scalar_int =
+    std::count_if(beg,end,[](const std::pair<std::string,FType>& it)
+        {
+          return not it.second.midpoints and not it.second.packed;
+        });
+
+  // Create the linear interpolation object
+  const auto ncols     = m_src_grid->get_num_local_dofs();
+  const auto nlevs_src = m_src_grid->get_num_vertical_levels();
+  const auto nlevs_tgt = m_tgt_grid->get_num_vertical_levels();
+
+  if (num_packed_mid>0) {
+    m_lin_interp_mid_packed =
+      std::make_shared<ekat::LinInterp<Real,SCREAM_PACK_SIZE>>(ncols,nlevs_src,nlevs_tgt);
+  }
+  if (num_scalar_mid>0) {
+    m_lin_interp_mid_scalar =
+      std::make_shared<ekat::LinInterp<Real,1>>(ncols,nlevs_src,nlevs_tgt);
+  }
+  if (num_packed_int>0) {
+    m_lin_interp_int_packed =
+      std::make_shared<ekat::LinInterp<Real,SCREAM_PACK_SIZE>>(ncols,nlevs_src,nlevs_tgt);
+  }
+  if (num_scalar_int>0) {
+    m_lin_interp_int_scalar =
+      std::make_shared<ekat::LinInterp<Real,1>>(ncols,nlevs_src,nlevs_tgt);
+  }
 }
 
 void VerticalRemapper::do_remap_fwd ()
 {
+  // 1. Setup any interp object that was created (if nullptr, no fields need it)
+  if (m_lin_interp_mid_packed) {
+    setup_lin_interp(*m_lin_interp_mid_packed,m_src_pmid);
+  }
+  if (m_lin_interp_int_packed) {
+    setup_lin_interp(*m_lin_interp_int_packed,m_src_pint);
+  }
+  if (m_lin_interp_mid_scalar) {
+    setup_lin_interp(*m_lin_interp_mid_scalar,m_src_pmid);
+  }
+  if (m_lin_interp_int_scalar) {
+    setup_lin_interp(*m_lin_interp_int_scalar,m_src_pint);
+  }
+
   using namespace ShortFieldTagsNames;
-  // Loop over each field
-  const auto& tgt_pres_ap = m_remap_pres.get_header().get_alloc_properties();
+
+  // 2. Interpolate the fields
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src    = m_src_fields[i];
-          auto  f_tgt    = m_tgt_fields[i];
-    const auto& layout   = f_src.get_header().get_identifier().get_layout();
-    const auto  src_tag  = layout.tags().back();
-    const bool  do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
-    if (do_remap) {
-      // Dispatch kernel with the largest possible pack size
-      const auto& src_ap = f_src.get_header().get_alloc_properties();
-      const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
-      const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
-        apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt); 
+          auto& f_tgt    = m_tgt_fields[i];
+    const auto& tgt_layout   = f_tgt.get_header().get_identifier().get_layout();
+    if (tgt_layout.has_tag(LEV)) {
+      const auto& type = m_field2type.at(f_src.name());
+      // Dispatch interpolation to the proper lin interp object
+      if (type.midpoints) {
+        if (type.packed) {
+          apply_vertical_interpolation(*m_lin_interp_mid_packed,f_src,f_tgt,m_src_pmid,m_mask_val);
+        } else {
+          apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,m_src_pmid,m_mask_val);
+        }
       } else {
-        apply_vertical_interpolation<1>(f_src,f_tgt); 
+        if (type.packed) {
+          apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,m_src_pint,m_mask_val);
+        } else {
+          apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,m_src_pint,m_mask_val);
+        }
       }
     } else {
-      // There is nothing to do, this field cannot be vertically interpolated,
+      // There is nothing to do, this field does not need vertical interpolation,
       // so just copy it over.  Note, if this field has its own mask data make
       // sure that is copied too.
+      f_tgt.deep_copy(f_src);
       if (f_tgt.get_header().has_extra_data("mask_data")) {
         auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
         auto f_src_mask = f_src.get_header().get_extra_data<Field>("mask_data");
         f_tgt_mask.deep_copy(f_src_mask);
       }
-      f_tgt.deep_copy(f_src);
     }
   }
+
+  // 3. Interpolate the mask fields
   for (unsigned i=0; i<m_tgt_masks.size(); ++i) {
-          auto& f_src    = m_src_masks[i];
-          auto& f_tgt    = m_tgt_masks[i];
-    const auto& layout   = f_src.get_header().get_identifier().get_layout();
-    const auto  src_tag  = layout.tags().back();
-    const bool  do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
-    if (do_remap) {
-      // If we are remapping then we need to initialize the mask source values to 1.0
-      f_src.deep_copy(1.0);
-      // Dispatch kernel with the largest possible pack size
-      const auto& src_ap = f_src.get_header().get_alloc_properties();
-      const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
-      const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-          tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
-        apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt,true); 
+          auto& f_src = m_src_masks[i];
+          auto& f_tgt = m_tgt_masks[i];
+    const auto& type = m_field2type.at(f_src.name());
+
+    // Initialize the mask source values to 1.0
+    f_src.deep_copy(1.0);
+
+    // Dispatch interpolation to the proper lin interp object
+    if (type.midpoints) {
+      if (type.packed) {
+        apply_vertical_interpolation(*m_lin_interp_mid_packed,f_src,f_tgt,m_src_pmid,0);
       } else {
-        apply_vertical_interpolation<1>(f_src,f_tgt,true); 
+        apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,m_src_pmid,0);
       }
     } else {
-      // There is nothing to do, this field cannot be vertically interpolated,
-      // so just copy it over.
-      f_tgt.deep_copy(f_src);
+      if (type.packed) {
+        apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,m_src_pint,0);
+      } else {
+        apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,m_src_pint,0);
+      }
     }
   }
 }
 
 template<int Packsize>
 void VerticalRemapper::
-apply_vertical_interpolation(const Field& f_src, const Field& f_tgt, const bool mask_interp) const
+setup_lin_interp (const ekat::LinInterp<Real,Packsize>& lin_interp,
+                  const Field& p_src) const
 {
-  using Pack = ekat::Pack<Real,Packsize>;
-  using namespace ShortFieldTagsNames;
-  using namespace scream::vinterp;
-  const auto& layout = f_src.get_header().get_identifier().get_layout();
-  const auto  rank   = f_src.rank();
-  const auto src_tag = layout.tags().back();
-  const auto src_num_levs = layout.dims().back();
-  // ARG mask_interp checks if this is a vertical interpolation of the mask array that tracks masked 0.0 or not 1.0
-  Real mask_val = mask_interp ? 0.0 : m_mask_val;
+  using LI_t = ekat::LinInterp<Real,Packsize>;
+  using ESU = ekat::ExeSpaceUtils<DefaultDevice::execution_space>;
+  using PackT = ekat::Pack<Real,Packsize>;
+  auto p_src_v = p_src.get_view<const PackT**>();
+  auto p_tgt_v = m_tgt_pressure.get_view<const PackT*>();
 
-  Field    src_lev_f;
-  if (src_tag == ILEV) {
-    src_lev_f = m_src_int;
-  } else {
-    src_lev_f = m_src_mid;
-  }
-  auto src_lev  = src_lev_f.get_view<const Pack**>();
-  auto remap_pres_view = m_remap_pres.get_view<Pack*>();
-  switch(rank) {
+  auto lambda = KOKKOS_LAMBDA(typename LI_t::MemberType const& team) {
+    const int icol = team.league_rank();
+    lin_interp.setup(team,ekat::subview(p_src_v,icol),
+                          p_tgt_v);
+  };
+
+  const int ncols = m_src_grid->get_num_local_dofs();
+  const int nlevs_tgt = m_tgt_grid->get_num_vertical_levels();
+  const int npacks_tgt = ekat::PackInfo<Packsize>::num_packs(nlevs_tgt);
+  auto policy = ESU::get_default_team_policy(ncols,npacks_tgt);
+  Kokkos::parallel_for("VerticalRemapper::interp_setup",policy,lambda);
+  Kokkos::fence();
+}
+
+template<int Packsize>
+void VerticalRemapper::
+apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
+                             const Field& f_src, const Field& f_tgt,
+                             const Field& p_src,
+                             const Real mask_val) const
+{
+  // Note: if Packsize==1, we grab packs of size 1, which are for sure
+  //       compatible with the allocation
+  using LI_t = ekat::LinInterp<Real,Packsize>;
+  using PackT = ekat::Pack<Real,Packsize>;
+  using ESU = ekat::ExeSpaceUtils<DefaultDevice::execution_space>;
+
+  auto p_src_v = p_src.get_view<const PackT**>();
+  auto x_tgt = m_tgt_pressure.get_view<const PackT*>();
+  const int ncols = m_src_grid->get_num_local_dofs();
+  const int nlevs_tgt = m_tgt_grid->get_num_vertical_levels();
+  const int nlevs_src = m_src_grid->get_num_vertical_levels();
+  const int npacks_tgt = ekat::PackInfo<Packsize>::num_packs(nlevs_tgt);
+
+  const int last_src_pack_idx = ekat::PackInfo<Packsize>::last_pack_idx(nlevs_src);
+  const int last_src_pack_end = ekat::PackInfo<Packsize>::last_vec_end(nlevs_src);
+  
+  switch(f_src.rank()) {
     case 2:
     {
-      auto src_view = f_src.get_view<const Pack**>();
-      auto tgt_view = f_tgt.get_view<      Pack**>();
-      perform_vertical_interpolation<Real,Packsize,2>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
+      auto f_src_v = f_src.get_view<const PackT**>();
+      auto f_tgt_v = f_tgt.get_view<      PackT**>();
+      auto policy = ESU::get_default_team_policy(ncols,npacks_tgt);
+      auto lambda = KOKKOS_LAMBDA(typename LI_t::MemberType const& team) {
+
+        // Interpolate
+        const int icol = team.league_rank();
+        auto x_src = ekat::subview(p_src_v,icol);
+        auto y_src = ekat::subview(f_src_v,icol);
+        auto y_tgt = ekat::subview(f_tgt_v,icol);
+        lin_interp.lin_interp(team,x_src,x_tgt,y_src,y_tgt,icol);
+        team.team_barrier();
+
+        // If x_tgt is extrapolated, set to mask_val
+        auto x_min = x_src[0][0];
+        auto x_max = x_src[last_src_pack_idx][last_src_pack_end-1];
+        auto set_mask = [&](const int ipack) {
+          auto oob = x_tgt[ipack]<x_min or x_tgt[ipack]>x_max;
+          if (oob.any()) {
+            y_tgt[ipack].set(oob,mask_val);
+          }
+        };
+        Kokkos::parallel_for (Kokkos::TeamThreadRange(team,npacks_tgt), set_mask);
+      };
+      Kokkos::parallel_for("VerticalRemapper::apply_vertical_interpolation",policy,lambda);
       break;
     }
     case 3:
     {
-      auto src_view = f_src.get_view<const Pack***>();
-      auto tgt_view = f_tgt.get_view<      Pack***>();
-      perform_vertical_interpolation<Real,Packsize,3>(src_lev,remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,mask_val);
+      auto f_src_v = f_src.get_view<const PackT***>();
+      auto f_tgt_v = f_tgt.get_view<      PackT***>();
+      const auto& layout = f_src.get_header().get_identifier().get_layout();
+      const int ncomps = layout.get_vector_dim();
+      auto policy = ESU::get_default_team_policy(ncols*ncomps,npacks_tgt);
+
+      auto lambda = KOKKOS_LAMBDA(typename LI_t::MemberType const& team)
+      {
+        // Interpolate
+        const int icol = team.league_rank() / ncomps;
+        const int icmp = team.league_rank() % ncomps;
+        auto x_src = ekat::subview(p_src_v,icol);
+        auto y_src = ekat::subview(f_src_v,icol,icmp);
+        auto y_tgt = ekat::subview(f_tgt_v,icol,icmp);
+        lin_interp.lin_interp(team,x_src,x_tgt,y_src,y_tgt,icol);
+        team.team_barrier();
+
+        // If x_tgt is extrapolated, set to mask_val
+        auto x_min = x_src[0][0];
+        auto x_max = x_src[last_src_pack_idx][last_src_pack_end-1];
+        auto set_mask = [&](const int ipack) {
+          auto oob = x_tgt[ipack]<x_min or x_tgt[ipack]>x_max;
+          if (oob.any()) {
+            y_tgt[ipack].set(oob,mask_val);
+          }
+        };
+        Kokkos::parallel_for (Kokkos::TeamThreadRange(team,npacks_tgt), set_mask);
+      };
+      Kokkos::parallel_for("VerticalRemapper::apply_vertical_interpolation",policy,lambda);
       break;
     }
     default:
-      EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by VerticalRemapper.\n");
+      EKAT_ERROR_MSG (
+          "[VerticalRemapper::apply_vertical_interpolation] Error! Unsupported field rank.\n"
+          " - src field name: " + f_src.name() + "\n"
+          " - src field rank: " + std::to_string(f_src.rank()) + "\n");
   }
 }
 

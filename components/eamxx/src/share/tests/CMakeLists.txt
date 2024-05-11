@@ -2,9 +2,6 @@
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
-  # Test vertical interpolation
-  CreateUnitTest(vertical_interp "vertical_interp_tests.cpp")
-
   # Test utils
   CreateUnitTest(utils "utils_tests.cpp")
 
