@@ -1410,7 +1410,7 @@ contains
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf300, n)
+            ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
 !            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)

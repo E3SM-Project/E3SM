@@ -2987,12 +2987,12 @@ contains
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
 
-       name = 'So_tf300'
+       name = 'So_tf2d'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
        call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
-       longname = 'ocean thermal forcing at 300 m depth'
-       stdname  = 'ocean_thermal_forcing_at_300m'
+       longname = 'ocean thermal forcing at predefined critical depth'
+       stdname  = 'ocean_thermal_forcing_at_critical_depth'
        units    = 'C'
        attname  = name
        call metadata_set(attname, longname, stdname, units)
