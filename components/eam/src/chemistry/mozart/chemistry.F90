@@ -1747,32 +1747,27 @@ end function chem_is_active
           call get_rlat_all_p(lchnk, ncol, clat)
           call get_rlon_all_p(lchnk, ncol, clon)
           ptend%lq(1) = .true.
-       !ptend%q(:ncol,:,1) = 0._r8
-       !write(iulog, *)'kzm_pend_lq_1 ', ptend%lq(1)
-         ! do it = 1,pcols
-         !    ptend_sum = 0.0_r8
-             !ptend_sum_brc = 0.0_r8
-         !    ptend_sum = maxval(ptend%q(it, :, n))
-             !ptend_sum_brc = maxval(ptend%q(it, :, brc_a4_ndx))
-             !if ( ptend_sum > 1.0e-10_r8) then ! when ptend of h2ofire is impactful
-                !write(iulog,*)'kzm_h2ofire_tend ', ptend_sum,   state%q(it,52,1)
-                !write(iulog,*)'kzm_h2ofire_loca ', clat(it)/(3.1415_r8)*180.0_r8, clon(it)/(3.1415_r8)*180.0_r8
-             !endif
-         ! enddo
-           do it = 1,pcols
-              ptend%q(it,:,1) = 0.0_r8 ! no q tend from other mechanism
+          do it = 1,pcols
+              ptend%q(it,:,1) = 0.0_r8 ! no q tend from other chemistry processes
               do k = 1,pver+1 ! not the surface layer
                  ! find the locations has positive plume water tend
-                 ! add plume water tend to q
-                 ! remove same tend to q at surface
-                 ! keep the q tend neutral
-                 if (ptend%q(it,k,n) > 1.0e-15_r8 )then
+                 ! add plume water tendency to q
+                 ! remove same tendency to q at surface
+                 ! keep the water vapor conserve: qn*dpn = q1*dp1
+                 ! q(k,n)*pdel(k) from fireh2o to q(k,1)
+                 ! q(pver,1)*pdel(pver) removed from bottom layer
+                 ! q(pver,1) = q(k,n)*pdel(k)/pdel(pver)
+                 ! in the code, it should be:
+                 ! del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k) = del(ptend%q(:ncol,pver,1))*state%pdel(:ncol,pver)
+                 ! del(ptend%q(:ncol,pver,1)) = del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k)/state%pdel(:ncol,pver) 
+                 if (ptend%q(it,k,n) > 1.0e-20_r8 )then
                     ptend%q(it,k,1) =  ptend%q(it,k,1) + ptend%q(it,k,n) ! only tend from plume water
-                    ptend%q(it,pver,1) = ptend%q(it,pver,1) - ptend%q(it,k,n) ! remove same water at surface
+                    ptend%q(it,pver,1) = ptend%q(it,pver,1) &
+                                         - ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
                  endif
               end do
-           end do  
-           ptend%q(:ncol,:,n) = 0.0_r8 ! remove the plume water tend; no plume water accumulation
+          end do  
+          ptend%q(:ncol,:,n) = 0.0_r8 ! remove the plume water tend; no plume water accumulation
       endif 
     end do
 
