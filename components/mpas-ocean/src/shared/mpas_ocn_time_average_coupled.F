@@ -60,7 +60,7 @@ module ocn_time_average_coupled
                                                     avgRemovedRiverRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux
 
-        real (kind=RKIND), dimension(:), pointer :: avgThermalForcing300m
+        real (kind=RKIND), dimension(:), pointer :: avgThermalForcingAtCritDepth
 
         integer :: iCell
         integer, pointer :: nAccumulatedCoupled, nCells
@@ -164,12 +164,12 @@ module ocn_time_average_coupled
            !$omp end parallel
         end if
 
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcing300m', avgThermalForcing300m)
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
 
         !$omp parallel
         !$omp do schedule(runtime)
         do iCell = 1, nCells
-           avgThermalForcing300m(iCell) = 0.0_RKIND
+           avgThermalForcingAtCritDepth(iCell) = 0.0_RKIND
         end do
         !$omp end do
         !$omp end parallel
@@ -282,13 +282,13 @@ module ocn_time_average_coupled
                                                     removedRiverRunoffFlux, avgRemovedRiverRunoffFlux, &
                                                     removedIceRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgRemovedIceRunoffHeatFlux, &
-                                                    avgThermalForcing300m
+                                                    avgThermalForcingAtCritDepth
 
         type (mpas_pool_type), pointer :: tracersPool
 
         real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
         integer, pointer :: indexTemperature, indexSalinity
-        integer :: iLevel0300, iLevel
+        integer :: iLevelCritDepth, iLevel
         real (kind=RKIND) :: freezingTemp
 
         real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -438,17 +438,19 @@ module ocn_time_average_coupled
 
         end if
 
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcing300m', avgThermalForcing300m)
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
-        ! find find vertical level that is just above the 300 m reference level
-        iLevel0300 = 1
+
+        ! find vertical level that is just above the critical depth reference level
+        ! this does not account for depression due to ice shelf cavities or sea ice
+        iLevelCritDepth = 1
         do iLevel = 1, nVertLevels
-           if(refBottomDepth(iLevel) > 300.0_RKIND) then
-              iLevel0300 = iLevel-1
+           if(refBottomDepth(iLevel) > config_2d_thermal_forcing_depth) then
+              iLevelCritDepth = iLevel-1
               exit
            end if
         end do
@@ -457,13 +459,13 @@ module ocn_time_average_coupled
         ! calculate thermal forcing at identified level for each cell
         do iCell = 1, nCells
            ! ignore cells that are too shallow
-           if (iLevel0300 <= maxLevelCell(iCell)) then
+           if (iLevelCritDepth <= maxLevelCell(iCell)) then
               ! this uses the level shallower than the reference level.  could interpolate instead
               ! note: assuming no LandIce cavity, but we may want to support that
-              freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevel0300, iCell), &
-                 pressure=pressure(iLevel0300, iCell),  inLandIceCavity=.false.)
-              avgThermalForcing300m(iCell) = ( avgThermalForcing300m(iCell) * nAccumulatedCoupled &
-                 + activeTracers(indexTemperature, iLevel0300, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
+              freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
+                 pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
+              avgThermalForcingAtCritDepth(iCell) = ( avgThermalForcingAtCritDepth(iCell) * nAccumulatedCoupled &
+                 + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
             end if
         end do
         !$omp end do
