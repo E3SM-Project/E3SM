@@ -298,7 +298,7 @@ module CNEcosystemDynBetrMod
 
           call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                canopystate_vars, cnstate_vars, &
-               crop_vars, energyflux_vars, soilstate_vars)
+               crop_vars, energyflux_vars, soilstate_vars, dt)
           call t_stopf('RootDynamics')
        end if
 
