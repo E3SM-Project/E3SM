@@ -551,6 +551,14 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="sunspotcpu" type="pbspro">
+      <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="128" default="true">workq</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="128">debug</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="sunspot-pvc" type="pbspro">
       <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
       <queues>
