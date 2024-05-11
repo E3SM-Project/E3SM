@@ -38,10 +38,11 @@ SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
 SET(SYCL_LINK_FLAGS "-fsycl-max-parallel-link-jobs=32 -fsycl-link-huge-device-code -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
 
-SET(ADD_Fortran_FLAGS "-fc=ifx -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
+#-fpscomp does not actually solve the issue with bools in here,another suggestion was -fp-model=precise, not working either
+SET(ADD_Fortran_FLAGS " -fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")
 
-SET(ADD_CXX_FLAGS "-std=c++17 -O3 -DNDEBUG ${SYCL_COMPILE_FLAGS}" CACHE STRING "")
+SET(ADD_CXX_FLAGS " -std=c++17 -O3 -DNDEBUG ${SYCL_COMPILE_FLAGS}" CACHE STRING "")
 SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "")
 
 set (ENABLE_OPENMP OFF CACHE BOOL "")
