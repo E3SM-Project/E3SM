@@ -42,7 +42,7 @@ struct SimulationParams
   bool      disable_diagnostics;
   int       transport_alg;
   bool      use_cpstar;
-  bool      theta_hydrostatic_mode;   // Only for theta model
+  int      theta_hydrostatic_mode;   // Only for theta model
 
   double    dcmip16_mu;               // Only for theta model
   double    nu;

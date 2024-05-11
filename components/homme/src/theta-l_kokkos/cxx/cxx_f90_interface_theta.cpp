@@ -50,6 +50,9 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const double& dp3d_thresh, const double& vtheta_thresh, const int& internal_diagnostics_level)
 {
 
+	std::cout << "In transfer routine theta_hydrostatic_mode =" << theta_hydrostatic_mode << "\n";
+
+
 if(theta_hydrostatic_mode){
         std::cout << " HEEEEEEEEEEEtheta_hydrostatic_mode =TRUE \n";
 }else
@@ -101,6 +104,13 @@ if(theta_hydrostatic_mode){
     params.theta_adv_form = AdvectionForm::NonConservative;
   }
 
+//  if (theta_hydrostatic_mode==0) {
+//    params.theta_hydrostatic_mode = false;
+//  } else {
+//    params.theta_hydrostatic_mode = true;
+//  }
+
+
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
@@ -123,7 +133,7 @@ if(theta_hydrostatic_mode){
   params.use_moisture                  = (bool)use_moisture;
   params.use_cpstar                    = (bool)use_cpstar;
   params.transport_alg                 = transport_alg;
-  params.theta_hydrostatic_mode        = (bool)theta_hydrostatic_mode;
+  params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
   params.scale_factor                  = scale_factor;
