@@ -679,6 +679,10 @@
 					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_bulk_wind_stress_interp_isotropic" type="logical" default_value=".false."
+					description="Controls if windstress is interpolated to edges from 4 adjacent cells rather than just 2."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_bulk_thickness_flux" type="logical" default_value=".false."
 					description="Controls if a bulk thickness flux will be computed for surface forcing."
 					possible_values=".true. or .false."
