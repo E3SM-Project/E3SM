@@ -1,0 +1,1 @@
+ config_bulk_wind_stress_interp_isotropic = .true.
