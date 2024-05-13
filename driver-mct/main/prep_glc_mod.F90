@@ -54,8 +54,8 @@ module prep_glc_mod
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
 
-  public :: prep_glc_get_mapper_So2g
-  public :: prep_glc_get_mapper_Fo2g
+  public :: prep_glc_get_mapper_So2g_shelf
+  public :: prep_glc_get_mapper_Fo2g_shelf
 
   public :: prep_glc_calculate_subshelf_boundary_fluxes
 
@@ -77,9 +77,9 @@ module prep_glc_mod
   ! mappers
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
-  type(seq_map), pointer :: mapper_So2g
+  type(seq_map), pointer :: mapper_So2g_shelf
+  type(seq_map), pointer :: mapper_Fo2g_shelf
   type(seq_map), pointer :: mapper_So2g_tf
-  type(seq_map), pointer :: mapper_Fo2g
   type(seq_map), pointer :: mapper_Fg2l
 
   ! attribute vectors
@@ -137,7 +137,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc, ocn_c2_glcshelf)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glctf, ocn_c2_glcshelf)
 
     !---------------------------------------------------------------
     ! Description
@@ -146,7 +146,7 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glctf ! .true.  => ocn to glc thermal forcing coupling on
     logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc shelf coupling on
     !
     ! Local Variables
@@ -181,9 +181,9 @@ contains
 
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
-    allocate(mapper_So2g)
+    allocate(mapper_So2g_shelf)
     allocate(mapper_So2g_tf)
-    allocate(mapper_Fo2g)
+    allocate(mapper_Fo2g_shelf)
     allocate(mapper_Fg2l)
 
     smb_renormalize = prep_glc_do_renormalize_smb(infodata)
@@ -254,7 +254,7 @@ contains
     end if
 
     ! setup needed for either kind of ocn2glc coupling
-    if (glc_present .and. (ocn_c2_glc .or. ocn_c2_glcshelf)) then
+    if (glc_present .and. (ocn_c2_glctf .or. ocn_c2_glcshelf)) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
@@ -281,8 +281,8 @@ contains
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
     end if
 
-    ! setup needed for ocn2glc (TF) coupling
-    if (glc_present .and. ocn_c2_glc) then
+    ! setup needed for ocn2glc TF coupling
+    if (glc_present .and. ocn_c2_glctf) then
        if (iamroot_CPLID) then
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_So2g_tf'
@@ -296,18 +296,18 @@ contains
     if (glc_present .and. ocn_c2_glcshelf) then
        if (iamroot_CPLID) then
           write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_So2g'
+          write(logunit,F00) 'Initializing mapper_So2g_shelf'
        end if
-       call seq_map_init_rcfile(mapper_So2g, ocn(1), glc(1), &
-       'seq_maps.rc','ocn2glc_smapname:','ocn2glc_smaptype:',samegrid_go, &
-       'mapper_So2g initialization',esmf_map_flag)
+       call seq_map_init_rcfile(mapper_So2g_shelf, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_shelf_smapname:','ocn2glc_shelf_smaptype:',samegrid_go, &
+       'mapper_So2g_shelf initialization',esmf_map_flag)
        if (iamroot_CPLID) then
           write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_Fo2g'
+          write(logunit,F00) 'Initializing mapper_Fo2g_shelf'
        end if
-       call seq_map_init_rcfile(mapper_Fo2g, ocn(1), glc(1), &
-       'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
-       'mapper_Fo2g initialization',esmf_map_flag)
+       call seq_map_init_rcfile(mapper_Fo2g_shelf, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_shelf_fmapname:','ocn2glc_shelf_fmaptype:',samegrid_go, &
+       'mapper_Fo2g_shelf initialization',esmf_map_flag)
        !Initialize module-level arrays associated with compute_melt_fluxes
        allocate(oceanTemperature(lsize_g))
        allocate(oceanSalinity(lsize_g))
@@ -833,14 +833,14 @@ contains
   end subroutine prep_glc_merge_lnd_forcing
 
 
-  subroutine prep_glc_calc_o2x_gx(ocn_c2_glc, ocn_c2_glcshelf, timer)
+  subroutine prep_glc_calc_o2x_gx(ocn_c2_glctf, ocn_c2_glcshelf, timer)
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_gx
 
     ! Arguments
     character(len=*), intent(in) :: timer
-    logical, intent(in) :: ocn_c2_glc
+    logical, intent(in) :: ocn_c2_glctf
     logical, intent(in) :: ocn_c2_glcshelf
 
     character(*), parameter :: subname = '(prep_glc_calc_o2x_gx)'
@@ -851,13 +851,13 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
-      if (ocn_c2_glc) then
+      if (ocn_c2_glctf) then
          call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
                        fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
       end if
       if (ocn_c2_glcshelf) then
-         call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
-                       fldlist=seq_flds_x2g_states_from_ocn,norm=.true.)
+         call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
+                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
       end if
     enddo
 
@@ -1023,8 +1023,8 @@ contains
        !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
        ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
        ! these fields on the GLC grid of the coupler history file, which helps with debugging.
-       call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
-       fldlist=seq_flds_x2g_states_from_ocn,norm=.true.)
+       call seq_map_map(mapper_So2g_shelf, o2x_ox, x2g_gx, &
+       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
 
        ! inputs to melt flux calculation
        index_x2g_So_blt =    mct_avect_indexra(x2g_gx,'So_blt',perrwith='quiet')
@@ -1622,15 +1622,15 @@ contains
     prep_glc_get_mapper_Fl2g => mapper_Fl2g
   end function prep_glc_get_mapper_Fl2g
 
-  function prep_glc_get_mapper_So2g()
-    type(seq_map), pointer :: prep_glc_get_mapper_So2g
-    prep_glc_get_mapper_So2g=> mapper_So2g
-  end function prep_glc_get_mapper_So2g
+  function prep_glc_get_mapper_So2g_shelf()
+    type(seq_map), pointer :: prep_glc_get_mapper_So2g_shelf
+    prep_glc_get_mapper_So2g_shelf=> mapper_So2g_shelf
+  end function prep_glc_get_mapper_So2g_shelf
 
-  function prep_glc_get_mapper_Fo2g()
-    type(seq_map), pointer :: prep_glc_get_mapper_Fo2g
-    prep_glc_get_mapper_Fo2g=> mapper_Fo2g
-  end function prep_glc_get_mapper_Fo2g
+  function prep_glc_get_mapper_Fo2g_shelf()
+    type(seq_map), pointer :: prep_glc_get_mapper_Fo2g_shelf
+    prep_glc_get_mapper_Fo2g_shelf=> mapper_Fo2g_shelf
+  end function prep_glc_get_mapper_Fo2g_shelf
 
 !***********************************************************************
 !
