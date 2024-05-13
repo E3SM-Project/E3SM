@@ -189,14 +189,6 @@ void compute_nucleate_ice_tendencies(
   // from ice nucleation
   //-------------------------------------------------------------
 
-  //Initialize (zero out) all the output
-  Kokkos::deep_copy(naai,     0.0);
-  Kokkos::deep_copy(nihf,     0.0);
-  Kokkos::deep_copy(niim,     0.0);
-  Kokkos::deep_copy(nidep,    0.0);
-  Kokkos::deep_copy(nimey,    0.0);
-  Kokkos::deep_copy(naai_hom, 0.0);
-
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -334,11 +326,10 @@ void call_function_dropmixnuc(
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
-    // ## input-outputs to be used by other processes ##
+    // ## outputs to be used by other processes ##
     // qqcw_fld_work should be directly assigned to the cloud borne aerosols
     MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
 
-    // ## outputs to be used by other processes ##
     // ptend_q are the tendencies to the interstitial aerosols
     MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
 
@@ -353,26 +344,6 @@ void call_function_dropmixnuc(
     MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[MAMAci::dropmix_scratch_]) {
-
-
-  // initialize the purely output variables to zero
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i)Kokkos::deep_copy(ptend_q[i], 0.0);
-  Kokkos::deep_copy(factnum, 0.0);
-  Kokkos::deep_copy(tendnd,  0.0);
-
-  //initialize all diagnostic ouputs to zero:
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i){
-    Kokkos::deep_copy(coltend[i],    0.0);
-    Kokkos::deep_copy(coltend_cw[i], 0.0);
-  }
-  Kokkos::deep_copy(qcld,       0.0);
-  Kokkos::deep_copy(ndropcol,   0.0);
-  Kokkos::deep_copy(ndropmix,   0.0);
-  Kokkos::deep_copy(nsource,    0.0);
-  Kokkos::deep_copy(wtke,       0.0);
-  Kokkos::deep_copy(ccn,        0.0);
-
-
   // Extract atmosphere variables
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
@@ -949,6 +920,14 @@ void MAMAci::set_grids(
   add_field<Computed>("nc_nuceat_tend", scalar3d_layout_mid, n_unit / s,
                       grid_name);
 
+  // FIXME: [TEMPORARY]droplet number mixing ratio source tendency [#/kg/s]
+  add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s,
+                      grid_name);
+
+  // FIXME: [TEMPORARY]droplet number mixing ratio tendency due to mixing [#/kg/s]
+  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s,
+                      grid_name);
+
   // ------------------------------------------------------------------------
   // Output from hetrozenous freezing
   // ------------------------------------------------------------------------
@@ -1101,10 +1080,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // hetrozenous freezing outputs
   hetfrz_immersion_nucleation_tend_ =
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
-
   hetfrz_contact_nucleation_tend_ =
       get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
-
   hetfrz_depostion_nucleation_tend_ =
       get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
 
@@ -1165,10 +1142,15 @@ void MAMAci::initialize_impl(const RunType run_type) {
   Kokkos::resize(ndropcol_, ncol_, nlev_);
 
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
-  Kokkos::resize(ndropmix_, ncol_, nlev_);
+  //Kokkos::resize(ndropmix_, ncol_, nlev_);
+  //Temporarily output ndropmix_
+  ndropmix_ = get_field_out("ndropmix").get_view<Real **>();
 
   // droplet number mixing ratio source tendency [#/kg/s]
-  Kokkos::resize(nsource_, ncol_, nlev_);
+  //Kokkos::resize(nsource_, ncol_, nlev_);
+  //Temporarily output nsource_
+  nsource_ = get_field_out("nsource").get_view<Real **>();
+  
 
   // subgrid vertical velocity [m/s]
   Kokkos::resize(wtke_, ncol_, nlev_);
