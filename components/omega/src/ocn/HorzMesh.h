@@ -13,6 +13,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "MachEnv.h"
+#include "OmegaKokkos.h"
 
 #include <string>
 

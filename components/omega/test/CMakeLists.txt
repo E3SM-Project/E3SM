@@ -111,6 +111,34 @@ add_omega_test(
     "-n 8;--cpu-bind=cores"
 )
 
+#######################
+# HorzOperators tests
+#######################
+
+add_omega_test(
+    HORZOPERATORS_PLANE_TEST
+    testHorzOperatorsPlane.exe
+    ocn/HorzOperatorsTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
+target_compile_definitions(
+  testHorzOperatorsPlane.exe
+  PRIVATE
+  HORZOPERATORS_TEST_PLANE
+)
+
+add_omega_test(
+  HORZOPERATORS_SPHERE_TEST
+    testHorzOperatorsSphere.exe
+    ocn/HorzOperatorsTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
+target_compile_definitions(
+  testHorzOperatorsSphere.exe
+  PRIVATE
+  HORZOPERATORS_TEST_SPHERE_1
+)
+
 #############
 # IO test
 #############
@@ -190,6 +218,8 @@ set_tests_properties(
   DECOMP_TEST
   HALO_TEST
   HORZMESH_TEST
+  HORZOPERATORS_PLANE_TEST
+  HORZOPERATORS_SPHERE_TEST
   IO_TEST
   METADATA_TEST
   TIMEMGR_TEST
