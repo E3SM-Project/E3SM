@@ -212,7 +212,7 @@ module seq_flds_mod
   character(CXX) :: seq_flds_g2o_ice_fluxes
   character(CXX) :: seq_flds_x2g_states
   character(CXX) :: seq_flds_x2g_states_from_lnd
-  character(CXX) :: seq_flds_x2g_states_from_ocn
+  character(CXX) :: seq_flds_x2g_shelf_states_from_ocn
   character(CXX) :: seq_flds_x2g_tf_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
   character(CXX) :: seq_flds_x2g_fluxes_from_lnd
@@ -348,7 +348,7 @@ contains
     character(CXX) :: g2o_ice_fluxes = ''
     character(CXX) :: x2g_states = ''
     character(CXX) :: x2g_states_from_lnd = ''
-    character(CXX) :: x2g_states_from_ocn = ''
+    character(CXX) :: x2g_shelf_states_from_ocn = ''
     character(CXX) :: x2g_tf_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
     character(CXX) :: x2g_fluxes_from_lnd = ''
@@ -2940,7 +2940,7 @@ contains
        name = 'So_blt'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean temperature'
        stdname  = 'Ice_shelf_boundary_layer_ocean_temperature'
        units    = 'C'
@@ -2950,7 +2950,7 @@ contains
        name = 'So_bls'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean salinity'
        stdname  = 'Ice_shelf_boundary_layer_ocean_salinity'
        units    = 'psu'
@@ -2960,7 +2960,7 @@ contains
        name = 'So_htv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean heat transfer velocity'
        stdname  = 'Ice_shelf_ocean_heat_transfer_velocity'
        units    = 'm/s'
@@ -2970,7 +2970,7 @@ contains
        name = 'So_stv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean salinity transfer velocity'
        stdname  = 'Ice_shelf_ocean_salinity_transfer_velocity'
        units    = 'm/s'
@@ -2980,7 +2980,7 @@ contains
        name = 'So_rhoeff'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ocean effective pressure'
        stdname  = 'Ocean_effective_pressure'
        units    = 'Pa'
@@ -3948,7 +3948,7 @@ contains
     seq_flds_g2x_states_to_lnd = trim(g2x_states_to_lnd)
     seq_flds_x2g_states = trim(x2g_states)
     seq_flds_x2g_states_from_lnd = trim(x2g_states_from_lnd)
-    seq_flds_x2g_states_from_ocn = trim(x2g_states_from_ocn)
+    seq_flds_x2g_shelf_states_from_ocn = trim(x2g_shelf_states_from_ocn)
     seq_flds_x2g_tf_states_from_ocn = trim(x2g_tf_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
@@ -4016,7 +4016,7 @@ contains
        write(logunit,*) subname//': seq_flds_x2g_states= ',trim(seq_flds_x2g_states)
        write(logunit,*) subname//': seq_flds_x2g_states_from_lnd= ',trim(seq_flds_x2g_states_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_states_to_glc= ',trim(seq_flds_l2x_states_to_glc)
-       write(logunit,*) subname//': seq_flds_x2g_states_from_ocn= ',trim(seq_flds_x2g_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_shelf_states_from_ocn= ',trim(seq_flds_x2g_shelf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_tf_states_from_ocn= ',trim(seq_flds_x2g_tf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_fluxes_from_lnd= ',trim(seq_flds_x2g_fluxes_from_lnd)

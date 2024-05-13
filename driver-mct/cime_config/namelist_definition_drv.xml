@@ -4530,20 +4530,20 @@
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+  <entry id="ocn2glc_shelf_fmapname"    modify_via_xml="OCN2GLC_SHELF_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc flux mapping file for fluxes
+      ocn to glc shelf mapping file for fluxes
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPNAME</value>
+      <value>$OCN2GLC_SHELF_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+  <entry id="ocn2glc_shelf_fmaptype"    modify_via_xml="OCN2GLC_SHELF_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4555,25 +4555,25 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+  <entry id="ocn2glc_shelf_smapname"    modify_via_xml="OCN2GLC_SHELF_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc state mapping file for states
+      ocn to glc shelf mapping file for states
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPNAME</value>
+      <value>$OCN2GLC_SHELF_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+  <entry id="ocn2glc_shelf_smaptype"    modify_via_xml="OCN2GLC_SHELF_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4585,7 +4585,7 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

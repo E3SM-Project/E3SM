@@ -5503,15 +5503,15 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.aisgis20km" ocn_grid="oEC60to30v3">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_aave.190403.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_bilin.190403.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_aave.190403.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.aisgis20km_bilin.190403.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3_aave.190403.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3_bilin.190403.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.aisgis20km" ocn_grid="oEC60to30v3wLI">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_aave.190713.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_bilin.190713.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_aave.190713.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_to_mpas.aisgis20km_bilin.190713.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3wLI_aave.190713.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.aisgis20km/map_mpas.aisgis20km_to_oEC60to30v3wLI_bilin.190713.nc</map>
     </gridmap>
@@ -5528,8 +5528,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis20km" ocn_grid="oEC60to30v3">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_aave.181115.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_bilin.181115.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_aave.181115.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_mpas.gis20km_bilin.181115.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_oEC60to30v3_aave.181115.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_oEC60to30v3_aave.181115.nc</map>
     </gridmap>
@@ -5556,8 +5556,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis20km" ocn_grid="EC30to60E2r2">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis20km_aave.230510.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis20km_bilin.230510.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis20km_aave.230510.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis20km_bilin.230510.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_EC30to60E2r2_aave.230510.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_EC30to60E2r2_aave.230510.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_EC30to60E2r2_aave.230510.nc</map>
@@ -5567,8 +5567,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis20km" ocn_grid="IcoswISC30E3r5">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis20km_esmfaave.20240403.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis20km_esmfbilin.20240403.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis20km_esmfaave.20240403.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis20km_esmfbilin.20240403.nc</map>
       <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis20km_esmfneareststod.20240422.deeperThan300m.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
@@ -5604,8 +5604,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis1to10km" ocn_grid="oEC60to30v3">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_aave.200602.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_bilin.200602.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_aave.200602.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_bilin.200602.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
@@ -5615,8 +5615,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis1to10km" ocn_grid="EC30to60E2r2">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_aave.210304.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_bilin.210304.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_aave.210304.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_bilin.210304.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
@@ -5651,8 +5651,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="EC30to60E2r2">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_aave.230725.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_bilin.230725.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_aave.230725.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_bilin.230725.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
@@ -5662,8 +5662,8 @@
     </gridmap>
 
     <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="IcoswISC30E3r5">
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfaave.20240403.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfbilin.20240403.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfaave.20240403.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfbilin.20240403.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
@@ -5878,11 +5878,11 @@
 
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU240">
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_aave.151209.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ais20km_aave.151209.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ais20km_aave.151209.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240_nearestdtos.151209.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ais20km_nearestdtos.151209.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ais20km_nearestdtos.151209.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU120">
@@ -5892,8 +5892,8 @@
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU120_nearestdtos.160331.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_neareststod.160331.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_aave.160331.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_neareststod.160331.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oEC60to30v3wLI">
@@ -5903,8 +5903,8 @@
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
-      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_aave.190207.nc</map>
-      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_neareststod.190207.nc</map>
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_aave.190207.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_neareststod.190207.nc</map>
     </gridmap>
 
   </gridmaps>
