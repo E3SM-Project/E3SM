@@ -2487,10 +2487,10 @@
 			 description="Reconstruction weights associated with each of the edgesOnEdge, used to reconstruct the tangentialVelocity from normalVelocities on neighboring edges."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between verticesOnEdge."
+			 description="The great circle distance between vertices bordering a given edge.  It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between cellsOnEdge."
+			 description="The great circle distance between cell centers bordering a given edge.  It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 			 description="Angle the edge normal makes with local eastward direction."
