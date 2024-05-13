@@ -23,7 +23,7 @@ namespace OMEGA {
 /// A class for the ocean prognostic variable information
 
 /// The OceanState class provides a container for the layer thickness,
-/// and normal velocity variables. It contains methods which handle 
+/// and normal velocity variables. It contains methods which handle
 /// IO and time level updates.
 class OceanState {
 
@@ -58,14 +58,14 @@ class OceanState {
    I4 NCellsAll;   ///< Total number of local cells (owned + all halo)
    I4 NCellsSize;  ///< Array size (incl padding, bndy cell) for cell arrays
 
-   I4 NEdgesOwned;    ///< Number of edges owned by this task
-   I4 NEdgesAll;      ///< Total number (owned+halo) of local edges
-   I4 NEdgesSize;     ///< Array length (incl padding, bndy) for edge dim
+   I4 NEdgesOwned; ///< Number of edges owned by this task
+   I4 NEdgesAll;   ///< Total number (owned+halo) of local edges
+   I4 NEdgesSize;  ///< Array length (incl padding, bndy) for edge dim
 
    I4 TimeLevels;     ///< Number of time levels in state variable arrays
    I4 VerticalLevels; ///< Number of vertical levels in state variable arrays
 
-   // Prognostic variables 
+   // Prognostic variables
 
    Array3DR8 LayerThickness;      ///< Device LayerThickness array
    HostArray3DR8 LayerThicknessH; ///< Host LayerThickness array

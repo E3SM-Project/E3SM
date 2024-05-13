@@ -9,15 +9,15 @@
 //
 //===-----------------------------------------------------------------------===/
 
-#include "HorzMesh.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Halo.h"
+#include "HorzMesh.h"
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "OmegaKokkos.h"
 #include "OceanState.h"
+#include "OmegaKokkos.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -62,14 +62,12 @@ int initStateTest() {
    if (Err != 0)
       LOG_ERROR("State: error initializing default State");
 
-
    return Err;
 }
 
-
 //------------------------------------------------------------------------------
-// The test driver for State -> This tests the time level swap of state variables
-// and verifies the state is read in correctly.
+// The test driver for State -> This tests the time level swap of state
+// variables and verifies the state is read in correctly.
 //
 int main(int argc, char *argv[]) {
 
@@ -91,12 +89,13 @@ int main(int argc, char *argv[]) {
       bool IsMaster          = DefEnv->isMasterTask();
 
       OMEGA::HorzMesh *DefHorzMesh = OMEGA::HorzMesh::getDefault();
-      OMEGA::Decomp *DefDecomp = OMEGA::Decomp::getDefault();
-      OMEGA::Halo *DefHalo = OMEGA::Halo::getDefault();
+      OMEGA::Decomp *DefDecomp     = OMEGA::Decomp::getDefault();
+      OMEGA::Halo *DefHalo         = OMEGA::Halo::getDefault();
 
-      OMEGA::OceanState DefOceanState("Test", DefHorzMesh, DefDecomp, DefHalo, 60, 2);
+      OMEGA::OceanState DefOceanState("Test", DefHorzMesh, DefDecomp, DefHalo,
+                                      60, 2);
 
-      // Test retrieval of the default state 
+      // Test retrieval of the default state
       OMEGA::OceanState *DefState = OMEGA::OceanState::getDefault();
       if (DefState) { // true if non-null ptr
          LOG_INFO("State: Default state retrieval PASS");
@@ -111,21 +110,21 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: Test state retrieval FAIL");
       }
 
-      //for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-      //   for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-      //      LOG_INFO(DefState->LayerThicknessH(0, Cell, Level));
-      //      LOG_INFO(DefState->LayerThicknessH(1, Cell, Level));
-      //   }
-      //}
+      // for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
+      //    for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
+      //       LOG_INFO(DefState->LayerThicknessH(0, Cell, Level));
+      //       LOG_INFO(DefState->LayerThicknessH(1, Cell, Level));
+      //    }
+      // }
 
       // Test that reasonable values have been read in for LayerThickness
-      int count = 0; 
+      int count = 0;
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          int colCount = 0;
          for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
             OMEGA::R8 val = DefState->LayerThicknessH(0, Cell, Level);
             if (val > 0.0 && val < 300.0) {
-               colCount++; 
+               colCount++;
             }
          }
          if (colCount < 2) {
@@ -139,11 +138,13 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: State read FAIL");
       }
 
-      // Test that initally the 0 time levels of the Def and Test state arrays match
+      // Test that initally the 0 time levels of the
+      // Def and Test state arrays match
       count = 0;
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(0, Cell, Level) != TestState->LayerThicknessH(0, Cell, Level)) {
+            if (DefState->LayerThicknessH(0, Cell, Level) !=
+                TestState->LayerThicknessH(0, Cell, Level)) {
                count++;
             }
          }
@@ -156,13 +157,14 @@ int main(int argc, char *argv[]) {
       }
 
       // Test that the time level swap is correct.
-      DefState->swapTimeLevels(0,1);
+      DefState->swapTimeLevels(0, 1);
       DefState->copyToHost();
 
       count = 0;
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(1, Cell, Level) != TestState->LayerThicknessH(0, Cell, Level)) {
+            if (DefState->LayerThicknessH(1, Cell, Level) !=
+                TestState->LayerThicknessH(0, Cell, Level)) {
                count++;
             }
          }
@@ -170,16 +172,18 @@ int main(int argc, char *argv[]) {
 
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(0, Cell, Level) != TestState->LayerThicknessH(1, Cell, Level)) {
+            if (DefState->LayerThicknessH(0, Cell, Level) !=
+                TestState->LayerThicknessH(1, Cell, Level)) {
                count++;
             }
          }
       }
 
       /*
-      OMEGA::parallelReduce("test", {DefState->NCellsAll, DefState->VerticalLevels}, KOKKOS_LAMBDA(int Cell, int Level, int &total) {
-            if (DefState->LayerThickness(1, Cell, Level) != TestState->LayerThickness(0, Cell, Level)) {
-               total++;
+      OMEGA::parallelReduce("test", {DefState->NCellsAll,
+      DefState->VerticalLevels}, KOKKOS_LAMBDA(int Cell, int Level, int &total)
+      { if (DefState->LayerThickness(1, Cell, Level) !=
+      TestState->LayerThickness(0, Cell, Level)) { total++;
            }
       }, count);
       */
