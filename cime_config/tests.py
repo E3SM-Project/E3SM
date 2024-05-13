@@ -54,8 +54,8 @@ _TESTS = {
     "e3sm_land_exenoshare" : {
         "time"  : "0:45:00",
         "tests" : (
-            "ERS.f19_g16.IERA5ELM.elm-era5",
-            "ERS.f19_g16.IERA56HRELM.elm-era56hr",
+            "ERS.f19_g16.IERA5ELM",
+            "ERS.f19_g16.IERA56HRELM",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
