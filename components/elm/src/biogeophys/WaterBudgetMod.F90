@@ -374,8 +374,8 @@ contains
     budg_fluxGtmp = 0._r8
     budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true. )
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true. )
 
     budg_fluxG  = budg_fluxG + budg_fluxGtmp
     budg_stateG = budg_stateGtmp
@@ -563,7 +563,7 @@ contains
 
     call ncd_defvar(varname='budg_fluxG', xtype=ncd_double, &
          dim1name='budg_flux', &
-         long_name='budg_fluxG', units='mm', ncid=ncid)
+         long_name='budg_fluxG', units='kg/m2/s', ncid=ncid)
 
     call ncd_defvar(varname='budg_fluxN', xtype=ncd_double, &
          dim1name='budg_flux', &
@@ -571,7 +571,7 @@ contains
 
     call ncd_defvar(varname='budg_stateG', xtype=ncd_double, &
          dim1name='budg_state', &
-         long_name='budg_stateG', units='mm', ncid=ncid)
+         long_name='budg_stateG', units='kg/m2', ncid=ncid)
 
   end subroutine WaterBudget_Restart_Define
 
@@ -601,8 +601,8 @@ contains
     budg_fluxGtmp = 0._r8
     budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true.)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true. )
 
     ! Copy data from 2D into 1D array
     count = 0

@@ -460,9 +460,9 @@ IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
   list(APPEND CMAKE_MODULE_PATH
        ${EKAT_CMAKE_PATH}
        ${EKAT_CMAKE_PATH}/pkg_build
+       ${EKAT_CMAKE_PATH}/tpls
   )
   include (EkatBuildKokkos)
-  BuildKokkos()
 ENDIF ()
 ELSE ()
   IF (${HOMME_USE_KOKKOS})

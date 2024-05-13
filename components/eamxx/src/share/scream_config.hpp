@@ -22,6 +22,15 @@ std::string scream_config_string();
 bool use_leap_year ();
 void set_use_leap_year (const bool use_leap);
 
+// Allow downstream code to avoid macros
+bool constexpr is_scream_standalone () {
+#ifdef SCREAM_CIME_BUILD
+  return false;
+#else
+  return true;
+#endif
+}
+
 } // namespace scream
 
 #endif // SCREAM_CONFIG_HPP

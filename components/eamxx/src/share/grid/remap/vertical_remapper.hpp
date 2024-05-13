@@ -23,6 +23,7 @@ public:
                     const Field& ilev_prof,
                     const Real mask_val);
 
+  // Calls the above one, with mask_val=max_float/10
   VerticalRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
                     const Field& lev_prof,
@@ -35,40 +36,32 @@ public:
 
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
-    // Same type of layout, and same sizes except for possibly the first one
-    // Note: we can't do tgt.size()/tgt.dim(0), since there may be 0 tgt gids
-    //       on some ranks, which means tgt.dim(0)=0.
-    // Note: for vertical remapping we strip out the LEV or ILEV dimension when
-    //       calculating the size.
-    auto src_dims = src.dims();
-    auto tgt_dims = tgt.dims();
-    auto src_size = src.rank();
-    auto tgt_size = tgt.rank();
+    // Strip the LEV/ILEV tags, and check if they are the same
+    // Also, check rank compatibility, in case one has LEV/ILEV and the other doesn't
+    // NOTE: tgt layouts always use LEV (not ILEV), while src can have ILEV or LEV.
 
     using namespace ShortFieldTagsNames;
-    if (src.has_tag(LEV) || src.has_tag(ILEV)) {
-      // Then we ignore the last dimension:
-      src_size -= 1; 
-    } 
-    if (tgt.has_tag(LEV) || tgt.has_tag(ILEV)) {
-      // Then we ignore the last dimension:
-      tgt_size -= 1; 
-    } 
+    auto src_stripped = src.clone().strip_dim(ILEV,false).strip_dim(LEV,false);
+    auto tgt_stripped = tgt.clone().strip_dim(LEV,false);
 
-    int src_col_size = 1;
-    for (int i=0; i<src_size; ++i) {
-      src_col_size *= src_dims[i];
-    }
-    int tgt_col_size = 1;
-    for (int i=0; i<tgt_size; ++i) {
-      tgt_col_size *= tgt_dims[i];
-    }
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-           src_col_size == tgt_col_size;
+    return src.rank()==tgt.rank() and
+           src_stripped.congruent(tgt_stripped);
   }
 
+  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
+  //       between midpoints and interfaces: we're simply asking for a quantity
+  //       at a given set of pressure levels. So we choose to NOT allow a tgt
+  //       layout with ILEV tag.
+  bool is_valid_tgt_layout (const layout_type& layout) const override {
+    using namespace ShortFieldTagsNames;
+    return not layout.has_tag(ILEV)
+           and AbstractRemapper::is_valid_tgt_layout(layout);
+  }
 
 protected:
+
+  FieldLayout create_layout (const FieldLayout& fl_in,
+                             const grid_ptr_type& grid_out) const;
 
   void register_vertical_source_field(const Field& src);
 

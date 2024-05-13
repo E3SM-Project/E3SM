@@ -47,7 +47,7 @@ subview (const int idim, const int k, const bool dynamic) const {
   FieldAllocProp props(m_scalar_type_size);
   props.m_committed = true;
   props.m_scalar_type_size = m_scalar_type_size;
-  props.m_layout = m_layout.strip_dim(idim);
+  props.m_layout = m_layout.clone().strip_dim(idim);
 
   // Output is contioguous if either
   //  - this->m_contiguous=true AND idim==0

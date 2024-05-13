@@ -381,6 +381,21 @@ Toggle to turn on inventory initialization(only relevant if FATES is being used)
 Full pathname to the inventory initialization control file.
 </entry>
 
+<!-- This may eventually migrate to the dynamic_subgrid group-->
+<entry id="use_fates_luh" type="logical" category="physics"
+       group="elm_inparm" valid_values="" >
+If TRUE, enable use of land use state and transition data from luh_timeseries file.
+(Only valid for fates land use change runs, where there is a luh_timeseries file.)
+(Also, only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
+<!-- This could eventually be included in the "dynamic_subgrid" -->
+<entry id="fluh_timeseries" type="char*256" category="datasets"
+       input_pathname="abs" group="elm_inparm" valid_values="" >
+Full pathname of unified land use harmonization data file. This causes the land-use
+types to vary over time.
+</entry>
+
 <entry id="use_hydrstress" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.
@@ -735,7 +750,7 @@ Default configuration has no connection to soil or atmosphere.
 Optional flag to turn on the fan mode coupling atm/soil.
     fan_offline = use only fan for calculating emissions (no coupling)
     fan_soil    = fan coupled to soil bgc
-    fan_atm     = fan coupled to atmosphere 
+    fan_atm     = fan coupled to atmosphere
     fan_full    = fan coupled to both soil bgc and atmosphere
 </entry>
 
@@ -772,7 +787,7 @@ in its attributes. (Only used if scripgriddata_src_type = UGRID.)
 <!--                                                   -->
 <entry id="mksrf_filename" type="char*256" category="mksurfdata"
        group="default_settings"
-       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero" >
+       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero,mksrf_ffert" >
 Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
 
@@ -928,6 +943,11 @@ Slope percentile dataset
 <entry id="mksrf_fero" type="char*256" category="mksurfdata"
        input_pathname="abs" group="elmexp" valid_values="" >
 ELM-Erosion parameters dataset
+</entry>
+
+<entry id="mksrf_ffert" type="char*256" category="mksurfdata"
+       input_pathname="abs" group="elmexp" valid_values="" >
+ELM-Fertilizer dataset
 </entry>
 
 <entry id="outnc_double" type="logical" category="mksurfdata"
@@ -1211,7 +1231,7 @@ Fraction of manure N produced in crop columns but spread on native vegetation co
        group="fan_nml" valid_values="">
 Adsorption coefficient for ammonium in FAN. Must be >= 0, 0 means no adsorption.
 </entry>
- 
+
 <!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
 <!-- ========================================================================================  -->
@@ -1404,7 +1424,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,ECwISC30to60E3r2,IcoswISC30E3r5">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5">
 Land mask description
 </entry>
 
@@ -2095,7 +2115,7 @@ Toggle to turn on the soil erosion and OM pools feedback.
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to use modifed infiltration scheme in h2osfc     .
 </entry>
-    
+
 <!-- ========================================================================================  -->
 <!-- Namelist options for land river coulping                                                  -->
 <!-- ========================================================================================  -->

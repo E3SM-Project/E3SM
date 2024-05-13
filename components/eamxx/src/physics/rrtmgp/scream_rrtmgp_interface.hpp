@@ -122,7 +122,7 @@ namespace scream {
                 int ncol, int nlay, int ngpt, Real pmin, Real pmax,
                 const real2d& pmid, const real3d& cld_tau_gpt, real1d& cld_area);
         /*
-         * Return select cloud-top diagnostics following AeroCOM recommendation
+         * Return select cloud-top diagnostics following AeroCom recommendation
          */
         void compute_aerocom_cloudtop(
             int ncol, int nlay, const real2d &tmid, const real2d &pmid,

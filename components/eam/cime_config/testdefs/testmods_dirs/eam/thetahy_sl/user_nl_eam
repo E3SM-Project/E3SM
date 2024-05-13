@@ -1,7 +1,7 @@
 
 theta_hydrostatic_mode=.true.
 tstep_type=5
-cubed_sphere_map=0
+cubed_sphere_map=2
 
 transport_alg=12
 semi_lagrange_cdr_alg=20

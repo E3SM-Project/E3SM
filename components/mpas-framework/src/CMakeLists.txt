@@ -1,4 +1,4 @@
-#
+ #
 # This is the interface between E3SM's new CMake-based build system and MPAS.
 #
 # The following CMake variables are expected to be defined:
@@ -69,6 +69,11 @@ add_subdirectory(tools)
 
 set(COMMON_RAW_SOURCES external/ezxml/ezxml.c)
 include(${CMAKE_CURRENT_SOURCE_DIR}/framework/framework.cmake)
+if (COMP_INTERFACE STREQUAL "moab")
+  list(APPEND COMMON_RAW_SOURCES framework/mpas_moabmesh.F)
+  list(APPEND INCLUDES ${MOAB_INCLUDE_DIRS})
+  list(APPEND CPPDEFS "-DHAVE_MOAB")
+endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 
 add_library(common)

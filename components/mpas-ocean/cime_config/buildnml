@@ -270,6 +270,58 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
 
+    elif ocn_grid == 'FRISwISC08to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC08to60E3r1.20230913.nc'
+        analysis_mask_file = 'FRISwISC08to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230913'
+        ic_prefix = 'mpaso.FRISwISC08to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/mpaso.FRISwISC08to60E3r1.20230913.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC08to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC08to60E3r1.20230913.nc'
+
+    elif ocn_grid == 'FRISwISC04to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC04to60E3r1.20230913.nc'
+        analysis_mask_file = 'FRISwISC04to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230913'
+        ic_prefix = 'mpaso.FRISwISC04to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/mpaso.FRISwISC04to60E3r1.20230913.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC04to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC04to60E3r1.20230913.nc'
+
+    elif ocn_grid == 'FRISwISC02to60E3r1':
+        decomp_date = '20230914'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC02to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC02to60E3r1.20230914.nc'
+        analysis_mask_file = 'FRISwISC02to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230914'
+        ic_prefix = 'mpaso.FRISwISC02to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC02to60E3r1/mpaso.FRISwISC02to60E3r1.20230914.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230914'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC02to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC02to60E3r1.20230914.nc'
+
+    elif ocn_grid == 'FRISwISC01to60E3r1':
+        decomp_date = '20230915'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC01to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC01to60E3r1.20230915.nc'
+        analysis_mask_file = 'FRISwISC01to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230915'
+        ic_prefix = 'mpaso.FRISwISC01to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC01to60E3r1/mpaso.FRISwISC01to60E3r1.20230915.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230915'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC01to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC01to60E3r1.20230915.nc'
+
     elif ocn_grid == 'ECwISC30to60E2r1':
         decomp_date = '200915'
         decomp_prefix = 'mpas-o.graph.info.'
@@ -283,19 +335,6 @@ def buildnml(case, caseroot, compname):
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
 
-    elif ocn_grid == 'ECwISC30to60E3r2':
-        decomp_date = '20230901'
-        decomp_prefix = 'partitions/mpas-o.graph.info.'
-        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E3r2.20230901.nc'
-        analysis_mask_file = 'ECwISC30to60E3r2_mocBasinsAndTransects20210623.nc'
-        ic_date = '20230901'
-        ic_prefix = 'mpaso.ECwISC30to60E3r2'
-        if ocn_ic_mode == 'spunup':
-            ic_date = '230914'
-            ic_prefix = 'mpaso.ECwISC30to60E3r2.rstFromG-chrysalis'
-        if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E3r2.20230901.nc'
-
     elif ocn_grid == 'IcoswISC30E3r5':
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
@@ -306,8 +345,12 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20231121'
             ic_prefix = 'mpaso.IcoswISC30E3r5.rstFromG-chrysalis'
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '20231215'
+            ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_adusumilli2020.IcoswISC30E3r5.20231120.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -435,7 +478,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -444,7 +487,7 @@ def buildnml(case, caseroot, compname):
             lines.append('/>')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -465,7 +508,7 @@ def buildnml(case, caseroot, compname):
             lines.append('-->')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -484,7 +527,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="output"')
             lines.append('        type="output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -768,7 +811,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="eddyProductVariablesOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1019,7 +1062,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        reference_time="01-01-01_00:00:00"')
             lines.append('        output_interval="00-01-00_00:00:00"')
-            lines.append('        clobber_mode="append"')
+            lines.append('        clobber_mode="truncate"')
             lines.append('        packages="conservationCheckAMPKG">')
             lines.append('')
             lines.append('<var name="xtime"/>')
@@ -1148,7 +1191,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1200,6 +1243,9 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="cGMphaseSpeed"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
+
+            if ocn_grid.startswith("FRIS"):
+                lines.append('    <var name="gmHorizontalTaper"/>')
 
             lines.append('    <var name="mocStreamvalLatAndDepthMLE"/>')
             lines.append('    <var name="mocStreamvalLatAndDepthRegionMLE"/>')
@@ -1375,7 +1421,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyMaxOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1437,7 +1483,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyMinOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1540,7 +1586,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1556,7 +1602,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyMaxRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1572,7 +1618,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyMinRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))

@@ -9,12 +9,14 @@ the most challenging and demanding climate-change research problems and
 Department of Energy mission needs while efficiently using DOE Leadership
 Computing Facilities.  
 
-DOI: [10.11578/E3SM/dc.20230110.5](http://dx.doi.org/10.11578/E3SM/dc.20230110.5)
+DOI: [10.11578/E3SM/dc.20240301.3](http://dx.doi.org/10.11578/E3SM/dc.20240301.3)
 
 Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
 for further details.
 
-For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions)
+For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions).
+
+See our Github-hosted documentation at [https://e3sm-project.github.io/E3SM/](https://e3sm-project.github.io/E3SM/).
 
 Table of Contents 
 --------------------------------------------------------------------------------
@@ -27,7 +29,7 @@ Table of Contents
 
 Quick Start
 --------------------------------------------------------------------------------
-The [Quick Start](https://e3sm.org/model/running-e3sm/e3sm-quick-start/) page 
+The [Quick Start](https://e3sm.org/model/running-e3sm/e3sm-quick-start/) page
 includes instructions on obtaining the necessary code and input data for model 
 setup and execution on a supported machine.
 
@@ -42,7 +44,7 @@ To run E3SM, it is recommended that you obtain time on a
 
 Running
 --------------------------------------------------------------------------------
-Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/) 
+Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/)
  for instructions on running the model. 
 
 Contributing
@@ -64,11 +66,11 @@ the following BibTeX entry is provided.
 	author = {{E3SM Project}},
 	abstractNote = {{E3SM} is a state-of-the-art fully coupled model of the {E}arth's 
 		climate including important biogeochemical and cryospheric processes.},
-	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20230110.5}},
-	url = {https://dx.doi.org/10.11578/E3SM/dc.20230110.5},
-	doi = {10.11578/E3SM/dc.20230110.5},
-	year = 2023,
-	month = jan,
+	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20240301.3}},
+	url = {https://dx.doi.org/10.11578/E3SM/dc.20240301.3},
+	doi = {10.11578/E3SM/dc.20240301.3},
+	year = 2024,
+	month = mar,
 }
 ```
 

@@ -97,10 +97,10 @@ module seaice_constants
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii                                = pi, &    !echmod - replace pii with seaicePi elsewhere
+       pii                                = pi, &    ! replace pii with seaicePi elsewhere (might need to be parameter)
        seaiceDegreesToRadians             = pi / 180.0_RKIND, &
        seaiceRadiansToDegrees             = 180.0_RKIND / pi, &
-       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
+       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & ! incorrect for leap years
        seaiceDaysPerSecond                = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
@@ -143,7 +143,6 @@ module seaice_constants
        iceThicknessMinimum, &
        snowThicknessMinimum
 
-!echmod - declare and define these constants explicitly in case Icepack changes its defaults
   real(kind=RKIND), public :: &
        seaiceBigNumber                   = 1.0e+30_RKIND, & ! a large number
        seaiceSnowMinimumDensity          = 100.0_RKIND  , & ! minimum snow density (kg/m^3)
@@ -169,7 +168,7 @@ module seaice_constants
        seaiceQsatQocnConstant            = 627572.4_RKIND    ,&
        seaiceQsatTocnConstant            = 5107.4_RKIND
 
-!echmod - Are these needed for standalone runs?
+! Are these needed for standalone runs?
 !      ! orbital parameters
 !      integer, public :: iyear_AD  ! Year to calculate orbit for
 !      real(kind=RKIND),public :: eccen  ! Earth's orbital eccentricity

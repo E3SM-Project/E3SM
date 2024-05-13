@@ -73,9 +73,24 @@ public:
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout (const bool midpoints) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
-  virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const = 0;
+  virtual FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims,
+                                            const std::vector<std::string>& cmp_dims_names) const = 0;
   virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;
-  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim,
+                                            const std::string& vec_dim_name) const = 0;
+  virtual FieldLayout get_3d_tensor_layout (const bool midpoints,
+                                            const std::vector<int>& cmp_dims,
+                                            const std::vector<std::string>& cmp_dims_names) const = 0;
+
+  // Some shortcut versions of the above ones, where the name of the vector/tensor
+  // components are all equal to e2str(CMP)
+  FieldLayout get_2d_vector_layout (const int vector_dim) const;
+  FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const;
+
+  FieldLayout get_3d_vector_layout (const bool midpoints) const;
+  FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
+  FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
@@ -97,10 +112,18 @@ public:
   gid_type get_num_global_dofs () const { return m_num_global_dofs; }
   gid_type get_global_min_dof_gid () const;
   gid_type get_global_max_dof_gid () const;
+  gid_type get_global_min_partitioned_dim_gid () const;
+  gid_type get_global_max_partitioned_dim_gid () const;
 
   // Get a Field storing 1d data (the dof gids)
   Field get_dofs_gids () const;
   Field get_dofs_gids ();
+
+  // Get Field storing the gids that this process owns along the partitioned dim
+  // NOTE: for some grids, this is the same as get_dofs_gids. The SEGrid is a counterexample:
+  //       the dofs are the GLL dofs, but the partitioned dim is the element dimension
+  Field get_partitioned_dim_gids ();
+  Field get_partitioned_dim_gids () const;
 
   // Get a Field storing 2d data, where (i,j) entry contains the j-th coordinate of
   // the i-th dof in the native dof layout. Const verison returns a read-only field
@@ -120,6 +143,7 @@ public:
 
   // Sets pre-existing field as geometry data.
   void set_geometry_data (const Field& f);
+  void delete_geometry_data (const std::string& name);
 
   bool has_geometry_data (const std::string& name) const {
     return m_geo_fields.find(name)!=m_geo_fields.end();
@@ -164,9 +188,8 @@ public:
   virtual bool check_valid_lid_to_idx () const { return true; }
 
   void reset_field_tag_name (const FieldTag t, const std::string& s) { m_special_tag_names[t] = s; }
-  std::string get_dim_name (const FieldTag t) const {
-    return m_special_tag_names.count(t)==1 ? m_special_tag_names.at(t) : e2str(t);
-  }
+  bool has_special_tag_name (const FieldTag t) const { return m_special_tag_names.count(t)==1; }
+  std::string get_special_tag_name (const FieldTag t) const { return m_special_tag_names.at(t); }
 
   // This member is used mostly by IO: if a field exists on multiple grids
   // with the same name, IO can use this as a suffix to diambiguate the fields in
@@ -186,8 +209,6 @@ protected:
   //       since it calls get_2d_scalar_layout.
   void create_dof_fields (const int scalar2d_layout_rank);
 
-private:
-
   // The grid name and type
   GridType     m_type;
   std::string  m_name;
@@ -206,9 +227,15 @@ private:
   // The global ID of each dof
   Field     m_dofs_gids;
 
+  // The global ID of the owned entries of the partitioned dimension (if any)
+  Field     m_partitioned_dim_gids;
+
   // The max/min dof GID across all ranks. Mutable, to allow for lazy calculation
   mutable gid_type  m_global_min_dof_gid =  std::numeric_limits<gid_type>::max();
   mutable gid_type  m_global_max_dof_gid = -std::numeric_limits<gid_type>::max();
+  // Same as above, but for partitioned dim gids
+  mutable gid_type  m_global_min_partitioned_dim_gid =  std::numeric_limits<gid_type>::max();
+  mutable gid_type  m_global_max_partitioned_dim_gid = -std::numeric_limits<gid_type>::max();
 
   // The fcn is_unique is expensive, so we lazy init this at the first call.
   mutable bool m_is_unique;

@@ -9,6 +9,10 @@
 
 namespace scream {
 
+void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data);
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data, Field& out_data);
+bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol, const bool msg = true);
+
 TEST_CASE("field_at_height")
 {
   using namespace ShortFieldTagsNames;
@@ -18,11 +22,12 @@ TEST_CASE("field_at_height")
   // Get an MPI comm group for test
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  constexpr int nruns = 10;
+  constexpr int nruns = 100;
 
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Create a grids manager w/ a point grid
+  constexpr Real tol            = std::numeric_limits<Real>::epsilon()*1e5;
   int ncols = 3;
   int ndims = 4;
   int nlevs = 10;
@@ -31,35 +36,57 @@ TEST_CASE("field_at_height")
   gm->build_grids();
   auto grid = gm->get_grid("Point Grid");
 
-  // Create input test fields, as well as z_mid/int fields
   const auto m = ekat::units::m;
+  // Create input data test fields
   FieldIdentifier s_mid_fid ("s_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
   FieldIdentifier s_int_fid ("s_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
   FieldIdentifier v_mid_fid ("v_mid",FieldLayout({COL,CMP, LEV},{ncols,ndims,nlevs  }),m,grid->name());
   FieldIdentifier v_int_fid ("v_int",FieldLayout({COL,CMP,ILEV},{ncols,ndims,nlevs+1}),m,grid->name());
-  FieldIdentifier z_mid_fid ("z_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
-  FieldIdentifier z_int_fid ("z_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
+  // Create vertical fields z and geo on both midpoints and interfaces
+  FieldIdentifier z_surf_fid ("z_surf",          FieldLayout({COL         },{ncols              }),m,grid->name());
+  FieldIdentifier z_mid_fid   ("z_mid",           FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
+  FieldIdentifier z_int_fid   ("z_int",           FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
+  FieldIdentifier geo_mid_fid ("geopotential_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
+  FieldIdentifier geo_int_fid ("geopotential_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
+  // Keep track of reference fields for comparison
+  FieldIdentifier s_tgt_fid ("scalar_target",FieldLayout({COL    },{ncols      }),m,grid->name());
+  FieldIdentifier v_tgt_fid ("vector_target",FieldLayout({COL,CMP},{ncols,ndims}),m,grid->name());
 
-  Field s_mid (s_mid_fid);
-  Field s_int (s_int_fid);
-  Field v_mid (v_mid_fid);
-  Field v_int (v_int_fid);
-  Field z_mid (z_mid_fid);
-  Field z_int (z_int_fid);
+  Field s_mid   (s_mid_fid);
+  Field s_int   (s_int_fid);
+  Field v_mid   (v_mid_fid);
+  Field v_int   (v_int_fid);
+  Field z_surf  (z_surf_fid);
+  Field z_mid   (z_mid_fid);
+  Field z_int   (z_int_fid);
+  Field geo_mid (geo_mid_fid);
+  Field geo_int (geo_int_fid);
+  Field s_tgt   (s_tgt_fid);
+  Field v_tgt   (v_tgt_fid);
 
   s_mid.allocate_view();
   s_int.allocate_view();
   v_mid.allocate_view();
   v_int.allocate_view();
+  z_surf.allocate_view();
   z_mid.allocate_view();
   z_int.allocate_view();
+  geo_mid.allocate_view();
+  geo_int.allocate_view();
+  s_tgt.allocate_view();
+  v_tgt.allocate_view();
 
   s_mid.get_header().get_tracking().update_time_stamp(t0);
   s_int.get_header().get_tracking().update_time_stamp(t0);
   v_mid.get_header().get_tracking().update_time_stamp(t0);
   v_int.get_header().get_tracking().update_time_stamp(t0);
+  z_surf.get_header().get_tracking().update_time_stamp(t0);
   z_mid.get_header().get_tracking().update_time_stamp(t0);
   z_int.get_header().get_tracking().update_time_stamp(t0);
+  geo_mid.get_header().get_tracking().update_time_stamp(t0);
+  geo_int.get_header().get_tracking().update_time_stamp(t0);
+  s_tgt.get_header().get_tracking().update_time_stamp(t0);
+  v_tgt.get_header().get_tracking().update_time_stamp(t0);
 
   auto print = [&](const std::string& msg) {
     if (comm.am_i_root()) {
@@ -69,16 +96,19 @@ TEST_CASE("field_at_height")
 
   auto engine = scream::setup_random_test(&comm);
   using IPDF = std::uniform_int_distribution<int>;
+  using RPDF = std::uniform_real_distribution<Real>;
 
   IPDF pdf_fields (0,1000);
-  IPDF pdf_levs (1,nlevs-1);
+  RPDF pdf_m  (1,10);
+  RPDF pdf_y0 (0,5);
 
   // Lambda to create and run a diag, and return output
   auto run_diag = [&](const Field& f, const Field& z,
-                      const std::string& loc) {
+                      const std::string& loc, const std::string& surf_ref) {
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
     auto& factory = AtmosphereDiagnosticFactory::instance();
     ekat::ParameterList pl;
+    pl.set("surface_reference",surf_ref);
     pl.set("vertical_location",loc);
     pl.set("field_name",f.name());
     pl.set("grid_name",grid->name());
@@ -92,135 +122,231 @@ TEST_CASE("field_at_height")
     return diag->get_diagnostic();
   };
 
-  // Create z(i,j)=nlevs-j, which makes testing easier
-  for (auto f : {z_mid, z_int}) {
-    auto v = f.get_view<Real**,Host>();
-    const auto& dims = f.get_header().get_identifier().get_layout().dims();
-    for (int i=0; i<dims[0]; ++i) {
-      for (int j=0; j<dims[1]; ++j) {
-        v(i,j) = nlevs-j;
-      }
-    };
-    f.sync_to_dev();
+  // Set up vertical structure for the tests.  Note,
+  //   z_mid/int represents the height in m above sealevel
+  //   geo_mid/int represente the hegith in m above the surface
+  // So we first construct z_mid/int using z_surf as reference, and
+  // then can build geo_mid/int from z_mid/int
+  // Furthermore, z_mid is just the midpoint between two adjacent z_int
+  // points, so we back z_mid out of z_int.
+  //
+  // To simplify the surface contribution we set the surface height to equal
+  // the local column index.
+  const int z_top = 1000;
+  const Real surf_slope = z_top/10.0/ncols;
+  const auto& zint_v   = z_int.get_view<Real**,Host>();
+  const auto& zmid_v   = z_mid.get_view<Real**,Host>();
+  const auto& zsurf_v  = z_surf.get_view<Real*,Host>();
+  const auto& geoint_v = geo_int.get_view<Real**,Host>();
+  const auto& geomid_v = geo_mid.get_view<Real**,Host>();
+  int         min_col_thickness = z_top;
+  int         max_surf = 0;
+  for (int ii=0; ii<ncols; ++ii) {
+    zsurf_v(ii) = ii*surf_slope;
+    max_surf = zsurf_v(ii) > max_surf ? zsurf_v(ii) : max_surf;
+    const Real col_thickness = z_top - zsurf_v(ii);
+    min_col_thickness = min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
+    const Real dz = (z_top - zsurf_v(ii))/nlevs;
+    zint_v(ii,0) = z_top;
+    geoint_v(ii,0) = z_top - zsurf_v(ii); // Note, the distance above surface needs to consider the surface height.
+    for (int jj=0; jj<nlevs; ++jj) {
+      zint_v(ii,jj+1)   = zint_v(ii,jj)-dz;
+      zmid_v(ii,jj)     = 0.5*(zint_v(ii,jj) + zint_v(ii,jj+1));
+      geoint_v(ii,jj+1) = zint_v(ii,jj+1)- zsurf_v(ii); 
+      geomid_v(ii,jj)   = zmid_v(ii,jj)  - zsurf_v(ii);
+    }
   }
+  z_mid.sync_to_dev();
+  z_int.sync_to_dev();
+  z_surf.sync_to_dev();
+  geo_int.sync_to_dev();
+  geo_mid.sync_to_dev();
+  // Set the PDF for target height in the test to always be within the shortest column.
+  // This ensures that we don't havea target z that extrapolates everywhere.
+  // We test this case individually.
+  IPDF pdf_levs (max_surf,min_col_thickness);
+  // Sanity check that the geo and z vertical structures are in fact different,
+  // so we know we are testing above_surface and above_sealevel as different cases.
+  REQUIRE(! views_are_equal(z_int,geo_int));
+  REQUIRE(! views_are_equal(z_mid,geo_mid));
+
+  // Make sure that an unsupported reference height throws an error.
+  print(" -> Testing throws error with unsupported reference height...\n");
+  {
+    REQUIRE_THROWS(run_diag (s_mid,geo_mid,"1m","foobar"));
+  }
+  print(" -> Testing throws error with unsupported reference height... OK\n");
 
   // Run many times
-  Real z_tgt,lev_tgt;
+  int z_tgt;
   std::string loc;
-  for (int irun=0; irun<nruns; ++irun) {
+  for (std::string surf_ref : {"sealevel","surface"}) {
+    printf(" -> Testing for a reference height above %s...\n",surf_ref.c_str());
+    const auto mid_src = surf_ref == "sealevel" ? z_mid : geo_mid;
+    const auto int_src = surf_ref == "sealevel" ? z_int : geo_int;
+    const int  max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
+    for (int irun=0; irun<nruns; ++irun) {
 
-    // Randomize fields
-    for (auto f : {s_mid, s_int, v_mid, v_int}) {
-      // We know f is not a subfield, so we can use this power-user method
-      auto data = f.get_internal_view_data<Real,Host>();
-      const auto& size = f.get_header().get_identifier().get_layout().size();
-      for (int i=0; i<size; ++i) {
-        data[i] = pdf_fields(engine);
+      // Randomize fields using f_z_src function defined above:
+      auto slope = pdf_m(engine); 
+      auto inter = pdf_y0(engine);
+      f_z_src(inter, slope, mid_src, s_mid);
+      f_z_src(inter, slope, mid_src, v_mid);
+      f_z_src(inter, slope, int_src, s_int);
+      f_z_src(inter, slope, int_src, v_int);
+
+      // Set target z-slice for testing to a random value.
+      z_tgt = pdf_levs(engine)+max_surf_4test;
+      loc = std::to_string(z_tgt) + "m";
+      printf("  -> test at height of %s.............\n",loc.c_str());
+      {
+        print("    -> scalar midpoint field...............\n");
+        auto d = run_diag(s_mid,mid_src,loc,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,mid_src,s_tgt);
+        REQUIRE (views_are_approx_equal(d,s_tgt,tol));
+        print("    -> scalar midpoint field............... OK!\n");
       }
-      f.sync_to_dev();
-    }
-
-    z_tgt = pdf_levs(engine);
-    loc = std::to_string(z_tgt) + "m";
-    // z[ilev] = nlevs-ilev, so the tgt slice is nlevs-z_tgt
-    lev_tgt = nlevs-z_tgt;
-
-    print(" -> Testing with z_tgt coinciding with a z level\n");
-    {
-      print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc);
-      auto tgt = s_mid.subfield(1,static_cast<int>(lev_tgt));
-      REQUIRE (views_are_equal(d,tgt,&comm));
-      print("    -> scalar midpoint field............... OK!\n");
-    }
-    {
-      print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc);
-      // z_mid = nlevs+1-ilev, so the tgt slice is nlevs+1-z_tgt
-      auto tgt = s_int.subfield(1,static_cast<int>(lev_tgt));
-      REQUIRE (views_are_equal(d,tgt,&comm));
-      print("    -> scalar interface field............... OK!\n");
-    }
-    {
-      print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc);
-      // We can't subview over 3rd index and keep layout right,
-      // so do all cols separately
-      for (int i=0; i<ncols; ++i) {
-        auto fi = v_mid.subfield(0,i);
-        auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,static_cast<int>(lev_tgt));
-        REQUIRE (views_are_equal(di,tgt,&comm));
+      {
+        print("    -> scalar interface field...............\n");
+        auto d = run_diag (s_int,int_src,loc,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+        REQUIRE (views_are_approx_equal(d,s_tgt,tol));
+        print("    -> scalar interface field............... OK!\n");
       }
-      print("    -> vector midpoint field............... OK!\n");
-    }
-    {
-      print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc);
-      // We can't subview over 3rd index and keep layout right,
-      // so do all cols separately
-      for (int i=0; i<ncols; ++i) {
-        auto fi = v_int.subfield(0,i);
-        auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,static_cast<int>(lev_tgt));
-        REQUIRE (views_are_equal(di,tgt,&comm));
+      {
+        print("    -> vector midpoint field...............\n");
+        auto d = run_diag (v_mid,mid_src,loc,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,mid_src,v_tgt);
+        REQUIRE (views_are_approx_equal(d,v_tgt,tol));
+        print("    -> vector midpoint field............... OK!\n");
       }
-      print("    -> vector interface field............... OK!\n");
-    }
-
-    z_tgt = pdf_levs(engine) + 0.5;
-    lev_tgt = nlevs-z_tgt;
-    loc = std::to_string(z_tgt) + "m";
-
-    auto zp1 = static_cast<int>(std::round(lev_tgt+0.5));
-    auto zm1 = static_cast<int>(std::round(lev_tgt-0.5));
-
-    print(" -> Testing with z_tgt between levels\n");
-    {
-      print("    -> scalar midpoint field...............\n");
-      auto d = run_diag (s_mid,z_mid,loc);
-      auto tgt = s_mid.subfield(1,zp1).clone();
-      tgt.update(s_mid.subfield(1,zm1),0.5,0.5);
-      REQUIRE (views_are_equal(d,tgt,&comm));
-      print("    -> scalar midpoint field............... OK!\n");
-    }
-    {
-      print("    -> scalar interface field...............\n");
-      auto d = run_diag (s_int,z_int,loc);
-      auto tgt = s_int.subfield(1,zp1).clone();
-      tgt.update(s_int.subfield(1,zm1),0.5,0.5);
-      REQUIRE (views_are_equal(d,tgt,&comm));
-      print("    -> scalar interface field............... OK!\n");
-    }
-    {
-      print("    -> vector midpoint field...............\n");
-      auto d = run_diag (v_mid,z_mid,loc);
-      // We can't subview over 3rd index and keep layout right,
-      // so do all cols separately
-      for (int i=0; i<ncols; ++i) {
-        auto fi = v_mid.subfield(0,i);
-        auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,zp1).clone();
-        tgt.update(fi.subfield(1,zm1),0.5,0.5);
-        REQUIRE (views_are_equal(di,tgt,&comm));
+      {
+        print("    -> vector interface field...............\n");
+        auto d = run_diag (v_int,int_src,loc,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,int_src,v_tgt);
+        REQUIRE (views_are_approx_equal(d,v_tgt,tol));
+        print("    -> vector interface field............... OK!\n");
       }
-      print("    -> vector midpoint field............... OK!\n");
+      {
+        print("    -> Forced fail, give incorrect location...............\n");
+        const int z_tgt_adj = (z_tgt+max_surf_4test)/2;
+        std::string loc_err = std::to_string(z_tgt_adj) + "m";
+        auto d = run_diag(s_int,int_src,loc_err,surf_ref);
+        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+        REQUIRE (!views_are_approx_equal(d,s_tgt,tol,false));
+        print("    -> Forced fail, give incorrect location............... OK!\n");
+      }
     }
     {
-      print("    -> vector interface field...............\n");
-      auto d = run_diag (v_int,z_int,loc);
-      // We can't subview over 3rd index and keep layout right,
-      // so do all cols separately
-      for (int i=0; i<ncols; ++i) {
-        auto fi = v_int.subfield(0,i);
-        auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,zp1).clone();
-        tgt.update(fi.subfield(1,zm1),0.5,0.5);
-        REQUIRE (views_are_equal(di,tgt,&comm));
+      print("    -> Forced extrapolation ...............\n");
+      auto slope = pdf_m(engine); 
+      auto inter = pdf_y0(engine);
+      f_z_src(inter, slope, int_src, s_int);
+      print("    ->                      at top...............\n");
+      z_tgt = 2*z_top;
+      std::string loc = std::to_string(z_tgt) + "m";
+      auto dtop = run_diag(s_int,int_src,loc,surf_ref);
+      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+      REQUIRE (views_are_approx_equal(dtop,s_tgt,tol));
+      print("    ->                      at bot...............\n");
+      z_tgt = 0;
+      loc = std::to_string(z_tgt) + "m";
+      auto dbot = run_diag(s_int,int_src,loc,surf_ref);
+      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
+      REQUIRE (views_are_approx_equal(dbot,s_tgt,tol));
+      print("    -> Forced extrapolation............... OK!\n");
+    }
+    printf(" -> Testing for a reference height above %s... OK!\n",surf_ref.c_str());
+  }
+}
+
+//-------------------------------
+// Set up the inpute data.  To make the test simple we assume a linear distribution of the data
+// with height.  That way we can exactly calculate what a linear interpolation to a random
+// height would be.
+void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data) {
+  using namespace ShortFieldTagsNames;
+  const auto layout = out_data.get_header().get_identifier().get_layout();
+  if (layout.has_tag(CMP)) { // Is a vector layout, meaning different dims than z_data.
+    const auto& dims = layout.dims();
+    const auto& z_view = z_data.get_view<const Real**,Host>();
+    const auto& out_view = out_data.get_view<Real***,Host>();
+    for (int ii=0; ii<dims[0]; ++ii) {
+      for (int nd=0; nd<dims[1]; ++nd) {
+        for (int jj=0; jj<dims[2]; ++jj) {
+          out_view(ii,nd,jj) = y0 + m*(nd+1)*z_view(ii,jj);
+        }
       }
-      print("    -> vector interface field............... OK!\n");
+    }
+  } else { // Not a vector output, easier to deal with
+    const auto z_view = z_data.get_internal_view_data<const Real,Host>();
+    const auto& size = z_data.get_header().get_identifier().get_layout().size();
+    auto out_view = out_data.get_internal_view_data<Real,Host>();
+    for (int ii=0; ii<size; ++ii) {
+      out_view[ii] = y0 + m*z_view[ii];
     }
   }
+  out_data.sync_to_dev();
+}
+//-------------------------------
+// Calculate the target data.  Note expression here must match the f_z_src abovel
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data, Field& out_data) {
+  using namespace ShortFieldTagsNames;
+  const auto layout = out_data.get_header().get_identifier().get_layout();
+  const auto& z_view = z_data.get_view<const Real**,Host>();
+  const auto& zdims = z_data.get_header().get_identifier().get_layout().dims();
+  if (layout.has_tag(CMP)) { // Is a vector layout, meaning different dims than z_target.
+    const auto& dims = layout.dims();
+    const auto& out_view = out_data.get_view<Real**,Host>();
+    for (int ii=0; ii<dims[0]; ++ii) {
+      for (int nd=0; nd<dims[1]; ++nd) {
+        // Check if FieldAtHeight would have had to extrapolate:
+	if (z_target > z_view(ii,0)) {
+          out_view(ii,nd) = y0 + m*(nd+1)*z_view(ii,0);
+	} else if ( z_target < z_view(ii,zdims[1]-1)) {
+          out_view(ii,nd) = y0 + m*(nd+1)*z_view(ii,zdims[1]-1);
+	} else {
+          out_view(ii,nd) = y0 + m*(nd+1)*z_target;
+	}
+      }
+    }
+  } else { // Not a vector output, easier to deal with
+    const auto& dims = layout.dims();
+    const auto& out_view = out_data.get_view<Real*,Host>();
+    for (int ii=0; ii<dims[0]; ++ii) {
+      // Check if FieldAtHeight would have had to extrapolate:
+      if (z_target > z_view(ii,0)) {
+        out_view(ii) = y0 + m*z_view(ii,0);
+      } else if ( z_target < z_view(ii,zdims[1]-1)) {
+        out_view(ii) = y0 + m*z_view(ii,zdims[1]-1);
+      } else {
+        out_view(ii) = y0 + m*z_target;
+      }
+    }
+  }
+  out_data.sync_to_dev();
+}
+/*-----------------------------------------------------------------------------------------------*/
+bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol, const bool msg)
+{
+  const auto& l0    = f0.get_header().get_identifier().get_layout();
+  const auto& l1    = f1.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG(l0==l1,"Error! views_are_approx_equal - the two fields don't have matching layouts.");
+  // Take advantage of field utils update, min and max to assess the max difference between the two fields
+  // simply.
+  auto ft = f0.clone();
+  ft.update(f1,1.0,-1.0);
+  auto d_min = field_min<Real>(ft);
+  auto d_max = field_max<Real>(ft);
+  if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
+    if (msg) {
+      printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are %e and %e respectively.\n",f0.name().c_str(),tol,d_min,d_max);
+    }
+    return false;
+  } else {
+    return true;
+  }
+
 }
 
 } // namespace scream

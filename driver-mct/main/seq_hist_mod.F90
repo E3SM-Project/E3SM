@@ -161,6 +161,8 @@ contains
     integer(IN)   :: start_tod    ! Starting time-of-day (s)
     real(r8)      :: curr_time    ! Time interval since reference time
     integer(IN)   :: fk           ! index
+    integer(IN)   :: latlonid(2)  ! ids of lat lon dimensions
+    integer(IN)   :: alatlonid(2)  ! ids of atmosphere lat lon dimensions
     character(CL) :: time_units   ! units of time variable
     character(CL) :: calendar     ! calendar type
     character(CL) :: case_name    ! case name
@@ -258,16 +260,16 @@ contains
              gsmap => component_get_gsmap_cx(atm(1))
              dom   => component_get_dom_cx(atm(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma', &
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,dims2do=alatlonid, pre='doma', &
                   scolumn=single_column)
              call seq_io_write(hist_file, gsmap, fractions_ax, 'fractions_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='fraca', &
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, dims2din=alatlonid, pre='fraca', &
                   scolumn=single_column)
              call seq_io_write(hist_file, atm, 'x2c', 'x2a_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='x2a', &
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, dims2din=alatlonid, pre='x2a', &
                   scolumn=single_column)
              call seq_io_write(hist_file, atm, 'c2x', 'a2x_ax', &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='a2x', &
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, dims2din=alatlonid, pre='a2x', &
                   scolumn=single_column)
              !call seq_io_write(hist_file, gsmap, l2x_ax, 'l2x_ax',  &
              !    nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='l2x_ax')
@@ -281,51 +283,45 @@ contains
              gsmap => component_get_gsmap_cx(lnd(1))
              dom   => component_get_dom_cx(lnd(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='doml')
+                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='doml')
              call seq_io_write(hist_file, gsmap, fractions_lx, 'fractions_lx',  &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='fracl')
+                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid,  pre='fracl')
              call seq_io_write(hist_file, lnd, 'c2x', 'l2x_lx', &
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='l2x')
+                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='l2x')
              call seq_io_write(hist_file, lnd, 'x2c', 'x2l_lx',&
-                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='x2l')
+                  nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2l')
           endif
 
           if (rof_present) then
              gsmap => component_get_gsmap_cx(rof(1))
              dom   => component_get_dom_cx(rof(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='domr')
+                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domr')
              call seq_io_write(hist_file, gsmap, fractions_rx, 'fractions_rx',  &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='fracr')
+                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracr')
              call seq_io_write(hist_file, rof, 'c2x', 'r2x_rx', &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='r2x')
+                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='r2x')
              call seq_io_write(hist_file, rof, 'x2c', 'x2r_rx', &
-                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='x2r')
-          endif
-
-          if (rof_present .and. ocnrof_prognostic) then
-             gsmap  => component_get_gsmap_cx(ocn(1))
-             r2x_ox => prep_ocn_get_r2x_ox()
-             call seq_io_write(hist_file, gsmap, r2x_ox, 'r2x_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='r2xo')
+                  nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2r')
           endif
 
           if (ocn_present) then
              gsmap => component_get_gsmap_cx(ocn(1))
              dom   => component_get_dom_cx(ocn(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domo')
              call seq_io_write(hist_file, gsmap, fractions_ox, 'fractions_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='fraco')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fraco')
              call seq_io_write(hist_file, ocn, 'c2x', 'o2x_ox', &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='o2x')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='o2x')
+
              !call seq_io_write(hist_file, ocn, 'x2c', 'x2o_ox', &
              !                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2o')
 
              gsmap     => component_get_gsmap_cx(ocn(1))
              x2oacc_ox => prep_ocn_get_x2oacc_ox()
              call seq_io_write(hist_file, gsmap, x2oacc_ox, 'x2oacc_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='x2oacc')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2oacc')
 
              gsmap         => component_get_gsmap_cx(ocn(1))
              x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
@@ -334,17 +330,24 @@ contains
              gsmap => component_get_gsmap_cx(ocn(1))
              xao_ox => prep_aoflux_get_xao_ox()
              call seq_io_write(hist_file, gsmap, xao_ox, 'xao_ox',  &
-                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='xaoo')
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='xaoo')
 
              gsmap  => component_get_gsmap_cx(atm(1))
              o2x_ax => prep_atm_get_o2x_ax()
              call seq_io_write(hist_file, gsmap, o2x_ax, 'o2x_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='o2xa')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, dims2din=alatlonid, pre='o2xa')
 
              gsmap  => component_get_gsmap_cx(atm(1))
              xao_ax => prep_aoflux_get_xao_ax()
              call seq_io_write(hist_file, gsmap, xao_ax, 'xao_ax',  &
-                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='xaoa')
+                  nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, dims2din=alatlonid, pre='xaoa')
+          endif
+
+          if (rof_present .and. ocnrof_prognostic) then
+             gsmap  => component_get_gsmap_cx(ocn(1))
+             r2x_ox => prep_ocn_get_r2x_ox()
+             call seq_io_write(hist_file, gsmap, r2x_ox, 'r2x_ox',  &
+                  nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='r2xo')
           endif
 
           if (ice_present) then
@@ -352,52 +355,52 @@ contains
              dom   => component_get_dom_cx(ice(1))
              nmask = mct_aVect_indexRA(dom%data,'mask')
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domi')
              call seq_io_write(hist_file, gsmap, fractions_ix, 'fractions_ix',  &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='fraci')
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fraci')
              call seq_io_write(hist_file, ice, 'c2x', 'i2x_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x', mask=dom%data%rattr(nmask,:))
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='i2x', mask=dom%data%rattr(nmask,:))
              call seq_io_write(hist_file, ice, 'x2c', 'x2i_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i', mask=dom%data%rattr(nmask,:))
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2i', mask=dom%data%rattr(nmask,:))
           endif
 
           if (glc_present) then
              gsmap => component_get_gsmap_cx(glc(1))
              dom   => component_get_dom_cx(glc(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='domg')
+                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domg')
              call seq_io_write(hist_file, gsmap, fractions_gx, 'fractions_gx',  &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='fracg')
+                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracg')
              call seq_io_write(hist_file, glc, 'c2x', 'g2x_gx', &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='g2x')
+                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='g2x')
              call seq_io_write(hist_file, glc, 'x2c', 'x2g_gx', &
-                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='x2g')
+                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2g')
           endif
 
           if (wav_present) then
              gsmap => component_get_gsmap_cx(wav(1))
              dom   => component_get_dom_cx(wav(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
+                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domw')
              call seq_io_write(hist_file, gsmap, fractions_wx, 'fractions_wx',  &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='fracw')
+                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracw')
              call seq_io_write(hist_file, wav, 'c2x', 'w2x_wx', &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='w2x')
+                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='w2x')
              call seq_io_write(hist_file, wav, 'x2c', 'x2w_wx', &
-                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
+                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2w')
           endif
 
           if (iac_present) then
              gsmap => component_get_gsmap_cx(iac(1))
              dom   => component_get_dom_cx(iac(1))
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domz')
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2do=latlonid, pre='domz')
              call seq_io_write(hist_file, gsmap, fractions_zx, 'fractions_zx',  &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='fracz')
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracz')
              call seq_io_write(hist_file, iac, 'c2x', 'z2x_zx', &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='w2x')
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='w2x')
              call seq_io_write(hist_file, iac, 'x2c', 'x2z_zx', &
-                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='x2w')
+                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2w')
           endif
        enddo
        call seq_io_close(hist_file)

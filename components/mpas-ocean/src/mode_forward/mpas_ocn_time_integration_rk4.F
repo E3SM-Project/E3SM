@@ -744,7 +744,7 @@ module ocn_time_integration_rk4
 #endif
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 
-         ! Update the effective desnity in land ice if we're coupling to land ice
+         ! Update the effective density in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(forcingPool, &
                                                        statePool, err)
 

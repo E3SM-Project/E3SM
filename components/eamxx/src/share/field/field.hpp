@@ -237,9 +237,9 @@ public:
   //     to store a stride for the slowest dimension.
   //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
   Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-                       const int idim, const int index, const bool dynamic = false) const;
+                  const int idim, const int index, const bool dynamic = false) const;
   Field subfield (const std::string& sf_name, const int idim,
-                       const int index, const bool dynamic = false) const;
+                  const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
 
   // If this field is a vector field, get a subfield for the ith component.

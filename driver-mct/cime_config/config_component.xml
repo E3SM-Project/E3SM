@@ -717,7 +717,7 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
-  <entry id="SMP_PRESENT">
+  <entry id="BUILD_THREADED">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -751,15 +751,6 @@
     variable to TRUE will involve the inclusion of C++ code in the
     MALI executable. This is currently only supported for certain
     machines.</desc>
-  </entry>
-
-  <entry id="USE_MOAB">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies linking to the MOAB library</desc>
   </entry>
 
   <entry id="USE_TRILINOS">
@@ -1382,6 +1373,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ice flux mapping file</desc>
   </entry>
 
   <entry id="ATM2OCN_SMAPNAME">
@@ -2693,10 +2692,10 @@
 
   <entry id="PIO_REARRANGER">
     <type>integer</type>
-    <valid_values>1,2</valid_values>
+    <valid_values>1,2,3</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
+    <desc>pio rearranger choice box=1, subset=2, any=3 </desc>
     <values>
       <value compclass="ATM">$PIO_VERSION</value>
       <value compclass="CPL">$PIO_VERSION</value>

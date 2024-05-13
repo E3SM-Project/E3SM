@@ -19,6 +19,10 @@
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "diagnostics/precip_surf_mass_flux.hpp"
 #include "diagnostics/surf_upward_latent_heat_flux.hpp"
+#include "diagnostics/wind_speed.hpp"
+#include "diagnostics/aodvis.hpp"
+#include "diagnostics/number_path.hpp"
+#include "diagnostics/aerocom_cld.hpp"
 
 namespace scream {
 
@@ -45,6 +49,10 @@ inline void register_diagnostics () {
   diag_factory.register_product("VaporFlux",&create_atmosphere_diagnostic<VaporFluxDiagnostic>);
   diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
   diag_factory.register_product("surface_upward_latent_heat_flux",&create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
+  diag_factory.register_product("wind_speed",&create_atmosphere_diagnostic<WindSpeed>);
+  diag_factory.register_product("AerosolOpticalDepth550nm",&create_atmosphere_diagnostic<AODVis>);
+  diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
+  diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
 }
 
 } // namespace scream

@@ -42,22 +42,22 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   m_nlevs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
   // Add required/computed fields
-  FieldLayout scalar2d_layout{          {COL},           {m_ncols} },
-              scalar3d_midpoint_layout{ {COL, LEV},      {m_ncols, m_nlevs} },
-              vector2d_layout{          {COL, CMP},      {m_ncols, 2} },
-              vector3d_midpoint_layout{ {COL, CMP, LEV}, {m_ncols, 2, m_nlevs} };
+  auto scalar2d     = m_grid->get_2d_scalar_layout();
+  auto vector2d     = m_grid->get_2d_vector_layout(2);
+  auto scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  auto vector3d_mid = m_grid->get_3d_vector_layout(true,2);
 
   constexpr int ps = Spack::n;
-  add_field<Required>("horiz_winds",    vector3d_midpoint_layout, m/s,    grid_name,            ps);
-  add_field<Required>("T_mid",          scalar3d_midpoint_layout, K,      grid_name,            ps);
-  add_field<Required>("p_mid",          scalar3d_midpoint_layout, Pa,     grid_name,            ps);
-  add_field<Required>("pseudo_density", scalar3d_midpoint_layout, Pa,     grid_name,            ps);
-  add_field<Required>("qv",             scalar3d_midpoint_layout, Qunit,  grid_name, "tracers", ps);
-  add_field<Required>("sgh30",          scalar2d_layout,          m,      grid_name);
-  add_field<Required>("landfrac",       scalar2d_layout,          nondim, grid_name);
+  add_field<Required>("horiz_winds",    vector3d_mid, m/s,    grid_name,            ps);
+  add_field<Required>("T_mid",          scalar3d_mid, K,      grid_name,            ps);
+  add_field<Required>("p_mid",          scalar3d_mid, Pa,     grid_name,            ps);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa,     grid_name,            ps);
+  add_field<Required>("qv",             scalar3d_mid, Qunit,  grid_name, "tracers", ps);
+  add_field<Required>("sgh30",          scalar2d    , m,      grid_name);
+  add_field<Required>("landfrac",       scalar2d    , nondim, grid_name);
 
-  add_field<Computed>("surf_drag_coeff_tms", scalar2d_layout, kg/s/m2, grid_name);
-  add_field<Computed>("wind_stress_tms",     vector2d_layout, N/m2,    grid_name);
+  add_field<Computed>("surf_drag_coeff_tms", scalar2d, kg/s/m2, grid_name);
+  add_field<Computed>("wind_stress_tms",     vector2d, N/m2,    grid_name);
 }
 
 // =========================================================================================

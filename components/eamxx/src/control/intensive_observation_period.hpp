@@ -26,6 +26,8 @@ class IntensiveObservationPeriod
 
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
+  using Pack1d = ekat::Pack<Real, 1>;
 
   template<typename ScalarT>
   using view_1d = KT::template view_1d<ScalarT>;
@@ -35,14 +37,13 @@ class IntensiveObservationPeriod
   using view_3d = KT::template view_3d<ScalarT>;
   template<typename ScalarT>
   using view_1d_host = typename view_1d<ScalarT>::HostMirror;
-  using Pack1d = ekat::Pack<Real, 1>;
 
 public:
 
   // Constructor
   // Input:
   //   - comm: MPI communicator
-  //   - params: Input yaml file needs intensive_observation_period_options sublist
+  //   - params: Input yaml file needs iop_options sublist
   //   - run_t0: Initial timestamp for the simulation
   //   - model_nlevs: Number of vertical levels in the simulation. Needed since
   //                  the iop file contains a (potentially) different number of levels
@@ -54,7 +55,7 @@ public:
                              const Field& hybm);
 
   // Default destructor
-  ~IntensiveObservationPeriod() = default;
+  ~IntensiveObservationPeriod();
 
   // Read data from IOP file and store internally.
   void read_iop_file_data(const util::TimeStamp& current_ts);
@@ -69,31 +70,35 @@ public:
   void setup_io_info (const std::string& file_name,
 	               	    const grid_ptr& grid);
 
-  // Read ICs from file for IOP cases. We set all columns in the
-  // given fields to the values of the column in the file with the
-  // closest lat,lon pair to the target lat,lon in the parameters.
-  // The setup_io_info must be called for the correct grids before
-  // this function can be called.
-  // Input:
+  // Read ICs and SPA data from file and remap to fields in field_mgr.
+  // The remap is defined by setting all columns in the given fields to the
+  // values of the column in the file with the closest lat,lon pair to
+  // the target lat,lon in the parameters.
+  // The function setup_io_info() must be called for the grids corresponding
+  // to the file data before this function can be called.
+  // Fields in the field_mgr must have the same number of levels as the file.
+  // Inputs and outputs:
   //  - file_name: Name of the file used to load field data (IC or topo file)
   //  - field_names_nc: Field names used by the input file
   //  - field_names_eamxx: Field names used by eamxx
-  //  - initial_ts: Inital timestamp
-  // Input/output
+  //  - initial_ts: Inital timestamp.
   //  - field_mgr: Field manager containing fields that need data read from files
+  //  - time_index: Time index of read. time_index=-1 will read the latest time in file.
   void read_fields_from_file_for_iop(const std::string& file_name,
                                      const vos& field_names_nc,
                                      const vos& field_names_eamxx,
                                      const util::TimeStamp& initial_ts,
-                                     const field_mgr_ptr field_mgr);
+                                     const field_mgr_ptr field_mgr,
+                                     const int time_index = -1);
 
   // Version of above, but where nc and eamxx field names are identical
   void read_fields_from_file_for_iop(const std::string& file_name,
                                      const vos& field_names,
                                      const util::TimeStamp& initial_ts,
-                                     const field_mgr_ptr field_mgr)
+                                     const field_mgr_ptr field_mgr,
+                                     const int time_index = -1)
   {
-    read_fields_from_file_for_iop(file_name, field_names, field_names, initial_ts, field_mgr);
+    read_fields_from_file_for_iop(file_name, field_names, field_names, initial_ts, field_mgr, time_index);
   }
 
   // Set fields using data loaded from the iop file
@@ -175,10 +180,13 @@ private:
     }
   };
 
+  enum IOPFieldType {
+    FromFile,
+    Computed
+  };
+
   void initialize_iop_file(const util::TimeStamp& run_t0,
-                           int model_nlevs,
-                           const Field& hyam,
-                           const Field& hybm);
+                           int model_nlevs);
 
   ekat::Comm m_comm;
   ekat::ParameterList m_params;
@@ -195,6 +203,7 @@ private:
 
   std::map<std::string, std::string> m_iop_file_varnames;
   std::map<std::string, std::string> m_iop_field_surface_varnames;
+  std::map<std::string, IOPFieldType> m_iop_field_type;
 }; // class IntensiveObservationPeriod
 
 } // namespace control

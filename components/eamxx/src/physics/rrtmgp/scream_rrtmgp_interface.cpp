@@ -1047,7 +1047,7 @@ namespace scream {
             real1d &cldfrac_tot_at_cldtop, real1d &cdnc_at_cldtop,
             real1d &eff_radius_qc_at_cldtop, real1d &eff_radius_qi_at_cldtop) {
           /* The goal of this routine is to calculate properties at cloud top
-           * based on the AeroCOM recommendation. See reference for routine
+           * based on the AeroCom recommendation. See reference for routine
            * get_subcolumn_mask above, where equation 14 is used for the
            * maximum-random overlap assumption for subcolumn generation. We use
            * equation 13, the column counterpart.

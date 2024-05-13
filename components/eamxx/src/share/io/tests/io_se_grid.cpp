@@ -39,15 +39,16 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
 
 TEST_CASE("se_grid_io")
 {
+  using strvec_t = std::vector<std::string>;
   ekat::Comm io_comm(MPI_COMM_WORLD);
 
   int num_my_elems = 2;
   int np = 4;
   int num_levs = 2 + SCREAM_PACK_SIZE;
+  int dt = 10;
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+  scorpio::init_subsystem(io_comm);
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_my_elems,np,num_levs);
@@ -58,12 +59,20 @@ TEST_CASE("se_grid_io")
 
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
-  ekat::parse_yaml_file("io_test_se_grid.yaml",params);
+  params.set<std::string>("filename_prefix","io_se_grid");
+  params.set<std::string>("Averaging Type","Instant");
+  params.set<int>("Max Snapshots Per File",1);
+  params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
+  params.set("MPI Ranks in Filename",true);
+  auto& ctl_pl = params.sublist("output_control");
+  ctl_pl.set("Frequency",1);
+  ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
   om.setup(io_comm,params,fm0,gm,t0,t0,false);
-  om.run(t0);
+  om.init_timestep(t0,dt);
+  om.run(t0+dt);
   om.finalize();
 
   // Get a fresh new field manager, and set fields to NaN
@@ -87,7 +96,7 @@ TEST_CASE("se_grid_io")
   ins_input.finalize();
 
   // All Done 
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 /*===================================================================================================*/
@@ -164,7 +173,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_test_se_grid.INSTANT.nsteps_x1.np"
+  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 

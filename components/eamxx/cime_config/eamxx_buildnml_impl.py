@@ -162,11 +162,12 @@ def refine_type(entry, force_type=None):
     >>> e = '1.0'
     >>> refine_type(e,force_type='my_type')
     Traceback (most recent call last):
-    NameError: ERROR: Invalid/unsupported force type 'my_type'
+    CIME.utils.CIMEError: ERROR: Invalid/unsupported force type 'my_type'
     >>> e = 'true,falsE'
     >>> refine_type(e,'logical')
     Traceback (most recent call last):
-    ValueError: Could not refine 'true,falsE' as type 'logical'
+    CIME.utils.CIMEError: ERROR: Could not refine 'true,falsE' as type 'logical':
+    ERROR: For entry of type 'logical', expected 'true' or 'false', got 'true,falsE'
     >>> refine_type(e,'array(logical)')
     [True, False]
     >>> refine_type('', 'array(string)')
@@ -176,15 +177,14 @@ def refine_type(entry, force_type=None):
     >>> refine_type(None, 'array(real)')
     []
     """
-
-    # If force type is unspecified, try to deduce it 
+    # If force type is unspecified, try to deduce it
     if force_type is None:
         expect (entry is not None,
                 "If an entry is None, you must specify the force_type")
     else:
         elem_valid = ["logical","integer","real","string","file"]
         valid = elem_valid + ["array("+e+")" for e in elem_valid]
-        expect (force_type in valid, exc_type=NameError,
+        expect (force_type in valid,
                 error_msg=f"Invalid/unsupported force type '{force_type}'")
 
     if is_array_type(force_type):
@@ -208,7 +208,8 @@ def refine_type(entry, force_type=None):
             elif entry.upper() == "FALSE":
                 return False
             else:
-                return bool(int(entry))
+                expect(False, f"For entry of type 'logical', expected 'true' or 'false', got '{entry}'",
+                       exc_type=ValueError)
 
         elif elem_type == "integer":
             tmp  = float(entry)
@@ -220,7 +221,7 @@ def refine_type(entry, force_type=None):
             return str(entry)
 
     except ValueError as e:
-        raise ValueError (f"Could not refine '{entry}' as type '{force_type}'") from e
+        expect(False, f"Could not refine '{entry}' as type '{force_type}':\n{e}")
 
     # No force type provided. Try to infer from value
     if entry.upper() == "TRUE":
@@ -273,7 +274,7 @@ def derive_type(entry):
     elif isinstance(elem_value, str):
         elem_type = "string"
     else:
-        raise RuntimeError("Couldn't derive type of '{}'".format(entry))
+        expect(False, "Couldn't derive type of '{}'".format(entry))
 
     if isinstance(refined_value,list):
         return "array(" + elem_type + ")"
@@ -293,7 +294,8 @@ def check_value(elem, value):
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'1.5')
     Traceback (most recent call last):
-    ValueError: Could not refine '1.5' as type 'integer'
+    CIME.utils.CIMEError: ERROR: Could not refine '1.5' as type 'integer':
+    ERROR: Cannot interpret 1.5 as int
     >>> check_value(root,'3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')

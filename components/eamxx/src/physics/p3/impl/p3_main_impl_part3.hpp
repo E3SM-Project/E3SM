@@ -108,7 +108,7 @@ void Functions<S,D>
       auto nr_incld = nr(k)/cld_frac_r(k); //nr_incld is updated in get_rain_dsd2 but isn't used again
 
       get_rain_dsd2(
-        qr_incld, nr_incld, mu_r(k), lamr(k), ignore1, ignore2, p3constants, qr_gt_small);
+        qr_incld, nr_incld, mu_r(k), lamr(k), p3constants, qr_gt_small);
 
       //Note that integrating over the drop-size PDF as done here should only be done to in-cloud
       //quantities but radar reflectivity is likely meant to be a cell ave. Thus nr in the next line

@@ -96,9 +96,9 @@ add_default($nl, 'config_Redi_constant_kappa');
 add_default($nl, 'config_Redi_maximum_slope');
 add_default($nl, 'config_Redi_use_slope_taper');
 add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_limit_term1');
 add_default($nl, 'config_Redi_use_quasi_monotone_limiter');
 add_default($nl, 'config_Redi_quasi_monotone_safety_factor');
-add_default($nl, 'config_Redi_limit_term1');
 add_default($nl, 'config_Redi_min_layers_diag_terms');
 add_default($nl, 'config_Redi_horizontal_taper');
 add_default($nl, 'config_Redi_horizontal_ramp_min');
@@ -227,7 +227,6 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 # Namelist group: coupling #
 ############################
 
-add_default($nl, 'config_ssh_grad_relax_timescale');
 add_default($nl, 'config_remove_AIS_coupler_runoff');
 
 ######################################

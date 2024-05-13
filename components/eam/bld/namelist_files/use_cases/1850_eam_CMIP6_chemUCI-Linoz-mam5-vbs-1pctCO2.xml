@@ -15,7 +15,7 @@
 <solar_data_ymd>18500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
-<!-- 2010 GHG values from CMIP6 input4MIPS -->
+<!-- 1850 GHG values from CMIP6 input4MIPS -->
 <!-- <co2vmr>284.317e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
 <ch4vmr>808.249e-9</ch4vmr>
 <n2ovmr>273.0211e-9</n2ovmr>

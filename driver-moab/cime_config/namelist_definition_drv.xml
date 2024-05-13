@@ -149,6 +149,26 @@
     </values>
   </entry>
 
+  <entry id="atm_flux_method" modify_via_xml="ATM_FLUX_INTEGRATION_METHOD">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>Time integration method for atmospheric fluxes. Set by the xml variable ATM_FLUX_INTEGRATION_METHOD in env_run.xml</desc>
+    <values>
+      <value>$ATM_FLUX_INTEGRATION_METHOD</value>
+    </values>
+  </entry>
+
+  <entry id="atm_gustiness" modify_via_xml="ATM_SUPPLIES_GUSTINESS">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>Set to .true. if the atmosphere produces a gustiness velocity. Set by the xml variable ATM_SUPPLIES_GUSTINESS in env_run.xml</desc>
+    <values>
+      <value>$ATM_SUPPLIES_GUSTINESS</value>
+    </values>
+  </entry>
+
   <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>seq_flds</category>
@@ -208,7 +228,54 @@
     </desc>
     <values>
       <value>.false.</value>
-      <value cime_model='e3sm'>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="rof2ocn_nutrients">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to transfer nutrients from the runoff model to the ocn
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="lnd_rof_two_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate land-river two-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_rof_two_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate river-ocean two-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="rof_sed">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate sediment in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
     </values>
   </entry>
 
@@ -763,11 +830,13 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      Iterate atmocn flux calculation a max of this value
+      Maximum number of iterations in atmosphere-ocean flux calculation.
+      Setting this value to -1 will cause the model to use a default that
+      depends on the setting of atm_flux_method.
     </desc>
     <values>
       <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>2</value>
+      <value cime_model='e3sm'>-1</value>
     </values>
   </entry>
 
@@ -982,6 +1051,20 @@
     </desc>
     <values>
       <value>$BUDGETS</value>
+    </values>
+  </entry>
+
+  <entry id="do_bgc_budgets">
+    <type>logical</type>
+    <category>budget</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      logical that turns on BGC diagnostic budgets, false means BGC budgets will never be written
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value BGC_MODE="CO2.*">.true.</value>
+      <value BGC_MODE=".*_OI">.true.</value>
     </values>
   </entry>
 
@@ -1429,6 +1512,9 @@
     <values>
       <value>$EPS_AGRID</value>
       <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
+      <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
+      <value atm_grid="ne120np4.pg2" lnd_grid="ne120np4.pg2">1.e-10</value>
+      <value atm_grid="ne256np4.pg2" lnd_grid="ne256np4.pg2">1.e-10</value>
     </values>
   </entry>
 
@@ -1481,6 +1567,49 @@
     </desc>
     <values>
       <value>$EPS_OAREA</value>
+    </values>
+  </entry>
+
+  <entry id="scm_multcols" modify_via_xml="PTS_MULTCOLS_MODE">
+    <type>logical</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Uses SCM functionality for multiple columns. Specifically, it takes the column
+      on the globe intended to be run in SCM mode, but propogates that point (i.e.
+      meaning surface type and properties etc.) to multiple columns, as defined by the
+      user.  All columns are then forced identically according to the Intensive Observation
+      Period (IOP) file, which is typically required to run in SCM mode.  This option
+      originally implemented to support running a doubly periodic cloud resolving model, but
+      could be used for other applications.
+      set by PTS_MULTCOLS_MODE in env_case.xml, default: false
+    </desc>
+    <values>
+      <value>$PTS_MULTCOLS_MODE</value>
+    </values>
+  </entry>
+
+  <entry id="scm_nx" modify_via_xml="PTS_NX">
+    <type>integer</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      number of points in x direction when using SCM functionality for multiple columns
+    </desc>
+    <values>
+      <value>$PTS_NX</value>
+    </values>
+  </entry>
+
+  <entry id="scm_ny" modify_via_xml="PTS_NY">
+    <type>integer</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      number of points in Y direction when using SCM functionality for multiple columns
+    </desc>
+    <values>
+      <value>$PTS_NY</value>
     </values>
   </entry>
 
@@ -2472,6 +2601,14 @@
     </values>
   </entry>
 
+  <entry id="atm_excl_stride" modify_via_xml="EXCL_STRIDE_ATM">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ATM</value></values>
+  </entry>
+
   <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2535,6 +2672,14 @@
     <values>
       <value>$NINST_LND_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="lnd_excl_stride" modify_via_xml="EXCL_STRIDE_LND">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_LND</value></values>
   </entry>
 
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
@@ -2602,6 +2747,14 @@
     </values>
   </entry>
 
+  <entry id="ice_excl_stride" modify_via_xml="EXCL_STRIDE_ICE">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ICE</value></values>
+  </entry>
+
   <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2665,6 +2818,14 @@
     <values>
       <value>$NINST_OCN_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="ocn_excl_stride" modify_via_xml="EXCL_STRIDE_OCN">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_OCN</value></values>
   </entry>
 
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
@@ -2732,6 +2893,14 @@
     </values>
   </entry>
 
+  <entry id="glc_excl_stride" modify_via_xml="EXCL_STRIDE_GLC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_GLC</value></values>
+  </entry>
+
   <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2795,6 +2964,14 @@
     <values>
       <value>$NINST_WAV_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="wav_excl_stride" modify_via_xml="EXCL_STRIDE_WAV">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_WAV</value></values>
   </entry>
 
   <entry id="iac_ntasks" modify_via_xml="NTASKS_IAC">
@@ -2862,6 +3039,14 @@
     </values>
   </entry>
 
+  <entry id="iac_excl_stride" modify_via_xml="EXCL_STRIDE_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_IAC</value></values>
+  </entry>
+
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2925,6 +3110,14 @@
     <values>
       <value>$NINST_ROF_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="rof_excl_stride" modify_via_xml="EXCL_STRIDE_ROF">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ROF</value></values>
   </entry>
 
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
@@ -2992,6 +3185,14 @@
     </values>
   </entry>
 
+  <entry id="esp_excl_stride" modify_via_xml="EXCL_STRIDE_ESP">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ESP</value></values>
+  </entry>
+
   <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3044,6 +3245,14 @@
     </values>
   </entry>
 
+  <entry id="cpl_excl_stride" modify_via_xml="EXCL_STRIDE_CPL">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_CPL</value></values>
+  </entry>
+
   <entry id="info_taskmap_model">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3067,6 +3276,36 @@
     </desc>
     <values>
       <value>$INFO_TASKMAP_COMP</value>
+    </values>
+  </entry>
+
+  <entry id="info_mprof">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      Sets level of memory profile logging:
+      0: no output
+      1: log mem-usage from component ROOTPE tasks
+      2: log mem-usage from all tasks
+      3: aggregate logging to node-level mem-usage on ROOTPE nodes
+      4: aggregate logging to node-level mem-usage on all nodes
+      Aggregation requires info_taskmap_model>0.
+    </desc>
+    <values>
+      <value>$INFO_MPROF</value>
+    </values>
+  </entry>
+
+  <entry id="info_mprof_dt">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      number of seconds between memory profiling logs
+    </desc>
+    <values>
+      <value>$INFO_MPROF_DT</value>
     </values>
   </entry>
 
@@ -3459,6 +3698,19 @@
     </values>
   </entry>
 
+  <entry id="atm2ocn_fmapname_nonlinear"    modify_via_xml="ATM2OCN_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to ocn flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2OCN_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2ocn_smapname"    modify_via_xml="ATM2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3549,6 +3801,19 @@
     </values>
   </entry>
 
+  <entry id="ocn2atm_fmapname_nonlinear"    modify_via_xml="OCN2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="ocn2atm_smapname"    modify_via_xml="OCN2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3579,6 +3844,19 @@
     </values>
   </entry>
 
+  <entry id="ocn2atm_smapname_nonlinear"    modify_via_xml="OCN2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to atm mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ATM_SMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2ice_fmapname"    modify_via_xml="ATM2ICE_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3606,6 +3884,19 @@
     <values>
       <value>$ATM2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2ice_fmapname_nonlinear"    modify_via_xml="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to ice flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2OCN_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -3699,6 +3990,19 @@
     </values>
   </entry>
 
+  <entry id="ice2atm_fmapname_nonlinear"    modify_via_xml="ICE2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ice to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="ice2atm_smapname"    modify_via_xml="ICE2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3729,6 +4033,19 @@
     </values>
   </entry>
 
+  <entry id="ice2atm_smapname_nonlinear"    modify_via_xml="ICE2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ice to atm mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ATM_SMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2lnd_fmapname"    modify_via_xml="ATM2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3756,6 +4073,19 @@
     <values>
       <value>$ATM2LND_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2lnd_fmapname_nonlinear"    modify_via_xml="ATM2LND_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to land mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2LND_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -3819,6 +4149,19 @@
     </values>
   </entry>
 
+  <entry id="lnd2atm_fmapname_nonlinear"    modify_via_xml="LND2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      land to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$LND2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="lnd2atm_smapname"    modify_via_xml="LND2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3846,6 +4189,19 @@
     <values>
       <value>$LND2ATM_SMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2atm_smapname_nonlinear"    modify_via_xml="LND2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      land to atm mapping file for states
+    </desc>
+    <values>
+      <value>$LND2ATM_SMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -3936,6 +4292,19 @@
     <values>
       <value>$ATM2ROF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmapname_nonlinear"    modify_via_xml="ATM2ROF_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff flux mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -4581,7 +4950,8 @@
       components that need to look at the same data.
     </desc>
     <values>
-      <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+      <value cime_model='cesm'>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+      <value cime_model='e3sm'>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
     </values>
   </entry>
 
@@ -4701,6 +5071,36 @@
     </desc>
     <values>
       <value>$IAC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smapname"    modify_via_xml="OCN2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smaptype"    modify_via_xml="OCN2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -4849,6 +5249,24 @@
       <value>0.5D0</value>
       <value aqua_planet_sst_type="sst_aquap_constant">1.0D0</value>
     </values>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- Dust-related setups                                                                       -->
+  <!-- ========================================================================================  -->
+
+  <entry id="dust_emis_scheme">
+    <type>integer</type>
+    <category>shr_dust</category>
+    <group>shr_dust_nl</group>
+    <desc>
+      Dust emission scheme.
+      1 = Zender et al. (2003) as in E3SMv1 and v2.
+      2 = Kok et al. (2014) for E3SMv3
+    </desc>
+	  <values>
+		  <value>1</value>
+	  </values>
   </entry>
 
 </entry_id>

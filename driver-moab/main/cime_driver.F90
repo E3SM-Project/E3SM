@@ -36,6 +36,7 @@ program cime_driver
   use cime_comp_mod, only : cime_init
   use cime_comp_mod, only : cime_run
   use cime_comp_mod, only : cime_final
+  use cime_comp_mod, only : cime_pre_init2_lb
   use seq_comm_mct,  only : logunit
 
   implicit none
@@ -45,7 +46,8 @@ program cime_driver
   !--------------------------------------------------------------------------
   integer(i8) :: beg_count, end_count, irtc_rate
   real(r8)    :: cime_pre_init1_time, ESMF_Initialize_time, &
-       cime_pre_init2_time, cime_init_time_adjustment
+                 cime_pre_init2_time, cime_pre_init2_time_adjustment, &
+                 cime_init_time_adjustment
 
   !--------------------------------------------------------------------------
   ! For ESMF logging
@@ -98,8 +100,12 @@ program cime_driver
   !--------------------------------------------------------------------------
   ! Timer initialization has to be after determination of the maximum number
   ! of threads used across all components, so called inside of
-  ! cime_pre_init2, as are t_startf and t_stopf for CPL:INIT and
-  ! cime_pre_init2.
+  ! cime_pre_init2, as are t_startf for CPL:INIT and t_startf and t_stopf for
+  ! cime_pre_init2. t_startf/t_stopf are also called for cime_pre_init1 and
+  ! cime_ESMF_initialize, to establish the correct parent/child
+  ! relationships. t_stopf for CPL:INIT is called below.
+  ! The wallclock times are later adjusted, as needed, for all of these
+  ! timers, using the timings collected in cime_driver using shr_sys_irtc.
   !--------------------------------------------------------------------------
   beg_count = shr_sys_irtc(irtc_rate)
 
@@ -109,27 +115,41 @@ program cime_driver
   cime_pre_init2_time = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
 
   !--------------------------------------------------------------------------
-  ! Call the initialize, run and finalize routines.
+  ! Call the initialize routines
   !--------------------------------------------------------------------------
-
-  call t_startf('CPL:INIT')
   call t_adj_detailf(+1)
-
-  call t_startstop_valsf('CPL:cime_pre_init1',  walltime=cime_pre_init1_time)
-  call t_startstop_valsf('CPL:ESMF_Initialize', walltime=ESMF_Initialize_time)
-  call t_startstop_valsf('CPL:cime_pre_init2',  walltime=cime_pre_init2_time)
 
   call cime_init()
 
   call t_adj_detailf(-1)
+
+  !--------------------------------------------------------------------------
+  ! Adjust initialization timers, as needed
+  !--------------------------------------------------------------------------
+  call t_startstop_valsf('CPL:cime_pre_init1',  walltime=cime_pre_init1_time, &
+                         callcount = 0)
+  call t_startstop_valsf('CPL:ESMF_Initialize', walltime=ESMF_Initialize_time, &
+                         callcount = 0)
+
+  ! Some of the time for cime_pre_init2 has already been recorded. Adjust for this.
+  cime_pre_init2_time_adjustment = cime_pre_init2_time - cime_pre_init2_lb
+  call t_startstop_valsf('CPL:cime_pre_init2',  walltime=cime_pre_init2_time_adjustment, &
+                         callcount = 0)
+
+  ! CPL:INIT timer started in cime_pre_init2
   call t_stopf('CPL:INIT')
 
+  ! Add in the time that was not captured by the CPL:INIT timer (because it was
+  ! started inside of cime_pre_init2 instead of before cime_pre_init1).
   cime_init_time_adjustment = cime_pre_init1_time  &
-       + ESMF_Initialize_time &
-       + cime_pre_init2_time
+                            + ESMF_Initialize_time &
+                            + cime_pre_init2_time_adjustment
   call t_startstop_valsf('CPL:INIT',  walltime=cime_init_time_adjustment, &
-       callcount=0)
+                         callcount=0)
 
+  !--------------------------------------------------------------------------
+  ! Call the run and finalize routines.
+  !--------------------------------------------------------------------------
   call cime_run()
   call cime_final()
 

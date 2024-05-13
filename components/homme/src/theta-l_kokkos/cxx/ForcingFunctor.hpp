@@ -99,8 +99,7 @@ public:
     m_hydrostatic = p.theta_hydrostatic_mode;
     m_qsize = p.qsize;
 
-    // TODO: this may change, depending on the simulation params
-    m_adjust_ps = true;
+    m_adjust_ps = (p.dt_remap_factor == 0);
 
     m_eos.init(m_hydrostatic,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
@@ -153,7 +152,7 @@ public:
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
     // 3 persistent midlayers, 2 non-persistent midlayer, and 1 non-persistent interface
-    return mid_size*(nelems*4+nslots) + (m_hydrostatic ? int_size*nslots : 0);
+    return mid_size*(nelems*4+nslots) + int_size*nslots;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
@@ -370,7 +369,7 @@ public:
           });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                                 [&](const int ilev) {
+                                [&](const int ilev) {
               dp_adj(ilev) = dp(ilev) + dp(ilev)*(fq(ilev)-q(ilev));
             });
           }
@@ -386,7 +385,7 @@ public:
           });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                                 [&](const int& ilev) {
+                                [&](const int& ilev) {
               dp_adj(ilev) = dp(ilev) + compute_fqdt_pack(ilev,fq,qdp);
             });
           }
@@ -472,14 +471,14 @@ public:
         } else {
           // Compute hydrostatic p from dp. Store in exner, then add to pnh
           auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
-          m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,exner);
+          m_elem_ops.compute_hydrostatic_p(kv,dp_adj,p_i,exner);
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int ilev) {
+                              [&](const int ilev) {
             pnh(ilev) += exner(ilev);
             dp(ilev) = dp_adj(ilev);
           });
         }
-        
+
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           using namespace PhysicalConstants;

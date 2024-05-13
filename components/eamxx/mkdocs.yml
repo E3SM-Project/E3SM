@@ -1,14 +1,14 @@
-site_name: The C++ E3SM Atmosphere Model (EAMxx)
+site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
-    - 'Installation': 'common/installation.md'
-    - 'Model output': 'user/model_output.md'
+    - 'EAMxx case basics': 'user/eamxx_cases.md'
     - 'Model input': 'user/model_input.md'
-    - 'Runtime parameters': 'common/eamxx_params.md'
-    - 'Coarse nudging': 'user/coarse_nudging.md'
+    - 'Model output': 'user/model_output.md'
+    - 'Nudging': 'user/nudging.md'
+    - 'Extra radiation calls': 'user/clean_clear_sky.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
@@ -26,13 +26,14 @@ nav:
       - 'Full model': 'developer/cime_testing.md'
       - 'CI and Nightly Testing': 'developer/ci_nightly.md'
   - 'Technical Guide':
-    - 'AeroCOM cloud top': 'technical/aerocom_cldtop.md'
-    - 'Extra radiation calls': 'technical/clean_clear_sky.md'
+    - 'Overview': 'technical/index.md'
+    - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
 
 theme:
   name: material
+  custom_dir: docs/overrides
   palette:
   - media: "(prefers-color-scheme: light)"
     scheme: default
@@ -47,7 +48,6 @@ theme:
   features:
     - navigation.indices
     - navigation.instant
-    - navigation.sections
     - navigation.top
 #    - navigation.tabs
 
@@ -58,6 +58,7 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - footnotes
 
 extra_javascript:
   # - javascript/mathjax.js
@@ -65,3 +66,8 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 repo_url: https://github.com/E3SM-Project/scream
+
+plugins:
+  - search
+  - bibtex:
+      bib_dir: docs/refs

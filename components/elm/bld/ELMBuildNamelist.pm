@@ -797,7 +797,8 @@ sub setup_cmdl_fates_mode {
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
                      "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
                      "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
-                     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+                     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad", "use_fates_luh",
+                     "fluh_timeseries");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -854,6 +855,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_inventory_init";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_luh";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -2313,7 +2318,7 @@ sub setup_logic_create_crop_landunit {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 
-     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'});
+     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'}, 'use_top_solar_rad'=>$nl->get_value('use_top_solar_rad'));
 }
 
 #-------------------------------------------------------------------------------
@@ -3001,11 +3006,13 @@ sub setup_logic_phosphorus_deposition {
 
 sub setup_logic_fan {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-   
+
   # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
   #
       if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) { 
-          if( $opts->{'fan'} ) {
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
                          'use_cn'=>$nl_flags->{'use_cn'} );
              $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
@@ -3021,7 +3028,9 @@ sub setup_logic_fan {
             fatal_error('Cannot use_fan if use_crop is false');
           }   #
 
-          if( $opts->{'fan'} ) {
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fanmapalgo", 'phys'=>$nl_flags->{'phys'},
                       'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
              add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},
@@ -3288,8 +3297,43 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_seeddisp_cadence',       'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh',                'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
 
+    # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
+    # And also check for other settings that can't be trigged on as well
+    my $var = "use_fates_sp";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog" );
+          foreach my $var ( @list ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+               fatal_error("$var is required when FATES SP is on (use_fates_sp)" );
+             }
+          }
+          # spit-fire can't be on with FATES SP mode is active
+          if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
+                fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
+          }
+       }
+    }
+    # check that fates landuse change mode has the necessary luh2 landuse timeseries data
+    my $var = "use_fates_luh";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          $var = "fluh_timeseries";
+          add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
+                      'phys'=>$nl_flags->{'phys'}, 'hgrid'=>$nl_flags->{'res'},
+                      'sim_year_range'=>$nl_flags->{'sim_year_range'}, nofail=>1 );
+          my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+          if ( ! defined($nl->get_value($var))  ) {
+             fatal_error("$var is required when use_fates_luh is set" );
+          } elsif ( ! -f "$fname" ) {
+             fatal_error("$fname does NOT point to a valid filename" );
+          }
+       }
+    }
   }
 }
 

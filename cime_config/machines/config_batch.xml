@@ -423,6 +423,16 @@
       </queues>
     </batch_system>
 
+  <batch_system MACH="improv" type="pbspro">
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" jobmin="1" jobmax="8" strict="true" default="true">debug</queue>
+      <queue walltimemax="00:30:00" jobmin="9" jobmax="737" strict="true">compute</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
       <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
@@ -433,17 +443,16 @@
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
-    <directives compiler="gnugpu">
-      <directive> --gpus-per-task=1</directive>
-    </directives>
     <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
@@ -459,33 +468,32 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="pm-cpu" type="nersc_slurm">
+  <batch_system MACH="muller-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
-      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="16" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="16" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
-  <batch_system MACH="muller" type="nersc_slurm">
+  <batch_system MACH="muller-gpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
-    <directives compiler="gnugpu">
-      <directive> --gpus-per-task=1</directive>
-    </directives>
     <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
+      <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
@@ -497,10 +505,22 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="64" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="64" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
 
+  <batch_system MACH="pm-cpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
+      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+  
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
@@ -592,6 +612,18 @@
         <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
       </queues>
     </batch_system>
+    
+    <batch_system MACH="polaris" type="pbspro">
+      <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <directives>
+        <directive> -l filesystems=home:grand:eagle </directive>
+      </directives>
+      <queues>
+        <queue walltimemax="00:30:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemax="00:30:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
+        <queue walltimemax="01:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
+      </queues>
+    </batch_system>
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
@@ -654,35 +686,40 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="grizzly" type="slurm" >
-	<directives>
-		<directive>--nodes={{ num_nodes }}</directive>
-		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-		<directive>--qos=standard </directive>
-	</directives>
-	<queues>
-		<queue walltimemax="16:00:00" default="true">standard</queue>
-	</queues>
-  </batch_system>
-
-   <batch_system MACH="badger" type="slurm" >
-	<directives>
-		<directive>--nodes={{ num_nodes }}</directive>
-		<directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-		<directive>--qos=standard </directive>
-	</directives>
-	<queues>
-		<queue walltimemax="16:00:00" default="true">standard</queue>
-	</queues>
-    </batch_system>
-
    <batch_system MACH="chicoma-cpu" type="slurm">
     <directives>
      <directive>--partition=standard </directive>
      <directive>--qos=standard </directive>
     </directives>
     <queues>
-      <queue walltimemax="24:00:00" nodemax="1792" default="true">standard</queue>
+      <queue walltimemax="16:00:00" nodemax="1792" default="true">standard</queue>
+    </queues>
+   </batch_system>
+
+   <batch_system MACH="chicoma-gpu" type="slurm">
+    <directives>
+      <directive> --partition=gpu</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="16:00:00" nodemax="96" default="true">gpu</queue>
     </queues>
    </batch_system>
 

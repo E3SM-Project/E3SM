@@ -133,13 +133,13 @@
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne16np4pg2_16xdel2_20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</bnd_topo>
+<bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="3">atm/cam/topo/USGS-gtopo30_ne30np4pg3_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="4">atm/cam/topo/USGS-gtopo30_ne30np4pg4_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne45np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne45np4pg2_16xdel2.c20200615.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</bnd_topo>
+<bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
@@ -1885,7 +1885,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
-<dust_emis_fact phys="default"> 12.8D0     </dust_emis_fact>
+<dust_emis_fact phys="default"> 13.8D0     </dust_emis_fact>
 <linoz_psc_T               > 198.0D0    </linoz_psc_T>
 <lght_no_prd_factor        > 5.0D0    </lght_no_prd_factor>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
@@ -1939,5 +1939,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <cosp_ncolumns phys="default"> 10 </cosp_ncolumns>
 <cflx_cpl_opt phys="default"> 2 </cflx_cpl_opt>
 <tropopause_E90_thrd phys="default"> 80.0e-9 </tropopause_E90_thrd>
+
+<!-- set following parameters to go with rough topography -->
+<pgrad_correction phys="default"> 1 </pgrad_correction>
+<hv_ref_profiles phys="default"> 6 </hv_ref_profiles>
 
 </namelist_defaults>
