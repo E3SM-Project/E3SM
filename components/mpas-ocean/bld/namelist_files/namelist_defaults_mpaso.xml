@@ -332,6 +332,7 @@
 <!-- forcing -->
 <config_use_variable_drag>.false.</config_use_variable_drag>
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
+<config_bulk_wind_stress_interp_isotropic>.false.</config_bulk_wind_stress_interp_isotropic>
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
