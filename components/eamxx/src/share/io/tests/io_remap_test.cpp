@@ -272,10 +272,10 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
-  // ------------------------------------------------------------------------------------------------------
-  //                                    ---  Vertical Remapping ---
   std::vector<std::string> fnames = {"Y_flat","Y_mid","Y_int","V_mid","V_int"};
 
+  // ------------------------------------------------------------------------------------------------------
+  //                                    ---  Vertical Remapping ---
   {
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
     const float mask_val = vert_remap_control.isParameter("Fill Value")
@@ -461,7 +461,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // Test vertically + horizontally remapped output.
     // This test is a combination of the vertical test and horizontal test above.
     // There should be maksing in the vertical in all locations where the target pressure
-    // is lower higher than the surface pressure, just like in the vertical test.  This should
+    // is lower/higher than the min/max of the surface pressure, just like in the vertical test.  This should
     // also translate to more masking in the horizontal reamapping.  So we must check for potential
     // masking for all variables rather than just the Y_int_at_XPa variable for the horizontal interpolation.
     //

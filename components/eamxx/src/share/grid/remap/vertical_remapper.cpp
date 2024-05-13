@@ -235,8 +235,9 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     //       at a specific COL,LEV
     src_layout.strip_dims({CMP});
 
-    // Check if this mask has already been created
+    // I this mask has already been created, retrieve it, otherwise create it
     const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
+    Field tgt_mask;
     if (m_field2type.count(mask_name)==0) {
       auto nondim = ekat::units::Units::nondimensional();
       // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
@@ -244,28 +245,39 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       FieldIdentifier src_mask_fid (mask_name, src_layout, nondim, m_src_grid->name() );
       FieldIdentifier tgt_mask_fid = create_tgt_fid(src_mask_fid);
 
-      Field  src_mask (src_mask_fid);
-      Field  tgt_mask (tgt_mask_fid);
-
+      Field src_mask (src_mask_fid);
       src_mask.allocate_view();
+
+      tgt_mask  = Field (tgt_mask_fid);
       tgt_mask.allocate_view();
 
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
+      // Initialize the src mask values to 1.0
+      src_mask.deep_copy(1.0);
 
-      f_tgt.get_header().set_extra_data("mask_data",tgt_mask);
-      f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
       m_src_masks.push_back(src_mask);
       m_tgt_masks.push_back(tgt_mask);
 
       auto& mt = m_field2type[src_mask_fid.name()];
       mt.packed = false;
       mt.midpoints = src_layout.has_tag(LEV);
+    } else {
+      for (size_t i=0; i<m_tgt_masks.size(); ++i) {
+        if (m_tgt_masks[i].name()==mask_name) {
+          tgt_mask = m_tgt_masks[i];
+          break;
+        }
+      }
     }
+
+    EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+        "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
+        " - tgt field name: " + tgt.name() + "\n");
+    EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+        "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
+        " - tgt field name: " + tgt.name() + "\n");
+
+    f_tgt.get_header().set_extra_data("mask_data",tgt_mask);
+    f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
   } else {
     // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
     // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
@@ -282,7 +294,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
           " - tgt field name: " + tgt.name() + "\n");
       auto src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
-      f_tgt.get_header().set_extra_data("mask_data",src_mask_val);
+      f_tgt.get_header().set_extra_data("mask_value",src_mask_val);
     }
   }
 
@@ -406,9 +418,6 @@ void VerticalRemapper::do_remap_fwd ()
           auto& f_tgt = m_tgt_masks[i];
     const auto& type = m_field2type.at(f_src.name());
 
-    // Initialize the mask source values to 1.0
-    f_src.deep_copy(1.0);
-
     // Dispatch interpolation to the proper lin interp object
     if (type.midpoints) {
       if (type.packed) {
@@ -466,9 +475,10 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
 
   auto p_src_v = p_src.get_view<const PackT**>();
   auto x_tgt = m_tgt_pressure.get_view<const PackT*>();
+  const auto& f_src_l = f_src.get_header().get_identifier().get_layout();
   const int ncols = m_src_grid->get_num_local_dofs();
   const int nlevs_tgt = m_tgt_grid->get_num_vertical_levels();
-  const int nlevs_src = m_src_grid->get_num_vertical_levels();
+  const int nlevs_src = f_src_l.dims().back();
   const int npacks_tgt = ekat::PackInfo<Packsize>::num_packs(nlevs_tgt);
 
   const int last_src_pack_idx = ekat::PackInfo<Packsize>::last_pack_idx(nlevs_src);
@@ -494,7 +504,8 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
         auto x_min = x_src[0][0];
         auto x_max = x_src[last_src_pack_idx][last_src_pack_end-1];
         auto set_mask = [&](const int ipack) {
-          auto oob = x_tgt[ipack]<x_min or x_tgt[ipack]>x_max;
+          auto in_range = ekat::range<PackT>(ipack*Packsize) < nlevs_tgt;
+          auto oob = (x_tgt[ipack]<x_min or x_tgt[ipack]>x_max) and in_range;
           if (oob.any()) {
             y_tgt[ipack].set(oob,mask_val);
           }

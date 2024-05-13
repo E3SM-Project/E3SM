@@ -177,7 +177,7 @@ void CoarseningRemapper::do_remap_fwd ()
       const auto& mask = m_src_fields[mask_idx];
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
-      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+      if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
         local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask);
       } else {
         local_mat_vec<1>(f_src,f_ov,mask);
@@ -214,7 +214,7 @@ void CoarseningRemapper::do_remap_fwd ()
       if (mask_idx>0) {
         // Then this field did use a mask
         const auto& mask = m_tgt_fields[mask_idx];
-        if (can_pack_field(f_tgt)) {
+        if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
           rescale_masked_fields<1>(f_tgt,mask);
