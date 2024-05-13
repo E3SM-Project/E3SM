@@ -1909,6 +1909,16 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="TL319_IcoswISC30E3r5_gis1to10kmR2" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.gis1to10kmR2</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg2_r05_oECv3_gis1to10" compset="_MALI">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
@@ -5664,6 +5674,7 @@
     <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="IcoswISC30E3r5">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfaave.20240403.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfbilin.20240403.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis1to10kmR2_esmfneareststod.20240422.deeperThan300m.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
