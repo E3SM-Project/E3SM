@@ -1611,14 +1611,22 @@ initialize (const ekat::Comm& atm_comm,
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
+  std::cout << "IN DRIVER        1         \n";
+
+
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
+
+
+  std::cout << "IN DRIVER         2        \n";
 
   // Print current timestamp information
   m_atm_logger->log(ekat::logger::LogLevel::info,
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
+
+  std::cout << "IN DRIVER          3       \n";
   // Reset accum fields to 0
   // Note: at the 1st timestep this is redundant, since we did it at init,
   //       to ensure t=0 INSTANT output was correct. However, it's not a
@@ -1626,10 +1634,12 @@ void AtmosphereDriver::run (const int dt) {
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
 
+  std::cout << "IN DRIVER           4      \n" << std::flush;
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
 
+  std::cout << "IN DRIVER            5     \n"<< std::flush;
   // Some accumulated fields need to be divided by dt at the end of the atm step
   for (auto fm_it : m_field_mgrs) {
     const auto& fm = fm_it.second;
@@ -1643,14 +1653,21 @@ void AtmosphereDriver::run (const int dt) {
     }
   }
 
+  std::cout << "IN DRIVER             6    \n"<<std::flush;
   // Update current time stamps
   m_current_ts += dt;
 
+  std::cout << "IN DRIVER              7   \n";
+
+
+#if 1
   // Update output streams
   m_atm_logger->debug("[EAMxx::run] running output managers...");
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
+
+#endif
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
