@@ -132,7 +132,8 @@ parallel job launcher such as SLURM srun should be available. You may first
 get allocation of an interactive computing node or use batch system.
 In addition, you must either copy (or soft link) a mesh file into the same
 directory as the unit test executables or specify in a configuration file
-(not implemented yet) the path to that mesh input file.
+(not implemented yet) the path to that mesh input file. For detailed instructions
+on how to obtain appropiate test meshes see {ref}`omega-dev-quick-start-getting-meshes`.
 
 For example, if you are on an interactive computing node, you can run
 Omega unit test by running `omega_ctest.sh` as shown below.
