@@ -921,11 +921,14 @@ void MAMAci::set_grids(
                       grid_name);
 
   // FIXME: [TEMPORARY]droplet number mixing ratio source tendency [#/kg/s]
-  add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s,
-                      grid_name);
+  add_field<Computed>("nsource", scalar3d_layout_mid, n_unit / s, grid_name);
 
-  // FIXME: [TEMPORARY]droplet number mixing ratio tendency due to mixing [#/kg/s]
-  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s,
+  // FIXME: [TEMPORARY]droplet number mixing ratio tendency due to mixing
+  // [#/kg/s]
+  add_field<Computed>("ndropmix", scalar3d_layout_mid, n_unit / s, grid_name);
+
+  // FIXME: [TEMPORARY]droplet number as seen by ACI [#/kg]
+  add_field<Computed>("nc_inp_to_aci", scalar3d_layout_mid, n_unit / s,
                       grid_name);
 
   // ------------------------------------------------------------------------
@@ -1142,15 +1145,17 @@ void MAMAci::initialize_impl(const RunType run_type) {
   Kokkos::resize(ndropcol_, ncol_, nlev_);
 
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
-  //Kokkos::resize(ndropmix_, ncol_, nlev_);
-  //Temporarily output ndropmix_
+  // Kokkos::resize(ndropmix_, ncol_, nlev_);
+  // Temporarily output ndropmix_
   ndropmix_ = get_field_out("ndropmix").get_view<Real **>();
 
   // droplet number mixing ratio source tendency [#/kg/s]
-  //Kokkos::resize(nsource_, ncol_, nlev_);
-  //Temporarily output nsource_
+  // Kokkos::resize(nsource_, ncol_, nlev_);
+  // Temporarily output nsource_
   nsource_ = get_field_out("nsource").get_view<Real **>();
-  
+
+  // Temporarily output nc_inp_to_aci_
+  nc_inp_to_aci_ = get_field_out("nc_inp_to_aci").get_view<Real **>();
 
   // subgrid vertical velocity [m/s]
   Kokkos::resize(wtke_, ncol_, nlev_);
@@ -1237,6 +1242,16 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+
+  // FIXME: Temporary assignment of nc
+  // Kokkos::deep_copy(nc_inp_to_aci_, wet_atm_.nc);
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [=](int kk) {
+          nc_inp_to_aci_(icol, kk) = wet_atm_.nc(icol, kk);
+        });
+      });
 
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
