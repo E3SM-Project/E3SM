@@ -1065,10 +1065,10 @@ is the value of that variable from the *previous* time level!
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-		     description="The great circle distance between vertices bordering a given edge.  It is the length of the edge on the primal mesh."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-		     description="The great circle distance between cell centers bordering a given edge.  It is the length of the edge on the dual mesh."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Angle the edge normal makes with local eastward direction."
