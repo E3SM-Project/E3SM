@@ -11,3 +11,4 @@ More information
 + [Development Big Picture](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/7997024/Development+Big+Picture)
 + [Getting Started](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide)
 + [Development Reference](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2523163/Development+Reference)
++ [Adding Support for New Grids](dev-guide/adding-grid-support/index.md)
