@@ -2313,7 +2313,12 @@ contains
        name1 = trim(prefix)//trim(dname)
     endif
     rcode = pio_inq_varid(pioid,trim(name1),varid)
-    rcode = pio_get_var(pioid,varid,idata)
+    if (rcode == pio_noerr) then
+       rcode = pio_get_var(pioid,varid,idata)
+    else
+      if(iam==0) write(logunit,*) subname,' warning: file ',trim(filename),' variable ',trim(dname), ' is not found '
+      idata(:) = 0
+    endif
 
     call pio_closefile(pioid)
 
@@ -2416,7 +2421,12 @@ contains
        name1 = trim(prefix)//trim(dname)
     endif
     rcode = pio_inq_varid(pioid,trim(name1),varid)
-    rcode = pio_get_var(pioid,varid,rdata)
+    if (rcode == pio_noerr) then
+      rcode = pio_get_var(pioid,varid,rdata)
+    else
+      if(iam==0) write(logunit,*) subname,' warning: file ',trim(filename),' variable ',trim(dname), ' is not found '
+      rdata(:) = 0
+    endif
 
     call pio_closefile(pioid)
 
