@@ -30,6 +30,13 @@ site
 # Ignore emacs backup files
 *~
 
+#Ignore Mac folder files
+.DS_Store
+
+#Ignore vscode dir
+.vscode
+
+
 # Ignore mkdocs site-generated files in eamxx
 components/eamxx/site/*
 # Ignore auto-generated eamxx_params.md file

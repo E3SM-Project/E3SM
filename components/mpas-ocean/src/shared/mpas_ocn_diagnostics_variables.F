@@ -140,7 +140,11 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: wettingVelocityFactor
    type (field2DReal), pointer :: wettingVelocityField
 
+   real (kind=RKIND), dimension(:,:), pointer :: layerThicknessCellWetDry
+   real (kind=RKIND), dimension(:), pointer :: sshCellWetDry
+
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
+   real (kind=RKIND), dimension(:,:), pointer :: vertDiffPassiveTopOfCell
    real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
    integer, dimension(:,:), pointer :: rediLimiterCount
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerSurfaceFluxTendency
@@ -262,6 +266,10 @@ contains
                    wettingVelocityFactor)
          call mpas_pool_get_field(diagnosticsPool, 'wettingVelocityFactor', &
                    wettingVelocityField)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessCellWetDry', &
+                   layerThicknessCellWetDry)
+         call mpas_pool_get_array(diagnosticsPool, 'sshCellWetDry', &
+                   sshCellWetDry)
       end if
 
       if (config_use_GM.or.config_use_Redi) then
@@ -494,6 +502,8 @@ contains
                    vertViscTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', &
                    vertDiffTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'vertDiffPassiveTopOfCell', &
+                   vertDiffPassiveTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', &
                    vertAleTransportTop)
          call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', &
@@ -752,6 +762,7 @@ contains
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
          !$acc                   vertDiffTopOfCell,               &
+         !$acc                   vertDiffPassiveTopOfCell,        &
          !$acc                   GMStreamFuncZonal,               &
          !$acc                   relativeVorticity,               &
          !$acc                   kineticEnergyCell,               &
@@ -999,6 +1010,7 @@ contains
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
          !$acc                   vertDiffTopOfCell,               &
+         !$acc                   vertDiffPassiveTopOfCell,        &
          !$acc                   GMStreamFuncZonal,               &
          !$acc                   relativeVorticity,               &
          !$acc                   kineticEnergyCell,               &
@@ -1204,6 +1216,7 @@ contains
                  barotropicForcing,               &
                  vertViscTopOfCell,               &
                  vertDiffTopOfCell,               &
+                 vertDiffPassiveTopOfCell,        &
                  GMStreamFuncZonal,               &
                  relativeVorticity,               &
                  kineticEnergyCell,               &
@@ -1246,6 +1259,8 @@ contains
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          nullify(wettingVelocityFactor)
+         nullify(layerThicknessCellWetDry)
+         nullify(sshCellWetDry)
       end if
       if (config_use_GM.or.config_use_Redi) then
          nullify(RediKappa,         &

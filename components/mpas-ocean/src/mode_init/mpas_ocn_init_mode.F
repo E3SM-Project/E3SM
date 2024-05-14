@@ -63,8 +63,8 @@ module ocn_init_mode
    use ocn_init_mixed_layer_eddy
    use ocn_init_transport_tests
    use ocn_init_test_sht
-
    use ocn_init_parabolic_bowl
+   use ocn_init_Buttermilk_bay
 
    implicit none
    private
@@ -310,6 +310,7 @@ module ocn_init_mode
       call ocn_init_setup_transport_tests(domain, ierr)
       call ocn_init_setup_test_sht(domain, ierr)
       call ocn_init_setup_parabolic_bowl(domain, iErr)
+      call ocn_init_setup_Buttermilk_bay(domain, iErr) 
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
@@ -428,6 +429,8 @@ module ocn_init_mode
       iErr = ior(iErr, err_tmp)
  
       call ocn_init_validate_parabolic_bowl(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_Buttermilk_bay(configPool, packagePool, iocontext, iErr=err_tmp) 
       iErr = ior(iErr, err_tmp)
 
       ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)

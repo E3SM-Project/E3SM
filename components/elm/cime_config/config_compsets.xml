@@ -548,6 +548,11 @@
   </compset>
 
   <compset>
+    <alias>IGSWCNPRDCTCBCTOP</alias>
+    <lname>2000_DATM%GSWP3v1_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>IGSWCNECACTCBC</alias>
     <lname>2000_DATM%GSWP3v1_ELM%CNECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
@@ -643,6 +648,11 @@
    </compset>
 
    <compset>
+    <alias>I1850GSWCNPRDCTCBCTOP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
      <alias>I20TRGSWCNRDCTCBC</alias>
      <lname>20TR_DATM%GSWP3v1_ELM%CNRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
@@ -650,6 +660,11 @@
    <compset>
     <alias>I20TRGSWCNPRDCTCBC</alias>
     <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+   </compset>
+
+   <compset>
+    <alias>I20TRGSWCNPRDCTCBCTOP</alias>
+    <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
   <!---I compset system tests -->

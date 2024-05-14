@@ -1,13 +1,28 @@
 # The Energy Exascale Earth System Model (E3SM)
 
-The E3SM documentation is organized into sections for each component model and additional sections for shared tools and general guides.
+E3SM is a state-of-the-art fully coupled model of the Earth's climate including important biogeochemical
+and cryospheric processes. It is intended to address the most challenging and demanding climate-change
+research problems and Department of Energy mission needs while efficiently using DOE Leadership Computing Facilities.
+
+!!! note
+    This is the future home for all documentation specific to E3SM and its components. Until complete,
+    some documentation will be found at the project's
+    [Confluence wiki](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
+
+## E3SM Basics
+
+- [Installation](installation.md)
+- [User Guide](user-guide/index.md)
+- [Development](development.md)
 
 ## Component Models
 
 - [EAM](./EAM/index.md)
-- [EAMxx](./EAMxx/index.md)
+- EAMxx — not yet supported.
 - [ELM](./ELM/index.md)
 - [MOSART](./MOSART/index.md)
+- [MPAS-Ocean](./MPAS-Ocean/index.md)
+- [MPAS-seaice](./MPAS-seaice/index.md)
 
 ## Tools
 
