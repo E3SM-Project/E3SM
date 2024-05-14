@@ -18,6 +18,8 @@ endif()
 
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
+set(EKAT_MPI_EXTRA_ARGS "${EKAT_MPI_EXTRA_ARGS} --gpu-per-task 1")
+
 #option(Kokkos_ARCH_AMPERE80 "" ON)
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 
