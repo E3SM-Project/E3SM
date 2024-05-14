@@ -155,12 +155,12 @@ module zonal_mean_mod
 
 use shr_kind_mod,    only: r8=>SHR_KIND_R8
 use phys_grid,       only: get_ncols_p, get_rlat_p, get_wght_all_p, get_nlcols_p
-use ppgrid,          only: begchunk, endchunk, pcols
+use ppgrid,          only: begchunk, endchunk, pcols, pver
 use shr_reprosum_mod,only: shr_reprosum_calc
 use cam_abortutils,  only: endrun, handle_allocate_error
 use spmd_utils,      only: mpicom
 use physconst,       only: pi
-use phys_grid,       only: ngcols_p 
+use phys_grid,       only: ngcols_p
 use cam_logfile,     only: iulog
 
 implicit none
@@ -224,6 +224,10 @@ type ZonalAverage_t
                                  calc_ZonalAverage_3DbinAvg
       procedure,private,pass:: calc_ZonalAverage_2DbinAvg
       procedure,private,pass:: calc_ZonalAverage_3DbinAvg
+      generic,public:: binAvg_recast => calc_ZonalAverage_2DbinAvg_recast, &
+                                        calc_ZonalAverage_3DbinAvg_recast
+      procedure,private,pass:: calc_ZonalAverage_2DbinAvg_recast
+      procedure,private,pass:: calc_ZonalAverage_3DbinAvg_recast
       procedure, pass :: final => final_ZonalAverage
 end type ZonalAverage_t
 
@@ -1298,6 +1302,85 @@ subroutine calc_ZonalAverage_3DbinAvg(this,I_Gdata,O_Zdata)
    deallocate(Asum)
 
 end subroutine calc_ZonalAverage_3DbinAvg
+!=======================================================================
+
+!=======================================================================
+subroutine calc_ZonalAverage_2DbinAvg_recast(this,I_Gdata,O_Zdata)
+   !
+   ! calc_ZonalAverage_2DbinAvg_recast: Given 2D data values for ncol gridpoints,
+   !                             compute the nlat area weighted binAvg profile
+   !                             and cast the data back to the input grid
+   !                             undoing the area weighting in the process
+   !=====================================================================
+   !
+   ! Passed Variables
+   !------------------
+   class(ZonalAverage_t):: this
+   real(r8),intent(in ):: I_Gdata(pcols,begchunk:endchunk)
+   real(r8),intent(out):: O_Zdata(pcols,begchunk:endchunk)
+   !
+   ! Local Values
+   !--------------
+   integer:: ncols,lchnk,cc,jlat
+   character(len=*), parameter :: subname = 'calc_ZonalAverage_2DbinAvg_recast'
+   real(r8) :: tmp_binAvg(this%nlat)
+
+   call this%calc_ZonalAverage_2DbinAvg(I_Gdata,tmp_binAvg)
+
+   ! Cast ZM to grid and undo area-weighting
+   ! and normalization from binavg()
+   !-----------------------------
+   do lchnk=begchunk,endchunk
+      ncols = get_ncols_p(lchnk)
+      do cc = 1,ncols
+         jlat = this%idx_map(cc,lchnk)
+         ! O_Zdata(cc,lchnk) = tmp_binAvg(jlat) * this%a_norm(jlat) / this%area_g(cc,lchnk)
+         O_Zdata(cc,lchnk) = tmp_binAvg(jlat)
+      end do
+   end do
+
+end subroutine calc_ZonalAverage_2DbinAvg_recast
+!=======================================================================
+
+!=======================================================================
+subroutine calc_ZonalAverage_3DbinAvg_recast(this,I_Gdata,O_Zdata)
+   !
+   ! calc_ZonalAverage_3DbinAvg_recast: Given 3D data values for ncol,nlev gridpoints,
+   !                             compute the nlat,nlev area weighted binAvg profile
+   !                             and cast the data back to the input grid
+   !                             undoing the area weighting in the process
+   !=====================================================================
+   !
+   ! Passed Variables
+   !------------------
+   class(ZonalAverage_t):: this
+   real(r8),intent(in ):: I_Gdata(pcols,pver,begchunk:endchunk)
+   real(r8),intent(out):: O_Zdata(pcols,pver,begchunk:endchunk)
+   !
+   ! Local Values
+   !--------------
+   integer:: ncols,lchnk,cc,jlat
+   integer :: ilev
+   character(len=*), parameter :: subname = 'calc_ZonalAverage_3DbinAvg_recast'
+   real(r8) :: tmp_binAvg(this%nlat,pver)
+
+   call this%calc_ZonalAverage_3DbinAvg(I_Gdata,tmp_binAvg)
+
+   ! Cast ZM to grid and undo area-weighting
+   ! and normalization from binavg()
+   !-----------------------------
+   do ilev = 1,pver
+      do lchnk=begchunk,endchunk
+         ncols = get_ncols_p(lchnk)
+         do cc = 1,ncols
+            jlat = this%idx_map(cc,lchnk)
+            ! O_Zdata(cc,ilev,lchnk) = tmp_binAvg(jlat,ilev) * this%a_norm(jlat) / this%area_g(cc,lchnk)
+            O_Zdata(cc,ilev,lchnk) = tmp_binAvg(jlat,ilev)
+         end do
+      end do
+   end do
+
+end subroutine calc_ZonalAverage_3DbinAvg_recast
 !=======================================================================
 
 !=======================================================================
