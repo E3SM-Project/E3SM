@@ -34,6 +34,14 @@ use nucleate_ice,   only: nucleati_init, nucleati
 
 use modal_aero_data,  only: nso4, nsoa, npoa, nbc
 
+
+#if defined(CLDERA_PROFILING)
+    use ppgrid,         only: begchunk
+    use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
+
+
+
 implicit none
 private
 save
@@ -896,6 +904,14 @@ subroutine nucleate_ice_cam_calc( &
    call outfld('NIIMM', niimm, pcols, lchnk)
    call outfld('NIDEP', nidep, pcols, lchnk)
    call outfld('NIMEY', nimey, pcols, lchnk)
+
+#if defined(CLDERA_PROFILING)
+   call cldera_set_field_part_data('NIHF',lchnk-begchunk+1,nihf)
+   call cldera_set_field_part_data('NIIMM',lchnk-begchunk+1,niimm)
+   call cldera_set_field_part_data('NIDEP',lchnk-begchunk+1,nidep)
+   call cldera_set_field_part_data('NIMEY',lchnk-begchunk+1,nimey)
+#endif
+
 
    if (use_preexisting_ice) then
       call outfld( 'fhom' , fhom, pcols, lchnk)
