@@ -31,9 +31,9 @@
 			description="If true, apply monthly salinity restoring using a uniform piston velocity, defined at run-time by config_salinity_restoring_constant_piston_velocity.  When false, salinity piston velocity is specified in the input file by salinityPistonVelocity, which may be spatially variable."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_surface_salinity_monthly_restoring_compute_interval" type="character" default_value="0000-00-01_00:00:00"
+		<nml_option name="config_surface_salinity_monthly_restoring_compute_interval" type="character" default_value="dt"
 			description="Time interval to compute salinity restoring tendency."
-			possible_values="Any valid time stamp or 'dt'"
+			possible_values="Any valid time stamp e.g. format '0000-00-01_00:00:00' or 'dt'"
 		/>
 		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="1.585e-5" units="m/year"
 			description="When config_use_surface_salinity_monthly_restoring is true, this flag provides a run-time override of the salinityPistonVelocity variable in the input files.  It is uniform over the domain, and controls the rate at which salinity is restored to salinitySurfaceRestoringValue"
