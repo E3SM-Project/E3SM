@@ -984,6 +984,7 @@ CONTAINS
     integer  :: i
     real(r8) :: tmp, tmp1, pi
     real(r8) :: rlon(lsize), rlat(lsize)
+    real(r8) :: mean_SST, delta_SST
 
     real(r8), parameter :: pio180 = SHR_CONST_PI/180._r8
 
@@ -1013,8 +1014,8 @@ CONTAINS
 
     ! Control
 
-    if (sst_option < 1 .or. sst_option > 10) then
-       call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
+    if (sst_option < 1 .or. sst_option > 15) then
+       call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 15')
     end if
 
     if (sst_option == 1 .or. sst_option == 6 .or. sst_option == 7 .or. sst_option == 8) then
@@ -1172,6 +1173,55 @@ CONTAINS
              sst(i) = tmp*(t0_max - t0_min) + t0_min
           end if
        end do
+    end if
+
+    !-------------------------------------------------------------------------------
+    ! RCEMIP phase 2 - Mock-Walker
+
+    ! MW_295dT1p25 - mean SST = 295 / dSST = 1.25 K
+
+    if (sst_option == 11) then
+      mean_SST = 295
+      delta_SST = 1.25
+      do i = 1, lsize
+        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
+      end do
+    end if
+
+    ! MW_300dT0p625 - mean SST = 300 / dSST = 0.625 K
+    if (sst_option == 12) then
+      mean_SST = 300
+      delta_SST = 0.625
+      do i = 1, lsize
+        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
+      end do
+    end if
+
+    ! MW_300dT1p25 - mean SST = 300 / dSST = 1.25 K
+    if (sst_option == 13) then
+      mean_SST = 300
+      delta_SST = 1.25
+      do i = 1, lsize
+        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
+      end do
+    end if
+
+    ! MW_300dT2p5 - mean SST = 300 / dSST = 2.5 K
+    if (sst_option == 14) then
+      mean_SST = 300
+      delta_SST = 2.5
+      do i = 1, lsize
+        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
+      end do
+    end if
+
+    ! MW_305dT1p25 - mean SST = 305 / dSST = 1.25 K
+    if (sst_option == 15) then
+      mean_SST = 305
+      delta_SST = 1.25
+      do i = 1, lsize
+        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
+      end do
     end if
 
   end subroutine prescribed_sst
