@@ -70,6 +70,7 @@ subroutine phys_grid_ctem_readnl(nlfile,dtime)
    integer :: phys_grid_ctem_nfreq
 
    namelist /phys_grid_ctem_opts/ phys_grid_ctem_zm_nbas, phys_grid_ctem_za_nlat, phys_grid_ctem_nfreq
+   ! namelist /phys_grid_ctem_opts/ phys_grid_ctem_za_nlat, phys_grid_ctem_nfreq
 
    phys_grid_ctem_zm_nbas = 0
    phys_grid_ctem_za_nlat = 0
@@ -102,6 +103,10 @@ subroutine phys_grid_ctem_readnl(nlfile,dtime)
          call endrun(prefix//'inconsistent phys_grid_ctem namelist settings -- phys_grid_ctem_zm_nbas=' &
                      //int2str(phys_grid_ctem_zm_nbas)//', phys_grid_ctem_za_nlat='//int2str(phys_grid_ctem_za_nlat))
       end if
+      ! if (.not.(phys_grid_ctem_za_nlat>0)) then
+      !    call endrun(prefix//'inconsistent phys_grid_ctem namelist settings -- phys_grid_ctem_za_nlat=' &
+      !                //int2str(phys_grid_ctem_za_nlat))
+      ! end if
       if (phys_grid_ctem_nfreq>0) then
          ntimesteps = phys_grid_ctem_nfreq
       else
@@ -231,6 +236,8 @@ subroutine phys_grid_ctem_init
    call addfld ('UVzm', (/'lev'/), 'A','m2 s-2', 'Meridional Flux of Zonal Momentum', gridname='ctem_zavg_phys')
    call addfld ('UWzm', (/'lev'/), 'A','m2 s-2', 'Vertical Flux of Zonal Momentum', gridname='ctem_zavg_phys')
    call addfld ('THphys',(/'lev'/), 'A', 'K',    'Potential temp', gridname='physgrid' )
+   call addfld ('Uzm_old',  (/'lev'/), 'A','m s-1',  'Zonal-Mean zonal wind', gridname='ctem_zavg_phys' )
+   call addfld ('UVzm_old', (/'lev'/), 'A','m2 s-2', 'Meridional Flux of Zonal Momentum', gridname='ctem_zavg_phys')
 
 end subroutine phys_grid_ctem_init
 
@@ -276,11 +283,21 @@ subroutine phys_grid_ctem_diags(phys_state)
    real(r8) :: vthza(nzalat,pver)
    real(r8) :: wthza(nzalat,pver)
 
+
+
    real(r8) :: psza(nzalat)
    real(r8) :: uza(nzalat,pver)
    real(r8) :: vza(nzalat,pver)
    real(r8) :: wza(nzalat,pver)
    real(r8) :: thza(nzalat,pver)
+
+   real(r8) :: uza_old(nzalat,pver)
+   real(r8) :: uzm_old(pcols,pver,begchunk:endchunk)
+   real(r8) :: vzm_old(pcols,pver,begchunk:endchunk)
+   real(r8) :: ud_old(pcols,pver,begchunk:endchunk)
+   real(r8) :: vd_old(pcols,pver,begchunk:endchunk)
+   real(r8) :: uvp_old(pcols,pver,begchunk:endchunk)
+   real(r8) :: uvza_old(nzalat,pver)
 
    if (.not.do_calc()) return
 
@@ -297,12 +314,18 @@ subroutine phys_grid_ctem_diags(phys_state)
       v(:ncol,:,lchnk) =  phys_state(lchnk)%v(:ncol,:)
    end do
 
-   ! zonal means evaluated on the physics grid (3D) to be used in the deviations calculation below
-   pszm(:,:)   = zmean_fld_2D(ps(:,:))
-   uzm(:,:,:)  = zmean_fld_3D(u(:,:,:))
-   vzm(:,:,:)  = zmean_fld_3D(v(:,:,:))
-   wzm(:,:,:)  = zmean_fld_3D(w(:,:,:))
-   thzm(:,:,:) = zmean_fld_3D(theta(:,:,:))
+   ! ! zonal means evaluated on the physics grid (3D) to be used in the deviations calculation below
+   ! pszm(:,:)   = zmean_fld_2D(ps(:,:))
+   uzm_old(:,:,:)  = zmean_fld_3D(u(:,:,:))
+   vzm_old(:,:,:)  = zmean_fld_3D(v(:,:,:))
+   ! wzm(:,:,:)  = zmean_fld_3D(w(:,:,:))
+   ! thzm(:,:,:) = zmean_fld_3D(theta(:,:,:))
+
+   call ZAobj%binAvg_recast(ps(:,:),      pszm(:,:)   )
+   call ZAobj%binAvg_recast(u(:,:,:),     uzm(:,:,:)  )
+   call ZAobj%binAvg_recast(v(:,:,:),     vzm(:,:,:)  )
+   call ZAobj%binAvg_recast(w(:,:,:),     wzm(:,:,:)  )
+   call ZAobj%binAvg_recast(theta(:,:,:), thzm(:,:,:) )
 
    ! diagnostic output
    do lchnk = begchunk, endchunk
@@ -322,6 +345,9 @@ subroutine phys_grid_ctem_diags(phys_state)
          uwp(:ncol,k,lchnk)  = ud(:ncol,k,lchnk) * wd(:ncol,k,lchnk)
          vthp(:ncol,k,lchnk) = vd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
          wthp(:ncol,k,lchnk) = wd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
+         ud_old(:ncol,k,lchnk)  = u(:ncol,k,lchnk)     - uzm_old(:ncol,k,lchnk)
+         vd_old(:ncol,k,lchnk)  = v(:ncol,k,lchnk)     - vzm_old(:ncol,k,lchnk)
+         uvp_old(:ncol,k,lchnk)  = ud_old(:ncol,k,lchnk) * vd_old(:ncol,k,lchnk)
       end do
    end do
 
@@ -331,11 +357,15 @@ subroutine phys_grid_ctem_diags(phys_state)
    call ZAobj%binAvg(vthp, vthza)
    call ZAobj%binAvg(wthp, wthza)
 
+   call ZAobj%binAvg(uvp_old,  uvza_old)
+
 
    if (any(abs(uvza)>1.e20_r8))  call endrun(prefix//'bad values in uvza')
    if (any(abs(uwza)>1.e20_r8))  call endrun(prefix//'bad values in uwza')
    if (any(abs(vthza)>1.e20_r8)) call endrun(prefix//'bad values in vthza')
    if (any(abs(wthza)>1.e20_r8)) call endrun(prefix//'bad values in wthza')
+
+   if (any(abs(uvza_old)>1.e20_r8))  call endrun(prefix//'bad values in uvza')
 
    call ZAobj%binAvg(pszm, psza)
    call ZAobj%binAvg(uzm,  uza)
@@ -343,11 +373,15 @@ subroutine phys_grid_ctem_diags(phys_state)
    call ZAobj%binAvg(wzm,  wza)
    call ZAobj%binAvg(thzm, thza)
 
+   call ZAobj%binAvg(uzm_old,  uza_old)
+
    if (any(abs(psza)>1.e20_r8)) call endrun(prefix//'bad values in psza')
    if (any(abs(uza)>1.e20_r8))  call endrun(prefix//'bad values in uza')
    if (any(abs(vza)>1.e20_r8))  call endrun(prefix//'bad values in vza')
    if (any(abs(wza)>1.e20_r8))  call endrun(prefix//'bad values in wza')
    if (any(abs(thza)>1.e20_r8)) call endrun(prefix//'bad values in thza')
+
+   if (any(abs(uza_old)>1.e20_r8))  call endrun(prefix//'bad values in uza')
 
    ! diagnostic output
    do j = 1,nzalat
@@ -360,6 +394,8 @@ subroutine phys_grid_ctem_diags(phys_state)
       call outfld('UWzm',uwza(j,:),1,j)
       call outfld('VTHzm',vthza(j,:),1,j)
       call outfld('WTHzm',wthza(j,:),1,j)
+      call outfld('Uzm_old',uza_old(j,:),1,j)
+      call outfld('UVzm_old',uvza_old(j,:),1,j)
    end do
 
    contains
