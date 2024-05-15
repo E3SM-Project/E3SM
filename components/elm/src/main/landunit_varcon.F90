@@ -38,8 +38,8 @@ module landunit_varcon
   
   ! land unit polygonal ground types
   integer, parameter, public :: ilowcenpoly     = 1     ! low-centered polygons
-  integer, parameter, public :: iflatcenpoly    = 2	    ! flat-centered polygons
-  integer, parameter, public :: ihighcenpoly    = 3	    ! high-centered polygons
+  integer, parameter, public :: iflatcenpoly    = 2     ! flat-centered polygons
+  integer, parameter, public :: ihighcenpoly    = 3     ! high-centered polygons
   
   integer, parameter, public :: max_poly  = 3  !maximum value that lun_pp%polygontype can have
                                         !(i.e., largest value in the above list)
@@ -82,6 +82,7 @@ contains
     !-----------------------------------------------------------------------
     
     call set_landunit_names()
+    call set_polygon_names()
 
   end subroutine landunit_varcon_init
   

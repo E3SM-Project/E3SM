@@ -795,9 +795,9 @@ contains
      !
      ! !LOCAL VARIABLES:
      integer :: c,f,l,k          ! indices
-     real(r8):: d,fd,dfdd      ! temporary variable for frac_h2oscs iteration
-     real(r8):: sigma          ! microtopography pdf sigma in mm
-     real(r8):: swc            ! surface water content in m
+     real(r8):: d,fd,dfdd        ! temporary variable for frac_h2oscs iteration
+     real(r8):: sigma            ! microtopography pdf sigma in mm
+     real(r8):: swc              ! surface water content in m
      real(r8):: min_h2osfc
      !-----------------------------------------------------------------------
 
@@ -805,8 +805,8 @@ contains
           micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
 
           iwp_microrel => col_pp%iwp_microrel , & ! Input:  [real(r8) (:)   ] ice wedge polygon microtopographic relief (m)
-          iwp_exclvol  => col_pp%iwp_exclvol  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
-          iwp_ddep     => col_pp%iwp_ddep     , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
+          iwp_exclvol  => col_pp%iwp_exclvol  , & ! Input:  [real(r8) (:)   ] ice wedge polygon excluded volume (m)
+          iwp_ddep     => col_pp%iwp_ddep     , & ! Input:  [real(r8) (:)   ] ice wedge polygon depression depth (m)
 
           h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
 
