@@ -12,7 +12,9 @@ module ActiveLayerMod
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es  
+  use ColumnDataType  , only : col_es, col_ws
+  use LandunitType    , only : lun_pp
+  use landunit_varcon , only : ilowcenpoly, iflatcenpoly, ihighcenpoly
   !
   implicit none
   save
@@ -47,7 +49,7 @@ contains
     use elm_varpar       , only : nlevgrnd
     use elm_time_manager , only : get_curr_date, get_step_size
     use elm_varctl       , only : iulog
-    use elm_varcon       , only : zsoi
+    use elm_varcon       , only : zsoi, dzsoi
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -56,16 +58,17 @@ contains
     type(canopystate_type) , intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, j, fc, g                     ! counters
-    integer  :: alt_ind                         ! index of base of activel layer
-    integer  :: year                            ! year (0, ...) for nstep+1
-    integer  :: mon                             ! month (1, ..., 12) for nstep+1
-    integer  :: day                             ! day of month (1, ..., 31) for nstep+1
-    integer  :: sec                             ! seconds into current date for nstep+1
-    integer  :: dtime                           ! time step length in seconds
-    integer  :: k_frz                           ! index of first nonfrozen soil layer
-    logical  :: found_thawlayer                 ! used to break loop when first unfrozen layer reached
-    real(r8) :: t1, t2, z1, z2                  ! temporary variables
+    integer  :: c, j, fc, g                       ! counters
+    integer  :: alt_ind                           ! index of base of active layer
+    integer  :: year                              ! year (0, ...) for nstep+1
+    integer  :: mon                               ! month (1, ..., 12) for nstep+1
+    integer  :: day                               ! day of month (1, ..., 31) for nstep+1
+    integer  :: sec                               ! seconds into current date for nstep+1
+    integer  :: dtime                             ! time step length in seconds
+    integer  :: k_frz                             ! index of first nonfrozen soil layer
+    logical  :: found_thawlayer                   ! used to break loop when first unfrozen layer reached
+    real(r8) :: t1, t2, z1, z2                    ! temporary variables
+    real(r8), dimension(nlevgrnd) :: melt_profile ! profile of melted excess ice
     !-----------------------------------------------------------------------
 
     associate(                                                                &
@@ -78,7 +81,12 @@ contains
          alt_indx             =>    canopystate_vars%alt_indx_col        ,      & ! Output:  [integer  (:)   ]  current depth of thaw
          altmax_indx          =>    canopystate_vars%altmax_indx_col     ,      & ! Output:  [integer  (:)   ]  maximum annual depth of thaw
          altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col , & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw
-         altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col       & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
+         altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col,      & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
+         excess_ice           =>    col_ws%excess_ice                    ,      & ! Input:   [real(r8) (:,:) ]  depth variable excess ice content in soil column (-)
+         rmax                 =>    col_pp%iwp_microrel                  ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
+         vexc                 =>    col_pp%iwp_exclvol                   ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
+         ddep                 =>    col_pp%iwp_ddep                      ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
+         subsidence           =>    col_pp%iwp_subsidence                       & ! Input/output:[real(r8) (:)   ]  ice wedge polygon subsidence (m)
          )
 
       ! on a set annual timestep, update annual maxima
@@ -153,15 +161,53 @@ contains
             altmax_indx(c) = alt_indx(c)
          endif
          if (alt(c) > altmax_ever(c)) then
-            if (spinup_state .eq. 0) then !overwrite if in spinup
+            if (spinup_state .eq. 0) then
                 altmax_ever(c) = alt(c)
                 altmax_ever_indx(c) = alt_indx(c)
-            else
+            else !overwrite if in spinup
                 altmax_ever(c) = 0._r8
                 altmax_ever_indx(c) = 0
             endif
          endif
 
+         ! update subsidence based on change in ALT
+         ! melt_profile stores the amount of excess_ice
+         ! melted in this timestep.
+         do j = nlevgrnd-1,1,-1
+            if (j < k_frz) then
+               melt_profile(j) = 0.0_r8
+            else if (j .eq. k_frz) then
+               melt_profile(j) = excess_ice(c,j) + ((z2-alt(c))/(z2-z1))*excess_ice(c,j+1) ! TODO: check indices here!!
+            else
+               melt_profile(j) = excess_ice(c,j)
+            end if
+            ! calculate subsidence at this layer:
+            melt_profile(j) = melt_profile(j) * dzsoi(j)
+         end do
+
+         ! subsidence is integral of melt profile:
+         subsidence(c) = subsidence(c) + sum(melt_profile)
+
+         ! update ice wedge polygon microtopographic parameters if in polygonal ground
+         ! TODO: need to retrieve landunit this column is on.
+         if (lun_pp%ispolygon(c)) then
+            if (lun_pp%polygontype(c) .eq. ilowcenpoly) then
+               rmax(c) = 0.4_r8
+               vexc(c) = 0.2_r8
+               ddep(c) = 0.15_r8 ! TODO - update based on subsidence calcs.
+            elseif (lun_pp%polygontype(c) .eq. iflatcenpoly) then
+               rmax(c) = 0.1_r8  ! TODO - update based on subsidence calcs.
+               vexc(c) = 0.05_r8 ! TODO - update based on subsidence calcs.
+               ddep(c) = 0.01_r8 ! TODO - update based on subsidence calcs.
+            elseif (lun_pp%polygontype(c) .eq. ihighcenpoly) then
+               rmax(c) = 0.4_r8
+               vexc(c) = 0.2_r8
+               ddep(c) = 0.05_r8
+            else
+               !call endrun !<- TODO: needed? Potential way to prevent unintended updating of microtopography
+               ! if polygonal ground is misspecified on surface file.
+            endif
+         endif
       end do
 
     end associate 
