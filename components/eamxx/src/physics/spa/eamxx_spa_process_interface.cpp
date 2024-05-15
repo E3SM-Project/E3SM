@@ -26,10 +26,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
   m_grid = grids_manager->get_grid("Physics");

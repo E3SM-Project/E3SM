@@ -24,8 +24,6 @@ void MLCorrection::set_grids(
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg / kg;
-  Q.set_string("kg/kg");
   constexpr int ps = Pack::n;
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();
@@ -40,16 +38,15 @@ void MLCorrection::set_grids(
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
   FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
-  const auto m2 = m*m;
+  const auto m2 = pow(m,2);
   if (not m_ML_correction_unit_test) {
-    const auto s2 = s*s;
-    auto Wm2 = W / m / m;
-    auto nondim = m/m;
+    const auto s2 = pow(s,2);
+    auto nondim = Units::nondimensional();
     add_field<Required>("phis", scalar2d, m2/s2, grid_name);
     add_field<Required>("sfc_alb_dif_vis", scalar2d, nondim, grid_name);
-    add_field<Updated>("SW_flux_dn", scalar3d_int, Wm2, grid_name, ps);
-    add_field<Updated>("sfc_flux_sw_net", scalar2d, Wm2, grid_name);
-    add_field<Updated>("sfc_flux_lw_dn", scalar2d, Wm2, grid_name);
+    add_field<Updated>("SW_flux_dn", scalar3d_int, W/m2, grid_name, ps);
+    add_field<Updated>("sfc_flux_sw_net", scalar2d, W/m2, grid_name);
+    add_field<Updated>("sfc_flux_lw_dn", scalar2d, W/m2, grid_name);
     m_lat  = m_grid->get_geometry_data("lat");
     m_lon  = m_grid->get_geometry_data("lon");      
   }
@@ -60,9 +57,9 @@ void MLCorrection::set_grids(
    * is adapting the infrastructure to allow for a generic "add_field" call
    * to be used here which we can then setup using the m_fields_ml_output_variables variable
    */
-  add_field<Updated>("T_mid",       scalar3d_mid, K,   grid_name, ps);
-  add_field<Updated>("qv",          scalar3d_mid, Q,   grid_name, "tracers", ps);
-  add_field<Updated>("horiz_winds", vector3d_mid, m/s, grid_name, ps);
+  add_field<Updated>("T_mid",       scalar3d_mid, K,     grid_name, ps);
+  add_field<Updated>("qv",          scalar3d_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("horiz_winds", vector3d_mid, m/s,   grid_name, ps);
   /* Note: we also need to update the precipitation after ML commits any column drying */
   add_field<Required>("pseudo_density",      scalar3d_mid, Pa,     grid_name, ps);
   add_field<Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name);
@@ -106,7 +103,6 @@ void MLCorrection::run_impl(const double dt) {
   // For precipitation adjustment we need to track the change in column integrated 'qv'
   host_view2d_type qv_told("",qv.extent(0),qv.extent(1));
   Kokkos::deep_copy(qv_told,qv);
-
 
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
