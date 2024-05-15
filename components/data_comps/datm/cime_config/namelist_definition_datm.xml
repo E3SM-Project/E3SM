@@ -262,7 +262,6 @@
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
       <value datm_mode="CFSv2">CFSv2.UV</value>
       <value datm_mode="CFSR">CFSR.UV</value>
-    </values>
       <value datm_mode="E3SMWCv2">E3SMWCv2Forcing.Solar,E3SMWCv2Forcing.nonSolarFlux,E3SMWCv2Forcing.State3hr,E3SMWCv2Forcing.State1hr</value>
       <value datm_mode="CPLWCH">CPLWCHForcing.Solar,CPLWCHForcing.nonSolarFlux,CPLWCHForcing.State3hr,CPLWCHForcing.State1hr</value>
     </values>   
@@ -1779,6 +1778,7 @@
       </value>
       <value  stream="ERA56HR.msdwlwrf">
         msdwlwrf    lwdn
+      </value>
       <value  stream="ELMGSWP3w5e5.Solar">
         FSDS swdn
       </value>
