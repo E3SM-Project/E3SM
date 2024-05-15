@@ -3454,7 +3454,7 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
@@ -3643,7 +3643,7 @@
 	<env name="FI_CXI_CQ_FILL_PERCENT">20</env>
 	<env name="MPIR_CVAR_ENABLE_GPU">0</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
@@ -3744,7 +3744,7 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
@@ -3754,78 +3754,6 @@
   </machine>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-=======
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">cmake/3.23.2</command>
-        <command name="load">craype-x86-rome</command>
-      </modules>
-      <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-      </modules>
-      <modules compiler="gnugpu">
-        <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
-        <command name="load">cudatoolkit-standalone/11.4.4</command>
-      </modules>
-      <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvhpc/8.3.3</command>
-      </modules>
-      <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit-standalone/11.4.4</command>
-        <command name="load">craype-accel-nvidia80</command>
-      </modules>
-      <modules>
-        <command name="load">craype-network-ofi</command>
-        <command name="load">libfabric/1.15.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
-      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-      <env name="CRAY_ACCEL_TARGET">host</env>
-      <env name="GPU_TILE_COMPACT"> </env>
-    </environment_variables>
-    <environment_variables compiler=".*gpu">
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="CRAY_ACCEL_TARGET">nvidia80</env>
-      <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
-    </environment_variables>
-    <environment_variables compiler="gnu.*">
-      <env name="LD_PRELOAD">/opt/cray/pe/gcc/11.2.0/snos/lib64/libstdc++.so</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-  </machine>
-
->>>>>>> origin/master
   <machine MACH="sunspot">
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
@@ -4132,11 +4060,11 @@
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+    <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
         <env name="OMP_PLACES">threads</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
