@@ -2692,10 +2692,10 @@
 
   <entry id="PIO_REARRANGER">
     <type>integer</type>
-    <valid_values>1,2</valid_values>
+    <valid_values>1,2,3</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
+    <desc>pio rearranger choice box=1, subset=2, any=3 </desc>
     <values>
       <value compclass="ATM">$PIO_VERSION</value>
       <value compclass="CPL">$PIO_VERSION</value>
