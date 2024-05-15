@@ -32,10 +32,6 @@ void tridiag_diagdom_bfb_a1x1_impl (int n, RealType* dl, RealType* d, RealType* 
 
 // For F90.
 extern "C" {
-void czeroulpn(int a_len, double* a, int nbit, double* replace) {
-  for (int i = 0; i < a_len; ++i)
-    a[i] = Homme::zeroulpn(a[i], nbit, replace[i]);
-}
 
 void tridiag_diagdom_bfb_a1x1 (int n, void* dl, void* d, void* du, void* x, int real_size) {
   assert (real_size==4 || real_size==8);
