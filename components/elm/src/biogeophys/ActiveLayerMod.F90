@@ -188,18 +188,21 @@ contains
          ! subsidence is integral of melt profile:
          subsidence(c) = subsidence(c) + sum(melt_profile)
 
+         ! limit subsidence to 0.4 m
+         subsidence(c) = min(0.4_r8, subsidence(c))
+
          ! update ice wedge polygon microtopographic parameters if in polygonal ground
-         ! TODO: need to retrieve landunit this column is on.
-         if (lun_pp%ispolygon(c)) then
-            if (lun_pp%polygontype(c) .eq. ilowcenpoly) then
+         !rf - min/max logic may be redunant w/ subsidence limiter above
+         if (lun_pp%ispolygon(col_pp%landunit(c))) then
+            if (lun_pp%polygontype(col_pp%landunit(c)) .eq. ilowcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
-               ddep(c) = 0.15_r8 ! TODO - update based on subsidence calcs.
-            elseif (lun_pp%polygontype(c) .eq. iflatcenpoly) then
-               rmax(c) = 0.1_r8  ! TODO - update based on subsidence calcs.
-               vexc(c) = 0.05_r8 ! TODO - update based on subsidence calcs.
-               ddep(c) = 0.01_r8 ! TODO - update based on subsidence calcs.
-            elseif (lun_pp%polygontype(c) .eq. ihighcenpoly) then
+               ddep(c) = min(0.05_r8, max(0.15_r8 - 0.25_r8*subsidence(c), 0.15_r8))
+            elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. iflatcenpoly) then
+               rmax(c) = min(0.1_r8, max(0.4_r8, 0.1_r8 + 0.75_r8*subsidence(c)))
+               vexc(c) = min(0.05_r8, max(0.2_r8, 0.05_r8 + 0.375_r8*subsidence(c)))
+               ddep(c) = min(0.01_r8, max(0.05_r8, 0.01_r8 + 0.1_r8*subsidence(c)))
+            elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. ihighcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
                ddep(c) = 0.05_r8
