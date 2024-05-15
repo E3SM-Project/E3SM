@@ -8,7 +8,7 @@ extern "C" void cosp_c2f_run(const int ncol, const int nsubcol, const int nlay, 
     const Real emsfc_lw, const Real* sunlit, const Real* skt,
     const Real* T_mid, const Real* p_mid, const Real* p_int, const Real* qv,
     const Real* cldfrac, const Real* reff_qc, const Real* reff_qi, const Real* dtau067, const Real* dtau105,
-    Real* isccp_cldtot, Real* isccp_ctptau);
+    Real* isccp_cldtot, Real* isccp_ctptau, Real* modis_ctptau);
 
 namespace scream {
 
@@ -36,7 +36,7 @@ namespace scream {
                 view_2d<const Real>& qv     , view_2d<const Real>& cldfrac,
                 view_2d<const Real>& reff_qc, view_2d<const Real>& reff_qi,
                 view_2d<const Real>& dtau067, view_2d<const Real>& dtau105,
-                view_1d<Real>& isccp_cldtot , view_3d<Real>& isccp_ctptau) {
+                view_1d<Real>& isccp_cldtot , view_3d<Real>& isccp_ctptau, view_3d<Real>& modis_ctptau) {
 
             // Make host copies and permute data as needed
             lview_host_2d
@@ -45,6 +45,7 @@ namespace scream {
                   reff_qc_h("reff_qc_h", ncol, nlay), reff_qi_h("reff_qi_h", ncol, nlay),
                   dtau067_h("dtau_067_h", ncol, nlay), dtau105_h("dtau105_h", ncol, nlay);
             lview_host_3d isccp_ctptau_h("isccp_ctptau_h", ncol, ntau, nctp);
+            lview_host_3d modis_ctptau_h("modis_ctptau_h", ncol, ntau, nctp);
 
             // Copy to layoutLeft host views
             for (int i = 0; i < ncol; i++) {
@@ -72,13 +73,14 @@ namespace scream {
                     emsfc_lw, sunlit.data(), skt.data(), T_mid_h.data(), p_mid_h.data(), p_int_h.data(),
                     qv_h.data(),
                     cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data(),
-                    isccp_cldtot.data(), isccp_ctptau_h.data());
+                    isccp_cldtot.data(), isccp_ctptau_h.data(), modis_ctptau_h.data());
 
             // Copy outputs back to layoutRight views
             for (int i = 0; i < ncol; i++) {
                 for (int j = 0; j < ntau; j++) {
                     for (int k = 0; k < nctp; k++) {
                         isccp_ctptau(i,j,k) = isccp_ctptau_h(i,j,k);
+                        modis_ctptau(i,j,k) = modis_ctptau_h(i,j,k);
                     }
                 }
             }

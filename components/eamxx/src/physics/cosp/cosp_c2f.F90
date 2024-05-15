@@ -43,7 +43,7 @@ module cosp_c2f
        lsingle     = .false.,  & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
        ldouble     = .true., & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
        lisccp      = .true. , & ! Local on/off switch for simulators (used by initialization)
-       lmodis      = .false., & !
+       lmodis      = .true., & !
        lmisr       = .false., & !
        lcalipso    = .false., & !
        lgrLidar532 = .false., & !
@@ -82,7 +82,7 @@ module cosp_c2f
          Lpctmodis           = .false., & ! MODIS cloud top pressure
          Llwpmodis           = .false., & ! MODIS cloud liquid water path
          Liwpmodis           = .false., & ! MODIS cloud ice water path
-         Lclmodis            = .false., & ! MODIS cloud area fraction
+         Lclmodis            = .true. , & ! MODIS cloud area fraction
          Latb532             = .false., & ! CALIPSO attenuated total backscatter (532nm)
          Latb532gr           = .false., & ! GROUND LIDAR @ 532NM attenuated total backscatter (532nm)
          Latb355             = .false., & ! ATLID attenuated total backscatter (355nm)
@@ -239,11 +239,9 @@ contains
 
   subroutine cosp_c2f_init(npoints, ncolumns, nlevels) bind(c, name='cosp_c2f_init')
     integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels
-    ! Initialize/allocate COSP input and output derived types
+
+    ! Number of vertical levels for Cloudsat/CALIPSO
     nlvgrid = 40
-    call construct_cospIN(npoints,ncolumns,nlevels,cospIN)
-    call construct_cospstatein(npoints,nlevels,rttov_nchannels,cospstateIN)
-    call construct_cosp_outputs(npoints, ncolumns, nlevels, nlvgrid, rttov_nchannels, cospOUT)
 
     ! Initialize quickbeam_optics, also if two-moment radar microphysics scheme is wanted...
     if (cloudsat_micro_scheme == 'MMF_v3.5_two_moment')  then
@@ -264,11 +262,17 @@ contains
          cloudsat_radar_freq, cloudsat_k2, cloudsat_use_gas_abs,                           &
          cloudsat_do_ray, isccp_topheight, isccp_topheight_direction, surface_radar,       &
          rcfg_cloudsat, use_vgrid, csat_vgrid, Nlvgrid, Nlevels, cloudsat_micro_scheme)
+
+    ! Initialize/allocate COSP input and output derived types
+    call construct_cospIN(npoints,ncolumns,nlevels,cospIN)
+    call construct_cospstatein(npoints,nlevels,rttov_nchannels,cospstateIN)
+    call construct_cosp_outputs(npoints, ncolumns, nlevels, nlvgrid, rttov_nchannels, cospOUT)
+
   end subroutine cosp_c2f_init 
 
   subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, &
        emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv, &
-       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau &
+       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau, modis_ctptau &
        ) bind(C, name='cosp_c2f_run')
     integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp
     real(kind=c_double), value, intent(in) :: emsfc_lw
@@ -276,7 +280,7 @@ contains
     real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
     real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
     real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
-    real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau
+    real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau, modis_ctptau
     ! Takes normal arrays as input and populates COSP derived types
     character(len=256),dimension(100) :: cosp_status
     integer :: nptsperit
@@ -350,6 +354,9 @@ contains
     ! Translate derived types to output arrays
     isccp_cldtot(:npoints) = cospOUT%isccp_totalcldarea(:npoints)
     isccp_ctptau(:npoints,:,:) = cospOUT%isccp_fq(:npoints,:,:)
+
+    ! Modis
+    modis_ctptau(:npoints,:,:) = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(:npoints,:,:)
 
   end subroutine cosp_c2f_run
 
@@ -455,8 +462,6 @@ contains
   !
   ! This subroutine allocates output fields based on input logical flag switches.
   ! ######################################################################################  
-  ! TODO: This is WAY too many dummy arguments! These can just be defined at module scope I think
-  ! and then initialized once at init
   subroutine construct_cosp_outputs(Npoints,Ncolumns,Nlevels,Nlvgrid,Nchan,x)
     ! Inputs
     integer,intent(in) :: &
