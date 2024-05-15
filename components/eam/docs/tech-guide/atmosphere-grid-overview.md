@@ -11,7 +11,7 @@ While the atmosphere history output is primarily on the physics grid (see below)
 For a np4 grid with N elements per cube edge the total number of unique GLL nodes can be calculated as:  
 `N*(np-1)^2 + 2`
 
-![ne4np4 grid illustration](grid_illustration_ne4np4.png)
+![ne4np4 grid illustration](../figures/grid_illustration_ne4np4.png)
 
 ## The pg2 "physgrid"
 
@@ -20,4 +20,4 @@ Starting in v2, physics calculations and history output in E3SM use a quasi-equa
 For a pg2 grid with N elements per cube edge the total number of physics columns can be calculated as:  
 `ncol = N*N*6*(2*2)`
 
-![ne4pg2 grid illustration](grid_illustration_ne4pg2.png)
+![ne4pg2 grid illustration](../figures/grid_illustration_ne4pg2.png)

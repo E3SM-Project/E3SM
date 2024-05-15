@@ -6,7 +6,7 @@ nav:
     - 'index.md'
     - Installation: 'installation.md'
     - User Guide: 'user-guide/index.md'
-    - Development: 'development.md'
+    - Development: 'dev-guide/index.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
   - More Information:

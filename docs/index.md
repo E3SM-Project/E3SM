@@ -13,7 +13,7 @@ research problems and Department of Energy mission needs while efficiently using
 
 - [Installation](installation.md)
 - [User Guide](user-guide/index.md)
-- [Development](development.md)
+- [Development](dev-guide/index.md)
 
 ## Component Models
 
