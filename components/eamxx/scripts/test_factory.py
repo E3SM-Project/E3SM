@@ -81,7 +81,8 @@ class TestProperty(object):
 class DBG(TestProperty):
 ###############################################################################
 
-    CMAKE_ARGS = [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True")]
+    CMAKE_ARGS = [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
+                  ("Kokkos_ENABLE_DEBUG_BOUNDS_CHECK", "True")]
 
     def __init__(self, _):
         TestProperty.__init__(
