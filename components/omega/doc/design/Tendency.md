@@ -46,11 +46,10 @@ class ThicknessFluxDivergenceOnCell {
  
     ThicknessFluxDivergenceOnCell(const HorzMesh *Mesh, Config *Options);
   
-    KOKKOS_INLINE_FUNCTION Real operator()(int ICell,
-                                           int KChunk,
-                                           const OceanState *State,
-                                           const OceanAuxState *AuxState,
-                                           Array2DReal &Tend);
+    KOKKOS_FUNCTION void operator()(Array2DReal &Tend
+                                    int ICell,
+                                    int KChunk,
+                                    const Array2DReal &ThicknessFlux);
   
   private:
     Array1DI4 NEdgesOnCell;
@@ -81,16 +80,15 @@ The operator method implements the tendency computation for a chunk of vertical 
 The inner loop over a chunk of vertical levels enables CPU vectorization.
 
 ```c++
-KOKKOS_INLINE_FUNCTION Real ThicknessFluxDivergenceOnCell::operator()(int ICell,
-                                                                      int KChunk,
-                                                                      const OceanState *State,
-                                                                      const OceanAuxState *AuxState,
-                                                                      Array2DReal &Tend)  const {
+KOKKOS_FUNCTION void ThicknessFluxDivergenceOnCell::operator()(Array2DReal &Tend
+                                                               int ICell,
+                                                               int KChunk,
+                                                               const Array2DReal &ThicknessFlux)  const {
    const Real InvAreaCell = 1. / AreaCell(iCell);
    for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
       const int JEdge = EdgesOnCell(ICell, J);
-      for (int K = KChunk * LevelsPerChunk; K < (KChunk + 1) * LevelsPerChunk; ++K) {
-         Tend(JEdge,K) -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) * AuxState->ThicknessFlux(JEdge, K) * InvAreaCell;
+      for (int K = KChunk * VecLength; K < (KChunk + 1) * VecLength; ++K) {
+         Tend(ICell, K) -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) * ThicknessFlux(JEdge, K) * InvAreaCell;
       }
    }
 }
