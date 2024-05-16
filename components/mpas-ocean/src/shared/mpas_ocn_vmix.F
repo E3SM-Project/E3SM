@@ -1588,7 +1588,7 @@ contains
 
 
 #ifdef MPAS_OPENACC
-                  !$acc parallel loop gang vector collapse(3) present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
+                  !$acc parallel loop gang vector present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
 #else
                   !$omp parallel
                   !$omp do schedule(runtime) private(k, iTracer)

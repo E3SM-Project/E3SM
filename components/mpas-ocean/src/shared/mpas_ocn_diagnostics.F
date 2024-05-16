@@ -1164,10 +1164,10 @@ contains
       do iCell = 1, nCells
          kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
+         !$acc loop seq
          do i = 1, nEdgesOnCell(iCell)
             j = kiteIndexOnCell(i, iCell)
             iVertex = verticesOnCell(i, iCell)
-            !$acc loop seq
             do k = 1, nVertLevels
                kineticEnergyVertexOnCells(k,iCell) = &
                kineticEnergyVertexOnCells(k,iCell) + &
