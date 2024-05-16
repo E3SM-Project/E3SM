@@ -5428,15 +5428,22 @@
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_aave.151005.nc</map>
     </gridmap>
 
+    <gridmap glc_grid="mpas.ais20" lnd_grid="TL319">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais20km_traave.20240509.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais20km_trbilin.20240509.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_TL319_traave.20240509.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_TL319_traave.20240509.nc</map>
+    </gridmap>
+
     <gridmap glc_grid="mpas.ais20km" ocn_grid="oQU240wLI">
-      <map name="OCN2GLC_FMAPNAME"></map>
-      <map name="OCN2GLC_SMAPNAME"></map>
-      <map name="GLC2ICE_FMAPNAME"></map>
-      <map name="GLC2ICE_SMAPNAME"></map>
-      <map name="GLC2OCN_FMAPNAME"></map>
-      <map name="GLC2OCN_SMAPNAME"></map>
-      <map name="GLC2OCN_LIQ_RMAPNAME"></map>
-      <map name="GLC2OCN_ICE_RMAPNAME"></map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI-nomask_to_ais20km_esmfaave.20240509.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI-nomask_to_ais20km_esmfbilin.20240509.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI-nomask_esmfaave.20240509.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais20km/imap_ais20km_to_oQU240wLI-nomask_esmfbilin.20240509.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI-nomask_esmfaave.20240509.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI-nomask_esmfbilin.20240509.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI-nomask_esmfnearestdtos.20240509.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI_esmfnearestdtos.20240509.nc</map>
     </gridmap>
 
     <!-- ======================================================== -->
