@@ -37,8 +37,6 @@ template <typename DeviceT>
 void run(std::mt19937_64 &engine) {
   using PC         = scream::physics::Constants<Real>;
   using KT         = ekat::KokkosTypes<DeviceT>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
-  using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
@@ -51,9 +49,6 @@ void run(std::mt19937_64 &engine) {
   // Create a grids manager - single column for these tests
   const int ncols = 10;
   auto gm         = create_gm(comm, ncols, num_levs);
-
-  // Kokkos Policy
-  auto policy = ESU::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
   view_1d pseudo_density("pseudo_density", num_levs), qc("qc", num_levs),
