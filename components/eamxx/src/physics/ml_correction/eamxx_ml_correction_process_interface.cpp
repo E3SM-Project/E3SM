@@ -104,9 +104,8 @@ void MLCorrection::run_impl(const double dt) {
   const auto &v               = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
 
   // For precipitation adjustment we need to track the change in column integrated 'qv'
-  host_view2d_type qv_told("",qv.extent(0),qv.extent(1));
+  decltype(qv) qv_told("", qv.extent(0), qv.extent(1));
   Kokkos::deep_copy(qv_told,qv);
-
 
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
@@ -155,8 +154,8 @@ void MLCorrection::run_impl(const double dt) {
     using MT  = typename KT::MemberType;
     using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
     const auto &pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
-    const auto &precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real *, Host>();
-    const auto &precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real *, Host>();
+    const auto &precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real *>();
+    const auto &precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real *>();
     constexpr Real g = PC::gravit;
     const auto num_levs = m_num_levs;
     const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
