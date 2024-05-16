@@ -81,15 +81,13 @@ class TestProperty(object):
 class DBG(TestProperty):
 ###############################################################################
 
-    CMAKE_ARGS = [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
-                  ("Kokkos_ENABLE_DEBUG_BOUNDS_CHECK", "True")]
-
     def __init__(self, _):
         TestProperty.__init__(
             self,
             "full_debug",
             "debug",
-            self.CMAKE_ARGS,
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
+             ("Kokkos_ENABLE_DEBUG_BOUNDS_CHECK", "True")]
         )
 
 ###############################################################################
@@ -101,7 +99,8 @@ class SP(TestProperty):
             self,
             "full_sp_debug",
             "debug single precision",
-            DBG.CMAKE_ARGS + [("SCREAM_DOUBLE_PRECISION", "False")],
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
+             ("SCREAM_DOUBLE_PRECISION", "False")],
         )
 
 ###############################################################################
@@ -113,7 +112,8 @@ class FPE(TestProperty):
             self,
             "debug_nopack_fpe",
             "debug pksize=1 floating point exceptions on",
-            DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
+             ("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
             uses_baselines=False,
             on_by_default=(tas is not None and not tas.on_cuda())
         )
