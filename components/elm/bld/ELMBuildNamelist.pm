@@ -2751,9 +2751,9 @@ sub setup_logic_do_transient_crops {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
   
-  # elsif (!value_is_true($nl->get_value("irrigate"))) {
-  #  $cannot_be_true = "$var should be set to true when running with irrigate = true";
-  #}
+   elsif (!value_is_true($nl->get_value("irrigate"))) {
+    $cannot_be_true = "$var should be set to true when running with irrigate = true";
+  }
   
   elsif (value_is_true($nl->get_value('use_fates'))) {
     # In principle, use_fates should be compatible with

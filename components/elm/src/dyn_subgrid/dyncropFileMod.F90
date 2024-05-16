@@ -179,7 +179,7 @@ contains
     allocate(pfertcft_cur(bounds%begg:bounds%endg, max_topounits, cft_lb:cft_ub))
     call pfertcft%get_current_data(pfertcft_cur)
 
-    !call collapse_crop_types(wtcft_cur, nfertcft_cur, pfertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
+    call collapse_crop_types(wtcft_cur, nfertcft_cur, pfertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
     call collapse_crop_var(nfertcft_cur(bounds%begg:bounds%endg,:,:), bounds%begg, bounds%endg)
     call collapse_crop_var(pfertcft_cur(bounds%begg:bounds%endg,:,:), bounds%begg, bounds%endg)
 
