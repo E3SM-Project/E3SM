@@ -625,6 +625,7 @@ def buildnml(case, caseroot, compname):
             if iceberg_mode == 'data':
                 lines.append('<stream name="dataIcebergForcing"')
                 lines.append('                  type="input"')
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
                 lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
                 lines.append('                  filename_interval="none"')
                 lines.append('                  input_interval="none" >')
