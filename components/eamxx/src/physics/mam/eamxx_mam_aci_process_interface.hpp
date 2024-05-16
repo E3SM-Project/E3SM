@@ -99,6 +99,12 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d ndropmix_;
   view_2d nsource_;
   view_2d nc_inp_to_aci_;  // FIXME: TEMPORARY output
+  view_2d ccn_0p02_;       // FIXME: TEMPORARY output
+  view_2d ccn_0p05_;       // FIXME: TEMPORARY output
+  view_2d ccn_0p1_;        // FIXME: TEMPORARY output
+  view_2d ccn_0p2_;        // FIXME: TEMPORARY output
+  view_2d ccn_0p5_;        // FIXME: TEMPORARY output
+  view_2d ccn_1p0_;        // FIXME: TEMPORARY output
   view_2d wtke_;
   view_3d ccn_;
   view_2d coltend_[mam4::ndrop::ncnst_tot];

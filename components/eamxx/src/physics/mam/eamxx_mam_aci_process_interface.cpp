@@ -930,6 +930,15 @@ void MAMAci::set_grids(
   // FIXME: [TEMPORARY]droplet number as seen by ACI [#/kg]
   add_field<Computed>("nc_inp_to_aci", scalar3d_layout_mid, n_unit / s,
                       grid_name);
+  const auto cm_tmp = m / 100;                // FIXME: [TEMPORARY] remove this
+  const auto cm3 = cm_tmp * cm_tmp * cm_tmp;  // FIXME: [TEMPORARY] remove this
+  // FIXME: [TEMPORARY] remove the following ccn outputs
+  add_field<Computed>("ccn_0p02", scalar3d_layout_mid, cm3, grid_name);
+  add_field<Computed>("ccn_0p05", scalar3d_layout_mid, cm3, grid_name);
+  add_field<Computed>("ccn_0p1", scalar3d_layout_mid, cm3, grid_name);
+  add_field<Computed>("ccn_0p2", scalar3d_layout_mid, cm3, grid_name);
+  add_field<Computed>("ccn_0p5", scalar3d_layout_mid, cm3, grid_name);
+  add_field<Computed>("ccn_1p0", scalar3d_layout_mid, cm3, grid_name);
 
   // ------------------------------------------------------------------------
   // Output from hetrozenous freezing
@@ -1157,6 +1166,14 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Temporarily output nc_inp_to_aci_
   nc_inp_to_aci_ = get_field_out("nc_inp_to_aci").get_view<Real **>();
 
+  // FIXME: [TEMPORARY] remove the following ccn outputs
+  ccn_0p02_ = get_field_out("ccn_0p02").get_view<Real **>();
+  ccn_0p05_ = get_field_out("ccn_0p05").get_view<Real **>();
+  ccn_0p1_  = get_field_out("ccn_0p1").get_view<Real **>();
+  ccn_0p2_  = get_field_out("ccn_0p2").get_view<Real **>();
+  ccn_0p5_  = get_field_out("ccn_0p5").get_view<Real **>();
+  ccn_1p0_  = get_field_out("ccn_1p0").get_view<Real **>();
+
   // subgrid vertical velocity [m/s]
   Kokkos::resize(wtke_, ncol_, nlev_);
 
@@ -1322,6 +1339,19 @@ void MAMAci::run_impl(const double dt) {
                            raercol_cw_, raercol_, state_q_work_, nact_, mact_,
                            dropmixnuc_scratch_mem_);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
+
+  Kokkos::deep_copy(ccn_0p02_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));
+  Kokkos::deep_copy(ccn_0p05_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 1));
+  Kokkos::deep_copy(ccn_0p1_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 2));
+  Kokkos::deep_copy(ccn_0p2_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 3));
+  Kokkos::deep_copy(ccn_0p5_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 4));
+  Kokkos::deep_copy(ccn_1p0_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 5));
 
   //---------------------------------------------------------------------------
   //  NOTE: DO NOT UPDATE cloud borne aerosols using the qqcw_fld_work_ array
