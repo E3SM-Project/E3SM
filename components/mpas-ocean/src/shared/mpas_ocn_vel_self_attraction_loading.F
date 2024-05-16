@@ -103,7 +103,7 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND), dimension(:),   allocatable :: Snm, SnmRe, SnmIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
     real(kind=RKIND), dimension(:,:), allocatable :: Snm_local_reproSum, SnmRe_local_reproSum, SnmIm_local_reproSum
-    real(kind=RKIND), dimension(:),   allocatable :: sshSmoothed
+    real(kind=RKIND), dimension(:),   allocatable :: btrPressure
     real(kind=RKIND), dimension(:), pointer :: coastalSmoothingFactor
     integer, dimension(:,:), allocatable :: blockIdxForward
     integer, dimension(:,:), allocatable :: blockIdxInverse
@@ -128,7 +128,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)!{{{
+    subroutine ocn_compute_self_attraction_loading(domain, forcingPool, &
+        dminfo, ssh, surfacePressure, err)!{{{
 
         !-----------------------------------------------------------------
         !
@@ -137,6 +138,7 @@ contains
         !-----------------------------------------------------------------
         type (dm_info), intent(in) :: dminfo
         real (kind=RKIND), dimension(:), intent(in) :: ssh
+        real (kind=RKIND), dimension(:), intent(in) :: surfacePressure
 
         !-----------------------------------------------------------------
         !
@@ -161,7 +163,8 @@ contains
         !-----------------------------------------------------------------
 
         integer :: iCell
-
+        real (kind=RKIND) :: rho0gInv
+        
         call mpas_timer_start('SAL Calculation')
 
         err = 0
@@ -170,8 +173,12 @@ contains
             return
         endif
 
+        rho0gInv = 1.0_RKIND / rho_sw / gravity
+
         do iCell = 1,nCellsAll
-          sshSmoothed(iCell) = coastalSmoothingFactor(iCell)*ssh(iCell)
+          ! compute SAL wrt. the full barotropic bottom pressure
+          btrPressure(iCell) = coastalSmoothingFactor(iCell) * ( &
+              ssh(iCell) + rho0gInv * surfacePressure(iCell) )
         enddo
 
         if (.not. config_use_parallel_self_attraction_loading) then
@@ -184,9 +191,9 @@ contains
 
         endif
 
-        ! ssh_sal currently computed on host but must be transferred
+        ! pgf_sal currently computed on host but must be transferred
         ! to device for later tendency calculations
-        !$acc update device(ssh_sal)
+        !$acc update device(pgf_sal)
 
         call mpas_timer_stop('SAL Calculation')
 
@@ -236,7 +243,7 @@ contains
         !-----------------------------------------------------------------
 
         ! SAL variables
-        real (kind=RKIND), dimension(:), pointer :: ssh_gg
+        real (kind=RKIND), dimension(:), pointer :: pgf_gg
 
         ! MPI Variables
         integer :: iCell, ilm, curProc
@@ -253,8 +260,8 @@ contains
             allocate(globalArray(nCellsGlobal), gatheredArray(nCellsGlobal))
         endif
 
-        ! Gather only the nCellsOwned from ssh (does not include Halos)
-        call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
+        ! Gather only the nCellsOwned from pgf (does not include Halos)
+        call MPI_GATHERV(btrPressure, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
                         nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
         err = ior(err, err_tmp)
         call mpas_timer_stop('Serial SAL: Gather')
@@ -262,20 +269,20 @@ contains
         ! Perform SAL calculation only on process 0
         if (curProc.eq.0) then
             call mpas_timer_start('Serial SAL: Forward')
-            allocate(ssh_gg(nGrid))
-            ssh_gg(:) = 0.0_dp
+            allocate(pgf_gg(nGrid))
+            pgf_gg(:) = 0.0_dp
             Slm(:)=(0.0_dp, 0.0_dp)
 
-            ! Rearrange ssh into CellID order
+            ! Rearrange into CellID order
             do iCell = 1,nCellsGlobal
                globalArray(indexToCellIDGathered(iCell)) = gatheredArray(iCell)
             enddo
 
-            ! Interpolate ssh onto Gaussian Grid
-            call interpolate( toColValues, toRowValues, toSValues, globalArray, ssh_gg)
+            ! Interpolate pgf onto Gaussian Grid
+            call interpolate( toColValues, toRowValues, toSValues, globalArray, pgf_gg)
             ! Perform spherical harmonic transform
 #ifdef USE_SHTNS
-            call Spat_to_SH(shtns_c, ssh_gg, Slm)
+            call Spat_to_SH(shtns_c, pgf_gg, Slm)
             call mpas_timer_stop('Serial SAL: Forward')
             call mpas_timer_start('Serial SAL: Inverse')
             ! Multiply each harmonic coefficient by the scaling factor
@@ -283,10 +290,10 @@ contains
                 Slm(ilm) = Slm(ilm) * LoveScaling(ilm)
             enddo
             ! Perform inverse spherical harmonic transform
-            call SH_to_spat(shtns_c, Slm, ssh_gg)
+            call SH_to_spat(shtns_c, Slm, pgf_gg)
 #endif
             ! Interpolate back to MPAS mesh
-            call interpolate( fromColValues, fromRowValues, fromSValues, ssh_gg, globalArray)
+            call interpolate( fromColValues, fromRowValues, fromSValues, pgf_gg, globalArray)
 
             ! Rearrange back to index order
             do iCell = 1,nCellsGlobal
@@ -300,18 +307,18 @@ contains
             call mpas_timer_stop('Serial SAL: Inverse')
         endif
 
-        ! Scatter back to ssh_sal
+        ! Scatter back to pgf_sal
         call mpas_timer_start('Serial SAL: Scatter')
         call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                    ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
+                    pgf_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
         err = ior(err, err_tmp)
 
         if (curProc.eq.0) then
-          deallocate(globalArray, gatheredArray, ssh_gg)
+          deallocate(globalArray, gatheredArray, pgf_gg)
         endif
 
         ! Perform Halo exchange update
-        call mpas_dmpar_field_halo_exch(domain,'ssh_sal')
+        call mpas_dmpar_field_halo_exch(domain,'pgf_sal')
         call mpas_timer_stop('Serial SAL: Scatter')
 
     end subroutine self_attraction_loading_serial!}}}
@@ -394,13 +401,13 @@ contains
                 ! Compute local integral contribution
                 if (config_parallel_self_attraction_loading_bfb) then
                   do iCell = endIdx, startIdx, -1
-                      SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                      SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                   enddo
                 else
                   do iCell = endIdx, startIdx, -1
-                      SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                      SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                   enddo
                 endif
 
@@ -416,13 +423,13 @@ contains
                     ! Compute local integral contribution
                     if (config_parallel_self_attraction_loading_bfb) then
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
 
@@ -447,13 +454,13 @@ contains
                     ! Compute local integral contribution
                     if (config_parallel_self_attraction_loading_bfb) then
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
 
@@ -514,7 +521,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!
 
         do iCell = 1,nCellsAll
-           ssh_sal(iCell) = 0.0_RKIND
+           pgf_sal(iCell) = 0.0_RKIND
         enddo
 
         do m = 0,nOrder
@@ -539,7 +546,7 @@ contains
 
                 ! Sum together product of spherical harmonic functions and coefficients
                 do iCell = endIdx, startIdx, -1
-                    ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                    pgf_sal(iCell) = pgf_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                 enddo
 
                 !------------
@@ -553,7 +560,7 @@ contains
 
                     ! Sum together product of spherical harmonic functions and coefficients
                     do iCell = endIdx, startIdx, -1
-                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                        pgf_sal(iCell) = pgf_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
 
                 endif
@@ -576,7 +583,7 @@ contains
 
                     ! Sum together product of spherical harmonic functions and coefficients
                     do iCell = endIdx, startIdx, -1
-                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                        pgf_sal(iCell) = pgf_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
 
                 enddo ! n loop
@@ -609,6 +616,7 @@ contains
         ! Config variables
         type (block_type), pointer :: block_ptr
         type (mpas_pool_type), pointer :: forcingPool
+        type (mpas_pool_type), pointer :: statePool
 
         ! NetCDF and weights file variables
         integer :: toNcId, toNsDimId, toRowId, toColId, toSId
@@ -641,8 +649,8 @@ contains
         integer :: nCellBlock
         integer :: err_tmp
 
-        real(kind=RKIND) :: d
-        real(kind=RKIND) :: trans_start, trans_width
+        real(kind=RKIND), dimension(:), pointer :: ssh
+        real(kind=RKIND) :: depth, depth_tol
 
         call mpas_timer_start('SAL Init')
 
@@ -665,24 +673,24 @@ contains
 
         block_ptr => domain % blocklist
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
 
         call mpas_pool_get_array(forcingPool, 'coastalSmoothingFactor', &
                                                coastalSmoothingFactor)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
-        ! Set up coastal ssh smoothing
-        allocate(sshSmoothed(nCellsAll))
+        ! Set up coastal smoothing
+        allocate(btrPressure(nCellsAll))
 
-        if (config_self_attraction_loading_smoothing_width > 2.0_RKIND) then
-           trans_width = config_self_attraction_loading_smoothing_width*1000.0_RKIND
-           trans_start = 0.0_RKIND
-           do iCell = 1,nCellsAll
-               d = distanceToCoast(iCell)
-               coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh((d - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
-           enddo
-        else
-           coastalSmoothingFactor(:) = 1.0_RKIND
-        endif
-
+        ! Set-up smoothing mask for shallow regions where SAL should not
+        ! be computed across e.g. wet-dry cells
+        depth_tol = config_self_attraction_loading_depth_cutoff
+        do iCell = 1,nCellsAll
+           depth = ssh(iCell) + bottomDepth(iCell)
+           coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh( &
+              (depth - 0.5_RKIND*depth_tol) / (0.2_RKIND*depth_tol)) + 1.0_RKIND)
+        enddo
+        
         ! Setup Alarm for SAL
         alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err)
         call mpas_set_timeInterval(alarmTimeStep, timeString = &

@@ -95,8 +95,8 @@ module ocn_vel_tidal_potential
    type(char_array), dimension(37) :: constituentList
    public :: char_array
 
-   ! Flag for ssh_sal
-   real(kind=RKIND) :: ssh_sal_on
+   ! Flag for pgf_sal
+   real(kind=RKIND) :: pgf_sal_on
 
 !***********************************************************************
 
@@ -162,7 +162,7 @@ contains
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
-         !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
+         !$acc            tidalPotEta, ssh, surfacePressure, tend, pgf_sal) &
          !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #else
          !$omp parallel do schedule(runtime) &
@@ -176,8 +176,8 @@ contains
 
             potentialGrad = - gravity*invdcEdge* &
                ( tidalPotEta(cell2) - tidalPotEta(cell1) &
-                + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ( rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
-                + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+                + (1.0_RKIND - pgf_sal_on) * betaSelfAttrLoad * ( rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
+                + pgf_sal_on * (pgf_sal(cell2) - pgf_sal(cell1)) )
 
             do k=1,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
@@ -193,7 +193,7 @@ contains
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
-         !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
+         !$acc            tidalPotEta, ssh, surfacePressure, tend, pgf_sal) &
          !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #else
          !$omp parallel do schedule(runtime) &
@@ -207,9 +207,9 @@ contains
 
             potentialGrad = - gravity*invdcEdge* &
                (  tidalPotEta(cell2) - tidalPotEta(cell1) &
-                + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) &
-                                                         + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
-                + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+               + (1.0_RKIND - pgf_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) & 
+                                                        + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
+               + pgf_sal_on * (pgf_sal(cell2) - pgf_sal(cell1)) )
 
             do k=1,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
@@ -366,9 +366,9 @@ contains
 
          tidalPotentialOff = .false.
          if (config_use_self_attraction_loading) then
-            ssh_sal_on = 1.0_RKIND
+            pgf_sal_on = 1.0_RKIND
          else
-            ssh_sal_on = 0.0_RKIND
+            pgf_sal_on = 0.0_RKIND
          endif
 
          betaSelfAttrLoad = config_self_attraction_and_loading_beta
