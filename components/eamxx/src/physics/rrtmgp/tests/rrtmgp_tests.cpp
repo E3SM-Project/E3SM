@@ -309,6 +309,7 @@ int run_yakl(int argc, char** argv) {
   cld_tau_lw.deallocate();
   cld_tau_sw_bnd.deallocate();
   cld_tau_lw_bnd.deallocate();
+  col_dry.deallocate();
   yakl::finalize();
 
   return nerr != 0 ? 1 : 0;

@@ -412,6 +412,7 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
   sw_flux_dn_dir_loc.deallocate();
   lw_flux_up_loc.deallocate();
   lw_flux_dn_loc.deallocate();
+  col_dry.deallocate();
 
   // Finalize the driver. YAKL will be finalized inside
   // RRTMGPRadiation::finalize_impl after RRTMGP has had the
