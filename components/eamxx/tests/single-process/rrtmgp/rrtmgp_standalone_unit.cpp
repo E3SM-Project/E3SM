@@ -153,7 +153,8 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
   // times. We will then fill some fraction of these columns with clouds for
   // the test problem.
   GasConcs gas_concs;
-  read_atmos(inputfile, p_lay_all, t_lay_all, p_lev_all, t_lev_all, gas_concs, ncol_all);
+  real2d col_dry;
+  read_atmos(inputfile, p_lay_all, t_lay_all, p_lev_all, t_lev_all, gas_concs, col_dry, ncol_all);
   // Setup dummy problem; need to use tmp arrays with ncol_all size
   rrtmgpTest::dummy_atmos(
     inputfile, ncol_all, p_lay_all, t_lay_all,
