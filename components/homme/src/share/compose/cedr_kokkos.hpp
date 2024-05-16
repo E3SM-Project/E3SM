@@ -123,7 +123,7 @@ struct ExeSpaceUtils {
 #ifdef COMPOSE_MIMIC_GPU
     const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
-      ExeSpace::concurrency()
+      ExeSpace().concurrency()
 #else
       1
 #endif
