@@ -257,6 +257,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -424,6 +425,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -571,6 +573,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -740,6 +743,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -878,6 +882,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
