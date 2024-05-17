@@ -52,11 +52,12 @@ module mo_extfrc
   logical :: plumerise = .false.
   logical :: emis_constrained_frp = .false.
   logical :: diag_run_plumerise = .false.
-  real(r8)    :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  real(r8)    :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
-  real(r8)    :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)*(12.0_r8/18.0_r8) ! adjust moleculer weight from carbon to h2o
-  !real(r8)    :: ef_h2o_a4 = (1.0_r8/0.45_r8) ! test the sensitivity
-  real(r8)    :: fix_plume_height = 0.0
+  real(r8) :: ef_bc_a4 = 0.55_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8) :: ef_oc_a4 = 10.9_r8*1.0e-03_r8*(1.0_r8/0.45_r8)
+  real(r8) :: ef_h2o_a4 = 350.0_r8*1.0e-03_r8*(1.0_r8/0.45_r8)*(12.0_r8/18.0_r8) ! adjust moleculer weight from carbon to h2o
+  !real(r8) :: ef_h2o_a4 = (1.0_r8/0.45_r8) ! test the sensitivity
+  real(r8) :: fix_plume_height = 0.0_r8
+  real(r8) :: detrainment_para = 0.0_r8
 contains
 
   subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
@@ -115,7 +116,8 @@ contains
                        emis_constrained_frp_out   = emis_constrained_frp, &
                        diag_run_plumerise_out   = diag_run_plumerise, &
                        plumerise_out              = plumerise, &
-                       fix_plume_height_out = fix_plume_height   )
+                       fix_plume_height_out = fix_plume_height, &
+                       detrainment_para_out = detrainment_para   )
 
     do i = 1, gas_pcnst
        has_extfrc(i) = .false.
@@ -461,10 +463,15 @@ contains
                 t_ini_e3sm_out(pcols,pver), t_end_e3sm_out(pcols,pver)
     real(r8) :: air_density(pcols,pver) ! (kg/m3)
     real(r8) :: v_air, m_vapor, f_vapor
-    logical :: surface_flux_flag = .true.
-    real(r8) :: detrainment_para = 0.5_r8 ! tunable parameter for detrainment fraction from surface plume
+    logical :: surface_flux_flag = .false.
+    !real(r8) :: detrainment_para = 0.5_r8 ! tunable parameter for detrainment fraction from surface plume
     !kzm ++ surface air flux
     !mass(:ncol,:)        = state%pdeldry(:ncol,:)*rga
+    if (detrainment_para > 0.0_r8) then
+       surface_flux_flag = .true.
+    else
+       surface_flux_flag = .false.
+    endif
     if (surface_flux_flag) then
        air_density(:ncol,:) = pmid(:ncol,:)/(rair*tfld(:ncol,:))
     endif
@@ -701,25 +708,31 @@ contains
                             ! option: release all emission into plume top layer
                             if (k == ph_z(icol)) then
                                frcing_col_plume = frcing_col_plume_bc_memory(icol)  
-                               if (forcings(m)%species == 'bc_a4')then
+                               if (forcings(m)%species == 'bc_a4' .and. forcings(m)%sectors(isec) == 'EM')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_bc_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_bc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
-                               elseif (forcings(m)%species == 'pom_a4' .or. forcings(m)%species == 'brc_a4')then
+                               elseif (forcings(m)%species == 'pom_a4' .and. forcings(m)%sectors(isec) == 'EM')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_oc_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_oc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
-                               elseif (forcings(m)%species == 'H2OFIRE')then
+                               elseif (forcings(m)%species == 'brc_a4' .and. forcings(m)%sectors(isec) == 'EM')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_oc_a4
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_oc_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               elseif (forcings(m)%species == 'H2OFIRE'.and. forcings(m)%sectors(isec) == 'EM')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
                                   frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_h2o_a4
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_fuel_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
-                                  if (surface_flux_flag) then
+                                  if (surface_flux_flag ) then ! water flux for plume-height 5 layers height 
                                      ! v_air, m_vapor, f_vapor
                                      !v_air = burnedarea_memory(icol)*wt_ini_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
                                      v_air = burnedarea_memory(icol)*wt_end_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
@@ -732,12 +745,17 @@ contains
                                      frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor*detrainment_para  
                                   endif
                                   if (diag_run_plumerise) then
-                                     write(iulog,*) 'kzm_H2O_flux_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                     write(iulog,*) 'kzm_H2O_flux_emis_at_layer ', k, detrainment_para, frcing_vertical_plume_new(k)
                                   endif
-                               elseif (forcings(m)%species == 'num_a4')then
+                               elseif (forcings(m)%species == 'num_a4' .and. forcings(m)%sectors(isec) == 'num_a1_BC_ELEV_EM')then
                                   frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) 
-                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_bc_a4/coef_bc + &
-                                                                  frcing_vertical_plume_new(k)*ef_oc_a4/coef_pom
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_bc_a4/coef_bc
+                                  if (diag_run_plumerise) then
+                                     write(iulog,*) 'kzm_num_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
+                                  endif
+                               elseif (forcings(m)%species == 'num_a4' .and. forcings(m)%sectors(isec) == 'num_a1_POM_ELEV_EM')then
+                                  frcing_vertical_plume_new(k) =  frcing_col_plume/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm)
+                                  frcing_vertical_plume_new(k) =  frcing_vertical_plume_new(k)*ef_oc_a4/coef_pom 
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_num_a4_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
@@ -763,7 +781,14 @@ contains
             ! back to no fire plume calculation 
             ! add emission from different sectors together
             if (forcings(m)%file%alt_data) then
-               frcing(:ncol,:,n) = frcing(:ncol,:,n) + forcings(m)%fields(isec)%data(:ncol,pver:1:-1,lchnk)
+               ! avoid non EM sector from H2OFIRE and brc_a4
+               if (forcings(m)%species == 'H2OFIRE'.and. forcings(m)%sectors(isec) /= 'EM') then
+                    frcing(:ncol,:,n) = frcing(:ncol,:,n)
+               elseif (forcings(m)%species == 'brc_a4'.and. forcings(m)%sectors(isec) /= 'EM') then    
+                    frcing(:ncol,:,n) = frcing(:ncol,:,n)
+               else
+                    frcing(:ncol,:,n) = frcing(:ncol,:,n) + forcings(m)%fields(isec)%data(:ncol,pver:1:-1,lchnk)
+               endif
             else
                frcing(:ncol,:,n) = frcing(:ncol,:,n) + forcings(m)%fields(isec)%data(:ncol,:,lchnk)
             endif

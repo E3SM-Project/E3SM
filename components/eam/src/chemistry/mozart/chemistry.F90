@@ -1760,10 +1760,13 @@ end function chem_is_active
                  ! in the code, it should be:
                  ! del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k) = del(ptend%q(:ncol,pver,1))*state%pdel(:ncol,pver)
                  ! del(ptend%q(:ncol,pver,1)) = del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k)/state%pdel(:ncol,pver) 
-                 if (ptend%q(it,k,n) > 1.0e-20_r8 )then
+                 if (ptend%q(it,k,n) > 1.0e-15_r8 )then
                     ptend%q(it,k,1) =  ptend%q(it,k,1) + ptend%q(it,k,n) ! only tend from plume water
-                    ptend%q(it,pver,1) = ptend%q(it,pver,1) &
-                                         - ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
+                    if (state%pdel(it,k)/state%pdel(it,pver) > 0.0_r8) then
+                           !write(iulog,*) 'kzm_pres_ratio ', state%pdel(it,k)/state%pdel(it,pver), ptend%q(it,k,n)
+                         ptend%q(it,pver,1) = ptend%q(it,pver,1) &
+                                                - ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
+                    endif
                  endif
               end do
           end do  
