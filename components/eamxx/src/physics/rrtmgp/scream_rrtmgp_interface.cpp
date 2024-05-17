@@ -124,8 +124,8 @@ OpticalProps2strK get_cloud_optics_sw(
   // Limit effective radii to be within bounds of lookup table
   auto rel_limited = real2dk("rel_limited", ncol, nlay);
   auto rei_limited = real2dk("rei_limited", ncol, nlay);
-  limit_to_bounds(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
-  limit_to_bounds(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
+  limit_to_bounds_k(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
+  limit_to_bounds_k(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
 
   // Calculate cloud optics
   cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
@@ -179,8 +179,8 @@ OpticalProps1sclK get_cloud_optics_lw(
   // Limit effective radii to be within bounds of lookup table
   auto rel_limited = real2dk("rel_limited", ncol, nlay);
   auto rei_limited = real2dk("rei_limited", ncol, nlay);
-  limit_to_bounds(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
-  limit_to_bounds(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
+  limit_to_bounds_k(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
+  limit_to_bounds_k(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
 
   // Calculate cloud optics
   cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
@@ -883,17 +883,17 @@ void rrtmgp_main(
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Sanity check inputs, and possibly repair
-  check_range(t_lay      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lay");
-  check_range(t_lev      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lev");
-  check_range(p_lay      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lay");
-  check_range(p_lev      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lev");
-  check_range(sfc_alb_dir,                         0,                                1, "rrtmgp_main::sfc_alb_dir");
-  check_range(sfc_alb_dif,                         0,                                1, "rrtmgp_main::sfc_alb_dif");
-  check_range(mu0        ,                         0,                                1, "rrtmgp_main::mu0");
-  check_range(lwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::lwp");
-  check_range(iwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::iwp");
-  check_range(rel        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rel");
-  check_range(rei        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rei");
+  check_range_k(t_lay      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lay");
+  check_range_k(t_lev      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lev");
+  check_range_k(p_lay      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lay");
+  check_range_k(p_lev      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lev");
+  check_range_k(sfc_alb_dir,                         0,                                1, "rrtmgp_main::sfc_alb_dir");
+  check_range_k(sfc_alb_dif,                         0,                                1, "rrtmgp_main::sfc_alb_dif");
+  check_range_k(mu0        ,                         0,                                1, "rrtmgp_main::mu0");
+  check_range_k(lwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::lwp");
+  check_range_k(iwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::iwp");
+  check_range_k(rel        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rel");
+  check_range_k(rei        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rei");
 #endif
 
   // Setup pointers to RRTMGP SW fluxes
@@ -962,10 +962,10 @@ void rrtmgp_main(
   // Check aerosol optical properties
   // NOTE: these should already have been checked by precondition checks, but someday we might have
   // non-trivial aerosol optics, so this is still good to do here.
-  check_range(aerosol_sw.tau,  0, 1e3, "rrtmgp_main:aerosol_sw.tau");
-  check_range(aerosol_sw.ssa,  0,   1, "rrtmgp_main:aerosol_sw.ssa"); //, "aerosol_optics_sw.ssa");
-  check_range(aerosol_sw.g  , -1,   1, "rrtmgp_main:aerosol_sw.g  "); //, "aerosol_optics_sw.g"  );
-  check_range(aerosol_lw.tau,  0, 1e3, "rrtmgp_main:aerosol_lw.tau");
+  check_range_k(aerosol_sw.tau,  0, 1e3, "rrtmgp_main:aerosol_sw.tau");
+  check_range_k(aerosol_sw.ssa,  0,   1, "rrtmgp_main:aerosol_sw.ssa"); //, "aerosol_optics_sw.ssa");
+  check_range_k(aerosol_sw.g  , -1,   1, "rrtmgp_main:aerosol_sw.g  "); //, "aerosol_optics_sw.g"  );
+  check_range_k(aerosol_lw.tau,  0, 1e3, "rrtmgp_main:aerosol_lw.tau");
 #endif
 
   // Convert cloud physical properties to optical properties for input to RRTMGP
@@ -999,10 +999,10 @@ void rrtmgp_main(
   // a parameterization of their own, and we might want to swap different choices. These checks go here
   // only because we need to run them on computed optical props, so if the optical props themselves get
   // computed up higher, then perform these checks higher as well
-  check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
-  check_range(clouds_sw.ssa,  0,                                1, "rrtmgp_main:clouds_sw.ssa");
-  check_range(clouds_sw.g  , -1,                                1, "rrtmgp_main:clouds_sw.g  ");
-  check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
+  check_range_k(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
+  check_range_k(clouds_sw.ssa,  0,                                1, "rrtmgp_main:clouds_sw.ssa");
+  check_range_k(clouds_sw.g  , -1,                                1, "rrtmgp_main:clouds_sw.g  ");
+  check_range_k(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
 #endif
 
   // Do shortwave
@@ -1591,7 +1591,7 @@ void rrtmgp_sw(
 
   // Limit temperatures for gas optics look-up tables
   auto t_lay_limited = real2dk("t_lay_limited", nday, nlay);
-  limit_to_bounds(t_lay_day, k_dist_sw_k.get_temp_min(), k_dist_sw_k.get_temp_max(), t_lay_limited);
+  limit_to_bounds_k(t_lay_day, k_dist_sw_k.get_temp_min(), k_dist_sw_k.get_temp_max(), t_lay_limited);
 
   // Do gas optics
   real2dk toa_flux("toa_flux", nday, ngpt);
@@ -1609,9 +1609,9 @@ void rrtmgp_sw(
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Check gas optics
-  check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_sw:optics.tau");
-  check_range(optics.ssa,  0,                                1, "rrtmgp_sw:optics.ssa"); //, "optics.ssa");
-  check_range(optics.g  , -1,                                1, "rrtmgp_sw:optics.g  "); //, "optics.g"  );
+  check_range_k(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_sw:optics.tau");
+  check_range_k(optics.ssa,  0,                                1, "rrtmgp_sw:optics.ssa"); //, "optics.ssa");
+  check_range_k(optics.g  , -1,                                1, "rrtmgp_sw:optics.g  "); //, "optics.g"  );
 #endif
 
   // Apply tsi_scaling
@@ -1914,8 +1914,8 @@ void rrtmgp_lw(
   // Limit temperatures for gas optics look-up tables
   auto t_lay_limited = real2dk("t_lay_limited", ncol, nlay);
   auto t_lev_limited = real2dk("t_lev_limited", ncol, nlay+1);
-  limit_to_bounds(t_lay, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lay_limited);
-  limit_to_bounds(t_lev, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lev_limited);
+  limit_to_bounds_k(t_lay, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lay_limited);
+  limit_to_bounds_k(t_lev, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lev_limited);
 
   // Do gas optics
   realOff3dk col_gas("col_gas", std::make_pair(0, ncol-1), std::make_pair(0, nlay-1), std::make_pair(-1, k_dist.get_ngas()-1));
@@ -1926,7 +1926,7 @@ void rrtmgp_lw(
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Check gas optics
-  check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
+  check_range_k(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
 #endif
 
   if (extra_clnclrsky_diag) {

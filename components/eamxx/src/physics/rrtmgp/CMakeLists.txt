@@ -139,6 +139,7 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
+    ${NetCDF_C_PATH}/include
 )
 
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface

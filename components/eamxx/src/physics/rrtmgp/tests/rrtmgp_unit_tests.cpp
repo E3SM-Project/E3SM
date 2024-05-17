@@ -1250,13 +1250,13 @@ TEST_CASE("rrtmgp_test_check_range_k") {
   auto dummy = real2dk("dummy", 2, 1);
   // All values within range
   Kokkos::deep_copy(dummy, 0.1);
-  REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == true);
+  REQUIRE(scream::rrtmgp::check_range_k(dummy, 0.0, 1.0, "dummy") == true);
   // At least one value below lower bound
   Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 0) = -0.1;});
-  REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
+  REQUIRE(scream::rrtmgp::check_range_k(dummy, 0.0, 1.0, "dummy") == false);
   // At least one value above upper bound
   Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 0) = 1.1;});
-  REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
+  REQUIRE(scream::rrtmgp::check_range_k(dummy, 0.0, 1.0, "dummy") == false);
   scream::finalize_kls();
 }
 

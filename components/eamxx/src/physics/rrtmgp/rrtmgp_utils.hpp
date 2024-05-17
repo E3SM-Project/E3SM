@@ -83,7 +83,7 @@ inline bool radiation_do(const int irad, const int nstep) {
 // Verify that array only contains values within valid range, and if not
 // report min and max of array
 #ifdef RRTMGP_ENABLE_YAKL
-template <class T, typename std::enable_if<!conv::is_view_v<T>>::type* = nullptr>
+template <class T>
 bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
   auto _xmin = minval(x);
@@ -109,8 +109,8 @@ bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=s
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <class T, typename std::enable_if<conv::is_view_v<T>>::type* = nullptr>
-bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
+template <class T>
+bool check_range_k(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);

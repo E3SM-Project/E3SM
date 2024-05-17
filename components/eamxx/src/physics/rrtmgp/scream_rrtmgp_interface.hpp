@@ -338,7 +338,7 @@ void mixing_ratio_to_cloud_mass(
  * fields as well.
  */
 #ifdef RRTMGP_ENABLE_YAKL
-template<class S, class T, typename std::enable_if<!conv::is_view_v<S>>::type* = nullptr>
+template<class S, class T>
 void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
   yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
     arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
@@ -346,8 +346,8 @@ void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) 
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template<class S, class T, typename std::enable_if<conv::is_view_v<S>>::type* = nullptr>
-void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
+template<class S, class T>
+void limit_to_bounds_k(S const &arr_in, T const lower, T const upper, S &arr_out) {
   Kokkos::parallel_for(arr_in.size(), KOKKOS_LAMBDA(int i) {
     arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
   });
