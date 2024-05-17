@@ -479,6 +479,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2000.*_DATM%CRU">2010</value>
       <value   compset="2003.*_DATM%CRU">2003</value>
       <value   compset="2010.*_DATM%CRU">2014</value>
+      <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="2000.*_DATM%GSW">2010</value>
       <value   compset="2010.*_DATM%GSW">2013</value>   <!-- NOTE: 2014 data is bad so ending in 2013 see issue #3653 -->
       <value   compset="2003.*_DATM%GSW">2003</value>
