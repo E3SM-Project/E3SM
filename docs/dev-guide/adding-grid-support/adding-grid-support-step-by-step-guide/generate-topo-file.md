@@ -24,10 +24,14 @@ The workflow to generate topography data for the atmosphere model must address t
 
 ## Topography Smoothing
 
-Smoothing of the input surface geopotential (`phi_s`) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use `homme_tool`, which is a standalone build of the HOMME dycor. 
+Smoothing of the input surface geopotential (`phi_s`) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use `homme_tool`, which is a standalone build of the HOMME dycor.
 
 !!! NOTE
     homme_tool is not routinely tested on all supported machines, and the build can be broken without anyone noticing. If you encounter problems building homme_tool please reach out on the e3sm_help slack channel and include a detailed description of the error and the commands you used to produce the error.
+
+<!-- disable certain linter checks here for more readable nested markdown  -->
+<!-- markdownlint-disable  MD007 --> <!-- ul-indent -->
+<!-- markdownlint-disable  MD033 --> <!-- no-inline-html -->
 
 ## Step-by-Step Topography Generation
 
@@ -51,7 +55,7 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
     DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
     NE=30
     ```
-    
+
     Example settings for Chrysalis (ANL/LCRC):
 
     ```shell
@@ -81,12 +85,12 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
     map_file_src_to_np4=${map_root}/map_ne3000pg1_to_ne${NE}np4_fv2se_flx.nc
     map_file_src_to_pg2=${map_root}/map_ne3000pg1_to_ne${NE}pg2_traave.nc
     map_file_pg2_to_src=${map_root}/map_ne${NE}pg2_to_ne3000pg1_traave.nc
-    ```   
+    ```
 
 1. **Create grid and map files**
 
     1. source the unified env
-        
+
         Perlmutter (NERSC):
 
         ```shell
@@ -115,7 +119,7 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         ```
 
     1. Create map files
-        
+
         !!!WARNING
             this can take a long time
 
@@ -161,7 +165,7 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         ```
 
     1. Build homme_tool
-        
+
         The build process requires the user to select the appropriate cmake file that contains machine-specific settings.
 
         ```shell
@@ -205,13 +209,15 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         ```
 
 1. **Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data**
-    
+
     1. Remap smoothed topo to ne3000 grid
+
         ```shell
         ncremap -v PHIS -m ${map_file_pg2_to_src} -i ${topo_file_3} -o ${topo_file_4}
         ```
 
     1. Append unsmoothed ne3000 data
+
         ```shell
         ncks -A ${topo_file_0} ${topo_file_4}
         ```
@@ -225,11 +231,10 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         ```
 
     1. Remap anomalies back to target pg2 grid
-        
+
         ```shell
         ncremap -m ${map_file_src_to_pg2} -i ${topo_file_0} -o ${topo_file_6}
         ```
-
 
 1. **???? Append LANDFRAC and LANDM_COSLAT ????**
 
@@ -260,7 +265,7 @@ To submit the slurm batch job use `sbatch batch_topo_slurm.sh`
     #SBATCH --nodes=1
     #SBATCH --mail-user=hannah6@llnl.gov
     #SBATCH --mail-type=END,FAIL
-    
+
     e3sm_root=/pscratch/sd/w/whannah/e3sm_scratch/tmp_clone
     grid_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_grid
     map_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_map
@@ -326,6 +331,5 @@ To submit the slurm batch job use `sbatch batch_topo_slurm.sh`
     ncdiff ${topo_file_0} ${topo_file_4} ${topo_file_5}
     ncremap -m ${map_file_src_to_pg2} -i ${topo_file_0} -o ${topo_file_6}
     
-
     ```
 </details>
