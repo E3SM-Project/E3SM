@@ -1832,9 +1832,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#homme_tool" class="md-nav__link">
+  <a href="#data-processing-requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      homme_tool
+      Data Processing Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topography-smoothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Topography Smoothing
     </span>
   </a>
   
@@ -1844,6 +1853,15 @@
   <a href="#step-by-step-topography-generation" class="md-nav__link">
     <span class="md-ellipsis">
       Step-by-Step Topography Generation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-scripts-to-streamline-all-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch scripts to streamline all steps
     </span>
   </a>
   
@@ -1879,10 +1897,10 @@
 <p>Topography needs to be interpolated from a high resolution USGS file, and then doctored up a bit to allow the model to run stably with the new topography. The tool chain used to compute topography is documented in the following paper:  </p>
 <p><a href="https://www.geosci-model-dev.net/8/3975/2015/">P.H. Lauritzen, J.T. Bacmeister, P.F. Callaghan, M. Taylor,  NCAR_Topo (v1.0): NCAR global model topography generation software for unstructured grids, Geosci. Model Dev., 8, 3975-3986, 2015.</a></p>
 <h2 id="input-topography-data">Input Topography Data</h2>
-<p>Traditionally the topography generation for E3SM start with <strong>USGS-topo-cube3000.nc</strong>, which is a high-resolution topography dataset on a 3km cubed sphere grid derived from 1 km resolution source data.  This file is located in the <a href="https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/atm/cam/hrtopo/">CESM inputdata server here</a>.</p>
+<p>Traditionally the topography generation for E3SM start with <strong>USGS-topo-cube3000.nc</strong>, which is included in the [E3SM inputdata repository]. This is a high-resolution topography dataset on a 3km cubed sphere grid derived from 1 km resolution source data.  This file is located in the <a href="https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/atm/cam/hrtopo/">CESM inputdata server here</a>.</p>
 <p>For target resolutions of 3 km or finer it is recommended to use <strong>USGS-topo-cube12000.nc</strong>, which was created by Jishi Zhang in 2024. This file has a resolution of 750m created from a  500m/250m USGS GMTED2010 source DEM dataset (see <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/4189520033/800m+cubed+topo+generation+from+GMTED2010+15s+DEM">here</a> for more information).</p>
-<h2 id="homme_tool">homme_tool</h2>
-<p>homme_tool is included in the repository (<code>components/homme/test/tool</code>). This builds parts of the HOMME code directly, which is preferred to creating an offline tool. This tool allows us to process the topography data and address the following requirements:</p>
+<h2 id="data-processing-requirements">Data Processing Requirements</h2>
+<p>The workflow to generate topography data for the atmosphere model must address the following requirements:</p>
 <ul>
 <li>The dycore needs surface geopotential (<code>phi_s</code>) at GLL nodes (np4)</li>
 <li>The physics needs various things at FV cell centers (pg2)<ul>
@@ -1894,50 +1912,71 @@
 <li>The np4 to pg2 map of <code>phi_s</code> data must be equal to the FV <code>phi_s</code> data</li>
 <li>HOMME's smoothing operator must be used on <code>phi_s</code> for stability</li>
 </ul>
+<h2 id="topography-smoothing">Topography Smoothing</h2>
+<p>Smoothing of the input surface geopotential (<code>phi_s</code>) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use <code>homme_tool</code>, which is a standalone build of the HOMME dycor. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>homme_tool is not routinely tested on all supported machines, and the build can be broken without anyone noticing. If you encounter problems building homme_tool please reach out on the e3sm_help slack channel and include a detailed description of the error and the commands you used to produce the error.</p>
+</div>
 <h2 id="step-by-step-topography-generation">Step-by-Step Topography Generation</h2>
 <ol>
 <li>
-<p>Set some helpful environmental variables used in commands below
+<p><strong>Set some helpful environmental variables used in commands below</strong>
     <div class="highlight"><pre><span></span><code><span class="nv">e3sm_root</span><span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>E3SM<span class="w"> </span>source&gt;
 <span class="nv">grid_root</span><span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>write<span class="w"> </span>grid<span class="w"> </span>files&gt;
 <span class="nv">map_root</span><span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>write<span class="w"> </span>map<span class="w"> </span>files&gt;
 <span class="nv">topo_root</span><span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>write<span class="w"> </span>new<span class="w"> </span>topo<span class="w"> </span>files&gt;
-
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>E3SM<span class="w"> </span>inputdata&gt;
 <span class="nv">NE</span><span class="o">=</span>&lt;ne<span class="w"> </span>value<span class="w"> </span><span class="k">for</span><span class="w"> </span>target<span class="w"> </span>grid&gt;
 </code></pre></div>
-    <div class="highlight"><pre><span></span><code><span class="nv">e3sm_root</span><span class="o">=</span>/lustre/orion/cli115/proj-shared/hannah6/e3sm_scratch/tmp_clone
-<span class="nv">grid_root</span><span class="o">=</span>/lustre/orion/cli115/proj-shared/hannah6/HICCUP/files_grid
-<span class="nv">map_root</span><span class="o">=</span>/lustre/orion/cli115/proj-shared/hannah6/HICCUP/files_map
-<span class="nv">topo_root</span><span class="o">=</span>/lustre/orion/cli115/proj-shared/hannah6/HICCUP/files_topo
-
+    Example settings for Perlmutter (NERSC):
+    <div class="highlight"><pre><span></span><code><span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_grid
+<span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_map
+<span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
 <span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
-
-<span class="nv">e3sm_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/tmp_clone
-<span class="nv">grid_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_grid
-<span class="nv">map_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_map
-<span class="nv">topo_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_topo
-
-<span class="nv">e3sm_root</span><span class="o">=</span>/lcrc/group/e3sm/ac.whannah/scratch/chrys/tmp_clone
-<span class="nv">grid_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_grid
-<span class="nv">map_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_map
-<span class="nv">topo_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/files_topo
+</code></pre></div>
+    Example settings for Chrysalis (ANL/LCRC):
+    <div class="highlight"><pre><span></span><code><span class="nv">grid_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_grid
+<span class="nv">map_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_map
+<span class="nv">topo_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
+<span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
+</code></pre></div>
+    Make sure the directories exist:
+    <div class="highlight"><pre><span></span><code>mkdir -p ${grid_root} ${map_root} ${topo_root}
 </code></pre></div></p>
 </li>
 <li>
-<p>Set machine specific environment (this sets <code>DIN_LOC_ROOT</code>)
-    <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
-<span class="nb">eval</span><span class="w"> </span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/get_case_env<span class="k">)</span>
-<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span>--macros-format<span class="w"> </span>Makefile<span class="w"> </span>--mpilib<span class="w"> </span>mpi-serial
-<span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
-<span class="c1"># above approach is too slow - will this work?</span>
-<span class="nb">eval</span><span class="w"> </span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/get_case_env<span class="k">)</span>
-<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+<p><strong>Specify all topo and map file paths for consistency</strong>
+    <div class="highlight"><pre><span></span><code><span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube3000.nc
+<span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
+<span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_phis.nc
+<span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed.nc
+<span class="nv">topo_file_4</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_ne3000pg1.nc
+<span class="nv">topo_file_5</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_ne3000pg1_anomalies.nc
+<span class="nv">topo_file_6</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_anomalies.nc
+<span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne3000pg1_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_fv2se_flx.nc
+<span class="nv">map_file_src_to_pg2</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne3000pg1_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_traave.nc
+<span class="nv">map_file_pg2_to_src</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_to_ne3000pg1_traave.nc
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Create grid and map files</strong></p>
+<ol>
+<li>
+<p>source the unified env</p>
+<p>Perlmutter (NERSC):
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
+</code></pre></div>
+Chrysalis (ANL/LCRC):
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
 </code></pre></div></p>
 </li>
 <li>
 <p>Create grid files for the input high res topo
     <div class="highlight"><pre><span></span><code>GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="m">3000</span><span class="w">  </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne3000.g
-ConvertExodusToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne3000.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne3000.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc
 </code></pre></div></p>
 </li>
 <li>
@@ -1948,36 +1987,64 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 </code></pre></div></p>
 </li>
 <li>
-<p>Create map file
-    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne3000pg1_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
-</code></pre></div></p>
+<p>Create map files</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>this can take a long time</p>
+</div>
+<ol>
+<li>from source to target np4
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span>
+</code></pre></div></li>
+<li>from source to target pg2
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-a<span class="w"> </span>traave<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_pg2</span><span class="si">}</span>
+</code></pre></div></li>
+<li>from target to source (needed for calculating sub-grid anomalies on target grid)
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-a<span class="w"> </span>traave<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_pg2_to_src</span><span class="si">}</span>
+</code></pre></div></li>
+</ol>
 </li>
+</ol>
+</li>
+<li>
+<p><strong>Create new topograpy data on target grid</strong></p>
+<ol>
 <li>
 <p>Map high-res topo to target np4 grid
-    <div class="highlight"><pre><span></span><code><span class="nv">map_file</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne3000pg1_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
-ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube3000.nc<span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 </code></pre></div></p>
 </li>
 <li>
-<p>Build homme_tool
-    <div class="highlight"><pre><span></span><code><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/get_case_env<span class="k">)</span>
-<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
-
-<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
-
-<span class="nv">E3SM_MACH</span><span class="o">=</span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/list_e3sm_tests<span class="w"> </span>cime_tiny<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ERS<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f<span class="w"> </span><span class="m">4</span><span class="w"> </span>-d<span class="w"> </span>.<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f<span class="w"> </span><span class="m">1</span><span class="w"> </span>-d<span class="w"> </span>_<span class="w"> </span><span class="k">)</span>
-<span class="nv">E3SM_COMP</span><span class="o">=</span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/list_e3sm_tests<span class="w"> </span>cime_tiny<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ERS<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f<span class="w"> </span><span class="m">4</span><span class="w"> </span>-d<span class="w"> </span>.<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f<span class="w"> </span><span class="m">2</span><span class="w"> </span>-d<span class="w"> </span>_<span class="w"> </span><span class="k">)</span>
-
-<span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/perlmutter-nocuda-gnu.cmake</span>
-<span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/perlmutter-gnu.cmake</span>
-<span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/crusher-gpumpi.cmake</span>
+<p>Compute phi_s on the np4 grid
+    <div class="highlight"><pre><span></span><code>ncap2<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
+</code></pre></div></p>
+</li>
+</ol>
+</li>
+<li>
+<p><strong>Use homme_tool to smooth topography</strong></p>
+<ol>
+<li>
+<p>Set the machine specific environment
+    <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+<span class="nb">eval</span><span class="w"> </span><span class="k">$(</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/Tools/get_case_env<span class="k">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Build homme_tool</p>
+<p>The build process requires the user to select the appropriate cmake file that contains machine-specific settings.
+<div class="highlight"><pre><span></span><code><span class="nv">mach_file</span><span class="o">=</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/cmake/machineFiles/perlmutter-gnu.cmake
 <span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/chrysalis.cmake</span>
-<span class="nv">mach_file</span><span class="o">=</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime_config/machines/cmake_macros/gnu_chrysalis.cmake
-<span class="c1"># E3SM_MACH=$(${e3sm_root}/cime/CIME/Tools/list_e3sm_tests cime_tiny | grep ERS | cut -f 4 -d . | cut -f 1 -d _ )</span>
-<span class="c1"># E3SM_COMP=$(${e3sm_root}/cime/CIME/Tools/list_e3sm_tests cime_tiny | grep ERS | cut -f 4 -d . | cut -f 2 -d _ )</span>
-<span class="c1"># mach_file=${e3sm_root}/cime_config/machines/cmake_macros/${E3SM_COMP}_${E3SM_MACH}.cmake</span>
-<span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/${E3SM_MACH}.cmake</span>
-cmake<span class="w"> </span>-C<span class="w"> </span><span class="si">${</span><span class="nv">mach_file</span><span class="si">}</span><span class="w"> </span>-DBUILD_HOMME_WITHOUT_PIOLIBRARY<span class="o">=</span>OFF<span class="w"> </span>-DPREQX_PLEV<span class="o">=</span><span class="m">26</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/
+
+cmake<span class="w"> </span>-C<span class="w"> </span><span class="si">${</span><span class="nv">mach_file</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_THETA_KOKKOS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_PREQX_KOKKOS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DHOMME_ENABLE_COMPOSE<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DHOMME_BUILD_EXECS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_TOOL<span class="o">=</span>TRUE<span class="w"> </span><span class="se">\</span>
+-DPREQX_PLEV<span class="o">=</span><span class="m">26</span><span class="w"> </span><span class="se">\</span>
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+
 make<span class="w"> </span>-j4<span class="w"> </span>homme_tool
 </code></pre></div></p>
 </li>
@@ -1997,26 +2064,134 @@ make<span class="w"> </span>-j4<span class="w"> </span>homme_tool
 <span class="s">/</span>
 <span class="s">&amp;analysis_nl</span>
 <span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
-<span class="s">infilenames = &#39;${topo_root}/USGS-topo_${NE}np4.nc&#39;, &#39;${topo_root}/USGS-topo_${NE}np4_smoothed&#39;</span>
+<span class="s">infilenames = &#39;${topo_file_2}&#39;, &#39;${topo_file_3::-3}&#39;</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
 
-mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span>~/E3SM/E3SM_SRC4/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+</code></pre></div></p>
+</li>
+</ol>
+</li>
+<li>
+<p><strong>Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data</strong></p>
+<ol>
+<li>
+<p>Remap smoothed topo to ne3000 grid
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-v<span class="w"> </span>PHIS<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_pg2_to_src</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
 </code></pre></div></p>
 </li>
 <li>
-<p>Compute phi_s on the np4 grid</p>
+<p>Append unsmoothed ne3000 data
+<div class="highlight"><pre><span></span><code>ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
+</code></pre></div></p>
 </li>
 <li>
-<p>Use homme_tool to apply dycore specific smoothing on GLL grid.</p>
+<p>Calculate anomalies on ne3000 grid</p>
+<p>(Note that for ncdiff the operation is <code>file_3 = file_1 - file_2</code>)
+<div class="highlight"><pre><span></span><code>ncdiff<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_5</span><span class="si">}</span>
+</code></pre></div></p>
 </li>
 <li>
-<p>Compute SGH, SGH30, LANDFRAC, and LANDM_COSLAT on the pg2 grid, using the pg2 phi_s data.</p>
-</li>
-<li>
-<p>Append the GLL phi_s data to the output of step 4.</p>
+<p>Remap anomalies back to target pg2 grid
+    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_pg2</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_6</span><span class="si">}</span>
+</code></pre></div></p>
 </li>
 </ol>
+</li>
+<li>
+<p><strong>???? Append LANDFRAC and LANDM_COSLAT ????</strong></p>
+</li>
+<li>
+<p><strong>Append the GLL phi_s data to the output of step 4</strong>
+    <div class="highlight"><pre><span></span><code><span class="nv">TOPO_FILE_2</span><span class="o">=</span><span class="si">${</span><span class="nv">DATA_FILE_ROOT</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_phis_x6t_tmp
+<span class="nv">TOPO_FILE_3</span><span class="o">=</span><span class="si">${</span><span class="nv">DATA_FILE_ROOT</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_x6tensor.nc
+ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">TOPO_FILE_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">TOPO_FILE_3</span><span class="si">}</span>
+</code></pre></div></p>
+</li>
+</ol>
+<h2 id="batch-scripts-to-streamline-all-steps">Batch scripts to streamline all steps</h2>
+<p>Running through all the steps above can be tedious and time-consuming. The batch script below includes all these steps as well as example Slurm batch directives for running on Perlmutter CPU nodes(NERSC). The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. Also, be sure to comment out any parts that have already been completed in advance (like creating the grid files).</p>
+<p>To submit the slurm batch job use <code>sbatch batch_topo_slurm.sh</code></p>
+<details open>
+    <summary>batch_topo_slurm.sh</summary>
+    <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --constraint=cpu</span>
+<span class="c1">#SBATCH --account=m3312</span>
+<span class="c1">#SBATCH -q regular</span>
+<span class="c1">#SBATCH --job-name=generate_map</span>
+<span class="c1">#SBATCH --output=~/E3SM/logs_slurm/slurm-%x-%j.out</span>
+<span class="c1">#SBATCH --time=24:00:00</span>
+<span class="c1">#SBATCH --nodes=1</span>
+<span class="c1">#SBATCH --mail-user=hannah6@llnl.gov</span>
+<span class="c1">#SBATCH --mail-type=END,FAIL</span>
+
+<span class="nv">e3sm_root</span><span class="o">=</span>/pscratch/sd/w/whannah/e3sm_scratch/tmp_clone
+<span class="nv">grid_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_grid
+<span class="nv">map_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_map
+<span class="nv">topo_root</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
+
+<span class="nv">NE</span><span class="o">=</span><span class="m">30</span>
+
+<span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube3000.nc
+<span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
+<span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_phis.nc
+<span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed.nc
+<span class="nv">topo_file_4</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_ne3000pg1.nc
+<span class="nv">topo_file_5</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4_smoothed_ne3000pg1_anomalies.nc
+
+<span class="nb">source</span><span class="w"> </span>/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
+
+<span class="c1"># Create grid files for the input high res topo</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="m">3000</span><span class="w">  </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne3000.g
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne3000.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc
+
+<span class="c1"># Create grid files target EAM grid</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.nc
+
+<span class="c1"># Create map file - source to target</span>
+ncremap<span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>.g<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne3000pg1_to_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>np4.nc
+
+<span class="c1"># Create map file - target to source</span>
+ncremap<span class="w"> </span>-a<span class="w"> </span>traave<span class="w"> </span>-5<span class="w"> </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2.nc<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne3000pg1.nc<span class="w"> </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE</span><span class="si">}</span>pg2_to_ne3000pg1.nc
+
+<span class="c1"># Map high-res topo to target np4 grid</span>
+ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+
+<span class="c1"># Compute phi_s on the np4 grid</span>
+ncap2<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
+
+<span class="c1"># Use homme_tool to smooth topography</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
+<span class="s">&amp;ctl_nl</span>
+<span class="s">ne = ${NE}</span>
+<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE}.g&quot;</span>
+<span class="s">smooth_phis_p2filt = 0</span>
+<span class="s">smooth_phis_numcycle = 12  # v3 uses 6 for less smoothing</span>
+<span class="s">smooth_phis_nudt = 4e-16</span>
+<span class="s">hypervis_scaling = 2</span>
+<span class="s">se_ftype = 2 ! actually output NPHYS; overloaded use of ftype</span>
+<span class="s">/</span>
+<span class="s">&amp;vert_nl</span>
+<span class="s">/</span>
+<span class="s">&amp;analysis_nl</span>
+<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
+<span class="s">infilenames = &#39;${topo_file_2}&#39;, &#39;${topo_file_3::-3}&#39;</span>
+<span class="s">/</span>
+<span class="s">EOF</span>
+
+mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+
+<span class="c1"># Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data</span>
+ncremap<span class="w"> </span>-v<span class="w"> </span>PHIS<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_pg2_to_src</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
+ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
+ncdiff<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_5</span><span class="si">}</span>
+ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_pg2</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_6</span><span class="si">}</span>
+</code></pre></div>
+</details>
 
 
 
