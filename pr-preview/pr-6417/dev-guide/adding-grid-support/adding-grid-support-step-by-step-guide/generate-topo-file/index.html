@@ -1913,11 +1913,14 @@
 <li>HOMME's smoothing operator must be used on <code>phi_s</code> for stability</li>
 </ul>
 <h2 id="topography-smoothing">Topography Smoothing</h2>
-<p>Smoothing of the input surface geopotential (<code>phi_s</code>) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use <code>homme_tool</code>, which is a standalone build of the HOMME dycor. </p>
+<p>Smoothing of the input surface geopotential (<code>phi_s</code>) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use <code>homme_tool</code>, which is a standalone build of the HOMME dycor.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>homme_tool is not routinely tested on all supported machines, and the build can be broken without anyone noticing. If you encounter problems building homme_tool please reach out on the e3sm_help slack channel and include a detailed description of the error and the commands you used to produce the error.</p>
 </div>
+<!-- disable certain linter checks here for more readable nested markdown  -->
+<!-- markdownlint-disable  MD007 -->
+<!-- markdownlint-disable  MD033 -->
 <h2 id="step-by-step-topography-generation">Step-by-Step Topography Generation</h2>
 <ol>
 <li>
@@ -2083,14 +2086,14 @@ mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span
 <p><strong>Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data</strong></p>
 <ol>
 <li>
-<p>Remap smoothed topo to ne3000 grid
-    <div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-v<span class="w"> </span>PHIS<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_pg2_to_src</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
-</code></pre></div></p>
+<p>Remap smoothed topo to ne3000 grid</p>
+<div class="highlight"><pre><span></span><code>ncremap<span class="w"> </span>-v<span class="w"> </span>PHIS<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_pg2_to_src</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
+</code></pre></div>
 </li>
 <li>
-<p>Append unsmoothed ne3000 data
-    <div class="highlight"><pre><span></span><code>ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
-</code></pre></div></p>
+<p>Append unsmoothed ne3000 data</p>
+<div class="highlight"><pre><span></span><code>ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_4</span><span class="si">}</span>
+</code></pre></div>
 </li>
 <li>
 <p>Calculate anomalies on ne3000 grid</p>
@@ -2119,7 +2122,7 @@ ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span>
 <h2 id="batch-scripts-to-streamline-all-steps">Batch scripts to streamline all steps</h2>
 <p>Running through all the steps above can be tedious and time-consuming. The batch script below includes all these steps as well as example Slurm batch directives for running on Perlmutter CPU nodes(NERSC). The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. Also, be sure to comment out any parts that have already been completed in advance (like creating the grid files).</p>
 <p>To submit the slurm batch job use <code>sbatch batch_topo_slurm.sh</code></p>
-<details open>
+<!-- ul-indent --><!-- no-inline-html --><details open>
     <summary>batch_topo_slurm.sh</summary>
     <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 <span class="c1">#SBATCH --constraint=cpu</span>
