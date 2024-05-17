@@ -29,12 +29,7 @@ ZMDeepConvection::ZMDeepConvection (const ekat::Comm& comm,const ekat::Parameter
 void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace std;
-  using namespace ekat;
-  using namespace units;
-
-  auto Q = kg/kg;
-  auto nondim = m/m;
-  Q.set_string("kg/kg");
+  using namespace ekat::units;
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
@@ -57,9 +52,9 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
   set_grid_opts(opt_map);
 
   for ( auto i = opt_map.begin(); i != opt_map.end(); ++i) {
-    add_required_field((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
+    add_required_field((i->second).name, layout_opts[((i->second).field_idx)], kg/kg, grid->name());
     if ( (i->second).isOut == true ) {
-      add_computed_field((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
+      add_computed_field((i->second).name, layout_opts[((i->second).field_idx)], kg/kg, grid->name());
     }
   }
 

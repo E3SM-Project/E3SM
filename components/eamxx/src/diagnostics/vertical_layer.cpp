@@ -29,10 +29,8 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-  auto m2 = m*m;
-  auto s2 = s*s;
+  auto m2 = pow(m,2);
+  auto s2 = pow(s,2);
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
@@ -48,7 +46,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name, ps);
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
-  add_field<Required>("qv",             scalar3d_layout_mid, Q,     grid_name, ps);
+  add_field<Required>("qv",             scalar3d_layout_mid, kg/kg, grid_name, ps);
 
   // Only need phis if computing geopotential_*
   if (not m_only_compute_dz and not m_from_sea_level) {

@@ -23,12 +23,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 {
   using namespace ekat::units;
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Qunit = kg/kg;
-  Qunit.set_string("kg/kg");
-  auto nondim = Units::nondimensional();
-
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
 
@@ -56,21 +50,22 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   constexpr int ps = Spack::n;
 
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  const auto nondim = Units::nondimensional();
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
   add_field<Required>("omega",          scalar3d_mid, Pa/s, grid_name, ps);
   add_field<Required>("surf_sens_flux", scalar2d    , W/m2, grid_name);
   add_field<Required>("surf_mom_flux",  vector2d    , N/m2, grid_name);
 
-  add_field<Updated>("surf_evap",       scalar2d    , kg/m2/s, grid_name);
-  add_field<Updated> ("T_mid",          scalar3d_mid, K,       grid_name, ps);
-  add_field<Updated> ("qv",             scalar3d_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("surf_evap",       scalar2d    , kg/(m2*s), grid_name);
+  add_field<Updated> ("T_mid",          scalar3d_mid, K,         grid_name, ps);
+  add_field<Updated> ("qv",             scalar3d_mid, kg/kg,     grid_name, "tracers", ps);
 
   // If TMS is a process, add surface drag coefficient to required fields
   if (m_params.get<bool>("apply_tms", false)) {
-    add_field<Required>("surf_drag_coeff_tms", scalar2d,  kg/s/m2, grid_name);
+    add_field<Required>("surf_drag_coeff_tms", scalar2d,  kg/(m2*s), grid_name);
   }
 
   // Input variables
@@ -84,19 +79,19 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",            scalar3d_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("qc",            scalar3d_mid, kg/kg,   grid_name, "tracers", ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
 
   // Output variables
-  add_field<Computed>("pbl_height",    scalar2d    , m,           grid_name);
-  add_field<Computed>("inv_qc_relvar", scalar3d_mid, Qunit*Qunit, grid_name, ps);
+  add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
+  add_field<Computed>("inv_qc_relvar", scalar3d_mid, pow(kg/kg,2), grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
-    add_field<Computed>("vapor_flux", scalar2d, kg/m2/s, grid_name);
+    add_field<Computed>("vapor_flux", scalar2d, kg/(m2*s), grid_name);
     add_field<Computed>("water_flux", scalar2d, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d, m/s,     grid_name);
     add_field<Computed>("heat_flux",  scalar2d, W/m2,    grid_name);

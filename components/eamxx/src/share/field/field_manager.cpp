@@ -46,8 +46,8 @@ void FieldManager::register_field (const FieldRequest& req)
       const auto id0 = m_fields[id.name()]->get_header().get_identifier();
       EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
           "Error! Field '" + id.name() + "' already registered with different units:\n"
-          "         - input field units:  " + to_string(id.get_units()) + "\n"
-          "         - stored field units: " + to_string(id0.get_units()) + "\n"
+          "         - input field units:  " + id.get_units().to_string() + "\n"
+          "         - stored field units: " + id0.get_units().to_string() + "\n"
           "       Please, check and make sure all atmosphere processes use the same units.\n");
 
       EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),

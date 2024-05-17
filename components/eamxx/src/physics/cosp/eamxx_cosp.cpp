@@ -31,16 +31,14 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
 void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
+  using namespace ekat::prefixes;
   using namespace ShortFieldTagsNames;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-  auto nondim = Units::nondimensional();
-  auto percent = Units::nondimensional();
-  percent.set_string("%");
-  auto micron = m / 1000000;
+  Units nondim = Units::nondimensional();
+  Units percent (nondim,"%");
+  auto micron = micro*m;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
@@ -68,9 +66,9 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
   //add_field<Required>("height_int",  scalar3d_int, m,      grid_name);
   add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
-  add_field<Required>("qv",               scalar3d_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qc",               scalar3d_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qi",               scalar3d_mid, Q,      grid_name, "tracers");
+  add_field<Required>("qv",               scalar3d_mid, kg/kg,      grid_name, "tracers");
+  add_field<Required>("qc",               scalar3d_mid, kg/kg,      grid_name, "tracers");
+  add_field<Required>("qi",               scalar3d_mid, kg/kg,      grid_name, "tracers");
   add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
   // Optical properties, should be computed in radiation interface
   add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth

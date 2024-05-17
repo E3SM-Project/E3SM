@@ -953,7 +953,7 @@ register_variables(const std::string& filename,
     // in the simulation and not the one used in the output file.
     const auto& layout = fid.get_layout();
     auto vec_of_dims   = set_vec_of_dims(layout);
-    std::string units = fid.get_units().get_string();
+    std::string units = fid.get_units().to_string();
 
     // Gather longname
     auto longname = m_longnames.get_longname(name);
