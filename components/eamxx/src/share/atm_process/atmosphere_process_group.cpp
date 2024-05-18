@@ -401,9 +401,7 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
   } else {
     run_parallel(dt);
   }
-
-          std::cout << "process GROUP RUN is done\n" << std::flush;
-
+  std::cout << "process GROUP RUN is done\n" << std::flush;
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
@@ -411,9 +409,7 @@ void AtmosphereProcessGroup::run_sequential (const double dt) {
   auto ts = timestamp();
   ts += dt;
 
-
-
-   auto& c = scream::ScreamContext::singleton();
+  auto& c = scream::ScreamContext::singleton();
   auto ad = c.getNonConst<scream::control::AtmosphereDriver>();
   const auto gn = "Physics";
   //const auto gn = "Physics GLL";
@@ -435,7 +431,6 @@ std::cout << "OG T field (" <<std::to_string(ii)<<","<<std::to_string(jj)<<") = 
 	<<"\n"<<std::flush;
   }
 #endif
-
 
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
@@ -474,7 +469,11 @@ std::cout << "OG  proc AFTER RUN " << atm_proc->name() <<"\n"<<std::flush;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
     m_atm_logger->debug("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
+
+std::cout << "OG AFTER mem usage " << atm_proc->name() <<"\n"<<std::flush;
+
   }
+std::cout << "OG AFTER process group " <<"\n"<<std::flush;
 }
 
 void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
