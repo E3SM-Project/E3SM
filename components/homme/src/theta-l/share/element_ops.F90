@@ -59,7 +59,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
+  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF, rearth
   use control_mod,    only: use_moisture, theta_hydrostatic_mode, hv_ref_profiles
   use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
@@ -705,11 +705,14 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   type(element_t),     intent(inout):: elem
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl
-  real(real_kind), dimension(np,np,nlev) :: pi
+  integer :: k,tl,ii
+  real(real_kind), dimension(np,np,nlev) :: pi, pmid
+  real(real_kind), dimension(np,np) :: ptop
+  real(real_kind) :: r0
 
-  real(real_kind), dimension(np,np,nlev) :: pnh,exner
-  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
+  real(real_kind), dimension(np,np,nlev) :: pnh,exner, dp3d, vtheta
+  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i, dp3d_i, phiSA, phiDA, r3int, dpnh,&
+                                             rinter, rhat, munew
 
   tl=1
 
@@ -733,6 +736,94 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 #endif
   enddo
 #endif
+
+
+
+#if 1
+!use above computed mu to see what we have originally
+
+!   print *, dpnh_dp_i(1,1,1:10)
+
+   r0=rearth
+   dp3d = elem%state%dp3d(:,:,:,tl)
+   vtheta = elem%state%vtheta_dp(:,:,:,tl)
+
+
+do ii=1,12
+
+   phiSA = elem%state%phinh_i(:,:,:,tl)
+
+!print *, 'dp3d', dp3d(1,1,:)
+!print *, 'phiSA', phiSA(1,1,:)
+!print *, 'vtheta', vtheta(1,1,:)
+
+   rinter = phiSA(:,:,:)/g + r0
+   rhat = rinter/r0 ! r/r0
+
+!print *, '1/rhat', 1/rhat(1,1,:)
+!print *, '1/rhat/rhat', 1/rhat(1,1,:)/rhat(1,1,:)
+
+   ptop(:,:) = hvcoord%hyai(1)*hvcoord%ps0/rhat(:,:,1)/rhat(:,:,1)  ! hydrostatic ptop/rhat^2
+
+!print *, 'Pi TOP', hvcoord%hyai(1)*hvcoord%ps0
+!print *, 'r0', r0
+!print *, 'g', g
+!print *, 'p0', p0
+
+!now compute dp_int like in eos:
+   dp3d_i(:,:,1) = dp3d(:,:,1)
+   dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+   do k=2,nlev
+      dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+   end do
+   dpnh = dp3d_i / rhat / rhat
+
+!print *, 'dp_i', dp3d_i(1,1,:)
+!print *, 'dpnh', dpnh(1,1,:)
+
+   pmid(:,:,1) = ptop(:,:) + dpnh(:,:,1)/2
+
+   do k=2,nlev
+      pmid(:,:,k) = pmid(:,:,k-1) + dpnh(:,:,k)
+   enddo
+
+!print *, 'pmid', pmid(1,1,:)
+
+   !reconstruct (r/r0)^3
+   r3int(:,:,nlevp) = (rinter(:,:,nlevp) / r0)**3
+
+!print *, 'rinter', rinter(1,1,:)
+!print *, 'bot r3', r3int(1,1,nlevp)
+!print *, 'vtheta', vtheta(1,1,:)
+
+   do k=nlev,1,-1
+!print *,'k=',k
+!print *,'k+1 r3int', r3int(1,1,k+1)
+
+      r3int(:,:,k) = r3int(:,:,k+1) + 3.0 * rgas * vtheta(:,:,k) * (pmid(:,:,k)/p0)**kappa / pmid(:,:,k) / g / r0
+
+!print *,'k r3int', r3int(1,1,k)
+
+   enddo
+   phiDA(:,:,1:nlev) = g*(r3int(:,:,1:nlev)**(1.0/3.0)-1)*r0
+   phiDA(:,:,nlevp) = phiSA(:,:,nlevp)
+
+!print *, 'r3int(1,1,1:nlev)**(1/3)', r3int(1,1,1:nlev)**(1.0/3.0)
+!print *, 'phiDA', phiDA(1,1,:)
+
+   call pnh_and_exner_from_eos(hvcoord,vtheta,&
+       dp3d(:,:,:),phiDA,pnh,exner,munew,caller='NEW MU')
+
+!   print *,'NEW MU', munew(1,1,1:10)
+
+   elem%state%phinh_i(:,:,:,tl) = phiDA
+
+!stop
+
+enddo
+
+#endif
+
 
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
