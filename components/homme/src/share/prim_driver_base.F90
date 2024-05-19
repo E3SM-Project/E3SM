@@ -1115,7 +1115,7 @@ contains
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
        ! homme.
-!       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
        call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1609,6 +1609,8 @@ contains
   real (kind=real_kind)  :: p_exner(np,np,nlev)
   real (kind=real_kind)  :: dphi(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp), rs(np,np), r1(np,np), r0, aa, bb
+
+  real (kind=real_kind)  :: adjp(np,np,nlev)
 #endif
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1661,6 +1663,8 @@ contains
 
    call pnh_and_exner_from_eos3(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         dphi,pnh,exner,dpnh_dp_i,elem%state%phis,'forcing',p_exner=p_exner)
+
+adjp=pnh
 
    do k=1,nlev
       pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
@@ -1727,6 +1731,11 @@ contains
                   if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
+
+adjp(i,j,k)=adjp(i,j,k)+fq
+
+!if(abs(fq)>0.0) stop
+
                   endif
                enddo
             enddo
@@ -1774,7 +1783,13 @@ contains
       do k=1,nlev
 
 !da issue NEEDS REVISITING
-         pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+         
+!pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+
+
+!print *, 'diff for pnh and adjp', pnh(1,1,:)-adjp(1,1,:)
+
+pnh(:,:,k)=adjp(:,:,k)
 #ifdef HOMMEXX_BFB_TESTING
          exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
 #else
