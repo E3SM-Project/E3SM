@@ -548,10 +548,12 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
     EKAT_KERNEL_ASSERT_MSG(dry_aero.int_aero_nmr[m].data(),
       "int_aero_nmr not defined for dry aerosol state!");
     progs.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
+    //std::cout<<"progs.n_mode_i index:"<<m<<" stores int_aero_nmr index:"<<m<<std::endl;
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
-        int prg_idx = mam4::utils::get_prognostics_index(m,a);//Index of HAERO's prognostics 
+        int prg_idx = a;//mam4::utils::get_prognostics_index(m,a);//Index of HAERO's prognostics 
         progs.q_aero_i[m][prg_idx] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+        //std::cout<<"progs.q_aero_i indices:"<<m<<" "<<a<<" stores int_aero_mmr indices:"<<m<<" "<<a<<std::endl;
       }
     }
   }
@@ -576,7 +578,7 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
     progs.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        int prg_idx = mam4::utils::get_prognostics_index(m,a); //Index of HAERO's prognostics array
+        int prg_idx = a;//mam4::utils::get_prognostics_index(m,a); //Index of HAERO's prognostics array
         progs.q_aero_c[m][prg_idx] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
     }
@@ -671,21 +673,21 @@ void compute_dry_mixing_ratios(const Team& team,
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     const auto qv_ik = wet_atm.qv(i,k);
     for (int m = 0; m < num_aero_modes(); ++m) {
-      dry_aero.int_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_nmr[m](i,k), qv_ik);
+      dry_aero.int_aero_nmr[m](i,k) = wet_aero.int_aero_nmr[m](i,k);//PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_nmr[m](i,k), qv_ik);
       if (dry_aero.cld_aero_nmr[m].data()) {
-        dry_aero.cld_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_nmr[m](i,k), qv_ik);
+        dry_aero.cld_aero_nmr[m](i,k) = wet_aero.cld_aero_nmr[m](i,k);//PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_nmr[m](i,k), qv_ik);
       }
       for (int a = 0; a < num_aero_species(); ++a) {
         if (dry_aero.int_aero_mmr[m][a].data()) {
-          dry_aero.int_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_mmr[m][a](i,k), qv_ik);
+          dry_aero.int_aero_mmr[m][a](i,k) = wet_aero.int_aero_mmr[m][a](i,k);//PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_mmr[m][a](i,k), qv_ik);
         }
         if (dry_aero.cld_aero_mmr[m][a].data()) {
-          dry_aero.cld_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_mmr[m][a](i,k), qv_ik);
+          dry_aero.cld_aero_mmr[m][a](i,k) = wet_aero.cld_aero_mmr[m][a](i,k);//PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_mmr[m][a](i,k), qv_ik);
         }
       }
     }
     for (int g = 0; g < num_aero_gases(); ++g) {
-      dry_aero.gas_mmr[g](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.gas_mmr[g](i,k), qv_ik);
+      dry_aero.gas_mmr[g](i,k) = wet_aero.gas_mmr[g](i,k);//PF::calculate_drymmr_from_wetmmr(wet_aero.gas_mmr[g](i,k), qv_ik);
     }
   });
 }
