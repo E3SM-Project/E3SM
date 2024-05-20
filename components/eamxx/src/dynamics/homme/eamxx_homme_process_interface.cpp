@@ -115,10 +115,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   constexpr int QTL = HOMMEXX_Q_NUM_TIME_LEVELS;
   constexpr int N   = HOMMEXX_PACK_SIZE;
 
-  // Some units
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int nlev_mid = m_dyn_grid->get_num_vertical_levels();
   const int nlev_int = nlev_mid+1;
@@ -161,8 +157,8 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       into the n0 time-slice of Homme's vtheta_dp, and then do the conversion
   //       T_mid->VTheta_dp in place.
 
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   // Note: qv is needed to transform T<->Theta
 
@@ -176,7 +172,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("pseudo_density_dry", pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Updated> ("ps",                 pg_scalar2d    , Pa,    pgn);
-  add_field<Updated >("qv",                 pg_scalar3d_mid, Q,     pgn,"tracers",N);
+  add_field<Updated >("qv",                 pg_scalar3d_mid, kg/kg, pgn,"tracers",N);
   add_field<Updated >("phis",               pg_scalar2d    , m2/s2, pgn);
   add_field<Computed>("p_int",              pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_mid",              pg_scalar3d_mid, Pa,    pgn,N);

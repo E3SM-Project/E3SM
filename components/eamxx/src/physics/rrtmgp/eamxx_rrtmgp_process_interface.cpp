@@ -42,17 +42,12 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
   using namespace ekat::units;
+  using namespace ekat::prefixes;
 
   // Declare the set of fields used by rrtmgp
-  auto kgkg = kg/kg;
-  kgkg.set_string("kg/kg");
-  auto m2 = m * m;
-  auto Wm2 = W / m / m;
-  Wm2.set_string("W/m2");
-  auto nondim = m/m;  // dummy unit for non-dimensional fields
-  auto micron = m / 1000000;
-  auto molmol = mol/mol;
-  molmol.set_string("mol/mol");
+  Units m2(m*m,"m2");
+  auto nondim = Units::nondimensional();
+  auto micron = micro*m;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
@@ -92,24 +87,24 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("sfc_alb_dir_nir", scalar2d, nondim, grid_name);
   add_field<Required>("sfc_alb_dif_vis", scalar2d, nondim, grid_name);
   add_field<Required>("sfc_alb_dif_nir", scalar2d, nondim, grid_name);
-  add_field<Required>("qc", scalar3d_mid, kgkg, grid_name);
+  add_field<Required>("qc", scalar3d_mid, kg/kg, grid_name);
   add_field<Required>("nc", scalar3d_mid, 1/kg, grid_name);
-  add_field<Required>("qi", scalar3d_mid, kgkg, grid_name);
+  add_field<Required>("qi", scalar3d_mid, kg/kg, grid_name);
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
   add_field<Required>("eff_radius_qc", scalar3d_mid, micron, grid_name);
   add_field<Required>("eff_radius_qi", scalar3d_mid, micron, grid_name);
-  add_field<Required>("qv",scalar3d_mid,kgkg,grid_name);
+  add_field<Required>("qv",scalar3d_mid,kg/kg,grid_name);
   add_field<Required>("surf_lw_flux_up",scalar2d,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Required>(it + "_volume_mix_ratio", scalar3d_mid, molmol, grid_name);
+      add_field<Required>(it + "_volume_mix_ratio", scalar3d_mid, mol/mol, grid_name);
     } else {
       // the rest are computed by RRTMGP from prescribed surface values
       // NOTE: this may change at some point
-      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_mid, molmol, grid_name);
+      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_mid, mol/mol, grid_name);
     }
   }
   // Required aerosol optical properties from SPA
@@ -127,26 +122,26 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_mid, K  , grid_name);
-  add_field<Computed>("SW_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clrsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, Wm2, grid_name);
-  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, Wm2, grid_name);
+  add_field<Computed>("SW_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnclrsky_flux_dn_dir", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("SW_clnsky_flux_dn_dir", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clnclrsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
@@ -179,12 +174,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {

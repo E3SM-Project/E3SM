@@ -230,14 +230,15 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using geo_view_host = AtmosphereInput::view_1d_host;
 
   using namespace ShortFieldTagsNames;
-  FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
-  const auto units = ekat::units::Units::nondimensional();
-  auto lev_unit = ekat::units::Units::nondimensional();;
-  lev_unit.set_string("mb");
+  using namespace ekat::units;
 
-  auto hyam = grid->create_geometry_data("hyam", layout_mid, units);
-  auto hybm = grid->create_geometry_data("hybm", layout_mid, units);
-  auto lev  = grid->create_geometry_data("lev",  layout_mid, lev_unit);
+  FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
+  Units nondim = Units::nondimensional();
+  Units mbar (100*Pa,"mb");
+
+  auto hyam = grid->create_geometry_data("hyam", layout_mid, nondim);
+  auto hybm = grid->create_geometry_data("hybm", layout_mid, nondim);
+  auto lev  = grid->create_geometry_data("lev",  layout_mid, mbar);
 
   // Create host mirrors for reading in data
   std::map<std::string,geo_view_host> host_views = {

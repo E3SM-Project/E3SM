@@ -91,13 +91,10 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  auto q_unit = kg/kg; // mass mixing ratios [kg stuff / kg air]
-  q_unit.set_string("kg/kg");
-  auto n_unit = 1/kg;  // number mixing ratios [# / kg air]
-  n_unit.set_string("#/kg");
-  Units nondim(0,0,0,0,0,0,0);
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  Units nondim = Units::nondimensional();
+  Units n_unit (1/kg,"#/kg");  // number mixing ratios [# / kg air]
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
@@ -125,8 +122,8 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name); // Temperature
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
-  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // specific humidity
-  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
+  add_field<Required>("qv", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // specific humidity
+  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // ice wet mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // p_del, hydrostatic pressure
@@ -134,7 +131,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_field<Updated>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid wet mixing ratio
+  add_field<Updated>("qc", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // cloud liquid wet mixing ratio
   add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // cloud liquid wet number mixing ratio
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
@@ -144,7 +141,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, kg/kg, grid_name, "tracers");
       }
     }
   }
@@ -152,7 +149,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // aerosol-related gases: mass mixing ratios
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, kg/kg, grid_name, "tracers");
   }
 
   // Tracers group -- do we need this in addition to the tracers above? In any
