@@ -92,11 +92,15 @@ initialize_impl (const RunType /*run_type*/)
 
   m_diagnostic_output = Field(fid);
   auto& diag_fap = m_diagnostic_output.get_header().get_alloc_properties();
+  int ps = SCREAM_PACK_SIZE;
   for (const auto& f : {T,rho,p,qv,phis}) {
     const auto& fap = f.get_header().get_alloc_properties();
-    const auto& ps = fap.get_largest_pack_size();
-    diag_fap.request_allocation(ps);
+    const auto& f_ps = fap.get_largest_pack_size();
+
+    // We must use a pack size that works with all inputs, so pick the smallest
+    ps = std::min(ps,f_ps);
   }
+  diag_fap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 
   using stratts_t = std::map<std::string,std::string>;
@@ -121,7 +125,6 @@ initialize_impl (const RunType /*run_type*/)
   // Initialize temporary views based on need. Can alias the diag if a temp is not needed
   auto create_temp = [&](const std::string& name, int levs) {
     auto u = Units::nondimensional();
-    auto ps = diag_fap.get_largest_pack_size();
     FieldLayout fl({COL,LEV},{m_num_cols,levs});
     FieldIdentifier fid (name,fl,u,grid_name);
     Field f = Field(fid);
