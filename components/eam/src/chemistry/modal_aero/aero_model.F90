@@ -844,7 +844,6 @@ contains
     index_tot_mass(1,5) = get_spc_ndx('mom_a1')
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
-    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
     !
     ! aitken mode
     !
@@ -873,7 +872,7 @@ contains
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
     index_tot_mass(4,2) = get_spc_ndx('bc_a4')
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
     ! aged carbon mode
     !
@@ -881,7 +880,8 @@ contains
     index_tot_mass(5,2) = get_spc_ndx('pom_a5')
     index_tot_mass(5,3) = get_spc_ndx('soa_a5')
     index_tot_mass(5,4) = get_spc_ndx('bc_a5' )
-    index_tot_mass(5,5) = get_spc_ndx('mom_a5')
+    index_tot_mass(5,5) = get_spc_ndx('ncl_a5')
+    index_tot_mass(5,6) = get_spc_ndx('mom_a5')
     index_chm_mass(5,1) = get_spc_ndx('so4_a5')
     index_chm_mass(5,2) = get_spc_ndx('soa_a5')
     index_chm_mass(5,3) = get_spc_ndx('bc_a5' )
