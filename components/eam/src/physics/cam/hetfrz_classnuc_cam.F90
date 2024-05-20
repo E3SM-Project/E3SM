@@ -120,6 +120,7 @@ integer :: so4_acarbon   ! sulfate in aged carbon mode
 integer :: bc_acarbon    ! black-c in aged carbon mode
 integer :: pom_acarbon   ! p-organic in aged carbon mode
 integer :: soa_acarbon   ! s-organic in aged carbon mode
+integer :: ncl_acarbon   ! seasalt in aged carbon mode
 integer :: mom_acarbon   ! marine-organic in aged carbon mode
 integer :: num_acarbon   ! number in aged carbon mode
 ! --MW
@@ -589,7 +590,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
 ! ++MW
    else if (nmodes == MAM5_nmodes) then
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON && defined RAIN_EVAP_TO_COARSE_AERO )
-      ncnst = 24
+      ncnst = 25
       so4_accum  =  1
       soa_accum  =  2
       dst_accum  =  3
@@ -612,8 +613,9 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       bc_acarbon   = 20
       pom_acarbon  = 21
       soa_acarbon  = 22
-      mom_acarbon  = 23
-      num_acarbon  = 24
+      ncl_acarbon  = 23
+      mom_acarbon  = 24
+      num_acarbon  = 25
 #endif      
 ! --MW
    end if
@@ -742,6 +744,8 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       mode_idx(pom_acarbon) = mode_acarbon_idx
       spec_idx(soa_acarbon) = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 's-organic')
       mode_idx(soa_acarbon) = mode_acarbon_idx
+      spec_idx(ncl_acarbon) = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 'seasalt')
+      mode_idx(ncl_acarbon) = mode_acarbon_idx
       spec_idx(mom_acarbon) = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 'm-organic')
       mode_idx(mom_acarbon) = mode_acarbon_idx
    endif   
@@ -1346,10 +1350,11 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          as_bc  = aer(ii,kk,bc_acarbon)
          as_pom = aer(ii,kk,pom_acarbon)
          as_soa = aer(ii,kk,soa_acarbon)
+         as_ss  = aer(ii,kk,ncl_acarbon)
          as_mom  = aer(ii,kk,mom_acarbon)
 
          if (as_bc > 0._r8) then
-            bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_mom)  &
+            bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_mom)  &
                      * aer(ii,kk,num_acarbon)*1.0e-6_r8 ! #/cm^3
          else
             bc_num = 0.0_r8
@@ -1479,10 +1484,11 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       as_bc  = aer_cb(ii,kk,bc_acarbon)
       as_pom = aer_cb(ii,kk,pom_acarbon)
       as_soa = aer_cb(ii,kk,soa_acarbon)
+      as_ss  = aer_cb(ii,kk,ncl_acarbon)
       as_mom = aer_cb(ii,kk,mom_acarbon)
 
       if (as_bc > 0._r8) then
-         bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_mom)  &
+         bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_mom)  &
                     * aer_cb(ii,kk,num_acarbon)*1.0e-6_r8 ! #/cm^3 
       else
          bc_num_imm = 0.0_r8
