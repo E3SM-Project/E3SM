@@ -213,11 +213,11 @@ contains
 #if ( defined MODAL_AERO_5MODE_AGEDCARBON )
        ! mode 5 aged carbon species
        xname_massptr(:nspec_amode(5),5)   = (/ 'so4_a5  ', 'bc_a5   ','pom_a5  ', &
-                                               'soa_a5  ', 'mom_a5  ' /)
+                                               'soa_a5  ', 'ncl_a5  ','mom_a5  ' /)
        xname_massptrcw(:nspec_amode(5),5) = (/ 'so4_c5  ', 'bc_c5   ','pom_c5  ', &
-                                               'soa_c5  ', 'mom_c5  ' /)
+                                               'soa_c5  ', 'ncl_c5  ','mom_c5  ' /)
        xname_spectype(:nspec_amode(5),5)  = (/ 'sulfate   ', 'black-c   ','p-organic ', &
-                                               's-organic ', 'm-organic ' /)
+                                               's-organic ', 'seasalt   ','m-organic ' /)
 #endif
 
 
