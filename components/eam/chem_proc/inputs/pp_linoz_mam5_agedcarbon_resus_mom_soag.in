@@ -24,6 +24,7 @@
  so4_a5 -> NH4HSO4
  bc_a5 -> C, pom_a5 -> C
  soa_a5 -> C
+ ncl_a5 -> NaCl
  mom_a5 -> C8520H11360O8520
  num_a5 -> H
       End Solution
@@ -54,7 +55,7 @@
         bc_a3, pom_a3, soa_a3, mom_a3, num_a3
         pom_a4, bc_a4, mom_a4, num_a4
         so4_a5, bc_a5, pom_a5, soa_a5
-        mom_a5, num_a5
+        ncl_a5, mom_a5, num_a5
       End Implicit
    End Solution Classes
 
