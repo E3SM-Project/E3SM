@@ -2,8 +2,6 @@
 #define EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream
 {
@@ -22,13 +20,6 @@ namespace scream
 class VerticalLayerDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
-  using KT            = KokkosTypes<DefaultDevice>;
-  using MemberType    = typename KT::MemberType;
-  using view_1d_const = typename KT::template view_1d<const Real>;
-  using view_2d       = typename KT::template view_2d<Pack>;
-
   // Constructors
   VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -39,19 +30,22 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
+  void compute_diagnostic_impl ();
+  void initialize_impl (const RunType /* run_type */);
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
+  template<int PackSize>
+  void do_compute_diagnostic_impl ();
 protected:
 
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
 
-  // Temporary view to set dz, z_mid, and z_int
-  view_2d m_tmp_interface_view;
-  view_2d m_tmp_midpoint_view;
+  // Temporaries to use for calculation of dz, z_int, and z_mid
+  Field m_tmp_interface;
+  Field m_tmp_midpoint;
 
   // The diagnostic name. This will dictate which
   // field in the computation is output (dz, z_int, or z_mid).
@@ -65,8 +59,7 @@ protected:
 
   // If true, output is a geopotential (units m2/s2), otherwise an elevation
   bool m_geopotential;
-
-}; // class VerticalLayerDiagnostic
+};
 
 } //namespace scream
 

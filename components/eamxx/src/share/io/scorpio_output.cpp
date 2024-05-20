@@ -1394,7 +1394,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   // The diagnostics requires the name to be given as param value.
   if (diag_name == "z_int"            or diag_name == "z_mid"            or
       diag_name == "geopotential_int" or diag_name == "geopotential_mid" or
-      diag_name == "altitude_int"     or diag_name == "altitude_mid"     or
+      diag_name == "height_int"       or diag_name == "height_mid"     or
       diag_name == "dz") {
     params.set<std::string>("diag_name", diag_name);
   }
