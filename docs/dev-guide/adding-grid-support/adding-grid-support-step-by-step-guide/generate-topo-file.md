@@ -10,6 +10,8 @@ Traditionally the topography generation for E3SM start with **USGS-topo-cube3000
 
 For target resolutions of 3 km or finer it is recommended to use **USGS-topo-cube12000.nc**, which was created by Jishi Zhang in 2024. This file has a resolution of 750m created from a  500m/250m USGS GMTED2010 source DEM dataset (see [here](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/4189520033/800m+cubed+topo+generation+from+GMTED2010+15s+DEM) for more information).
 
+For testing the topography workflow the mapping between the ne3000 data is much too burdensome, so a ne90pg1 (i.e. 1-degree) version of this data was created to allow efficient testing. This file can be found in the inputdata repository at `${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube90.nc`.
+
 ## Data Processing Requirements
 
 The workflow to generate topography data for the atmosphere model must address the following requirements:
@@ -43,27 +45,26 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
     map_root=<path to write map files>
     topo_root=<path to write new topo files>
     DIN_LOC_ROOT=<path to E3SM inputdata>
-    NE=<ne value for target grid>
+    NE_SRC=<ne value for source grid>
+    NE_DST=<ne value for target grid>
     ```
 
-    Example settings for Perlmutter (NERSC):
+    Example path settings for Perlmutter (NERSC):
 
     ```shell
     grid_root=${SCRATCH}/e3sm_scratch/files_grid
     map_root=${SCRATCH}/e3sm_scratch/files_map
     topo_root=${SCRATCH}/e3sm_scratch/files_topo
     DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
-    NE=30
     ```
 
-    Example settings for Chrysalis (ANL/LCRC):
+    Example path settings for Chrysalis (ANL/LCRC):
 
     ```shell
     grid_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_grid
     map_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_map
     topo_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_topo
     DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
-    NE=30
     ```
 
     Make sure the directories exist:
@@ -75,16 +76,31 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
 1. **Specify all topo and map file paths for consistency**
 
     ```shell
-    topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube3000.nc
-    topo_file_1=${topo_root}/USGS-topo_ne${NE}np4.nc
-    topo_file_2=${topo_root}/USGS-topo_ne${NE}np4_phis.nc
-    topo_file_3=${topo_root}/USGS-topo_ne${NE}np4_smoothed.nc
-    topo_file_4=${topo_root}/USGS-topo_ne${NE}np4_smoothed_ne3000pg1.nc
-    topo_file_5=${topo_root}/USGS-topo_ne${NE}np4_smoothed_ne3000pg1_anomalies.nc
-    topo_file_6=${topo_root}/USGS-topo_ne${NE}np4_smoothed_anomalies.nc
-    map_file_src_to_np4=${map_root}/map_ne3000pg1_to_ne${NE}np4_fv2se_flx.nc
-    map_file_src_to_pg2=${map_root}/map_ne3000pg1_to_ne${NE}pg2_traave.nc
-    map_file_pg2_to_src=${map_root}/map_ne${NE}pg2_to_ne3000pg1_traave.nc
+    # topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube${NE_SRC}.nc
+    # topo_file_1=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4.nc
+    # topo_file_2=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_phis.nc
+    # topo_file_3=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t.nc
+    # topo_file_4=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_ne${NE_SRC}pg1.nc
+    # topo_file_5=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_ne${NE_SRC}pg1_anomalies.nc
+    # topo_file_6=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_anomalies.nc
+    # topo_file_7=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_sgh.nc
+    # topo_file_8=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothedx6t.nc
+
+
+    topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube${NE_SRC}.nc
+    topo_file_1=${topo_root}/USGS-topo_tmp_ne${NE_SRC}pg1.nc
+    topo_file_2=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4.nc
+    topo_file_3=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t.nc
+    topo_file_4=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_ne${NE_SRC}pg1.nc
+    topo_file_5=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_ne${NE_SRC}pg1_anomalies.nc
+    topo_file_6=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_anomalies.nc
+    topo_file_7=${topo_root}/USGS-topo_tmp_ne${NE_DST}np4_smoothedx6t_sgh.nc
+    topo_file_8=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothedx6t.nc
+
+    map_file_src_to_np4=${map_root}/map_ne${NE_SRC}pg1_to_ne${NE_DST}np4_fv2se_flx.nc
+    map_file_src_to_pg2=${map_root}/map_ne${NE_SRC}pg1_to_ne${NE_DST}pg2_traave.nc
+    map_file_pg2_to_src=${map_root}/map_ne${NE_DST}pg2_to_ne${NE_SRC}pg1_traave.nc
+    map_file_np4_to_pg2=${map_root}/map_ne${NE_DST}np4_to_ne${NE_DST}pg2_se2fv_flx.nc
     ```
 
 1. **Create grid and map files**
@@ -103,72 +119,73 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
         ```
 
-    1. Create grid files for the input high res topo
+    1. Create grid files
 
         ```shell
-        GenerateCSMesh --alt --res 3000  --file ${grid_root}/exodus_ne3000.g
-        ConvertMeshToSCRIP --in ${grid_root}/exodus_ne3000.g  --out ${grid_root}/scrip_ne3000pg1.nc
-        ```
-
-    1. Create grid files target EAM grid
-
-        ```shell
-        GenerateCSMesh --alt --res ${NE} --file ${grid_root}/exodus_ne${NE}.g
-        GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE}.g --out ${grid_root}/exodus_ne${NE}pg2.g --np 2 --uniform
-        ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE}pg2.g --out ${grid_root}/scrip_ne${NE}pg2.nc
+        # Grid for source high res topo
+        GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
+        ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
+        
+        # Grid for target EAM grid
+        GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
+        GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
+        ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
         ```
 
     1. Create map files
 
         !!!WARNING
-            this can take a long time
+            This can take a long time - several hours for each map file in some cases
 
-        1. from source to target np4
+        ```shell
+        # from source to target np4 
+        ncremap -a fv2se_flx -5 --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  --dst_grd=${grid_root}/exodus_ne${NE_DST}.g --map_file=${map_file_src_to_np4}
+        
+        # from source to target pg2
+        ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  --dst_grd=${grid_root}/scrip_ne${NE_DST}pg2.nc --map_file=${map_file_src_to_pg2}
+        
+        # from target to source (needed for calculating sub-grid anomalies on target grid)
+        ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE_DST}pg2.nc  --dst_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc --map_file=${
+            map_file_pg2_to_src}
 
-            ```shell
-            ncremap -a fv2se_flx -5 --src_grd=${grid_root}/scrip_ne3000pg1.nc  --dst_grd=${grid_root}/exodus_ne${NE}.g --map_file=${map_file_src_to_np4}
-            ```
-
-        1. from source to target pg2
-
-            ```shell
-            ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne3000pg1.nc  --dst_grd=${grid_root}/exodus_ne${NE}.g --map_file=${map_file_src_to_pg2}
-            ```
-
-        1. from target to source (needed for calculating sub-grid anomalies on target grid)
-
-            ```shell
-            ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE}pg2.nc  --dst_grd=${grid_root}/scrip_ne3000pg1.nc --map_file=${map_file_pg2_to_src}
-            ```
+        # from target np4 to target pg2
+        ncremap -a se2fv_flx -5 --src_grd=${grid_root}/exodus_ne${NE_DST}.g  --dst_grd=${grid_root}/scrip_ne${NE_DST}pg2.nc --map_file=${map_file_np4_to_pg2}
+        ```
 
 1. **Create new topograpy data on target grid**
 
-    1. Map high-res topo to target np4 grid
+    ```shell
+    # # Map high-res topo to target np4 grid
+    # ncremap -m ${map_file_src_to_np4} -i ${topo_file_0} -o ${topo_file_1}
 
-        ```shell
-        ncremap -m ${map_file_src_to_np4} -i ${topo_file_0} -o ${topo_file_1}
-        ```
+    # # Compute phi_s on the np4 grid
+    # ncap2 -s 'PHIS=terr*9.80616' ${topo_file_1} ${topo_file_2}
 
-    1. Compute phi_s on the np4 grid
+    # # rename the column dimension to be "ncol"
+    # ncrename -d grid_size,ncol ${topo_file_2}
 
-        ```shell
-        ncap2 -s 'PHIS=terr*9.80616' ${topo_file_1} ${topo_file_2}
-        ```
+    # Compute phi_s on the source np4 grid
+    ncap2 -s 'PHIS=terr*9.80616' ${topo_file_0} ${topo_file_1}
+
+    # rename the column dimension to be "ncol"
+    ncrename -d grid_size,ncol ${topo_file_1}
+
+    # Map high-res topo to target np4 grid
+    ncremap -m ${map_file_src_to_np4} -i ${topo_file_1} -o ${topo_file_2}
+    ```
 
 1. **Use homme_tool to smooth topography**
-
-    1. Set the machine specific environment
-
-        ```shell
-        cd ${e3sm_root}/components/homme
-        eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
-        ```
 
     1. Build homme_tool
 
         The build process requires the user to select the appropriate cmake file that contains machine-specific settings.
 
         ```shell
+        # Set the machine specific environment
+        cd ${e3sm_root}/components/homme
+        eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
+
+        # Specify machine configuration file
         mach_file=${e3sm_root}/components/homme/cmake/machineFiles/perlmutter-gnu.cmake
         # mach_file=${e3sm_root}/components/homme/cmake/machineFiles/chrysalis.cmake
 
@@ -185,14 +202,14 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         ```
 
     1. run homme_tool
-
+        <!-- ne = ${NE_DST} -->
+        <!-- mesh_file = "${grid_root}/exodus_ne${NE_DST}.g" -->
         ```shell
         cat <<EOF > input.nl
         &ctl_nl
-        ne = ${NE}
-        mesh_file = "${grid_root}/exodus_ne${NE}.g"
+        mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"
         smooth_phis_p2filt = 0
-        smooth_phis_numcycle = 12  # v3 uses 6 for less smoothing
+        smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing
         smooth_phis_nudt = 4e-16
         hypervis_scaling = 2
         se_ftype = 2 ! actually output NPHYS; overloaded use of ftype
@@ -201,114 +218,151 @@ Smoothing of the input surface geopotential (`phi_s`) is an essential step to en
         /
         &analysis_nl
         tool = 'topo_pgn_to_smoothed'
-        infilenames = '${topo_file_2}', '${topo_file_3::-3}'
+        infilenames = '${topo_file_2}', '${topo_file_3}'
         /
         EOF
 
         mpirun -np 8 ${e3sm_root}/components/homme/src/tool/homme_tool < input.nl
+
+        # rename output file to remove "1.nc" suffix
+        mv ${topo_file_3}1.nc ${topo_file_3}
         ```
 
 1. **Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data**
 
-    1. Remap smoothed topo to ne3000 grid
-
-        ```shell
-        ncremap -v PHIS -m ${map_file_pg2_to_src} -i ${topo_file_3} -o ${topo_file_4}
-        ```
-
-    1. Append unsmoothed ne3000 data
-
-        ```shell
-        ncks -A ${topo_file_0} ${topo_file_4}
-        ```
-
-    1. Calculate anomalies on ne3000 grid
-
-        (Note that for ncdiff the operation is `file_3 = file_1 - file_2`)
-
-        ```shell
-        ncdiff ${topo_file_0} ${topo_file_4} ${topo_file_5}
-        ```
-
-    1. Remap anomalies back to target pg2 grid
-
-        ```shell
-        ncremap -m ${map_file_src_to_pg2} -i ${topo_file_0} -o ${topo_file_6}
-        ```
-
-1. **???? Append LANDFRAC and LANDM_COSLAT ????**
-
-1. **Append the GLL phi_s data to the output of step 4**
-
     ```shell
-    TOPO_FILE_2=${DATA_FILE_ROOT}/USGS-topo_ne${NE}np4_phis_x6t_tmp
-    TOPO_FILE_3=${DATA_FILE_ROOT}/USGS-topo_ne${NE}np4_smoothed_x6tensor.nc
-    ncks -A ${TOPO_FILE_2}1.nc ${TOPO_FILE_3}
+    # Remap smoothed data back to source grid
+    ncremap -v PHIS -m ${map_file_pg2_to_src} -i ${topo_file_3} -o ${topo_file_4}
+    
+    # Calculate anomalies on source grid
+    ncdiff -O ${topo_file_1} ${topo_file_4} ${topo_file_5}
+    
+    # Square the anomaly values
+    ncap2 -O -s 'PHIS_ANOM_SQ=PHIS^2' ${topo_file_5} ${topo_file_5}
+    
+    # Remap squared anomalies back to target pg2 grid
+    ncremap -v PHIS_ANOM_SQ -m ${map_file_src_to_pg2} -i ${topo_file_5} -o ${topo_file_6}
+    
+    # Take the square root of the remapped to get standard deviation (SGH)
+    ncap2 -O -s 'SGH=sqrt(PHIS_ANOM_SQ)' ${topo_file_6} ${topo_file_7}
     ```
 
-## Batch scripts to streamline all steps
+1. **Put all quantities into the final topo file**
 
-Running through all the steps above can be tedious and time-consuming. The batch script below includes all these steps as well as example Slurm batch directives for running on Perlmutter CPU nodes(NERSC). The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. Also, be sure to comment out any parts that have already been completed in advance (like creating the grid files).
+    ```shell
+    
+    # Create final topo file starting with smoothed PHIS data
+    cp ${topo_file_3} ${topo_file_8}
+
+    # Append the SGH data
+    ncks -A -v SGH ${topo_file_7} ${topo_file_8}
+
+    # rename GLL coordinate to ncol_g
+    ncrename -d ncol,ncol_d ${topo_file_2}
+
+    # Map np4 LANDFRAC and SGH30 to the target pg2 grid
+    ncremap -v SGH30,LANDFRAC -m ${map_file_np4_to_pg2} -i ${topo_file_2} -o ${????}
+
+    # Append the pg2 LANDFRAC and SGH30 data to final file
+    ncks -A -v SGH30,LANDFRAC --hdr_pad=100000 ${?????} ${topo_file_8}
+    
+    ```
+
+1. **Clean up temporary files**
+
+    ```shell
+    rm ${topo_root}/USGS-topo_tmp_*
+    ```
+
+## Batch script to streamline all steps
+
+Running through all the steps above can be tedious and time-consuming. The batch script below includes all these steps as well as example Slurm batch directives for running on Perlmutter CPU nodes(NERSC). The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. 
+
+Here's a check list of things to do before submitting this script:
+
+- Build `homme_tool`
+- Update allocation code (i.e. `--account`
+- Update batch job wallclock time
+- Update paths at the top of the batch script
+- Comment out any sections that were completed in advance (i.e. grid file creation)
 
 To submit the slurm batch job use `sbatch batch_topo_slurm.sh`
 
-<details open>
+<details>
     <summary>batch_topo_slurm.sh</summary>
     ```shell
     #!/bin/bash
+    #SBATCH --account=### PUT ALLOCATION CODE HERE ###
     #SBATCH --constraint=cpu
-    #SBATCH --account=m3312
-    #SBATCH -q regular
-    #SBATCH --job-name=generate_map
-    #SBATCH --output=~/E3SM/logs_slurm/slurm-%x-%j.out
+    #SBATCH --qos=regular
+    #SBATCH --job-name=generate_topo
+    #SBATCH --output=slurm-%x-%j.out
     #SBATCH --time=24:00:00
     #SBATCH --nodes=1
-    #SBATCH --mail-user=hannah6@llnl.gov
-    #SBATCH --mail-type=END,FAIL
-
-    e3sm_root=/pscratch/sd/w/whannah/e3sm_scratch/tmp_clone
-    grid_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_grid
-    map_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_map
-    topo_root=/lcrc/group/e3sm/${USER}/scratch/chrys/files_topo
-    DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
-
-    NE=30
-
-    topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube3000.nc
-    topo_file_1=${topo_root}/USGS-topo_ne${NE}np4.nc
-    topo_file_2=${topo_root}/USGS-topo_ne${NE}np4_phis.nc
-    topo_file_3=${topo_root}/USGS-topo_ne${NE}np4_smoothed.nc
-    topo_file_4=${topo_root}/USGS-topo_ne${NE}np4_smoothed_ne3000pg1.nc
-    topo_file_5=${topo_root}/USGS-topo_ne${NE}np4_smoothed_ne3000pg1_anomalies.nc
-
+    #---------------------------------------------------------------------------
+    # Stop execution on any error
+    set -e
+    #---------------------------------------------------------------------------
+    e3sm_root=<path to E3SM source>
+    grid_root=<path to write grid files>
+    map_root=<path to write map files>
+    topo_root=<path to write new topo files>
+    DIN_LOC_ROOT=<path to E3SM inputdata>
+    NE_SRC=<ne value for source grid>
+    NE_DST=<ne value for target grid>
+    #---------------------------------------------------------------------------
+    topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube${NE_SRC}.nc
+    topo_file_1=${topo_root}/USGS-topo_ne${NE_DST}np4.nc
+    topo_file_2=${topo_root}/USGS-topo_ne${NE_DST}np4_phis.nc
+    topo_file_3=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothed.nc
+    topo_file_4=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothed_ne${NE_SRC}pg1.nc
+    topo_file_5=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothed_ne${NE_SRC}pg1_anomalies.nc
+    topo_file_6=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothed_anomalies.nc
+    #---------------------------------------------------------------------------
+    # print some useful things to the log file
+    echo e3sm_root    = $e3sm_root
+    echo grid_root    = $grid_root
+    echo map_root     = $map_root
+    echo topo_root    = $topo_root
+    echo DIN_LOC_ROOT = $DIN_LOC_ROOT
+    echo topo_file_0  = $topo_file_0
+    echo topo_file_1  = $topo_file_1
+    echo topo_file_2  = $topo_file_2
+    echo topo_file_3  = $topo_file_3
+    echo topo_file_4  = $topo_file_4
+    echo topo_file_5  = $topo_file_5
+    echo topo_file_6  = $topo_file_6
+    #---------------------------------------------------------------------------
     source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
-
+    #---------------------------------------------------------------------------
     # Create grid files for the input high res topo
-    GenerateCSMesh --alt --res 3000  --file ${grid_root}/exodus_ne3000.g
-    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne3000.g  --out ${grid_root}/scrip_ne3000pg1.nc
-
+    GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
+    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
+    #---------------------------------------------------------------------------
     # Create grid files target EAM grid
-    GenerateCSMesh --alt --res ${NE} --file ${grid_root}/exodus_ne${NE}.g
-    GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE}.g --out ${grid_root}/exodus_ne${NE}pg2.g --np 2 --uniform
-    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE}pg2.g --out ${grid_root}/scrip_ne${NE}pg2.nc
-
-    # Create map file - source to target
-    ncremap -a fv2se_flx -5 --src_grd=${grid_root}/scrip_ne3000pg1.nc  --dst_grd=${grid_root}/exodus_ne${NE}.g --map_file=${map_root}/map_ne3000pg1_to_ne${NE}np4.nc
-
-    # Create map file - target to source
-    ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE}pg2.nc  --dst_grd=${grid_root}/scrip_ne3000pg1.nc --map_file=${map_root}/map_ne${NE}pg2_to_ne3000pg1.nc
-
+    GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
+    GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
+    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
+    #---------------------------------------------------------------------------
+    # Create map files
+    # from source to target np4 
+    ncremap -a fv2se_flx -5 --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  --dst_grd=${grid_root}/exodus_ne${NE_DST}.g --map_file=${map_file_src_to_np4}
+    # from source to target pg2
+    ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  --dst_grd=${grid_root}/scrip_ne${NE_DST}pg2.nc --map_file=${map_file_src_to_pg2}
+    # from target to source (needed for calculating sub-grid anomalies on target grid)
+    ncremap -a traave -5 --src_grd=${grid_root}/scrip_ne${NE_DST}pg2.nc  --dst_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc --map_file=${map_file_pg2_to_src}
+    #---------------------------------------------------------------------------
     # Map high-res topo to target np4 grid
     ncremap -m ${map_file_src_to_np4} -i ${topo_file_0} -o ${topo_file_1}
-
+    #---------------------------------------------------------------------------
     # Compute phi_s on the np4 grid
     ncap2 -s 'PHIS=terr*9.80616' ${topo_file_1} ${topo_file_2}
-
+    #---------------------------------------------------------------------------
     # Use homme_tool to smooth topography
     cat <<EOF > input.nl
     &ctl_nl
-    ne = ${NE}
-    mesh_file = "${grid_root}/exodus_ne${NE}.g"
+    ne = ${NE_DST}
+    mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"
     smooth_phis_p2filt = 0
     smooth_phis_numcycle = 12  # v3 uses 6 for less smoothing
     smooth_phis_nudt = 4e-16
@@ -322,14 +376,15 @@ To submit the slurm batch job use `sbatch batch_topo_slurm.sh`
     infilenames = '${topo_file_2}', '${topo_file_3::-3}'
     /
     EOF
-
     mpirun -np 8 ${e3sm_root}/components/homme/src/tool/homme_tool < input.nl
-
+    #---------------------------------------------------------------------------
     # Compute SGH and SGH30 on the pg2 grid, using the pg2 phi_s data
     ncremap -v PHIS -m ${map_file_pg2_to_src} -i ${topo_file_3} -o ${topo_file_4}
     ncks -A ${topo_file_0} ${topo_file_4}
     ncdiff ${topo_file_0} ${topo_file_4} ${topo_file_5}
     ncremap -m ${map_file_src_to_pg2} -i ${topo_file_0} -o ${topo_file_6}
-    
+    #---------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     ```
 </details>
