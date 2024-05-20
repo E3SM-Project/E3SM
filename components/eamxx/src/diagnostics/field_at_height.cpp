@@ -44,7 +44,7 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
       " -        field name: " + m_field_name + "\n"
       " - surface reference: " + surf_ref + "\n"
       " -     valid options: sealevel, surface\n");
-  m_z_name = (surf_ref == "sealevel") ? "z" : "geopotential";
+  m_z_name = (surf_ref == "sealevel") ? "z" : "altitude";
   const auto& location = m_params.get<std::string>("vertical_location");
   auto chars_start = location.find_first_not_of("0123456789.");
   EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,

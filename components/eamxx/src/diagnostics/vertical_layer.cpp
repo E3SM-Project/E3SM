@@ -11,16 +11,14 @@ VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& para
   m_diag_name = params.get<std::string>("diag_name");
   EKAT_REQUIRE_MSG(m_diag_name == "z_int"            or m_diag_name == "z_mid"            or
                    m_diag_name == "geopotential_int" or m_diag_name == "geopotential_mid" or
+                   m_diag_name == "altitude_int"     or m_diag_name == "altitude_mid"     or
                    m_diag_name == "dz",
                    "Error! VerticalLayerDiagnostic has been given an unknown name: "+m_diag_name+".\n");
 
-  m_only_compute_dz = (m_diag_name == "dz");
   m_is_interface_layout = m_diag_name.find("_int") != std::string::npos;
 
-  // Whether or not diagnostic is computed from sea level depends on the name.
-  // "z_" -> from sea level, "geopotential_" -> from topography data.
-  // This boolean is irrelevant for vertical layer thickness (dz).
-  m_from_sea_level = m_diag_name.find("z_") != std::string::npos;
+  m_geopotential = m_diag_name.substr(0,12)=="geopotential";
+  m_from_sea_level = m_diag_name[0]=='z' or m_geopotential;
 }
 // ========================================================================================
 void VerticalLayerDiagnostic::
@@ -49,7 +47,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("qv",             scalar3d_layout_mid, kg/kg, grid_name, ps);
 
   // Only need phis if computing geopotential_*
-  if (not m_only_compute_dz and not m_from_sea_level) {
+  if (not m_geopotential) {
     add_field<Required>("phis", scalar2d_layout, m2/s2, grid_name);
   }
 
@@ -62,7 +60,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_diagnostic_output.allocate_view();
 
   // Initialize temporary views based on need.
-  if (not m_only_compute_dz) {
+  if (m_diag_name!="dz") {
     if (m_is_interface_layout) {
       const auto npacks = ekat::npack<Pack>(m_num_levs);
       m_tmp_midpoint_view = view_2d("tmp_mid",m_num_cols,npacks);
@@ -75,6 +73,10 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void VerticalLayerDiagnostic::compute_diagnostic_impl()
 {
+  using column_ops  = ColumnOps<DefaultDevice,Real>;
+  // To use in column_ops, since we integrate from surface
+  constexpr bool FromTop = false;
+
   const auto npacks         = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
 
@@ -84,14 +86,16 @@ void VerticalLayerDiagnostic::compute_diagnostic_impl()
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
   view_1d_const phis;
-  if (not m_only_compute_dz and not m_from_sea_level) {
+  if (m_from_sea_level) {
     phis = get_field_in("phis").get_view<const Real*>();
   }
 
-  const bool only_compute_dz     = m_only_compute_dz;
+  const bool only_compute_dz     = m_diag_name=="dz";
   const bool is_interface_layout = m_is_interface_layout;
   const bool from_sea_level      = m_from_sea_level;
+  const bool do_geopotential     = m_geopotential;
   const int  num_levs            = m_num_levs;
+  constexpr auto g = scream::physics::Constants<Real>::gravit;
 
   // Alias correct view for diagnostic output and for tmp class views
   view_2d interface_view;
@@ -111,27 +115,39 @@ void VerticalLayerDiagnostic::compute_diagnostic_impl()
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
 
-    // Calculate dz. Use the memory in tmp_mid_view for dz and z_mid,
-    // since we don't set z_mid until after dz is no longer needed.
-    const auto& dz_s = ekat::subview(midpoint_view, icol);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
-      dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
-    });
+    // Whatever the output needs, the first thing to compute is dz.
+    const auto& dz = ekat::subview(midpoint_view, icol);
+    PF::calculate_dz(team,ekat::subview(pseudo_density_mid,icol),
+                          ekat::subview(p_mid,icol),
+                          ekat::subview(T_mid,icol),
+                          ekat::subview(qv_mid,icol),
+                          dz);
     team.team_barrier();
 
-    if (not only_compute_dz) {
-      // Calculate z_int if this diagnostic is not dz
-      const auto& z_int_s = ekat::subview(interface_view, icol);
-      const Real surf_geopotential = from_sea_level ? 0.0 : phis(icol);
-      PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,z_int_s);
+    // If dz is all we need, we're done
+    if (only_compute_dz) { return; }
 
-      if (not is_interface_layout) {
-        // Calculate z_mid if this diagnostic is not dz or an interface value
-        const auto& z_mid_s = ekat::subview(midpoint_view, icol);
-        PF::calculate_z_mid(team,num_levs,z_int_s,z_mid_s);
-      }
+    // Now integrate to compute quantity at interfaces
+    const auto& v_int = ekat::subview(interface_view, icol);
+
+    // phi and z are related by phi=z*g, so dphi=dz*g, and z_surf = phis/g
+    if (do_geopotential) {
+      auto dphi = [&](const int ilev) {
+        return dz(ilev) * g;
+      };
+      column_ops::template column_scan<FromTop>(team,num_levs,dphi,v_int,phis(icol));
+    } else {
+      const Real surf_val = from_sea_level ? phis(icol)/g : 0;
+      column_ops::template column_scan<FromTop>(team,num_levs,dz,v_int,surf_val);
+    }
+
+    // If we need quantity at midpoints, simply do int->mid averaging
+    if (not is_interface_layout) {
+      team.team_barrier();
+      const auto& v_mid = ekat::subview(midpoint_view, icol);
+      column_ops::compute_midpoint_values(team,num_levs,v_int,v_mid);
     }
   });
 }
-// =========================================================================================
+
 } //namespace scream

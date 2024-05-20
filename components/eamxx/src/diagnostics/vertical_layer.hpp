@@ -57,15 +57,14 @@ protected:
   // field in the computation is output (dz, z_int, or z_mid).
   std::string m_diag_name;
 
-  // Store if we only need to compute dz to save computation/memory requirements.
-  bool m_only_compute_dz;
-
   // Store if the diagnostic output field exists on interface values
   bool m_is_interface_layout;
 
-  // If z_int or z_mid is computed, determine whether the BC
-  // is from sea level or not (from topography data).
+  // True z_mid/int, false for altitude_mid/int. Unused for others
   bool m_from_sea_level;
+
+  // If true, output is a geopotential (units m2/s2), otherwise an elevation
+  bool m_geopotential;
 
 }; // class VerticalLayerDiagnostic
 
