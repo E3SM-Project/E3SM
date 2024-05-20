@@ -35,29 +35,48 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar2d_layout     { {COL     }, {m_num_cols             } };
-  FieldLayout scalar3d_layout_mid { {COL,LEV }, {m_num_cols,m_num_levs  } };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
+  const auto scalar2d     = grid->get_2d_scalar_layout();
+  const auto scalar3d_mid = grid->get_3d_scalar_layout(true);
+  const auto scalar3d_int = grid->get_3d_scalar_layout(false);
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name, ps);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
-  add_field<Required>("qv",             scalar3d_layout_mid, kg/kg, grid_name, ps);
+  add_field<Required>("T_mid",          scalar3d_mid, K,     grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
+  add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, ps);
+  add_field<Required>("qv",             scalar3d_mid, kg/kg, grid_name, ps);
 
   // Only need phis if computing geopotential_*
   if (not m_geopotential) {
-    add_field<Required>("phis", scalar2d_layout, m2/s2, grid_name);
+    add_field<Required>("phis", scalar2d, m2/s2, grid_name);
   }
 
   // Construct and allocate the diagnostic field based on the diagnostic name.
-  const auto diag_layout = m_is_interface_layout ? scalar3d_layout_int : scalar3d_layout_mid;
-  FieldIdentifier fid (name(), diag_layout, m, grid_name);
+  const auto diag_layout = m_is_interface_layout ? scalar3d_int : scalar3d_mid;
+  FieldIdentifier fid (name(), diag_layout, m_geopotential ? m2/s2 : m, grid_name);
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
+  auto& fap = m_diagnostic_output.get_header().get_alloc_properties();
+  fap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
+
+  using stratts_t = std::map<std::string,std::string>;
+  auto& io_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto& long_name = io_atts["long_name"];
+  if (m_diag_name=="dz") {
+    long_name = "level thickness";
+  } else if (m_diag_name=="z_mid") {
+    long_name = "elevation above sealevel at level midpoints";
+  } else if (m_diag_name=="z_int") {
+    long_name = "elevation above sealevel at level interfaces";
+  } else if (m_diag_name=="altitude_mid") {
+    long_name= "elevation above surface at level midpoints";
+  } else if (m_diag_name=="altitude_int") {
+    long_name = "elevation above surface at level interfaces";
+  } else if (m_diag_name=="geopotential_mid") {
+    long_name = "geopotential height relative to sealevel at level midpoints";
+  } else {
+    long_name = "geopotential height relative to sealevel at level interfaces";
+  }
 
   // Initialize temporary views based on need.
   if (m_diag_name!="dz") {
