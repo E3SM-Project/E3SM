@@ -1762,10 +1762,6 @@
 	<command name="unload">parallel-netcdf</command>
       </modules>
 
-      <modules compiler="intel">
-	<command name="load">intel</command>
-      </modules>
-
       <modules mpilib="mpich">
 	<command name="load">mpich</command>
       </modules>
@@ -1785,7 +1781,8 @@
       </modules>
 
       <modules compiler="intel">
-	<command name="load">intel</command>        
+	<command name="load">intel-oneapi-compilers</command>        
+	<command name="load">intel-oneapi-mkl</command>        
 	<command name="load">cmake</command>
 	<command name="load">perl</command>
 	<command name="load">perl-xml-libxml</command>
