@@ -142,6 +142,10 @@ void MAMWetscav::set_grids(
   add_field<Updated>(
       "icwmrdp", scalar3d_mid, nondim,
       grid_name);
+
+  add_field<Updated>(
+      "prain", scalar3d_mid, nondim,
+      grid_name);
   add_field<Required>("evapcsh", scalar3d_mid, kg / kg / s,
                       grid_name);  // Evaporation rate of shallow convective
                                    // precipitation >=0. [kg/kg/s]
@@ -533,6 +537,9 @@ void MAMWetscav::run_impl(const double dt) {
   auto icwmrdp = get_field_out("icwmrdp")
                  .get_view<Real **>(); // ??
 
+  auto prain = get_field_out("prain")
+                 .get_view<Real **>(); // ??
+
   // outputs
   const auto aerdepwetis = aerdepwetis_;//get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = aerdepwetcw_;// get_field_out("aerdepwetcw").get_view<Real **>();
@@ -599,13 +606,15 @@ void MAMWetscav::run_impl(const double dt) {
         auto dry_diameter_icol = ekat::subview(dry_geometric_mean_diameter_i,icol);
         auto qaerwat_icol = ekat::subview(qaerwat,icol);
         auto wetdens_icol = ekat::subview(wetdens,icol);
+        auto prain_icol = ekat::subview(prain,icol);
+
 
         mam4::wetdep::aero_model_wetdep(team, atm, progs, tends, dt,
                                     // inputs
                                     cldst_icol, cldn_prev_step_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
                                     evapcsh_icol, dp_frac_icol, sh_frac_icol,
                                     icwmrdp_col, icwmrsh_icol, evapr_icol,
-                                    dlf_icol,
+                                    dlf_icol, prain_icol,
                                     wet_diameter_icol,dry_diameter_icol,
                                     qaerwat_icol, wetdens_icol,
                                     // output
