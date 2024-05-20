@@ -955,9 +955,6 @@ register_variables(const std::string& filename,
     auto vec_of_dims   = set_vec_of_dims(layout);
     std::string units = fid.get_units().to_string();
 
-    // Gather longname
-    auto longname = m_longnames.get_longname(name);
-
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
@@ -990,8 +987,6 @@ register_variables(const std::string& filename,
     } else {
       scorpio::define_var (filename, name, units, vec_of_dims,
                             "real",fp_precision, m_add_time_dim);
-
-      scorpio::set_attribute(filename, name, "long_name", longname);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
@@ -1032,6 +1027,12 @@ register_variables(const std::string& filename,
       const auto& str_atts = field.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
         scorpio::set_attribute(filename,name,att_name,att_val);
+      }
+
+      // Gather longname (if not already in the io: string attributes)
+      if (str_atts.count("long_name")==0) {
+        auto longname = m_longnames.get_longname(name);
+        scorpio::set_attribute(filename, name, "long_name", longname);
       }
     }
   }
