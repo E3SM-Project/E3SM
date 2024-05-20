@@ -461,8 +461,9 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:45:00" nodemax="1600" default="true">regular</queue>
-      <queue walltimemax="00:45:00" nodemax="1600" strict="true">preempt</queue>
+      <queue walltimemax="00:45:00" nodemax="1792" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1792" strict="true">preempt</queue>
+      <queue walltimemax="00:45:00" nodemax="1792" strict="true">shared</queue>
       <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -514,8 +515,9 @@
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
-      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">shared</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
