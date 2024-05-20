@@ -1741,11 +1741,11 @@
     </mpirun>
     <!--module_system type="none"/-->
     <module_system type="module" allow_error="true">
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">$LMOD_ROOT/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">$LMOD_ROOT/lmod/init/sh</init_path>
+      <init_path lang="csh">$LMOD_ROOT/lmod/init/csh</init_path>
 
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">$LMOD_ROOT/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
