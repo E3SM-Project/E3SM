@@ -128,8 +128,8 @@ Field Field::subfield(const std::string& sf_name,
       is_allocated(),
       "Error! Input field must be allocated in order to subview it.\n");
 
-  auto sf_layout =
-      lt.clone_with_different_extent(idim, index_end - index_beg);
+  auto sf_layout = lt.clone();
+  sf_layout.reset_dim(idim, index_end - index_beg);
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name());
 
@@ -178,8 +178,7 @@ Field Field::get_components(const int i1, const int i2) {
   EKAT_REQUIRE_MSG(layout.is_vector_layout(),
                    "Error! 'get_component' available only for vector fields.\n"
                    "       Layout of '" +
-                       fname + "': " + e2str(get_layout_type(layout.tags())) +
-                       "\n");
+                       fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
   EKAT_REQUIRE_MSG(i1 >= 0 && i2 < layout.dim(idim),

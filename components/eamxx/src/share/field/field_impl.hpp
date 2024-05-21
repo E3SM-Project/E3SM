@@ -718,8 +718,15 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 }
 
 template<HostOrDevice HD,typename T,int N>
+auto get_ND_view () const
+  -> if_t<N == 0, get_view_type<data_nd_t<T,N>,HD>>
+{
+  EKAT_ERROR_MSG("Error! Cannot take an ND view of 0 dimensional field.\n");
+}
+
+template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const ->
-  if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>
+  if_t<(N > 0) and (N < MaxRank), get_view_type<data_nd_t<T, N>, HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),

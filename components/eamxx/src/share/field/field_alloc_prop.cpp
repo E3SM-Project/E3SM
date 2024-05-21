@@ -95,8 +95,8 @@ FieldAllocProp FieldAllocProp::subview(const int idim,
   FieldAllocProp props(m_scalar_type_size);
   props.m_committed = true;
   props.m_scalar_type_size = m_scalar_type_size;
-  props.m_layout =
-      m_layout.clone_with_different_extent(idim, k_end - k_beg);
+  props.m_layout = m_layout.clone();
+  props.m_layout.reset_dim(idim, k_end - k_beg);
 
   // Output is contiguous if either
   //  - this->m_contiguous=true AND idim==0
