@@ -1750,8 +1750,8 @@
       <cmd_path lang="csh">module</cmd_path>
 
       <modules>
-	<!--command name="use">/opt/apps/spack/share/spack/modules/linux-centos7-zen2</command>
-	<command name="use">/opt/apps/spack/share/spack/modules/linux-centos7-x86_64_v3</command-->
+	<command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen</command>
+	<command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen3</command>
 	<command name="unload">gcc</command>
 	<command name="unload">openmpi</command>
 	<command name="unload">binutils</command>
@@ -1792,8 +1792,12 @@
 	<command name="load">parallel-netcdf</command>
 	<command name="load">hdf5</command>
       </modules>
-      
+
+      <modules>
+	<command name="list"></command>
+      </modules>
     </module_system>
+    
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.2</TEST_TPUT_TOLERANCE>
