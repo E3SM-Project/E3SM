@@ -1,5 +1,8 @@
 This testdef is used to test a stealth feature in mpaso introduced by
-PR #2726. It simply changes one mpaso namelist variable,
+PR #2726. It changes one mpaso namelist variable,
     config_land_ice_flux_mode
 from its default value to 'coupled'.
 This tests the ocn/glcshelf coupling.
+
+It also specified that DATM forcing should be restricted to 1958.
+This allows JRA1p5 forcing to be used without a large input data requirement.

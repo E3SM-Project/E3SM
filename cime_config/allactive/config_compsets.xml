@@ -412,8 +412,8 @@
 
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
-  <alias>MPAS_LISIO_TEST</alias>
-  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
+  <alias>MPAS_LISIO_JRA1p5</alias>
+  <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_MALI%SIA_SWAV</lname>
 </compset>
 
 <!-- Slab ocean cases -->
