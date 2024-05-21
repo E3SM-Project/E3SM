@@ -333,7 +333,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_initial_ice_area" type="real"
 	category="initialize" group="initialize">
-Sea ice concentration at initialization.
+Sea ice fraction at initialization.
 
 Valid values: A real number between 0.0 and 1.0 inclusive.
 Default: Defined in namelist_defaults.xml

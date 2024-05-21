@@ -234,11 +234,11 @@
                 />
                 <nml_option name="config_grounded_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from grounded ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)"
                 />
                 <nml_option name="config_floating_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from floating ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)"
                 />
 		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".true." units="unitless"
                         description="If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true."
@@ -1065,10 +1065,10 @@ is the value of that variable from the *previous* time level!
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Angle the edge normal makes with local eastward direction."
@@ -1372,7 +1372,7 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
-                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="0.0" packages="ismip6ShelfMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
@@ -1411,7 +1411,7 @@ is the value of that variable from the *previous* time level!
 		     description="thermal forcing for ISMIP6 retreat paramterization, from previous input time."
 	        />
                 <var name="ismip6RunoffPrevious" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
-                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time" 
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time"
 	     />
       	     <var name="ismip6_2dThermalForcingCurrent" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="thermal forcing for ISMIP6 retreat parameterization, at current input time."
