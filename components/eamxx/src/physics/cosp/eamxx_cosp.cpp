@@ -92,7 +92,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Computed>("isccp_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("modis_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("misr_cthtau" , scalar4d_cthtau, percent, grid_name, 1);
-  add_field<Computed>("isccp_mask"  , scalar2d, nondim, grid_name);
+  add_field<Computed>("cosp_sunlit"  , scalar2d, nondim, grid_name);
 }
 
 // =========================================================================================
@@ -109,7 +109,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   for (const auto field_name : {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"}) {
       auto& f = get_field_out(field_name);
       auto& atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-      atts["note"] = "Night values are zero; divide by isccp_mask to get daytime mean";
+      atts["note"] = "Night values are zero; divide by cosp_sunlit to get daytime mean";
   }
 }
 
@@ -175,7 +175,7 @@ void Cosp::run_impl (const double dt)
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
   auto modis_ctptau = get_field_out("modis_ctptau").get_view<Real***, Host>();
   auto misr_cthtau  = get_field_out("misr_cthtau" ).get_view<Real***, Host>();
-  auto isccp_mask   = get_field_out("isccp_mask"  ).get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
+  auto cosp_sunlit   = get_field_out("isccp_mask"  ).get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
 
   // Compute heights
   const auto z_mid = CospFunc::view_2d<Real>("z_mid", m_num_cols, m_num_levs);
@@ -207,7 +207,7 @@ void Cosp::run_impl (const double dt)
   // Call COSP wrapper routines
   if (update_cosp) {
     Real emsfc_lw = 0.99;
-    Kokkos::deep_copy(isccp_mask, sunlit);
+    Kokkos::deep_copy(cosp_sunlit, sunlit);
     CospFunc::view_2d<const Real> z_mid_c = z_mid;  // Need a const version of z_mid for call to CospFunc::main
     CospFunc::main(
             m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth,
@@ -245,13 +245,13 @@ void Cosp::run_impl (const double dt)
     Kokkos::deep_copy(isccp_ctptau, 0.0);
     Kokkos::deep_copy(modis_ctptau, 0.0);
     Kokkos::deep_copy(misr_cthtau , 0.0);
-    Kokkos::deep_copy(isccp_mask  , 0.0);
+    Kokkos::deep_copy(cosp_sunlit  , 0.0);
   }
   get_field_out("isccp_cldtot").sync_to_dev();
   get_field_out("isccp_ctptau").sync_to_dev();
   get_field_out("modis_ctptau").sync_to_dev();
   get_field_out("misr_cthtau" ).sync_to_dev();
-  get_field_out("isccp_mask"  ).sync_to_dev();
+  get_field_out("cosp_sunlit"  ).sync_to_dev();
 }
 
 // =========================================================================================
