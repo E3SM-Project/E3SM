@@ -19,6 +19,7 @@ enum class LayoutType {
   Invalid,
   Scalar0D,
   Vector0D,
+  Tensor0D,
   Scalar1D,
   Vector1D,
   Scalar2D,

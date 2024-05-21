@@ -72,6 +72,9 @@ public:
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout (const bool midpoints) const;
+  FieldLayout get_vertical_layout (const bool midpoints,
+                                   const int vector_dim,
+                                   const std::string& vec_dim_name = e2str(FieldTag::Component)) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
   virtual FieldLayout get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const = 0;
   virtual FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims,
