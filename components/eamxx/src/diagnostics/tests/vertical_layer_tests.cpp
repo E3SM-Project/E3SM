@@ -106,13 +106,13 @@ void run (const std::string& diag_name, const std::string& location)
   diag_out.sync_to_host();
   auto d_h = diag_out.get_view<Real**,Host>();
 
-  // Compare against expecte value
+  // Compare against expected value
   const auto last_int = num_levs;
   const auto last_mid = last_int-1;
 
   // Precompute surface value and increment depending on the diag type
   Real delta, surf_val;
-  if (diag_name=="altitude") {
+  if (diag_name=="height") {
     surf_val = 0;
     delta = dz_val;
   } else if (diag_name=="z") {
@@ -169,7 +169,7 @@ TEST_CASE("vertical_layer_test", "vertical_layer_test]"){
     root_print("\n");
     root_print(" -> Testing diagnostic for pack_size=" + std::to_string(N) + "\n");
     for (std::string loc : {"midpoints","interfaces"}) {
-      for (std::string diag : {"geopotential","altitude","z"}) {
+      for (std::string diag : {"geopotential","height","z"}) {
         std::string msg = "    -> Testing diag=" + diag + " at " + loc + " ";
         std::string dots (50-msg.size(),'.');
         root_print (msg + dots + "\n");

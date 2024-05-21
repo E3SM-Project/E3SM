@@ -47,14 +47,13 @@ protected:
   Field m_tmp_interface;
   Field m_tmp_midpoint;
 
-  // The diagnostic name. This will dictate which
-  // field in the computation is output (dz, z_int, or z_mid).
+  // The diagnostic name.
   std::string m_diag_name;
 
   // Store if the diagnostic output field exists on interface values
   bool m_is_interface_layout;
 
-  // True z_mid/int, false for altitude_mid/int. Unused for others
+  // True z_mid/int and geopotential_mid/int, false for height_mid/int. Unused for dz
   bool m_from_sea_level;
 
   // If true, output is a geopotential (units m2/s2), otherwise an elevation
