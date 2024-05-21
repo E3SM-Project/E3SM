@@ -311,7 +311,7 @@ AbstractGrid::delete_geometry_data (const std::string& name)
 }
 
 void
-AbstractGrid::set_geometry_data (const Field& f)
+AbstractGrid::set_geometry_data (const Field& f) const
 {
   EKAT_REQUIRE_MSG (not has_geometry_data(f.name()),
       "Error! Cannot set geometry data, since it already exists.\n"

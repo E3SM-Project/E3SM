@@ -142,7 +142,10 @@ public:
   }
 
   // Sets pre-existing field as geometry data.
-  void set_geometry_data (const Field& f);
+  // NOTE: setter is const, since we do allow adding new data even if grid is const
+  //       E.g., this allows atm procs to define coordinate vars for dimensions
+  //       peculiar to that process
+  void set_geometry_data (const Field& f) const;
   void delete_geometry_data (const std::string& name);
 
   bool has_geometry_data (const std::string& name) const {
@@ -244,7 +247,7 @@ protected:
   // The map lid->idx
   Field     m_lid_to_idx;
 
-  std::map<std::string,Field>  m_geo_fields;
+  mutable std::map<std::string,Field>  m_geo_fields;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;
