@@ -845,6 +845,7 @@ module li_subglacial_hydro
       integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
+      real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
       integer :: err_tmp
       
       err = 0
@@ -1078,6 +1079,10 @@ module li_subglacial_hydro
             endif
          enddo
       endif
+
+      where (effectiveConducEdge < SMALL_CONDUC)
+              effectiveConducEdge = 0.0_RKIND
+      end where
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
