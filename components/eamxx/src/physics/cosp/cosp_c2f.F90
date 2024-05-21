@@ -40,11 +40,11 @@ module cosp_c2f
 
   ! Local variables; control what runs and what does not
   logical :: &
-       lsingle     = .false.,  & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
-       ldouble     = .true., & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
+       lsingle     = .false., & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
+       ldouble     = .true. , & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
        lisccp      = .true. , & ! Local on/off switch for simulators (used by initialization)
-       lmodis      = .true., & !
-       lmisr       = .false., & !
+       lmodis      = .true. , & !
+       lmisr       = .true. , & !
        lcalipso    = .false., & !
        lgrLidar532 = .false., & !
        latlid      = .false., & !
@@ -64,7 +64,7 @@ module cosp_c2f
          Lmeantbisccp        = .false., & ! ISCCP mean all-sky 10.5micron brightness temperature
          Lmeantbclrisccp     = .false., & ! ISCCP mean clear-sky 10.5micron brightness temperature
          Lalbisccp           = .false., & ! ISCCP mean cloud albedo         
-         LclMISR             = .false., & ! MISR cloud fraction
+         LclMISR             = .true. , & ! MISR cloud fraction
          Lcltmodis           = .false., & ! MODIS total cloud fraction
          Lclwmodis           = .false., & ! MODIS liquid cloud fraction
          Lclimodis           = .false., & ! MODIS ice cloud fraction
@@ -270,17 +270,18 @@ contains
 
   end subroutine cosp_c2f_init 
 
-  subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, &
-       emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv, &
-       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau, modis_ctptau &
+  subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, ncth, &
+       emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid, qv, &
+       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau &
        ) bind(C, name='cosp_c2f_run')
-    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp
+    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp, ncth
     real(kind=c_double), value, intent(in) :: emsfc_lw
     real(kind=c_double), intent(in), dimension(npoints) :: sunlit, skt
-    real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
+    real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, z_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
     real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
     real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
     real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau, modis_ctptau
+    real(kind=c_double), intent(inout), dimension(npoints,ntau,ncth) :: misr_cthtau
     ! Takes normal arrays as input and populates COSP derived types
     character(len=256),dimension(100) :: cosp_status
     integer :: nptsperit
@@ -326,7 +327,7 @@ contains
     ! Translate arrays to derived types
     cospIN%emsfc_lw         = emsfc_lw
     cospIN%rcfg_cloudsat    = rcfg_cloudsat
-!   cospstateIN%hgt_matrix  = zlev(start_idx:end_idx,Nlevels:1:-1) ! km
+    cospstateIN%hgt_matrix  = z_mid(start_idx:end_idx,1:Nlevels)   ! m
     cospstateIN%sunlit      = sunlit(start_idx:end_idx)            ! 0-1
     cospstateIN%skt         = skt(start_idx:end_idx)               ! K
 !   cospstateIN%surfelev    = surfelev(start_idx:end_idx)          ! m
@@ -357,6 +358,9 @@ contains
 
     ! Modis
     modis_ctptau(:npoints,:,:) = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(:npoints,:,:)
+
+    ! MISR
+    misr_cthtau(:npoints,:,:) = cospOUT%misr_fq(:npoints,:,:)
 
   end subroutine cosp_c2f_run
 
