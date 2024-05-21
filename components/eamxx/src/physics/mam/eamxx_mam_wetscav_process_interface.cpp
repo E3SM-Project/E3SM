@@ -2,9 +2,6 @@
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 #include "scream_config.h"  // for SCREAM_CIME_BUILD
 
-// NOTE: see the impl/ directory for the contents of the impl namespace
-#include "impl/compute_particle_size.cpp"
-
 // Remove the following<<<<
 #include <type_traits>
 #include <typeinfo>
@@ -65,8 +62,9 @@ void MAMWetscav::set_grids(
   FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = m_grid->get_3d_vector_layout(true,nmodes,"nmodes");
+  FieldLayout scalar3d_mid_nmodes = m_grid->get_3d_vector_layout(true, nmodes, "nmodes");
 
+  // FieldLayout scalar2d = m_grid->get_2d_scalar_layout
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -89,9 +87,9 @@ void MAMWetscav::set_grids(
 
   // MUST FIXME: cldt and cldn are the same variables. They must be their
   // previous step values.
-  add_field<Updated>("cldn_prev_step", scalar3d_mid, nondim,
+  add_field<Updated>("cldn", scalar3d_mid, nondim,
                       grid_name);  // layer cloud fraction [fraction]
-  add_field<Updated>("cldst", scalar3d_mid, nondim,
+  add_field<Updated>("cldt", scalar3d_mid, nondim,
                       grid_name); //??
   add_field<Updated>("rprdsh", scalar3d_mid, kg / kg / s,
                      grid_name);  // rain production, shallow convection
@@ -110,11 +108,13 @@ void MAMWetscav::set_grids(
   // "inputs" data structure
   // MUST FIXME: cldt and cldn are the same variables. They must be their
   // previous step values.
-  add_field<Updated>("cldt_prev_step", scalar3d_mid, nondim,
-                      grid_name);  // total cloud fraction [fraction]
-  add_field<Required>(
-      "qme", scalar3d_mid, kg / kg / s,
-      grid_name);  // net condensation/evaporation of cloud water [kg/kg/s]
+  // add_field<Updated>("cldt_prev_step", scalar3d_mid, nondim,
+  //                     grid_name);  // total cloud fraction [fraction]
+
+  // FIXME: we do not need qme
+  // add_field<Required>(
+  //     "qme", scalar3d_mid, kg / kg / s,
+  //     grid_name);  // net condensation/evaporation of cloud water [kg/kg/s]
   add_field<Required>("prain", scalar3d_mid, kg / kg / s,
                       grid_name);  // stratiform rain production rate [kg/kg/s]
   add_field<Updated>(
@@ -128,30 +128,27 @@ void MAMWetscav::set_grids(
   add_field<Updated>("icwmrsh", scalar3d_mid, kg / kg,
                      grid_name);  // In cloud water mixing ratio, shallow
                                   // convection [kg/kg] //NOT updated
-  add_field<Required>("rprddp", scalar3d_mid, kg / kg / s,
-                      grid_name);  // Rain production, deep convection [kg/kg/s]
+  // add_field<Required>("rprddp", scalar3d_mid, kg / kg / s,
+  //                     grid_name);  // Rain production, deep convection [kg/kg/s]
   add_field<Updated>(
       "sh_frac", scalar3d_mid, nondim,
       grid_name);  // Shallow convective cloud fraction [fraction] //NOT updated
   add_field<Updated>(
       "dp_frac", scalar3d_mid, nondim,
       grid_name);  // Deep convective cloud fraction [fraction] //NOT updated
+  // in cloud water mixing ratio, deep shallow [kg/kg]
   add_field<Updated>(
       "icwmrsh", scalar3d_mid, nondim,
       grid_name);
-  add_field<Updated>(
-      "icwmrdp", scalar3d_mid, nondim,
-      grid_name);
-
-  add_field<Updated>(
-      "prain", scalar3d_mid, nondim,
-      grid_name);
-  add_field<Required>("evapcsh", scalar3d_mid, kg / kg / s,
-                      grid_name);  // Evaporation rate of shallow convective
-                                   // precipitation >=0. [kg/kg/s]
-  add_field<Required>("evapcdp", scalar3d_mid, kg / kg / s,
-                      grid_name);  // Evaporation rate of deep convective
-                                   // precipitation >=0. [kg/kg/s]
+  // add_field<Updated>(
+  //     "icwmrdp", scalar3d_mid, nondim,
+  //     grid_name);
+  // add_field<Required>("evapcsh", scalar3d_mid, kg / kg / s,
+  //                     grid_name);  // Evaporation rate of shallow convective
+  //                                  // precipitation >=0. [kg/kg/s]
+  // add_field<Required>("evapcdp", scalar3d_mid, kg / kg / s,
+  //                     grid_name);  // Evaporation rate of deep convective
+  //                                  // precipitation >=0. [kg/kg/s]
 
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -295,15 +292,17 @@ void MAMWetscav::set_grids(
                       grid_name);  // vertical pressure velocity
 
   // FIXME: units
-  add_field<Updated>("dlf", scalar3d_mid, n_unit,
+  add_field<Updated>("dlf", scalar3d_mid, kg / kg / s,
                       grid_name);  //
-  add_field<Updated>("dp_ccf", scalar3d_mid, n_unit,
-                      grid_name);  //
-  add_field<Updated>("sh_ccf", scalar3d_mid, n_unit,
-                      grid_name);  //
+  // add_field<Updated>("dp_ccf", scalar3d_mid, n_unit,
+  //                     grid_name);  //
+  // add_field<Updated>("sh_ccf", scalar3d_mid, n_unit,
+  //                     grid_name);  //
+
   // FIXME: do we need to write aerdepwetis and  aerdepwetcw?
   // add_field<Computed>("aerdepwetis", scalar3d_mid, n_unit,
   //                     grid_name);  //
+
   // add_field<Computed>("aerdepwetcw", scalar3d_mid, n_unit,
   //                     grid_name);  //
 }
@@ -460,7 +459,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   constexpr int pcnst = mam4::aero_model::pcnst;
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_ = view_2d("work", ncol_, work_len);
+  // FIXME: do I need to move these variables to FM?
+  // aerosol wet deposition (interstitial) [kg/m2/s]
   aerdepwetis_ = view_2d("aerdepwetis", ncol_, pcnst);
+  // aerosol wet deposition (cloud water)  [kg/m2/s]
   aerdepwetcw_ = view_2d("aerdepwetcw", ncol_, pcnst);
 }
 
@@ -474,35 +476,6 @@ void MAMWetscav::run_impl(const double dt) {
   // needed by this process or setting up MAM4xx classes and their objects
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
-
-  /*Fortran code:
-  call modal_aero_calcsize_sub(state%ncol, state%lchnk, state%q, state%pdel,
-  dt, & !in qqcw, ptend, dgnumdry_m=dgncur_a) !inout
-
-   ----subroutine modal_aero_calcsize_sub(ncol, lchnk, state_q, pdel, deltat,
-  qqcw, ptend, do_adjust_in, & do_aitacc_transfer_in, list_idx_in,
-  update_mmr_in, dgnumdry_m) */
-  // mam4::CalcSizeProcess process_(aero_config_); //initiate MAM4xx calcsize
-  // process
-
-  /* ----------------------------------------------------------------------------------------
-   * Compute particle size using the calcsize process
-   * ----------------------------------------------------------------------------------------
-   */
-
-  // -- configure the process
-  /*
-   * -- NOTES: 1. Flags for the inter-mode particle transfer
-   * (do_aitacc_transfer) and  size adjustment (do_adjust) are TRUE by default
-   *                a. Size adjustment is only done by changing aerosol
-   * numbers in the modes.
-   *           2. Interstitial and cld borne aerosols (i.e. "tends") mmr will
-   * be updated (update_mmr is TRUE by default)
-   */
-  // MUST: FIXME: Make sure state is not updated...only tendencies should be
-  // updated!!
-   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
-  // We cannot use member of this class inside of the parallel_for
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work = work_;
@@ -510,14 +483,14 @@ void MAMWetscav::run_impl(const double dt) {
 
   // inputs/outputs
   auto dlf = get_field_out("dlf").get_view<Real**>();
-  auto dp_ccf = get_field_out("dp_ccf").get_view<Real**>();
-  auto sh_ccf = get_field_out("sh_ccf").get_view<Real**>();
+  // auto dp_ccf = get_field_out("dp_ccf").get_view<Real**>();
+  // auto sh_ccf = get_field_out("sh_ccf").get_view<Real**>();
 
-  auto cldn_prev_step = get_field_out("cldn_prev_step").get_view< Real **>();
+  auto cldn = get_field_out("cldn").get_view< Real **>();
 
   // where is cldt_prev_step used?
   auto cldt_prev_step = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
-  auto cldst = get_field_out("cldst").get_view< Real **>();//??
+  auto cldt = get_field_out("cldt").get_view< Real **>();//??
   auto evapr = get_field_out("evapr").get_view< Real **>();
   auto rprdsh = get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
 
@@ -540,9 +513,11 @@ void MAMWetscav::run_impl(const double dt) {
   auto prain = get_field_out("prain")
                  .get_view<Real **>(); // ??
 
+  const auto aerdepwetis = aerdepwetis_;//
+  const auto aerdepwetcw = aerdepwetcw_;//
   // outputs
-  const auto aerdepwetis = aerdepwetis_;//get_field_out("aerdepwetis").get_view<Real **>();
-  const auto aerdepwetcw = aerdepwetcw_;// get_field_out("aerdepwetcw").get_view<Real **>();
+  // const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
+  // const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
 
   const auto wet_geometric_mean_diameter_i = get_field_out("dgnumwet").get_view<Real ***>();
   const auto dry_geometric_mean_diameter_i = get_field_out("dgncur_a").get_view<Real ***>();
@@ -566,7 +541,7 @@ void MAMWetscav::run_impl(const double dt) {
         // Note: we are only updating interstitial aerosols.
         mam4::Tendencies tends = mam_coupling::interstitial_aerosols_tendencies_for_column(dry_aero_tends, icol);
         // shallow_convective_cloud_fraction
-        auto cldn_prev_step_icol = ekat::subview(cldn_prev_step, icol);
+        auto cldn_icol = ekat::subview(cldn, icol);
         ///shallow_convective_precipitation_production
         auto rprdsh_icol = ekat::subview(rprdsh, icol);
         // deep_convective_precipitation_production
@@ -581,40 +556,28 @@ void MAMWetscav::run_impl(const double dt) {
         auto sh_frac_icol = ekat::subview(sh_frac, icol);
         // FIXME: what is this?
 
-        // diags.deep_convective_cloud_condensate
         auto  icwmrdp_col = ekat::subview(icwmrdp, icol);
-        // diags.shallow_convective_cloud_condensate
         auto icwmrsh_icol = ekat::subview(icwmrsh, icol);
-        // diags.evaporation_of_falling_precipitation =
         auto evapr_icol = ekat::subview(evapr, icol);
-        // diags.stratiform_cloud_fraction =
-        auto cldst_icol = ekat::subview(cldst, icol);
+        auto cldt_icol = ekat::subview(cldt, icol);
 
-        // deep_convective_cloud_fraction;
-        // auto dp_ccf_icol = ekat::subview(dp_ccf, icol);
-        // // shallow_convective_cloud_fraction;
-        // auto sh_ccf_icol = ekat::subview(sh_ccf, icol);
-        //  total_convective_detrainment;
         auto dlf_icol = ekat::subview(dlf, icol);
-        //aerosol_wet_deposition_interstitial;
         auto aerdepwetis_icol  = ekat::subview(aerdepwetis, icol);
-        // diags.aerosol_wet_deposition_cloud_water;
         auto aerdepwetcw_icol  = ekat::subview(aerdepwetcw, icol);\
         auto work_icol = ekat::subview(work, icol);
-        // auto qqcw_sav_icol = ekat::subview(qqcw_sav,icol);
         auto wet_diameter_icol = ekat::subview(wet_geometric_mean_diameter_i,icol);
         auto dry_diameter_icol = ekat::subview(dry_geometric_mean_diameter_i,icol);
         auto qaerwat_icol = ekat::subview(qaerwat,icol);
         auto wetdens_icol = ekat::subview(wetdens,icol);
         auto prain_icol = ekat::subview(prain,icol);
 
-
         mam4::wetdep::aero_model_wetdep(team, atm, progs, tends, dt,
                                     // inputs
-                                    cldst_icol, cldn_prev_step_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
+                                    cldt_icol, cldn_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
                                     evapcsh_icol, dp_frac_icol, sh_frac_icol,
                                     icwmrdp_col, icwmrsh_icol, evapr_icol,
                                     dlf_icol, prain_icol,
+                                    // in/out
                                     wet_diameter_icol,dry_diameter_icol,
                                     qaerwat_icol, wetdens_icol,
                                     // output
@@ -622,248 +585,6 @@ void MAMWetscav::run_impl(const double dt) {
                                     work_icol);
       });  // icol parallel_for loop
 
-  /*
-      call calc_sfc_flux(rprdsh(:ncol,:),  state%pdel(:ncol,:),
-     rprdshsum(:ncol))  ! output the last argument call
-     calc_sfc_flux(rprddp(:ncol,:),  state%pdel(:ncol,:), rprddpsum(:ncol))  !
-     output the last argument call calc_sfc_flux(evapcsh(:ncol,:),
-     state%pdel(:ncol,:), evapcshsum(:ncol)) ! output the last argument call
-     calc_sfc_flux(evapcdp(:ncol,:), state%pdel(:ncol,:), evapcdpsum(:ncol)) !
-     output the last argument
-
-      ! initiate variables
-      qsrflx_mzaer2cnvpr(:,:,:) = 0.0_r8
-      aerdepwetis(:,:)          = 0.0_r8
-      aerdepwetcw(:,:)          = 0.0_r8
-      qqcw_tmp(:,:)             = 0.0_r8
-      ! below-cloud scavcoef = 0.0 for cloud-borne species
-      scavcoefnv(:,:,0)         = 0.0_r8
-      ! resuspension goes to a different phase or mode
-      rtscavt_sv(:,:,:)         = 0.0_r8
-
-      ! examine if there is precipitation falling from above in each grid
-      call examine_prec_exist ( ncol,  state%pdel,      & ! in
-           dep_inputs%prain,  dep_inputs%cmfdqr,& ! in
-           dep_inputs%evapr,                    & ! in
-           isprx                                ) ! out
-
-      ! calculate the mass-weighted sol_factic for coarse mode species
-      call set_f_act_coarse(      ncol,                           & ! in
-           state%q,        ptend%q,        dt,             & ! in
-           f_act_conv_coarse, f_act_conv_coarse_dust,      & ! out
-           f_act_conv_coarse_nacl                          ) ! out
-
-      mmode_loop_aa: do mtmp = 1, ntot_amode ! main loop over aerosol modes
-
-         ! for mam4, do accum, aitken, pcarbon, then coarse
-         ! so change the order of 3 and 4 here
-         imode = mode_order_change(mtmp)
-
-         ! loop over interstitial (1) and cloud-borne (2) forms
-         !BSINGH (09/12/2014):Do cloudborne first for unified convection scheme
-     so !that the resuspension of cloudborne can be saved then applied to
-     interstitial (RCE) lphase_loop_aa:  do lphase = 2,1,-1  ! do cloudborne (2)
-     first then interstitial (1)
-
-            if (lphase == 1) then ! interstial aerosol
-               call modal_aero_bcscavcoef_get( imode, ncol, isprx, dgnumwet, &
-                    scavcoefnv(:,:,1), scavcoefnv(:,:,2) )
-            endif
-            call define_act_frac ( lphase,     imode,         & ! in
-                 sol_facti, sol_factic, sol_factb, f_act_conv) ! out
-
-            ! REASTER 08/12/2015 - changed ordering (mass then number) for
-     prevap resuspend to coarse lspec_loop_aa: do lspec = 1,
-     nspec_amode(imode)+2 ! loop over number + chem constituents + water
-
-               call index_ordering (                        &
-                    lspec, imode,  lphase,            & ! in
-                    jaeronumb, jaeromass, jaerowater, & ! in
-                    mm,    jnv, jnummaswtr            ) ! out
-
-               if (mm <= 0 .or. jnummaswtr == jaerowater ) cycle  ! by pass wet
-     aerosols
-
-               ! mam_prevap_resusp_optcc values control the prevap_resusp
-     calculations in wetdepa_v2: !     0 = no resuspension !   130 = non-linear
-     resuspension of aerosol mass   based on scavenged aerosol mass !   230 =
-     non-linear resuspension of aerosol number based on raindrop number !   the
-     130 thru 230 all use the new prevap_resusp code block in subr wetdepa_v2
-               !
-               mam_prevap_resusp_optcc = mam_prevap_resusp_no
-
-               if ( jnummaswtr == jaeromass ) then  ! dry mass
-                  mam_prevap_resusp_optcc = mam_prevap_resusp_mass
-               elseif ( jnummaswtr == jaeronumb .and. lphase == 1 .and. imode ==
-     modeptr_coarse ) then ! number mam_prevap_resusp_optcc =
-     mam_prevap_resusp_num endif
-
-               ! set f_act_conv for interstitial (lphase=1) coarse mode species
-               ! for the convective in-cloud, we conceptually treat the coarse
-     dust and seasalt ! as being externally mixed, and apply ! f_act_conv =
-     f_act_conv_coarse_dust/nacl to dust/seasalt ! number and sulfate are
-     conceptually partitioned to the dust and seasalt ! on a mass basis, so the
-     f_act_conv for number and sulfate are ! mass-weighted averages of the
-     values used for dust/seasalt if ((lphase == 1) .and. (imode ==
-     modeptr_coarse)) then f_act_conv = f_act_conv_coarse if (jnummaswtr ==
-     jaeromass) then if (lmassptr_amode(lspec,imode) ==
-     lptr_dust_a_amode(imode)) then f_act_conv = f_act_conv_coarse_dust elseif
-     (lmassptr_amode(lspec,imode) == lptr_nacl_a_amode(imode)) then f_act_conv =
-     f_act_conv_coarse_nacl endif endif endif
-
-               lphase_jnmw_conditional: if (lphase == 1) then
-                  ptend%lq(mm) = .true.
-                  ! q_tmp reflects changes from modal_aero_calcsize and is the
-     "most current" q q_tmp(1:ncol,:) = state%q(1:ncol,:,mm) +
-     ptend%q(1:ncol,:,mm)*dt !Feed in the saved cloudborne mixing ratios from
-     phase 2 qqcw_in(:,:) = qqcw_sav(:,:,lspec)
-
-                  call wetdepa_v2( &
-                       ncol, dt, state%pdel, & ! in dep_inputs%cmfdqr,
-     dep_inputs%evapc, dlf, dep_inputs%conicw, & ! in dep_inputs%prain,
-     dep_inputs%evapr, dep_inputs%totcond,    & ! in dep_inputs%cldt,
-     dep_inputs%cldcu,                         & ! in dep_inputs%cldvcu,
-     dep_inputs%cldvst,                      & ! in sol_factb, sol_facti,
-     sol_factic,                          & ! in mam_prevap_resusp_optcc,
-     .false., scavcoefnv(:,:,jnv), f_act_conv, & ! in q_tmp, qqcw_in(:,:), & !
-     in fracis(:,:,mm), dqdt_tmp, iscavt,                          & ! out
-                       icscavt, isscavt, bcscavt, bsscavt, rcscavt, rsscavt ) !
-     out
-
-                  ! resuspension goes to coarse mode
-                  call calc_resusp_to_coarse(     ncol,   mm,     & ! in
-                       mmtoo_prevap_resusp,    .true.,         & ! in
-                       rcscavt,        rsscavt,                & ! in
-                       dqdt_tmp,       rtscavt_sv              ) ! inout
-
-                  ptend%q(1:ncol,:,mm) = ptend%q(1:ncol,:,mm) +
-     dqdt_tmp(1:ncol,:)
-
-                  call outfld( trim(cnst_name(mm))//'WET', dqdt_tmp(:,:), pcols,
-     lchnk) call outfld( trim(cnst_name(mm))//'SIC', icscavt, pcols, lchnk) call
-     outfld( trim(cnst_name(mm))//'SIS', isscavt, pcols, lchnk) call outfld(
-     trim(cnst_name(mm))//'SBC', bcscavt, pcols, lchnk) call outfld(
-     trim(cnst_name(mm))//'SBS', bsscavt, pcols, lchnk)
-
-                  call calc_sfc_flux(dqdt_tmp(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx aerdepwetis(:ncol,mm) = sflx(:ncol)
-
-                  call calc_sfc_flux(icscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx sflxic = sflx
-
-                  call calc_sfc_flux(isscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name(mm))//'SFSIS', sflx,
-     pcols, lchnk)
-
-                  call calc_sfc_flux(bcscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name(mm))//'SFSBC', sflx,
-     pcols, lchnk) sflxbc = sflx
-
-                  call calc_sfc_flux(bsscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name(mm))//'SFSBS', sflx,
-     pcols, lchnk)
-
-                  ! here the prevap resuspension is in rcscavt & rsscavt and
-     column integral is written to history !BSINGH(09/15/2014):Following two
-     nested do-loops are new additions for unified convection
-                  !BSINGH(09/15/2014):After these do-loops, code was added by
-     RCE, the comments by RCE are kept as it is call
-     calc_sfc_flux(rcscavt(:ncol,:), state%pdel(:ncol,:), sflx(:ncol)) ! output
-     sflx sflxec = sflx
-
-                  call calc_sfc_flux(rsscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name(mm))//'SFSES', sflx,
-     pcols, lchnk)
-
-                  ! apportion convective surface fluxes to deep and shallow conv
-                  ! this could be done more accurately in subr wetdepa
-                  ! since deep and shallow rarely occur simultaneously, and
-     these !    fields are just diagnostics, this approximate method is adequate
-                  ! only do this for interstitial aerosol, because conv clouds
-     to not !    affect the stratiform-cloudborne aerosol call
-     apportion_sfc_flux_deep ( ncol,              & ! in
-                       rprddpsum,rprdshsum,evapcdpsum,evapcshsum,& ! in
-                       sflxbc,             sflxec,               & ! in
-                       sflxbcdp,           sflxecdp              ) ! out
-
-                  call outfld( trim(cnst_name(mm))//'SFSBD', sflxbcdp, pcols,
-     lchnk) ! when ma_convproc_intr is used, convective in-cloud wet removal is
-     done there ! the convective (total and deep) precip-evap-resuspension
-     includes in- and below-cloud ! contributions, so pass the below-cloud
-     contribution to ma_convproc_intr qsrflx_mzaer2cnvpr(1:ncol,mm,1) = sflxec(
-     1:ncol) qsrflx_mzaer2cnvpr(1:ncol,mm,2) = sflxecdp(1:ncol)
-
-               elseif (lphase == 2) then lphase_jnmw_conditional
-                  ! There is no cloud-borne aerosol water in the model, so this
-     code block ! should NEVER execute for lspec = nspec_amode(m)+1 (i.e.,
-     jnummaswtr = 2). ! The code only worked because the "do lspec" loop cycles
-     when lspec = nspec_amode(m)+1, ! but that does not make the code correct.
-                  fldcw => qqcw_get_field(pbuf,mm,lchnk)
-                  qqcw_sav(1:ncol,:,lspec) = fldcw(1:ncol,:)  !RCE 2012/01/12
-
-                  ! FIXME: Not sure if this is a bug or not as qqcw_tmp seem
-     different ! from the previous call and qqcw_tmp is always zero. May need !
-     further check.  - Shuaiqi Tang in refactoring for MAM4xx call wetdepa_v2( &
-                       ncol, dt, state%pdel, & ! in dep_inputs%cmfdqr,
-     dep_inputs%evapc, dlf, dep_inputs%conicw, & ! in dep_inputs%prain,
-     dep_inputs%evapr, dep_inputs%totcond,      & ! in dep_inputs%cldt,
-     dep_inputs%cldcu,                           & ! in dep_inputs%cldvcu,
-     dep_inputs%cldvst,                        & ! in sol_factb, sol_facti,
-     sol_factic,                            & ! in mam_prevap_resusp_optcc,
-     .true., scavcoefnv(:,:,jnv), f_act_conv, & ! in fldcw, qqcw_tmp, & ! in
-                       fracis_cw, dqdt_tmp, iscavt, & ! out icscavt, isscavt,
-     bcscavt, bsscavt, rcscavt, rsscavt         ) ! out
-
-                  ! resuspension goes to coarse mode
-                  call calc_resusp_to_coarse(    ncol,   mm,      & ! in
-                       mmtoo_prevap_resusp,   .false.,         & ! in
-                       rcscavt,        rsscavt,                & ! in
-                       dqdt_tmp,       rtscavt_sv              ) ! inout
-
-                  fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
-
-                  call calc_sfc_flux(dqdt_tmp(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFWET',
-     sflx, pcols, lchnk) aerdepwetcw(:ncol,mm) = sflx(:ncol)
-
-                  call calc_sfc_flux(icscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSIC',
-     sflx, pcols, lchnk)
-
-                  call calc_sfc_flux(isscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSIS',
-     sflx, pcols, lchnk)
-
-                  call calc_sfc_flux(bcscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSBC',
-     sflx, pcols, lchnk)
-
-                  call calc_sfc_flux(bsscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSBS',
-     sflx, pcols, lchnk)
-
-                  call calc_sfc_flux(rcscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSEC',
-     sflx, pcols, lchnk)
-
-                  call calc_sfc_flux(rsscavt(:ncol,:), state%pdel(:ncol,:),
-     sflx(:ncol)) ! output sflx call outfld( trim(cnst_name_cw(mm))//'SFSES',
-     sflx, pcols, lchnk)
-
-               endif lphase_jnmw_conditional
-
-            enddo lspec_loop_aa  ! lspec = 1, nspec_amode(m)+2
-         enddo lphase_loop_aa  ! lphase = 1, 2
-      enddo mmode_loop_aa  ! m = 1, ntot_amode
-
-      ! if the user has specified prescribed aerosol dep fluxes then
-      ! do not set cam_out dep fluxes according to the prognostic aerosols
-      if (.not.aerodep_flx_prescribed()) then
-         call set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
-      endif
-
-      call wetdep_inputs_unset(dep_inputs)
-  */
   std::cout << "End of wetscav run" << std::endl;
 }
 
