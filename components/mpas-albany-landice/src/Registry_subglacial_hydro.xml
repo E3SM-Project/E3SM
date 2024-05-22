@@ -152,8 +152,6 @@
                 <!-- state vars -->
 		<var name="iceThicknessHydro" type="real" dimensions="nCells Time" units="m"
 			description="ice thickness used by the hydrology model. Same as 'thickness' but with potential differences along domain boundaries that inhibit the formation of local hydropotential minima on boundaries." /> 
-		<var name="upperSurfaceHydro" type="real" dimensions="nCells Time" units="m"
-			description="upper surface used by the hydrology model if config_SGH_use_iceThicknessHydro = .true." />
 		<var name="waterThickness" type="real" dimensions="nCells Time" units="m"
                      description="water layer thickness in subglacial hydrology system" />
                 <var name="waterThicknessOld" type="real" dimensions="nCells Time" units="m"
