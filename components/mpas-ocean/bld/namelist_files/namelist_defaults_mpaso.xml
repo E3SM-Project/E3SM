@@ -347,7 +347,7 @@
 
 <!-- self_attraction_loading -->
 <config_use_self_attraction_loading>.false.</config_use_self_attraction_loading>
-<config_self_attraction_loading_smoothing_width>1.0</config_self_attraction_loading_smoothing_width>
+<config_self_attraction_loading_depth_cutoff>10.0</config_self_attraction_loading_depth_cutoff>
 <config_mpas_to_grid_weights_file>'mpas_to_grid.nc'</config_mpas_to_grid_weights_file>
 <config_grid_to_mpas_weights_file>'grid_to_mpas.nc'</config_grid_to_mpas_weights_file>
 <config_self_attraction_loading_compute_interval>'0000-00-00_00:30:00'</config_self_attraction_loading_compute_interval>
@@ -476,8 +476,11 @@
 <config_loglaw_bottom_drag_max>1.0e-1</config_loglaw_bottom_drag_max>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 <config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
+<config_topographic_wave_drag_scheme>'ZAE'</config_topographic_wave_drag_scheme>
 <config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
 <config_thickness_drag_type>'centered'</config_thickness_drag_type>
+<config_topographic_wave_drag_cutoff_depth>500</config_topographic_wave_drag_cutoff_depth>
+<config_topographic_wave_drag_cutoff_width>10</config_topographic_wave_drag_cutoff_width>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
