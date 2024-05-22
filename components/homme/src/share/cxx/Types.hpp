@@ -16,9 +16,6 @@
 
 #include <vector/KokkosKernels_Vector.hpp>
 
-#define __MACRO_STRING(MacroVal) #MacroVal
-#define MACRO_STRING(MacroVal) __MACRO_STRING(MacroVal)
-
 namespace Homme {
 
 // Usual typedef for real scalar type
