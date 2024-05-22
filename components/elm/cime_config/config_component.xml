@@ -99,7 +99,6 @@
       <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
       <value compset="1850.*_*CNPRDCTCBCTGU" >1850_TGU_control</value>
       <value compset="1850.*_*CNPRDCTCBCPHSTGUWFM" >1850_PHSTGUWFM_control</value>
-      <value compset="20TR.*_*CNPRDCTCBC" >20thC_CTL_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCPHS" >20thC_PHS_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
