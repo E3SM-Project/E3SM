@@ -102,14 +102,13 @@ OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 #  ${HOMME_BINARY_DIR}/tests/compilerTests/
 #  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
 
-# Default use quad precision
-OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
+OPTION (HOMME_SINGLE_PRECISION "Whether Homme should assume single precision floating point numbers" OFF)
 
 # Whether to use enhanced FP precision in certain parts of the code (mostly quadrature weight calculation)
 # If true, the enhanced precision is twice that of a reagular real type
 OPTION(HOMME_ENHANCED_PRECISION "Default to try to use quadruple precision" TRUE)
 
-IF (HOMME_ENHANCED_PRECISION)
+IF (HOMME_ENHANCED_PRECISION AND NOT HOMME_SINGLE_PRECISION)
   testQuadPrec(HOMME_QUAD_SUPPORTED)
   IF (NOT HOMME_QUAD_SUPPORTED)
     SET(HOMME_ENHANCED_PRECISION FALSE)

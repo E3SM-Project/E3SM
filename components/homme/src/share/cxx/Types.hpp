@@ -19,13 +19,18 @@
 namespace Homme {
 
 // Usual typedef for real scalar type
+#if HOMME_SINGLE_PRECISION
+using Real = float;
+#else
 using Real = double;
+#endif
 using RCPtr = Real *const;
 using CRCPtr = const Real *const;
-using F90Ptr = Real *const; // Using this in a function signature emphasizes
-                            // that the ordering is Fortran
-using CF90Ptr = const Real *const; // Using this in a function signature
-                                   // emphasizes that the ordering is Fortran
+
+// Using these in a function signature emphasizes that the array that is pointe
+// to by the ptr is from Fortran or, at least, has Fortran-style indices ordering.
+using F90Ptr  =       Real *const;
+using CF90Ptr = const Real *const;
 
 using VectorTagType = KokkosKernels::Batched::Experimental::SIMD<Real, ExecSpace>;
 

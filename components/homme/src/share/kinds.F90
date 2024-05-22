@@ -35,7 +35,11 @@ private
   int_kind     = 4,                      &
   long_kind    = 8,                      &
   log_kind     = 4,                      &
+#if HOMME_SINGLE_PRECISION
+  real_kind    = 4
+#else
   real_kind    = 8
+#endif
 #endif
 
 ! EAM uses iulog from cam_logfile, SCREAM/Homme will declare iulog in this file

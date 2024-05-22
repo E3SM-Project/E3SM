@@ -15,42 +15,42 @@ namespace KokkosKernels {
 namespace Batched {
 namespace Experimental {
 
-template <typename SpT, int l>
+template <typename T, typename Space, int l>
 KOKKOS_INLINE_FUNCTION
-Vector<VectorTag<SIMD<double, SpT>, l> >
-max (const Vector<VectorTag<SIMD<double, SpT>, l> >& a,
-     const Vector<VectorTag<SIMD<double, SpT>, l> >& b)
+Vector<VectorTag<SIMD<T, Space>, l> >
+max (const Vector<VectorTag<SIMD<T, Space>, l> >& a,
+     const Vector<VectorTag<SIMD<T, Space>, l> >& b)
 {
-  Vector<VectorTag<SIMD<double, SpT>, l> > r_val;
+  Vector<VectorTag<SIMD<T, Space>, l> > r_val;
 VECTOR_SIMD_LOOP
-  for (int i = 0; i < Vector<VectorTag<SIMD<double, SpT>, l>>::vector_length; i++) {
+  for (int i = 0; i < Vector<VectorTag<SIMD<T, Space>, l>>::vector_length; i++) {
     r_val[i] = Homme::max(a[i],b[i]);
   }
 
   return r_val;
 }
 
-template <typename SpT, int l>
+template <typename T, typename Space, int l>
 KOKKOS_INLINE_FUNCTION
-Vector<VectorTag<SIMD<double, SpT>, l> >
-min (const Vector<VectorTag<SIMD<double, SpT>, l> >& a,
-     const Vector<VectorTag<SIMD<double, SpT>, l> >& b)
+Vector<VectorTag<SIMD<T, Space>, l> >
+min (const Vector<VectorTag<SIMD<T, Space>, l> >& a,
+     const Vector<VectorTag<SIMD<T, Space>, l> >& b)
 {
-  Vector<VectorTag<SIMD<double, SpT>, l> > r_val;
+  Vector<VectorTag<SIMD<T, Space>, l> > r_val;
 VECTOR_SIMD_LOOP
-  for (int i = 0; i < Vector<VectorTag<SIMD<double, SpT>, l>>::vector_length; i++) {
+  for (int i = 0; i < Vector<VectorTag<SIMD<T, Space>, l>>::vector_length; i++) {
     r_val[i] = Homme::min(a[i],b[i]);
   }
 
   return r_val;
 }
 
-template <typename SpT, int l, typename ExpType>
+template <typename T, typename Space, int l, typename ExpType>
 KOKKOS_INLINE_FUNCTION
-Vector<VectorTag<SIMD<double, SpT>, l> >
-pow (const Vector<VectorTag<SIMD<double,SpT>,l>>& v, const ExpType p)
+Vector<VectorTag<SIMD<T, Space>, l> >
+pow (const Vector<VectorTag<SIMD<T,Space>,l>>& v, const ExpType p)
 {
-  using VectorType = Vector<VectorTag<SIMD<double,SpT>,l>>;
+  using VectorType = Vector<VectorTag<SIMD<T,Space>,l>>;
   VectorType vp;
 VECTOR_SIMD_LOOP
   for (int i = 0; i < VectorType::vector_length; ++i) {
@@ -60,12 +60,12 @@ VECTOR_SIMD_LOOP
   return vp;
 }
 
-template <typename SpT, int l>
+template <typename T, typename Space, int l>
 KOKKOS_INLINE_FUNCTION
-Vector<VectorTag<SIMD<double, SpT>, l> >
-log (const Vector<VectorTag<SIMD<double,SpT>,l>>& v)
+Vector<VectorTag<SIMD<T, Space>, l> >
+log (const Vector<VectorTag<SIMD<T,Space>,l>>& v)
 {
-  using VectorType = Vector<VectorTag<SIMD<double,SpT>,l>>;
+  using VectorType = Vector<VectorTag<SIMD<T,Space>,l>>;
   VectorType vp;
 VECTOR_SIMD_LOOP
   for (int i = 0; i < VectorType::vector_length; ++i) {

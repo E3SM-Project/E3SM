@@ -26,6 +26,18 @@
 namespace Homme
 {
 
+template<typename T>
+MPI_Datatype get_mpi_type ();
+
+template<>
+MPI_Datatype get_mpi_type<double>() {
+  return MPI_DOUBLE;
+}
+template<>
+MPI_Datatype get_mpi_type<float>() {
+  return MPI_FLOAT;
+}
+
 // ======================== IMPLEMENTATION ======================== //
 
 // Separating these allocations into a small routine works around a Cuda 10/GCC
@@ -1158,11 +1170,11 @@ void BoundaryExchange::build_buffer_views_and_requests()
         const auto& info = ucon(i);
         count += m_elem_buf_size[info.kind];
       }
-      HOMMEXX_MPI_CHECK_ERROR(MPI_Send_init(send_ptr + offset, count, MPI_DOUBLE,
+      HOMMEXX_MPI_CHECK_ERROR(MPI_Send_init(send_ptr + offset, count, get_mpi_type<Real>(),
                                             pids[ip], m_exchange_type, mpi_comm,
                                             &m_send_requests[ip]),
                               m_connectivity->get_comm().mpi_comm());
-      HOMMEXX_MPI_CHECK_ERROR(MPI_Recv_init(recv_ptr + offset, count, MPI_DOUBLE,
+      HOMMEXX_MPI_CHECK_ERROR(MPI_Recv_init(recv_ptr + offset, count, get_mpi_type<Real>(),
                                             pids[ip], m_exchange_type, mpi_comm,
                                             &m_recv_requests[ip]),
                               m_connectivity->get_comm().mpi_comm());
