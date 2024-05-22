@@ -965,12 +965,8 @@
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_sea_ice_reference_salinity" type="real" default_value="4.0" units="1.e-3"
-					description="assumed salinity of frazil ice in the open ocean."
+					description="assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0."
 					possible_values="Any positive real number."
-		/>
-		<nml_option name="config_frazil_land_ice_reference_salinity" type="real" default_value="0.0" units="1.e-3"
-					description="assumed salinity of frazil ice under land ice."
-					possible_values="Any non-negative real number."
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"

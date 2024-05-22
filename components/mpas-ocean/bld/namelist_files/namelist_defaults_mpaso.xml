@@ -382,7 +382,6 @@
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
 <config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
-<config_frazil_land_ice_reference_salinity>0.0</config_frazil_land_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
