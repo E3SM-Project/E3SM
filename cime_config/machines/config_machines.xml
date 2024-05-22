@@ -3920,9 +3920,9 @@
        <modules>
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
-          <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
-	  <command name="load">cray-python/3.9.13.1</command>
-	  <command name="load">spack-pe-gcc/0.4-rc1 cmake/3.26.4-gcc-testing</command>
+	  <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
+	  <command name="load">spack-pe-gcc/0.6.1-23.275.2 cmake</command>
+          <command name="load">python/3.10.10</command>
         </modules>
         <modules compiler="!gnu">
           <command name="load">oneapi/release/2023.12.15.001</command>
@@ -4030,8 +4030,8 @@
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
-          <command name="load">cray-python/3.9.13.1</command>
-          <command name="load">spack-pe-gcc/0.4-rc1 cmake/3.26.4-gcc-testing</command>
+          <command name="load">spack-pe-gcc/0.6.1-23.275.2 cmake</command>
+          <command name="load">python/3.10.10</command>
         </modules>
         <modules compiler="!gnu">
           <command name="load">oneapi/release/2023.12.15.001</command>
