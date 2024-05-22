@@ -1839,13 +1839,13 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{HOME}/e3sm/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/e3sm/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
-    <GMAKE_J>4</GMAKE_J>
+    <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>    
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -1853,7 +1853,7 @@
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    
+
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -1874,8 +1874,9 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="OPENBLAS_PATH">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/openblas-0.3.21-z66r7lyxwkhsshgreexm4cedffp73scp</env>
       <env name="LAPACK_ROOT">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/netlib-lapack-3.10.1-lkhddpuidlw2z74g5ui6eq5iattsfjxp</env>
-      <env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env>
+      <!--env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env-->
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which nf-config))}/lib</env>
     </environment_variables>
 
     <environment_variables BUILD_THREADED="TRUE">
