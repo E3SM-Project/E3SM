@@ -519,6 +519,17 @@
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
+
+  <batch_system MACH="pod" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
   
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
