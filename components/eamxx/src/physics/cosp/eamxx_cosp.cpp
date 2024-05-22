@@ -175,7 +175,7 @@ void Cosp::run_impl (const double dt)
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
   auto modis_ctptau = get_field_out("modis_ctptau").get_view<Real***, Host>();
   auto misr_cthtau  = get_field_out("misr_cthtau" ).get_view<Real***, Host>();
-  auto cosp_sunlit   = get_field_out("isccp_mask"  ).get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
+  auto cosp_sunlit  = get_field_out("cosp_sunlit").get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
 
   // Compute heights
   const auto z_mid = CospFunc::view_2d<Real>("z_mid", m_num_cols, m_num_levs);
@@ -211,7 +211,7 @@ void Cosp::run_impl (const double dt)
     CospFunc::view_2d<const Real> z_mid_c = z_mid;  // Need a const version of z_mid for call to CospFunc::main
     CospFunc::main(
             m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth,
-            emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid_c, qv,
+            emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid_c, qv, qc, qi,
             cldfrac, reff_qc, reff_qi, dtau067, dtau105,
             isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau
     );

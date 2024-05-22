@@ -6,7 +6,7 @@ extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
 extern "C" void cosp_c2f_run(const int ncol, const int nsubcol, const int nlay, const int ntau, const int nctp, const int ncth,
     const Real emsfc_lw, const Real* sunlit, const Real* skt,
-    const Real* T_mid, const Real* p_mid, const Real* p_int, const Real* z_mid, const Real* qv,
+    const Real* T_mid, const Real* p_mid, const Real* p_int, const Real* z_mid, const Real* qv, const Real* qc, const Real* qi,
     const Real* cldfrac, const Real* reff_qc, const Real* reff_qi, const Real* dtau067, const Real* dtau105,
     Real* isccp_cldtot, Real* isccp_ctptau, Real* modis_ctptau, Real* misr_cthtau);
 
@@ -33,7 +33,8 @@ namespace scream {
                 const Int ncol, const Int nsubcol, const Int nlay, const Int ntau, const Int nctp, const Int ncth, const Real emsfc_lw,
                 view_1d<const Real>& sunlit , view_1d<const Real>& skt,
                 view_2d<const Real>& T_mid  , view_2d<const Real>& p_mid  , view_2d<const Real>& p_int,
-                view_2d<const Real>& z_mid  , view_2d<const Real>& qv     , view_2d<const Real>& cldfrac,
+                view_2d<const Real>& z_mid  , view_2d<const Real>& qv     , view_2d<const Real>& qc     , view_2d<const Real>& qi,
+                view_2d<const Real>& cldfrac,
                 view_2d<const Real>& reff_qc, view_2d<const Real>& reff_qi,
                 view_2d<const Real>& dtau067, view_2d<const Real>& dtau105,
                 view_1d<Real>& isccp_cldtot , view_3d<Real>& isccp_ctptau, view_3d<Real>& modis_ctptau, view_3d<Real>& misr_cthtau) {
@@ -41,7 +42,8 @@ namespace scream {
             // Make host copies and permute data as needed
             lview_host_2d
                   T_mid_h("T_mid_h", ncol, nlay), p_mid_h("p_mid_h", ncol, nlay), p_int_h("p_int_h", ncol, nlay+1),
-                  z_mid_h("z_mid_h", ncol, nlay), qv_h("qv_h", ncol, nlay), cldfrac_h("cldfrac_h", ncol, nlay),
+                  z_mid_h("z_mid_h", ncol, nlay), qv_h("qv_h", ncol, nlay), qc_h("qc_h", ncol, nlay), qi_h("qi_h", ncol, nlay),
+                  cldfrac_h("cldfrac_h", ncol, nlay),
                   reff_qc_h("reff_qc_h", ncol, nlay), reff_qi_h("reff_qi_h", ncol, nlay),
                   dtau067_h("dtau_067_h", ncol, nlay), dtau105_h("dtau105_h", ncol, nlay);
             lview_host_3d isccp_ctptau_h("isccp_ctptau_h", ncol, ntau, nctp);
@@ -55,6 +57,8 @@ namespace scream {
                     p_mid_h(i,j) = p_mid(i,j);
                     z_mid_h(i,j) = z_mid(i,j);
                     qv_h(i,j) = qv(i,j);
+                    qc_h(i,j) = qc(i,j);
+                    qi_h(i,j) = qi(i,j);
                     cldfrac_h(i,j) = cldfrac(i,j);
                     reff_qc_h(i,j) = reff_qc(i,j);
                     reff_qi_h(i,j) = reff_qi(i,j);
@@ -73,7 +77,7 @@ namespace scream {
             // Call COSP wrapper
             cosp_c2f_run(ncol, nsubcol, nlay, ntau, nctp, ncth,
                     emsfc_lw, sunlit.data(), skt.data(), T_mid_h.data(), p_mid_h.data(), p_int_h.data(),
-                    z_mid_h.data(), qv_h.data(),
+                    z_mid_h.data(), qv_h.data(), qc_h.data(), qi_h.data(),
                     cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data(),
                     isccp_cldtot.data(), isccp_ctptau_h.data(), modis_ctptau_h.data(), misr_cthtau_h.data());
 

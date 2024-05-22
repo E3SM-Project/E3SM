@@ -271,13 +271,13 @@ contains
   end subroutine cosp_c2f_init 
 
   subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, ncth, &
-       emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid, qv, &
+       emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, z_mid, qv, qc, qi, &
        cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau &
        ) bind(C, name='cosp_c2f_run')
     integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp, ncth
     real(kind=c_double), value, intent(in) :: emsfc_lw
     real(kind=c_double), intent(in), dimension(npoints) :: sunlit, skt
-    real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, z_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
+    real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, z_mid, qv, qc, qi, cldfrac, reff_qc, reff_qi, dtau067, dtau105
     real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
     real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
     real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau, modis_ctptau
@@ -311,9 +311,9 @@ contains
     cca(:npoints,:nlevels) = 0        ! Cloud fraction of convective clouds; not present or used in our model
     dtau_c(:npoints,:nlevels) = 0     ! Optical depth of convective clouds; not present or used in our model
     dem_c (:npoints,:nlevels) = 0     ! Emissivity of convective clouds; not present or used in our model
-    mr_lsliq(:npoints,:nlevels) = 0   ! Mixing ratio of cloud liquid; will be needed for radar/lidar
-    mr_ccliq(:npoints,:nlevels) = 0   ! Mixing ratio of cloud liquid for convective clouds; not present or used in our model
-    mr_lsice(:npoints,:nlevels) = 0   ! Mixing ratio of cloud ice; will be needed for radar/lidar
+    mr_lsliq(:npoints,:nlevels) = qc(:npoints,:nlevels)  ! Mixing ratio of cloud liquid; will be needed for radar/lidar
+    mr_ccliq(:npoints,:nlevels) = 0                      ! Mixing ratio of cloud liquid for convective clouds; not present or used in our model
+    mr_lsice(:npoints,:nlevels) = qi(:npoints,:nlevels)  ! Mixing ratio of cloud ice; will be needed for radar/lidar
     mr_ccice(:npoints,:nlevels) = 0   ! Mixing ratio of cloud ice for convective clouds; not present or used in our model
     mr_lsrain(:npoints,:nlevels) = 0  ! Mixing ratio of rain; will be needed for radar/lidar
     mr_ccrain(:npoints,:nlevels) = 0  ! Mixing ratio of rain for convective clouds; not present or used in our model 
@@ -321,6 +321,8 @@ contains
     mr_ccsnow(:npoints,:nlevels) = 0  ! Mixing ratio of snow for convective clouds; will be needed for radar/lidar
     mr_lsgrpl(:npoints,:nlevels) = 0  ! Mixing ratio of graupel; will be needed for radar/lidar
     reff = 0                          ! Effective radii; will be needed for MODIS
+    reff(:npoints,:nlevels,I_LSCLIQ) = 1e-6 * reff_qc(:npoints,:nlevels)
+    reff(:npoints,:nlevels,I_LSCICE) = 1e-6 * reff_qi(:npoints,:nlevels)
 
     start_idx = 1
     end_idx = npoints
@@ -1323,6 +1325,7 @@ contains
    
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! MODIS optics
+    ! TODO: we can probably bypass this block if we take asym and ss_alb from radiation
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if (Lmodis) then
        allocate(MODIS_cloudWater(nPoints,nColumns,nLevels),                                &
