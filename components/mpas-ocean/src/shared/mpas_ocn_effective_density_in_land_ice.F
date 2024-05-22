@@ -111,7 +111,7 @@ contains
          landIcePressure,     &! land ice pressure
          effectiveDensityCur, &! effective density at current time
          effectiveDensityNew   ! effective density at new time level
-                                                  
+
       integer, dimension(:), pointer :: &
          landIceFloatingMask   ! mask for land ice presence on cell
 
@@ -179,15 +179,17 @@ contains
 #else
       !$omp do schedule(runtime) private(weightSum, i, cell2)
 #endif
-      do iCell = 1, nCellsAll
+      do iCell = 1, nCellsOwned
          weightSum = 1.0_RKIND
          effectiveDensityNew(iCell) = effectiveDensityScratch(iCell)
          do i = 1, nEdgesOnCell(iCell)
             cell2 = cellsOnCell(i,iCell)
-            effectiveDensityNew(iCell) = effectiveDensityNew(iCell) &
-                                       + cellMask(1,cell2)* &
-                                         effectiveDensityScratch(cell2)
-            weightSum = weightSum + cellMask(1,cell2)
+            if (cell2 <= nCellsAll) then
+               effectiveDensityNew(iCell) = effectiveDensityNew(iCell) &
+                                          + cellMask(1,cell2)* &
+                                            effectiveDensityScratch(cell2)
+               weightSum = weightSum + cellMask(1,cell2)
+            end if
          end do
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/ &
                                       weightSum
