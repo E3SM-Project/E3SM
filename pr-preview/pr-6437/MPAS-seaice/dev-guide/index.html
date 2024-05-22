@@ -1,0 +1,2438 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../tech-guide/">
+      
+      
+        <link rel="next" href="../references/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24">
+    
+    
+      
+        <title>Developer's Guide - E3SM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6543a935.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--note:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');}</style>
+
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#developers-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            E3SM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Developer's Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    E3SM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    E3SM Basics
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            E3SM Basics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Components
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../EAM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    EAM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            EAM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../EAM/user-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2" id="__nav_3_1_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Namelist Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Aerosol Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Emission Oxidants
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../EAM/tech-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_4" id="__nav_3_1_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/homme/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    High-Order Methods Modeling Environment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/p3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Predicted Particle Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/clubb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cloud Layers Unified By Binormals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/zm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Zhang and McFarlane deep convection scheme
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/rrtmg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    RRTMG
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/mam/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modal Aerosol Module
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/vbs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Volatility Basis Set (VBS) approach for SOA
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/dust/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dust aerosol
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OCEANFILMS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    chemUCI and Linoz
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/cosp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COSP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../EAM/tech-guide/armdiags/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ARM diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../ELM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    ELM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            ELM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ELM/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ELM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ELM/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../MOSART/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MOSART
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            MOSART
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MOSART/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MOSART/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MOSART/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../MPAS-Ocean/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MPAS-Ocean
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            MPAS-Ocean
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MPAS-seaice
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            MPAS-seaice
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Developer's Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Developer's Guide
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Controls
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mpas-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      MPAS Framework
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coupling-of-mpas-seaice-within-e3sm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coupling of MPAS-seaice within E3SM
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#icepack" class="md-nav__link">
+    <span class="md-ellipsis">
+      Icepack
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e3sm-polar-developer-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      E3SM-Polar-Developer Script
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E3SM-Polar-Developer Script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view-helpful-information-including-default-values-for-duration-configuration-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      View helpful information, including default values for duration, configuration, etc
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-up-and-run-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up and run baselines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-up-a-sandbox-for-model-development-to-be-compared-with-the-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up a sandbox for model development, to be compared with the baselines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make-changes-in-icepack-and-pr-to-the-consortium" class="md-nav__link">
+    <span class="md-ellipsis">
+      Make changes in Icepack and PR to the Consortium
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cice-qc-quality-control-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      CICE-QC Quality Control Testing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CICE-QC Quality Control Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-up-and-run-simulations-to-be-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up and run simulations to be compared
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-qc-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run QC comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-statistics-from-the-cice-qc-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generate statistics from the CICE-QC runs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-comparison-plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create comparison plots
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../generate_domain_files/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    generate_domain_files
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            generate_domain_files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    More Information
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            More Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://docs.e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    E3SM-Project
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    e3sm.org
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Controls
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mpas-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      MPAS Framework
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coupling-of-mpas-seaice-within-e3sm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coupling of MPAS-seaice within E3SM
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#icepack" class="md-nav__link">
+    <span class="md-ellipsis">
+      Icepack
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e3sm-polar-developer-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      E3SM-Polar-Developer Script
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="E3SM-Polar-Developer Script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#view-helpful-information-including-default-values-for-duration-configuration-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      View helpful information, including default values for duration, configuration, etc
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-up-and-run-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up and run baselines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-up-a-sandbox-for-model-development-to-be-compared-with-the-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up a sandbox for model development, to be compared with the baselines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make-changes-in-icepack-and-pr-to-the-consortium" class="md-nav__link">
+    <span class="md-ellipsis">
+      Make changes in Icepack and PR to the Consortium
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cice-qc-quality-control-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      CICE-QC Quality Control Testing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CICE-QC Quality Control Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-up-and-run-simulations-to-be-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set up and run simulations to be compared
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-qc-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run QC comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-statistics-from-the-cice-qc-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generate statistics from the CICE-QC runs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-comparison-plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create comparison plots
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+    
+      
+    
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/components/mpas-seaice/docs/dev-guide/index.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
+    </a>
+  
+
+
+<h1 id="developers-guide">Developer's Guide</h1>
+<p>Development of the MPAS-seaice component should follow the general procedures outlined by the E3SM project.</p>
+<p><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide">Development Guide for E3SM Code</a>
+<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3924787306/Developing+Documentation">Development Guide for E3SM Documentation</a></p>
+<h2 id="configuration-controls">Configuration Controls</h2>
+<p>MPAS-seaice is controlled using namelist options.  Namelist files for E3SM runs are found in <code>E3SM/components/mpas-seaice/bld/namelist_files/</code>.  However, the values in these files are drawn from the Registry, following the convention of all MPAS components. Registry files are used directly for stand-alone MPAS-seaice runs, and E3SM scripts pass information from them into E3SM's namelist files when a PR is merged.  E3SM's namelist files need to be changed for development purposes.  It's easiest to change all of them when needed, to keep them consistent, taking care not to unintentionally change standalone MPAS-seaice configurations.</p>
+<h2 id="mpas-framework">MPAS Framework</h2>
+<p>MPAS-seaice is built on the MPAS Framework.</p>
+<p>The MPAS Framework provides the foundation for a generalized geophysical fluid dynamics model on unstructured spherical and planar meshes. On top of the framework, implementations specific to the modeling of a particular physical system (e.g., sea ice, ocean) are created as MPAS cores. The MPAS design philosophy is to leverage the efforts of developers from the various MPAS cores to provide common framework functionality with minimal effort, allowing MPAS core developers to focus on development of the physics and features relevant to their application.</p>
+<p>The framework code includes shared modules for fundamental model operation. Significant capabilities include:</p>
+<ul>
+<li><strong>Description of model data types.</strong> MPAS uses a handful of fundamental Fortran derived types for basic model functionality. Core-specific model variables are handled through custom groupings of model fields called pools, for which custom access routines exist. Core-specific variables are defined in XML syntax in a Registry, and the framework parses the Registry, defines variables, and allocates memory as needed.</li>
+<li><strong>Mesh specification.</strong> MPAS requires 36 fields to fully describe the mesh used in a simulation. These include the position, area, orientation, and connectivity of all cells, edges, and vertices in the mesh. The mesh specification can flexibly describe both spherical and planar meshes. For more information about the meshes, see the <a href="../user-guide/">Users Guide</a>.</li>
+<li><strong>Distributed memory parallelization and domain decomposition.</strong> The MPAS Framework provides needed routines for exchanging information between processors in a parallel environment using Message Passing Interface (MPI). This includes halo updates, global reductions, and global broadcasts. MPAS also supports decomposing multiple domain blocks on each processor to optimize model performance by minimizing transfer of data from disk to memory. Shared memory parallelization through OpenMP is also supported, but the implementation is left up to each core.</li>
+<li><strong>Parallel input and output capabilities.</strong> MPAS performs parallel input and output of data from and to disk through the commonly used libraries of NetCDF, Parallel NetCDF (pnetcdf), and Parallel Input/Output (PIO). The Registry definitions control which fields can be input and/or output, and a framework "streams" functionality provides run-time configuration of what fields are to be written to what file name and at what frequency through an XML streams file. The MPAS framework includes additional functionality specific to providing a flexible model restart capability.</li>
+<li><strong>Advanced timekeeping.</strong> MPAS uses a customized version of the timekeeping functionality of the Earth System Modeling Framework (ESMF), which includes a robust set of time and calendar tools used by many Earth System Models (ESMs). This allows explicit definition of model epochs in terms of years, months, days, hours, minutes, seconds, and fractional seconds and can be set to three different calendar types: Gregorian, Gregorian no leap, and 360 day. This flexibility helps enable multi-scale physics and simplifies coupling to ESMs. To manage the complex date/time types that ensue, MPAS framework provides routines for arithmetic of time intervals and the definition of alarm objects for handling events (e.g., when to write output, when the simulation should end).</li>
+<li><strong>Run-time configurable control of model options.</strong> Model options are configured through namelist files that use standard Fortran namelist file format, and input/output are configured through streams files that use XML format. Both are completely adjustable at run time.</li>
+<li><strong>Online, run-time analysis framework.</strong> A system for defining analysis of model states during run time, reducing the need for post-processing and model output.</li>
+</ul>
+<p>Additionally, a number of shared operators exist to perform common operations on model data. These include geometric operations (e.g., length, area, and angle operations on the sphere or the plane), interpolation (linear, barycentric, Wachspress, radial basis functions, spline), vector and tensor operations (e.g., cross products, divergence), and vector reconstruction (e.g., interpolating from cell edges to cell centers). Most operators work on both spherical and planar meshes.</p>
+<h2 id="coupling-of-mpas-seaice-within-e3sm">Coupling of MPAS-seaice within E3SM</h2>
+<p>Several files within MPAS-SI control the coupling of fields between MPAS-SI and other E3SM components via the coupler. A list of all variables being passed to and from MPAS-SI can be found in <code>components/mpas-seaice/driver/mpassi_cpl_indices.F</code>.
+Variables named with the prefix <code>x2i</code> are passed from the coupler to MPAS-SI, variables with the prefix <code>i2x</code> are passed from MPAS-SI to the coupler.
+For example, all coupled variables are named with the following convention:
+<code>index_i2x_Si_ithick</code> refers to a state variable of ice (<code>Si</code>) that gets passed from MPAS-SI to the coupler (<code>i2x</code>) for the ice thickness (<code>ithick</code>). <code>index_x2i_So_t</code> refers to an ocean state variable (<code>So</code>) passed from the the coupler to MPAS-SI (<code>x2i</code>) for ocean temperature (<code>t</code>).</p>
+<h2 id="icepack">Icepack</h2>
+<p>For changes to Icepack, please consult the <a href="https://github.com/CICE-Consortium/About-Us/wiki/Contributing">CICE Consortium's recommendations for code contributions</a>.</p>
+<p>To access the column physics in Icepack, MPAS-seaice uses methods defined in <code>icepack_intfc.F90</code>. The 'init' and 'query' methods are used to set and retrieve Icepack values. A 'write' method is also available for documenting these values. MPAS-seaice follows the 'icepack_warnings' methodology where <code>icepack_warnings_aborted</code> is checked and <code>icepack_warnings_flush</code> is called after every call to an Icepack method. It does not directly “use” Icepack data, accessing Icepack data only through these interfaces.</p>
+<p>Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. <strong>We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.</strong></p>
+<h2 id="e3sm-polar-developer-script">E3SM-Polar-Developer Script</h2>
+<p>To accelerate early development stages, a script is available for configuring and testing MPAS-seaice (including the Icepack submodule) in D compsets, which have the sea ice component active and data models for the other components.</p>
+<h3 id="view-helpful-information-including-default-values-for-duration-configuration-etc">View helpful information, including default values for duration, configuration, etc</h3>
+<div class="highlight"><pre><span></span><code>git clone git@github.com:E3SM-Project/SimulationScripts.git
+cd SimulationScripts/archive/PolarGroup
+./E3SM-Polar-Developer.sh -h
+</code></pre></div>
+<p>For debugging E3SM, search the script for 'debug' and follow the instructions.</p>
+<p>The following examples describe how to use the script for development in Icepack.  Similar procedures could be used for any MPAS-SI physics development.</p>
+<h3 id="set-up-and-run-baselines">Set up and run baselines</h3>
+<p>Create a file containing modified namelist options. The file <code>nset01.nlk</code> in this example creates baselines for two types of column physics and turns off the <code>snicar_ad</code> radiation scheme.</p>
+<div class="highlight"><pre><span></span><code>$ less nset01.nlk
+[mpassi]
+config_column_physics_type = {&#39;column_package&#39;,&#39;icepack&#39;}
+config_use_snicar_ad = {.false.}
+</code></pre></div>
+<p>Notes:</p>
+<ul>
+<li>A .nlk file without any config settings will create a baseline using default settings.</li>
+<li>The <code>column_package</code> option is still available but is no longer being supported in MPAS-seaice.</li>
+</ul>
+<p>Fetch E3SM (choose any name for the directory baselines01):</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -f git@github.com:E3SM-Project/E3SM
+</code></pre></div>
+<p>Set up a new case and build it:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -n -b
+</code></pre></div>
+<p>Submit:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -q
+</code></pre></div>
+<p>Examine the diagnostic output (compares the icepack run with the column_package run in this example):</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -a -v
+</code></pre></div>
+<h3 id="set-up-a-sandbox-for-model-development-to-be-compared-with-the-baselines">Set up a sandbox for model development, to be compared with the baselines</h3>
+<p>Fetch E3SM (choose any name for the directory newdev01):</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -f git@github.com:E3SM-Project/E3SM
+</code></pre></div>
+<p>Create a new development branch:</p>
+<div class="highlight"><pre><span></span><code>cd ~/E3SM-Polar/code/newdev01
+git branch newbranch
+git checkout newbranch
+</code></pre></div>
+<p>Set up a new case and build it:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -k nset01.nlk -e -n -b
+</code></pre></div>
+<p>Develop and test...
+Build/compile:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -k nset01.nlk -e -b
+</code></pre></div>
+<p>Submit:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -k nset01.nlk -e -q
+</code></pre></div>
+<p>Examine the diagnostic output:</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -k nset01.nlk -e -a -v
+</code></pre></div>
+<p>Compare with the baselines case directory (use your D3 baselines directory):</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s newdev01 -k nset01.nlk -a D3.nset01.baselines01.master.E3SM-Project.anvil -v
+</code></pre></div>
+<h3 id="make-changes-in-icepack-and-pr-to-the-consortium">Make changes in Icepack and PR to the Consortium</h3>
+<p>We recommend PR’ing Icepack changes first to the Consortium then to E3SM’s icepack fork, in order to keep the repositories in sync and to ensure the changes are robust outside of E3SM.  Some changes to Icepack require extensive changes to the driver code (e.g. MPAS-seaice or CICE), making this process challenging.  Contact the <a href="https://github.com/CICE-Consortium/About-Us/wiki/Contributing">CICE Consortium</a> to discuss and identify a collaborative path forward.</p>
+<p>First, create a baseline (standalone) Icepack test suite using the E3SM icepack fork or, if the Consortium code is different, using Consortium icepack main (see <a href="https://cice-consortium-icepack.readthedocs.io/en/main/user_guide/ug_testing.html">Consortium documentation</a>.)</p>
+<p>Similarly test your branch of Icepack within E3SM and compare with the baseline.
+When satisfied with E3SM testing, PR to Consortium icepack main:</p>
+<div class="highlight"><pre><span></span><code>git remote add consortium git@github.com:cice-consortium/icepack.git
+git pull consortium main
+</code></pre></div>
+<p>Fix conflicts if needed, then</p>
+<div class="highlight"><pre><span></span><code>git add ...
+git commit -m &quot;update from cice-consortium main&quot;
+</code></pre></div>
+<p>Continue testing. When satisfied,</p>
+<div class="highlight"><pre><span></span><code>git push origin branch
+</code></pre></div>
+<p>Create a PR from branch to cice-consortium/icepack -b main.</p>
+<p>Once the PR has been tested and merged into the main Icepack codebase, a new PR is submitted to E3SM.</p>
+<p>More extensive documentation of this workflow tool used for the Icepack merge project is available <a href="https://acme-climate.atlassian.net/wiki/spaces/ICE/pages/3450339435/Project+Workflow">here</a>.</p>
+<h2 id="cice-qc-quality-control-testing">CICE-QC Quality Control Testing</h2>
+<p>Example to run a CICE-QC comparison between two E3SM simulations with changes to the sea ice component.</p>
+<h3 id="set-up-and-run-simulations-to-be-compared">Set up and run simulations to be compared</h3>
+<div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/
+</code></pre></div>
+<p>Create a <code>.nlk</code> file with namelist changes to include the thickness analysis member. Include changes to namelist values needed in both the baseline and the test here, if desired (append the last 3 lines here to the end of your standard D-case test .nlk).</p>
+<div class="highlight"><pre><span></span><code>$ less qcbase.nlk
+[mpassi]
+config_AM_thicknesses_enable = {.true.}
+config_AM_thicknesses_compute_on_startup = {.true.}
+config_AM_thicknesses_write_on_startup = {.true.}
+</code></pre></div>
+<p>Use test script to clone E3SM, and create a sandbox</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s qcbaseline -f git@github.com:E3SM-Project/E3SM
+</code></pre></div>
+<p>Edit <code>~/E3SM-Polar/code/qcbaseline/components/mpas-seaice/cime_config/buildnml</code> to change:</p>
+<div class="highlight"><pre><span></span><code>lines.append(&#39;        output_interval=&quot;none&quot;&gt;&#39;)
+</code></pre></div>
+<p>to</p>
+<div class="highlight"><pre><span></span><code>lines.append(&#39;        output_interval=&quot;00-00-01_00:00:00&quot;&gt;&#39;)
+</code></pre></div>
+<p>for <code>stream name=“output”</code> and add</p>
+<div class="highlight"><pre><span></span><code>lines.append(&#39;    &lt;var name=&quot;iceThicknessCell&quot;/&gt;&#39;)
+</code></pre></div>
+<p>a few lines below that:</p>
+<div class="highlight"><pre><span></span><code>            lines.append(&#39;&lt;stream name=&quot;output&quot;&#39;)
+            lines.append(&#39;        type=&quot;output&quot;&#39;)
+            lines.append(&#39;        io_type=&quot;{}&quot;&#39;.format(ice_pio_typename))
+            lines.append(&#39;        filename_template=&quot;{}.mpassi{}.hist.$Y-$M-$D_$
+S.nc&quot;&#39;.format(casename, inst_string))
+            lines.append(&#39;        filename_interval=&quot;00-01-00_00:00:00&quot;&#39;)
+            lines.append(&#39;        clobber_mode=&quot;truncate&quot;&#39;)
+            lines.append(&#39;        reference_time=&quot;01-01-01_00:00:00&quot;&#39;)
+-           lines.append(&#39;        output_interval=&quot;none&quot;&gt;&#39;)
++           lines.append(&#39;        output_interval=&quot;00-00-01_00:00:00&quot;&gt;&#39;)
+            lines.append(&#39;&#39;)
+            lines.append(&#39;    &lt;stream name=&quot;mesh&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;xtime&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;daysSinceStartOfSim&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;iceAreaCell&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;iceVolumeCell&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;snowVolumeCell&quot;/&gt;&#39;)
++           lines.append(&#39;    &lt;var name=&quot;iceThicknessCell&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;uVelocityGeo&quot;/&gt;&#39;)
+            lines.append(&#39;    &lt;var name=&quot;vVelocityGeo&quot;/&gt;&#39;)
+            lines.append(&#39;&#39;)
+            lines.append(&#39;&lt;/stream&gt;&#39;)
+</code></pre></div>
+<p>Build and run baseline case for 5 years (60 months):</p>
+<div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -nb
+./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -q
+</code></pre></div>
+<p>Copy the thickness analysis member changes into your development directory:</p>
+<div class="highlight"><pre><span></span><code>cd ~/E3SM-Polar/code/newdev01/components/mpas-seaice/cime_config/
+cp ~/E3SM-Polar/code/qcbaseline/components/mpas-seaice/cime_config/buildnml .
+</code></pre></div>
+<p>If your development case adds namelist parameters, add the thickness analysis member to your .nlk file as above. This example uses the default configuration.</p>
+<p>Build and run the development case:</p>
+<div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/
+./E3SM-Polar-Developer.sh -s newdev01 -k qcbase.nlk -e -d60 -nb
+./E3SM-Polar-Developer.sh -s newdev01 -k qcbase.nlk -e -d60 -q
+</code></pre></div>
+<h3 id="run-qc-comparison">Run QC comparison</h3>
+<div class="highlight"><pre><span></span><code>cd ~/E3SM-Polar/code/newdev01/components/mpas-seaice/testing/cice-qc
+</code></pre></div>
+<p>See README.md.  This example is for anvil.</p>
+<p>Edit <code>job_script.cice-qc.anvil</code> to export (insert your username)</p>
+<div class="highlight"><pre><span></span><code>BASE = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.anvil/run.k000/
+TEST = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil/run.k000
+</code></pre></div>
+<p>Submit QC test. Test results will be in the file <code>qc_log.txt</code>.</p>
+<div class="highlight"><pre><span></span><code>sbatch job_script.qc-testing-mpassi.anvil
+less qc_log.txt
+</code></pre></div>
+<p>Example of desired result:</p>
+<div class="highlight"><pre><span></span><code>Running QC test on the following directories:
+  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.anvil/run.k000/
+  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil/run.k000
+Number of files: 61
+2 Stage Test Passed
+Quadratic Skill Test Passed for Northern Hemisphere
+Quadratic Skill Test Passed for Southern Hemisphere
+</code></pre></div>
+<h3 id="generate-statistics-from-the-cice-qc-runs">Generate statistics from the CICE-QC runs</h3>
+<p>This only works if the .nlk filename is the same for both cases.  If comparing only namelist changes within MPAS-seaice, use the <code>./E3SM-Polar-Developer.sh</code> script with a single .nlk file that includes each option.</p>
+<div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/
+$ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil -v
+</code></pre></div>
+<h3 id="create-comparison-plots">Create comparison plots</h3>
+<p>To generate MPAS-Analysis plots from the CICE-QC runs and compare:</p>
+<p>Copy the scripts in the file <a href="MPAS-Analysis_scripts.zip">MPAS-Analysis_scripts.zip</a> to anvil or chrysalis.</p>
+<p>Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for a QC comparison)</p>
+<p>Edit and submit (on chrysalis) the job script 3 times, once for icepack, once for column, and finally for the comparison.</p>
+<p>Browse the html output by navigating to the location indicated by <code>htmlSubdirectory</code> in the comparison script, e.g.
+<code>https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.eclare/icepack-testing/D12.qcPR19.emc.qcPR19.snicar_active.eclare108213.anvil/mpas_analysis_output/</code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
+      
+        <script src="../../javascript/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
