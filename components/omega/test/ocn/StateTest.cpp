@@ -110,10 +110,12 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: Test state retrieval FAIL");
       }
 
+      // auto LayerThicknessH_0 = DefState->LayerThicknessH[0];
+      // auto LayerThicknessH_1 = DefState->LayerThicknessH[1];
       // for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-      //    for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-      //       LOG_INFO(DefState->LayerThicknessH(0, Cell, Level));
-      //       LOG_INFO(DefState->LayerThicknessH(1, Cell, Level));
+      //    for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+      //       LOG_INFO(LayerThicknessH_0(Cell, Level));
+      //       LOG_INFO(LayerThicknessH_1(Cell, Level));
       //    }
       // }
 
@@ -121,8 +123,8 @@ int main(int argc, char *argv[]) {
       int count = 0;
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          int colCount = 0;
-         for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            OMEGA::R8 val = DefState->LayerThicknessH(0, Cell, Level);
+         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+            OMEGA::R8 val = DefState->LayerThicknessH[0](Cell, Level);
             if (val > 0.0 && val < 300.0) {
                colCount++;
             }
@@ -140,11 +142,13 @@ int main(int argc, char *argv[]) {
 
       // Test that initally the 0 time levels of the
       // Def and Test state arrays match
-      count = 0;
+      count                     = 0;
+      auto LayerThicknessH_def  = DefState->LayerThicknessH[0];
+      auto LayerThicknessH_test = TestState->LayerThicknessH[0];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(0, Cell, Level) !=
-                TestState->LayerThicknessH(0, Cell, Level)) {
+         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+            if (LayerThicknessH_def(Cell, Level) !=
+                LayerThicknessH_test(Cell, Level)) {
                count++;
             }
          }
@@ -158,22 +162,27 @@ int main(int argc, char *argv[]) {
 
       // Test that the time level swap is correct.
       DefState->swapTimeLevels(0, 1);
-      DefState->copyToHost();
+      DefState->copyToHost(0);
+      DefState->copyToHost(1);
 
-      count = 0;
+      count                = 0;
+      LayerThicknessH_def  = DefState->LayerThicknessH[1];
+      LayerThicknessH_test = TestState->LayerThicknessH[0];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(1, Cell, Level) !=
-                TestState->LayerThicknessH(0, Cell, Level)) {
+         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+            if (LayerThicknessH_def(Cell, Level) !=
+                LayerThicknessH_test(Cell, Level)) {
                count++;
             }
          }
       }
 
+      LayerThicknessH_def  = DefState->LayerThicknessH[0];
+      LayerThicknessH_test = TestState->LayerThicknessH[1];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->VerticalLevels; Level++) {
-            if (DefState->LayerThicknessH(0, Cell, Level) !=
-                TestState->LayerThicknessH(1, Cell, Level)) {
+         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+            if (LayerThicknessH_def(Cell, Level) !=
+                LayerThicknessH_test(Cell, Level)) {
                count++;
             }
          }
@@ -181,7 +190,7 @@ int main(int argc, char *argv[]) {
 
       /*
       OMEGA::parallelReduce("test", {DefState->NCellsAll,
-      DefState->VerticalLevels}, KOKKOS_LAMBDA(int Cell, int Level, int &total)
+      DefState->NVerticalLevels}, KOKKOS_LAMBDA(int Cell, int Level, int &total)
       { if (DefState->LayerThickness(1, Cell, Level) !=
       TestState->LayerThickness(0, Cell, Level)) { total++;
            }

@@ -62,16 +62,16 @@ class OceanState {
    I4 NEdgesAll;   ///< Total number (owned+halo) of local edges
    I4 NEdgesSize;  ///< Array length (incl padding, bndy) for edge dim
 
-   I4 TimeLevels;     ///< Number of time levels in state variable arrays
-   I4 VerticalLevels; ///< Number of vertical levels in state variable arrays
+   I4 NTimeLevels;     ///< Number of time levels in state variable arrays
+   I4 NVerticalLevels; ///< Number of vertical levels in state variable arrays
 
    // Prognostic variables
 
-   Array3DR8 LayerThickness;      ///< Device LayerThickness array
-   HostArray3DR8 LayerThicknessH; ///< Host LayerThickness array
+   std::vector<Array2DR8> LayerThickness;      ///< Device LayerThickness array
+   std::vector<HostArray2DR8> LayerThicknessH; ///< Host LayerThickness array
 
-   Array3DR8 NormalVelocity;      ///< Device LayerThickness array
-   HostArray3DR8 NormalVelocityH; ///< Host LayterThickness array
+   std::vector<Array2DR8> NormalVelocity;      ///< Device LayerThickness array
+   std::vector<HostArray2DR8> NormalVelocityH; ///< Host LayterThickness array
 
    // Methods
 
@@ -79,20 +79,20 @@ class OceanState {
    static int init();
 
    /// Construct a new local mesh for a given decomposition
-   OceanState(const std::string &Name,   ///< [in] Name for mesh
-              HorzMesh *Mesh,            ///< [in] Horizontal mesh
-              Decomp *MeshDecomp,        ///< [in] Decomp for Mesh
-              Halo *MeshHalo_,           ///< [in] Halo for Mesh
-              const int VerticalLevels_, ///< [in] Number of vertical levels
-              const int TimeLevels_      ///< [in] Number of time levels
+   OceanState(const std::string &Name,    ///< [in] Name for mesh
+              HorzMesh *Mesh,             ///< [in] Horizontal mesh
+              Decomp *MeshDecomp,         ///< [in] Decomp for Mesh
+              Halo *MeshHalo_,            ///< [in] Halo for Mesh
+              const int NVerticalLevels_, ///< [in] Number of vertical levels
+              const int NTimeLevels_      ///< [in] Number of time levels
    );
 
    /// Swap time levels to update state arrays
    void swapTimeLevels(int FromLevel, int ToLevel);
 
-   void copyToDevice();
+   void copyToDevice(int TimeLevel);
 
-   void copyToHost();
+   void copyToHost(int TimeLevel);
 
    /// Destructor - deallocates all memory and deletes a HorzMesh
    ~OceanState();

@@ -46,13 +46,15 @@ int OceanState::init() {
 // Construct a new local mesh given a decomposition
 
 OceanState::OceanState(
-    const std::string &Name,   //< [in] Name for new state
-    HorzMesh *Mesh,            //< [in] HorzMesh for state
-    Decomp *MeshDecomp,        //< [in] Decomp for Mesh
-    Halo *MeshHalo_,           //< [in] Halo for Mesh
-    const int VerticalLevels_, //< [in] number of vertical levels
-    const int TimeLevels_      //< [in] number of time levels
-) {
+    const std::string &Name,    //< [in] Name for new state
+    HorzMesh *Mesh,             //< [in] HorzMesh for state
+    Decomp *MeshDecomp,         //< [in] Decomp for Mesh
+    Halo *MeshHalo_,            //< [in] Halo for Mesh
+    const int NVerticalLevels_, //< [in] number of vertical levels
+    const int NTimeLevels_      //< [in] number of time levels
+    )
+    : LayerThicknessH(NTimeLevels_), NormalVelocityH(NTimeLevels_),
+      LayerThickness(NTimeLevels_), NormalVelocity(NTimeLevels_) {
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
    NCellsOwned = Mesh->NCellsOwned;
@@ -63,22 +65,28 @@ OceanState::OceanState(
    NEdgesAll   = Mesh->NEdgesAll;
    NEdgesSize  = Mesh->NEdgesSize;
 
-   VerticalLevels = VerticalLevels_;
-   TimeLevels     = TimeLevels_;
+   NVerticalLevels = NVerticalLevels_;
+   NTimeLevels     = NTimeLevels_;
 
    MeshHalo = MeshHalo_;
 
    StateFileName = Mesh->MeshFileName;
 
    // Allocate state arrays
-   LayerThicknessH =
-       HostArray3DR8("LayerThickness", TimeLevels, NCellsSize, VerticalLevels);
-   NormalVelocityH =
-       HostArray3DR8("NormalVelocity", TimeLevels, NEdgesSize, VerticalLevels);
+   for (int I = 0; I < NTimeLevels; I++) {
+      LayerThicknessH[I] = HostArray2DR8("LayerThickness" + std::to_string(I),
+                                         NCellsSize, NVerticalLevels);
+      NormalVelocityH[I] = HostArray2DR8("NormalVelocity" + std::to_string(I),
+                                         NEdgesSize, NVerticalLevels);
+   }
 
    // Create device arrays
-   LayerThickness = createDeviceMirrorCopy(LayerThicknessH);
-   NormalVelocity = createDeviceMirrorCopy(NormalVelocityH);
+   for (int I = 0; I < NTimeLevels; I++) {
+      LayerThickness[I] = Array2DR8("LayerThickness" + std::to_string(I),
+                                    NCellsSize, NVerticalLevels);
+      NormalVelocity[I] = Array2DR8("NormalVelocity" + std::to_string(I),
+                                    NEdgesSize, NVerticalLevels);
+   }
 
    // Open the mesh file for reading (assume IO has already been initialized)
    I4 Err;
@@ -96,7 +104,7 @@ OceanState::OceanState(
    finalizeParallelIO();
 
    // Copy host data to device
-   copyToDevice();
+   copyToDevice(0);
 
    // Associate this instance with a name
    AllOceanStates.emplace(Name, *this);
@@ -138,32 +146,34 @@ void OceanState::initParallelIO(Decomp *MeshDecomp) {
    IO::Rearranger Rearr = IO::RearrBox;
 
    // Create the IO decomp for arrays with (NCells) dimensions
-   std::vector<I4> CellDims{1, MeshDecomp->NCellsGlobal, VerticalLevels};
-   std::vector<I4> CellID(NCellsAll * VerticalLevels, -1);
+   std::vector<I4> CellDims{1, MeshDecomp->NCellsGlobal, NVerticalLevels};
+   std::vector<I4> CellID(NCellsAll * NVerticalLevels, -1);
    for (int Cell = 0; Cell < NCellsAll; ++Cell) {
-      for (int Level = 0; Level < VerticalLevels; ++Level) {
-         I4 GlobalID = (MeshDecomp->CellIDH(Cell) - 1) * VerticalLevels + Level;
-         CellID[Cell * VerticalLevels + Level] = GlobalID;
+      for (int Level = 0; Level < NVerticalLevels; ++Level) {
+         I4 GlobalID =
+             (MeshDecomp->CellIDH(Cell) - 1) * NVerticalLevels + Level;
+         CellID[Cell * NVerticalLevels + Level] = GlobalID;
       }
    }
 
    Err = IO::createDecomp(CellDecompR8, IO::IOTypeR8, NDims, CellDims,
-                          NCellsAll * VerticalLevels, CellID, Rearr);
+                          NCellsAll * NVerticalLevels, CellID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error creating cell IO decomposition");
 
    // Create the IO decomp for arrays with (NEdges) dimensions
-   std::vector<I4> EdgeDims{1, MeshDecomp->NEdgesGlobal, VerticalLevels};
-   std::vector<I4> EdgeID(NEdgesAll * VerticalLevels, -1);
+   std::vector<I4> EdgeDims{1, MeshDecomp->NEdgesGlobal, NVerticalLevels};
+   std::vector<I4> EdgeID(NEdgesAll * NVerticalLevels, -1);
    for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
-      for (int Level = 0; Level < VerticalLevels; ++Level) {
-         I4 GlobalID = (MeshDecomp->EdgeIDH(Edge) - 1) * VerticalLevels + Level;
-         EdgeID[Edge * VerticalLevels + Level] = GlobalID;
+      for (int Level = 0; Level < NVerticalLevels; ++Level) {
+         I4 GlobalID =
+             (MeshDecomp->EdgeIDH(Edge) - 1) * NVerticalLevels + Level;
+         EdgeID[Edge * NVerticalLevels + Level] = GlobalID;
       }
    }
 
    Err = IO::createDecomp(EdgeDecompR8, IO::IOTypeR8, NDims, EdgeDims,
-                          NEdgesAll * VerticalLevels, EdgeID, Rearr);
+                          NEdgesAll * NVerticalLevels, EdgeID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("OceanStateh: error creating edge IO decomposition");
 
@@ -195,37 +205,35 @@ void OceanState::read() {
 
    // Read LayerThickness
    int LayerThicknessID;
-   auto LayerThicknessSubH =
-       Kokkos::subview(LayerThicknessH, 0, Kokkos::ALL, Kokkos::ALL);
-   Err = IO::readArray(LayerThicknessSubH.data(), NCellsAll, "layerThickness",
+   Err = IO::readArray(LayerThicknessH[0].data(), NCellsAll, "layerThickness",
                        StateFileID, CellDecompR8, LayerThicknessID);
    if (Err != 0)
-      LOG_CRITICAL("HorzMesh: error reading xCell");
+      LOG_CRITICAL("OceanState: error reading layerThickness");
 
    // Read NormalVelocity
    int NormalVelocityID;
-   auto NormalVelocitySubH =
-       Kokkos::subview(NormalVelocityH, 0, Kokkos::ALL, Kokkos::ALL);
-   Err = IO::readArray(NormalVelocitySubH.data(), NEdgesAll, "normalVelocity",
+   Err = IO::readArray(NormalVelocityH[0].data(), NEdgesAll, "normalVelocity",
                        StateFileID, EdgeDecompR8, NormalVelocityID);
+   if (Err != 0)
+      LOG_CRITICAL("OceanState: error reading normalVelocity");
 
 } // end read
 
 //------------------------------------------------------------------------------
 // Perform copy to device for state variables
-void OceanState::copyToDevice() {
+void OceanState::copyToDevice(int TimeLevel) {
 
-   deepCopy(LayerThickness, LayerThicknessH);
-   deepCopy(NormalVelocity, NormalVelocityH);
+   deepCopy(LayerThickness[TimeLevel], LayerThicknessH[TimeLevel]);
+   deepCopy(NormalVelocity[TimeLevel], NormalVelocityH[TimeLevel]);
 
 } // end copyToDevice
 
 //------------------------------------------------------------------------------
 // Perform copy to host for state variables
-void OceanState::copyToHost() {
+void OceanState::copyToHost(int TimeLevel) {
 
-   deepCopy(LayerThicknessH, LayerThickness);
-   deepCopy(NormalVelocityH, NormalVelocity);
+   deepCopy(LayerThicknessH[TimeLevel], LayerThickness[TimeLevel]);
+   deepCopy(NormalVelocityH[TimeLevel], NormalVelocity[TimeLevel]);
 
 } // end copyToHost
 
@@ -233,33 +241,21 @@ void OceanState::copyToHost() {
 // Perform time level swap
 void OceanState::swapTimeLevels(int FromLevel, int ToLevel) {
 
-   copyToHost();
-   MeshHalo->exchangeFullArrayHalo(LayerThicknessH, OMEGA::OnCell);
-   copyToDevice();
+   copyToHost(FromLevel);
+   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[FromLevel], OMEGA::OnCell);
+   copyToDevice(FromLevel);
 
-   auto LayerThicknessSubTo =
-       Kokkos::subview(LayerThickness, ToLevel, Kokkos::ALL, Kokkos::ALL);
-   auto LayerThicknessTemp = Kokkos::create_mirror_view(LayerThicknessSubTo);
+   Array2DR8 Temp            = LayerThickness[ToLevel];
+   LayerThickness[ToLevel]   = LayerThickness[FromLevel];
+   LayerThickness[FromLevel] = Temp;
 
-   auto LayerThicknessSubFrom =
-       Kokkos::subview(LayerThickness, FromLevel, Kokkos::ALL, Kokkos::ALL);
+   copyToHost(FromLevel);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[FromLevel], OMEGA::OnEdge);
+   copyToDevice(FromLevel);
 
-   Kokkos::deep_copy(LayerThicknessSubTo, LayerThicknessSubFrom);
-   Kokkos::deep_copy(LayerThicknessSubFrom, LayerThicknessTemp);
-
-   copyToHost();
-   MeshHalo->exchangeFullArrayHalo(NormalVelocityH, OMEGA::OnEdge);
-   copyToDevice();
-
-   auto NormalVelocitySubTo =
-       Kokkos::subview(NormalVelocity, ToLevel, Kokkos::ALL, Kokkos::ALL);
-   auto NormalVelocityTemp = Kokkos::create_mirror_view(NormalVelocitySubTo);
-
-   auto NormalVelocitySubFrom =
-       Kokkos::subview(NormalVelocity, FromLevel, Kokkos::ALL, Kokkos::ALL);
-
-   Kokkos::deep_copy(NormalVelocitySubTo, NormalVelocitySubFrom);
-   Kokkos::deep_copy(NormalVelocitySubFrom, NormalVelocityTemp);
+   Temp                      = NormalVelocity[ToLevel];
+   NormalVelocity[ToLevel]   = NormalVelocity[FromLevel];
+   NormalVelocity[FromLevel] = Temp;
 
 } // end swapTimeLevels
 
