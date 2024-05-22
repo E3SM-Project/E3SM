@@ -13,7 +13,7 @@
 #endif
 
 module planar_mod
-  use kinds, only : real_kind, long_kind, longdouble_kind
+  use kinds, only : real_kind, long_kind, longreal_kind
   use parallel_mod, only : abortmp
   use dimensions_mod, only : np,ne_x,ne_y
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2d_t
@@ -239,7 +239,7 @@ call initgridedge(GridEdge,GridVertex)
     type (element_t),intent(inout) :: elem
     real (kind=real_kind),optional :: alpha_in
     real (kind=real_kind)          :: alpha=1
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
 
     if(present(alpha_in)) alpha=alpha_in
 
@@ -266,7 +266,7 @@ call initgridedge(GridEdge,GridVertex)
     use element_mod, only : element_t
 
     type (element_t) :: elem
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
     integer i,j
 
 
@@ -366,7 +366,7 @@ call initgridedge(GridEdge,GridVertex)
 
     type (element_t) :: elem
     real(kind=real_kind) :: alpha
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
     ! Local variables
     integer ii
     integer i,j,nn

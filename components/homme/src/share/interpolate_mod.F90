@@ -268,7 +268,7 @@ contains
 
 
   subroutine interpolate_tracers_init()
-    use kinds,          only : longdouble_kind
+    use kinds,          only : longreal_kind
     use dimensions_mod, only : np, qsize
     use quadrature_mod, only : quadrature_t, gausslobatto
 
@@ -306,7 +306,7 @@ contains
 
 
   subroutine interpolate_tracers(r, tracers, f)
-    use kinds,          only : longdouble_kind
+    use kinds,          only : longreal_kind
     use dimensions_mod, only : np, qsize
 
 
@@ -349,10 +349,10 @@ contains
 
   function linear_interpolate_2d(x,y,s) result(v)
     use dimensions_mod, only : np, qsize
-    use kinds, only : longdouble_kind
+    use kinds, only : longreal_kind
 
     implicit none
-    real (kind=longdouble_kind),intent(in)  :: x(np)
+    real (kind=longreal_kind),intent(in)  :: x(np)
     real (kind=real_kind),intent(in)  :: y(np,np,qsize)
     type (cartesian2D_t), intent(in)  :: s        
 

@@ -36,7 +36,7 @@
 #define TRILINOS 1
 
 /* Quadruple-precision */
-#cmakedefine01 HOMME_QUAD_PREC
+#cmakedefine01 HOMME_ENHANCED_PRECISION
 
 /* Horizontal OpenMP (over elements) */
 #cmakedefine HORIZ_OPENMP

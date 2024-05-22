@@ -5,7 +5,7 @@
 
 module derivative_mod_base
 
-  use kinds,          only : real_kind, longdouble_kind
+  use kinds,          only : real_kind, longreal_kind
   use dimensions_mod, only : np, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod,   only : abortmp
@@ -102,16 +102,16 @@ contains
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
     
-    real (kind=longdouble_kind) :: dmat(np,np)
-    real (kind=longdouble_kind) :: dpv(np,np)
-    real (kind=longdouble_kind) :: dvv(np,np)
-    real (kind=longdouble_kind) :: dvv_diag(np,np)
-    real (kind=longdouble_kind) :: v2v(np,np)
-    real (kind=longdouble_kind) :: xnorm
+    real (kind=longreal_kind) :: dmat(np,np)
+    real (kind=longreal_kind) :: dpv(np,np)
+    real (kind=longreal_kind) :: dvv(np,np)
+    real (kind=longreal_kind) :: dvv_diag(np,np)
+    real (kind=longreal_kind) :: v2v(np,np)
+    real (kind=longreal_kind) :: xnorm
     integer i,j
 
     ! ============================================
-    ! initialize matrices in longdouble_kind precision
+    ! initialize matrices in longreal_kind precision
     ! and transfer results into real_kind
     ! floating point precision
     ! ============================================
@@ -177,19 +177,19 @@ contains
 
   subroutine dvvinit(dvv,gll)
 
-    real(kind=longdouble_kind)  ::  dvv(np,np)
+    real(kind=longreal_kind)  ::  dvv(np,np)
     type (quadrature_t)   :: gll
 
     ! Local variables
 
-    real(kind=longdouble_kind)  :: leg(np,np)
-    real(kind=longdouble_kind)  :: c0,c1,c4
+    real(kind=longreal_kind)  :: leg(np,np)
+    real(kind=longreal_kind)  :: c0,c1,c4
 
     integer i,j
 
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c4 = 4.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c4 = 4.0_longreal_kind
 
     do i=1,np
        leg(:,i) = legendre(gll%points(i),np-1)

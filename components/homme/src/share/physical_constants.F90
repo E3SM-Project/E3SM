@@ -7,7 +7,7 @@
 !
 module physical_constants
   ! ------------------------------
-  use kinds, only : real_kind, longdouble_kind
+  use kinds, only : real_kind, longreal_kind
 #ifdef CAM
 
   ! set physical constants from CAM variables
@@ -36,7 +36,7 @@ module physical_constants
 
   ! physical constants inherited from CAM
   real (kind=real_kind), public, parameter :: DD_PI = pi
-  real (kind=longdouble_kind), public, parameter :: QQ_PI = 3.141592653589793238462643383279_longdouble_kind
+  real (kind=longreal_kind), public, parameter :: QQ_PI = 3.141592653589793238462643383279_longreal_kind
   public                                   :: rearth                    ! m
   public                                   :: g                         ! m s^-2
   public                                   :: omega                     ! s^-1
@@ -54,7 +54,7 @@ module physical_constants
 
   ! physical constants used in HOMME stand-alone simulations
   real (kind=real_kind), public, parameter :: DD_PI        = 3.141592653589793238462643383279_real_kind
-  real (kind=longdouble_kind), public, parameter :: QQ_PI  = 3.141592653589793238462643383279_longdouble_kind
+  real (kind=longreal_kind), public, parameter :: QQ_PI  = 3.141592653589793238462643383279_longreal_kind
   real (kind=real_kind), public, parameter :: rearth0      = 6.376D6    ! m
   real (kind=real_kind), public            :: rearth       = rearth0    ! m
   real (kind=real_kind), public, parameter :: g            = 9.80616D0  ! m s^-2

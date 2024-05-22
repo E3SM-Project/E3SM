@@ -817,7 +817,7 @@ MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
   ENDFOREACH ()
 ENDMACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE)
 
-macro(testQuadPrec HOMME_QUAD_PREC)
+macro(testQuadPrec HOMME_ENHANCED_PRECISION)
 
   TRY_COMPILE(COMPILE_RESULT_VAR
               ${HOMME_BINARY_DIR}/tests/compilerTests/
@@ -825,10 +825,10 @@ macro(testQuadPrec HOMME_QUAD_PREC)
               OUTPUT_VARIABLE COMPILE_OUTPUT)
 
   IF (${COMPILE_RESULT_VAR})
-    SET (HOMME_QUAD_PREC TRUE)
+    SET (HOMME_ENHANCED_PRECISION TRUE)
     MESSAGE(STATUS "Quadruple-precision supported enabling")
   ELSE ()
-    SET (HOMME_QUAD_PREC FALSE)
+    SET (HOMME_ENHANCED_PRECISION FALSE)
     MESSAGE(STATUS "Quadruple-precision not supported")
   ENDIF ()
 endmacro(testQuadPrec)

@@ -7,7 +7,7 @@
 module prim_movie_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
 #ifndef PIO_INTERP
-  use kinds, only : real_kind, longdouble_kind
+  use kinds, only : real_kind, longreal_kind
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
   use hybvcoord_mod, only :  hvcoord_t 
 #ifdef _MPI

@@ -3,7 +3,7 @@
 #endif
 
 module geometry_mod
-  use kinds, only : real_kind, long_kind, longdouble_kind
+  use kinds, only : real_kind, long_kind, longreal_kind
   use coordinate_systems_mod, only : sphere_tri_area
   use dimensions_mod, only : np
   use planar_mod, only : plane_init_atomic

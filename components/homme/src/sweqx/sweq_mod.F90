@@ -6,7 +6,7 @@ module sweq_mod
 contains
   subroutine sweq(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     !-----------------
-    use kinds, only : real_kind, longdouble_kind
+    use kinds, only : real_kind, longreal_kind
     !-----------------
     use parallel_mod, only : parallel_t, syncmp, abortmp
     !-----------------

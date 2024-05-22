@@ -6,7 +6,7 @@
 module init_mod
 contains
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
-    use kinds, only : real_kind, longdouble_kind
+    use kinds, only : real_kind, longreal_kind
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, omp_set_num_threads
     ! --------------------------------

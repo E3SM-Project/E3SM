@@ -105,12 +105,15 @@ OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 # Default use quad precision
 OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
 
-IF (${HOMME_QUAD_PREC}) 
+# Whether to use enhanced FP precision in certain parts of the code (mostly quadrature weight calculation)
+# If true, the enhanced precision is twice that of a reagular real type
+OPTION(HOMME_ENHANCED_PRECISION "Default to try to use quadruple precision" TRUE)
+
+IF (HOMME_ENHANCED_PRECISION)
   testQuadPrec(HOMME_QUAD_SUPPORTED)
-  IF (NOT ${HOMME_QUAD_SUPPORTED})
-    SET(HOMME_QUAD_PREC FALSE)
-    MESSAGE(STATUS "Quadruple-precision requested but unavailable on this
-                    system with this compiler")
+  IF (NOT HOMME_QUAD_SUPPORTED)
+    SET(HOMME_ENHANCED_PRECISION FALSE)
+    MESSAGE(STATUS "Enhanced precision requested but unavailable on this system with this compiler")
   ENDIF()
 ENDIF ()
 

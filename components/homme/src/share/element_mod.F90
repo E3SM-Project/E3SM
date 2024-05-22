@@ -158,14 +158,14 @@ contains
 
     ! Initialize 2D rectilinear element colocation points
 
-    use kinds, only : longdouble_kind
+    use kinds, only : longreal_kind
     type (cartesian2D_t), intent(in) :: start
     type (cartesian2D_t), intent(in) :: end
-    real (kind=longdouble_kind), intent(in) :: points(:)
+    real (kind=longreal_kind), intent(in) :: points(:)
 
     type (cartesian2D_t) :: cart(SIZE(points),SIZE(points))
     type (cartesian2D_t) :: length, centroid
-    real (kind=longdouble_kind) :: y
+    real (kind=longreal_kind) :: y
     integer i,j
 
     length%x   = 0.50D0*(end%x-start%x)
@@ -184,13 +184,13 @@ contains
   !___________________________________________________________________
   function element_var_coordinates(c,points) result(cart)
 
-    use kinds, only : longdouble_kind
+    use kinds, only : longreal_kind
     type (cartesian2D_t), intent(in) :: c(4)
-    real (kind=longdouble_kind), intent(in) :: points(:)
+    real (kind=longreal_kind), intent(in) :: points(:)
     type (cartesian2D_t) :: cart(SIZE(points),SIZE(points))
 
-    real (kind=longdouble_kind) :: p(size(points))
-    real (kind=longdouble_kind) :: q(size(points))
+    real (kind=longreal_kind) :: p(size(points))
+    real (kind=longreal_kind) :: q(size(points))
     integer i,j
 
     p(:) = (1.0D0-points(:))/2.0D0
@@ -213,13 +213,13 @@ contains
   !___________________________________________________________________
   function element_var_coordinates3d(c,points) result(cart)
 
-    use kinds, only : longdouble_kind
+    use kinds, only : longreal_kind
     type (cartesian3D_t), intent(in) :: c(4)
-    real (kind=longdouble_kind), intent(in) :: points(:)
+    real (kind=longreal_kind), intent(in) :: points(:)
     type (cartesian3D_t) :: cart(SIZE(points),SIZE(points))
 
-    real (kind=longdouble_kind) :: p(size(points))
-    real (kind=longdouble_kind) :: q(size(points)),r
+    real (kind=longreal_kind) :: p(size(points))
+    real (kind=longreal_kind) :: q(size(points)),r
     integer i,j
 
     p(:) = (1.0D0-points(:))/2.0D0

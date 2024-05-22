@@ -14,7 +14,7 @@
 #undef _FACE_5
 
 module cube_mod
-  use kinds, only : real_kind, long_kind, longdouble_kind
+  use kinds, only : real_kind, long_kind, longreal_kind
   use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, cartesian2d_t, &
        projectpoint, cubedsphere2cart, spherical_to_cart, sphere_tri_area,dist_threshold, &
        change_coordinates
@@ -86,15 +86,15 @@ module cube_mod
 
 
   ! public interface to REFERECE element map
-#if HOMME_QUAD_PREC
+#if HOMME_ENHANCED_PRECISION
   interface ref2sphere
-     module procedure ref2sphere_double
-     module procedure ref2sphere_longdouble
+     module procedure ref2sphere_real
+     module procedure ref2sphere_longreal
   end interface
 #else
   ! both routines have identical arguments in this case, cant use interface
   interface ref2sphere
-     module procedure ref2sphere_double
+     module procedure ref2sphere_real
   end interface
 #endif
 
@@ -119,7 +119,7 @@ contains
     type (element_t),intent(inout) :: elem
     real (kind=real_kind),optional :: alpha_in
     real (kind=real_kind)          :: alpha=1
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
 
     if(present(alpha_in)) alpha=alpha_in
     
@@ -144,7 +144,7 @@ contains
   subroutine coordinates_atomic(elem,gll_points)
     use element_mod, only : element_t, element_var_coordinates
     type (element_t) :: elem
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
 
 
     real (kind=real_kind)      :: area1,area2
@@ -220,7 +220,7 @@ contains
 
     type (element_t) :: elem
     real(kind=real_kind) :: alpha
-    real (kind=longdouble_kind)      :: gll_points(np)
+    real (kind=longreal_kind)      :: gll_points(np)
     ! Local variables
     integer ii
     integer i,j,nn
@@ -1921,8 +1921,8 @@ contains
     endif
   end function
 
-  function ref2sphere_longdouble(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
-    real(kind=longdouble_kind)    :: a,b
+  function ref2sphere_longreal(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
+    real(kind=longreal_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)          :: corners3D(4)
     type (cartesian2d_t), optional  :: corners(4)
@@ -1933,12 +1933,12 @@ contains
     if (ref_map==0) then
        if (.not. present(corners) ) &
             call abortmp('ref2sphere_double(): missing arguments for equiangular map')
-       sphere = ref2sphere_equiangular_longdouble(a,b,corners,facenum)
+       sphere = ref2sphere_equiangular_longreal(a,b,corners,facenum)
     elseif (ref_map==1) then
-!       sphere = ref2sphere_gnomonic_longdouble(a,b,corners,face_no)
+!       sphere = ref2sphere_gnomonic_longreal(a,b,corners,face_no)
        call abortmp('gnomonic map not yet coded')
     elseif (ref_map==2) then
-       sphere = ref2sphere_elementlocal_longdouble(a,b,corners3D,cart)
+       sphere = ref2sphere_elementlocal_longreal(a,b,corners3D,cart)
     else
        call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
@@ -1984,9 +1984,9 @@ contains
 !
 ! map a point in the referece element to the sphere
 !
-  function ref2sphere_equiangular_longdouble(a,b, corners, face_no) result(sphere)         
+  function ref2sphere_equiangular_longreal(a,b, corners, face_no) result(sphere)         
     implicit none
-    real(kind=longdouble_kind)    :: a,b
+    real(kind=longreal_kind)    :: a,b
     integer,intent(in)            :: face_no
     type (spherical_polar_t)      :: sphere
     type (cartesian2d_t)          :: corners(4)
@@ -2011,7 +2011,7 @@ contains
          + pi*qj*corners(4)%y 
     ! map from [pi/2,pi/2] equ angular cube face to sphere:   
     sphere=projectpoint(cart,face_no)
-  end function ref2sphere_equiangular_longdouble
+  end function ref2sphere_equiangular_longreal
 
 
 
@@ -2045,10 +2045,10 @@ contains
     q=q/4.0d0;
     sphere=ref2sphere_elementlocal_q(q,corners3D,cart)
   end function 
-  function ref2sphere_elementlocal_longdouble(a,b, corners3D, cart) result(sphere)
+  function ref2sphere_elementlocal_longreal(a,b, corners3D, cart) result(sphere)
     use element_mod, only : element_t
     implicit none
-    real(kind=longdouble_kind)    :: a,b
+    real(kind=longreal_kind)    :: a,b
     type (cartesian3d_t)          :: corners3D(4)
     type (spherical_polar_t)      :: sphere
     type (cartesian3D_t), optional  :: cart

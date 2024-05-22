@@ -5,13 +5,13 @@
 #undef _GAUSS_TABLE
 #undef _QUAD_DBG
 module quadrature_mod
-  use kinds, only : longdouble_kind
+  use kinds, only : longreal_kind
   implicit none
   private
 
   type, public :: quadrature_t
-  real (kind=longdouble_kind), dimension(:), pointer :: points
-  real (kind=longdouble_kind), dimension(:), pointer :: weights
+  real (kind=longreal_kind), dimension(:), pointer :: points
+  real (kind=longreal_kind), dimension(:), pointer :: weights
   end type quadrature_t
 
   public  :: gausslobatto
@@ -60,7 +60,7 @@ contains
   function gauss_pts(npts) result(pts)
 
     integer, intent(in) :: npts
-    real (kind=longdouble_kind) :: pts(npts)
+    real (kind=longreal_kind) :: pts(npts)
 
     pts(1) = -0.93246951420315202781d0
     pts(2) = -0.66120938646626451366d0
@@ -75,8 +75,8 @@ contains
   function gauss_wts(npts,pts) result(wts)
 
     integer, intent(in) :: npts
-    real (kind=longdouble_kind) :: pts(npts)
-    real (kind=longdouble_kind) :: wts(npts)
+    real (kind=longreal_kind) :: pts(npts)
+    real (kind=longreal_kind) :: wts(npts)
 
     wts(1)  =  0.17132449237917034504d0
     wts(2)  =  0.36076157304813860756d0
@@ -100,39 +100,39 @@ contains
     use physical_constants, only : qq_pi
 
     integer, intent(in)     :: np1        ! Number of velocity grid points
-    real (kind=longdouble_kind) :: pts(np1)
+    real (kind=longreal_kind) :: pts(np1)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: alpha,beta
-    real (kind=longdouble_kind) :: xjac(0:np1-1)
-    real (kind=longdouble_kind) :: jac(0:np1)
-    real (kind=longdouble_kind) :: djac(0:np1)
+    real (kind=longreal_kind) :: alpha,beta
+    real (kind=longreal_kind) :: xjac(0:np1-1)
+    real (kind=longreal_kind) :: jac(0:np1)
+    real (kind=longreal_kind) :: djac(0:np1)
 
     integer  prec                    ! number of mantissa bits
-    real (kind=longdouble_kind) eps      ! machine epsilon
-    real (kind=longdouble_kind), parameter :: convthresh = 10  ! convergence threshold relative\
+    real (kind=longreal_kind) eps      ! machine epsilon
+    real (kind=longreal_kind), parameter :: convthresh = 10  ! convergence threshold relative\
 
     ! to machine epsilon
     integer, parameter :: kstop = 30 ! max iterations for polynomial deflation
 
-    real (kind=longdouble_kind) :: poly
-    real (kind=longdouble_kind) :: pder
-    real (kind=longdouble_kind) :: recsum,thresh
-    real (kind=longdouble_kind) :: dth
+    real (kind=longreal_kind) :: poly
+    real (kind=longreal_kind) :: pder
+    real (kind=longreal_kind) :: recsum,thresh
+    real (kind=longreal_kind) :: dth
 
-    real (kind=longdouble_kind) :: x
-    real (kind=longdouble_kind) :: delx
-    real (kind=longdouble_kind) :: c0,c1,c2,c10
+    real (kind=longreal_kind) :: x
+    real (kind=longreal_kind) :: delx
+    real (kind=longreal_kind) :: c0,c1,c2,c10
 
     integer i,j,k
     integer n, nh
 
     n  = np1 - 1
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c2 = 2.0_longdouble_kind
-    c10 = 10.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c2 = 2.0_longreal_kind
+    c10 = 10.0_longreal_kind
     alpha = c0
     beta  = c0
 
@@ -204,20 +204,20 @@ contains
   function gauss_wts(np1, gpts) result(wts)
 
     integer, intent(in)                 :: np1
-    real (kind=longdouble_kind), intent(in) :: gpts(np1)  ! Gauss-Legendre points
-    real (kind=longdouble_kind)             :: wts(np1)   ! Gauss-Legendre weights
+    real (kind=longreal_kind), intent(in) :: gpts(np1)  ! Gauss-Legendre points
+    real (kind=longreal_kind)             :: wts(np1)   ! Gauss-Legendre weights
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: c0,c1,c2
-    real (kind=longdouble_kind) :: alpha
-    real (kind=longdouble_kind) :: beta
-    real (kind=longdouble_kind) :: djac(np1)
+    real (kind=longreal_kind) :: c0,c1,c2
+    real (kind=longreal_kind) :: alpha
+    real (kind=longreal_kind) :: beta
+    real (kind=longreal_kind) :: djac(np1)
     integer i,n
 
-    c0    = 0.0_longdouble_kind
-    c1    = 1.0_longdouble_kind
-    c2    = 2.0_longdouble_kind
+    c0    = 0.0_longreal_kind
+    c1    = 1.0_longreal_kind
+    c2    = 2.0_longreal_kind
 
     alpha = c0
     beta  = c0
@@ -301,40 +301,40 @@ contains
     use physical_constants, only : QQ_PI
 
     integer, intent(in)     :: np1        ! Number of velocity grid points
-    real (kind=longdouble_kind) :: pts(np1)
+    real (kind=longreal_kind) :: pts(np1)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: alpha,beta
-    real (kind=longdouble_kind) :: xjac(0:np1-1)
-    real (kind=longdouble_kind) :: jac(0:np1)
-    real (kind=longdouble_kind) :: jacm1(0:np1)
-    real (kind=longdouble_kind) :: djac(0:np1)
+    real (kind=longreal_kind) :: alpha,beta
+    real (kind=longreal_kind) :: xjac(0:np1-1)
+    real (kind=longreal_kind) :: jac(0:np1)
+    real (kind=longreal_kind) :: jacm1(0:np1)
+    real (kind=longreal_kind) :: djac(0:np1)
 
     integer  prec                    ! number of mantissa bits 
-    real (kind=longdouble_kind) eps      ! machine epsilon
-    real (kind=longdouble_kind), parameter :: convthresh = 10  ! convergence threshold relative 
+    real (kind=longreal_kind) eps      ! machine epsilon
+    real (kind=longreal_kind), parameter :: convthresh = 10  ! convergence threshold relative 
     ! to machine epsilon 
     integer, parameter :: kstop = 30 ! max iterations for polynomial deflation
 
-    real (kind=longdouble_kind) :: a,b,det
-    real (kind=longdouble_kind) :: poly
-    real (kind=longdouble_kind) :: pder
-    real (kind=longdouble_kind) :: recsum,thresh
-    real (kind=longdouble_kind) :: dth,cd,sd,cs,ss,cstmp
+    real (kind=longreal_kind) :: a,b,det
+    real (kind=longreal_kind) :: poly
+    real (kind=longreal_kind) :: pder
+    real (kind=longreal_kind) :: recsum,thresh
+    real (kind=longreal_kind) :: dth,cd,sd,cs,ss,cstmp
 
-    real (kind=longdouble_kind) :: x
-    real (kind=longdouble_kind) :: delx
-    real (kind=longdouble_kind) :: c0,c1,c2,c10
+    real (kind=longreal_kind) :: x
+    real (kind=longreal_kind) :: delx
+    real (kind=longreal_kind) :: c0,c1,c2,c10
 
     integer i,j,k
     integer n, nh
 
     n  = np1 - 1
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c2 = 2.0_longdouble_kind
-    c10 = 10.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c2 = 2.0_longreal_kind
+    c10 = 10.0_longreal_kind
 
     alpha = c0
     beta  = c0
@@ -439,19 +439,19 @@ contains
   function gausslobatto_wts(np1, glpts) result(wts)
 
     integer, intent(in)                 :: np1
-    real (kind=longdouble_kind), intent(in) :: glpts(np1)
-    real (kind=longdouble_kind)             :: wts(np1)
+    real (kind=longreal_kind), intent(in) :: glpts(np1)
+    real (kind=longreal_kind)             :: wts(np1)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: c0,c2
-    real (kind=longdouble_kind) :: alpha
-    real (kind=longdouble_kind) :: beta
-    real (kind=longdouble_kind) :: jac(np1)
+    real (kind=longreal_kind) :: c0,c2
+    real (kind=longreal_kind) :: alpha
+    real (kind=longreal_kind) :: beta
+    real (kind=longreal_kind) :: jac(np1)
     integer i,n
 
-    c0    = 0.0_longdouble_kind
-    c2    = 2.0_longdouble_kind
+    c0    = 0.0_longreal_kind
+    c2    = 2.0_longreal_kind
     alpha = c0
     beta  = c0
     n     = np1-1
@@ -517,26 +517,26 @@ contains
   subroutine jacobi(n, x, alpha, beta, jac, djac)
 
     integer, intent(in)                 :: n
-    real (kind=longdouble_kind), intent(in) :: x
-    real (kind=longdouble_kind), intent(in) :: alpha
-    real (kind=longdouble_kind), intent(in) :: beta
-    real (kind=longdouble_kind)             :: jac(0:n)
-    real (kind=longdouble_kind)             :: djac(0:n)
+    real (kind=longreal_kind), intent(in) :: x
+    real (kind=longreal_kind), intent(in) :: alpha
+    real (kind=longreal_kind), intent(in) :: beta
+    real (kind=longreal_kind)             :: jac(0:n)
+    real (kind=longreal_kind)             :: djac(0:n)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: a1k
-    real (kind=longdouble_kind) :: a2k
-    real (kind=longdouble_kind) :: a3k
-    real (kind=longdouble_kind) :: da2kdx
+    real (kind=longreal_kind) :: a1k
+    real (kind=longreal_kind) :: a2k
+    real (kind=longreal_kind) :: a3k
+    real (kind=longreal_kind) :: da2kdx
 
-    real (kind=longdouble_kind) :: c2,c1,c0
+    real (kind=longreal_kind) :: c2,c1,c0
 
     integer ::  k
 
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c2 = 2.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c2 = 2.0_longreal_kind
 
     jac(0)=c1
     jac(1)=(c1 + alpha)*x
@@ -573,30 +573,30 @@ contains
   function jacobi_polynomials(n, alpha, beta, npoints, x) result(jac)
 
     integer, intent(in)     :: n         ! order of the Jacobi Polynomial
-    real (kind=longdouble_kind) :: alpha 
-    real (kind=longdouble_kind) :: beta
+    real (kind=longreal_kind) :: alpha 
+    real (kind=longreal_kind) :: beta
     integer, intent(in)     :: npoints
-    real (kind=longdouble_kind) :: x(npoints)
-    real (kind=longdouble_kind) :: jac(npoints)
+    real (kind=longreal_kind) :: x(npoints)
+    real (kind=longreal_kind) :: jac(npoints)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: a1k
-    real (kind=longdouble_kind) :: a2k
-    real (kind=longdouble_kind) :: a3k
-    real (kind=longdouble_kind) :: da2kdx
+    real (kind=longreal_kind) :: a1k
+    real (kind=longreal_kind) :: a2k
+    real (kind=longreal_kind) :: a3k
+    real (kind=longreal_kind) :: da2kdx
 
-    real (kind=longdouble_kind) :: jacp1
-    real (kind=longdouble_kind) :: jacm1
-    real (kind=longdouble_kind) :: jac0
-    real (kind=longdouble_kind) :: xtmp
+    real (kind=longreal_kind) :: jacp1
+    real (kind=longreal_kind) :: jacm1
+    real (kind=longreal_kind) :: jac0
+    real (kind=longreal_kind) :: xtmp
 
-    real (kind=longdouble_kind) :: c2,c1,c0
+    real (kind=longreal_kind) :: c2,c1,c0
     integer j,k
 
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c2 = 2.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c2 = 2.0_longreal_kind
 
     do j = 1,npoints
 
@@ -638,37 +638,37 @@ contains
   function jacobi_derivatives(n, alpha, beta, npoints, x) result(djac)
 
     integer                , intent(in) :: n         ! order of the Jacobi Polynomial
-    real (kind=longdouble_kind), intent(in) :: alpha 
-    real (kind=longdouble_kind), intent(in) :: beta
+    real (kind=longreal_kind), intent(in) :: alpha 
+    real (kind=longreal_kind), intent(in) :: beta
     integer                , intent(in) :: npoints
-    real (kind=longdouble_kind), intent(in) :: x(npoints)
+    real (kind=longreal_kind), intent(in) :: x(npoints)
 
-    real (kind=longdouble_kind)             :: djac(npoints)
-
-    ! Local variables
+    real (kind=longreal_kind)             :: djac(npoints)
 
     ! Local variables
 
-    real (kind=longdouble_kind) :: a1k
-    real (kind=longdouble_kind) :: a2k
-    real (kind=longdouble_kind) :: a3k
-    real (kind=longdouble_kind) :: da2kdx
+    ! Local variables
 
-    real (kind=longdouble_kind) :: jacp1
-    real (kind=longdouble_kind) :: jacm1
-    real (kind=longdouble_kind) :: jac0
-    real (kind=longdouble_kind) :: djacp1
-    real (kind=longdouble_kind) :: djacm1
-    real (kind=longdouble_kind) :: djac0
+    real (kind=longreal_kind) :: a1k
+    real (kind=longreal_kind) :: a2k
+    real (kind=longreal_kind) :: a3k
+    real (kind=longreal_kind) :: da2kdx
 
-    real (kind=longdouble_kind) :: xtmp
+    real (kind=longreal_kind) :: jacp1
+    real (kind=longreal_kind) :: jacm1
+    real (kind=longreal_kind) :: jac0
+    real (kind=longreal_kind) :: djacp1
+    real (kind=longreal_kind) :: djacm1
+    real (kind=longreal_kind) :: djac0
 
-    real (kind=longdouble_kind) :: c2,c1,c0
+    real (kind=longreal_kind) :: xtmp
+
+    real (kind=longreal_kind) :: c2,c1,c0
     integer j,k
 
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-    c2 = 2.0_longdouble_kind
+    c0 = 0.0_longreal_kind
+    c1 = 1.0_longreal_kind
+    c2 = 2.0_longreal_kind
 
     do j = 1,npoints
 
@@ -720,13 +720,13 @@ contains
   function legendre(x,N) result(leg)
 
     integer   :: N
-    real (kind=longdouble_kind) :: x
-    real (kind=longdouble_kind) :: leg(N+1)
+    real (kind=longreal_kind) :: x
+    real (kind=longreal_kind) :: leg(N+1)
 
-    real (kind=longdouble_kind) ::  p_1, p_2, p_3
+    real (kind=longreal_kind) ::  p_1, p_2, p_3
     integer   :: k
 
-    p_3 = 1.0_longdouble_kind
+    p_3 = 1.0_longreal_kind
     leg(1)=p_3
     if (n.ne.0) then
        p_2 = p_3
@@ -757,13 +757,13 @@ contains
     type (quadrature_t), intent(in) :: gquad
     integer            , intent(in) :: N
 
-    real (kind=longdouble_kind) :: gamma(N)
+    real (kind=longreal_kind) :: gamma(N)
 
     ! Local variables
-    real (kind=longdouble_kind) :: leg(N)
+    real (kind=longreal_kind) :: leg(N)
     integer               :: i,k
 
-    gamma(:)=0.0_longdouble_kind
+    gamma(:)=0.0_longreal_kind
 
     do i=1,N
        leg=legendre(gquad%points(i),N-1)

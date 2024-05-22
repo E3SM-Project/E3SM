@@ -7,7 +7,7 @@ module coordinate_systems_mod
 ! WARNING:  When using this class be sure that you know if the
 ! cubic coordinates are on the unit cube or the [-\pi/4,\pi/4] cube
 ! and if the spherical longitude is in [0,2\pi] or [-\pi,\pi]
-  use kinds, only : real_kind, longdouble_kind
+  use kinds, only : real_kind, longreal_kind
   implicit none
   private
 

@@ -49,10 +49,10 @@ private
   ! QUAD precision can be enabled via CMake var (or compiler macro for EAM).
   ! Currently, EAM does not use quad precision, while HommeStandalone/SCREAM can.
   integer (kind=4), public, parameter::  &
-#ifdef HOMME_QUAD_PREC
-  longdouble_kind    = 16
+#if HOMME_ENHANCED_PRECISION
+  longreal_kind    = 2*real_kind
 #else 
-  longdouble_kind    = 8
+  longreal_kind    = real_kind
 #endif
 
 end module kinds

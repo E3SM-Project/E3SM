@@ -10,7 +10,7 @@ module derivative_mod
                                  curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, limiter_optim_iter_full, &
                                  limiter_clip_and_sum, &
                                  laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
-  use kinds, only : real_kind, longdouble_kind
+  use kinds, only : real_kind, longreal_kind
   use dimensions_mod, only : np, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod, only : abortmp

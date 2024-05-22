@@ -14,7 +14,7 @@
 #define _GLLPTS_ 6
 
 module surfaces_mod
-  use kinds, only : real_kind,longdouble_kind
+  use kinds, only : real_kind,longreal_kind
   use coordinate_systems_mod, only : cartesian3d_t, cartesian2d_t, spherical_polar_t, change_coordinates
   use coordinate_systems_mod, only : cubedsphere2cart, cart2cubedsphere, cubedsphere2cart, &
                                      cube_face_number_from_cart, distance, sphere_tri_area
@@ -190,7 +190,7 @@ contains
     type (quadrature_t)              :: gll_pts
     type (cartesian2d_t)             :: cv_cartp(0:np,0:np)
     type (cartesian3d_t)             :: quad(4),corners3d(4)
-    real (kind=longdouble_kind)      :: cv_pts(0:np)
+    real (kind=longreal_kind)      :: cv_pts(0:np)
     real (kind=real_kind)            :: rvert
     real (kind=real_kind)            :: test(np,np,1)
 
@@ -1006,7 +1006,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     real (kind=real_kind)            :: dx,dy,a1(nets:nete),a2(nets:nete),d1(nets:nete),d1mid(nets:nete)
     real (kind=real_kind)            :: d2,d1_global,d1_global_mid,sphere1,sphere2,diff2,diff3
     real (kind=real_kind)            :: diff23,diff32,diff33,diff22
-    real (kind=longdouble_kind)      :: gllnm1(0:np)
+    real (kind=longreal_kind)      :: gllnm1(0:np)
     type (cartesian2d_t)             :: corner,start,end,cv_loc_2d(4,np,np),cvnew_loc_2d(4,np,np)
     type (cartesian3D_t)             :: cart,cv_loc_3d(nv,np,np)
     type (cartesian3D_t)             :: temp3d(nv)
