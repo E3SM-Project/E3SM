@@ -844,7 +844,7 @@ module li_subglacial_hydro
       integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
-      real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
+      real (kind=RKIND), parameter :: MIN_PHISLOPE_GL = 1e-10_RKIND
       integer :: err_tmp
       
       err = 0
@@ -952,22 +952,22 @@ module li_subglacial_hydro
             cell2 = cellsOnEdge(2, iEdge)
             if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
                     if (hydroMarineMarginMask(iEdge) == 1) then
-                            if (hydropotentialBaseSlopeNormal(iEdge) > -1.0_RKIND) then
-                                 hydropotentialBaseSlopeNormal(iEdge) = -1.0_RKIND
+                            if (hydropotentialBaseSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                                 hydropotentialBaseSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
                             endif
-                            if (hydropotentialSlopeNormal(iEdge) > -1.0_RKIND) then
-                                 hydropotentialSlopeNormal(iEdge) = -1.0_RKIND
+                            if (hydropotentialSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                                 hydropotentialSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
                             endif
                     endif
 
             else ! cell1 is the cell outside the hydro domain
 
                     if (hydroMarineMarginMask(iEdge) == 1) then
-                            if (hydropotentialBaseSlopeNormal(iEdge) < 1.0_RKIND) then
-                                 hydropotentialBaseSlopeNormal(iEdge) = 1.0_RKIND
+                            if (hydropotentialBaseSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                                 hydropotentialBaseSlopeNormal(iEdge) = MIN_PHISLOPE_GL
                             endif
-                            if (hydropotentialSlopeNormal(iEdge) < 1.0_RKIND) then
-                                 hydropotentialSlopeNormal(iEdge) = 1.0_RKIND
+                            if (hydropotentialSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                                 hydropotentialSlopeNormal(iEdge) = MIN_PHISLOPE_GL
                             endif
                     endif
 
