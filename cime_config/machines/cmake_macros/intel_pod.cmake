@@ -3,6 +3,8 @@ if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
 endif()
 
+string(APPEND SLIBS " -L/usr/lib64")
+
 #set(MPICC "cc")
 #set(MPICXX "CC")
 #set(MPIFC "ftn")
