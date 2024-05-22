@@ -1862,13 +1862,6 @@ module li_subglacial_hydro
          channelDischarge = 0.0_RKIND
       end where
 
-      ! Disable channels from forming if there is no sheet flux
-      ! TODO: Make a function of sheet dissipation threshold?
-      where (abs(waterFlux) <= 1e-10_RKIND)
-         channelArea = 0.0_RKIND
-         channelDischarge = 0.0_RKIND
-      end where
-
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
 
       ! diffusivity used only to limit channel dt right now
