@@ -20,18 +20,14 @@ TEST_CASE ("io_subsystem") {
 TEST_CASE ("write_and_read") {
   ekat::Comm comm (MPI_COMM_WORLD);
 
-  EKAT_REQUIRE_MSG (comm.size()<=4,
-      "Error! This test is tailored for an MPI_Comm of size 1, 2, 3, or 4.\n"
-      " - MPI_Comm size: " + std::to_string(comm.size()) + "\n");
-
   init_subsystem (comm);
 
   std::string filename = "scorpio_interface_write_test_np" + std::to_string(comm.size()) + ".nc";
 
   const int dim1 = 2;
   const int dim2 = 4;
-  const int dim3 = 12;
-  const int ldim3 = dim3 / comm.size();
+  const int ldim3 = 3;
+  const int dim3  = ldim3 * comm.size();
 
   // Offsets for dim3 decomp owned by this rank
   std::vector<offset_t> my_offsets;
