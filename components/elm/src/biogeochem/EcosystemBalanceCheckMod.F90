@@ -621,7 +621,6 @@ contains
       ! set time steps
       dt = dtime_mod
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
-      !nstep = nstep_mod 
       err_found = .false.
 
       if(.not.use_fates)then
@@ -905,13 +904,13 @@ contains
          grc_som_c_yield           => grc_cf%somc_yield            , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
          grc_cinputs               => grc_cf%cinputs               , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
          grc_coutputs              => grc_cf%coutputs              , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
-         beg_totpftc               =>  grc_cs%beg_totpftc          , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         beg_cwdc                  =>  grc_cs%beg_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
-         beg_totsomc               =>  grc_cs%beg_totsomc          , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
-         beg_totlitc               =>  grc_cs%beg_totlitc          , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
-         beg_totprodc              =>  grc_cs%beg_totprodc         , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
-         beg_ctrunc                =>  grc_cs%beg_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
-         beg_cropseedc_deficit     =>  grc_cs%beg_cropseedc_deficit  & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         beg_totpftc               => grc_cs%beg_totpftc          , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         beg_cwdc                  => grc_cs%beg_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc               => grc_cs%beg_totsomc          , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc               => grc_cs%beg_totlitc          , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc              => grc_cs%beg_totprodc         , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc                => grc_cs%beg_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cropseedc_deficit     => grc_cs%beg_cropseedc_deficit  & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          )
 
       ! c2g states
@@ -952,7 +951,7 @@ contains
       call c2g(bounds, col_som_c_yield(bounds%begc:bounds%endc), grc_som_c_yield(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')  
 
-      if(use_fates) then 
+      if (use_fates) then 
         call c2g(bounds, col_cf%litfall(bounds%begc:bounds%endc), grc_cinputs(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
       end if 
@@ -962,7 +961,7 @@ contains
 
       do g = bounds%begg, bounds%endg
 
-         if(.not. use_fates) then 
+         if (.not. use_fates) then 
            grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
          end if 
 

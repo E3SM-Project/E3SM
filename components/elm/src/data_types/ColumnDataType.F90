@@ -7778,8 +7778,8 @@ contains
        this%er(i)                        = value_column
        this%som_c_leached(i)             = value_column
        this%somc_yield(i)                = value_column
-       this%somhr(i)                     = value_column ! REVISIT
-       this%lithr(i)                     = value_column ! REVISIT
+       this%somhr(i)                     = value_column 
+       this%lithr(i)                     = value_column 
        this%hr(i)                        = value_column
        this%cinputs(i)                   = value_column
        this%coutputs(i)                  = value_column
@@ -7787,8 +7787,8 @@ contains
        this%litterc_loss(i)              = value_column
        
        this%nee(i)                       = value_column
-       this%er(i)                        = value_column !! Grid Balance Error 
-       this%som_c_leached(i)             = value_column !! Grid Balance Error 
+       this%er(i)                        = value_column  
+       this%som_c_leached(i)             = value_column  
 
        ! Zero p2c column fluxes
        this%rr(i)                    = value_column
