@@ -239,6 +239,8 @@
 <config_use_iron>false</config_use_iron>
 <config_use_modal_aerosols>false</config_use_modal_aerosols>
 <config_use_zaerosols>false</config_use_zaerosols>
+<config_use_atm_dust_file>false</config_use_atm_dust_file>
+<config_use_iron_solubility_file>false</config_use_iron_solubility_file>
 <config_skeletal_bgc_flux_type>'Jin2006'</config_skeletal_bgc_flux_type>
 <config_scale_initial_vertical_bgc>false</config_scale_initial_vertical_bgc>
 <config_biogrid_bottom_molecular_sublayer>0.006</config_biogrid_bottom_molecular_sublayer>

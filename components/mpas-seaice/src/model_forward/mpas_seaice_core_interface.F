@@ -599,6 +599,9 @@ module seaice_core_interface
      logical, pointer :: &
           config_use_forcing, &
           config_use_data_icebergs, &
+          config_use_zaerosols, &
+          config_use_iron_solubility_file, &
+          config_use_atm_dust_file, &
           config_testing_system_test, &
           config_use_snicar_ad, &
           config_use_prescribed_ice, &
@@ -613,17 +616,28 @@ module seaice_core_interface
           pkgPrescribedActive, &
           pkgSpecialBoundariesActive
 
+     logical :: &
+          config_use_dust_file
+
      ierr = 0
 
      ! pkgForcing
 
      call MPAS_pool_get_config(configPool, "config_use_forcing", config_use_forcing)
      call MPAS_pool_get_config(configPool, "config_use_data_icebergs", config_use_data_icebergs)
+     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
+     call MPAS_pool_get_config(configPool, "config_use_atm_dust_file", config_use_atm_dust_file)
+     call MPAS_pool_get_config(configPool, "config_use_iron_solubility_file", config_use_iron_solubility_file)
 
      call MPAS_pool_get_package(packagePool, "pkgForcingActive", pkgForcingActive)
 
+     config_use_dust_file = .false.
+     if (config_use_zaerosols .and. (config_use_iron_solubility_file .or. &
+         config_use_atm_dust_file) ) config_use_dust_file = .true.
+
      ! see if we are using the forcing system
-     if (config_use_forcing .or. config_use_data_icebergs) then
+     if (config_use_forcing .or. config_use_data_icebergs .or. &
+         config_use_dust_file) then
 
         pkgForcingActive = .true.
 

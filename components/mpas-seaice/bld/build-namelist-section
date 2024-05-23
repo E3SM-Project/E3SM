@@ -213,6 +213,8 @@ add_default($nl, 'config_use_DON');
 add_default($nl, 'config_use_iron');
 add_default($nl, 'config_use_modal_aerosols');
 add_default($nl, 'config_use_zaerosols');
+add_default($nl, 'config_use_atm_dust_file');
+add_default($nl, 'config_use_iron_solubility_file');
 add_default($nl, 'config_skeletal_bgc_flux_type');
 add_default($nl, 'config_scale_initial_vertical_bgc');
 add_default($nl, 'config_biogrid_bottom_molecular_sublayer');

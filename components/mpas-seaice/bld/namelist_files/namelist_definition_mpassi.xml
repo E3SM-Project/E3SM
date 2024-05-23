@@ -1115,6 +1115,22 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_atm_dust_file" type="logical"
+	category="biogeochemistry" group="biogeochemistry">
+Read atmospheric dust fluxes from a file
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_iron_solubility_file" type="logical"
+	category="biogeochemistry" group="biogeochemistry">
+Read atmospheric dust-iron solubility from a file
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_skeletal_bgc_flux_type" type="char*1024"
 	category="biogeochemistry" group="biogeochemistry">
 Determines the ocean-ice fluxes of biogeochemistry for the bottom1-layer model: in Jin2006, the piston velocity is a function of ice growth/melt rate, in default, the piston velocity is constant
