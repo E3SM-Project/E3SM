@@ -27,11 +27,13 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   cldn_prev_step: 0.5 
+  cldn: 0.5 
   rprdsh: 1e-5
   rprddp: 1e-5
   evapcsh: 1e-5
   evapcdp: 1e-5
   cldt_prev_step: 1e-5
+  cldt: 1e-5
   cldst: 1e-5
   qme: 1e-5 
   prain: 1e-5
