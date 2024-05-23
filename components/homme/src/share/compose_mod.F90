@@ -4,6 +4,8 @@
 
 module compose_mod
 
+  use kinds, only: c_real
+
   implicit none
 
   logical :: compose_h2d = .false., compose_d2h = .false.
@@ -46,8 +48,7 @@ module compose_mod
      end subroutine slmm_init_impl
 
      subroutine slmm_init_plane(Sx, Sy, Lx, Ly) bind(c)
-       use iso_c_binding, only: c_double
-       real(kind=c_double), value, intent(in) :: Sx, Sy, Lx, Ly
+       real(kind=c_real), value, intent(in) :: Sx, Sy, Lx, Ly
      end subroutine slmm_init_plane
 
      subroutine cedr_query_bufsz(sendsz, recvsz) bind(c)
@@ -56,9 +57,9 @@ module compose_mod
      end subroutine cedr_query_bufsz
 
      subroutine cedr_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
-       use iso_c_binding, only: c_double, c_int
+       use iso_c_binding, only: c_int
        integer(kind=c_int), value, intent(in) :: sendsz, recvsz
-       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
+       real(kind=c_real), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine cedr_set_bufs
 
      subroutine cedr_set_null_bufs() bind(c)
@@ -82,47 +83,46 @@ module compose_mod
      end subroutine cedr_sl_set_pointers_begin
 
      subroutine cedr_sl_set_spheremp(ie, spheremp) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : np
        integer(kind=c_int), value, intent(in) :: ie
-       real(kind=c_double), intent(in) :: spheremp(np,np)
+       real(kind=c_real), intent(in) :: spheremp(np,np)
      end subroutine cedr_sl_set_spheremp
 
      subroutine cedr_sl_set_dp0(dp0) bind(c)
-       use iso_c_binding, only: c_double
        use dimensions_mod, only : nlev
-       real(kind=c_double), intent(in) :: dp0(nlev)
+       real(kind=c_real), intent(in) :: dp0(nlev)
      end subroutine cedr_sl_set_dp0
 
      subroutine cedr_sl_set_Qdp(ie, Qdp, n0_qdp, np1_qdp) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np, qsize_d
        integer(kind=c_int), value, intent(in) :: ie, n0_qdp, np1_qdp
-       real(kind=c_double), intent(in) :: Qdp(np,np,nlev,qsize_d,2)
+       real(kind=c_real), intent(in) :: Qdp(np,np,nlev,qsize_d,2)
      end subroutine cedr_sl_set_Qdp
 
      subroutine cedr_sl_set_dp3d(ie, dp3d, tl_np1) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np
        use element_state,  only : timelevels
        integer(kind=c_int), value, intent(in) :: ie, tl_np1
-       real(kind=c_double), intent(in) :: dp3d(np,np,nlev,timelevels)
+       real(kind=c_real), intent(in) :: dp3d(np,np,nlev,timelevels)
      end subroutine cedr_sl_set_dp3d
 
      subroutine cedr_sl_set_dp(ie, dp) bind(c)
-       use iso_c_binding , only : c_int, c_double
+       use iso_c_binding , only : c_int
        use kinds         , only : real_kind
        use dimensions_mod, only : nlev, np
        use element_state,  only : timelevels
        integer(kind=c_int), value, intent(in) :: ie
-       real(kind=c_double), intent(in) :: dp(np,np,nlev)
+       real(kind=c_real), intent(in) :: dp(np,np,nlev)
      end subroutine cedr_sl_set_dp
 
      subroutine cedr_sl_set_Q(ie, Q) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np, qsize_d
        integer(kind=c_int), value, intent(in) :: ie
-       real(kind=c_double), intent(in) :: Q(np,np,nlev,qsize_d)
+       real(kind=c_real), intent(in) :: Q(np,np,nlev,qsize_d)
      end subroutine cedr_sl_set_Q
 
      subroutine cedr_sl_set_pointers_end(h2d, d2h) bind(c)
@@ -131,27 +131,27 @@ module compose_mod
      end subroutine cedr_sl_set_pointers_end
 
      subroutine cedr_sl_run_global(minq, maxq, nets, nete) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np, qsize
        integer(kind=c_int), value, intent(in) :: nets, nete
-       real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
-       real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
      end subroutine cedr_sl_run_global
 
      subroutine cedr_sl_run_local(minq, maxq, nets, nete, use_ir, limiter_option) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np, qsize
        integer(kind=c_int), value, intent(in) :: nets, nete, use_ir, limiter_option
-       real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
-       real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
      end subroutine cedr_sl_run_local
 
      subroutine cedr_sl_check(minq, maxq, nets, nete) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : nlev, np, qsize
        integer(kind=c_int), value, intent(in) :: nets, nete
-       real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
-       real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
+       real(kind=c_real), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
      end subroutine cedr_sl_check
 
      subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside, &
@@ -168,9 +168,9 @@ module compose_mod
      end subroutine slmm_query_bufsz
 
      subroutine slmm_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
-       use iso_c_binding, only: c_double, c_int
+       use iso_c_binding, only: c_int
        integer(kind=c_int), intent(in) :: sendsz, recvsz
-       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
+       real(kind=c_real), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine slmm_set_bufs
 
      subroutine slmm_set_null_bufs() bind(c)
@@ -187,16 +187,16 @@ module compose_mod
      end subroutine slmm_check_ref2sphere
 
      subroutine slmm_csl_set_elem_data(ie, metdet, qdp, n0_qdp, dp, q, nelem_in_patch, h2d, d2h) bind(c)
-       use iso_c_binding, only: c_int, c_double, c_bool
+       use iso_c_binding, only: c_int, c_bool
        use dimensions_mod, only : nlev, np, qsize
-       real(kind=c_double), intent(in) :: metdet(np,np), qdp(np,np,nlev,qsize,2), &
+       real(kind=c_real), intent(in) :: metdet(np,np), qdp(np,np,nlev,qsize,2), &
             dp(np,np,nlev), q(np,np,nlev,qsize)
        integer(kind=c_int), value, intent(in) :: ie, n0_qdp, nelem_in_patch
        logical(kind=c_bool), value, intent(in) :: h2d, d2h
      end subroutine slmm_csl_set_elem_data
 
      subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info) bind(c)
-       use iso_c_binding, only: c_int, c_double
+       use iso_c_binding, only: c_int
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
        integer(kind=c_int), value, intent(in) :: nets, nete
@@ -204,7 +204,7 @@ module compose_mod
        ! semi_lagrange_nearest_point_lev, a departure point may be altered if
        ! the winds take it outside of the comm halo.
        type(cartesian3D_t), intent(inout) :: dep_points(np,np,nlev,nelemd)
-       real(kind=c_double), intent(in) :: &
+       real(kind=c_real), intent(in) :: &
             minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
        integer(kind=c_int), intent(out) :: info
      end subroutine slmm_csl
@@ -422,7 +422,7 @@ contains
   end subroutine compose_set_null_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
-    use iso_c_binding, only: c_int, c_double
+    use iso_c_binding, only: c_int
 #ifdef CAM
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #else
@@ -430,8 +430,8 @@ contains
 #endif
 
     integer(kind=c_int), value, intent(in) :: nlocal, nfld, comm
-    real(kind=c_double), intent(in) :: send(nlocal,nfld)
-    real(kind=c_double), intent(out) :: recv(nfld)
+    real(kind=c_real), intent(in) :: send(nlocal,nfld)
+    real(kind=c_real), intent(out) :: recv(nfld)
 
     call repro_sum(send, recv, nlocal, nlocal, nfld, commid=comm)
   end subroutine compose_repro_sum

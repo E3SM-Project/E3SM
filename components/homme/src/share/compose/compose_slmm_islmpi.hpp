@@ -52,6 +52,7 @@ struct Request {
 
 template <typename T> MPI_Datatype get_type();
 template <> inline MPI_Datatype get_type<int>() { return MPI_INT; }
+template <> inline MPI_Datatype get_type<float>() { return MPI_FLOAT; }
 template <> inline MPI_Datatype get_type<double>() { return MPI_DOUBLE; }
 template <> inline MPI_Datatype get_type<long>() { return MPI_LONG_INT; }
 

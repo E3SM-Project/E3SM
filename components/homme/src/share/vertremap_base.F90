@@ -39,6 +39,14 @@ module vertremap_base
 ! remap1_nofilter         ! remap any field, splines, no filter
 ! remap_q_ppm             ! remap state%Q, PPM, monotone
 
+  implicit none
+
+#if HOMME_SINGLE_PRECISION
+  real (kind=real_kind), parameter, private :: large_q = 1d30
+#else
+  real (kind=real_kind), parameter, private :: large_q = 1d50
+#endif
+
   contains
 
 
@@ -94,7 +102,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2,remap_alg)
   real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
   real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
                             peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
-                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+                            zero = 0,one = 1,tiny = 1e-12,qmax = large_q
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abrtf=.false.
@@ -377,7 +385,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
   real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
                             peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
-                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+                            zero = 0,one = 1,tiny = 1e-12,qmax = large_q
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abrtf=.false.
@@ -486,7 +494,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
 
       zv1 = 0
       do k=1,nlev
-        if (zgam(k+1)>1d0) then
+        if (zgam(k+1)>1._real_kind) then
           WRITE(*,*) 'r not in [0:1]', zgam(k+1)
           abrtf=.true.
         endif
@@ -587,7 +595,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
         if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
                                       !Top bounds match anyway, so doesn't matter what coefficients are used
         kid(k) = kk                   !Save for reuse
-        z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
+        z1(k) = -0.5_real_kind        !This remapping assumes we're starting from the left interface of an old grid cell
                                       !In fact, we're usually integrating very little or almost all of the cell in question
         z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent
                                                                         !coordinate domain [-0.5,0.5].
@@ -698,7 +706,7 @@ function compute_ppm( a , dx )    result(coefs)
   ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
   do j = 0 , nlev+1
     da = dx(1,j) * ( dx(2,j) * ( a(j+1) - a(j) ) + dx(3,j) * ( a(j) - a(j-1) ) )
-    dma(j) = minval( (/ abs(da) , 2. * abs( a(j) - a(j-1) ) , 2. * abs( a(j+1) - a(j) ) /) ) * sign(1.D0,da)
+    dma(j) = minval( (/ abs(da) , 2. * abs( a(j) - a(j-1) ) , 2. * abs( a(j+1) - a(j) ) /) ) * sign(1._real_kind,da)
     if ( ( a(j+1) - a(j) ) * ( a(j) - a(j-1) ) <= 0. ) dma(j) = 0.
   enddo
 

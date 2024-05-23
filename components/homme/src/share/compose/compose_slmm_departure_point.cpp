@@ -59,8 +59,8 @@ void make_continuous (const Plane& p, LocalMesh<ko::MachineTraits::HES>& m) {
     if (ie == m.tgt_elem) continue;
     // Find the distance-minimizing translation, including 0 translation.
     Real min_dist = 1e20, mdx = 0, mdy = 0;
-    for (const Real dx : {-p.Lx, 0.0, p.Lx})
-      for (const Real dy : {-p.Ly, 0.0, p.Ly}) {
+    for (const Real dx : {-p.Lx, Real(0), p.Lx})
+      for (const Real dy : {-p.Ly, Real(0), p.Ly}) {
         const Real d = dist(ie, dx, dy);
         if (d < min_dist) { min_dist = d; mdx = dx; mdy = dy; }
       }

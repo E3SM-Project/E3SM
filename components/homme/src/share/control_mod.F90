@@ -471,7 +471,7 @@ contains
           tstep = tmp
        elseif (tstep > zero) then
           nsplit_real = real(dtime, real_kind)/(dt_max_factor*tstep)
-          nsplit = idnint(nsplit_real)
+          nsplit = nint(nsplit_real)
           nstep_factor = dt_max_factor*nsplit
           if (abs(nsplit_real - nsplit) > divisible_tol*nsplit_real) then
              if (par%masterproc .and. .not. silent_in) then

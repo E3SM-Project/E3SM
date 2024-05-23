@@ -56,7 +56,11 @@ module edge_mod_base
 
   logical, private :: threadsafe=.true.
 
+#if HOMME_SINGLE_PRECISION
+  real(kind=real_kind), parameter, public :: edgeDefaultVal = 1.11e+30_real_kind
+#else
   real(kind=real_kind), parameter, public :: edgeDefaultVal = 1.11e+100_real_kind
+#endif
 
 ! NOTE ON ELEMENT ORIENTATION
 !

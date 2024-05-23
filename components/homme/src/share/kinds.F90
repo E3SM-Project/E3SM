@@ -10,6 +10,12 @@ module kinds
 #else
   use iso_fortran_env, only: output_unit
 #endif
+#if HOMME_SINGLE_PRECISION
+  use iso_c_binding, only: c_real => c_double
+#else
+  use iso_c_binding, only: c_real => c_float
+#endif
+
 
 ! EAM/SCREAM builds can use kinds from shr_kind_mod
 #if defined(CAM) || defined(SCREAM)

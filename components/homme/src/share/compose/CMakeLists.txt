@@ -46,3 +46,6 @@ add_library (${COMPOSE_LIBRARY}
   cedr_test_randomized.cpp)
 
 target_link_libraries(${COMPOSE_LIBRARY} Kokkos::kokkos)
+if (HOMME_SINGLE_PRECISION)
+  target_compile_definitions(${COMPOSE_LIBRARY} PRIVATE HOMME_SINGLE_PRECISION=1)
+endif()

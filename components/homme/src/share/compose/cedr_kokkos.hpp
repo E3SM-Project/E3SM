@@ -163,8 +163,8 @@ template <> struct TypeTraits<double> {
 };
 
 template <> struct TypeTraits<float> {
-  static constexpr double epsilon = 1.1920928955078125e-07;
-  static constexpr double infinity = 1e38;
+  static constexpr float epsilon = 1.1920928955078125e-07;
+  static constexpr float infinity = 1e38;
 };
 
 } // namespace impl

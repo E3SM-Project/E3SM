@@ -37,9 +37,9 @@ module repro_sum_mod
 !-----------------------------------------------------------------------
 #if ( defined noI8 )
    ! Workaround for when shr_kind_i8 is not supported.
-   use shr_kind_mod,  only: r8 => shr_kind_r8, i8 => shr_kind_i4 
+   use shr_kind_mod,  only: r8 => shr_kind_r8, r4 => shr_kind_r4, i8 => shr_kind_i4 
 #else
-   use shr_kind_mod,  only: r8 => shr_kind_r8, i8 => shr_kind_i8 
+   use shr_kind_mod,  only: r8 => shr_kind_r8, r4 => shr_kind_r4, i8 => shr_kind_i8 
 #endif
    use shr_abort_mod,   only: shr_sys_abort=>shr_abort_abort
    use perf_mod  ! _EXTERNAL
@@ -74,8 +74,14 @@ module repro_sum_mod
    logical, parameter  :: def_repro_sum_recompute = .false.
    logical, public     :: repro_sum_recompute = def_repro_sum_recompute
 
-   real(r8), parameter :: def_rel_diff_max = -1.0_r8
-   real(r8), public    :: repro_sum_rel_diff_max = def_rel_diff_max
+#if HOMME_SINGLE_PRECISION
+   integer, parameter  :: real_kind = r4
+#else
+   integer, parameter  :: real_kind = r8
+#endif
+
+   real(real_kind), parameter :: def_rel_diff_max = -1.0_r8
+   real(real_kind), public    :: repro_sum_rel_diff_max = def_rel_diff_max
 
 !-----------------------------------------------------------------------
 ! Private interfaces ----------------------------------------------------
@@ -112,7 +118,7 @@ module repro_sum_mod
       logical, intent(out), optional :: repro_sum_use_ddpdd_out
       ! maximum permissible difference between reproducible and 
       ! nonreproducible sums
-      real(r8), intent(out), optional :: repro_sum_rel_diff_max_out
+      real(real_kind), intent(out), optional :: repro_sum_rel_diff_max_out
       ! recompute using different algorithm when difference between 
       ! reproducible and nonreproducible sums is too great 
       logical, intent(out), optional :: repro_sum_recompute_out
@@ -145,7 +151,7 @@ module repro_sum_mod
       logical, intent(in), optional :: repro_sum_use_ddpdd_in
       ! maximum permissible difference between reproducible and 
       ! nonreproducible sums
-      real(r8), intent(in), optional :: repro_sum_rel_diff_max_in
+      real(real_kind), intent(in), optional :: repro_sum_rel_diff_max_in
       ! recompute using different algorithm when difference between 
       ! reproducible and nonreproducible sums is too great 
       logical, intent(in), optional  :: repro_sum_recompute_in
@@ -190,7 +196,7 @@ module repro_sum_mod
               'distributed sum algorithm'
          endif
 
-         if (repro_sum_rel_diff_max >= 0._r8) then
+         if (repro_sum_rel_diff_max >= 0._real_kind) then
             write(logunit,*) '                    ',&
               'with a maximum relative error tolerance of ', &
               repro_sum_rel_diff_max
@@ -277,10 +283,10 @@ module repro_sum_mod
       integer,  intent(in) :: nsummands  ! number of local summands
       integer,  intent(in) :: dsummands  ! declared first dimension
       integer,  intent(in) :: nflds      ! number of fields
-      real(r8), intent(in) :: arr(dsummands,nflds) 
+      real(real_kind), intent(in) :: arr(dsummands,nflds) 
                                          ! input array
 
-      real(r8), intent(out):: arr_gsum(nflds)      
+      real(real_kind), intent(out):: arr_gsum(nflds)      
                                          ! global means
 
       logical,  intent(in),    optional :: ddpdd_sum
@@ -308,10 +314,10 @@ module repro_sum_mod
                                    !  (4) nonrepro_sum
                                    !  (5) global count reduction
 
-      real(r8), intent(inout), optional :: arr_gbl_max(nflds)
+      real(real_kind), intent(inout), optional :: arr_gbl_max(nflds)
                                          ! upper bound on max(abs(arr))
 
-      real(r8), intent(out),   optional :: rel_diff(2,nflds)
+      real(real_kind), intent(out),   optional :: rel_diff(2,nflds)
                                          ! relative and absolute
                                          !  differences between fixed 
                                          !  and floating point sums
@@ -355,13 +361,13 @@ module repro_sum_mod
       integer :: repro_sum_both          ! both fast and slow? (0/1)
       integer :: nonrepro_sum            ! nonrepro_sum? (0/1)
 
-      real(r8) :: xtot_summands          ! r8 version of tot_summands
+      real(real_kind) :: xtot_summands          ! r8 version of tot_summands
 
-      real(r8) :: arr_lsum(nflds)        ! local sums
-      real(r8) :: arr_gsum_fast(nflds)   ! global sum calculated using 
+      real(real_kind) :: arr_lsum(nflds)        ! local sums
+      real(real_kind) :: arr_gsum_fast(nflds)   ! global sum calculated using 
                                          !  fast, nonreproducible, 
                                          !  floating point alg.
-      real(r8) :: abs_diff               ! absolute difference between 
+      real(real_kind) :: abs_diff               ! absolute difference between 
                                          !  fixed and floating point 
                                          !  sums
 !
@@ -375,7 +381,7 @@ module repro_sum_mod
 
 ! check whether intrinsic-based algorithm will work on this system
       if (.not. use_ddpdd_sum) then
-         if (radix(0_r8) .ne. radix(0_i8)) then
+         if (radix(0_real_kind) .ne. radix(0_i8)) then
             use_ddpdd_sum = .true.
 !           call shr_sys_abort('repro_sum failed: mathematical models for '// &
 !                              'integer and floating point use different bases.' )
@@ -456,7 +462,7 @@ module repro_sum_mod
 
             max_level = 0
             do ifld=1,nflds
-               if ((arr_gbl_max(ifld) .ge. 0.0_r8) .and. &
+               if ((arr_gbl_max(ifld) .ge. 0.0_real_kind) .and. &
                    (arr_max_levels(ifld) > 0)) then
 
                   arr_gmax_exp(ifld)  = exponent(arr_gbl_max(ifld))
@@ -495,8 +501,8 @@ module repro_sum_mod
             repro_sum_slow = 1
 
 ! determine maximum and minimum (non-zero) summand values
-            arr_lmax_exp(:) = MINEXPONENT(1._r8)
-            arr_lmin_exp(:) = MAXEXPONENT(1._r8)
+            arr_lmax_exp(:) = MINEXPONENT(1._real_kind)
+            arr_lmin_exp(:) = MAXEXPONENT(1._real_kind)
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, isum)
@@ -559,7 +565,7 @@ module repro_sum_mod
 ! return upper bounds on observed maxima 
             if ( present(arr_gbl_max) ) then
                do ifld=1,nflds
-                  arr_gbl_max(ifld) = scale(1.0_r8,arr_gmax_exp(ifld))
+                  arr_gbl_max(ifld) = scale(1.0_real_kind,arr_gmax_exp(ifld))
                enddo
             endif
 
@@ -571,7 +577,7 @@ module repro_sum_mod
 
 ! compare fixed and floating point results
       if ( present(rel_diff) ) then
-         if (repro_sum_rel_diff_max >= 0.0_r8) then
+         if (repro_sum_rel_diff_max >= 0.0_real_kind) then
 
 #if ( defined SPMD )
             call t_barrierf('sync_nonrepro_sum',mpi_comm)
@@ -580,7 +586,7 @@ module repro_sum_mod
 ! record statistic
             nonrepro_sum = 1
 ! compute nonreproducible sum
-            arr_lsum(:) = 0._r8
+            arr_lsum(:) = 0._real_kind
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, isum)
@@ -612,7 +618,7 @@ module repro_sum_mod
                rel_diff(2,ifld) = abs_diff
             enddo
          else
-            rel_diff(:,:) = 0.0_r8
+            rel_diff(:,:) = 0.0_real_kind
          endif
       endif
 
@@ -664,7 +670,7 @@ module repro_sum_mod
                                             !  max_levels
       integer,  intent(in) :: mpi_comm      ! MPI subcommunicator
 
-      real(r8), intent(in) :: arr(dsummands,nflds) 
+      real(real_kind), intent(in) :: arr(dsummands,nflds) 
                                              ! input array
 
       logical,  intent(in):: validate
@@ -676,12 +682,12 @@ module repro_sum_mod
          !  or max_levels and arr_gmax_exp do not generate accurate 
          !  enough sums
 
-      real(r8), intent(out):: arr_gsum(nflds)      ! global means
+      real(real_kind), intent(out):: arr_gsum(nflds)      ! global means
 !
 ! Local workspace
 !
       integer, parameter  :: max_jlevel = &
-                                1 + (digits(0_i8)/digits(0.0_r8))
+                                1 + (digits(0_i8)/digits(0.0_real_kind))
 
       integer(i8) :: i8_arr_lsum_level((max_level+2)*nflds) 
                                    ! integer vector representing local 
@@ -721,12 +727,12 @@ module repro_sum_mod
       integer :: corr_exp          ! exponent of current summand in
                                    !  reconstruction from integer vector
 
-      real(r8) :: arr_frac         ! fraction of summand
-      real(r8) :: arr_remainder    ! part of summand remaining after 
+      real(real_kind) :: arr_frac         ! fraction of summand
+      real(real_kind) :: arr_remainder    ! part of summand remaining after 
                                    !  current level of integer expansion
-      real(r8) :: X_8(max_jlevel)  ! r8 vector representation of current 
+      real(real_kind) :: X_8(max_jlevel)  ! r8 vector representation of current 
                                    !  i8_arr_gsum_level
-      real(r8) :: RX_8             ! r8 representation of difference 
+      real(real_kind) :: RX_8             ! r8 representation of difference 
                                    !  between current i8_arr_gsum_level
                                    !  and current jlevels of X_8 
                                    !  (== IX_8). Also used in final
@@ -768,9 +774,9 @@ module repro_sum_mod
          ioffset = offset(ifld)
 
          do isum=1,nsummands
-            arr_remainder = 0.0_r8
+            arr_remainder = 0.0_real_kind
 
-            if (arr(isum,ifld) .ne. 0.0_r8) then
+            if (arr(isum,ifld) .ne. 0.0_real_kind) then
                arr_exp   = exponent(arr(isum,ifld))
                arr_frac  = fraction(arr(isum,ifld))
 
@@ -809,7 +815,7 @@ module repro_sum_mod
 
 ! while the remainder is non-zero, continue to shift, truncate, 
 ! sum, and calculate new remainder
-                  do while ((arr_remainder .ne. 0.0_r8) &
+                  do while ((arr_remainder .ne. 0.0_real_kind) &
                      .and. (ilevel < max_levels(ifld)))
                      ilevel = ilevel + 1
                      arr_remainder = scale(arr_remainder,arr_max_shift)
@@ -822,7 +828,7 @@ module repro_sum_mod
                endif
             endif
 
-            if (arr_remainder .ne. 0.0_r8) then
+            if (arr_remainder .ne. 0.0_real_kind) then
                not_exact(ifld) = 1
             endif
 
@@ -857,16 +863,16 @@ module repro_sum_mod
 !   removed implicitly by working only with the fraction .
 !  2) want to add levels into sum in reverse order (smallest to largest)
 !  3) assignment to X_8 will usually lose accuracy since maximum integer 
-!   size is greater than the max number of 'digits' in r8 value (if tot_summands 
+!   size is greater than the max number of 'digits' in real_kind value (if tot_summands 
 !   correction not very large). Calculate remainder and add in first (since 
-!   smaller). One correction is sufficient for r8 (53 digits) and i8 (63 digits). 
+!   smaller). One correction is sufficient for real_kind (53 digits) and i8 (63 digits). 
 !   For r4 (24 digits) may need to correct twice. Code is written in a general
 !   fashion, to work no matter how many corrections are necessary (assuming
 !   max_jlevel parameter calculation is correct).
 
       recompute = .false.
       do ifld=1,nflds
-         arr_gsum(ifld) = 0.0_r8
+         arr_gsum(ifld) = 0.0_real_kind
          ioffset = offset(ifld)
 
 ! if validate is .true., test whether the summand upper bound
@@ -889,7 +895,7 @@ module repro_sum_mod
                if (i8_arr_gsum_level(ioffset+ilevel) .ne. 0_i8) then
                   jlevel = 1
 
-! r8 representation of higher order bits in integer 
+! real_kind representation of higher order bits in integer 
                   X_8(jlevel) = i8_arr_gsum_level(ioffset+ilevel)
                   LX(jlevel)  = exponent(X_8(jlevel))
 
@@ -898,7 +904,7 @@ module repro_sum_mod
                   RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
 
 ! repeat using remainder
-                  do while (RX_8 .ne. 0.0_r8)
+                  do while (RX_8 .ne. 0.0_real_kind)
                      jlevel = jlevel + 1
                      X_8(jlevel) = RX_8
                      LX(jlevel) = exponent(RX_8)
@@ -931,18 +937,18 @@ module repro_sum_mod
 ! apply final exponent correction, scaling first if exponent is too small
 ! to apply directly
             corr_exp = curr_exp + exponent(arr_gsum(ifld))
-            if (corr_exp .ge. MINEXPONENT(1._r8)) then 
+            if (corr_exp .ge. MINEXPONENT(1._real_kind)) then 
                arr_gsum(ifld) = set_exponent(arr_gsum(ifld),corr_exp)
             else
                RX_8 = set_exponent(arr_gsum(ifld), &
-                                   corr_exp-MINEXPONENT(1._r8))
-               arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1._r8))
+                                   corr_exp-MINEXPONENT(1._real_kind))
+               arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1._real_kind))
             endif
 
 ! if validate is .true. and some precision lost, test whether 'too much' 
 !  was lost, due to too loose an upper bound, too stringent a limit on number
 !  of levels of expansion, cancellation, .... Calculated by comparing lower 
-!  bound on number of sigificant digits with number of digits in 1.0_r8 .
+!  bound on number of sigificant digits with number of digits in 1.0_real_kind .
             if (validate) then
                if (i8_arr_gsum_level(ioffset-voffset+2) .ne. 0_i8) then
 
@@ -962,7 +968,7 @@ module repro_sum_mod
                      endif
                   enddo
 
-                  if (sum_digits < digits(1.0_r8)) then
+                  if (sum_digits < digits(1.0_real_kind)) then
                      recompute = .true.
                   endif
                endif
@@ -998,7 +1004,7 @@ module repro_sum_mod
                                               !  warning messages?
       integer,  intent(in) :: logunit         ! unit warning messages 
                                               !  written to
-      real(r8), intent(in) :: rel_diff(2,nflds)
+      real(real_kind), intent(in) :: rel_diff(2,nflds)
                                               ! relative and absolute
                                               !  differences between fixed 
                                               !  and floating point sums
@@ -1009,20 +1015,20 @@ module repro_sum_mod
       integer  :: ifld                        ! field index
       integer  :: exceeds_limit               ! number of fields whose
                                               !  sum exceeds tolerance
-      real(r8) :: max_rel_diff                ! maximum relative difference
+      real(real_kind) :: max_rel_diff                ! maximum relative difference
       integer  :: max_rel_diff_idx            ! field index for max. rel. diff.
-      real(r8) :: max_abs_diff                ! maximum absolute difference
+      real(real_kind) :: max_abs_diff                ! maximum absolute difference
       integer  :: max_abs_diff_idx            ! field index for max. abs. diff.
 !
 !-----------------------------------------------------------------------
 !
       repro_sum_tol_exceeded = .false.
-      if (repro_sum_rel_diff_max < 0.0_r8) return
+      if (repro_sum_rel_diff_max < 0.0_real_kind) return
 
       ! check that "fast" reproducible sum is accurate enough.
       exceeds_limit = 0
-      max_rel_diff = 0.0_r8
-      max_abs_diff = 0.0_r8
+      max_rel_diff = 0.0_real_kind
+      max_abs_diff = 0.0_real_kind
       do ifld=1,nflds
          if (rel_diff(1,ifld) > repro_sum_rel_diff_max) then
             exceeds_limit = exceeds_limit + 1
@@ -1077,11 +1083,11 @@ module repro_sum_mod
       integer,  intent(in) :: nsummands  ! number of local summands
       integer,  intent(in) :: dsummands  ! declared first dimension
       integer,  intent(in) :: nflds      ! number of fields
-      real(r8), intent(in) :: arr(dsummands,nflds) 
+      real(real_kind), intent(in) :: arr(dsummands,nflds) 
                                          ! input array
       integer,  intent(in) :: mpi_comm   ! MPI subcommunicator
 
-      real(r8), intent(out):: arr_gsum(nflds)      
+      real(real_kind), intent(out):: arr_gsum(nflds)      
                                          ! global sums
 
 !
@@ -1092,10 +1098,10 @@ module repro_sum_mod
       integer :: ifld, isum              ! loop variables
       integer :: ierr                    ! MPI error return
 
-      real(r8)    :: e, t1, t2           ! temporaries
-      complex(r8) :: arr_lsum_dd(nflds)  ! local sums (in double-double
+      real(real_kind)    :: e, t1, t2           ! temporaries
+      complex(real_kind) :: arr_lsum_dd(nflds)  ! local sums (in double-double
                                          !  format)
-      complex(r8) :: arr_gsum_dd(nflds)  ! global sums (in double-double
+      complex(real_kind) :: arr_gsum_dd(nflds)  ! global sums (in double-double
                                          !  format)
 
       integer, save :: mpi_sumdd
@@ -1114,7 +1120,7 @@ module repro_sum_mod
       endif
 
       do ifld=1,nflds
-         arr_lsum_dd(ifld) = (0.0_r8,0.0_r8)
+         arr_lsum_dd(ifld) = (0.0_real_kind,0.0_r8)
 
          do isum=1,nsummands
                         
@@ -1127,7 +1133,7 @@ module repro_sum_mod
                  + aimag(arr_lsum_dd(ifld))
 
             ! The result is t1 + t2, after normalization.
-            arr_lsum_dd(ifld) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )
+            arr_lsum_dd(ifld) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), real_kind )
          enddo
 
       enddo
@@ -1164,13 +1170,13 @@ module repro_sum_mod
 ! Arguments
 !
       integer, intent(in)        :: len       ! array length
-      complex(r8), intent(in)    :: dda(len)  ! input
-      complex(r8), intent(inout) :: ddb(len)  ! result
+      complex(real_kind), intent(in)    :: dda(len)  ! input
+      complex(real_kind), intent(inout) :: ddb(len)  ! result
       integer, intent(in)        :: itype     ! unused
 !
 ! Local workspace
 !
-      real(r8) e, t1, t2
+      real(real_kind) e, t1, t2
       integer i
 !
 !-----------------------------------------------------------------------
@@ -1183,7 +1189,7 @@ module repro_sum_mod
               + aimag(dda(i)) + aimag(ddb(i))
 
 !   The result is t1 + t2, after normalization.
-         ddb(i) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )
+         ddb(i) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), real_kind )
       enddo
 
       return

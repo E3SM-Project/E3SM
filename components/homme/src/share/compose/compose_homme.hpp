@@ -10,7 +10,12 @@
 
 namespace homme {
 typedef int Int;
+
+#if HOMME_SINGLE_PRECISION
+typedef float Real;
+#else
 typedef double Real;
+#endif
 
 namespace ko = Kokkos;
 

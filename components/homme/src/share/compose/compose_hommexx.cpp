@@ -21,10 +21,10 @@ template <typename DataType>
 using View = typename TracerArrays<ko::MachineTraits>::View<DataType>;
 #endif
 
-void set_views (const SetView<double***>& spheremp,
-                const SetView<double****>& dp, const SetView<double*****>& dp3d,
-                const SetView<double******>& qdp, const SetView<double*****>& q,
-                const SetView<double*****>& dep_points) {
+void set_views(const SetView<Real***>& spheremp,
+               const SetView<Real****>& dp, const SetView<Real*****>& dp3d,
+               const SetView<Real******>& qdp, const SetView<Real*****>& q,
+               const SetView<Real*****>& dep_points) {
 #ifdef COMPOSE_PORT
   auto& ta = *get_tracer_arrays();
   const auto nel = spheremp.extent_int(0);

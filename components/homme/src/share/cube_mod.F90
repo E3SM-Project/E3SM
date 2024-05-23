@@ -27,6 +27,13 @@ module cube_mod
   implicit none
   private
 
+#if HOMME_SINGLE_PRECISION
+  real(kind=real_kind), parameter :: large_val = 1d30
+#else
+  real(kind=real_kind), parameter :: large_val = 1d99
+#endif
+
+
   integer,public, parameter :: nfaces = 6          ! number of faces on the cube
   integer,public, parameter :: nInnerElemEdge = 8  ! number of edges for an interior element
   integer,public, parameter :: nCornerElemEdge = 4 ! number of corner elements
@@ -249,7 +256,7 @@ contains
 
     max_svd = 0.0d0
     max_normDinv = 0.0d0
-    min_svd = 1d99
+    min_svd = large_val
     do j=1,np
        do i=1,np
           x1=gll_points(i)
@@ -1896,7 +1903,7 @@ contains
 !  equi-angular cubed-sphere mapping for non-cubed sphere grids, hence the 
 !  need for a new map)
 !
-  function ref2sphere_double(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
+  function ref2sphere_real(a,b, corners3D, ref_map, corners, facenum, cart) result(sphere)
     real(kind=real_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)            :: corners3D(4)
@@ -1909,15 +1916,15 @@ contains
 
     if (ref_map==0) then
        if (.not. present(corners) ) &
-            call abortmp('ref2sphere_double(): missing arguments for equiangular map')
-       sphere = ref2sphere_equiangular_double(a,b,corners,facenum)
+            call abortmp('ref2sphere_real(): missing arguments for equiangular map')
+       sphere = ref2sphere_equiangular_real(a,b,corners,facenum)
     elseif (ref_map==1) then
-!       sphere = ref2sphere_gnomonic_double(a,b,corners,face_no)
+!       sphere = ref2sphere_gnomonic_real(a,b,corners,face_no)
        call abortmp('gnomonic map not yet coded')
     elseif (ref_map==2) then
-       sphere = ref2sphere_elementlocal_double(a,b,corners3D,cart)
+       sphere = ref2sphere_elementlocal_real(a,b,corners3D,cart)
     else
-       call abortmp('ref2sphere_double(): bad value of ref_map')
+       call abortmp('ref2sphere_real(): bad value of ref_map')
     endif
   end function
 
@@ -1932,7 +1939,7 @@ contains
 
     if (ref_map==0) then
        if (.not. present(corners) ) &
-            call abortmp('ref2sphere_double(): missing arguments for equiangular map')
+            call abortmp('ref2sphere_longreal(): missing arguments for equiangular map')
        sphere = ref2sphere_equiangular_longreal(a,b,corners,facenum)
     elseif (ref_map==1) then
 !       sphere = ref2sphere_gnomonic_longreal(a,b,corners,face_no)
@@ -1940,7 +1947,7 @@ contains
     elseif (ref_map==2) then
        sphere = ref2sphere_elementlocal_longreal(a,b,corners3D,cart)
     else
-       call abortmp('ref2sphere_double(): bad value of ref_map')
+       call abortmp('ref2sphere_longreal(): bad value of ref_map')
     endif
   end function
 
@@ -1949,7 +1956,7 @@ contains
 !
 ! map a point in the referece element to the sphere
 !
-  function ref2sphere_equiangular_double(a,b, corners, face_no) result(sphere)         
+  function ref2sphere_equiangular_real(a,b, corners, face_no) result(sphere)         
     implicit none
     real(kind=real_kind)    :: a,b
     integer,intent(in)            :: face_no
@@ -1976,7 +1983,7 @@ contains
          + pi*qj*corners(4)%y 
     ! map from [pi/2,pi/2] equ angular cube face to sphere:   
     sphere=projectpoint(cart,face_no)
-  end function ref2sphere_equiangular_double
+  end function ref2sphere_equiangular_real
 
 
 
@@ -2032,7 +2039,7 @@ contains
 ! is to utilize a map (X,Y,X) --> (X,Y,Z)/SQRT(X**2+Y**2+Z**2) to
 ! project the quad to the unit sphere.
 ! -----------------------------------------------------------------------------------------
-  function ref2sphere_elementlocal_double(a,b, corners3D, cart) result(sphere)
+  function ref2sphere_elementlocal_real(a,b, corners3D, cart) result(sphere)
     use element_mod, only : element_t
     implicit none
     real(kind=real_kind)    :: a,b

@@ -92,12 +92,12 @@ class GLL {
   const Real oo8 = 1.0/8.0;
   const Real sqrt5 = std::sqrt(5.0);
   const Real oosqrt5 = 1.0/sqrt5;
-  const Real np2_coord[2] = {-1.0, 1.0};
-  const Real np2_wt[2]    = {1.0, 1.0};
-  const Real np3_coord[3] = {-1.0, 0.0, 1.0};
-  const Real np3_wt[3]    = {oo3, 2.0 - to3, oo3};
-  const Real np4_coord[4] = {-1.0, -oosqrt5, oosqrt5, 1.0};
-  const Real np4_wt[4]    = {oo6, 1.0 - oo6, 1.0 - oo6, oo6};
+  const Real np2_coord[2] = {-1, 1};
+  const Real np2_wt[2]    = {1, 1};
+  const Real np3_coord[3] = {-1, 0, 1};
+  const Real np3_wt[3]    = {oo3, 2 - to3, oo3};
+  const Real np4_coord[4] = {-1, -oosqrt5, oosqrt5, 1};
+  const Real np4_wt[4]    = {oo6, 1 - oo6, 1 - oo6, oo6};
 
 public:
   enum { np_max = 4 };

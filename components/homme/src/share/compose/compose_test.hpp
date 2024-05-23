@@ -3,10 +3,6 @@
 
 #include <mpi.h>
 
-extern "C"
-void compose_repro_sum(const double* send, double* recv,
-                       int nlocal, int nfld, int fcomm);
-
 namespace compose {
 namespace test {
 
@@ -14,7 +10,11 @@ int slmm_unittest();
 int cedr_unittest();
 int cedr_unittest(MPI_Comm comm);
 
+#if HOMME_SINGLE_PRECISION
+typedef float Real;
+#else
 typedef double Real;
+#endif
 typedef int Int;
 typedef Int Size;
 
@@ -220,5 +220,9 @@ inline InitialCondition::Shape get_ic (const Int qsize, const Int k, const Int q
 
 } // namespace test
 } // namespace compose
+
+extern "C"
+void compose_repro_sum(const compose::test::Real* send, compose::test::Real* recv,
+                       int nlocal, int nfld, int fcomm);
 
 #endif

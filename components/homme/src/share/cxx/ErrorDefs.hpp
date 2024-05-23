@@ -87,10 +87,12 @@ void check_option(const std::string& location,
   }
 }
 
-template<typename T>
-void check_option (const std::string& location,
+// Two template args, so we can, e.g., pass T=double, but ref_value=0 (int)
+template<typename T, typename S>
+typename std::enable_if<std::is_constructible<T,S>::value>::type
+check_option (const std::string& location,
                    const std::string& option,
-                   const T& value, const T& ref_value,
+                   const T& value, const S& ref_value,
                    const ComparisonOp& relation)
 {
   bool bad_inputs = false;

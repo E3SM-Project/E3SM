@@ -25,6 +25,12 @@ module planar_mod
   implicit none
   private
 
+#if HOMME_SINGLE_PRECISION
+  real(kind=real_kind), parameter :: large_val = 1d30
+#else
+  real(kind=real_kind), parameter :: large_val = 1d99
+#endif
+
 ! We work with reference domain [0,1]^2 and physical domain [Sx,Lx+Sx] x [Sy,Ly+Sy]
 
   ! ==========================================
@@ -391,11 +397,11 @@ call initgridedge(GridEdge,GridVertex)
 
     max_svd = 0.0d0
     max_normDinv = 0.0d0
-    min_svd = 1d99
+    min_svd = large_val
     do j=1,np
        do i=1,np
 
-          call plane_Dmap(elem%D(i,j,:,:),1.0D0,1.0D0,elem%corners3D,cubed_sphere_map)
+          call plane_Dmap(elem%D(i,j,:,:),1._real_kind,1._real_kind,elem%corners3D,cubed_sphere_map)
 
           ! Numerical metric tensor based on analytic D: met = D^T times D
           ! (D maps between physical plane and reference element)

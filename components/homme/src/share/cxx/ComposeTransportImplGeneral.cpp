@@ -11,7 +11,7 @@
 #include "compose_hommexx.hpp"
 
 extern "C" void
-sl_get_params(double* nu_q, double* hv_scaling, int* hv_q, int* hv_subcycle_q,
+sl_get_params(Homme::Real* nu_q, Homme::Real* hv_scaling, int* hv_q, int* hv_subcycle_q,
               int* limiter_option, int* cdr_check, int* geometry_type);
 
 namespace Homme {

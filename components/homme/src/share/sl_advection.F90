@@ -141,9 +141,10 @@ contains
        cdr_check, geometry_type) bind(c)
     use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
          nu_q, hypervis_scaling, limiter_option, geometry
-    use iso_c_binding, only: c_int, c_double
+    use kinds, only: c_real
+    use iso_c_binding, only: c_int
 
-    real(c_double), intent(out) :: nu_q_out, hv_scaling
+    real(c_real), intent(out) :: nu_q_out, hv_scaling
     integer(c_int), intent(out) :: hv_q, hv_subcycle_q, limiter_option_out, cdr_check, geometry_type
 
     nu_q_out = nu_q

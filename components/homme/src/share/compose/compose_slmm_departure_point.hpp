@@ -152,11 +152,11 @@ int get_src_cell (const LocalMesh<ES>& m, // Local mesh.
         // We can expect to lose approx. -log10(L) digits due to cancellation in
         // the formation of the edge normal and in dot_c_amb. Multiply by 100
         // for a little extra padding.
-        atol = 1e2 * ko::NumericTraits<Real>::epsilon() / L;
+        atol = 100 * ko::NumericTraits<Real>::epsilon() / L;
       } else {
         // Ok, we really didn't do that very well. We're still failing to find
         // the element. Ramp up the atol even more.
-        atol = ko::max(1e3*atol,
+        atol = ko::max(1000*atol,
                        std::sqrt(ko::NumericTraits<Real>::epsilon()));
       }
     }

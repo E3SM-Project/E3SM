@@ -147,13 +147,13 @@ private:
     const auto sy = (m.p(cell[0],1) + m.p(cell[1],1) +
                      m.p(cell[2],1) + m.p(cell[3],1))/4;
     Real dist = 1e20, mdx = 0;
-    for (const Real dx : {-p.Lx, 0.0, p.Lx}) {
+    for (const Real dx : {-p.Lx, Real(0), p.Lx}) {
       const Real d = std::abs(x[0] + dx - sx);
       if (d < dist) { dist = d; mdx = dx; }
     }
     Real mdy = 0;
     dist = 1e20;
-    for (const Real dy : {-p.Ly, 0.0, p.Ly}) {
+    for (const Real dy : {-p.Ly, Real(0), p.Ly}) {
       const Real d = std::abs(x[1] + dy - sy);
       if (d < dist) { dist = d; mdy = dy; }
     }

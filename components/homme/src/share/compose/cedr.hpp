@@ -11,7 +11,12 @@ namespace cedr {
 typedef int Int;
 typedef long int Long;
 typedef std::size_t Size;
+
+#if HOMME_SINGLE_PRECISION
+typedef float Real;
+#else
 typedef double Real;
+#endif
 
 // CDRs in general implement
 // * tracer mass, Qm, conservation;

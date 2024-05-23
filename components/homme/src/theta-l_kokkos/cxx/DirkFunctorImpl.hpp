@@ -674,7 +674,7 @@ struct DirkFunctorImpl {
     Real wmax;
     const auto tr = TeamThreadRange(kv.team, nlev);
     parallel_reduce(tr, f, Kokkos::Max<Real>(wmax));
-    return max(1.0, wmax);
+    return max(Real(1), wmax);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -840,7 +840,7 @@ struct DirkFunctorImpl {
       const auto vr = ThreadVectorRange(kv.team, nlev);
       parallel_reduce(vr, g, Kokkos::Min<Real>(alpha));
       // Step halfway to the distance at which at least one dphi is 0.
-      wrk(2,i)[s] = min(1.0, alpha)/2;
+      wrk(2,i)[s] = min(Real(1), alpha)/2;
     };
     const auto tr = TeamThreadRange(kv.team, static_cast<int>(scaln));
     parallel_for(tr, f);
