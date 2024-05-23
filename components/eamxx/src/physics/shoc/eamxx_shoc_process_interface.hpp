@@ -27,6 +27,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
+  using SC           = scream::shoc::Constants<Real>;
 
   using Spack                = typename SHF::Spack;
   using IntSmallPack         = typename SHF::IntSmallPack;
@@ -79,6 +80,7 @@ public:
       const Real cpair = C::Cpair;
       const Real ggr = C::gravit;
       const Real inv_ggr = 1/ggr;
+      const Real mintke = SC::mintke;
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
 
@@ -93,7 +95,7 @@ public:
         EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
-        tke(i,k) = ekat::max(sp(0.004), tke(i,k));
+        tke(i,k) = ekat::max(mintke, tke(i,k));
 
         // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
         // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
