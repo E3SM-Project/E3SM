@@ -77,7 +77,13 @@
 		            description="notional englacial porosity"
 		            possible_values="positive real number"
 		/>
-                <!-- channel options -->
+		
+		<nml_option name="config_SGH_use_iceThicknessHydro" type="logical" default_value=".true." units="unitless"
+			    description="Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable."
+		            possible_values=".true. or .false."
+		/>
+	
+	        <!-- channel options -->
                 <nml_option name="config_SGH_chnl_active" type="logical" default_value=".false." units="unitless"
 		            description="activate channels in subglacial hydrology model"
 		            possible_values=".true. or .false."
@@ -119,6 +125,10 @@
 		            possible_values="'file', 'thermal', 'basal_heat'"
 		/>
 
+		  <nml_option name="config_SGH_iter_smooth_waterPressureSlopeNormal" type="integer" default_value="1" units="none"
+					 description="number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure." 	
+					 possible_values="positive integer or zero"
+		/>
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -140,7 +150,9 @@
 	<!-- Variables related to subglacial hydrology -->
         <var_struct name="hydro" time_levs="1" packages="hydro">
                 <!-- state vars -->
-                <var name="waterThickness" type="real" dimensions="nCells Time" units="m"
+		<var name="iceThicknessHydro" type="real" dimensions="nCells Time" units="m"
+			description="ice thickness used by the hydrology model. Same as 'thickness' but with potential differences along domain boundaries that inhibit the formation of local hydropotential minima on boundaries." /> 
+		<var name="waterThickness" type="real" dimensions="nCells Time" units="m"
                      description="water layer thickness in subglacial hydrology system" />
                 <var name="waterThicknessOld" type="real" dimensions="nCells Time" units="m"
                      description="water layer thickness in subglacial hydrology system from previous time step" />
@@ -152,7 +164,9 @@
                      description="water layer thickness in subglacial till from previous time step" />
                 <var name="waterPressure" type="real" dimensions="nCells Time" units="Pa"
                      description="pressure in subglacial hydrology system" />
-                <var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
+					 <var name="waterPressureSmooth" type="real" dimensions="nCells Time" units="Pa"
+								description="smoothed water pressure used only for calculation of channelPressureFreeze" />
+					 <var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
                      description="pressure in subglacial hydrology system from previous time step" />
                 <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa s^{-1}"
                      description="tendency in pressure in subglacial hydrology system" />
@@ -229,7 +243,7 @@
                 <var name="deltatSGHpressure" type="real" dimensions="Time" units="s"
                      description="time step length limited by pressure equation scheme in subglacial hydrology system" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
-                        description="time step used for evolving subglacial hydrology system" />
+                     description="time step used for evolving subglacial hydrology system" />
 	     	<var name="distGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
 		     description="distributed discharge across the grounding line, summed from grounding line edges to adjacent ungrounded cell. Values from all edges are summed if multiple grounding line edges border a single ungrounded cell" />
 	     	<var name="totalGroundingLineDischargeCell" type="real" dimensions="Time nCells" units="m^{3} s^{-1}"
