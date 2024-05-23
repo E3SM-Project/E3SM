@@ -39,13 +39,8 @@ void MAMWetscav::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto q_unit = kg / kg;
-  q_unit.set_string("kg/kg");
-  // FIXME: units of tendencies; check units
   auto dqdt_unit = kg / kg / s;
-  dqdt_unit.set_string("kg/kg/t");
-
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-  n_unit.set_string("#/kg");
 
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();
@@ -115,7 +110,7 @@ void MAMWetscav::set_grids(
   // add_field<Required>(
   //     "qme", scalar3d_mid, kg / kg / s,
   //     grid_name);  // net condensation/evaporation of cloud water [kg/kg/s]
-  add_field<Required>("prain", scalar3d_mid, kg / kg / s,
+  add_field<Updated>("prain", scalar3d_mid, kg / kg / s,
                       grid_name);  // stratiform rain production rate [kg/kg/s]
   add_field<Updated>(
       "evapr", scalar3d_mid, kg / kg / s,
@@ -489,7 +484,7 @@ void MAMWetscav::run_impl(const double dt) {
   auto cldn = get_field_out("cldn").get_view< Real **>();
 
   // where is cldt_prev_step used?
-  auto cldt_prev_step = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
+  // auto cldt_prev_step = get_field_out("cldt_prev_step").get_view< Real **>(); //FIXME: Is it same as cldn_prev_step??
   auto cldt = get_field_out("cldt").get_view< Real **>();//??
   auto evapr = get_field_out("evapr").get_view< Real **>();
   auto rprdsh = get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
