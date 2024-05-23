@@ -136,12 +136,6 @@ public:
   get_strided_view_type<DT,HD>
   get_strided_view () const;
 
-  // this is the same as above but for a multi-sliced view
-  // which is to say, also a strided view
-  template<typename DT, int N, HostOrDevice HD = Device>
-  auto get_multi_sliced_view () const
-    -> get_strided_view_type<data_nd_t<DT, N>, HD>;
-
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
   DataType data_type () const { return get_header().get_identifier().data_type(); }
@@ -324,11 +318,7 @@ protected:
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N == 0, get_view_type<data_nd_t<T, N>, HD>>;
-
-  template<HostOrDevice HD,typename T,int N>
-  auto get_ND_view () const
-    -> if_t<(N > 0) and (N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const

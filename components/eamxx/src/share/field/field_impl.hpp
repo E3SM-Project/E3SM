@@ -151,70 +151,74 @@ get_strided_view_type<DT, HD> {
   using DstValueType = typename DstView::traits::value_type;
   // We only allow to reshape to a view of the correct rank
   constexpr int DstRank = DstView::rank;
-  constexpr int DstRankDynamic = DstView::rank_dynamic;
 
-  // Get src details
-  const auto& alloc_prop = m_header->get_alloc_properties();
-  const auto& fl = m_header->get_identifier().get_layout();
+  if constexpr (DstRank > 0) {
+    // Get src details
+    const auto& alloc_prop = m_header->get_alloc_properties();
+    const auto& fl = m_header->get_identifier().get_layout();
 
-  // Checks
-  EKAT_REQUIRE_MSG(
-      is_allocated(),
-      "Error! Cannot extract a field's view before allocation happens.\n");
-  EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<DstValueType>::value,
-                   "Error! Cannot get a view to non-const data if the field is "
-                   "read-only.\n");
-  EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
-                   "Error! Source field allocation is not compatible with the "
-                   "requested value type.\n");
+    // Checks
+    EKAT_REQUIRE_MSG(
+        is_allocated(),
+        "Error! Cannot extract a field's view before allocation happens.\n");
+    EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<DstValueType>::value,
+                    "Error! Cannot get a view to non-const data if the field is "
+                    "read-only.\n");
+    EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
+                    "Error! Source field allocation is not compatible with the "
+                    "requested value type.\n");
 
-  // Check if this field is a subview of another field
-  const auto parent = m_header->get_parent().lock();
-  if (parent != nullptr) {
-    // Parent field has correct layout to reinterpret the view into N+1-dim view
-    // So create the parent field on the fly, use it to get the N+1-dim view,
-    // then subview it. NOTE: we can set protected members, since f is the same
-    // type of this class.
-    Field f;
-    f.m_header = parent;
-    f.m_data = m_data;
+    // Check if this field is a subview of another field
+    const auto parent = m_header->get_parent().lock();
+    if (parent != nullptr) {
+      // Parent field has correct layout to reinterpret the view into N+1-dim view,
+      // for single-slice subfield, and N-dim view for multi-slice subfield.
+      // So create the parent field on the fly, use it to get the N+{1,0}-dim view,
+      // then subview it. NOTE: we can set protected members, since f is the same
+      // type of this class.
+      Field f;
+      f.m_header = parent;
+      f.m_data = m_data;
 
-    // get subview info to determine whether we are single- or multi-slicing
-    const auto& sv_alloc_prop = m_header->get_alloc_properties();
-    const auto& info = sv_alloc_prop.get_subview_info();
-    const int idim = info.dim_idx;
-    const int k = info.slice_idx;
-    const int k_end = info.slice_idx_end;
+      // get subview info to determine whether we are single- or multi-slicing
+      const auto& sv_alloc_prop = m_header->get_alloc_properties();
+      const auto& info = sv_alloc_prop.get_subview_info();
+      const int idim = info.dim_idx;
+      const int k = info.slice_idx;
+      const int k_end = info.slice_idx_end;
 
-    // k_end has not been set by a multi-slice subfield function
-    if (k_end == -1) {
-      // Take an (n + 1)-dimensional == DstRank (== 2D, in practice) view
-      // with normal LayoutRight
-      auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
+      // k_end has not been set by a multi-slice subfield function
+      if (k_end == -1) {
+        // Take an (n + 1)-dimensional == DstRank (== 2D, in practice) view
+        // with normal LayoutRight
+        auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
 
-      // As of now, we can only single-slice subview at first or second dimension.
-      EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
-                       "Error! Subview dimension index is out of bounds.\n");
+        // As of now, we can only single-slice subview at first or second dimension.
+        EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
+                        "Error! Subview dimension index is out of bounds.\n");
 
-      // Use correct subview utility
-      if (idim == 0) {
-        return DstView(ekat::subview(v_np1, k));
-      } else {
-        return DstView(ekat::subview_1(v_np1, k));
+        // Use correct subview utility
+        if (idim == 0) {
+          return DstView(ekat::subview(v_np1, k));
+        } else {
+          return DstView(ekat::subview_1(v_np1, k));
+        }
+      // k_end has been set, so we're multi-slicing
+      } else if (k_end > 0) {
+        // rank doesn't change for multi-slice
+        EKAT_REQUIRE_MSG(DstRank == fl.rank(),
+                        "Error! Destination view rank must be equal to parent "
+                        "field's rank for multi-sliced subview.\n");
+        auto v_fullsize = f.get_ND_view<HD, DstValueType, DstRank>();
+
+        return DstView(ekat::subview(
+            v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim));
       }
-    // k_end has been set, so we're multi-slicing
-    } else if (k_end > 0) {
-      EKAT_REQUIRE_MSG(DstRank == fl.rank(),
-                       "Error! Destination view rank must be equal to parent "
-                       "field's rank for multi-sliced subview.\n");
-      auto v_fullsize = f.get_ND_view<HD, DstValueType, DstRank>();
-
-      return DstView(ekat::subview(
-          v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim));
     }
   }
-  // Not a subfield, so stride == 1, and we can create the strided view from the
-  // LayoutRight 1d view.
+  // Either not a subfield or requesting a zero-D view from a
+  // 0D or 1D subfield, so stride == 1, and we can create the
+  // strided view from the LayoutRight 1d view.
   return DstView(get_ND_view<HD, DstValueType, DstRank>());
 }
 
@@ -717,16 +721,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   Kokkos::fence();
 }
 
-template<HostOrDevice HD,typename T,int N>
-auto get_ND_view () const
-  -> if_t<N == 0, get_view_type<data_nd_t<T,N>,HD>>
-{
-  EKAT_ERROR_MSG("Error! Cannot take an ND view of 0 dimensional field.\n");
-}
-
-template<HostOrDevice HD,typename T,int N>
-auto Field::get_ND_view () const ->
-  if_t<(N > 0) and (N < MaxRank), get_view_type<data_nd_t<T, N>, HD>>
+template<HostOrDevice HD, typename T, int N>
+auto Field::get_ND_view () const
+  -> if_t<(N < MaxRank), get_view_type<data_nd_t<T, N>, HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -754,7 +751,8 @@ auto Field::get_ND_view () const ->
         "Error! Subview dimension index is out of bounds.\n");
 
     EKAT_REQUIRE_MSG (idim==0 || N>1,
-        "Error! Cannot subview a rank-2 (or less) view along 2nd dimension without losing LayoutRight.\n");
+        "Error! Cannot subview a rank-2 (or less) view along 2nd dimension "
+        "without losing LayoutRight.\n");
 
     // Use SFINAE-ed get_subview helper function to pick correct
     // subview impl. If N+1<=2 and idim!=0, the code craps out in the check above.
@@ -785,8 +783,8 @@ auto Field::get_ND_view () const ->
 }
 
 template<HostOrDevice HD,typename T,int N>
-auto Field::get_ND_view () const ->
-  if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
+auto Field::get_ND_view () const
+  -> if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -814,8 +812,8 @@ auto Field::get_ND_view () const ->
 // NOTE: DO NOT USE--this circumvents compile-time issues with
 // subview slicing in get_strided_view()
 template<HostOrDevice HD,typename T,int N>
-auto Field::get_ND_view () const ->
-  if_t<(N >= MaxRank + 1),get_view_type<data_nd_t<T,N>,HD>>
+auto Field::get_ND_view () const
+  -> if_t<(N >= MaxRank + 1),get_view_type<data_nd_t<T,N>,HD>>
 {
   EKAT_ERROR_MSG("Error! Cannot call get_ND_view for rank greater than "
                  "MaxRank = 6.\n"
