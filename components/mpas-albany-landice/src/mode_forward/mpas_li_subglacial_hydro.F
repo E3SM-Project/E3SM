@@ -59,6 +59,12 @@ module li_subglacial_hydro
    ! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
    real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
+   !Minimum outflowing hydropotential slope applied at grounding line
+   real(kind=RKIND), parameter :: MIN_PHISLOPE_GL = 1e-10_RKIND
+
+   !Undefined value
+   real(kind=RKIND), parameter :: UNDEFINED = 9.99e30_RKIND
+
 !***********************************************************************
    contains
 
@@ -844,7 +850,6 @@ module li_subglacial_hydro
       integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
-      real (kind=RKIND), parameter :: MIN_PHISLOPE_GL = 1e-10_RKIND
       integer :: err_tmp
       
       err = 0
@@ -923,6 +928,7 @@ module li_subglacial_hydro
       ! hydropotential gradients and unstable channel growth.
       ! The hydropotential at the terrestrial margin should be determined by the geometry
       ! at the edge of the cell in a 1-sided sense.
+      ! This one-sided implementation also creates outflowing conditions at terrestrial boundary
       do iEdge = 1, nEdges
          if (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) then
             cell1 = cellsOnEdge(1, iEdge)
@@ -945,37 +951,34 @@ module li_subglacial_hydro
          endif ! if edge of grounded ice
       end do
 
-      ! At boundaries of hydro domain, disallow inflow.  Allow outflow if hydropotential gradient requires it.
+      ! Disallow inflow from the marine margin by imposing a minimum outflowing hydropotential gradient at the grounding line.
       do iEdge = 1, nEdges
-         if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge)))) then
+         if ( hydroMarineMarginMask(iEdge) == 1) then
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
-                    if (hydroMarineMarginMask(iEdge) == 1) then
-                            if (hydropotentialBaseSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
-                                 hydropotentialBaseSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
-                            endif
-                            if (hydropotentialSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
-                                 hydropotentialSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
-                            endif
-                    endif
+               
+               if (hydropotentialBaseSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                  hydropotentialBaseSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
+               endif
+               if (hydropotentialSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                  hydropotentialSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
+               endif
 
             else ! cell1 is the cell outside the hydro domain
 
-                    if (hydroMarineMarginMask(iEdge) == 1) then
-                            if (hydropotentialBaseSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
-                                 hydropotentialBaseSlopeNormal(iEdge) = MIN_PHISLOPE_GL
-                            endif
-                            if (hydropotentialSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
-                                 hydropotentialSlopeNormal(iEdge) = MIN_PHISLOPE_GL
-                            endif
-                    endif
+               if (hydropotentialBaseSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                  hydropotentialBaseSlopeNormal(iEdge) = MIN_PHISLOPE_GL
+               endif
+               if (hydropotentialSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                  hydropotentialSlopeNormal(iEdge) = MIN_PHISLOPE_GL
+               endif
 
             endif ! which cell is icefree
          endif ! if edge of grounded ice
       end do
 
-      ! zero gradients at boundaries of the mesh
+      ! zero gradients along zero flux boundaries
       do iEdge = 1, nEdges
          if (waterFluxMask(iEdge) == 2) then
             hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
@@ -1629,14 +1632,14 @@ module li_subglacial_hydro
       where (li_mask_is_grounded_ice(cellMask))        
          waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
       elsewhere
-         waterPressure = 0.0_RKIND ! zero waterPressure where no grounded ice 
+         waterPressure = UNDEFINED ! zero waterPressure where no grounded ice 
       end where
 
       case ('overburden')
          where (li_mask_is_floating_ice(cellMask))
             waterPressure = rhoi * gravity * iceThicknessHydro
          elsewhere (.not. li_mask_is_ice(cellMask))
-            waterPressure = 0.0_RKIND
+            waterPressure = UNDEFINED
          elsewhere
             waterPressure = rhoi * gravity * iceThicknessHydro
          end where
@@ -1726,7 +1729,7 @@ module li_subglacial_hydro
       
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
       where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography < 0.0_RKIND)) 
-         hydropotentialBase = 0.0_RKIND !zero hydropotential where no grounded ice
+         hydropotentialBase = 0.0_RKIND !zero hydropotential in ocean
       end where      
 
       ! hydropotential with water thickness
