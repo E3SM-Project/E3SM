@@ -2516,6 +2516,7 @@ contains
       config_rotate_cartesian_grid,      &
       config_use_topo_meltponds,         &
       config_use_column_biogeochemistry, &
+      config_use_zaerosols,              &
       config_couple_biogeochemistry_fields, &
       config_use_column_shortwave,       &
       config_use_data_icebergs
@@ -2566,6 +2567,7 @@ contains
       oceanDMSPpFlux,              &
       oceanDMSPdFlux,              &
       oceanHumicsFlux,             &
+      oceanDustIronFlux,           &
       carbonToNitrogenRatioAlgae,  &
       carbonToNitrogenRatioDON
 
@@ -2588,6 +2590,7 @@ contains
       configs => block_ptr % configs
       call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
       call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
+      call MPAS_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
       call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       call mpas_pool_get_config(configs, "config_couple_biogeochemistry_fields", config_couple_biogeochemistry_fields)
       call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
@@ -2671,6 +2674,9 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
       endif
+
+      if (config_use_zaerosols .and. config_couple_biogeochemistry_fields) &
+         call mpas_pool_get_array(biogeochemistry, 'oceanDustIronFlux', oceanDustIronFlux)
 
       do i = 1, nCellsSolve
          n = n + 1
@@ -2796,6 +2802,9 @@ contains
                i2x_i % rAttr(index_i2x_Fioi_fed1  ,n) = oceanDissolvedIronFlux(1,i) / 1000._RKIND
                i2x_i % rAttr(index_i2x_Fioi_fed2  ,n) = oceanDissolvedIronFlux(2,i) / 1000._RKIND
             endif
+            ! export dust, if configured kg/m2/s of dust
+            if (config_use_zaerosols .and. config_couple_biogeochemistry_fields) &
+               i2x_i % rAttr(index_i2x_Fioi_dust1 ,n) = oceanDustIronFlux(i)
          endif
       enddo
 
@@ -3124,8 +3133,10 @@ contains
          config_rotate_cartesian_grid,      &
          config_use_topo_meltponds,         &
          config_use_column_biogeochemistry, &
+         config_use_zaerosols,              &
          config_use_column_shortwave,       &
-         config_use_data_icebergs
+         config_use_data_icebergs,          &
+         config_couple_biogeochemistry_fields
 
       real(kind=RKIND), pointer :: &
          sphere_radius
@@ -3173,6 +3184,7 @@ contains
          oceanDMSPpFlux,              &
          oceanDMSPdFlux,              &
          oceanHumicsFlux,             &
+         oceanDustIronFlux,           &
          carbonToNitrogenRatioAlgae,  &
          carbonToNitrogenRatioDON
 
@@ -3186,23 +3198,25 @@ contains
 
       integer :: ent_type, ierr, cur_ice_stepno
       character(len=32), parameter :: sub = 'ice_export_moab'
-   
+
       character(len=100) :: outfile, wopts, localmeshfile, lnum
       character(CXX) :: tagname
-   !----------------------------------------------------------------------- 
+   !-----------------------------------------------------------------------
       call shr_file_setLogUnit (iceLogUnit)
       n = 0
       i2x_im(: ,:) = 0.0_RKIND
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
-   
+
          configs => block_ptr % configs
          call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
          call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
+         call MPAS_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
          call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+         call mpas_pool_get_config(configs, "config_couple_biogeochemistry_fields", config_couple_biogeochemistry_fields)
          call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
          call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
-   
+
          call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call MPAS_pool_get_subpool(block_ptr % structs, "tracers_aggregate", tracersAggregate)
          call MPAS_pool_get_subpool(block_ptr % structs, "velocity_solver", velocitySolver)
@@ -3211,7 +3225,7 @@ contains
          call MPAS_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCoupling)
          call MPAS_pool_get_subpool(block_ptr % structs, "atmos_fluxes", atmosFluxes)
          call MPAS_pool_get_subpool(block_ptr % structs, "ocean_fluxes", oceanFluxes)
-   
+
          call MPAS_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
          call MPAS_pool_get_array(meshPool, "latCell", latCell)
@@ -3219,7 +3233,7 @@ contains
          call MPAS_pool_get_array(meshPool, "xCell", xCell)
          call MPAS_pool_get_array(meshPool, "yCell", yCell)
          call MPAS_pool_get_array(meshPool, "zCell", zCell)
-   
+
          call MPAS_pool_get_array(tracersAggregate, 'iceAreaCell', iceAreaCell)
          call MPAS_pool_get_array(tracersAggregate, 'iceVolumeCell', iceVolumeCell)
          call MPAS_pool_get_array(tracersAggregate, 'snowVolumeCell', snowVolumeCell)
@@ -3227,44 +3241,44 @@ contains
          call MPAS_pool_get_array(tracersAggregate, 'pondLidThicknessCell', pondLidThicknessCell)
          call MPAS_pool_get_array(tracersAggregate, 'pondAreaCell', pondAreaCell)
          call MPAS_pool_get_array(tracersAggregate, 'surfaceTemperatureCell', surfaceTemperatureCell)
-   
+
          call MPAS_pool_get_array(velocitySolver, 'airStressCellU', airStressCellU)
          call MPAS_pool_get_array(velocitySolver, 'airStressCellV', airStressCellV)
          call MPAS_pool_get_array(velocitySolver, 'oceanStressCellU', oceanStressCellU)
          call MPAS_pool_get_array(velocitySolver, 'oceanStressCellV', oceanStressCellV)
-   
+
          call MPAS_pool_get_array(shortwave, 'albedoVisibleDirectCell', albedoVisibleDirectCell)
          call MPAS_pool_get_array(shortwave, 'albedoIRDirectCell', albedoIRDirectCell)
          call MPAS_pool_get_array(shortwave, 'albedoVisibleDiffuseCell', albedoVisibleDiffuseCell)
          call MPAS_pool_get_array(shortwave, 'albedoIRDiffuseCell', albedoIRDiffuseCell)
          call MPAS_pool_get_array(shortwave, 'absorbedShortwaveFlux', absorbedShortwaveFlux)
-   
+
          call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceSpeed10m', atmosReferenceSpeed10m)
          call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceTemperature2m', atmosReferenceTemperature2m)
          call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
-   
+
          call MPAS_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
-   
+
          call MPAS_pool_get_array(atmosFluxes, 'latentHeatFlux', latentHeatFlux)
          call MPAS_pool_get_array(atmosFluxes, 'sensibleHeatFlux', sensibleHeatFlux)
          call MPAS_pool_get_array(atmosFluxes, 'longwaveUp', longwaveUp)
          call MPAS_pool_get_array(atmosFluxes, 'evaporativeWaterFlux', evaporativeWaterFlux)
-   
+
          call MPAS_pool_get_array(oceanFluxes, 'oceanHeatFlux', oceanHeatFlux)
          call MPAS_pool_get_array(oceanFluxes, 'oceanShortwaveFlux', oceanShortwaveFlux)
          call MPAS_pool_get_array(oceanFluxes, 'oceanFreshWaterFlux', oceanFreshWaterFlux)
          call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
-   
+
          if (config_use_data_icebergs) then
             call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
-   
+
             call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
             call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
          endif
-   
-         if (config_use_column_biogeochemistry) then
+
+         if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
             call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
-   
+
             call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeFlux', oceanAlgaeFlux)
             call mpas_pool_get_array(biogeochemistry, 'oceanDOCFlux', oceanDOCFlux)
             call mpas_pool_get_array(biogeochemistry, 'oceanDICFlux', oceanDICFlux)
@@ -3281,18 +3295,20 @@ contains
             call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
             call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
          endif
-   
+         if (config_use_zaerosols .and. config_couple_biogeochemistry_fields) &
+            call mpas_pool_get_array(biogeochemistry, 'oceanDustIronFlux', oceanDustIronFlux)
+
          do i = 1, nCellsSolve
             n = n + 1
-   
+
             ! ice fraction
             ailohi = min(iceAreaCell(i), 1.0_RKIND)
-   
+
             !TODO: CICE has a check for ailohi < 0
-   
+
             ! surface temperature
             Tsrf = seaiceFreshWaterFreezingPoint + surfaceTemperatureCell(i)
-   
+
             ! basal pressure
             if ( ailohi > 0.0_RKIND ) then
                call basal_pressure(&
@@ -3304,7 +3320,7 @@ contains
                      pondAreaCell(i),         &
                      config_use_topo_meltponds)
             endif
-   
+
             ! wind stress  (on T-grid:  convert to lat-lon)
             call seaice_latlon_vector_rotation_backward(&
                   tauxa,             &
@@ -3318,7 +3334,7 @@ contains
                   zCell(i),          &
                   sphere_radius,     &
                   config_rotate_cartesian_grid)
-   
+
             ! ice/ocean stress (on POP T-grid:  convert to lat-lon)
             call seaice_latlon_vector_rotation_backward(&
                   tauxo,                &
@@ -3332,25 +3348,25 @@ contains
                   zCell(i),             &
                   sphere_radius,        &
                   config_rotate_cartesian_grid)
-         
-            !-------states-------------------- 
+
+            !-------states--------------------
             i2x_im(n, index_i2x_Si_ifrac)    = ailohi
-   
+
             if (config_use_data_icebergs) then
                i2x_im(n, index_i2x_Fioi_bergw) = bergFreshwaterFlux(i)
                i2x_im(n, index_i2x_Fioi_bergh) = bergLatentHeatFlux(i)
             endif
-   
+
             if ( ailohi > 0.0_RKIND ) then
-   
-               !-------states-------------------- 
+
+               !-------states--------------------
                i2x_im(n, index_i2x_Si_t)  = Tsrf
                i2x_im(n, index_i2x_Si_bpress)  = basalPressure
                i2x_im(n, index_i2x_Si_u10)  = atmosReferenceSpeed10m(i)
                i2x_im(n, index_i2x_Si_tref)  = atmosReferenceTemperature2m(i)
                i2x_im(n, index_i2x_Si_qref)  = atmosReferenceHumidity2m(i)
                i2x_im(n, index_i2x_Si_snowh)  = snowVolumeCell(i) / ailohi
-   
+
                !--- a/i fluxes computed by ice
                i2x_im(n, index_i2x_Faii_taux) = tauxa
                i2x_im(n, index_i2x_Faii_tauy) = tauya
@@ -3360,17 +3376,17 @@ contains
                i2x_im(n, index_i2x_Faii_evap) = evaporativeWaterFlux(i)
                i2x_im(n, index_i2x_Faii_swnet) = absorbedShortwaveFlux(i)
                i2x_im(n, index_i2x_Faii_evap) = evaporativeWaterFlux(i)
-   
+
                if (config_use_column_shortwave) then
                   i2x_im(n, index_i2x_Si_avsdr)  = albedoVisibleDirectCell(i)
                   i2x_im(n, index_i2x_Si_anidr)  = albedoIRDirectCell(i)
                   i2x_im(n, index_i2x_Si_avsdf)  = albedoVisibleDiffuseCell(i)
                   i2x_im(n, index_i2x_Si_anidf)  = albedoIRDiffuseCell(i)
-   
+
                   i2x_im(n, index_i2x_Faii_swnet) = absorbedShortwaveFlux(i)
                endif
-   
-               ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last 
+
+               ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last
                ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
                ! field frazilMassAdjust.
                i2x_im(n, index_i2x_Fioi_melth) = oceanHeatFlux(i)
@@ -3379,9 +3395,9 @@ contains
                i2x_im(n, index_i2x_Fioi_salt ) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
                i2x_im(n, index_i2x_Fioi_taux ) = tauxo
                i2x_im(n, index_i2x_Fioi_tauy ) = tauyo
-   
+
                ! export biogeochemistry fields, if configured
-               if (config_use_column_biogeochemistry) then
+               if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
                   ! convert from mmol N/m^3 to mmol C/m^3
                   i2x_im(n, index_i2x_Fioi_algae1) = oceanAlgaeFlux(1,i) * carbonToNitrogenRatioAlgae(1)
                   i2x_im(n, index_i2x_Fioi_algae2) = oceanAlgaeFlux(2,i) * carbonToNitrogenRatioAlgae(2)
@@ -3404,9 +3420,12 @@ contains
                   i2x_im(n, index_i2x_Fioi_fed1  ) = oceanDissolvedIronFlux(1,i) / 1000._RKIND
                   i2x_im(n, index_i2x_Fioi_fed2  ) = oceanDissolvedIronFlux(2,i) / 1000._RKIND
                endif
+               ! export dust, kg/m2/s
+               if (config_use_zaerosols .and. config_couple_biogeochemistry_fields) &
+                  i2x_im(n, index_i2x_Fioi_dust1 ) = oceanDustIronFlux(i)
             endif
          enddo
-   
+
          block_ptr => block_ptr % next
       enddo
 
@@ -3417,7 +3436,7 @@ contains
       if ( ierr /= 0 ) then
          write(iceLogUnit,*) 'Fail to set MOAB fields '
       endif
-      
+
       call seq_timemgr_EClockGetData( EClock, stepno=cur_ice_stepno )
 #ifdef MOABDEBUG
       write(lnum,"(I0.2)")cur_ice_stepno

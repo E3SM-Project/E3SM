@@ -3905,7 +3905,7 @@ contains
                    atmosBioFluxes(indexj,iCell) = atmosBioFluxes(indexj,iCell) + &
                       (atmosWetDustFlux(iBioTracers-maxBCType,iCell) * IRON_Zolubility_wet(iCell) + &
                       atmosDryDustFlux(iBioTracers-maxBCType,iCell) * IRON_Zolubility_dry(iCell) ) * &
-                      IRON_in_duzt_fraction(iCell) * kilogramsToMicrograms *  gramsIronPerMolIron
+                      IRON_in_duzt_fraction(iCell) * kilogramsToMicrograms / gramsIronPerMolIron
                 end do
              end if
           endif
