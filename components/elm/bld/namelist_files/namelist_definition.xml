@@ -191,7 +191,7 @@ If TRUE, irrigation will be active.
 </entry>
 
 <entry id="tw_irr" type="logical" category="elm_physics"
-       group="elm_inparm" valid_values="" value=".false."> >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, irrigation will be two-way coupled with MOSART.
 irrigation supply will be constrained by surface water availability from MOSART
 </entry>
