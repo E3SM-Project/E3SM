@@ -72,7 +72,11 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
-   real (kind=RKIND), dimension(:), pointer :: ssh_sal
+   real (kind=RKIND), dimension(:), pointer :: pgf_sal
+   real (kind=RKIND), dimension(:), pointer :: temp_twd
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -85,7 +89,13 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: topDrag
    real (kind=RKIND), dimension(:), pointer :: topDragMag
-   real (kind=RKIND), dimension(:), pointer :: topographic_wave_drag
+   real (kind=RKIND), dimension(:), pointer :: topo_rinv
+   real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1V
+   real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1B
+   real (kind=RKIND), dimension(:), pointer :: bathy_stddev
+   real (kind=RKIND), dimension(:), pointer :: bed_slope_edges
+   real (kind=RKIND), dimension(:), pointer :: lonGradEdge
+   real (kind=RKIND), dimension(:), pointer :: latGradEdge
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -144,6 +154,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: sshCellWetDry
 
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
+   real (kind=RKIND), dimension(:,:), pointer :: vertDiffPassiveTopOfCell
    real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
    integer, dimension(:,:), pointer :: rediLimiterCount
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerSurfaceFluxTendency
@@ -257,7 +268,13 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
       if (config_use_topographic_wave_drag) then
-         call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_rinv', topo_rinv)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1V', topo_buoyancy_N1V)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1B', topo_buoyancy_N1B)
+         call mpas_pool_get_array(diagnosticsPool, 'bathy_stddev', bathy_stddev)
+         call mpas_pool_get_array(diagnosticsPool, 'bed_slope_edges', bed_slope_edges)
+         call mpas_pool_get_array(diagnosticsPool, 'lonGradEdge', lonGradEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'latGradEdge', latGradEdge)
       end if
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -375,17 +392,48 @@ contains
       end if
 
       if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, 'topo_rinv', topo_rinv)
          call mpas_pool_get_array(diagnosticsPool, &
-                  'topographic_wave_drag', &
-                   topographic_wave_drag)
+                    'topo_buoyancy_N1V', &
+                     topo_buoyancy_N1V)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'topo_buoyancy_N1B', &
+                     topo_buoyancy_N1B)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'bathy_stddev', &
+                     bathy_stddev)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'bed_slope_edges', &
+                     bed_slope_edges)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'lonGradEdge', &
+                   lonGradEdge)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'latGradEdge', &
+                   latGradEdge)
       end if
 
       if (config_use_tidal_potential_forcing) then
          call mpas_pool_get_array(diagnosticsPool, &
-                  'ssh_sal', &
-                   ssh_sal)
+                  'pgf_sal', &
+                   pgf_sal)
       end if
-
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'temp_twd', &
+                   temp_twd)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalCoeffTWD', &
+                   normalCoeffTWD)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'tangentialCoeffTWD', &
+                   tangentialCoeffTWD)
+      end if
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'topographicWaveDrag', &
+                   topographicWaveDrag)
+      end if
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
          call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
@@ -501,6 +549,8 @@ contains
                    vertViscTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', &
                    vertDiffTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'vertDiffPassiveTopOfCell', &
+                   vertDiffPassiveTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', &
                    vertAleTransportTop)
          call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', &
@@ -695,10 +745,20 @@ contains
          !$acc                   landIceFrictionVelocity)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc enter data create(topographic_wave_drag)
+         !$acc enter data create(topo_rinv)
+         !$acc enter data create(topo_buoyancy_N1V)
+         !$acc enter data create(topo_buoyancy_N1B)
+         !$acc enter data create(bathy_stddev)
+         !$acc enter data create(bed_slope_edges)
+         !$acc enter data create(lonGradEdge)
+         !$acc enter data create(latGradEdge)
+         !$acc enter data create(temp_twd)
+         !$acc enter data create(normalCoeffTWD)
+         !$acc enter data create(tangentialCoeffTWD)
+         !$acc enter data create(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
-         !$acc enter data copyin(ssh_sal)
+         !$acc enter data copyin(pgf_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc enter data create(                          &
@@ -759,6 +819,7 @@ contains
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
          !$acc                   vertDiffTopOfCell,               &
+         !$acc                   vertDiffPassiveTopOfCell,        &
          !$acc                   GMStreamFuncZonal,               &
          !$acc                   relativeVorticity,               &
          !$acc                   kineticEnergyCell,               &
@@ -943,9 +1004,13 @@ contains
       end if
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
+         !$acc exit data delete(temp_twd)
+         !$acc exit data delete(normalCoeffTWD)
+         !$acc exit data delete(tangentialCoeffTWD)
+         !$acc exit data delete(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
-         !$acc exit data delete(ssh_sal)
+         !$acc exit data delete(pgf_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
@@ -1006,6 +1071,7 @@ contains
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
          !$acc                   vertDiffTopOfCell,               &
+         !$acc                   vertDiffPassiveTopOfCell,        &
          !$acc                   GMStreamFuncZonal,               &
          !$acc                   relativeVorticity,               &
          !$acc                   kineticEnergyCell,               &
@@ -1211,6 +1277,7 @@ contains
                  barotropicForcing,               &
                  vertViscTopOfCell,               &
                  vertDiffTopOfCell,               &
+                 vertDiffPassiveTopOfCell,        &
                  GMStreamFuncZonal,               &
                  relativeVorticity,               &
                  kineticEnergyCell,               &
@@ -1284,7 +1351,13 @@ contains
          nullify(salinitySurfaceRestoringTendency)
       end if
       if ( config_use_self_attraction_loading ) then
-         nullify(ssh_sal)
+         nullify(pgf_sal)
+      end if
+      if ( config_use_topographic_wave_drag) then
+         nullify(temp_twd)
+         nullify(normalCoeffTWD)
+         nullify(tangentialCoeffTWD)
+         nullify(topographicWaveDrag)
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &

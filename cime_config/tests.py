@@ -48,12 +48,15 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
+            "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
             )
         },
 
     "e3sm_land_exenoshare" : {
         "time"  : "0:45:00",
         "tests" : (
+            "ERS.f19_g16.IERA5ELM",
+            "ERS.f19_g16.IERA56HRELM",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.hcru_hcru.IELM.elm-multi_inst",
@@ -91,7 +94,7 @@ _TESTS = {
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-fan",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "ERS.f09_f09.IELM.elm-lnd_rof_2way",
+            "ERS.r05_r05.IELM.elm-lnd_rof_2way",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics"
             )
@@ -298,7 +301,7 @@ _TESTS = {
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
             "ERS.f09_g16_g.MALISIA",
-            "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
+            "ERS_Ld5.TL319_oQU240wLI_ais20.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )

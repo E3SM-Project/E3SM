@@ -257,6 +257,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -424,6 +425,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -571,6 +573,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -740,6 +743,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -878,6 +882,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -2070,7 +2075,7 @@
 
   <machine MACH="anlgce-ub22">
     <DESC>ANL CELS General Computing Environment (Linux) workstation (Ubuntu 22.04)</DESC>
-    <NODENAME_REGEX>compute-386-01|compute-386-02</NODENAME_REGEX>
+    <NODENAME_REGEX>compute-386-(01|02|03|05|07|08)|compute-240-(15)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich,openmpi</MPILIBS>
@@ -3080,106 +3085,6 @@
     <environment_variables compiler="intel">
       <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
       <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="theta">
-    <DESC>ALCF Cray XC40 KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
-    <NODENAME_REGEX>theta.*</NODENAME_REGEX>
-    <OS>CNL</OS>
-    <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt</MPILIBS>
-    <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/ccsm/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/$PROJECT/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>16</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
-    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>aprun</executable>
-      <arguments>
-        <arg name="num_tasks">-n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node">-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTAL_TASKS` ];then echo `./xmlquery --value TOTAL_TASKS`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
-        <arg name="hyperthreading">--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
-        <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
-      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
-      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
-      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-        <command name="rm">cray-mpich</command>
-        <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-hdf5-parallel</command>
-        <command name="rm">cray-hdf5</command>
-        <command name="rm">cray-netcdf</command>
-        <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">craype/2.6.5</command>
-        <command name="load">cmake/3.18.0</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="load">PrgEnv-intel/6.0.7</command>
-        <command name="swap">intel/19.1.0.166</command>
-      </modules>
-      <modules compiler="gnu">
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="load">PrgEnv-gnu/6.0.7</command>
-        <command name="swap">gcc/9.3.0</command>
-      </modules>
-      <modules compiler="cray">
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="load">gcc/9.3.0</command>
-        <command name="load">PrgEnv-cray/6.0.9</command>
-        <command name="swap">cce/10.0.3</command>
-        <command name="rm">darshan</command>
-      </modules>
-      <modules compiler="!intel">
-        <command name="swap">cray-libsci/20.09.1</command>
-      </modules>
-      <modules>
-        <command name="load">cray-mpich/7.7.14</command>
-        <command name="load">cray-hdf5-parallel/1.10.6.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.0.1</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
-    <environment_variables>
-      <env name="PATH">/projects/ccsm/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
-      <env name="MPAS_TOOL_DIR">/projects/ccsm/e3sm/tools/mpas</env>
-      <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
-      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
-      <env name="SMP_VARS"> </env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="intel">
-      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="!intel">
-      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
     </environment_variables>
   </machine>
 
