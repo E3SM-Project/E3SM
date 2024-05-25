@@ -7,9 +7,6 @@
 // For declaring ACI class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
 
-// For EKAT units package
-#include "ekat/util/ekat_units.hpp"
-
 // For aerosol configuration
 #include "mam4xx/aero_config.hpp"
 

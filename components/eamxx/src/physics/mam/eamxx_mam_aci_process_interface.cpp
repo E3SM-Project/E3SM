@@ -1,5 +1,10 @@
 #include <physics/mam/eamxx_mam_aci_process_interface.hpp>
+
+// ACI functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_aci_functions.hpp>
+
+// For EKAT units package
+#include "ekat/util/ekat_units.hpp"
 
 /*
 -----------------------------------------------------------------
