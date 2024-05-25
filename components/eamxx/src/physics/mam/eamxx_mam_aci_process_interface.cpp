@@ -546,14 +546,7 @@ void MAMAci::run_impl(const double dt) {
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   // FIXME: Temporary assignment of nc
-  // Kokkos::deep_copy(nc_inp_to_aci_, wet_atm_.nc);
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [=](int kk) {
-          nc_inp_to_aci_(icol, kk) = wet_atm_.nc(icol, kk);
-        });
-      });
+  Kokkos::deep_copy(nc_inp_to_aci_, wet_atm_.nc);
 
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
