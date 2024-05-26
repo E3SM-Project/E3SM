@@ -452,7 +452,8 @@
     </directives>
     <directives compiler="nvidiagpu">
       <directive> --gpus-per-node=4</directive>
-      <directive> --gpu-bind=none</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+      <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
@@ -463,7 +464,7 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="1600" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="1600" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
