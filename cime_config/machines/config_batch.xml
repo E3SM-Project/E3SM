@@ -454,6 +454,7 @@
       <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
+      <directive> --exclusive</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
