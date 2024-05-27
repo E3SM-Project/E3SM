@@ -6,7 +6,7 @@ driver_options:
 time_stepping:
   time_step: ${ATM_TIME_STEP}
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
-  number_of_steps: ${NUM_STEPS}
+  number_of_steps: 3
 
 atmosphere_processes:
   atm_procs_list: [mam4_wetscav]
@@ -26,8 +26,8 @@ grids_manager:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  cldn_prev_step: 0.5 
-  cldn: 0.5 
+  cldn_prev_step: 0.5
+  cldn: 0.5
   rprdsh: 1e-5
   rprddp: 1e-5
   evapcsh: 1e-5
@@ -35,7 +35,7 @@ initial_conditions:
   cldt_prev_step: 1e-5
   cldt: 1e-5
   cldst: 1e-5
-  qme: 1e-5 
+  qme: 1e-5
   prain: 1e-5
   evapr: 1e-5
   icwmrdp: 1e-5
