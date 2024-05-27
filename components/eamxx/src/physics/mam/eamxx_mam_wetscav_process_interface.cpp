@@ -11,8 +11,6 @@
 Future work:
 Wirte comments
 write in/outs for all variables clearly
-
-
 */
 
 namespace scream {
@@ -474,9 +472,6 @@ void MAMWetscav::run_impl(const double dt) {
 
   // inputs/outputs
   auto dlf = get_field_out("dlf").get_view<Real**>();
-  // auto dp_ccf = get_field_out("dp_ccf").get_view<Real**>();
-  // auto sh_ccf = get_field_out("sh_ccf").get_view<Real**>();
-
   auto cldn = get_field_out("cldn").get_view< Real **>();
 
   // where is cldt_prev_step used?
@@ -496,13 +491,12 @@ void MAMWetscav::run_impl(const double dt) {
                  .get_view<Real **>(); // Deep convective cloud fraction [fraction]
 
   auto icwmrsh = get_field_out("icwmrsh")
-                 .get_view<Real **>(); // ??
-
+                 .get_view<Real **>(); //in cloud water mixing ratio, shallow convection
   auto icwmrdp = get_field_out("icwmrdp")
-                 .get_view<Real **>(); // ??
+                 .get_view<Real **>(); // in cloud water mixing ratio, deep convection
 
   auto prain = get_field_out("prain")
-                 .get_view<Real **>(); // ??
+                 .get_view<Real **>();  // stratiform rain production rate
   // outputs
   const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
