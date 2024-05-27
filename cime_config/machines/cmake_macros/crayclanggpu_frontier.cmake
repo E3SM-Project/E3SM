@@ -37,9 +37,9 @@ string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition -Wl,--all
 
 # Switching to O3 for performance benchmarking
 # Will revisit any failing tests
-string(APPEND CMAKE_C_FLAGS_RELEASE   " -O3")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O3")
+string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2")
 
 if (COMP_NAME STREQUAL elm)
   # See Land NaNs in conditionals: https://github.com/E3SM-Project/E3SM/issues/4996
