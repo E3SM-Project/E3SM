@@ -261,6 +261,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_mom_physical_properties_file type="file" doc="File containing optical properties for marine organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/poly_rrtmg_c20240206.nc</mam4_mom_physical_properties_file>
     </mam4_optics>
 
+    <!-- MAM4xx-Wetscav -->
+    <mam4_wetscav inherit="atm_proc_base">
+    </mam4_wetscav>
+
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
       <nudging_filenames_patterns type="array(string)"/>
@@ -530,6 +534,64 @@ be lost if SCREAM_HACK_XML is not enabled.
     <perturbation_random_seed type="integer" doc="Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.">0</perturbation_random_seed>
     <perturbation_limit type="real" doc="Defines a range [1-x, 1+x] which perturbation will be taken from.">0.001</perturbation_limit>
     <perturbation_minimum_pressure type="real" doc="Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.">900.0</perturbation_minimum_pressure>
+        <!-- Note: MAM4xx-Wetscav -->
+    <!-- <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum> -->
+    <bc_c1 type="real">0.0</bc_c1>
+    <bc_c3 type="real">0.0</bc_c3>
+    <bc_c4 type="real">0.0</bc_c4>
+    <dst_c1 type="real">0.0</dst_c1>
+    <dst_c3 type="real">0.0</dst_c3>
+    <so4_c1 type="real">0.0</so4_c1>
+    <so4_c2 type="real">0.0</so4_c2>
+    <so4_c3 type="real">0.0</so4_c3>
+    <pom_c1 type="real">0.0</pom_c1>
+    <pom_c3 type="real">0.0</pom_c3>
+    <pom_c4 type="real">0.0</pom_c4>
+    <soa_c1 type="real">0.0</soa_c1>
+    <soa_c2 type="real">0.0</soa_c2>
+    <soa_c3 type="real">0.0</soa_c3>
+    <nacl_c1 type="real">0.0</nacl_c1>
+    <nacl_c2 type="real">0.0</nacl_c2>
+    <nacl_c3 type="real">0.0</nacl_c3>
+    <mom_c1 type="real">0.0</mom_c1>
+    <mom_c2 type="real">0.0</mom_c2>
+    <mom_c3 type="real">0.0</mom_c3>
+    <mom_c4 type="real">0.0</mom_c4>
+    <num_c1 type="real">0.0</num_c1>
+    <num_c2 type="real">0.0</num_c2>
+    <num_c3 type="real">0.0</num_c3>
+    <num_c4 type="real">0.0</num_c4>
+    <cldn type="real">0.5</cldn>
+    <rprdsh type="real">1e-5</rprdsh>
+    <rprddp type="real">1e-5</rprddp>
+    <evapcsh type="real">1e-5</evapcsh>
+    <evapcdp type="real">1e-5</evapcdp>
+    <cldt type="real">1e-5</cldt>
+    <prain type="real">1e-5</prain>
+    <evapr type="real">1e-5</evapr>
+    <icwmrdp type="real">1e-5</icwmrdp>
+    <icwmrsh type="real">1e-5</icwmrsh>
+    <sh_frac type="real">1e-5</sh_frac>
+    <dp_frac type="real">1e-5</dp_frac>
+    <bcphiwet type="real">1e-5</bcphiwet>
+    <bcphidry type="real">1e-5</bcphidry>
+    <ocphiwet type="real">1e-5</ocphiwet>
+    <ocphidry type="real">1e-5</ocphidry>
+    <dstwet1 type="real">1e-5</dstwet1>
+    <dstwet2 type="real">1e-5</dstwet2>
+    <dstwet3 type="real">1e-5</dstwet3>
+    <dstwet4 type="real">1e-5</dstwet4>
+    <dgncur_a type="real">1e-5</dgncur_a>
+    <wetdens type="real">1e-5</wetdens>
+    <qaerwat type="real">1e-5</qaerwat>
+    <dgnumwet type="real">1e-5</dgnumwet>
+    <fracis type="real">1e-5</fracis>
+    <cldfrac_tot type="real">0.5</cldfrac_tot>
+    <pbl_height type="real">25.0</pbl_height>
+    <phis type="real">0.1</phis>
+    <dlf type="real">0.0</dlf>
+    <dp_ccf type="real">0.0</dp_ccf>
+    <sh_ccf type="real">0.0</sh_ccf>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
