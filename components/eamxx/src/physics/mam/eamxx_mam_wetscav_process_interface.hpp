@@ -7,15 +7,6 @@
 // For declaring wetscav class derived from atm process class
 #include "share/atm_process/atmosphere_process.hpp"
 
-// For MAM4 processes
-#include <mam4xx/mam4.hpp>
-
-// For MAM4 calcsize process (FIXME:should we include it in mam4 or mam_coupling??)
-#include <mam4xx/modal_aero_calcsize.hpp>
-
-// For wetdep processes
-#include <mam4xx/wet_dep.hpp>
-
 // For component name
 #include <string>
 
@@ -182,7 +173,6 @@ class MAMWetscav : public scream::AtmosphereProcess {
   mam_coupling::AerosolState  wet_aero_, dry_aero_, dry_aero_tends_;
 
   mam_coupling::Buffer buffer_;
-  mam_coupling::view_2d aerdepwetis_, aerdepwetcw_;
 
   std::shared_ptr<const AbstractGrid> m_grid;
 };  // class MAMWetscav
