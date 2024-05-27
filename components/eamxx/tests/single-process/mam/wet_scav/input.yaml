@@ -54,7 +54,6 @@ initial_conditions:
   dstwet2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
   dstwet3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
   dstwet4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
-  pbuf: 1e-5 # cloud-borne aerosols
   dgncur_a: 1e-5 # aerosol particle diameter [m]
   wetdens: 1e-5 # wet aerosol density [kg/m3]
   qaerwat: 1e-5 # aerosol water [kg/kg]
