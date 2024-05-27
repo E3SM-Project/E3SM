@@ -6,7 +6,7 @@ driver_options:
 time_stepping:
   time_step: ${ATM_TIME_STEP}
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
-  number_of_steps: 3
+  number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
   atm_procs_list: [mam4_wetscav]

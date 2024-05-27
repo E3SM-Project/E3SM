@@ -62,7 +62,7 @@ Fields:
       - soa_c2
       - soa_c3
 output_control:
-  Frequency: 1
+  Frequency: 2
   frequency_units: nsteps
   MPI Ranks in Filename: true
 ...
