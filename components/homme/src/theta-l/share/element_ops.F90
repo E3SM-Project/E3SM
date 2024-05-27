@@ -710,9 +710,10 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real(real_kind), dimension(np,np) :: ptop
   real(real_kind) :: r0
 
+  real(real_kind), dimension(np,np,2,nlevp) :: v_i
   real(real_kind), dimension(np,np,nlev) :: pnh,exner, dp3d, vtheta
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i, dp3d_i, phiSA, phiDA, r3int, dpnh,&
-                                             rinter, rhat, munew
+                                             rinter, rhat, munew, muu
 
   tl=1
 
@@ -748,6 +749,10 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
    dp3d = elem%state%dp3d(:,:,:,tl)
    vtheta = elem%state%vtheta_dp(:,:,:,tl)
 
+   call pnh_and_exner_from_eos(hvcoord,vtheta,&
+       dp3d(:,:,:),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+
+if (elem%globalid==1)    print *,'OLD MU', munew(1,1,1:10)
 
 do ii=1,12
 
@@ -776,7 +781,28 @@ do ii=1,12
    do k=2,nlev
       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
    end do
-   dpnh = dp3d_i / rhat / rhat
+
+!for with u calculations
+   ! special averaging for velocity for energy conservation
+   v_i(:,:,1:2,1) = elem%state%v(:,:,1:2,1,tl)
+   v_i(:,:,1:2,nlevp) = elem%state%v(:,:,1:2,nlev,tl)
+   do k=2,nlev
+        v_i(:,:,1,k) = (dp3d(:,:,k)*elem%state%v(:,:,1,k,tl) + &
+             dp3d(:,:,k-1)*elem%state%v(:,:,1,k-1,tl) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,2,k) = (dp3d(:,:,k)*elem%state%v(:,:,2,k,tl) + &
+             dp3d(:,:,k-1)*elem%state%v(:,:,2,k-1,tl) ) / (2*dp3d_i(:,:,k))
+   end do
+
+#if 0
+   do k=1,nlevp
+   muu(:,:,k) = -(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rinter(:,:,k)/g &
+                -elem%fcorcosine(:,:)*v_i(:,:,1,k)/g + 1.0
+   enddo
+#else
+   muu(:,:,:) = 1.0
+#endif
+
+   dpnh = dp3d_i / rhat / rhat * muu
 
 !print *, 'dp_i', dp3d_i(1,1,:)
 !print *, 'dpnh', dpnh(1,1,:)
@@ -814,7 +840,7 @@ do ii=1,12
    call pnh_and_exner_from_eos(hvcoord,vtheta,&
        dp3d(:,:,:),phiDA,pnh,exner,munew,caller='NEW MU')
 
-!   print *,'NEW MU', munew(1,1,1:10)
+if (elem%globalid==1)   print *,'NEW MU', ii, munew(1,1,1:10)
 
    elem%state%phinh_i(:,:,:,tl) = phiDA
 
@@ -822,6 +848,7 @@ do ii=1,12
 
 enddo
 
+!if (elem%globalid==1)   print *,'NEW PHI', elem%state%phinh_i(1,1,1:10,tl)
 #endif
 
 
@@ -831,6 +858,28 @@ enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
 
+#if 0
+tl=1
+!print *, 'ID', elem%globalid
+!print *, 'tl is ', tl
+
+!print *, 'vtheta loc - elem', vtheta - elem%state%vtheta_dp(:,:,:,tl)
+!print *, 'dp3d loc - elem', dp3d - elem%state%vtheta_dp(:,:,:,tl)
+
+   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
+       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
+
+tl=2
+   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
+       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
+
+tl=3
+   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
+       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
+#endif
 
   end subroutine tests_finalize
 

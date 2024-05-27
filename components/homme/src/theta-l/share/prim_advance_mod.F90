@@ -1106,7 +1106,7 @@ contains
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
-  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
+  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp), munew(np,np,nlevp)
 
   call t_startf('compute_andor_apply_rhs')
 
@@ -1129,6 +1129,12 @@ print *, 'be phi lev 3', elem(1)%state%phinh_i(1,1,1:2,3)
 #endif  
 
   do ie=nets,nete
+
+!print *, 'ie=',ie
+   call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),&
+       elem(ie)%state%dp3d(:,:,:,n0),elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,munew,caller='NEW MU')
+!    print *,'begin CAAR MU= ', munew(1,1,1:10)
+
 
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
@@ -1386,14 +1392,28 @@ print *, 'be phi lev 3', elem(1)%state%phinh_i(1,1,1:2,3)
         gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
 #endif
 
+#if 0
+print *, 'BEFORE w_tens', k, w_tens(1,1,k)
+print *, 'BEFORE MU(1:10)', k, dpnh_dp_i(1,1,1:10)
+print *, 'scale2, g', scale2, g
+#endif
+
         v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k))
 
-
-
+#if 0
+print *, 'AFTER w_tens', k, w_tens(1,1,k)
+print *, 'w_vadv_i', w_vadv_i(1,1,k)
+print *, 'v_gradw_i', v_gradw_i(1,1,k)
+print *, 'scale2*g*(1-dpnh_dp_i(:,:,k) )', scale2*g*(1-dpnh_dp_i(1,1,k) )
+print *, 'scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)',&
+scale1*(v_i(1,1,1,k)*v_i(1,1,1,k)+v_i(1,1,2,k)*v_i(1,1,2,k))/rheighti(1,1,k)
+print *, 'scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)',scale1*elem(ie)%fcorcosine(1,1)*v_i(1,1,1,k)
+stop
 !!!!!!!!!!!!!!!HEY
 !w_tens(:,:,k) = 0
+#endif
 
 
 #ifdef DA
@@ -1456,16 +1476,35 @@ endif
      gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
 #endif
 
+!print *, 'BEFORE w_tens', w_tens(1,1,1)
      v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
      ! w - tendency on interfaces
+
+!print *, 'scale1*g*(1-dpnh_dp_i(:,:,k) ) ONE',scale1*g*(1-dpnh_dp_i(1,1,1) )
+
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
+
+
+!print *, 'AFTER w_tens', w_tens(1,1,1)
+!print *, 'w_vadv_i', w_vadv_i(1,1,1:5)
+!print *, 'v_gradw_i', v_gradw_i(1,1,1:5)
+!print *, 'scale1*g*(1-dpnh_dp_i(:,:,k) )', scale1*g*(1-dpnh_dp_i(1,1,1:5) )
+!print *, 'scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)',&
+!scale1*(v_i(1,1,1,1:5)*v_i(1,1,1,1:5)+v_i(1,1,2,1:5)*v_i(1,1,2,1:5))/rheighti(1,1,1:5)
+!print *, 'scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)',scale1*elem(ie)%fcorcosine(1,1)*v_i(1,1,1,1:5)
 
 #ifdef DA
      !da metric
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
+
      !da cos
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
+
+
+!print *, 'w_tens', w_tens(1,1,:)
+!stop
+
 
      !why do we have this for phi?
      ! phi - tendency on interfaces

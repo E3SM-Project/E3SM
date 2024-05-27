@@ -29,6 +29,7 @@ use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
 use time_mod,             only: time_at, TimeLevel_t
+use eos,             only: pnh_and_exner_from_eos
 
 implicit none
 
@@ -80,7 +81,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
-  integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
+  integer,  parameter :: is_deep      = 1                               ! use shallow atmosphere approximation
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
   integer :: moist                                                      ! use moist version
@@ -268,8 +269,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
 
   real(rl), dimension(np,np,nlev,3) :: q
-  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
-  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i
+  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom, exner, pnh
+  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i,  munew
   real(rl), dimension(np,np) :: phis, ps
 
   real(rl) :: p1,thetav1,rho1,q1
@@ -354,6 +355,15 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
     call tests_finalize(elem(ie),hvcoord,ie)
 
   enddo
+
+!print *, 'HELLLLLLLLLLLLLLLLLLLLLLo'
+!stop
+
+
+   call pnh_and_exner_from_eos(hvcoord,elem(1)%state%vtheta_dp(:,:,:,1),&
+       elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1),pnh,exner,munew,caller='NEW MU')
+if (elem(1)%globalid==1)    print *,'after tests_f MU= ', munew(1,1,1:10)
+
 
   sample_period = 1 ! 60 orig sec
 end subroutine
