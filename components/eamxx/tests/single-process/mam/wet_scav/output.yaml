@@ -7,6 +7,10 @@ Fields:
     Field Names:
       - aerdepwetis
       - aerdepwetcw
+      - dgnumwet
+      - dgncur_a
+      - wetdens
+      - qaerwat
 output_control:
   Frequency: 2
   frequency_units: nsteps
