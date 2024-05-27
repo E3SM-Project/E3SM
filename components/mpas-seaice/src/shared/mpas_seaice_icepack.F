@@ -12948,7 +12948,6 @@ contains
   subroutine init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
     use icepack_intfc, only: icepack_init_zbgc
-    use icepack_intfc, only: icepack_init_zbgc_tracer_indices
     use icepack_intfc, only: icepack_init_parameters
     use icepack_intfc, only: icepack_query_parameters
 
@@ -13089,6 +13088,7 @@ contains
          nParticulateIron, &
          nDissolvedIron, &
          nzAerosols, &
+         nZBGCTracers, &
          maxAerosolType, &
          maxAlgaeType, &
          maxDOCType, &
@@ -13106,6 +13106,12 @@ contains
     real(kind=RKIND) :: &
          rtmp1, &
          rtmp2
+    real (kind=RKIND), dimension (:), allocatable :: &
+        BGCTracerType, &
+        initialMobileFraction, &
+        retentionTime, &
+        releaseTime, &
+        newIceBGCFraction
 
     ! save tracer array size
     nTracers_temp = tracerObject % nTracers
@@ -13246,12 +13252,25 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxAerosolType", maxAerosolType)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxAlgaeType", maxAlgaeType)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDOCType", maxDOCType)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDICType", maxDICType)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDONType", maxDONType)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxIronType", maxIronType)
+
+    allocate(BGCTracerType(nZBGCTracers))
+    allocate(initialMobileFraction(nZBGCTracers))
+    allocate(retentionTime(nZBGCTracers))
+    allocate(releaseTime(nZBGCTracers))
+    allocate(newIceBGCFraction(nZBGCTracers))
+
+    retentionTime(:) = 0.0_RKIND
+    releaseTime(:) = 0.0_RKIND
+    initialMobileFraction(:) = 0.0_RKIND
+    BGCTracerType(:) = 0.0_RKIND
+    newIceBGCFraction(:) = 0.0_RKIND
 
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
@@ -13394,84 +13413,15 @@ contains
          tau_min_in=config_rapid_mobile_to_stationary_time, &
          tau_max_in=config_long_mobile_to_stationary_time)
 
-    call icepack_init_zbgc_tracer_indices(&
-         nilyr_in=nIceLayers, &
-         nslyr_in=nSnowLayers, &
-         nblyr_in=nBioLayers, &
-         n_algae_in=nAlgae, &
-         n_zaero_in=nzAerosols, &
-         n_doc_in=nDOC, &
-         n_dic_in=nDIC, &
-         n_don_in=nDON, &
-         n_fed_in=nDissolvedIron, &
-         n_fep_in=nParticulateIron, &
-         trcr_base=tracerObject % firstAncestorMask, &
-         trcr_depend=tracerObject % parentIndex, &
-         n_trcr_strata=tracerObject % ancestorNumber, &
-         nt_strata=tracerObject % ancestorIndices, &
-         nbtrcr_sw_out=tracerObject % nBioTracersShortwave, &
-         tr_brine_in=config_use_brine, &
-         nt_fbri_out=tracerObject % index_brineFraction,&
-         ntrcr_out=tracerObject % nTracers, &
-         nbtrcr_out=tracerObject % nBioTracers, &
-         ntrcr_o_out=tracerObject % nTracersNotBio, &
-         nt_bgc_Nit_out=tracerObject % index_nitrateConc, &
-         nt_bgc_Am_out=tracerObject % index_ammoniumConc, &
-         nt_bgc_Sil_out=tracerObject % index_silicateConc, &
-         nt_bgc_DMS_out=tracerObject % index_DMSConc, &
-         nt_bgc_PON_out=tracerObject % index_nonreactiveConc, &
-         nt_bgc_N_out=tracerObject % index_algaeConc, &
-         nt_bgc_C_out=tracerObject % index_algalCarbon, &
-         nt_bgc_chl_out=tracerObject % index_algalChlorophyll, &
-         nt_bgc_DOC_out=tracerObject % index_DOCConc, &
-         nt_bgc_DON_out=tracerObject % index_DONConc, &
-         nt_bgc_DIC_out=tracerObject % index_DICConc, &
-         nt_zaero_out=tracerObject % index_verticalAerosolsConc, &
-         nt_bgc_DMSPp_out=tracerObject % index_DMSPpConc, &
-         nt_bgc_DMSPd_out=tracerObject % index_DMSPdConc, &
-         nt_bgc_Fed_out=tracerObject % index_dissolvedIronConc, &
-         nt_bgc_Fep_out=tracerObject % index_particulateIronConc, &
-         nt_zbgc_frac_out=tracerObject % index_mobileFraction, &
-         tr_bgc_Nit_in=config_use_nitrate, &
-         tr_bgc_Am_in=config_use_ammonium, &
-         tr_bgc_Sil_in=config_use_silicate, &
-         tr_bgc_DMS_in=config_use_DMS, &
-         tr_bgc_PON_in=config_use_nonreactive, &
-         tr_bgc_N_in=use_nitrogen, &
-         tr_bgc_C_in=config_use_carbon, &
-         tr_bgc_chl_in=config_use_chlorophyll, &
-         tr_bgc_DON_in=config_use_DON, &
-         tr_bgc_Fe_in=config_use_iron,&
-         tr_zaero_in=config_use_zaerosols, &
-         nlt_zaero_sw_out=tracerObject % index_verticalAerosolsConcShortwave, &
-         nlt_chl_sw_out=tracerObject % index_chlorophyllShortwave, &
-         nlt_bgc_N_out=tracerObject % index_algaeConcLayer, &
-         nlt_bgc_Nit_out=tracerObject % index_nitrateConcLayer, &
-         nlt_bgc_Am_out=tracerObject % index_ammoniumConcLayer, &
-         nlt_bgc_Sil_out=tracerObject % index_silicateConcLayer, &
-         nlt_bgc_DMS_out=tracerObject % index_DMSConcLayer, &
-         nlt_bgc_DMSPp_out=tracerObject % index_DMSPpConcLayer, &
-         nlt_bgc_DMSPd_out=tracerObject % index_DMSPdConcLayer, &
-         nlt_bgc_C_out=tracerObject % index_algalCarbonLayer, &
-         nlt_bgc_chl_out=tracerObject % index_algalChlorophyllLayer, &
-         nlt_bgc_DIC_out=tracerObject % index_DICConcLayer, &
-         nlt_bgc_DOC_out=tracerObject % index_DOCConcLayer, &
-         nlt_bgc_PON_out=tracerObject % index_nonreactiveConcLayer, &
-         nlt_bgc_DON_out=tracerObject % index_DONConcLayer, &
-         nlt_bgc_Fed_out=tracerObject % index_dissolvedIronConcLayer, &
-         nlt_bgc_Fep_out=tracerObject % index_particulateIronConcLayer, &
-         nlt_zaero_out=tracerObject % index_verticalAerosolsConcLayer, &
-         nt_bgc_hum_out=tracerObject % index_humicsConc, &
-         nlt_bgc_hum_out=tracerObject % index_humicsConcLayer, &
-         tr_bgc_hum_in=config_use_humics, &
-         skl_bgc_in=config_use_skeletal_biochemistry, &
-         z_tracers_in=config_use_vertical_tracers, &
-         dEdd_algae_in=config_use_shortwave_bioabsorption, &
-         solve_zbgc_in=config_use_vertical_biochemistry, &
-         bio_index_o_out=tracerObject % index_LayerIndexToDataArray, &
-         bio_index_out=tracerObject % index_LayerIndexToBioIndex)
+    call init_zbgc_tracer_indices(domain, tracerObject, use_nitrogen, nTracers_temp, &
+                                 BGCTracerType, initialMobileFraction, retentionTime, &
+                                 releaseTime, newIceBGCFraction)
 
-    call icepack_init_zbgc()
+    call icepack_init_zbgc(bgc_tracer_type_in=BGCTracerType,        &
+                           zbgc_frac_init_in=initialMobileFraction, &
+                           tau_ret_in=retentionTime,                &
+                           tau_rel_in=releaseTime,                  &
+                           zbgc_init_frac_in=newIceBGCFraction)
 
     ! check calculated tracer array size
     if (nTracers_temp /= tracerObject % nTracers) then
@@ -13494,7 +13444,826 @@ contains
     call icepack_query_parameters(tau_max_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('tau_max differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
+    deallocate(BGCTracerType)
+    deallocate(initialMobileFraction)
+    deallocate(retentionTime)
+    deallocate(releaseTime)
+    deallocate(newIceBGCFraction)
+
   end subroutine init_column_tracer_object_for_biogeochemistry
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_zbgc_tracer_indices
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 24 May 2024
+!> \details
+!> Moves icepack_init_zbgc_tracer_indices to the interface
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_zbgc_tracer_indices(domain, tracerObject, use_nitrogen, nTracersTemp, &
+                                      BGCTracerType, initialMobileFraction, retentionTime, &
+                                      releaseTime, newIceBGCFraction)
+
+    type(domain_type), intent(in) :: &
+         domain
+
+    type(ciceTracerObjectType), intent(inout) :: &
+         tracerObject
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+        BGCTracerType, &
+        initialMobileFraction, &
+        retentionTime, &
+        releaseTime, &
+        newIceBGCFraction
+
+    integer, intent(in) :: &
+         nTracersTemp
+
+    logical, intent(in) :: &
+         use_nitrogen
+
+    logical, pointer :: &
+         config_use_brine, &
+         config_use_vertical_zsalinity, &      !echmod deprecate
+         config_use_vertical_biochemistry, &
+         config_use_vertical_tracers, &
+         config_use_skeletal_biochemistry, &
+         config_use_shortwave_bioabsorption, &
+         config_use_nitrate, &
+         config_use_carbon, &
+         config_use_chlorophyll, &
+         config_use_ammonium, &
+         config_use_silicate, &
+         config_use_DMS, &
+         config_use_nonreactive, &
+         config_use_humics, &
+         config_use_DON, &
+         config_use_iron, &
+         config_use_zaerosols
+
+    real(kind=RKIND), pointer :: &
+         config_mobility_type_diatoms, &
+         config_mobility_type_small_plankton, &
+         config_mobility_type_phaeocystis, &
+         config_mobility_type_nitrate, &
+         config_mobility_type_ammonium, &
+         config_mobility_type_silicate, &
+         config_mobility_type_DMSPp, &
+         config_mobility_type_DMSPd, &
+         config_mobility_type_humics, &
+         config_mobility_type_saccharids, &
+         config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
+         config_mobility_type_proteins, &
+         config_mobility_type_dissolved_iron, &
+         config_mobility_type_particulate_iron, &
+         config_mobility_type_black_carbon1, &
+         config_mobility_type_black_carbon2, &
+         config_mobility_type_dust1, &
+         config_mobility_type_dust2, &
+         config_mobility_type_dust3, &
+         config_mobility_type_dust4, &
+         config_rapid_mobile_to_stationary_time, &
+         config_long_mobile_to_stationary_time, &
+         config_fraction_biotracer_in_frazil, &
+         config_new_ice_fraction_biotracer
+
+    integer, pointer :: &
+         nIceLayers, &
+         nSnowLayers, &
+         nBioLayers, &
+         nAlgae, &
+         nDOC, &
+         nDIC, &
+         nDON, &
+         nParticulateIron, &
+         nDissolvedIron, &
+         nzAerosols, &
+         nZBGCTracers, &
+         maxAerosolType, &
+         maxAlgaeType, &
+         maxDOCType, &
+         maxDICType, &
+         maxDONType, &
+         maxIronType
+
+    integer :: &
+         iAerosols, &
+         nTracerDependOption, &
+         nCount, &
+         nTracerDepend, &
+         iBioLayer, &
+         iBioTracer
+
+    real(kind=RKIND) :: &
+         rtmp1, &
+         rtmp2
+
+    real (kind=RKIND), dimension (:), allocatable :: &
+        algalType, &
+        docType, &
+        dicType, &
+        donType, &
+        fedType, &
+        fepType, &
+        zAeroType
+
+    call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)  !echmod deprecate
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+    call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
+    call MPAS_pool_get_config(domain % configs, "config_use_carbon", config_use_carbon)
+    call MPAS_pool_get_config(domain % configs, "config_use_chlorophyll", config_use_chlorophyll)
+    call MPAS_pool_get_config(domain % configs, "config_use_ammonium", config_use_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_use_silicate", config_use_silicate)
+    call MPAS_pool_get_config(domain % configs, "config_use_DMS", config_use_DMS)
+    call MPAS_pool_get_config(domain % configs, "config_use_nonreactive", config_use_nonreactive)
+    call MPAS_pool_get_config(domain % configs, "config_use_humics", config_use_humics)
+    call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
+    call MPAS_pool_get_config(domain % configs, "config_use_iron", config_use_iron)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_diatoms", config_mobility_type_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_small_plankton", config_mobility_type_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_phaeocystis", config_mobility_type_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_nitrate", config_mobility_type_nitrate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_ammonium", config_mobility_type_ammonium)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_silicate", config_mobility_type_silicate)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPp", config_mobility_type_DMSPp)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPd", config_mobility_type_DMSPd)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_inorganic_carbon", config_mobility_type_inorganic_carbon)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon1", config_mobility_type_black_carbon1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon2", config_mobility_type_black_carbon2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust1", config_mobility_type_dust1)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust2", config_mobility_type_dust2)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust3", config_mobility_type_dust3)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust4", config_mobility_type_dust4)
+    call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", &
+                                                 config_rapid_mobile_to_stationary_time)
+    call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", &
+                                                 config_long_mobile_to_stationary_time)
+    call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", &
+                                                 config_fraction_biotracer_in_frazil)
+    call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", &
+                                                 config_new_ice_fraction_biotracer)
+
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayers",nBioLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDON", nDON)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxAerosolType", maxAerosolType)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxAlgaeType", maxAlgaeType)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDOCType", maxDOCType)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDICType", maxDICType)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDONType", maxDONType)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxIronType", maxIronType)
+
+      tracerObject % nTracersNotBio = tracerObject % nTracers
+      tracerObject % index_brineFraction = 0
+      if (config_use_brine) then
+          tracerObject % index_brineFraction = tracerObject % nTracers + 1   ! ice volume fraction with salt
+          tracerObject % nTracers = tracerObject % nTracers + 1
+          tracerObject % parentIndex(tracerObject % index_brineFraction)   = 1   ! volume-weighted
+          tracerObject % firstAncestorMask  (tracerObject % index_brineFraction,1) = 0.0_RKIND  ! volume-weighted
+          tracerObject % firstAncestorMask  (tracerObject % index_brineFraction,2) = 1.0_RKIND  ! volume-weighted
+          tracerObject % firstAncestorMask  (tracerObject % index_brineFraction,3) = 0.0_RKIND  ! volume-weighted
+          tracerObject % ancestorNumber(tracerObject % index_brineFraction) = 0
+          tracerObject % ancestorIndices  (tracerObject % index_brineFraction,1) = 0
+          tracerObject % ancestorIndices  (tracerObject % index_brineFraction,2) = 0
+      endif
+
+      nTracerDependOption = 0                    ! if tracerObject % index_brineFraction /= 0 then use fbri dependency
+      if (tracerObject % index_brineFraction == 0) nTracerDependOption = -1 ! otherwise make tracers depend on ice volume
+
+      !-----------------------------------------------------------------
+      ! biogeochemistry
+      !-----------------------------------------------------------------
+
+      tracerObject % nBioTracers = 0
+      tracerObject % nBioTracersShortwave = 0
+
+      ! vectors of size maxAlgaeType
+      tracerObject % index_algaeConcLayer(:) = 0
+      tracerObject % index_algalCarbonLayer(:) = 0
+      tracerObject % index_algalChlorophyllLayer(:) = 0
+      tracerObject % index_algaeConc(:) = 0
+      tracerObject % index_algalCarbon(:) = 0
+      tracerObject % index_algalChlorophyll(:) = 0
+
+      ! vectors of size maxDICType
+      tracerObject % index_DICConcLayer(:) = 0
+      tracerObject % index_DICConc(:) = 0
+
+      ! vectors of size maxDOCType
+      tracerObject % index_DOCConcLayer(:) = 0
+      tracerObject % index_DOCConc(:) = 0
+
+      ! vectors of size maxDONType
+      tracerObject % index_DONConcLayer(:) = 0
+      tracerObject % index_DONConc(:) = 0
+
+      ! vectors of size maxIronType
+      tracerObject % index_dissolvedIronConcLayer(:) = 0
+      tracerObject % index_particulateIronConcLayer(:) = 0
+      tracerObject % index_dissolvedIronConc(:) = 0
+      tracerObject % index_particulateIronConc(:) = 0
+
+      ! vectors of size maxAerosolType
+      tracerObject % index_verticalAerosolsConcLayer(:) = 0
+      tracerObject % index_verticalAerosolsConcShortwave(:) = 0
+      tracerObject % index_verticalAerosolsConc(:) = 0
+
+      tracerObject % index_nitrateConcLayer    = 0
+      tracerObject % index_ammoniumConcLayer   = 0
+      tracerObject % index_silicateConcLayer    = 0
+      tracerObject % index_DMSPpConcLayer  = 0
+      tracerObject % index_DMSPdConcLayer  = 0
+      tracerObject % index_DMSConcLayer    = 0
+      tracerObject % index_nonreactiveConcLayer    = 0
+      tracerObject % index_humicsConcLayer    = 0
+      tracerObject % index_chlorophyllShortwave     = 0
+      tracerObject % index_LayerIndexToBioIndex(:)   = 0
+      tracerObject % index_LayerIndexToDataArray(:) = 0
+
+      tracerObject % index_nitrateConc    = 0
+      tracerObject % index_ammoniumConc     = 0
+      tracerObject % index_silicateConc    = 0
+      tracerObject % index_DMSPpConc  = 0
+      tracerObject % index_DMSPdConc  = 0
+      tracerObject % index_DMSConc    = 0
+      tracerObject % index_nonreactiveConc    = 0
+      tracerObject % index_humicsConc    = 0
+
+      allocate(algalType(maxAlgaeType))
+      allocate(docType(maxDOCType))
+      allocate(dicType(maxDICType))
+      allocate(donType(maxDONType))
+      allocate(fedType(maxIronType))
+      allocate(fepType(maxIronType))
+      allocate(zAeroType(maxAerosolType))
+
+      algalType(1) = config_mobility_type_diatoms
+      algalType(2) = config_mobility_type_small_plankton
+      algalType(3) = config_mobility_type_phaeocystis
+
+      docType(1) = config_mobility_type_saccharids
+      docType(2) = config_mobility_type_lipids
+
+      dicType(1) = config_mobility_type_inorganic_carbon
+
+      donType(1) = config_mobility_type_proteins
+
+      fedType(1) = config_mobility_type_dissolved_iron
+      fepType(1) = config_mobility_type_particulate_iron
+
+      zAeroType(1) = config_mobility_type_black_carbon1
+      zAeroType(2) = config_mobility_type_black_carbon2
+      zAeroType(3) = config_mobility_type_dust1
+      zAeroType(4) = config_mobility_type_dust2
+      zAeroType(5) = config_mobility_type_dust3
+      zAeroType(6) = config_mobility_type_dust4
+
+      if (config_use_skeletal_biochemistry) then
+
+         nCount = 1
+         nTracerDepend = 0
+
+         if (config_use_shortwave_bioabsorption) then
+           tracerObject % index_chlorophyllShortwave = 1
+           tracerObject % nBioTracersShortwave = nIceLayers+nSnowLayers+2  ! only the bottom layer
+                                                                           ! will be nonzero
+          endif
+      elseif (config_use_vertical_tracers) then ! defined on nBioLayers+1 in ice
+                                                ! and 2 snow layers (snow surface + interior)
+         nCount = nBioLayers + 1
+         nTracerDepend = 2 + tracerObject % index_brineFraction + nTracerDependOption
+
+         if (use_nitrogen) then
+            if (config_use_shortwave_bioabsorption) then
+               tracerObject % index_chlorophyllShortwave = 1
+               tracerObject % nBioTracersShortwave = nIceLayers+nSnowLayers+2
+            endif
+         endif ! use_nitrogen
+
+      endif ! config_use_skeletal_biochemistry or config_use_vertical_tracers
+
+      if (config_use_skeletal_biochemistry .or. config_use_vertical_tracers) then
+
+      !-----------------------------------------------------------------
+      ! assign tracer indices and dependencies
+      ! BGCTracerType: < 0  purely mobile , >= 0 stationary
+      !------------------------------------------------------------------
+
+      if (use_nitrogen) then
+         do iBioTracer = 1, nAlgae
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,  &
+                                      tracerObject % index_algaeConc(iBioTracer),     &
+                                      tracerObject % index_algaeConcLayer(iBioTracer),&
+                                      algalType(iBioTracer),  nTracerDepend,          &
+                                      tracerObject % nTracers,                        &
+                                      tracerObject % nBioTracers,                     &
+                                      BGCTracerType,                                  &
+                                      tracerObject % parentIndex,                     &
+                                      tracerObject % firstAncestorMask,               &
+                                      tracerObject % ancestorNumber,                  &
+                                      tracerObject % ancestorIndices,                 &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_algaeConcLayer(iBioTracer)) &
+                           = iBioTracer
+         enddo   ! iBioTracer
+      endif ! use_nitrogen
+
+      if (config_use_nitrate) then
+         call init_bgc_tracer_indices(&
+                                      nCount, tracerObject % index_brineFraction,  &
+                                      tracerObject % index_nitrateConc,            &
+                                      tracerObject % index_nitrateConcLayer,       &
+                                      config_mobility_type_nitrate, nTracerDepend, &
+                                      tracerObject % nTracers,                     &
+                                      tracerObject % nBioTracers,                  &
+                                      BGCTracerType,                               &
+                                      tracerObject % parentIndex,                  &
+                                      tracerObject % firstAncestorMask,            &
+                                      tracerObject % ancestorNumber,               &
+                                      tracerObject % ancestorIndices,              &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_nitrateConcLayer) &
+                           = maxAlgaeType + 1
+      endif ! config_use_nitrate
+
+      if (config_use_carbon) then
+       !
+       ! Algal C is not yet distinct from algal N
+       ! * Reqires exudation and/or changing C:N ratios
+       ! for implementation
+       !
+       !  do iBioTracer = 1,nAlgae
+       !     call init_bgc_tracer_indices(nCount,tracerObject % index_brineFraction,      &
+       !                               tracerObject % index_algalCarbon(iBioTracer),      &
+       !                               tracerObject % index_algalCarbonLayer(iBioTracer), &
+       !                               algalType(iBioTracer),   nTracerDepend,            &
+       !                               tracerObject % nTracers,                           &
+       !                               tracerObject % nBioTracers,                        &
+       !                               BGCTracerType,                                     &
+       !                               tracerObject % parentIndex,                        &
+       !                               tracerObject % firstAncestorMask,                  &
+       !                               tracerObject % ancestorNumber,                     &
+       !                               tracerObject % ancestorIndices,                    &
+       !                               tracerObject % index_LayerIndexToBioIndex)
+       !     tracerObject % index_LayerIndexToDataArray(tracerObject % index_algalCarbonLayer(iBioTracer)) &
+       !                    = maxAlgaeType + 1 + iBioTracer
+       !  enddo   ! iBioTracer
+
+         do iBioTracer = 1, nDOC
+            call init_bgc_tracer_indices(&
+                                      nCount, tracerObject % index_brineFraction,    &
+                                      tracerObject % index_DOCConc(iBioTracer),      &
+                                      tracerObject % index_DOCConcLayer(iBioTracer), &
+                                      docType(iBioTracer), nTracerDepend,            &
+                                      tracerObject % nTracers,                       &
+                                      tracerObject % nBioTracers,                    &
+                                      BGCTracerType,                                 &
+                                      tracerObject % parentIndex,                    &
+                                      tracerObject % firstAncestorMask,              &
+                                      tracerObject % ancestorNumber,                 &
+                                      tracerObject % ancestorIndices,                &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DOCConcLayer(iBioTracer)) &
+                           = maxAlgaeType + 1 + iBioTracer
+         enddo   ! iBioTracer
+         do iBioTracer = 1, nDIC
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,  &
+                                      tracerObject % index_DICConc(iBioTracer),       &
+                                      tracerObject % index_DICConcLayer(iBioTracer),  &
+                                      dicType(iBioTracer), nTracerDepend,             &
+                                      tracerObject % nTracers,                        &
+                                      tracerObject % nBioTracers,                     &
+                                      BGCTracerType,                                  &
+                                      tracerObject % parentIndex,                     &
+                                      tracerObject % firstAncestorMask,               &
+                                      tracerObject % ancestorNumber,                  &
+                                      tracerObject % ancestorIndices,                 &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DICConcLayer(iBioTracer)) &
+                           = maxAlgaeType + maxDOCType + 1 + iBioTracer
+         enddo   ! iBioTracer
+      endif      ! config_use_carbon
+
+      if (config_use_chlorophyll) then
+         do iBioTracer = 1, nAlgae
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,          &
+                                      tracerObject % index_algalChlorophyll(iBioTracer),      &
+                                      tracerObject % index_algalChlorophyllLayer(iBioTracer), &
+                                      algalType(iBioTracer), nTracerDepend,                   &
+                                      tracerObject % nTracers,                                &
+                                      tracerObject % nBioTracers,                             &
+                                      BGCTracerType,                                          &
+                                      tracerObject % parentIndex,                             &
+                                      tracerObject % firstAncestorMask,                       &
+                                      tracerObject % ancestorNumber,                          &
+                                      tracerObject % ancestorIndices,                         &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_algalChlorophyllLayer(iBioTracer)) &
+                           = maxAlgaeType + 1 + maxDOCType + maxDICType + iBioTracer
+         enddo   ! iBioTracer
+      endif      ! config_use_chlorophyll
+
+      if (config_use_ammonium) then
+         call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_ammoniumConc,          &
+                                      tracerObject % index_ammoniumConcLayer,     &
+                                      config_mobility_type_ammonium,              &
+                                      nTracerDepend,                              &
+                                      tracerObject % nTracers,                    &
+                                      tracerObject % nBioTracers,                 &
+                                      BGCTracerType,                              &
+                                      tracerObject % parentIndex,                 &
+                                      tracerObject % firstAncestorMask,           &
+                                      tracerObject % ancestorNumber,              &
+                                      tracerObject % ancestorIndices,             &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_ammoniumConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 2
+      endif
+      if (config_use_silicate) then
+         call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_silicateConc,          &
+                                      tracerObject % index_silicateConcLayer,     &
+                                      config_mobility_type_silicate,              &
+                                      nTracerDepend,                              &
+                                      tracerObject % nTracers,                    &
+                                      tracerObject % nBioTracers,                 &
+                                      BGCTracerType,                              &
+                                      tracerObject % parentIndex,                 &
+                                      tracerObject % firstAncestorMask,           &
+                                      tracerObject % ancestorNumber,              &
+                                      tracerObject % ancestorIndices,             &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_silicateConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 3
+      endif
+      if (config_use_DMS) then   ! all together
+         call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_DMSPpConc,             &
+                                      tracerObject % index_DMSPpConcLayer,        &
+                                      config_mobility_type_DMSPp, nTracerDepend,  &
+                                      tracerObject % nTracers,                    &
+                                      tracerObject % nBioTracers,                 &
+                                      BGCTracerType,                              &
+                                      tracerObject % parentIndex,                 &
+                                      tracerObject % firstAncestorMask,           &
+                                      tracerObject % ancestorNumber,              &
+                                      tracerObject % ancestorIndices,             &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DMSPpConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 4
+
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_DMSPdConc,                &
+                                      tracerObject % index_DMSPdConcLayer,           &
+                                      config_mobility_type_DMSPd, nTracerDepend,     &
+                                      tracerObject % nTracers,                       &
+                                      tracerObject % nBioTracers,                    &
+                                      BGCTracerType,                                 &
+                                      tracerObject % parentIndex,                    &
+                                      tracerObject % firstAncestorMask,              &
+                                      tracerObject % ancestorNumber,                 &
+                                      tracerObject % ancestorIndices,                &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DMSPdConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 5
+
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_DMSConc,                  &
+                                      tracerObject % index_DMSConcLayer,             &
+                                      config_mobility_type_DMSPd, nTracerDepend,     &
+                                      tracerObject % nTracers,                       &
+                                      tracerObject % nBioTracers,                    &
+                                      BGCTracerType,                                 &
+                                      tracerObject % parentIndex,                    &
+                                      tracerObject % firstAncestorMask,              &
+                                      tracerObject % ancestorNumber,                 &
+                                      tracerObject % ancestorIndices,                &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DMSConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 6
+      endif
+      if (config_use_nonreactive) then
+         call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_nonreactiveConc,       &
+                                      tracerObject % index_nonreactiveConcLayer,  &
+                                      config_mobility_type_nitrate, nTracerDepend,&
+                                      tracerObject % nTracers,                    &
+                                      tracerObject % nBioTracers,                 &
+                                      BGCTracerType,                              &
+                                      tracerObject % parentIndex,                 &
+                                      tracerObject % firstAncestorMask,           &
+                                      tracerObject % ancestorNumber,              &
+                                      tracerObject % ancestorIndices,             &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_nonreactiveConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 7
+      endif
+      if (config_use_DON) then
+         do iBioTracer = 1, nDON
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_DONConc(iBioTracer),      &
+                                      tracerObject % index_DONConcLayer(iBioTracer), &
+                                      donType(iBioTracer), nTracerDepend,            &
+                                      tracerObject % nTracers,                       &
+                                      tracerObject % nBioTracers,                    &
+                                      BGCTracerType,                                 &
+                                      tracerObject % parentIndex,                    &
+                                      tracerObject % firstAncestorMask,              &
+                                      tracerObject % ancestorNumber,                 &
+                                      tracerObject % ancestorIndices,                &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_DONConcLayer(iBioTracer)) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + 7 + iBioTracer
+         enddo   ! iBioTracer
+      endif      ! config_use_DON
+      if (config_use_iron) then
+         do iBioTracer = 1, nDissolvedIron
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,          &
+                                      tracerObject % index_dissolvedIronConc(iBioTracer),     &
+                                      tracerObject % index_dissolvedIronConcLayer(iBioTracer),&
+                                      fedType(iBioTracer), nTracerDepend,                     &
+                                      tracerObject % nTracers,                                &
+                                      tracerObject % nBioTracers,                             &
+                                      BGCTracerType,   tracerObject % parentIndex,            &
+                                      tracerObject % firstAncestorMask,                       &
+                                      tracerObject % ancestorNumber,                          &
+                                      tracerObject % ancestorIndices,                         &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_dissolvedIronConcLayer(iBioTracer)) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 7 + iBioTracer
+         enddo   ! iBioTracer
+         do iBioTracer = 1, nParticulateIron
+            call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,             &
+                                      tracerObject % index_particulateIronConc(iBioTracer),      &
+                                      tracerObject % index_particulateIronConcLayer(iBioTracer), &
+                                      fepType(iBioTracer), nTracerDepend,                        &
+                                      tracerObject % nTracers,                                   &
+                                      tracerObject % nBioTracers,                                &
+                                      BGCTracerType,   tracerObject % parentIndex,               &
+                                      tracerObject % firstAncestorMask,                          &
+                                      tracerObject % ancestorNumber,                             &
+                                      tracerObject % ancestorIndices,                            &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_particulateIronConcLayer(iBioTracer)) &
+                           = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + maxIronType + 7 + iBioTracer
+         enddo   ! iBioTracer
+      endif      ! config_use_iron
+
+      if (config_use_humics) then
+         call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction, &
+                                      tracerObject % index_humicsConc,            &
+                                      tracerObject % index_humicsConcLayer,       &
+                                      config_mobility_type_humics, nTracerDepend, &
+                                      tracerObject % nTracers,                    &
+                                      tracerObject % nBioTracers,                 &
+                                      BGCTracerType,                              &
+                                      tracerObject % parentIndex,                 &
+                                      tracerObject % firstAncestorMask,           &
+                                      tracerObject % ancestorNumber,              &
+                                      tracerObject % ancestorIndices,             &
+                                      tracerObject % index_LayerIndexToBioIndex)
+            tracerObject % index_LayerIndexToDataArray(tracerObject % index_humicsConcLayer) &
+                           = 2*maxAlgaeType + maxDOCType + 8 + maxDICType + maxDONType + 2*maxIronType + maxAerosolType
+      endif
+      endif  ! config_use_skeletal_biochemistry or config_use_vertical_tracers
+
+      if (config_use_vertical_tracers) then ! defined on nBioLayers+1 in ice
+                                            ! and 2 snow layers (snow surface + interior)
+         nCount = nBioLayers + 1
+         nTracerDepend = 2 + tracerObject % index_brineFraction + nTracerDependOption
+
+         ! z layer aerosols
+         if (config_use_zaerosols) then
+            do iBioTracer = 1, nzAerosols
+               if (config_use_shortwave_bioabsorption) then
+                  tracerObject % index_verticalAerosolsConcShortwave(iBioTracer) = &
+                                 tracerObject % nBioTracersShortwave + 1
+                  tracerObject % nBioTracersShortwave = &
+                                 tracerObject % nBioTracersShortwave + nIceLayers + nSnowLayers+2
+               endif
+               call init_bgc_tracer_indices(nCount, tracerObject % index_brineFraction,              &
+                                         tracerObject % index_verticalAerosolsConc(iBioTracer),      &
+                                         tracerObject % index_verticalAerosolsConcLayer(iBioTracer), &
+                                         zAeroType(iBioTracer), nTracerDepend,                       &
+                                         tracerObject % nTracers,                                    &
+                                         tracerObject % nBioTracers,                                 &
+                                         BGCTracerType, tracerObject % parentIndex,                  &
+                                         tracerObject % firstAncestorMask,                           &
+                                         tracerObject % ancestorNumber,                              &
+                                         tracerObject % ancestorIndices,                             &
+                                         tracerObject % index_LayerIndexToBioIndex)
+               tracerObject % index_LayerIndexToDataArray(tracerObject % index_verticalAerosolsConcLayer(iBioTracer)) &
+                              = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 2*maxIronType + 7 + iBioTracer
+            enddo   ! iBioTracer
+         endif      ! config_use_zaerosols
+
+         tracerObject % index_mobileFraction = 0
+         if (tracerObject % nBioTracers > 0) then
+            tracerObject % index_mobileFraction = tracerObject % nTracers + 1
+            tracerObject % nTracers = tracerObject % nTracers + tracerObject % nBioTracers
+            do iBioLayer = 1,tracerObject % nBioTracers
+               initialMobileFraction(iBioLayer) = 1.0_RKIND
+               tracerObject % parentIndex(tracerObject % index_mobileFraction+iBioLayer-1) &
+                              = 2+tracerObject % index_brineFraction
+               tracerObject % firstAncestorMask(tracerObject % index_mobileFraction+ iBioLayer - 1,1)  = 0.0_RKIND
+               tracerObject % firstAncestorMask(tracerObject % index_mobileFraction+ iBioLayer - 1,2)  = 1.0_RKIND
+               tracerObject % firstAncestorMask(tracerObject % index_mobileFraction+ iBioLayer - 1,3)  = 0.0_RKIND
+               tracerObject % ancestorNumber(tracerObject % index_mobileFraction+ iBioLayer - 1) = 1
+               tracerObject % ancestorIndices(tracerObject % index_mobileFraction+ iBioLayer - 1,1) &
+                              = tracerObject % index_brineFraction
+               tracerObject % ancestorIndices(tracerObject % index_mobileFraction+ iBioLayer - 1,2) = 0
+               retentionTime(iBioLayer) = 1.0_RKIND
+               releaseTime(iBioLayer) = 1.0_RKIND
+
+               if (BGCTracerType(iBioLayer) >=  0.0_RKIND .and. BGCTracerType(iBioLayer) < 0.5_RKIND) then
+                  retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time
+                  releaseTime(iBioLayer) = config_long_mobile_to_stationary_time
+                  initialMobileFraction(iBioLayer) = 1.0_RKIND
+               elseif (BGCTracerType(iBioLayer) >= 0.5_RKIND .and. BGCTracerType(iBioLayer) < 1.0_RKIND) then
+                  retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time
+                  releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
+                  initialMobileFraction(iBioLayer) = 1.0_RKIND
+               elseif (BGCTracerType(iBioLayer) >= 1.0_RKIND .and. BGCTracerType(iBioLayer) < 2.0_RKIND) then
+                  retentionTime(iBioLayer) = config_long_mobile_to_stationary_time
+                  releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
+                  initialMobileFraction(iBioLayer) = 1.0_RKIND
+               elseif (BGCTracerType(iBioLayer) >= 2.0_RKIND ) then
+                  retentionTime(iBioLayer) = config_long_mobile_to_stationary_time
+                  releaseTime(iBioLayer) = config_long_mobile_to_stationary_time
+                  initialMobileFraction(iBioLayer) = 1.0_RKIND
+               endif
+            enddo
+         endif
+
+      endif ! config_use_vertical_tracers
+
+      do iBioLayer = 1, tracerObject % nBioTracers
+         newIceBGCFraction(iBioLayer) = config_fraction_biotracer_in_frazil
+         if (BGCTracerType(iBioLayer) < 0.0_RKIND) &
+               newIceBGCFraction(iBioLayer) = config_new_ice_fraction_biotracer
+      enddo
+
+      if (.NOT.config_use_shortwave_bioabsorption) tracerObject % nBioTracersShortwave = 1
+
+      !-----------------------------------------------------------------
+      ! final consistency checks
+      !-----------------------------------------------------------------
+
+      if (tracerObject % nBioTracers > nZBGCTracers) then
+         call mpas_log_write(&
+            "init_zbgc_tracer_indices: nBioTracers $i, greater than max nZBGCTracers: $i", &
+            messageType=MPAS_LOG_CRIT, intArgs=(/tracerObject % nBioTracers, nZBGCTracers/))
+      endif
+
+      deallocate(algalType)
+      deallocate(docType)
+      deallocate(dicType)
+      deallocate(donType)
+      deallocate(fedType)
+      deallocate(fepType)
+      deallocate(zAeroType)
+
+  end subroutine init_zbgc_tracer_indices
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_bgc_tracer_indices
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 24 May 2024
+!> \details
+!>
+!> Moves icepack_init_bgc_trcr to the interface
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_bgc_tracer_indices( nCount,          iBrineFraction, &
+                                      iBGCConc,        iBGCConcLayer,  &
+                                      BGCType,         nTracerDepend,  &
+                                      nTracers,        nBioTracers,    &
+                                      BGCTracerType,   parentIndexBGC, &
+                                      firstAncestorMaskBGC,            &
+                                      ancestorNumberBGC,               &
+                                      ancestorIndicesBGC,              &
+                                      layerIndexToBioIndex)
+
+      integer, intent(in) :: &
+         nCount           , & ! counter
+         nTracerDepend    , & ! tracer dependency index
+         iBrineFraction
+
+      integer, intent(inout) :: &
+         nTracers         , & ! number of tracers
+         nBioTracers      , & ! number of bio tracers
+         iBGCConc         , & ! tracer index
+         iBGCConcLayer        ! bio tracer index
+
+      integer, dimension(:), intent(inout) :: &
+         parentIndexBGC   , & ! tracer dependencies
+         ancestorNumberBGC, & ! number of underlying tracer layers
+         layerIndexToBioIndex
+
+      integer, dimension(:,:), intent(inout) :: &
+         ancestorIndicesBGC    ! indices of underlying tracer layers
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         firstAncestorMaskBGC  ! = 0 or 1 depending on tracer dependency
+                               ! argument 2:  (1) aice, (2) vice, (3) vsno
+
+      real (kind=RKIND), intent(in) :: &
+         BGCType               ! bio tracer transport type (mobile vs stationary)
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         BGCTracerType         ! bio tracer transport type array
+
+      ! local variables
+
+      integer :: &
+         iCount , & ! loop index
+         nTemp  , & ! temporary values
+         ancestorIndicesBGC1, & ! temporary values
+         ancestorIndicesBGC2
+
+      real (kind=RKIND) :: &
+         firstAncestorMaskBGC1, & ! temporary values
+         firstAncestorMaskBGC2, &
+         firstAncestorMaskBGC3
+
+         iBGCConc = nTracers + 1
+         nBioTracers = nBioTracers + 1
+         iBGCConcLayer = nBioTracers
+         BGCTracerType(nBioTracers) = BGCType
+
+         if (nCount > 1) then
+            ! include vertical bgc in snow
+            do iCount = nCount, nCount+1
+               nTracers = nTracers + 1
+               parentIndexBGC  (iBGCConc + iCount  ) = 2 ! snow volume
+               firstAncestorMaskBGC    (iBGCConc + iCount,1) = 0.0_RKIND
+               firstAncestorMaskBGC    (iBGCConc + iCount,2) = 0.0_RKIND
+               firstAncestorMaskBGC    (iBGCConc + iCount,3) = 1.0_RKIND
+               ancestorNumberBGC(iBGCConc + iCount  ) = 0
+               ancestorIndicesBGC    (iBGCConc + iCount,1) = 0
+               ancestorIndicesBGC    (iBGCConc + iCount,2) = 0
+            enddo
+
+            firstAncestorMaskBGC1 = 0.0_RKIND
+            firstAncestorMaskBGC2 = 1.0_RKIND
+            firstAncestorMaskBGC3 = 0.0_RKIND
+            nTemp = 1
+            ancestorIndicesBGC1 = iBrineFraction
+            ancestorIndicesBGC2 = 0
+         else  ! nCount = 1
+            firstAncestorMaskBGC1 = 1.0_RKIND
+            firstAncestorMaskBGC2 = 0.0_RKIND
+            firstAncestorMaskBGC3 = 0.0_RKIND
+            nTemp = 0
+            ancestorIndicesBGC1 = 0
+            ancestorIndicesBGC2 = 0
+         endif ! nCount
+
+         do iCount = 1, nCount     !in ice
+            nTracers = nTracers + 1
+            parentIndexBGC  (iBGCConc + iCount - 1  ) = nTracerDepend
+            firstAncestorMaskBGC    (iBGCConc + iCount - 1,1) = firstAncestorMaskBGC1
+            firstAncestorMaskBGC    (iBGCConc + iCount - 1,2) = firstAncestorMaskBGC2
+            firstAncestorMaskBGC    (iBGCConc + iCount - 1,3) = firstAncestorMaskBGC3
+            ancestorNumberBGC(iBGCConc + iCount - 1  ) = nTemp
+            ancestorIndicesBGC    (iBGCConc + iCount - 1,1) = ancestorIndicesBGC1
+            ancestorIndicesBGC    (iBGCConc + iCount - 1,2) = ancestorIndicesBGC2
+         enddo
+
+         layerIndexToBioIndex (iBGCConcLayer) = iBGCConc
+
+  end subroutine init_bgc_tracer_indices
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -13917,10 +14686,10 @@ contains
 
           pondFreshWaterFlux(:) = 0.0_RKIND
 
-          !fresh_ai  (:,:,:) = c0
-          !fsalt_ai  (:,:,:) = c0
-          !fhocn_ai  (:,:,:) = c0
-          !fswthru_ai(:,:,:) = c0
+          !fresh_ai  (:,:,:) = 0.0_RKIND
+          !fsalt_ai  (:,:,:) = 0.0_RKIND
+          !fhocn_ai  (:,:,:) = 0.0_RKIND
+          !fswthru_ai(:,:,:) = 0.0_RKIND
 
           ! shortwave
           call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)

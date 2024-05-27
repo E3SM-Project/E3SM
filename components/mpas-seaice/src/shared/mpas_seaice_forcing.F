@@ -1841,17 +1841,10 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
-    type (MPAS_Time_Type) :: currTime
-    character(len=strKIND) :: timeStamp
-    integer :: ierr
     ! get forcing configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     ! create the dust iron solubility forcing group
-
-    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    timeStamp = '0000'//trim(timeStamp(5:))
 
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
