@@ -47,7 +47,8 @@ void MAMWetscav::set_grids(
 
   ncol_ = m_grid->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = m_grid->get_num_vertical_levels();  // Number of levels per column
-  const int nmodes = mam4::AeroConfig::num_modes();
+  const int nmodes = mam4::AeroConfig::num_modes(); // Number of modes
+  constexpr int pcnst = mam4::aero_model::pcnst;
 
    // layout for 3D (2d horiz X 1d vertical) variables at level midpoints/interfaces
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
@@ -59,7 +60,8 @@ void MAMWetscav::set_grids(
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes = m_grid->get_3d_vector_layout(true, nmodes, "nmodes");
 
-  // FieldLayout scalar2d = m_grid->get_2d_scalar_layout
+  // layout for 2D (ncol, pcnst)
+  FieldLayout scalar2d_pconst = m_grid->get_2d_vector_layout(pcnst, "pcnst");
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -293,13 +295,12 @@ void MAMWetscav::set_grids(
   //                     grid_name);  //
   // add_field<Updated>("sh_ccf", scalar3d_mid, n_unit,
   //                     grid_name);  //
-
-  // FIXME: do we need to write aerdepwetis and  aerdepwetcw?
-  // add_field<Computed>("aerdepwetis", scalar3d_mid, n_unit,
-  //                     grid_name);  //
-
-  // add_field<Computed>("aerdepwetcw", scalar3d_mid, n_unit,
-  //                     grid_name);  //
+  // aerosol wet deposition (interstitial)
+  add_field<Computed>("aerdepwetis", scalar2d_pconst, kg/m2/s,
+                      grid_name);  //
+  // aerosol wet deposition (cloud water)
+  add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg/m2/s,
+                      grid_name);  //
 }
 
 // =========================================================================================
@@ -451,14 +452,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
                           dry_aero_);
 
   // wetdep
-  constexpr int pcnst = mam4::aero_model::pcnst;
+
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_ = view_2d("work", ncol_, work_len);
-  // FIXME: do I need to move these variables to FM?
-  // aerosol wet deposition (interstitial) [kg/m2/s]
-  aerdepwetis_ = view_2d("aerdepwetis", ncol_, pcnst);
-  // aerosol wet deposition (cloud water)  [kg/m2/s]
-  aerdepwetcw_ = view_2d("aerdepwetcw", ncol_, pcnst);
 }
 
 // =========================================================================================
@@ -507,12 +503,9 @@ void MAMWetscav::run_impl(const double dt) {
 
   auto prain = get_field_out("prain")
                  .get_view<Real **>(); // ??
-
-  const auto aerdepwetis = aerdepwetis_;//
-  const auto aerdepwetcw = aerdepwetcw_;//
   // outputs
-  // const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
-  // const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
+  const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
+  const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
 
   const auto wet_geometric_mean_diameter_i = get_field_out("dgnumwet").get_view<Real ***>();
   const auto dry_geometric_mean_diameter_i = get_field_out("dgncur_a").get_view<Real ***>();

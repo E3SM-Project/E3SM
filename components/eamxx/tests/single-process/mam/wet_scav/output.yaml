@@ -5,10 +5,10 @@ Averaging Type: Instant
 Fields:
   Physics:
     Field Names:
-      - T_mid
-
+      - aerdepwetis
+      - aerdepwetcw
 output_control:
-  Frequency: 2 
+  Frequency: 2
   frequency_units: nsteps
   MPI Ranks in Filename: true
 ...
