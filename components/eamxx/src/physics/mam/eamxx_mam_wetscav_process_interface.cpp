@@ -150,7 +150,7 @@ void MAMWetscav::set_grids(
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-
+  // FIXME: we have not added code to update the surface fluxes.
   // -- surface fluxes (input/outpts) for the coupler's cam_out data struture
   // for the land model
   static constexpr auto m2 = m * m;
