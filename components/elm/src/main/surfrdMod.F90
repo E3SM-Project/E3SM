@@ -1703,7 +1703,7 @@ contains
     call ncd_io(ncid=ncid, varname='STDEV_ELEV', flag='read', data=domain%stdev_elev, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-         write(iulog,*) trim(subname),' ERROR: STDEV_ELEV  NOT on fsurdat file'
+         write(iulog,*) trim(subname),' WARNING: STDEV_ELEV  NOT on fsurdat file. Try to use STD_ELEV instead.'
          call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=domain%stdev_elev, &
               dim1name=grlnd, readvar=readvar)
          if (.not. readvar) call endrun( trim(subname)//' ERROR: BOTH STD_ELEV and STDEV_ELEV NOT on fsurdat file' )
