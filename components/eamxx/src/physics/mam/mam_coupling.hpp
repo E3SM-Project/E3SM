@@ -724,6 +724,23 @@ void compute_wet_mixing_ratios(const Team& team,
   });
 }
 
+// Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
+// "packs". Following function copies a 2d view till model levels
+KOKKOS_INLINE_FUNCTION
+void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
+                         const_view_2d &inp_view,             //input view to copy
+                         const int dim,                       //dimension till view should be copied
+                         view_2d &out_view) {                 //output view
+
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [=](int kk) {
+          out_view(icol, kk) = inp_view(icol, kk);
+        });
+      });
+ }
+
 // Because CUDA C++ doesn't allow us to declare and use constants outside of
 // KOKKOS_INLINE_FUNCTIONS, we define this macro that allows us to (re)define
 // these constants where needed within two such functions so we don't define

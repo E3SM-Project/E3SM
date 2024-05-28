@@ -20,6 +20,8 @@ this assumption should not cause any issues.
 FUTURE WORK:
 1. MAM4xx submodule should point to MAM4xx main branch
 2. Link hetrozenous freezing outputs to microphysics
+3. Add postcondition and invariant checks
+4. Add variables in output.yaml files of the standalone tests
 -----------------------------------------------------------------
 */
 
@@ -551,7 +553,8 @@ void MAMAci::run_impl(const double dt) {
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   // FIXME: Temporary assignment of nc
-  Kokkos::deep_copy(nc_inp_to_aci_, wet_atm_.nc);
+  mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs
+                                    nc_inp_to_aci_);                  // output
 
   compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
                      // output
