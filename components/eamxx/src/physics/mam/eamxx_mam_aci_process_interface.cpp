@@ -71,10 +71,10 @@ void MAMAci::set_grids(
 
   using namespace ekat::units;
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  q_unit.set_string("kg/kg");
+  //q_unit.set_string("kg/kg");
 
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-  n_unit.set_string("#/kg");
+  //n_unit.set_string("#/kg");
 
   auto nondim = ekat::units::Units::nondimensional();
 
@@ -116,9 +116,9 @@ void MAMAci::set_grids(
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
   auto m2 = m * m;
-  m2.set_string("m^2");
+  //m2.set_string("m^2");
   auto s2 = s * s;
-  s2.set_string("s^2");
+  //s2.set_string("s^2");
 
   // NOTE: w_variance im microp_aero.F90 in EAM is at "itim_old" dynamics time
   // step. Since, we are using SE dycore, itim_old is 1 which is equivalent to
@@ -240,7 +240,7 @@ void MAMAci::set_grids(
 
   // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
-  n_unit.set_string("1(cm^-3 s^-1)");
+  //n_unit.set_string("1(cm^-3 s^-1)");
   // heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
