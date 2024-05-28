@@ -104,6 +104,10 @@ endif()
 # IO library
 add_subdirectory(io)
 
+if (EAMXX_ENABLE_PYBIND)
+  add_subdirectory(pyshare)
+endif()
+
 if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
