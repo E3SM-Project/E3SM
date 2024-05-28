@@ -33,6 +33,7 @@ initial_conditions:
   eff_radius_qi: 0.0
   sunlit: 1.0
   surf_radiative_T: 288.0
+  pseudo_density: 1.0
 
 # The parameters for I/O control
 Scorpio:
