@@ -140,7 +140,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="theta|pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse">
+    <mach name="pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse">
       <pes compset="any" pesize="any">
         <comment>eam: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -1080,21 +1080,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="theta">
-      <pes compset="any" pesize="any">
-        <comment>RRM grid on 128 Theta nodes</comment>
-        <ntasks>
-          <ntasks_atm>8192</ntasks_atm>
-          <ntasks_lnd>8192</ntasks_lnd>
-          <ntasks_rof>8192</ntasks_rof>
-          <ntasks_ice>8192</ntasks_ice>
-          <ntasks_ocn>8192</ntasks_ocn>
-          <ntasks_glc>8192</ntasks_glc>
-          <ntasks_wav>8192</ntasks_wav>
-          <ntasks_cpl>8192</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
@@ -1223,68 +1208,6 @@
           <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
-      </pes>
-    </mach>
-    <mach name="theta">
-      <pes compset=".*EAM.+ELM.+DOCN.+SGLC.+SWAV.*" pesize="any">
-        <comment>ne120 F-compset on 128 nodes 0.524sypd</comment>
-        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>8192</ntasks_atm>
-          <ntasks_cpl>8192</ntasks_cpl>
-          <ntasks_ice>8192</ntasks_ice>
-          <ntasks_lnd>8192</ntasks_lnd>
-          <ntasks_rof>8192</ntasks_rof>
-          <ntasks_ocn>8192</ntasks_ocn>
-          <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_cpl>2</nthrds_cpl>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-        </nthrds>
-      </pes>
-      <pes compset=".*EAM.+ELM.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
-        <comment>ne120 F-compset on 384 nodes</comment>
-        <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>10800</ntasks_atm>
-          <ntasks_cpl>10800</ntasks_cpl>
-          <ntasks_ice>10800</ntasks_ice>
-          <ntasks_lnd>1472</ntasks_lnd>
-          <ntasks_rof>1472</ntasks_rof>
-          <ntasks_ocn>1472</ntasks_ocn>
-          <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>8</nthrds_atm>
-          <nthrds_cpl>8</nthrds_cpl>
-          <nthrds_ice>8</nthrds_ice>
-          <nthrds_lnd>8</nthrds_lnd>
-          <nthrds_rof>8</nthrds_rof>
-          <nthrds_ocn>8</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_lnd>10816</rootpe_lnd>
-          <rootpe_rof>10816</rootpe_rof>
-          <rootpe_ocn>10816</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-        </rootpe>
       </pes>
     </mach>
   </grid>
