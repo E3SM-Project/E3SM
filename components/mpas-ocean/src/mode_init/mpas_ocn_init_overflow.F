@@ -241,7 +241,6 @@ contains
               do k=1, maxLevelCell(iCell)
                  restingThickness(k, iCell) = layerThickness(k, iCell)
               end do
-
            else if ( trim(config_overflow_layer_type) == 'sigma' ) then
               do k = 1, nVertLevels
                  layerThickness(k, iCell) = bottomDepth(iCell) / nVertLevels
