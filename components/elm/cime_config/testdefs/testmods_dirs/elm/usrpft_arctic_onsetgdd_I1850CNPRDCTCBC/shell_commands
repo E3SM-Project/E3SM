@@ -1,0 +1,16 @@
+./xmlchange LND_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange ATM_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange DATM_MODE=CLM1PT
+./xmlchange DATM_CLMNCEP_YR_START=1980
+./xmlchange DATM_CLMNCEP_YR_END=2015
+./xmlchange ELM_USRDAT_NAME=42_FLUXNETSITES
+./xmlchange NTASKS=6
+echo "
+ taxmode = 'cycle','extend','extend'
+">>user_nl_datm
+# a long run of test for onset_gdd summation ending in arctic,
+# but have to xmlchange the following after ./case.setup called
+# ./xmlchange --file env_test.xml STOP_N=200
+# ./xmlchange --file env_test.xml STOP_OPTION=nyears
