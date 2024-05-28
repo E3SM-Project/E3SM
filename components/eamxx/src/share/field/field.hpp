@@ -248,13 +248,13 @@ public:
                   const int idim, const int index_beg, const int index_end) const;
   Field subfield (const std::string& sf_name, const int idim,
                   const int index_beg, const int index_end) const;
-  Field subfield (const int idim, const int k_beg, const int k_end) const;
+  Field subfield (const int idim, const int index_beg, const int index_end) const;
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
   Field get_component (const int i, const bool dynamic = false);
   // version for slicing across multiple, contiguous indices
-  Field get_components (const int i1, const int i2);
+  Field get_components (const int beg, const int end);
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }

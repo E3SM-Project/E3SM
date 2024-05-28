@@ -30,7 +30,9 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
 
   // Reshape based on the rank, then loop over all entries.
   // NOTE: because views_are_equal() is only used for testing, we generalize by
-  // always calling get_strided_view(), even if it could be contiguous
+  // always calling get_strided_view(), even if it could be contiguous.
+  // This allows us to call this function on any type of field,
+  // including multi-slice subfields
   bool same_locally = true;
   const auto& dims = l1.dims();
   switch (l1.rank()) {
@@ -744,7 +746,9 @@ void print_field_hyperslab (const Field& f,
 
     // NOTE: because print_field_hyperslab() is only used for testing, we
     // generalize by always calling get_strided_view(), even if it could be
-    // contiguous
+    // contiguous.
+    // This allows us to call this function on any type of field,
+    // including multi-slice subfields
     f.sync_to_host();
     const int rank = layout.rank();
     out << "     " << f.name() << orig_layout.to_string() << "\n\n";

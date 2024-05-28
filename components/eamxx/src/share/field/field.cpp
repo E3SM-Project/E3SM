@@ -115,7 +115,9 @@ subfield (const int idim, const int index, const bool dynamic) const {
   return subfield(m_header->get_identifier().name(),idim,index,dynamic);
 }
 
-// slice at index idim, entries \in [index_beg, index_end]
+// slice at index idim, extracting the N = (index_end - index_beg) entries
+// written in math notation: [index_beg, index_end)
+// or equivalently, subF = F(index_beg, ... , index_beg + N)
 Field Field::subfield(const std::string& sf_name,
                       const ekat::units::Units& sf_units, const int idim,
                       const int index_beg, const int index_end) const {
@@ -172,7 +174,7 @@ get_component (const int i, const bool dynamic) {
   return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
-Field Field::get_components(const int i1, const int i2) {
+Field Field::get_components(const int beg, const int end) {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG(layout.is_vector_layout(),
@@ -181,15 +183,15 @@ Field Field::get_components(const int i1, const int i2) {
                        fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
-  EKAT_REQUIRE_MSG(i1 >= 0 && i2 < layout.dim(idim),
+  EKAT_REQUIRE_MSG(beg >= 0 && end < layout.dim(idim),
                    "Error! Component index range out of bounds [0," +
                        std::to_string(layout.dim(idim)) + ").\n");
-  EKAT_REQUIRE_MSG(i1 < i2, "Error! Invalid component indices (i1 >= i2).\n");
+  EKAT_REQUIRE_MSG(beg < end, "Error! Invalid component indices (beg >= end).\n");
 
-  // Add _$i1-$i2 to the field name, to avoid issues if the subfield is stored
+  // Add _$beg-$end to the field name, to avoid issues if the subfield is stored
   // in some structure that requires unique names (e.g., a remapper)
-  return subfield(fname + "_" + std::to_string(i1) + "-" + std::to_string(i2),
-                  idim, i1, i2);
+  return subfield(fname + "_" + std::to_string(beg) + "-" + std::to_string(end),
+                  idim, beg, end);
 }
 
 bool Field::equivalent(const Field& rhs) const

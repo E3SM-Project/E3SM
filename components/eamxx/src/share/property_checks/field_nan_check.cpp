@@ -44,6 +44,8 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
 
   int invalid_idx = -1;
   using max_t = Kokkos::Max<int>;
+  // below, we can't be sure the field we consider has a continuous allocation,
+  // so we use get_strided_view()
   switch (layout.rank()) {
     case 1:
       {
