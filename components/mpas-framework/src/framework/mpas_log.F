@@ -183,7 +183,7 @@ module mpas_log
       ! Set log file to be active or not based on master/nonmaster task and optimized/debug build
       !   * Optimized build: Only master task log is active
       !   * Debug build: All tasks active
-#ifdef MPAS_DEBUG
+#if defined(MPAS_DEBUG)  || defined(MPAS_LOGALL)
       ! in debug mode, all tasks have active logs
       mpas_log_info % outputLog % isActive = .true.
 #else

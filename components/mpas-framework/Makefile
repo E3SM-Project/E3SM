@@ -161,6 +161,7 @@ pgi-nersc:
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
+	"LOGALL = $(LOGALL)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"USE_MAGMA = $(USE_MAGMA)" \
 	"USE_CUBLAS = $(USE_CUBLAS)" \
@@ -503,6 +504,7 @@ cray-cray:
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
+	"LOGALL = $(LOGALL)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
@@ -671,6 +673,12 @@ ifneq "$(MOAB_PATH)" ""
        include $(MOAB_PATH)/lib/moab.make
        LIBS +=  ${MOAB_LIBS_LINK} -lstdc++
 endif
+
+
+ifeq "$(LOGALL)" "true"
+	override CPPFLAGS += -DMPAS_LOGALL
+endif
+
 
 RM = rm -f
 CPP = cpp -P -traditional
