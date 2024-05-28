@@ -1811,7 +1811,7 @@ contains
         lon_180 = lon(g)
          if (lon_180 > pi) lon_180 = lon_180-2._r8*pi    
     
-         if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
+         if (cosz > 0._r8 .and. stdev_elev(g) > 0._r8) then
             local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8
 
             if (local_timeofday >= 86400._r8) then
