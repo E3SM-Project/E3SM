@@ -26,6 +26,19 @@
         <desc>Option to describe the MPASO surface forcing</desc>
   </entry>
 
+  <entry id="MPASO_TIDAL_MIXING">
+        <type>char</type>
+        <valid_values>false,true</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASO_">false</value>
+           <value compset="_MPASO%.*TMIX">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASO prescribed tidal mixing</desc>
+  </entry>
+
   <entry id="MPASO_ICEBERG">
         <type>char</type>
         <valid_values>false,true</valid_values>
