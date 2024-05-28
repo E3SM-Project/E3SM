@@ -2225,7 +2225,7 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-         call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', thickness)
+         call mpas_pool_get_array(hydroPool, 'thickness', thickness)
          
          effectivePressure = rhoi * gravity * thickness - rhoi * gravity * max(0.0_RKIND,  -1.0_RKIND * rhoo/rhoi * bedTopography)
          effectivePressure = max(effectivePressure, 0.0_RKIND) ! This is just to zero out N in the open ocean to avoid confusion
