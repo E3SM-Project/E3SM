@@ -1,0 +1,17 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_42_FLUXNETSITES_simyr1850_c170912.nc'
+!
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c211124.nc'
+! below is a new physioloy file example, from Sulman et al 2021, 
+! by adding a few parameters into default (clm_params_c211124.nc) as following:
+! (1) pft-level controls of Nfixation by individual plant NPP: Nfix_NPP_c1, Nfix_NPP_c2 
+! (2) MR reduction during dormant seasons: dormant_mr_factor, domant_mr_temp
+! (3) pft-level 'lwtop_ann' for live woody tissue turnover: lwtop_pfts 
+! (4) plant rhizomes added as part of roots for all PFTs incl. graminoids: rhizome_long
+! 
+! but, all with default values (i.e. won't change simualtion results from default)
+! NOTE: have to copy this file here to $DIN_LOC_ROOT/lnd/clm2/paramdata/ in your system, if not yet.
+! paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c211124arctic.nc'
+!
+! and also need to turn on a namelist option, but likely non-BFB if it's true
+! onset_gdd_extension = .false.
+
