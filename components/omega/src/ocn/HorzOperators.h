@@ -10,12 +10,13 @@ class DivergenceOnCell {
  public:
    DivergenceOnCell(HorzMesh const *Mesh);
 
-   KOKKOS_FUNCTION Real operator()(int ICell,
-                                   const Array1DReal &VecEdge) const {
+   KOKKOS_FUNCTION Real operator()(int ICell, int K,
+                                   const Array2DReal &VecEdge) const {
       Real DivCell = 0;
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge = EdgesOnCell(ICell, J);
-         DivCell -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) * VecEdge(JEdge);
+         DivCell -=
+             DvEdge(JEdge) * EdgeSignOnCell(ICell, J) * VecEdge(JEdge, K);
       }
       const Real InvAreaCell = 1. / AreaCell(ICell);
       DivCell *= InvAreaCell;
@@ -34,13 +35,13 @@ class GradientOnEdge {
  public:
    GradientOnEdge(HorzMesh const *Mesh);
 
-   KOKKOS_FUNCTION Real operator()(int IEdge,
-                                   const Array1DReal &ScalarCell) const {
+   KOKKOS_FUNCTION Real operator()(int IEdge, int K,
+                                   const Array2DReal &ScalarCell) const {
       const auto JCell0    = CellsOnEdge(IEdge, 0);
       const auto JCell1    = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1. / DcEdge(IEdge);
       const Real GradEdge =
-          InvDcEdge * (ScalarCell(JCell1) - ScalarCell(JCell0));
+          InvDcEdge * (ScalarCell(JCell1, K) - ScalarCell(JCell0, K));
       return GradEdge;
    }
 
@@ -53,13 +54,13 @@ class CurlOnVertex {
  public:
    CurlOnVertex(HorzMesh const *Mesh);
 
-   KOKKOS_FUNCTION Real operator()(int IVertex,
-                                   const Array1DReal &VecEdge) const {
+   KOKKOS_FUNCTION Real operator()(int IVertex, int K,
+                                   const Array2DReal &VecEdge) const {
       Real CurlVertex = 0;
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
          CurlVertex +=
-             DcEdge(JEdge) * EdgeSignOnVertex(IVertex, J) * VecEdge(JEdge);
+             DcEdge(JEdge) * EdgeSignOnVertex(IVertex, J) * VecEdge(JEdge, K);
       }
       const Real InvAreaTriangle = 1. / AreaTriangle(IVertex);
       CurlVertex *= InvAreaTriangle;
@@ -78,12 +79,12 @@ class TangentialReconOnEdge {
  public:
    TangentialReconOnEdge(HorzMesh const *Mesh);
 
-   KOKKOS_FUNCTION Real operator()(int IEdge,
-                                   const Array1DReal &VecEdge) const {
+   KOKKOS_FUNCTION Real operator()(int IEdge, int K,
+                                   const Array2DReal &VecEdge) const {
       Real ReconEdge = 0;
       for (int J = 0; J < NEdgesOnEdge(IEdge); ++J) {
          const int JEdge = EdgesOnEdge(IEdge, J);
-         ReconEdge += WeightsOnEdge(IEdge, J) * VecEdge(JEdge);
+         ReconEdge += WeightsOnEdge(IEdge, J) * VecEdge(JEdge, K);
       }
       return ReconEdge;
    }
