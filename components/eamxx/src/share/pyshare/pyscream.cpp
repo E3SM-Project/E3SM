@@ -62,6 +62,10 @@ struct PyField {
   void print() const {
     print_field_hyperslab(f);
   }
+
+  void cleanup () {
+    f = Field();
+  }
 };
 
 PYBIND11_MODULE (pyscream,m) {
@@ -71,21 +75,12 @@ PYBIND11_MODULE (pyscream,m) {
   m.def("init",&initialize);
   m.def("finalize",&finalize);
 
-  py::enum_<scream::FieldTag>(m,"Tag")
-    .value("INV" ,INV)
-    .value("EL"  ,EL)
-    .value("COL" ,COL)
-    .value("GP"  ,GP)
-    .value("TL"  ,TL)
-    .value("LEV" ,LEV)
-    .value("ILEV",ILEV)
-    .value("CMP" ,CMP);
-
   py::class_<PyField>(m,"Field")
     .def(py::init<const std::string&,
                   const std::vector<int>&>())
     .def(py::init<const std::string&,
                   py::array_t<double>
                  >())
-    .def("print",&PyField::print);
+    .def("print",&PyField::print)
+    .def("cleanup",&PyField::cleanup);
 }
