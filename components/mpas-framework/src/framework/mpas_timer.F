@@ -373,7 +373,7 @@
           character(len=StrKIND) :: msg
 
 #ifdef MPAS_GPTL_TIMERS
-#ifdef MPAS_DEBUG
+#if defined(MPAS_DEBUG) || defined(MPAS_LOGALL)
           iErr = gptlpr(timer_root % dminfo % my_proc_id)
 #else
           if ( timer_root % dminfo % my_proc_id == 0 ) then
@@ -412,6 +412,7 @@
                 current_timer % min_time(1) = minval(current_timer % min_time(:))
                 current_timer % avg_time(1) = sum(current_timer % avg_time(:)) / numThreads
 
+#ifndef MPAS_LOGALL
                 ! Synchronize timers across procs
                 call mpas_dmpar_sum_real(timer_root  % dminfo, global_ave_total, global_time)
                 global_ave_total = global_time / timer_root % dminfo % nprocs
@@ -424,6 +425,7 @@
                 current_timer % min_time(1) = global_time
                 call mpas_dmpar_sum_real(timer_root % dminfo, current_timer % avg_time(1), global_time)
                 current_timer % avg_time(1) = global_time / timer_root % dminfo % nprocs
+#endif
 
                 ! Compute percent of run time
                 if ( timer_root % root_timer % total_time(1) /= 0.0_RKIND ) then
