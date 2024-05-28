@@ -1606,6 +1606,30 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_land_ice_flux_tidal_Jourdain_alpha" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+alpha from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, alpha = 0.777 when TMIX compset on
+
+Valid values: Any non-negative real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_flux_tidal_Jourdain_A0" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+A0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, A0 = 0.656 when TMIX compset on
+
+Valid values: Any non-negative real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_flux_tidal_Jourdain_U0" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+U0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, U0 = 0.003 m/s when TMIX compset on
+
+Valid values: Any non-negative real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
