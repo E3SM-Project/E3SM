@@ -1756,7 +1756,7 @@
 			icepack_name="kcatbound"
 		/>
 	</nml_record>
-	
+
 	<nml_record name="floesize" in_defaults="true">
 		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
 			description="Floe shape constant (noncircularity)."
@@ -2563,13 +2563,13 @@
 		     type="real"
 		     dimensions="nEdges"
 		     units="m"
-		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge"
 		     type="real"
 		     dimensions="nEdges"
 		     units="m"
-		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="areaCell"
 		     type="real"

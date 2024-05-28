@@ -965,12 +965,8 @@
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_sea_ice_reference_salinity" type="real" default_value="4.0" units="1.e-3"
-					description="assumed salinity of frazil ice in the open ocean."
+					description="assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0."
 					possible_values="Any positive real number."
-		/>
-		<nml_option name="config_frazil_land_ice_reference_salinity" type="real" default_value="0.0" units="1.e-3"
-					description="assumed salinity of frazil ice under land ice."
-					possible_values="Any non-negative real number."
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"
@@ -2505,10 +2501,10 @@
 			 description="Reconstruction weights associated with each of the edgesOnEdge, used to reconstruct the tangentialVelocity from normalVelocities on neighboring edges."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between verticesOnEdge."
+			 description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between cellsOnEdge."
+			 description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 			 description="Angle the edge normal makes with local eastward direction."
