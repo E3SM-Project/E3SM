@@ -1378,12 +1378,50 @@ T get_attribute (const std::string& filename,
   if (varname=="GLOBAL") {
     varid = PIO_GLOBAL;
   } else {
-    varid = impl::get_var(filename,varname,"scorpio::set_any_attribute").ncid;
+    varid = impl::get_var(filename,varname,"scorpio::get_attribute").ncid;
   }
 
+  // If the attribute type does not match T, we need a temporary, since we can't pass T* where pio expects
+  // a different type of pointer
+  int att_type, err;
+  err = PIOc_inq_atttype(pf.file->ncid,varid,attname.c_str(),&att_type);
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_atttype");
+
   T val;
-  int err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
+  if (att_type!=nctype(get_dtype<T>())) {
+
+    if (att_type==PIO_INT) {
+      int tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_INT64) {
+      std::int64_t tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_FLOAT) {
+      float tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_DOUBLE) {
+      double tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else {
+      EKAT_ERROR_MSG (
+          "Unrecognized/unsupported att type\n"
+          " - filename: " + filename + "\n"
+          " - varname : " + varname  + "\n"
+          " - attname : " + attname  + "\n"
+          " - attype  : " + std::to_string(att_type) + "\n");
+    }
+  } else {
+    err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
+    check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+  }
 
   return val;
 }
@@ -1421,12 +1459,12 @@ std::string get_attribute (const std::string& filename,
   int err;
   PIO_Offset len;
   err = PIOc_inq_attlen(pf.file->ncid,varid,attname.c_str(),&len);
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","inq_attlen");
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_attlen");
 
   std::string val(len,'\0');
 
   err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),val.data());
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","put_att");
 
   return val;
 }

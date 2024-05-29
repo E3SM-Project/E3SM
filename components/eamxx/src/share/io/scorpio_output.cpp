@@ -955,9 +955,6 @@ register_variables(const std::string& filename,
     auto vec_of_dims   = set_vec_of_dims(layout);
     std::string units = fid.get_units().to_string();
 
-    // Gather longname
-    auto longname = m_longnames.get_longname(name);
-
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
@@ -990,8 +987,6 @@ register_variables(const std::string& filename,
     } else {
       scorpio::define_var (filename, name, units, vec_of_dims,
                             "real",fp_precision, m_add_time_dim);
-
-      scorpio::set_attribute(filename, name, "long_name", longname);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
@@ -1032,6 +1027,12 @@ register_variables(const std::string& filename,
       const auto& str_atts = field.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
         scorpio::set_attribute(filename,name,att_name,att_val);
+      }
+
+      // Gather longname (if not already in the io: string attributes)
+      if (str_atts.count("long_name")==0) {
+        auto longname = m_longnames.get_longname(name);
+        scorpio::set_attribute(filename, name, "long_name", longname);
       }
     }
   }
@@ -1315,25 +1316,25 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
       if (units.find("_above_") != std::string::npos) {
         // The field is at a height above a specific reference.
         // Currently we only support FieldAtHeight above "sealevel" or "surface"
-	auto subtokens = ekat::split(units,"_above_");
-	params.set("surface_reference",subtokens[1]);
-	units = subtokens[0];
-	// Need to reset the vertical location to strip the "_above_" part of the string.
-        params.set("vertical_location", tokens[1].substr(0,units_start)+subtokens[0]);
-	// If the slice is "above_sealevel" then we need to track the avg cnt uniquely.
-	// Note, "above_surface" is expected to never have masking and can thus use
-	// the typical 2d layout avg cnt.
-	if (subtokens[1]=="sealevel") {
-          diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
-          // If we have 2D slices we need to be tracking the average count,
-          // if m_avg_type is not Instant
-          m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-	}
+        auto subtokens = ekat::split(units,"_above_");
+        params.set("surface_reference",subtokens[1]);
+        units = subtokens[0];
+        // Need to reset the vertical location to strip the "_above_" part of the string.
+              params.set("vertical_location", tokens[1].substr(0,units_start)+subtokens[0]);
+        // If the slice is "above_sealevel" then we need to track the avg cnt uniquely.
+        // Note, "above_surface" is expected to never have masking and can thus use
+        // the typical 2d layout avg cnt.
+        if (subtokens[1]=="sealevel") {
+                diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
+                // If we have 2D slices we need to be tracking the average count,
+                // if m_avg_type is not Instant
+                m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+        }
       }
       if (units=="m") {
         diag_name = "FieldAtHeight";
-	EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + " is missing a surface reference."
-			"  Please add either '_above_sealevel' or '_above_surface' to the field name");
+        EKAT_REQUIRE_MSG(params.isParameter("surface_reference"),"Error! Output field request for " + diag_field_name + " is missing a surface reference."
+            "  Please add either '_above_sealevel' or '_above_surface' to the field name");
       } else if (units=="mb" or units=="Pa" or units=="hPa") {
         diag_name = "FieldAtPressureLevel";
         diag_avg_cnt_name = "_" + tokens[1]; // Set avg_cnt tracking for this specific slice
@@ -1390,9 +1391,10 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   }
 
   // These fields are special case of VerticalLayer diagnostic.
-  // The diagnostics requires the names be given as param value.
-  if (diag_name == "z_int" or diag_name == "geopotential_int" or
-      diag_name == "z_mid" or diag_name == "geopotential_mid" or
+  // The diagnostics requires the name to be given as param value.
+  if (diag_name == "z_int"            or diag_name == "z_mid"            or
+      diag_name == "geopotential_int" or diag_name == "geopotential_mid" or
+      diag_name == "height_int"       or diag_name == "height_mid"     or
       diag_name == "dz") {
     params.set<std::string>("diag_name", diag_name);
   }
@@ -1401,7 +1403,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
 
-  // Add empty entry for this map, so .at(..) always works
+  // Ensure there's an entry in the map for this diag, so .at(diag_name) always works
   auto& deps = m_diag_depends_on_diags[diag->name()];
 
   // Initialize the diagnostic

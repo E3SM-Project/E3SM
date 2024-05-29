@@ -36,9 +36,11 @@ inline void register_diagnostics () {
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
   diag_factory.register_product("z_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
-  diag_factory.register_product("geopotential_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("z_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("geopotential_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("geopotential_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("height_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("height_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("dz",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
   diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
