@@ -2,9 +2,9 @@ hist_mfilt        = 365
 hist_nhtfrq       = -24
 hist_empty_htapes = .false.
 fates_spitfire_mode = 1
-fates_history_dimlevel = 2,2
+fates_history_dimlevel(1) = 2
+fates_history_dimlevel(2) = 2
 use_fates_tree_damage = .true.
-hist_ndens = 1
 hist_fincl1       = 'FATES_TLONGTERM',
 'FATES_TGROWTH','FATES_SEEDS_IN_GRIDCELL_PF','FATES_SEEDS_OUT_GRIDCELL_PF','FATES_NCL_AP',
 'FATES_NPATCH_AP','FATES_VEGC_AP','FATES_SECONDAREA_ANTHRODIST_AP','FATES_SECONDAREA_DIST_AP',
