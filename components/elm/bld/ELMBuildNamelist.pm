@@ -3317,6 +3317,10 @@ sub setup_logic_fates {
           if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
                 fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
           }
+          # hydro isn't currently supported to work when FATES SP mode is active
+          if (&value_is_true( $nl->get_value('use_fates_planthydro') )) {
+                fatal_error('fates sp mode is currently not supported to work with fates hydro');
+          }
        }
     }
     # check that fates landuse change mode has the necessary luh2 landuse timeseries data
