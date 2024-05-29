@@ -1,4 +1,4 @@
-set (pybind11_DIR /home/lbertag/.conda/envs/bartgol/lib/python3.12/site-packages)
+set (pybind11_DIR ${SCREAM_BASE_DIR}/../../externals/pybind11)
 find_package(pybind11 REQUIRED
   HINTS ${pybind11_DIR})
 

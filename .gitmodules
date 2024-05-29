@@ -83,3 +83,6 @@
 	path = externals/mam4xx
 	url = git@github.com:eagles-project/mam4xx.git
 
+[submodule "externals/pybind11"]
+	path = externals/pybind11
+	url = git@github.com:pybind/pybind11.git
