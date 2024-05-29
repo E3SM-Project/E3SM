@@ -17,14 +17,18 @@ Operators are constructed from an instance of the `HorzMesh` class, for example
 which sets up the previously mentioned internal state.
 
 Each Omega operator provides a C++ call operator, which computes its value on a
-mesh element given the element index and operator-specific input arrays.
-Typically, operators are created outside of a parallel region and are used
-inside a parallel loop over mesh elements, for example
+vertical chunk of mesh elements given the element index, the chunk index,
+and operator-specific input arrays. The first argument to an operator is
+an array that gets updated with the computed values. Typically, operators are
+created outside of a parallel region and are used inside a parallel loop
+over mesh elements, for example
 ```c++
     auto mesh = OMEGA::HorzMesh::getDefault();
     DivergenceOnCell DivOnCell(mesh);
-    parallelFor({mesh->NCellsOwned}, KOKKOS_LAMBDA(Int ICell) {
-        Real Div = DivOnCell(ICell, Vec); // computes divergence of Vec over cell with index ICell
+    parallelFor({mesh->NCellsOwned, NVertLevels / VecLength}, KOKKOS_LAMBDA(int ICell, int KChunk) {
+        // computes divergence of Vec for cells with indices (ICell, KChunk:KChunk+VecLength-1)
+        // stores the result in DivVec
+        DivOnCell(DivVec, ICell, KChunk, Vec);
     });
 ```
 
