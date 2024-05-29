@@ -26,7 +26,8 @@ EXECUTE_PROCESS(COMMAND nc-config --prefix
 SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
 
 
-SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
+#SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
+SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
 
 # TPL settings
 set(HDF5_DIR $ENV{HDF5_ROOT} CACHE FILEPATH "")
@@ -36,11 +37,11 @@ set(CURL_LIBRARY -L$ENV{CURL_ROOT}/lib -lcurl CACHE LIST "")
 
 # Flag tweaks
 set(CMAKE_C_FLAGS "-w" CACHE STRING "")
-set(ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas --fmad=false -O0" CACHE STRING "")
-set(ADD_Fortran_FLAGS " -ffp-contract=off -O0" CACHE STRING "")
-set(CMAKE_EXE_LINKER_FLAGS "-ldl" CACHE STRING "")
+set(ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
+set(ADD_Fortran_FLAGS " -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS "-ldl -lopenblas" CACHE STRING "")
 set(OPT_FLAGS "-O0" CACHE STRING "")
-set(DEBUG_FLAGS "-ffp-contract=off -g"CACHE STRING "")
+set(DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
 set(HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")
@@ -55,11 +56,11 @@ set(ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 set(HOMMEXX_EXEC_SPACE "CUDA" CACHE STRING "")
 set(HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")
 
-SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
+#SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
-#sET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
+SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 
-set(HOMMEXX_BFB_TESTING TRUE CACHE STRING ON)
+SET (CPRNC_DIR /projects/ccsm/acme/tools/cprnc CACHE FILEPATH "")
 
 # Kokkos settings
 set(ENABLE_OPENMP FALSE CACHE BOOL "")
@@ -73,6 +74,7 @@ set(Kokkos_ENABLE_EXPLICIT_INSTANTIATION FALSE CACHE BOOL "")
 
 # Compilers
 set(CMAKE_C_COMPILER mpicc CACHE STRING "")
+#set(CMAKE_CXX_COMPILER mpicxx CACHE STRING "")
 set(CMAKE_Fortran_COMPILER mpif90 CACHE STRING "")
 ######## CHANGE THAT
-set(CMAKE_CXX_COMPILER "/home/onguba/acme-master/externals/kokkos/bin/nvcc_wrapper" CACHE STRING "")
+set(CMAKE_CXX_COMPILER "/home/onguba/acme-master/externals/ekat/extern/kokkos/bin/nvcc_wrapper" CACHE STRING "")
