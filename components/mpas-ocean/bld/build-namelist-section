@@ -245,7 +245,7 @@ add_default($nl, 'config_enable_shortwave_energy_fixer');
 ###########################################
 
 add_default($nl, 'config_use_self_attraction_loading');
-add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_self_attraction_loading_depth_cutoff');
 add_default($nl, 'config_mpas_to_grid_weights_file');
 add_default($nl, 'config_grid_to_mpas_weights_file');
 add_default($nl, 'config_self_attraction_loading_compute_interval');
@@ -286,7 +286,6 @@ add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
 add_default($nl, 'config_frazil_sea_ice_reference_salinity');
-add_default($nl, 'config_frazil_land_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
@@ -337,8 +336,11 @@ add_default($nl, 'config_loglaw_bottom_drag_min');
 add_default($nl, 'config_loglaw_bottom_drag_max');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
+add_default($nl, 'config_topographic_wave_drag_scheme');
 add_default($nl, 'config_topographic_wave_drag_coeff');
 add_default($nl, 'config_thickness_drag_type');
+add_default($nl, 'config_topographic_wave_drag_cutoff_depth');
+add_default($nl, 'config_topographic_wave_drag_cutoff_width');
 
 ####################################
 # Namelist group: Rayleigh_damping #
