@@ -14,6 +14,8 @@
 
 using namespace OMEGA;
 
+static_assert(VecLength == 1, "HorzOperatorsTest needs vector length to be 1");
+
 // analytical expressions for scalar and vector fields used as input for
 // operator tests together with exact values of operators for computing errors
 // and expected error values
@@ -194,7 +196,7 @@ int testDivergence(Real RTol) {
    DivergenceOnCell DivergenceCell(Mesh);
    parallelFor(
        {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int K) {
-          NumDivCell(ICell, K) = DivergenceCell(ICell, K, VecEdge);
+          DivergenceCell(NumDivCell, ICell, K, VecEdge);
        });
 
    // Compute error measures
@@ -249,7 +251,7 @@ int testGradient(Real RTol) {
    Array2DReal NumGradEdge("NumGradEdge", Mesh->NEdgesOwned, NVertLevels);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
-          NumGradEdge(IEdge, K) = GradientEdge(IEdge, K, ScalarCell);
+          GradientEdge(NumGradEdge, IEdge, K, ScalarCell);
        });
 
    // Compute error measures
@@ -303,7 +305,7 @@ int testCurl(Real RTol) {
    CurlOnVertex CurlVertex(Mesh);
    parallelFor(
        {Mesh->NVerticesOwned, NVertLevels}, KOKKOS_LAMBDA(int IVertex, int K) {
-          NumCurlVertex(IVertex, K) = CurlVertex(IVertex, K, VecEdge);
+          CurlVertex(NumCurlVertex, IVertex, K, VecEdge);
        });
 
    // Compute error measures
@@ -361,7 +363,7 @@ int testRecon(Real RTol) {
    TangentialReconOnEdge TanReconEdge(Mesh);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
-          NumReconEdge(IEdge, K) = TanReconEdge(IEdge, K, VecEdge);
+          TanReconEdge(NumReconEdge, IEdge, K, VecEdge);
        });
 
    // Compute error measures
