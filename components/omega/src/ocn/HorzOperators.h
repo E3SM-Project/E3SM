@@ -16,18 +16,20 @@ class DivergenceOnCell {
       const int KStart       = KChunk * VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K       = KStart + KVec;
-         DivCell(ICell, K) = 0;
-      }
+      Real DivCellTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const int JEdge = EdgesOnCell(ICell, J);
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
-            DivCell(ICell, K) -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
-                                 VecEdge(JEdge, K) * InvAreaCell;
+            DivCellTmp[KVec] -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
+                                VecEdge(JEdge, K) * InvAreaCell;
          }
+      }
+
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const int K       = KStart + KVec;
+         DivCell(ICell, K) = DivCellTmp[KVec];
       }
    }
 
@@ -73,19 +75,21 @@ class CurlOnVertex {
       const int KStart           = KChunk * VecLength;
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K            = KStart + KVec;
-         CurlVertex(IVertex, K) = 0;
-      }
+      Real CurlVertexTmp[VecLength] = {0};
 
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
-            CurlVertex(IVertex, K) += DcEdge(JEdge) *
-                                      EdgeSignOnVertex(IVertex, J) *
-                                      VecEdge(JEdge, K) * InvAreaTriangle;
+            CurlVertexTmp[KVec] += DcEdge(JEdge) *
+                                   EdgeSignOnVertex(IVertex, J) *
+                                   VecEdge(JEdge, K) * InvAreaTriangle;
          }
+      }
+
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const int K            = KStart + KVec;
+         CurlVertex(IVertex, K) = CurlVertexTmp[KVec];
       }
    }
 
@@ -106,17 +110,19 @@ class TangentialReconOnEdge {
                                    const Array2DReal &VecEdge) const {
       const int KStart = KChunk * VecLength;
 
-      for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K         = KStart + KVec;
-         ReconEdge(IEdge, K) = 0;
-      }
+      Real ReconEdgeTmp[VecLength] = {0};
 
       for (int J = 0; J < NEdgesOnEdge(IEdge); ++J) {
          const int JEdge = EdgesOnEdge(IEdge, J);
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
-            ReconEdge(IEdge, K) += WeightsOnEdge(IEdge, J) * VecEdge(JEdge, K);
+            ReconEdgeTmp[KVec] += WeightsOnEdge(IEdge, J) * VecEdge(JEdge, K);
          }
+      }
+
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const int K         = KStart + KVec;
+         ReconEdge(IEdge, K) = ReconEdgeTmp[KVec];
       }
    }
 
