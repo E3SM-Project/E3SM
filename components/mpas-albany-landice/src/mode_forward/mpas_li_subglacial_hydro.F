@@ -845,6 +845,7 @@ module li_subglacial_hydro
       integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
+      real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
       integer :: err_tmp
       
       err = 0
@@ -1078,6 +1079,10 @@ module li_subglacial_hydro
             endif
          enddo
       endif
+
+      where (effectiveConducEdge < SMALL_CONDUC)
+              effectiveConducEdge = 0.0_RKIND
+      end where
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
@@ -2220,7 +2225,7 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-         call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', thickness)
+         call mpas_pool_get_array(hydroPool, 'thickness', thickness)
          
          effectivePressure = rhoi * gravity * thickness - rhoi * gravity * max(0.0_RKIND,  -1.0_RKIND * rhoo/rhoi * bedTopography)
          effectivePressure = max(effectivePressure, 0.0_RKIND) ! This is just to zero out N in the open ocean to avoid confusion
