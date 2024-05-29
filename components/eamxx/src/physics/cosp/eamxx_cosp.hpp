@@ -20,10 +20,9 @@ class Cosp : public AtmosphereProcess
 {
 
 public:
-  //using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<HostDevice>;
-  using KT            = KokkosTypes<DefaultDevice>;
-  using KTH           = KokkosTypes<HostDevice>;
+  using PF  = scream::PhysicsFunctions<HostDevice>;
+  using KT  = KokkosTypes<DefaultDevice>;
+  using KTH = KokkosTypes<HostDevice>;
 
   // Constructors
   Cosp (const ekat::Comm& comm, const ekat::ParameterList& params);

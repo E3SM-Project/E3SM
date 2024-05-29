@@ -91,8 +91,8 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Computed>("isccp_cldtot", scalar2d, percent, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("modis_ctptau", scalar4d_ctptau, percent, grid_name, 1);
-  add_field<Computed>("misr_cthtau" , scalar4d_cthtau, percent, grid_name, 1);
-  add_field<Computed>("cosp_sunlit"  , scalar2d, nondim, grid_name);
+  add_field<Computed>("misr_cthtau", scalar4d_cthtau, percent, grid_name, 1);
+  add_field<Computed>("cosp_sunlit", scalar2d, nondim, grid_name);
 }
 
 // =========================================================================================
@@ -174,7 +174,7 @@ void Cosp::run_impl (const double dt)
   auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*, Host>();
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
   auto modis_ctptau = get_field_out("modis_ctptau").get_view<Real***, Host>();
-  auto misr_cthtau  = get_field_out("misr_cthtau" ).get_view<Real***, Host>();
+  auto misr_cthtau  = get_field_out("misr_cthtau").get_view<Real***, Host>();
   auto cosp_sunlit  = get_field_out("cosp_sunlit").get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
 
   // Compute heights
@@ -244,14 +244,14 @@ void Cosp::run_impl (const double dt)
     Kokkos::deep_copy(isccp_cldtot, 0.0);
     Kokkos::deep_copy(isccp_ctptau, 0.0);
     Kokkos::deep_copy(modis_ctptau, 0.0);
-    Kokkos::deep_copy(misr_cthtau , 0.0);
-    Kokkos::deep_copy(cosp_sunlit  , 0.0);
+    Kokkos::deep_copy(misr_cthtau, 0.0);
+    Kokkos::deep_copy(cosp_sunlit, 0.0);
   }
   get_field_out("isccp_cldtot").sync_to_dev();
   get_field_out("isccp_ctptau").sync_to_dev();
   get_field_out("modis_ctptau").sync_to_dev();
-  get_field_out("misr_cthtau" ).sync_to_dev();
-  get_field_out("cosp_sunlit"  ).sync_to_dev();
+  get_field_out("misr_cthtau").sync_to_dev();
+  get_field_out("cosp_sunlit").sync_to_dev();
 }
 
 // =========================================================================================
