@@ -48,6 +48,7 @@ PYBIND11_MODULE (pyscream,m) {
 
   // Field class
   py::class_<PyField>(m,"Field")
+    .def(py::init<>())
     .def(py::init<const std::string&,
                   const std::vector<int>&>())
     .def(py::init<const std::string&,
@@ -56,10 +57,23 @@ PYBIND11_MODULE (pyscream,m) {
     .def("print",&PyField::print)
     .def("cleanup",&PyField::cleanup);
 
-  // PointGrid
-  py::class_<PyPointGrid>(m,"PointGrid")
+  // Grid
+  py::class_<PyGrid>(m,"Grid")
+    .def(py::init<>())
+    .def("scalar2d",py::overload_cast<const std::string&,const PyUnits&>(&PyGrid::scalar2d))
+    .def("scalar2d",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar2d))
+    .def("vector2d",py::overload_cast<const std::string&,const PyUnits&,int>(&PyGrid::vector2d))
+    .def("vector2d",py::overload_cast<const std::string&,const PyUnits&,int,py::array_t<double>>(&PyGrid::vector2d))
+    .def("scalar3d_mid",py::overload_cast<const std::string&,const PyUnits&>(&PyGrid::scalar3d_mid))
+    .def("scalar3d_mid",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar3d_mid))
+    .def("scalar3d_int",py::overload_cast<const std::string&,const PyUnits&>(&PyGrid::scalar3d_int))
+    .def("scalar3d_int",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar3d_int));
+
+  // GridsManager
+  py::class_<PyGridsManager>(m,"GridsManager")
     .def(py::init<const std::string&,int,int>())
-    .def("cleanup",&PyPointGrid::cleanup);
+    .def("get_grid",&PyGridsManager::get_grid)
+    .def("cleanup",&PyGridsManager::cleanup);
 }
 
 } // namespace scream
