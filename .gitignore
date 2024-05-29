@@ -9,6 +9,9 @@
 *.la
 *.a
 
+# Shared libraries
+*.so
+
 # Executables
 *.exe
 
@@ -34,3 +37,8 @@ site
 components/eamxx/site/*
 # Ignore auto-generated eamxx_params.md file
 components/eamxx/docs/common/eamxx_params.md
+
+# Python packaging
+*.egg-info
+*components/eamxx/src/python/build
+*components/eamxx/src/python/dist
