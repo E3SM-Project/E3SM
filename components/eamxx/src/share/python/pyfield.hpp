@@ -16,81 +16,42 @@ struct PyField {
   // Create empty field
   PyField () = default;
 
-  PyField(const FieldIdentifier& fid)
-  {
-    create(fid);
-  }
-
-  // Create field and allocate memory
-  PyField(const std::string& n,
-          const std::vector<int>& d)
-  {
-    std::vector<FieldTag> t (d.size(),FieldTag::Component);
-    FieldIdentifier fid(n,FieldLayout(t,d),ekat::units::Units::invalid(),"");
-    create(fid);
-  }
-
-  // Create field from pre-existing python nd array
-  PyField(const std::string& n,
-          pybind11::array_t<double> arr)
-  {
-    int rank = arr.ndim();
-    std::vector<int> d(rank,-1);
-    for (int n=0; n<rank; ++n) {
-      d[n] = arr.shape(n);
-    }
-    std::vector<FieldTag> t (rank,FieldTag::Component);
-    FieldIdentifier fid(n,FieldLayout(t,d),ekat::units::Units::invalid(),"");
-    create(fid,arr);
-  }
-
   PyField(const FieldIdentifier& fid,
-          pybind11::array_t<double> arr)
+          const int pack_size = 1)
   {
-    create(fid,arr);
+    f = Field(fid);
+    f.get_header().get_alloc_properties().request_allocation(pack_size);
+    f.allocate_view();
+  }
+
+  pybind11::array get () const {
+
+    const auto& fh  = f.get_header();
+    const auto& fid = fh.get_identifier();
+
+    // Can this actually happen? For now, no, since we only create fields from identifiers, so each PyField
+    // holds separate memory. However, this may change if we allow subfields.
+    EKAT_REQUIRE_MSG (f.get_header().get_parent().lock()==nullptr,
+        "Error! Cannot get the array for a field that is a subfield of another. Please, get array of parent field.\n"
+        "  - field name : " + fid.name() + "\n"
+        "  - parent name: " + fh.get_parent().lock()->get_identifier().name() + "\n");
+    pybind11::dtype dt;
+
+    switch (fid.data_type()) {
+      case DataType::IntType:     dt = pybind11::dtype::of<int>();    break;
+      case DataType::FloatType:   dt = pybind11::dtype::of<float>();  break;
+      case DataType::DoubleType:  dt = pybind11::dtype::of<double>(); break;
+      default:                    EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
+    }
+
+    pybind11::array::ShapeContainer shape (fid.get_layout().dims());
+    auto data = f.get_internal_view_data_unsafe<void,Host>();
+    // auto data = reinterpret_cast<void*>(f.get_internal_view_data_unsafe<char,Host>());
+    return pybind11::array(dt,shape,data);
   }
 
   void print() const {
     print_field_hyperslab(f);
-  }
-
-  void cleanup () {
-    f = Field();
-  }
-
-private:
-  void create (const FieldIdentifier& fid)
-  {
-    f = Field(fid);
-    f.allocate_view();
-  }
-
-  void create (const FieldIdentifier& fid,
-               pybind11::array_t<double> arr)
-  {
-    int rank = arr.ndim();
-    EKAT_REQUIRE_MSG (rank==fid.get_layout().rank(),
-        "Error! Rank mismatch between input FieldIdentifier and pybind11::array_t.\n"
-        "  - field name: " + fid.name() + "\n"
-        "  - identifier rank: " + std::to_string(fid.get_layout().rank()) + "\n"
-        "  - array_t rank   : " + std::to_string(rank) + "\n");
-    switch (rank) {
-      case 1:
-      {
-        Field::view_dev_t<double*> v(arr.mutable_data(0),arr.shape(0));
-        f = Field(fid,v);
-        break;
-      }
-      case 2:
-      {
-        Field::view_dev_t<double**> v(arr.mutable_data(0,0),arr.shape(0),arr.shape(1));
-        f = Field(fid,v);
-        v(0,0) = -1;
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("AAARGH!\n");
-    }
   }
 };
 
