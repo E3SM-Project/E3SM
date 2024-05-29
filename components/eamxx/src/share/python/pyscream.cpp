@@ -36,9 +36,10 @@ PYBIND11_MODULE (pyscream,m) {
 
   // Atm process
   py::class_<PyAtmProc>(m,"AtmProc")
-    .def(py::init<>())
+    .def(py::init<const PyGrid&>())
     .def("get_arr",&PyAtmProc::get_arr)
-    .def("initialize",&PyAtmProc::initialize);
+    .def("initialize",py::overload_cast<>(&PyAtmProc::initialize))
+    .def("initialize",py::overload_cast<const std::string&>(&PyAtmProc::initialize));
 }
 
 } // namespace scream

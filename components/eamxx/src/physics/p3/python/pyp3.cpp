@@ -10,7 +10,9 @@ namespace scream {
 namespace py = pybind11;
 
 struct PyP3 : public PyAtmProc {
-  PyP3 (const PyGrid& pygrid) {
+  PyP3 (const PyGrid& pygrid)
+   : PyAtmProc(pygrid)
+  {
     ekat::Comm comm(MPI_COMM_WORLD);
     ekat::ParameterList pl;
     pl.set("max_total_ni",10.0);
