@@ -105,7 +105,7 @@ endif()
 add_subdirectory(io)
 
 if (EAMXX_ENABLE_PYBIND)
-  add_subdirectory(pyshare)
+  add_subdirectory(python)
 endif()
 
 if (NOT SCREAM_LIB_ONLY)
