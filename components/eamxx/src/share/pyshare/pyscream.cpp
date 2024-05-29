@@ -1,5 +1,6 @@
 #include "scream_session.hpp"
 #include "pyfield.hpp"
+#include "pygrid.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -33,6 +34,11 @@ PYBIND11_MODULE (pyscream,m) {
                  >())
     .def("print",&PyField::print)
     .def("cleanup",&PyField::cleanup);
+
+  // PointGrid
+  py::class_<PyPointGrid>(m,"PointGrid")
+    .def(py::init<const std::string&,int,int>())
+    .def("cleanup",&PyPointGrid::cleanup);
 }
 
 } // namespace scream
