@@ -1,4 +1,5 @@
 #include "physics/p3/eamxx_p3_process_interface.hpp"
+#include "share/grid/point_grid.hpp"
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 
@@ -11,13 +12,16 @@ namespace py = pybind11;
 struct PyP3 {
   std::shared_ptr<AtmosphereProcess> p3;
 
-  PyP3 (const PyGridsManager& pygm) {
+  PyP3 (const PyGrid& pygrid) {
     ekat::Comm comm(MPI_COMM_WORLD);
     ekat::ParameterList pl;
     pl.set("max_total_ni",10.0);
 
     p3 = create_atmosphere_process<P3Microphysics>(comm,pl);
-    p3->set_grids(pygm.gm);
+
+    // Create a grids manager on the fly
+    auto gm = std::make_shared<SingleGridGM>(pygrid.grid);
+    p3->set_grids(gm);
   }
 
   void set_fields(const std::vector<PyField>& pyfields) {
@@ -47,7 +51,7 @@ PYBIND11_MODULE (pyp3,m) {
   m.doc() = "Python interfaces to P3Microphysics";
 
   py::class_<PyP3>(m,"P3")
-    .def(py::init<const PyGridsManager&>())
+    .def(py::init<const PyGrid&>())
     .def("set_fields",&PyP3::set_fields)
     .def("initialize",&PyP3::initialize)
     .def("cleanup",&PyP3::cleanup);

@@ -1,7 +1,8 @@
 #ifndef PYGRID_HPP
 #define PYGRID_HPP
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "pyunits.hpp"
 #include "pyfield.hpp"
 
@@ -9,8 +10,36 @@
 
 namespace scream {
 
+// Small grids manager class, to hold a pre-built grid
+class SingleGridGM : public GridsManager
+{
+public:
+  SingleGridGM (const std::shared_ptr<AbstractGrid>& grid)
+  {
+    add_grid(grid);
+  }
+
+  std::string name () const override { return "SingleGridGM"; }
+
+  void build_grids () override {}
+
+protected:
+  remapper_ptr_type
+  do_create_remapper (const grid_ptr_type /* from_grid */,
+                      const grid_ptr_type /* to_grid */) const
+  {
+    EKAT_ERROR_MSG ("Error! do_create_remapper not implemented for SingleGridGM.\n");
+  }
+};
+
 struct PyGrid {
-  std::shared_ptr<const AbstractGrid> grid;
+  std::shared_ptr<AbstractGrid> grid;
+
+  PyGrid(const std::string& name, int ncols, int nlevs)
+  {
+    ekat::Comm comm(MPI_COMM_WORLD);
+    grid = create_point_grid(name,ncols,nlevs,comm);
+  }
 
   // 2d scalar, managed/unmanaged
   PyField scalar2d (const std::string& name,
@@ -101,39 +130,6 @@ private:
         EKAT_ERROR_MSG ("AAARGH!\n");
     }
     return pyf;
-  }
-};
-
-struct PyGridsManager {
-  std::shared_ptr<MeshFreeGridsManager> gm;
-  PyGrid grid;
-
-  // Create field and allocate memory
-  PyGridsManager(const std::string& name, int ncols, int nlevs)
-  {
-    ekat::ParameterList gm_pl;
-    auto& pg_pl = gm_pl.sublist(name);
-    pg_pl.set("type",std::string("point_grid"));
-    pg_pl.set("number_of_global_columns",ncols);
-    pg_pl.set("number_of_vertical_levels",nlevs);
-    pg_pl.set<std::vector<std::string>>("aliases",{"Physics"});
-
-    gm_pl.set("grids_names",std::vector<std::string>{name});
-
-    ekat::Comm comm(MPI_COMM_WORLD);
-    gm = std::make_shared<MeshFreeGridsManager>(comm,gm_pl);
-    gm->build_grids();
-
-    grid.grid = gm->get_grid(name);
-  }
-
-  const PyGrid& get_grid () const {
-    return grid;
-  }
-
-  void cleanup () {
-    gm = nullptr;
-    grid = {};
   }
 };
 

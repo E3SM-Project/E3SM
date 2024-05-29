@@ -59,7 +59,7 @@ PYBIND11_MODULE (pyscream,m) {
 
   // Grid
   py::class_<PyGrid>(m,"Grid")
-    .def(py::init<>())
+    .def(py::init<const std::string&,int,int>())
     .def("scalar2d",py::overload_cast<const std::string&,const PyUnits&>(&PyGrid::scalar2d))
     .def("scalar2d",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar2d))
     .def("vector2d",py::overload_cast<const std::string&,const PyUnits&,int>(&PyGrid::vector2d))
@@ -68,12 +68,6 @@ PYBIND11_MODULE (pyscream,m) {
     .def("scalar3d_mid",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar3d_mid))
     .def("scalar3d_int",py::overload_cast<const std::string&,const PyUnits&>(&PyGrid::scalar3d_int))
     .def("scalar3d_int",py::overload_cast<const std::string&,const PyUnits&,py::array_t<double>>(&PyGrid::scalar3d_int));
-
-  // GridsManager
-  py::class_<PyGridsManager>(m,"GridsManager")
-    .def(py::init<const std::string&,int,int>())
-    .def("get_grid",&PyGridsManager::get_grid)
-    .def("cleanup",&PyGridsManager::cleanup);
 }
 
 } // namespace scream
