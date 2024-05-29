@@ -129,6 +129,10 @@ if (Kokkos_ENABLE_HIP)
 set_source_files_properties(p3_functions_f90.cpp  PROPERTIES COMPILE_FLAGS -O0)
 endif()
 
+if (EAMXX_ENABLE_PYBIND)
+  add_subdirectory (python)
+endif()
+
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
