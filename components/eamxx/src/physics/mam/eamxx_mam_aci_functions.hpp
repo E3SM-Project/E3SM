@@ -547,6 +547,7 @@ void update_cloud_borne_aerosols(
 }
 
 // Update interstitial aerosols using tendencies - levels
+KOKKOS_INLINE_FUNCTION
 void update_interstitial_aerosols_levs(
     const haero::ThreadTeam &team, const int nlev, const int icol,
     const int s_idx, const Real dt,

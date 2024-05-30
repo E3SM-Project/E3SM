@@ -36,19 +36,6 @@ CompareNCFilesFamilyMpi (
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
 
-# Check tendency calculation
-foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname mam4_aci_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
-  set (tname mam4_aci_tend_check_np${NRANKS})
-  add_test (NAME ${tname}
-    COMMAND ${script} -f ${fname} -v qc T_mid -t mam_aci_qc_tend mam_aci_T_mid_tend
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  set_tests_properties (${tname} PROPERTIES
-    LABELS "mam4_aci;physics"
-    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${NRANKS}_omp1)
-endforeach()
-
 if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX

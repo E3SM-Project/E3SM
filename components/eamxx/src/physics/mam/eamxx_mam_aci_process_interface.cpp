@@ -21,7 +21,11 @@ FUTURE WORK:
 1. MAM4xx submodule should point to MAM4xx main branch
 2. Link hetrozenous freezing outputs to microphysics
 3. Add postcondition and invariant checks
-4. Add variables in output.yaml files of the standalone tests
+5. Resolve comments about top_lev
+6. Avoid using c-style static arrays in ptend and other arrays
+7. Use std::string rather than c-strings
+8. Remove a Kokkos:fence and combine two kernels while computing w_sec_int_
+9. Fix double counting of tracer advection by modifying SHOC.
 -----------------------------------------------------------------
 */
 
@@ -145,7 +149,7 @@ void MAMAci::set_grids(
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_layout_mid =
-      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "NMODES", "LEV"});
+      make_layout({ncol_, num_aero_modes, nlev_}, {"ncol", "nmodes", "lev"});
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar4d_layout_mid, m, grid_name);
@@ -564,17 +568,16 @@ void MAMAci::run_impl(const double dt) {
   compute_values_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
                                // output
                                w_sec_int_);
-
+  Kokkos::fence();  // wait for w_sec_int_ to be computed.
   compute_tke_using_w_sec(team_policy, w_sec_int_, nlev_,
                           // output
                           tke_);
 
-  Kokkos::fence();  // wait for for tke_ to be computed.
+  Kokkos::fence();  // wait for tke_ to be computed.
   compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
 
-  Kokkos::fence();  // wait for wsig_ to be computed.
 
   // We need dry diameter for only aitken mode
   compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
@@ -611,6 +614,7 @@ void MAMAci::run_impl(const double dt) {
                                // output
                                kvh_int_);
 
+  Kokkos::fence(); 
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
