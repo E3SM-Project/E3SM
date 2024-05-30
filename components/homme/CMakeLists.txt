@@ -396,11 +396,14 @@ if (HOMME_BUILD_SCORPIO)
     SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
     SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
     ADD_SUBDIRECTORY(utils/externals/scorpio)
+    SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/src/flib")
   else ()
     # The default I/O library used in "Scorpio classic"
     ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
     SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+    SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/pio")
   endif ()
+  INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 endif ()
 
 
