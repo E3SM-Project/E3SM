@@ -14,11 +14,14 @@ struct PyAtmProc {
   std::shared_ptr<AtmosphereProcess> ap;
   PyGrid pygrid;
   std::map<std::string,PyField> fields;
+  util::TimeStamp t0;
+  ATMBufferManager buffer;
 
   PyAtmProc (const PyGrid& pyg)
    : pygrid(pyg)
+   , t0({2000,1,1},{0,0,0})
   {
-    // Nothing to do here
+    // TODO: make t0 configurable?
   }
 
   std::map<std::string,PyField> create_fields () {
@@ -77,40 +80,34 @@ struct PyAtmProc {
   // If running as part of a process group, call the second function, after
   // manually creating/setting the fields
   void initialize () {
-    // Create fields
-    set_fields(create_fields());
-
-    // TODO: should we allow setting this?
-    util::TimeStamp t0({2000,1,1},{0,0,0});
+    int nbytes = ap->requested_buffer_size_in_bytes ();
+    buffer.request_bytes(nbytes);
+    buffer.allocate();
+    ap->init_buffers(buffer);
     ap->initialize(t0,RunType::Initial);
   }
-  void initialize_without_creating_fields() {
-    // TODO: should we allow setting this?
-    util::TimeStamp t0({2000,1,1},{0,0,0});
-    ap->initialize(t0,RunType::Initial);
-  }
-  void initialize (const std::string& ic_filename) {
-    // Create fields
-    set_fields(create_fields());
 
-    // Get input fields, and read them from file
+  void read_ic (const std::string& ic_filename, bool default_init) {
+    // Get input fields, and read them from file (if present).
+    // If field is not in the IC, user is responsible for setting
+    // it to an initial value
     std::vector<Field> ic_fields;
+    scorpio::register_file(ic_filename,scorpio::Read);
     for (auto it : fields) {
-      const auto& f = it.second.f;
+      auto& f = it.second.f;
       if (ap->has_required_field(f.get_header().get_identifier())) {
-        ic_fields.push_back(f);
+        if (scorpio::has_var(ic_filename,f.name())) {
+          ic_fields.push_back(f);
+          f.get_header().get_tracking().update_time_stamp(t0);
+        } else if (default_init) {
+          f.deep_copy(0);
+          f.get_header().get_tracking().update_time_stamp(t0);
+        }
       }
     }
     AtmosphereInput reader (ic_filename,pygrid.grid,ic_fields,true);
     reader.read_variables();
-
-    // TODO: should we allow setting this?
-    util::TimeStamp t0({2000,1,1},{0,0,0});
-    for (auto& f : ic_fields) {
-      f.get_header().get_tracking().update_time_stamp(t0);
-    }
-
-    ap->initialize(t0,RunType::Initial);
+    scorpio::release_file(ic_filename);
   }
 };
 

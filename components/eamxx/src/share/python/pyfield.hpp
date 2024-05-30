@@ -50,6 +50,9 @@ struct PyField {
     return pybind11::array(dt,shape,data);
   }
 
+  void sync_to_host () {
+    f.sync_to_host();
+  }
   void print() const {
     print_field_hyperslab(f);
   }

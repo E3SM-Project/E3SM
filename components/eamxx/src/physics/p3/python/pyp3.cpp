@@ -22,6 +22,8 @@ struct PyP3 : public PyAtmProc {
     // Create a grids manager on the fly
     auto gm = std::make_shared<SingleGridGM>(pygrid.grid);
     ap->set_grids(gm);
+
+    set_fields(create_fields());
   }
 };
 
