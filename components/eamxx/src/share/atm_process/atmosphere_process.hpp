@@ -1,8 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include "control/intensive_observation_period.hpp"
-
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"

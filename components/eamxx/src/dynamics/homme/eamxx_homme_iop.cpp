@@ -1,10 +1,10 @@
 #include "eamxx_homme_process_interface.hpp"
 
 // EAMxx includes
-#include "control/intensive_observation_period.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/util/scream_column_ops.hpp"
 
 // Homme includes
