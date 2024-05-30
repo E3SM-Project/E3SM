@@ -11,6 +11,17 @@ Additionally, the frequency at which COSP is run can be configured via `atmchang
 ./atmchange physics::cosp::cosp_frequency_units="steps"
 ./atmchange physics::cosp::cosp_frequency=1
 ```
+
+COSP can be run with or without subcolumn sampling. This is configured by changing the `cosp_subcolumns` namelist variable via `atmchange`. A value of 1 implies *no* subcolumn sampling, while values greater than 1 specify the number of subcolumns to use for subcolumn sampling (assuming maximum-random overlap). E.g.,
+```
+./atmchange physics::cosp:cosp_subcolumns=1
+```
+would disable subcolumn sampling, while
+```
+./atmchange physics::cosp::cosp_subcolumns=10
+```
+would use 10 subcolumns for the COSP internal subcolumn sampling using `SCOPS`/`PREC_SCOPS`. The default for high resolution cases (e.g., ne1024) should be to *not* use subcolumns, while lower resolutions (e.g., ne30) should enable subcolumn sampling.
+
 Output streams need to be added manually. A minimal example:
 ```
 ./atmchange output_yaml_files=scream_daily_output.yaml
