@@ -285,6 +285,8 @@ void FieldLayout::compute_type () {
     m_type = LayoutType::Vector0D; return;
   } else if (tags.size()==1 and nvlevs==1) {
     m_type = LayoutType::Scalar1D; return;
+  } else if (tags[0]==CMP and tags[1]==CMP) {
+    m_type = LayoutType::Tensor0D; return;
   } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
     m_type = LayoutType::Vector1D; return;
   } else {

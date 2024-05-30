@@ -4,6 +4,7 @@
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "physics/share/scream_trcmix.hpp"
 
+#include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
@@ -200,6 +201,45 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     add_field<Computed>("water_flux", scalar2d, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d, m/s,     grid_name);
     add_field<Computed>("heat_flux",  scalar2d, W/m2,    grid_name);
+  }
+
+  // Load bands bounds from coefficients files and compute the band centerpoint.
+  // Store both in the grid (if not already present)
+  const auto cm = centi*m;
+  for (std::string prefix : {"sw", "lw"} ) {
+    int nbands = prefix == "sw" ? m_nswbands : m_nlwbands;
+
+    if (not m_grid->has_geometry_data(prefix + "band_bounds")) {
+      using namespace ShortFieldTagsNames;
+
+      // NOTE: use append, so we get builtin name for (CMP,2) dim, without hard-coding it here
+      FieldLayout layout({CMP},{nbands},{prefix+"band"});
+      layout.append_dim(CMP,2);
+      Field bounds (FieldIdentifier(prefix + "band_bounds", layout, 1/cm, grid_name));
+      bounds.allocate_view();
+
+      std::string fname = m_params.get<std::string>("rrtmgp_coefficients_file_" + prefix);
+      scorpio::register_file(fname,scorpio::FileMode::Read);
+      scorpio::read_var(fname,"bnd_limits_wavenumber",bounds.get_view<Real**,Host>().data());
+      scorpio::release_file(fname);
+
+      bounds.sync_to_dev();
+      m_grid->set_geometry_data(bounds);
+    }
+
+    // If no bounds were in the grid, the bands centerpoint likely wouldn't either. Still, let's check...
+    if (not m_grid->has_geometry_data(prefix + "bands")) {
+      auto bounds = m_grid->get_geometry_data(prefix + "band_bounds");
+      auto bounds_h = bounds.get_view<const Real**,Host>();
+
+      auto bands = bounds.subfield(1,0).clone(prefix + "band");
+      auto bands_h = bands.get_view<Real*,Host>();
+      for (int i=0; i<nbands; ++i) {
+        bands_h(i) = (bounds_h(i,0) + bounds_h(i,1)) / 2;
+      }
+      bands.sync_to_dev();
+      m_grid->set_geometry_data(bands);
+    }
   }
 }  // RRTMGPRadiation::set_grids
 

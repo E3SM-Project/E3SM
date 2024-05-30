@@ -74,6 +74,17 @@ get_vertical_layout (const bool midpoints) const
   return FieldLayout({t},{d}).rename_dims(m_special_tag_names);
 }
 
+FieldLayout AbstractGrid::
+get_vertical_layout (const bool midpoints,
+                     const int vector_dim,
+                     const std::string& vec_dim_name) const
+{
+  using namespace ShortFieldTagsNames;
+  auto l = get_vertical_layout(midpoints);
+  l.append_dim(CMP,vector_dim,vec_dim_name);
+  return l;
+}
+
 FieldLayout
 AbstractGrid::get_2d_vector_layout (const int vector_dim) const
 {
@@ -180,6 +191,7 @@ is_valid_layout (const FieldLayout& layout) const
   switch (layout.type()) {
     case LayoutType::Scalar0D: [[fallthrough]];
     case LayoutType::Vector0D:
+    case LayoutType::Tensor0D:
       // 0d quantities are always ok
       return true;
     case LayoutType::Scalar1D: [[fallthrough]];
@@ -311,7 +323,7 @@ AbstractGrid::delete_geometry_data (const std::string& name)
 }
 
 void
-AbstractGrid::set_geometry_data (const Field& f)
+AbstractGrid::set_geometry_data (const Field& f) const
 {
   EKAT_REQUIRE_MSG (not has_geometry_data(f.name()),
       "Error! Cannot set geometry data, since it already exists.\n"
