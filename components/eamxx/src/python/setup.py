@@ -5,23 +5,17 @@ class BinaryDistribution(Distribution):
     def has_ext_modules(foo):
         return True
 
-# For all of this to work, we either need to:
-# 1. build the extension as we build the python package; or
-# 2. simply package the extension as "data".
-# The latter is actually quite annoying, but we may have to do it anyway.
-# So, bring the extension to the dir of this file, before triggering
-
 setup(
-    name='screaminpy',
-    version='1.0.0',
-    author="screamers",
-    description='screaminpy wrapper',
-    packages=['', 'screaminpy'],
+    name='pyeamxx',
+    version='0.0.1',
+    author='E3SM SCREAM',
+    description='EAMxx wrapper',
+    packages=['','pyeamxx'],
     package_data={
-        'screaminpy': ['*.py'],
-        '': ['pyscream.*so'],
+        '': ['*.*so'],
     },
-    distclass=BinaryDistribution
+    distclass=BinaryDistribution,
+    zip_safe=False
 )
 
 # TODOs:

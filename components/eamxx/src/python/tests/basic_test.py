@@ -1,5 +1,5 @@
 # luca's verbatim example works from any dir now!
-from screaminpy import pyscream as ps
+from pyeamxx import pyscream as ps
 import numpy as np
 
 ps.init()
