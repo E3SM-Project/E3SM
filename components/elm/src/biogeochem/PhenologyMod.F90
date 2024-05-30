@@ -2559,8 +2559,17 @@ contains
          call calculate_eto(t_ref2m(p), netrad, eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), dt, ETout)
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
+         
          ! calculate the P:PET for each month
-         p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+         if ( abs(ETo(p,kmo)) > 0._r8) then 
+            p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+         else ! P:PET is undefined.
+            ! Setting to a fill value ( 'spval' ) would
+            ! require nested if statements due to 
+            ! the weighting of previous years (i.e., p2ETo and prev_p2ETo_bar )
+            ! So, set to zero for simplicity.
+            p2ETo(p,kmo) = 0._r8
+         end if 
 
          if (nyrs_crop_active(p) == 0) then ! for the first year, use last years values
             prev_xt_bar(p,kmo) = xt(p,kmo)
