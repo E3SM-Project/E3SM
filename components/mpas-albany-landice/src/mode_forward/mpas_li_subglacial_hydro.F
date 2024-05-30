@@ -850,6 +850,7 @@ module li_subglacial_hydro
       integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
+      real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
       integer :: err_tmp
       
       err = 0
