@@ -55,8 +55,19 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();
-  m_lat  = m_grid->get_geometry_data("lat");
-  m_lon  = m_grid->get_geometry_data("lon");
+
+  if (m_iop) {
+    // For IOP runs, we need to use the lat/lon from the
+    // IOP files instead of the geometry data.
+    m_lat = m_grid->get_geometry_data("lat").clone();
+    m_lat.deep_copy(m_iop->get_params().get<Real>("target_latitude"));
+
+    m_lon = m_grid->get_geometry_data("lon").clone();
+    m_lon.deep_copy(m_iop->get_params().get<Real>("target_longitude"));
+  } else {
+    m_lat = m_grid->get_geometry_data("lat");
+    m_lon = m_grid->get_geometry_data("lon");
+  }
 
   // Figure out radiation column chunks stats
   m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
