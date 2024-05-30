@@ -42,7 +42,30 @@
     <file>env_case.xml</file>
     <desc>Option to set WW3 Spectral Resolution.</desc>
   </entry>
-    
+
+  <entry id="WAV_OCN_COUP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="_MPASO">TRUE</value>
+    </values>
+    <group>run_component_wav</group>
+    <file>env_run.xml</file>
+    <desc>WW3-OCN Coupling mode</desc>
+  </entry>
+
+  <entry id="WAV_ATM_COUP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="_EAM">TRUE</value>
+    </values>
+    <group>run_component_wav</group>
+    <file>env_run.xml</file>
+    <desc>WW3-ATM Coupling mode</desc>
+  </entry>  
 
 
   <help>

@@ -1184,8 +1184,11 @@ CONTAINS
          IX  = MAPSF(ISEA,1)
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
-
-             if (wav_ocn_coup .eq. 'two') then
+            
+            if (wav_atm_coup .eq. 'two' .or. wav_ocn_coup .eq. 'two') then
+               w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
+            endif
+            if (wav_ocn_coup .eq. 'two') then
                 w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
                 w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                 w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
@@ -1208,7 +1211,6 @@ CONTAINS
                 w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = USSP(jsea,6)
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
 
-                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
                 w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 1000*TAUWIX(jsea) !Conversion to N m^{-2} by multiplying by density of water (See eqn 2.99 WW3 Manual)
                 w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 1000*TAUWIY(jsea)
                 w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 1000*TAUOX(jsea)
@@ -1217,6 +1219,10 @@ CONTAINS
                 w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = TAUOCY(jsea)
              endif
           else
+
+             if (wav_atm_coup .or. wav_ocn_coup) then
+                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = 0.0
+             endif
              if (wav_ocn_coup .eq. 'two') then
                 w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_Fp,jsea) = 0.0
@@ -1240,15 +1246,14 @@ CONTAINS
                 w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
              
-                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Faow_Tocx,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = 0.0
-          endif
-        endif
+            endif
+         endif
       enddo
 
       !----------------------------------------------------------------------------

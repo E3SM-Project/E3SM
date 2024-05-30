@@ -1558,7 +1558,7 @@ contains
              tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
              vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
-             charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
+             if (wav_atm_coup) charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
              if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
              if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = o2x%rAttr(index_o2x_So_roce_HDO, n)
              if ( index_o2x_So_roce_18O /= 0 ) roce_18O(n) = o2x%rAttr(index_o2x_So_roce_18O, n)
@@ -1637,7 +1637,8 @@ contains
             duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
        u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
-       call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
+       if (wav_atm_coup) then     
+          call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
             tocn , emask, seq_flux_atmocn_minwind, &
             sen , lat , lwup , &
@@ -1647,6 +1648,17 @@ contains
             duu10n, u10res, ustar, re  , ssq, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm, &
             charnockSeaState=charnsea)
+       else     
+          call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
+            shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
+            roce_16O, roce_HDO, roce_18O,    &
+            evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
+            ocn_surface_flux_scheme, &
+            duu10n, u10res, ustar, re  , ssq, &
+            wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm) 
+       endif
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
        !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
