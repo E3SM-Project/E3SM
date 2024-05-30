@@ -164,6 +164,7 @@ module seq_flds_mod
   logical            :: rof_sed             ! .true. if river model includes sediment
   logical            :: add_iac_to_cplstate  ! .true. if iac fields are added to coupler history files
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
+  character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-ocean two-way coupling turned on
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -410,7 +411,7 @@ contains
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
-         wav_ocn_coup, add_iac_to_cplstate
+         wav_ocn_coup, wav_atm_coup, add_iac_to_cplstate
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -456,6 +457,7 @@ contains
        ocn_rof_two_way   = .false.
        rof_sed   = .false.
        wav_ocn_coup = 'none'
+       wav_atm_coup = 'none'
        add_iac_to_cplstate = .false.
 
        unitn = shr_file_getUnit()
@@ -494,6 +496,7 @@ contains
     call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
     call shr_mpi_bcast(rof_sed,   mpicom)
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
+    call shr_mpi_bcast(wav_atm_coup, mpicom)
     call shr_mpi_bcast(add_iac_to_cplstate, mpicom)
 
     call glc_elevclass_init(glc_nec)
@@ -2547,6 +2550,14 @@ contains
     ! wav->ocn and ocn->wav
     !-----------------------------
     if (wav_ocn_coup == 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_Hs')
+       call seq_flds_add(x2o_states,'Sw_Hs')
+       longname = 'Significant wave height'
+       stdname  = 'significant_wave_height'
+       units    = 'm'
+       attname  = 'Sw_Hs'
+       call metadata_set(attname, longname, stdname, units)
+       
        call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
        call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
        longname = 'Partitioned Stokes drift u component, wavenumber 1'
@@ -2643,14 +2654,6 @@ contains
        attname  = 'Sw_vstokes_wavenumber_6'
        call metadata_set(attname, longname, stdname, units)
 
-       call seq_flds_add(w2x_states,'Sw_Hs')
-       call seq_flds_add(x2o_states,'Sw_Hs')
-       longname = 'Significant wave height'
-       stdname  = 'significant_wave_height'
-       units    = 'm'
-       attname  = 'Sw_Hs'
-       call metadata_set(attname, longname, stdname, units)
-
        call seq_flds_add(w2x_states,'Sw_Fp')
        call seq_flds_add(x2o_states,'Sw_Fp')
        longname = 'Peak wave frequency'
@@ -2716,7 +2719,7 @@ contains
        call metadata_set(attname, longname, stdname, units)
     endif
 
-    if (wav_ocn_coup == 'twoway') then
+    if (wav_atm_coup == 'twoway' .or. wav_ocn_coup == 'twoway') then
        call seq_flds_add(w2x_states,'Sw_Charn')
        call seq_flds_add(x2o_states,'Sw_Charn')
        longname = 'Charnock coefficent based on sea state'
