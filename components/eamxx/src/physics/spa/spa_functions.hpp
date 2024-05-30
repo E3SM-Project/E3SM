@@ -1,10 +1,10 @@
 #ifndef SPA_FUNCTIONS_HPP
 #define SPA_FUNCTIONS_HPP
 
-#include "control/intensive_observation_period.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
 

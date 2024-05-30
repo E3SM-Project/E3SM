@@ -1,13 +1,10 @@
-#include "control/intensive_observation_period.hpp"
-
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
-
-#include "pio.h"
 
 #include <numeric>
 
@@ -250,7 +247,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   if      (scorpio::has_dim(iop_file, "time")) time_dimname = "time";
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
-  
+
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
   m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
   scorpio::read_var(iop_file,"tsec",m_time_info.iop_file_times_in_sec.data());
