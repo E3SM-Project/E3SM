@@ -79,18 +79,28 @@ struct PyAtmProc {
 
   // If running as part of a process group, call the second function, after
   // manually creating/setting the fields
-  void initialize () {
+  void initialize (const std::string& t0_str) {
     int nbytes = ap->requested_buffer_size_in_bytes ();
     buffer.request_bytes(nbytes);
     buffer.allocate();
     ap->init_buffers(buffer);
+
+    t0 = util::str_to_time_stamp(t0_str);
+    for (auto it : fields) {
+      auto& f = it.second.f;
+      if (ap->has_required_field(f.get_header().get_identifier())) {
+        f.get_header().get_tracking().update_time_stamp(t0);
+      }
+    }
+
     ap->initialize(t0,RunType::Initial);
   }
 
-  void read_ic (const std::string& ic_filename, bool default_init) {
+  pybind11::list read_ic (const std::string& ic_filename) {
     // Get input fields, and read them from file (if present).
     // If field is not in the IC, user is responsible for setting
     // it to an initial value
+    std::vector<std::string> missing;
     std::vector<Field> ic_fields;
     scorpio::register_file(ic_filename,scorpio::Read);
     for (auto it : fields) {
@@ -98,16 +108,16 @@ struct PyAtmProc {
       if (ap->has_required_field(f.get_header().get_identifier())) {
         if (scorpio::has_var(ic_filename,f.name())) {
           ic_fields.push_back(f);
-          f.get_header().get_tracking().update_time_stamp(t0);
-        } else if (default_init) {
-          f.deep_copy(0);
-          f.get_header().get_tracking().update_time_stamp(t0);
+        } else {
+          missing.push_back(f.name());
         }
       }
     }
     AtmosphereInput reader (ic_filename,pygrid.grid,ic_fields,true);
     reader.read_variables();
     scorpio::release_file(ic_filename);
+
+    return pybind11::cast(missing);
   }
 };
 
