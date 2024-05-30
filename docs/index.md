@@ -18,7 +18,7 @@ research problems and Department of Energy mission needs while efficiently using
 ## Component Models
 
 - [EAM](./EAM/index.md)
-- EAMxx — not yet supported.
+- [EAMxx](https://docs.e3sm.org/scream/) — not yet supported.
 - [ELM](./ELM/index.md)
 - [MOSART](./MOSART/index.md)
 - [MPAS-Ocean](./MPAS-Ocean/index.md)
