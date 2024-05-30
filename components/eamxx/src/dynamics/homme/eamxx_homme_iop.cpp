@@ -18,6 +18,9 @@
 #include "SimulationParams.hpp"
 #include "Types.hpp"
 
+// SCREAM includes
+#include "share/util/scream_common_physics_functions.hpp"
+
 // EKAT includes
 #include "ekat/ekat_workspace.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
@@ -226,6 +229,8 @@ apply_iop_forcing(const Real dt)
   using EOS = Homme::EquationOfState;
   using ElementOps = Homme::ElementOps;
   using KV = Homme::KernelVariables;
+
+  using PF = PhysicsFunctions<DefaultDevice>;
 
   using ColOps = ColumnOps<DefaultDevice, Real>;
   using C = physics::Constants<Real>;
@@ -436,7 +441,7 @@ apply_iop_forcing(const Real dt)
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
-    advance_iop_forcing(team, total_levels, dt, divT, divq, temperature_i, qv_i);
+//    advance_iop_forcing(team, total_levels, dt, divT, divq, temperature_i, qv_i);
 
     if (iop_coriolis) {
       // Apply coriolis forcing to u and v winds
@@ -457,6 +462,13 @@ apply_iop_forcing(const Real dt)
       const int igp = idx/NGP;
       const int jgp = idx%NGP;
 
+      // Get temp views from workspace
+      auto ws = eamxx_wsm.get_workspace(team);
+      uview_1d<Pack> pmid, pint, pdel;
+      ws.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
+                                        {&pmid,  &pint,  &pdel});
+
+      auto ps_i          = ps_dyn(ie, igp, jgp);
       auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
       auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
       auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
@@ -465,6 +477,17 @@ apply_iop_forcing(const Real dt)
       auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
       auto exner_i       = ekat::subview(exner, ie, igp, jgp);
       auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+
+      // Compute reference pressures and layer thickness.
+      // TODO: Allow geometry data to allocate packsize
+      auto s_pmid = ekat::scalarize(pmid);
+      auto s_pint = ekat::scalarize(pint);
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels+1), [&](const int& k) {
+        s_pint(k) = hyai(k)*ps0 + hybi(k)*ps_i;
+        if (k < total_levels) {
+          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
+        }
+      });
 
       // Reinterperate into views of Homme::Scalar for calling Hommexx function.
       Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
@@ -481,11 +504,13 @@ apply_iop_forcing(const Real dt)
       });
       team.team_barrier();
 
-      // Recompute rstar with updated qv, and convert updated temperature back to potential temperature
-      elem_ops.get_R_star(kv, use_moisture, qv_scalar, rstar_scalar);
+      // Convert updated temperature back to density weight virtual potential temperature
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
-        vtheta_dp_i(k) = temperature_i(k)*rstar_i(k)*dp3d_i(k)/(Rair*exner_i(k));
+          const auto th = PF::calculate_theta_from_T(temperature_i(k),s_pmid(k));
+	  vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
       });
+    // Release WS views
+    ws.release_many_contiguous<3>({&pmid, &pint, &pdel});
     });
   });
 
