@@ -1,0 +1,47 @@
+# CFMIP Observation Simulator Package (COSP) in EAMxx
+[COSP](https://github.com/CFMIP/COSPv2.0) is partially implemented and supported in EAMxx. Currently, minimal outputs from the ISCCP, MODIS, and MISR simulators have been enabled.
+
+## Running with COSP
+Turning COSP on simply requires adding the `cosp` process to `atm_procs_list` via `atmchange` in a case directory:
+```
+./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
+```
+Additionally, the frequency at which COSP is run can be configured via `atmchange`:
+```
+./atmchange physics::cosp::cosp_frequency_units="steps"
+./atmchange physics::cosp::cosp_frequency=1
+```
+Output streams need to be added manually. A minimal example:
+```
+./atmchange output_yaml_files=scream_daily_output.yaml
+cat << EOF > scream_cosp_daily_output.yaml
+Averaging Type: Average
+Fields:
+  Physics PG2:
+    Field Names:
+    - isccp_cldtot
+    - isccp_ctptau
+    - modis_ctptau
+    - misr_cthtau
+    - cosp_sunlit
+Max Snapshots Per File: 1
+filename_prefix: eamxx
+output_control:
+  Frequency: 1
+  frequency_units: ndays
+EOF
+```
+
+## Available output fields
+The following output fields are available:
+
+  - isccp_cldtot (total cloud area from ISCCP simulator)
+  - isccp_ctptau (ISCCP-simulated cloud top pressure/optical depth joint histogram)
+  - modis_ctptau (MODIS-simulated cloud top pressure/optical depth joint histogram)
+  - misr_cthtau  (MISR-simulated cloud top height/optical depth joint histogram)
+  - cosp_sunlit  (sunlit flag aggregated at COSP frequency for renormalizing daytime averages)
+
+ISCCP, MODIS, and MISR outputs are valid only for daytime/sunlit columns (to be consistent with available satellite retrievals). In order to aggregate only daytime columns in time averages, these outputs are multiplied by the sunlit flag (0 or 1) at each COSP calculation time. Time averages of these quantities are then aggregated, along with the cosp sunlit flag each time COSP is called. In order to back out the daytime-only time averages from the outputs, one needs to divide the output fields by `cosp_sunlit`. E.g.,
+```
+isccp_ctptau = mean(isccp_ctptau) / mean(cosp_sunlit)
+```
