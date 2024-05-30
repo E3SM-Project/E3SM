@@ -1631,6 +1631,7 @@ module li_subglacial_hydro
 
       where (li_mask_is_grounded_ice(cellMask))        
          waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
+                rho_water * gravity * deltatSGH / porosity + waterPressureOld
       elsewhere
          waterPressure = UNDEFINED ! zero waterPressure where no grounded ice 
       end where
