@@ -5,7 +5,7 @@
 /// \file
 /// \brief Contains the state variables for an OMEGA sub-domain
 ///
-/// The OceanState class contains the prognostic variable data for a
+/// The OceanState class contains the non-tracer prognostic variable data for a
 /// sub-domain of the global horizontal mesh.
 //
 //===----------------------------------------------------------------------===//
@@ -33,6 +33,8 @@ class OceanState {
    void finalizeParallelIO();
 
    void read();
+
+   void defineIOFields();
 
    I4 CellDecompR8;
    I4 EdgeDecompR8;
@@ -62,8 +64,8 @@ class OceanState {
    I4 NEdgesAll;   ///< Total number (owned+halo) of local edges
    I4 NEdgesSize;  ///< Array length (incl padding, bndy) for edge dim
 
-   I4 NTimeLevels;     ///< Number of time levels in state variable arrays
-   I4 NVerticalLevels; ///< Number of vertical levels in state variable arrays
+   I4 NTimeLevels; ///< Number of time levels in state variable arrays
+   I4 NVertLevels; ///< Number of vertical levels in state variable arrays
 
    // Prognostic variables
 
@@ -75,33 +77,35 @@ class OceanState {
 
    // Methods
 
-   /// Initialize Omega local mesh
+   /// Initialize Omega local state
    static int init();
 
    /// Construct a new local mesh for a given decomposition
-   OceanState(const std::string &Name,    ///< [in] Name for mesh
-              HorzMesh *Mesh,             ///< [in] Horizontal mesh
-              Decomp *MeshDecomp,         ///< [in] Decomp for Mesh
-              Halo *MeshHalo_,            ///< [in] Halo for Mesh
-              const int NVerticalLevels_, ///< [in] Number of vertical levels
-              const int NTimeLevels_      ///< [in] Number of time levels
+   OceanState(const std::string &Name, ///< [in] Name for mesh
+              HorzMesh *Mesh,          ///< [in] Horizontal mesh
+              Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
+              Halo *MeshHalo_,         ///< [in] Halo for Mesh
+              const int NVertLevels_,  ///< [in] Number of vertical levels
+              const int NTimeLevels_   ///< [in] Number of time levels
    );
 
    /// Swap time levels to update state arrays
-   void swapTimeLevels(int FromLevel, int ToLevel);
+   void updateTimeLevels(int FromLevel, int ToLevel);
 
+   /// Copy state variables from host to device
    void copyToDevice(int TimeLevel);
 
+   /// Copy state variables from device to host
    void copyToHost(int TimeLevel);
 
-   /// Destructor - deallocates all memory and deletes a HorzMesh
+   /// Destructor - deallocates all memory and deletes an OceanState
    ~OceanState();
 
    /// Deallocates arrays
    static void clear();
 
-   /// Remove mesh by name
-   static void erase(std::string InName ///< [in] name of mesh to remove
+   /// Remove state by name
+   static void erase(std::string InName ///< [in] name of state to remove
    );
 
    static OceanState *getDefault();

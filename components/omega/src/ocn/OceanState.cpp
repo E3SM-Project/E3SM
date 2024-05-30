@@ -2,8 +2,8 @@
 //
 // The OceanState class initializes the prognostic variables in OMEGA.
 // It contains a method to update the time levels for each variable.
-// It is meant to provide a container for passing prognostic variables
-// throughout the OMEGA tendency computation routines.
+// It is meant to provide a container for passing (non-tracer) prognostic
+// variables throughout the OMEGA tendency computation routines.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,8 +12,10 @@
 #include "Decomp.h"
 #include "Halo.h"
 #include "IO.h"
+#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "MetaData.h"
 #include "OmegaKokkos.h"
 
 namespace OMEGA {
@@ -34,8 +36,14 @@ int OceanState::init() {
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
    Halo *DefHalo         = Halo::getDefault();
 
+   // These hard-wired variables need to be updated
+   // with retrivals/config options
+   int NTimeLevels = 2;
+   int NVertLevels = 60;
+
    // Create the default state
-   OceanState DefOceanState("Default", DefHorzMesh, DefDecomp, DefHalo, 60, 2);
+   OceanState DefOceanState("Default", DefHorzMesh, DefDecomp, DefHalo,
+                            NVertLevels, NTimeLevels);
 
    // Retrieve this mesh and set pointer to DefaultOceanState
    OceanState::DefaultOceanState = OceanState::get("Default");
@@ -43,15 +51,15 @@ int OceanState::init() {
 }
 
 //------------------------------------------------------------------------------
-// Construct a new local mesh given a decomposition
+// Construct a new local state given a decomposition
 
 OceanState::OceanState(
-    const std::string &Name,    //< [in] Name for new state
-    HorzMesh *Mesh,             //< [in] HorzMesh for state
-    Decomp *MeshDecomp,         //< [in] Decomp for Mesh
-    Halo *MeshHalo_,            //< [in] Halo for Mesh
-    const int NVerticalLevels_, //< [in] number of vertical levels
-    const int NTimeLevels_      //< [in] number of time levels
+    const std::string &Name, //< [in] Name for new state
+    HorzMesh *Mesh,          //< [in] HorzMesh for state
+    Decomp *MeshDecomp,      //< [in] Decomp for Mesh
+    Halo *MeshHalo_,         //< [in] Halo for Mesh
+    const int NVertLevels_,  //< [in] number of vertical levels
+    const int NTimeLevels_   //< [in] number of time levels
     )
     : LayerThicknessH(NTimeLevels_), NormalVelocityH(NTimeLevels_),
       LayerThickness(NTimeLevels_), NormalVelocity(NTimeLevels_) {
@@ -65,43 +73,48 @@ OceanState::OceanState(
    NEdgesAll   = Mesh->NEdgesAll;
    NEdgesSize  = Mesh->NEdgesSize;
 
-   NVerticalLevels = NVerticalLevels_;
-   NTimeLevels     = NTimeLevels_;
+   NVertLevels = NVertLevels_;
+   NTimeLevels = NTimeLevels_;
 
    MeshHalo = MeshHalo_;
 
    StateFileName = Mesh->MeshFileName;
 
-   // Allocate state arrays
+   // Allocate state host arrays
    for (int I = 0; I < NTimeLevels; I++) {
       LayerThicknessH[I] = HostArray2DR8("LayerThickness" + std::to_string(I),
-                                         NCellsSize, NVerticalLevels);
+                                         NCellsSize, NVertLevels);
       NormalVelocityH[I] = HostArray2DR8("NormalVelocity" + std::to_string(I),
-                                         NEdgesSize, NVerticalLevels);
+                                         NEdgesSize, NVertLevels);
    }
 
-   // Create device arrays
+   // Create state device arrays
    for (int I = 0; I < NTimeLevels; I++) {
       LayerThickness[I] = Array2DR8("LayerThickness" + std::to_string(I),
-                                    NCellsSize, NVerticalLevels);
+                                    NCellsSize, NVertLevels);
       NormalVelocity[I] = Array2DR8("NormalVelocity" + std::to_string(I),
-                                    NEdgesSize, NVerticalLevels);
+                                    NEdgesSize, NVertLevels);
    }
 
-   // Open the mesh file for reading (assume IO has already been initialized)
+   // Open the state file for reading (assume IO has already been initialized)
    I4 Err;
    Err = OMEGA::IO::openFile(StateFileID, StateFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error opening state file");
 
-   // Create the parallel IO decompositions required to read in mesh variables
+   // Create the parallel IO decompositions required to read in state variables
    initParallelIO(MeshDecomp);
 
-   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
+   // Read layerThickness and normalVelocity
    read();
 
    // Destroy the parallel IO decompositions
    finalizeParallelIO();
+
+   // Register fields and metadate for IO
+   if (Name != "Default") {
+      defineIOFields();
+   }
 
    // Copy host data to device
    copyToDevice(0);
@@ -109,7 +122,7 @@ OceanState::OceanState(
    // Associate this instance with a name
    AllOceanStates.emplace(Name, *this);
 
-} // end horizontal mesh constructor
+} // end state constructor
 
 //------------------------------------------------------------------------------
 // Destroys a local mesh and deallocates all arrays
@@ -120,20 +133,20 @@ OceanState::~OceanState() {
 } // end deconstructor
 
 //------------------------------------------------------------------------------
-// Removes a mesh from list by name
-void OceanState::erase(std::string InName // [in] name of mesh to remove
+// Removes a state from list by name
+void OceanState::erase(std::string InName // [in] name of state to remove
 ) {
 
-   AllOceanStates.erase(InName); // remove the mesh from the list and in
+   AllOceanStates.erase(InName); // remove the state from the list and in
                                  // the process, calls the destructor
 
-} // end mesh erase
+} // end state erase
 //------------------------------------------------------------------------------
-// Removes all meshes to clean up before exit
+// Removes all states to clean up before exit
 void OceanState::clear() {
 
-   AllOceanStates.clear(); // removes all meshes from the list and in
-                           // the porcess, calls the destructors for each
+   AllOceanStates.clear(); // removes all states from the list and in
+                           // the process, calls the destructors for each
 
 } // end clear
 
@@ -146,38 +159,84 @@ void OceanState::initParallelIO(Decomp *MeshDecomp) {
    IO::Rearranger Rearr = IO::RearrBox;
 
    // Create the IO decomp for arrays with (NCells) dimensions
-   std::vector<I4> CellDims{1, MeshDecomp->NCellsGlobal, NVerticalLevels};
-   std::vector<I4> CellID(NCellsAll * NVerticalLevels, -1);
+   std::vector<I4> CellDims{1, MeshDecomp->NCellsGlobal, NVertLevels};
+   std::vector<I4> CellID(NCellsAll * NVertLevels, -1);
    for (int Cell = 0; Cell < NCellsAll; ++Cell) {
-      for (int Level = 0; Level < NVerticalLevels; ++Level) {
-         I4 GlobalID =
-             (MeshDecomp->CellIDH(Cell) - 1) * NVerticalLevels + Level;
-         CellID[Cell * NVerticalLevels + Level] = GlobalID;
+      for (int Level = 0; Level < NVertLevels; ++Level) {
+         I4 GlobalID = (MeshDecomp->CellIDH(Cell) - 1) * NVertLevels + Level;
+         CellID[Cell * NVertLevels + Level] = GlobalID;
       }
    }
 
    Err = IO::createDecomp(CellDecompR8, IO::IOTypeR8, NDims, CellDims,
-                          NCellsAll * NVerticalLevels, CellID, Rearr);
+                          NCellsAll * NVertLevels, CellID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error creating cell IO decomposition");
 
    // Create the IO decomp for arrays with (NEdges) dimensions
-   std::vector<I4> EdgeDims{1, MeshDecomp->NEdgesGlobal, NVerticalLevels};
-   std::vector<I4> EdgeID(NEdgesAll * NVerticalLevels, -1);
+   std::vector<I4> EdgeDims{1, MeshDecomp->NEdgesGlobal, NVertLevels};
+   std::vector<I4> EdgeID(NEdgesAll * NVertLevels, -1);
    for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
-      for (int Level = 0; Level < NVerticalLevels; ++Level) {
-         I4 GlobalID =
-             (MeshDecomp->EdgeIDH(Edge) - 1) * NVerticalLevels + Level;
-         EdgeID[Edge * NVerticalLevels + Level] = GlobalID;
+      for (int Level = 0; Level < NVertLevels; ++Level) {
+         I4 GlobalID = (MeshDecomp->EdgeIDH(Edge) - 1) * NVertLevels + Level;
+         EdgeID[Edge * NVertLevels + Level] = GlobalID;
       }
    }
 
    Err = IO::createDecomp(EdgeDecompR8, IO::IOTypeR8, NDims, EdgeDims,
-                          NEdgesAll * NVerticalLevels, EdgeID, Rearr);
+                          NEdgesAll * NVertLevels, EdgeID, Rearr);
    if (Err != 0)
       LOG_CRITICAL("OceanStateh: error creating edge IO decomposition");
 
 } // end initParallelIO
+
+//------------------------------------------------------------------------------
+// Define IO fields and metadata
+void OceanState::defineIOFields() {
+
+   int Err = 0;
+
+   auto CellDim = OMEGA::MetaDim::create("NCells", NCellsSize);
+   auto EdgeDim = OMEGA::MetaDim::create("NEdges", NEdgesSize);
+   auto VertDim = OMEGA::MetaDim::create("NVertLevels", NVertLevels);
+
+   std::vector<std::shared_ptr<OMEGA::MetaDim>> LayerThicknessDim{CellDim,
+                                                                  VertDim};
+   std::vector<std::shared_ptr<OMEGA::MetaDim>> NormalVelocityDim{EdgeDim,
+                                                                  VertDim};
+
+   auto NormalVelocityMeta = OMEGA::ArrayMetaData::create(
+       "NormalVelocity",
+       "Velocity component normal to edge", /// long Name
+       "m/s",                               /// units
+       "",                                  /// CF standard Name
+       -9.99E+10,                           /// min valid value
+       9.99E+10,                            /// max valid value
+       -9.99E+30,        /// scalar used for undefined entries
+       2,                /// number of dimensions
+       NormalVelocityDim /// dim pointers
+   );
+
+   auto LayerThicknessMeta = OMEGA::ArrayMetaData::create(
+       "LayerThickness",
+       "Thickness of layer on cell center", /// long Name
+       "m",                                 /// units
+       "cell_thickness",                    /// CF standard Name
+       0.0,                                 /// min valid value
+       9.99E+30,                            /// max valid value
+       -9.99E+30,        /// scalar used for undefined entries
+       2,                /// number of dimensions
+       LayerThicknessDim /// dim pointers
+   );
+
+   Err = OMEGA::IOField::define("NormalVelocity");
+   Err = OMEGA::IOField::define("LayerThickness");
+   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
+                                                      NormalVelocity[0]);
+   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("LayerThickness",
+                                                      LayerThickness[0]);
+
+} // end defineIOFields
 
 //------------------------------------------------------------------------------
 // Destroy parallel decompositions
@@ -238,26 +297,41 @@ void OceanState::copyToHost(int TimeLevel) {
 } // end copyToHost
 
 //------------------------------------------------------------------------------
-// Perform time level swap
-void OceanState::swapTimeLevels(int FromLevel, int ToLevel) {
+// Perform time level update
+void OceanState::updateTimeLevels(int FromLevel, int ToLevel) {
 
-   copyToHost(FromLevel);
-   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[FromLevel], OMEGA::OnCell);
-   copyToDevice(FromLevel);
+   int NewLevel = NTimeLevels - 1;
 
-   Array2DR8 Temp            = LayerThickness[ToLevel];
-   LayerThickness[ToLevel]   = LayerThickness[FromLevel];
-   LayerThickness[FromLevel] = Temp;
+   copyToHost(NewLevel);
+   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[NewLevel], OMEGA::OnCell);
+   copyToDevice(NewLevel);
 
-   copyToHost(FromLevel);
-   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[FromLevel], OMEGA::OnEdge);
-   copyToDevice(FromLevel);
+   Array2DR8 Temp;
 
-   Temp                      = NormalVelocity[ToLevel];
-   NormalVelocity[ToLevel]   = NormalVelocity[FromLevel];
-   NormalVelocity[FromLevel] = Temp;
+   for (int Level = 0; Level < NTimeLevels - 1; Level++) {
+      Temp                      = LayerThickness[Level + 1];
+      LayerThickness[Level + 1] = LayerThickness[Level];
+      LayerThickness[Level]     = Temp;
+   }
 
-} // end swapTimeLevels
+   copyToHost(NewLevel);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[NewLevel], OMEGA::OnEdge);
+   copyToDevice(NewLevel);
+
+   for (int Level = 0; Level < NTimeLevels - 1; Level++) {
+      Temp                      = NormalVelocity[Level + 1];
+      NormalVelocity[Level + 1] = NormalVelocity[Level];
+      NormalVelocity[Level]     = Temp;
+   }
+
+   int Err = 0;
+
+   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
+                                                      NormalVelocity[0]);
+   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("LayerThickness",
+                                                      LayerThickness[0]);
+
+} // end updateTimeLevels
 
 //------------------------------------------------------------------------------
 // Get default state
@@ -271,7 +345,7 @@ OceanState *OceanState::get(const std::string Name ///< [in] Name of state
    // look for an instance of this name
    auto it = AllOceanStates.find(Name);
 
-   // if found, return the mesh pointer
+   // if found, return the state pointer
    if (it != AllOceanStates.end()) {
       return &(it->second);
 

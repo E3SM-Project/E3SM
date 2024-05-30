@@ -5,7 +5,7 @@
 ///
 /// This driver tests that the OMEGA state class member variables are read in
 /// correctly from a sample shperical mesh file. Also tests that the time level
-/// swap works as expected.
+/// update works as expected.
 //
 //===-----------------------------------------------------------------------===/
 
@@ -14,6 +14,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanState.h"
@@ -66,7 +67,7 @@ int initStateTest() {
 }
 
 //------------------------------------------------------------------------------
-// The test driver for State -> This tests the time level swap of state
+// The test driver for State -> This tests the time level update of state
 // variables and verifies the state is read in correctly.
 //
 int main(int argc, char *argv[]) {
@@ -92,8 +93,14 @@ int main(int argc, char *argv[]) {
       OMEGA::Decomp *DefDecomp     = OMEGA::Decomp::getDefault();
       OMEGA::Halo *DefHalo         = OMEGA::Halo::getDefault();
 
+      // These hard-wired variables need to be upated
+      // with retrivals/config options
+      int NVertLevels = 60;
+      int NTimeLevels = 2;
+
+      // Create "test" state
       OMEGA::OceanState DefOceanState("Test", DefHorzMesh, DefDecomp, DefHalo,
-                                      60, 2);
+                                      NVertLevels, NTimeLevels);
 
       // Test retrieval of the default state
       OMEGA::OceanState *DefState = OMEGA::OceanState::getDefault();
@@ -113,7 +120,7 @@ int main(int argc, char *argv[]) {
       // auto LayerThicknessH_0 = DefState->LayerThicknessH[0];
       // auto LayerThicknessH_1 = DefState->LayerThicknessH[1];
       // for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-      //    for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+      //    for (int Level = 0; Level < DefState->NVertLevels; Level++) {
       //       LOG_INFO(LayerThicknessH_0(Cell, Level));
       //       LOG_INFO(LayerThicknessH_1(Cell, Level));
       //    }
@@ -123,7 +130,7 @@ int main(int argc, char *argv[]) {
       int count = 0;
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
          int colCount = 0;
-         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
             OMEGA::R8 val = DefState->LayerThicknessH[0](Cell, Level);
             if (val > 0.0 && val < 300.0) {
                colCount++;
@@ -146,7 +153,7 @@ int main(int argc, char *argv[]) {
       auto LayerThicknessH_def  = DefState->LayerThicknessH[0];
       auto LayerThicknessH_test = TestState->LayerThicknessH[0];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
             if (LayerThicknessH_def(Cell, Level) !=
                 LayerThicknessH_test(Cell, Level)) {
                count++;
@@ -160,8 +167,8 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: Default test state comparison FAIL");
       }
 
-      // Test that the time level swap is correct.
-      DefState->swapTimeLevels(0, 1);
+      // Test that the time level update is correct.
+      DefState->updateTimeLevels(0, 1);
       DefState->copyToHost(0);
       DefState->copyToHost(1);
 
@@ -169,7 +176,7 @@ int main(int argc, char *argv[]) {
       LayerThicknessH_def  = DefState->LayerThicknessH[1];
       LayerThicknessH_test = TestState->LayerThicknessH[0];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
             if (LayerThicknessH_def(Cell, Level) !=
                 LayerThicknessH_test(Cell, Level)) {
                count++;
@@ -180,7 +187,7 @@ int main(int argc, char *argv[]) {
       LayerThicknessH_def  = DefState->LayerThicknessH[0];
       LayerThicknessH_test = TestState->LayerThicknessH[1];
       for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVerticalLevels; Level++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
             if (LayerThicknessH_def(Cell, Level) !=
                 LayerThicknessH_test(Cell, Level)) {
                count++;
@@ -188,19 +195,10 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      /*
-      OMEGA::parallelReduce("test", {DefState->NCellsAll,
-      DefState->NVerticalLevels}, KOKKOS_LAMBDA(int Cell, int Level, int &total)
-      { if (DefState->LayerThickness(1, Cell, Level) !=
-      TestState->LayerThickness(0, Cell, Level)) { total++;
-           }
-      }, count);
-      */
-
       if (count == 0) {
-         LOG_INFO("State: time level swap PASS");
+         LOG_INFO("State: time level update PASS");
       } else {
-         LOG_INFO("State: time level swap FAIL");
+         LOG_INFO("State: time level update FAIL");
       }
 
       // Finalize Omega objects
@@ -208,6 +206,7 @@ int main(int argc, char *argv[]) {
       OMEGA::Decomp::clear();
       OMEGA::MachEnv::removeAll();
       OMEGA::OceanState::clear();
+      OMEGA::IOField::clear();
 
       // MPI_Status status;
       if (Err == 0)
