@@ -441,7 +441,7 @@ apply_iop_forcing(const Real dt)
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
-//    advance_iop_forcing(team, total_levels, dt, divT, divq, temperature_i, qv_i);
+    advance_iop_forcing(team, total_levels, dt, divT, divq, temperature_i, qv_i);
 
     if (iop_coriolis) {
       // Apply coriolis forcing to u and v winds
