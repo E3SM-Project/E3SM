@@ -2,6 +2,7 @@
 #include "pyfield.hpp"
 #include "pygrid.hpp"
 #include "pyatmproc.hpp"
+#include "pyparamlist.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
