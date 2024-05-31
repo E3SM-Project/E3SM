@@ -36,6 +36,7 @@ userGuide/HorzMesh
 userGuide/HorzOperators
 userGuide/AuxiliaryVariables
 userGuide/TendencyTerms
+userGuide/OceanState
 userGuide/TimeMgr
 userGuide/Reductions
 ```
@@ -64,6 +65,7 @@ devGuide/HorzMesh
 devGuide/HorzOperators
 devGuide/AuxiliaryVariables
 devGuide/TendencyTerms
+devGuide/OceanState
 devGuide/TimeMgr
 devGuide/Reductions
 ```
