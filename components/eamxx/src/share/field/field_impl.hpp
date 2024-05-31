@@ -305,8 +305,6 @@ deep_copy_impl (const Field& src) {
   //       different pack sizes.
   auto src_alloc_props = src.get_header().get_alloc_properties();
   auto tgt_alloc_props =     get_header().get_alloc_properties();
-  auto src_alloc_size  = src_alloc_props.get_alloc_size();
-  auto tgt_alloc_size  = tgt_alloc_props.get_alloc_size();
 
   // If a manual parallel_for is required (b/c of alloc sizes difference),
   // we need to create extents (rather than just using the one in layout),
@@ -325,33 +323,32 @@ deep_copy_impl (const Field& src) {
         if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
           auto v     =     get_view<      ST*,HD>();
           auto v_src = src.get_view<const ST*,HD>();
-          if (src_alloc_size==tgt_alloc_size) {
-            Kokkos::deep_copy(v,v_src);
-          } else {
-            Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
               v(idx) = v_src(idx);
             });
-          }
         } else {
           auto v     =     get_strided_view<      ST*,HD>();
           auto v_src = src.get_strided_view<const ST*,HD>();
-          if (src_alloc_size==tgt_alloc_size) {
-            Kokkos::deep_copy(v,v_src);
-          } else {
-            Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
               v(idx) = v_src(idx);
             });
-          }
         }
       }
       break;
     case 2:
       {
-        auto v     =     get_view<      ST**,HD>();
-        auto v_src = src.get_view<const ST**,HD>();
-        if (src_alloc_size==tgt_alloc_size) {
-          Kokkos::deep_copy(v,v_src);
-        } else {
+        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
+          auto v     =     get_view<      ST**,HD>();
+          auto v_src = src.get_view<const ST**,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j;
+            unflatten_idx(idx,ext,i,j);
+            v(i,j) = v_src(i,j);
+          });
+        }
+        else {
+          auto v     =     get_strided_view<      ST**,HD>();
+          auto v_src = src.get_strided_view<const ST**,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             int i,j;
             unflatten_idx(idx,ext,i,j);
@@ -362,11 +359,17 @@ deep_copy_impl (const Field& src) {
       break;
     case 3:
       {
-        auto v     =     get_view<      ST***,HD>();
-        auto v_src = src.get_view<const ST***,HD>();
-        if (src_alloc_size==tgt_alloc_size) {
-          Kokkos::deep_copy(v,v_src);
+        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
+          auto v     =     get_view<      ST***,HD>();
+          auto v_src = src.get_view<const ST***,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k;
+            unflatten_idx(idx,ext,i,j,k);
+            v(i,j,k) = v_src(i,j,k);
+          });
         } else {
+          auto v     =     get_strided_view<      ST***,HD>();
+          auto v_src = src.get_strided_view<const ST***,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             int i,j,k;
             unflatten_idx(idx,ext,i,j,k);
@@ -377,11 +380,17 @@ deep_copy_impl (const Field& src) {
       break;
     case 4:
       {
-        auto v     =     get_view<      ST****,HD>();
-        auto v_src = src.get_view<const ST****,HD>();
-        if (src_alloc_size==tgt_alloc_size) {
-          Kokkos::deep_copy(v,v_src);
+        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
+          auto v     =     get_view<      ST****,HD>();
+          auto v_src = src.get_view<const ST****,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k,l;
+            unflatten_idx(idx,ext,i,j,k,l);
+            v(i,j,k,l) = v_src(i,j,k,l);
+          });
         } else {
+          auto v     =     get_strided_view<      ST****,HD>();
+          auto v_src = src.get_strided_view<const ST****,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             int i,j,k,l;
             unflatten_idx(idx,ext,i,j,k,l);
@@ -392,11 +401,17 @@ deep_copy_impl (const Field& src) {
       break;
     case 5:
       {
-        auto v     =     get_view<      ST*****,HD>();
-        auto v_src = src.get_view<const ST*****,HD>();
-        if (src_alloc_size==tgt_alloc_size) {
-          Kokkos::deep_copy(v,v_src);
+        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
+          auto v     =     get_view<      ST*****,HD>();
+          auto v_src = src.get_view<const ST*****,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,ext,i,j,k,l,m);
+            v(i,j,k,l,m) = v_src(i,j,k,l,m);
+          });
         } else {
+          auto v     =     get_view<      ST*****,HD>();
+          auto v_src = src.get_view<const ST*****,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             int i,j,k,l,m;
             unflatten_idx(idx,ext,i,j,k,l,m);
@@ -439,32 +454,57 @@ void Field::deep_copy_impl (const ST value) {
       break;
     case 2:
       {
-        auto v = get_view<ST**,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST**,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST**,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     case 3:
       {
-        auto v = get_view<ST***,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST***,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST***,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     case 4:
       {
-        auto v = get_view<ST****,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST****,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST****,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     case 5:
       {
-        auto v = get_view<ST*****,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST*****,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST*****,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     case 6:
       {
-        auto v = get_view<ST******,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST******,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST******,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     default:

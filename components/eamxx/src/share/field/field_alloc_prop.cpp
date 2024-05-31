@@ -67,13 +67,13 @@ subview (const int idim, const int k, const bool dynamic) const {
     // and there is no packing
     props.m_last_extent = m_layout.dim(idim);
     props.m_pack_size_max = 1;
-    props.m_alloc_size = m_alloc_size / m_last_extent;
   } else {
     // We are keeping the last dim, so same last extent and max pack size
     props.m_last_extent = m_last_extent;
     props.m_pack_size_max = m_pack_size_max;
-    props.m_alloc_size = m_alloc_size / m_layout.dim(idim);
   }
+  // give it an invalid value because subviews don't get allocated
+  props.m_alloc_size = -1;
   return props;
 }
 
@@ -103,21 +103,19 @@ FieldAllocProp FieldAllocProp::subview(const int idim,
 
   props.m_subview_info =
       SubviewInfo(idim, index_beg, index_end, m_layout.dim(idim));
-
   // Figure out strides/packs
   if (idim == (m_layout.rank() - 1)) {
     // We're slicing the possibly padded dim, so everything else is as in the
     // layout, and there is no packing
-    // props.m_last_extent = m_layout.dim(idim);
     props.m_last_extent = index_end - index_beg;
     props.m_pack_size_max = 1;
-    props.m_alloc_size = m_alloc_size / m_last_extent;
   } else {
     // We are keeping the last dim, so same last extent and max pack size
     props.m_last_extent = m_last_extent;
     props.m_pack_size_max = m_pack_size_max;
-    props.m_alloc_size = m_alloc_size / m_layout.dim(idim);
   }
+  // give it an invalid value because subviews don't get allocated
+  props.m_alloc_size = -1;
   return props;
 }
 
@@ -125,7 +123,7 @@ void FieldAllocProp::request_allocation (const int pack_size) {
   using ekat::ScalarTraits;
 
   EKAT_REQUIRE_MSG(!m_committed,
-      "Error! Cannot change allocation properties after they have been commited.\n");
+      "Error! Cannot change allocation properties after they have been committed.\n");
 
   const int vts = m_scalar_type_size*pack_size;
 

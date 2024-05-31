@@ -300,6 +300,42 @@ TEST_CASE("field", "") {
         }
       }
     }
+    SECTION("Subfield deep_copy") {
+      // ==============
+      /* Rank-3 view */
+      // ==============
+      std::vector<FieldTag> t3 = {COL, CMP, LEV};
+      std::vector<int> d3 = {5, 10, 2};
+      FieldIdentifier fid3("3d", {t3, d3}, m / s, "some_grid");
+
+      Field f3a(fid3);
+      f3a.allocate_view();
+      randomize(f3a, engine, pdf);
+
+      Field f3b(fid3);
+      f3b.allocate_view();
+      randomize(f3b, engine, pdf);
+
+      const int idim = 1;
+      const int sl_beg = 3;
+      const int sl_end = 6;
+
+      auto sfa = f3a.subfield(idim, sl_beg, sl_end);
+      auto sv_a = sfa.get_strided_view<Real***, Host>();
+
+      auto sfb = f3b.subfield(idim, sl_beg, sl_end);
+      auto sv_b = sfb.get_strided_view<Real***, Host>();
+
+      sfb.deep_copy<Host>(sfa);
+
+      for (int i = 0; i < d3[0]; i++) {
+        for (int j = sl_beg; j < sl_end; j++) {
+          for (int k = 0; k < d3[2]; k++) {
+            REQUIRE(sv_a(i, j - sl_beg, k) == sv_b(i, j - sl_beg, k));
+          }
+        }
+      }
+    }
   }
   // Dynamic Subfields
   SECTION("dynamic_subfield") {
