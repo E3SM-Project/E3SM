@@ -527,8 +527,10 @@ contains
                 !-----------------------------------------------------------------------
                 fail_cnt = fail_cnt + 1
                 nstep = get_nstep()
-                write(iulog,'('' imp_sol: Time step '',1p,e21.13,'' failed to converge @ (lchnk,lev,col,nstep) = '',4i6)') &
-                     dt,lchnk,lev,i,nstep
+                ! reduce the frequency of warning printing
+                ! but this message is still important for debug runs 
+                !write(iulog,'('' imp_sol: Time step '',1p,e21.13,'' failed to converge @ (lchnk,lev,col,nstep) = '',4i6)') &
+                !     dt,lchnk,lev,i,nstep
                 stp_con_cnt = 0
                 if( cut_cnt < cut_limit ) then
                    cut_cnt = cut_cnt + 1
@@ -553,7 +555,12 @@ contains
              !-----------------------------------------------------------------------
              interval_done = interval_done + dt
              if( abs( delt - interval_done ) <= .0001_r8 ) then
-                if( fail_cnt > 0 ) then
+                ! set the threshold to 2 from 0
+                ! if model resolves the convergence issue by using smaller dt,
+                ! the solver works fine
+                ! if model convergence issue can't be resolved by reducing dt twice,
+                ! developer should look at this issue
+                if( fail_cnt > 2 ) then
                    write(iulog,*) 'imp_sol : @ (lchnk,lev,col) = ',lchnk,lev,i,' failed ',fail_cnt,' times'
                 end if
                 exit time_step_loop
