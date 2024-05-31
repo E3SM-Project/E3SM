@@ -32,13 +32,13 @@ EXECUTE_PROCESS(COMMAND nc-config --prefix
 SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "") # NEEDED
 
 # TPL settings
-SET (PnetCDF_PATH /projects/ppc64le-pwr9-rhel8/tpls/parallel-netcdf/1.12.3/gcc/11.3.0/openmpi/4.1.4/pp6jcjk CACHE FILEPATH "")
+#SET (PnetCDF_PATH /projects/ppc64le-pwr9-rhel8/tpls/parallel-netcdf/1.12.3/gcc/11.3.0/openmpi/4.1.4/pp6jcjk CACHE FILEPATH "")
 SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
 
 # Compilers
 SET (CMAKE_C_COMPILER mpicc CACHE STRING "")
 SET (CMAKE_Fortran_COMPILER mpif90 CACHE STRING "")
-SET (CMAKE_CXX_COMPILER "/home/saruite/E3SM/externals/ekat/extern/kokkos/bin/nvcc_wrapper" CACHE STRING "")
+SET (CMAKE_CXX_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/extern/kokkos/bin/nvcc_wrapper" CACHE STRING "")
 
 
 ############################################
@@ -48,7 +48,7 @@ SET (CMAKE_CXX_COMPILER "/home/saruite/E3SM/externals/ekat/extern/kokkos/bin/nvc
 ############################################
 
 # Flag settings
-SET (CMAKE_C_FLAGS "-w" CACHE STRING "")
+SET (CMAKE_C_FLAGS "-w" CACHE STRING "") # disable warnings
 SET (ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
 SET (ADD_Fortran_FLAGS " -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
 SET (CMAKE_EXE_LINKER_FLAGS "-ldl -lopenblas" CACHE STRING "")
@@ -62,7 +62,7 @@ SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
 SET (USE_QUEUING FALSE CACHE BOOL "")				# Use queing or not
 SET (USE_TRILINOS OFF CACHE BOOL "")				# Use trilinos or not
-SET (WITH_PNETCDF TRUE CACHE FILEPATH "")			# Use parallel netcdf
+SET (WITH_PNETCDF FALSE CACHE FILEPATH "")			# Use parallel netcdf
 SET (USE_NUM_PROCS 4 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
 SET (HAVE_EXTRAE TRUE CACHE BOOL "")				# 
 SET (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")			# Use column orientation for openmp
