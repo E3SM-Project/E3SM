@@ -298,7 +298,7 @@ void OceanState::copyToHost(int TimeLevel) {
 
 //------------------------------------------------------------------------------
 // Perform time level update
-void OceanState::updateTimeLevels(int FromLevel, int ToLevel) {
+void OceanState::updateTimeLevels() {
 
    int NewLevel = NTimeLevels - 1;
 

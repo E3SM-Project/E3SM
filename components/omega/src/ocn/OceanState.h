@@ -90,7 +90,7 @@ class OceanState {
    );
 
    /// Swap time levels to update state arrays
-   void updateTimeLevels(int FromLevel, int ToLevel);
+   void updateTimeLevels();
 
    /// Copy state variables from host to device
    void copyToDevice(int TimeLevel);

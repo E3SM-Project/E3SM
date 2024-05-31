@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Test that the time level update is correct.
-      DefState->updateTimeLevels(0, 1);
+      DefState->updateTimeLevels();
       DefState->copyToHost(0);
       DefState->copyToHost(1);
 
