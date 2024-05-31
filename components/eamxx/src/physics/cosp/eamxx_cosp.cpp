@@ -179,7 +179,7 @@ void Cosp::run_impl (const double dt)
 
   // Compute heights
   const auto z_mid = CospFunc::view_2d<Real>("z_mid", m_num_cols, m_num_levs);
-  const auto z_int = CospFunc::view_2d<Real>("z_int", m_num_cols, m_num_levs);
+  const auto z_int = CospFunc::view_2d<Real>("z_int", m_num_cols, m_num_levs+1);
   const auto dz = z_mid;  // reuse tmp memory for dz
   const auto ncol = m_num_cols;
   const auto nlev = m_num_levs;
