@@ -65,7 +65,7 @@ struct PyAtmProc {
     }
   }
 
-  pybind11::array get_arr(const std::string& name) {
+  PyField get_field(const std::string& name) {
     auto it = fields.find(name);
 
     auto fnames = [&]() {
@@ -84,7 +84,7 @@ struct PyAtmProc {
         "  - field name: " + name + "\n"
         "  - p3 fields: " + fnames() + "\n");
 
-    return it->second.get();
+    return it->second;
   }
 
   // If running as part of a process group, call the second function, after
@@ -160,6 +160,17 @@ struct PyAtmProc {
   }
 };
 
+// Register type in the py module
+inline void pybind_pyatmproc(pybind11::module& m)
+{
+  pybind11::class_<PyAtmProc>(m,"AtmProc")
+    .def(pybind11::init<const PyGrid&>())
+    .def("get_field",&PyAtmProc::get_field)
+    .def("initialize",&PyAtmProc::initialize)
+    .def("setup_output",&PyAtmProc::setup_output)
+    .def("run",&PyAtmProc::run)
+    .def("read_ic",&PyAtmProc::read_ic);
+}
 } // namespace scream
 
 #endif // PYATMPROC_HPP

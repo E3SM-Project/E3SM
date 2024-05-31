@@ -11,8 +11,8 @@ namespace py = pybind11;
 namespace scream {
 
 void initialize () {
-  initialize_scream_session(true);
   ekat::Comm comm(MPI_COMM_WORLD);
+  initialize_scream_session(comm.am_i_root());
   scorpio::init_subsystem(comm);
 }
 void finalize () {
@@ -28,22 +28,11 @@ PYBIND11_MODULE (pyscream,m) {
   m.def("init",&initialize);
   m.def("finalize",&finalize);
 
-  // Field class
-  py::class_<PyField>(m,"Field")
-    .def("get",&PyField::get)
-    .def("sync_to_host",&PyField::sync_to_host)
-    .def("print",&PyField::print);
-
-  // Grid
-  py::class_<PyGrid>(m,"Grid")
-    .def(py::init<const std::string&,int,int>());
-
-  // Atm process
-  py::class_<PyAtmProc>(m,"AtmProc")
-    .def(py::init<const PyGrid&>())
-    .def("get_arr",&PyAtmProc::get_arr)
-    .def("initialize",&PyAtmProc::initialize)
-    .def("read_ic",&PyAtmProc::read_ic,py::arg("ic_filename") = "",py::arg("default_init") = true);
+  // Call all other headers' registration routines
+  pybind_pyparamlist(m);
+  pybind_pyfield(m);
+  pybind_pygrid(m);
+  pybind_pyatmproc(m);
 }
 
 } // namespace scream

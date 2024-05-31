@@ -26,7 +26,7 @@ public:
 protected:
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type /* from_grid */,
-                      const grid_ptr_type /* to_grid */) const
+                      const grid_ptr_type /* to_grid */) const override
   {
     EKAT_ERROR_MSG ("Error! do_create_remapper not implemented for SingleGridGM.\n");
   }
@@ -40,12 +40,12 @@ struct PyGrid {
     ekat::Comm comm(MPI_COMM_WORLD);
     grid = create_point_grid(name,ncols,nlevs,comm);
   }
-
-  // 2d scalar, managed/unmanaged
-
-
-
 };
+
+inline void pybind_pygrid (pybind11::module& m) {
+  pybind11::class_<PyGrid>(m,"Grid")
+    .def(pybind11::init<const std::string&,int,int>());
+}
 
 } // namespace scream
 

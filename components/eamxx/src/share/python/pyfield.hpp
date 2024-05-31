@@ -58,6 +58,15 @@ struct PyField {
   }
 };
 
+inline void pybind_pyfield (pybind11::module& m) {
+  // Field class
+  pybind11::class_<PyField>(m,"Field")
+    .def(pybind11::init<>())
+    .def("get",&PyField::get)
+    .def("sync_to_host",&PyField::sync_to_host)
+    .def("print",&PyField::print);
+}
+
 } // namespace scream
 
 #endif // PYFIELD_HPP
