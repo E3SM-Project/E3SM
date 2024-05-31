@@ -26,13 +26,10 @@ FUTURE WORK:
 7. Use std::string rather than c-strings
 8. Remove a Kokkos:fence and combine two kernels while computing w_sec_int_
 9. Fix double counting of tracer advection by modifying SHOC.
-10. A git issue for computing top_lev, moving liq_cldfrac in ACI and using TKE directly
-11.Replace [=] with [&]
-12. Remove all set_string and use pow
-13. use "aitken_dry_dia = ekat::subview_1(dgnum,mam4::ModeIndex::Aitken);"
+10. A git issue for computing top_lev, moving liq_cldfrac in ACI and using TKE
+directly
 14. Merge kernels so that we are not calling one from another
-15. Use "TeamVectorRange" instead of thread
-16. improve the way qqcw is populated 
+16. improve the way qqcw is populated
 17.delete fence mentioned by Luca
 -----------------------------------------------------------------
 */
@@ -83,10 +80,7 @@ void MAMAci::set_grids(
 
   using namespace ekat::units;
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  //q_unit.set_string("kg/kg");
-
-  auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-  //n_unit.set_string("#/kg");
+  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
 
   auto nondim = ekat::units::Units::nondimensional();
 
@@ -127,10 +121,8 @@ void MAMAci::set_grids(
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
-  auto m2 = m * m;
-  //m2.set_string("m^2");
-  auto s2 = s * s;
-  //s2.set_string("s^2");
+  auto m2 = pow(m, 2);
+  auto s2 = pow(s, 2);
 
   // NOTE: w_variance im microp_aero.F90 in EAM is at "itim_old" dynamics time
   // step. Since, we are using SE dycore, itim_old is 1 which is equivalent to
@@ -252,8 +244,7 @@ void MAMAci::set_grids(
 
   // units of number mixing ratios of tracers
   auto frz_unit = 1 / (cm * cm * cm * s);
-  //n_unit.set_string("1(cm^-3 s^-1)");
-  // heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
+  //  heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
   add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
 
@@ -586,11 +577,10 @@ void MAMAci::run_impl(const double dt) {
                                    // output
                                    wsub_, wsubice_, wsig_);
 
-
   // We need dry diameter for only aitken mode
-  compute_aitken_dry_diameter(team_policy, dgnum_, top_lev_, nlev_,
-                              // output
-                              aitken_dry_dia_);
+  Kokkos::deep_copy(
+      aitken_dry_dia_,
+      ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
 
   Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
 
@@ -622,7 +612,7 @@ void MAMAci::run_impl(const double dt) {
                                // output
                                kvh_int_);
 
-  Kokkos::fence(); 
+  Kokkos::fence();
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
