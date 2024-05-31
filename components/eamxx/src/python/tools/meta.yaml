@@ -1,0 +1,3 @@
+# add pyeamxx recipe here
+# get yaml-cpp, spdlog, netcdf, libnetcdf, lippnetcdf, etc. from cf
+# cannot get kokkos from cf, must build 

@@ -22,7 +22,7 @@ void finalize () {
   finalize_scream_session();
 }
 
-PYBIND11_MODULE (libpyeamxx,m) {
+PYBIND11_MODULE (libpyeamxx_ext,m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 

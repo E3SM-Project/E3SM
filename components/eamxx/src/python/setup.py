@@ -7,10 +7,10 @@ class BinaryDistribution(Distribution):
 
 setup(
     name='pyeamxx',
-    version='0.0.1',
+    version='0.0.1.dev4',
     author='E3SM SCREAM',
     description='EAMxx wrapper',
-    packages=['','pyeamxx'],
+    packages=['', 'pyeamxx'],
     package_data={
         '': ['libpyeamxx/*.so'],
     },
