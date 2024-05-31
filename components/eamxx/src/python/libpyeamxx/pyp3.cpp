@@ -38,10 +38,11 @@ struct PyP3 : public PyAtmProc {
   }
 };
 
-PYBIND11_MODULE (pyp3,m) {
+// PYBIND11_MODULE (pyp3,m) {
 
-  m.doc() = "Python interfaces to P3Microphysics";
-
+//   m.doc() = "Python interfaces to P3Microphysics";
+inline void pybind_pyp3(py::module& m) {
+  
   py::class_<PyP3,PyAtmProc>(m,"P3")
     .def(py::init<const PyGrid&>())
     .def(py::init<const PyGrid&,const PyParamList&>());

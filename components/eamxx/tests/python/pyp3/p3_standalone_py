@@ -6,8 +6,7 @@ import sys
 sys.path.append('@SCREAM_BASE_DIR@/scripts')
 
 # Add path to pyeamxx libs
-sys.path.append('@CMAKE_BINARY_DIR@/src/share/python')
-sys.path.append('@CMAKE_BINARY_DIR@/src/physics/p3/python')
+sys.path.append('@CMAKE_BINARY_DIR@/src/python/libpyeamxx')
 
 # Without these, and manual init/finalize, on my laptop I get
 # obscure MPI errors at exit.

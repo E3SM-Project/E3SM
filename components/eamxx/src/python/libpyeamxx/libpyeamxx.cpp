@@ -3,6 +3,7 @@
 #include "pygrid.hpp"
 #include "pyatmproc.hpp"
 #include "pyparamlist.hpp"
+#include "pyp3.cpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -21,7 +22,7 @@ void finalize () {
   finalize_scream_session();
 }
 
-PYBIND11_MODULE (pyscream,m) {
+PYBIND11_MODULE (libpyeamxx,m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 
@@ -34,6 +35,7 @@ PYBIND11_MODULE (pyscream,m) {
   pybind_pyfield(m);
   pybind_pygrid(m);
   pybind_pyatmproc(m);
+  pybind_pyp3(m);
 }
 
 } // namespace scream
