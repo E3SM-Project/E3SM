@@ -196,6 +196,7 @@ void OceanState::defineIOFields() {
 
    int Err = 0;
 
+   // Create metadata dimensions
    auto CellDim = OMEGA::MetaDim::create("NCells", NCellsSize);
    auto EdgeDim = OMEGA::MetaDim::create("NEdges", NEdgesSize);
    auto VertDim = OMEGA::MetaDim::create("NVertLevels", NVertLevels);
@@ -204,7 +205,7 @@ void OceanState::defineIOFields() {
                                                                   VertDim};
    std::vector<std::shared_ptr<OMEGA::MetaDim>> NormalVelocityDim{EdgeDim,
                                                                   VertDim};
-
+   // Create metadate for variables
    auto NormalVelocityMeta = OMEGA::ArrayMetaData::create(
        "NormalVelocity",
        "Velocity component normal to edge", /// long Name
@@ -229,6 +230,12 @@ void OceanState::defineIOFields() {
        LayerThicknessDim /// dim pointers
    );
 
+   // Group state metadata
+   auto StateMetaGroup = OMEGA::MetaGroup::create("State");
+   Err = StateMetaGroup->addField("NormalVelocity");
+   Err = StateMetaGroup->addField("LayerThickness");
+
+   // Setup IOFields for state variables
    Err = OMEGA::IOField::define("NormalVelocity");
    Err = OMEGA::IOField::define("LayerThickness");
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
@@ -302,6 +309,7 @@ void OceanState::updateTimeLevels() {
 
    int NewLevel = NTimeLevels - 1;
 
+   // Update time levels for layer thickness
    copyToHost(NewLevel);
    MeshHalo->exchangeFullArrayHalo(LayerThicknessH[NewLevel], OMEGA::OnCell);
    copyToDevice(NewLevel);
@@ -314,6 +322,7 @@ void OceanState::updateTimeLevels() {
       LayerThickness[Level]     = Temp;
    }
 
+   // Update time levels for normal velocity
    copyToHost(NewLevel);
    MeshHalo->exchangeFullArrayHalo(NormalVelocityH[NewLevel], OMEGA::OnEdge);
    copyToDevice(NewLevel);
@@ -324,6 +333,7 @@ void OceanState::updateTimeLevels() {
       NormalVelocity[Level]     = Temp;
    }
 
+   // Update IOField data associations
    int Err = 0;
 
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
