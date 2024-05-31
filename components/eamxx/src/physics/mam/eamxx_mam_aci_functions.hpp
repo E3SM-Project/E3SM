@@ -529,7 +529,6 @@ void call_function_dropmixnuc(
 
 // Update cloud borne aerosols
 void update_cloud_borne_aerosols(
-    haero::ThreadTeamPolicy team_policy,
     const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot], const int nlev,
     // output
     mam_coupling::AerosolState &dry_aero) {

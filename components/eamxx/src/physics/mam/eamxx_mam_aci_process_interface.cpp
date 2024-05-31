@@ -26,6 +26,14 @@ FUTURE WORK:
 7. Use std::string rather than c-strings
 8. Remove a Kokkos:fence and combine two kernels while computing w_sec_int_
 9. Fix double counting of tracer advection by modifying SHOC.
+10. A git issue for computing top_lev, moving liq_cldfrac in ACI and using TKE directly
+11.Replace [=] with [&]
+12. Remove all set_string and use pow
+13. use "aitken_dry_dia = ekat::subview_1(dgnum,mam4::ModeIndex::Aitken);"
+14. Merge kernels so that we are not calling one from another
+15. Use "TeamVectorRange" instead of thread
+16. improve the way qqcw is populated 
+17.delete fence mentioned by Luca
 -----------------------------------------------------------------
 */
 
@@ -663,7 +671,7 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(team_policy, qqcw_fld_work_, nlev_,
+  update_cloud_borne_aerosols(qqcw_fld_work_, nlev_,
                               // output
                               dry_aero_);
 
