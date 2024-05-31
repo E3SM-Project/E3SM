@@ -3,10 +3,14 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 
+#include <ekat/io/ekat_yaml.hpp>
+
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace scream {
 
@@ -18,12 +22,17 @@ struct PyAtmProc {
   util::TimeStamp time;
   ATMBufferManager buffer;
 
+  std::shared_ptr<OutputManager> output_mgr;
+
   PyAtmProc (const PyGrid& pyg)
    : pygrid(pyg)
    , t0({2000,1,1},{0,0,0})
   {
     // TODO: make t0 configurable?
   }
+
+  // I don't think virtual is needed, but just in case
+  virtual ~PyAtmProc () = default;
 
   std::map<std::string,PyField> create_fields () {
     std::map<std::string,PyField> pyfields;
@@ -121,9 +130,33 @@ struct PyAtmProc {
     return pybind11::cast(missing);
   }
 
+  void setup_output (const std::string& yaml_file) {
+
+    // Load output params
+    auto params = ekat::parse_yaml_file(yaml_file);
+
+    // Stuff all fields in a field manager
+    auto fm = std::make_shared<FieldManager>(pygrid.grid);
+    fm->registration_begins();
+    fm->registration_ends();
+    for (auto it : fields) {
+      fm->add_field(it.second.f);
+    }
+
+    // Create a grids manager on the fly
+    auto gm = std::make_shared<SingleGridGM>(pygrid.grid);
+
+    output_mgr = std::make_shared<OutputManager>();
+    output_mgr->setup(pygrid.grid->get_comm(),params,fm,gm,t0,t0,false);
+    output_mgr->set_logger(ap->get_logger());
+  }
+
   void run (double dt) {
     ap->run(dt);
     time += dt;
+    if (output_mgr) {
+      output_mgr->run(time);
+    }
   }
 };
 
