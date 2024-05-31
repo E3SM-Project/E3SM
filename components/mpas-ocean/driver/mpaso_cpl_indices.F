@@ -179,8 +179,12 @@ module mpaso_cpl_indices
 contains
 
   subroutine mpaso_cpl_indices_set( )
+<<<<<<< HEAD
 
     use seq_flds_mod, only : wav_ocn_coup      
+=======
+    use seq_flds_mod, only : wav_ocn_coup
+>>>>>>> 911d628841 (fix to wav_ocn_coup flag)
     type(mct_aVect) :: o2x      ! temporary
     type(mct_aVect) :: x2o      ! temporary
 
