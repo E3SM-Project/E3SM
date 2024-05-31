@@ -232,6 +232,7 @@ void OceanState::defineIOFields() {
 
    // Group state metadata
    auto StateMetaGroup = OMEGA::MetaGroup::create("State");
+
    Err = StateMetaGroup->addField("NormalVelocity");
    Err = StateMetaGroup->addField("LayerThickness");
 

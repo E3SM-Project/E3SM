@@ -201,30 +201,32 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: time level update FAIL");
       }
 
-
+      // Test time level update on device
       int count1;
       auto LayerThickness_def  = DefState->LayerThickness[1];
       auto LayerThickness_test = TestState->LayerThickness[0];
-      OMEGA::parallelReduce("reduce", {DefState->NCellsAll,  DefState->NVertLevels}, 
-                  KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
-            if (LayerThickness_def(Cell, Level) !=
-                LayerThickness_test(Cell, Level)) {
-               Accum++;
-            }
-         },
-      count1);
+      OMEGA::parallelReduce(
+          "reduce", {DefState->NCellsAll, DefState->NVertLevels},
+          KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
+             if (LayerThickness_def(Cell, Level) !=
+                 LayerThickness_test(Cell, Level)) {
+                Accum++;
+             }
+          },
+          count1);
 
       int count2;
       LayerThickness_def  = DefState->LayerThickness[0];
       LayerThickness_test = TestState->LayerThickness[1];
-      OMEGA::parallelReduce("reduce", {DefState->NCellsAll,  DefState->NVertLevels}, 
-                  KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
-            if (LayerThickness_def(Cell, Level) !=
-                LayerThickness_test(Cell, Level)) {
-               Accum++;
-            }
-        },
-      count2);
+      OMEGA::parallelReduce(
+          "reduce", {DefState->NCellsAll, DefState->NVertLevels},
+          KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
+             if (LayerThickness_def(Cell, Level) !=
+                 LayerThickness_test(Cell, Level)) {
+                Accum++;
+             }
+          },
+          count2);
 
       if (count1 == 0 && count2 == 0) {
          LOG_INFO("State: time level update (GPU) PASS");

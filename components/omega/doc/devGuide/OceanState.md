@@ -47,7 +47,7 @@ and a copy from device to host is performed by:
 State->copyToHost(TimeLevel);
 ```
 Eventually, the host arrays will be eliminated when `IO` and `Halo` are extended to
-handle host <-> device transfers.   
+handle host <-> device transfers.
 
 A time level update to advance the solution at the end of a model timestep is done by:
 ```c++
