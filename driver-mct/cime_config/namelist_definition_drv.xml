@@ -205,25 +205,23 @@
     </values>
   </entry>
 
-  <entry id="wav_atm_coup" modify_via_xml="WAV_ATM_COUP">
+  <entry id="wav_atm_coup">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>TRUE if wave atm coupling turned on. default is TRUE if WW3 used in compset </desc>
     <values>
-      <value>$WAV_ATM_COUP</value>
-      <value WAVSPEC='none'>.false.</value>
+      <value>.false.</value>
     </values>
   </entry>
 
-   <entry id="wav_ocn_coup" modify_via_xml="WAV_OCN_COUP">
+   <entry id="wav_ocn_coup">
     <type>logical</type>
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>TRUE if wave ocean coupling turned on. default is TRUE if WW3 used in compset </desc>
     <values>
-      <value>$WAV_OCN_COUP</value>
-      <value WAVSPEC='none'>.false.</value>
+      <value>.false.</value>
     </values>
   </entry>
 

@@ -55,9 +55,20 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['atm_grid'] = case.get_value('ATM_GRID')
     config['lnd_grid'] = case.get_value('LND_GRID')
     config['compocn'] = case.get_value('COMP_OCN')
+ 
+    if 'ww3' in case.get_value('COMP_WAV'):
+       config['WAVSPEC'] = case.get_value('WAV_SPEC') 
+       config['wav_atm_coup'] = '.true.' if case.get_value('COMP_ATM') == 'eam' else '.false.'
+       config['wav_ocn_coup'] = '.true.' if case.get_value('COMP_OCN') == 'mpaso' else '.false.'
+    elif 'dwav' in case.get_value('COMP_WAV'):
+       config['WAVSPEC'] = 'sp36x36'
+       config['wav_atm_coup'] = '.false.'
+       config['wav_ocn_coup'] = '.false.'
+    else:
+       config['WAVSPEC'] = 'none'
+       config['wav_atm_coup'] = '.false.'
+       config['wav_ocn_coup'] = '.false.'
 
-    config['wav_atm_coup'] = case.get_value('WAV_ATM_COUP')
-    config['wav_ocn_coup'] = case.get_value('WAV_OCN_COUP')
 
     docn_mode = case.get_value("DOCN_MODE")
     if docn_mode and 'aqua' in docn_mode:
