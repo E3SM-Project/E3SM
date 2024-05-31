@@ -26,6 +26,7 @@ module ocn_tracer_surface_restoring
    use mpas_timekeeping
    use mpas_forcing
    use mpas_stream_manager
+   use mpas_global_sum_mod
    use ocn_constants
    use ocn_config
    use ocn_framework_forcing
@@ -250,7 +251,11 @@ contains
         integer :: ierr
 
         integer, parameter :: nSums = 2
-        real (kind=RKIND), dimension(nSums) :: reductions, sums
+        real (kind=RKIND), dimension(nSums) :: reductions
+
+        integer, dimension(nSums) :: indexForReproSum
+        real (kind=RKIND), dimension(:,:), allocatable :: &
+           localArrayForReproSum
 
         ! initialize monthly forcing to be read from file
 
@@ -339,6 +344,9 @@ contains
         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
+        allocate (localArrayForReproSum(nCellsSolve,2))
+        localArrayForReproSum(:,:) = 0.0_RKIND
+
         ! This is not in a threaded region, so no openMP pragmas are needed.
         if ( associated(landIceMask)) then
 
@@ -414,11 +422,14 @@ contains
 
         endif
 
+        indexForReproSum(1) = 1
+        indexForReproSum(2) = 0
         do iCell=1,nCellsSolve
            deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)
            if (deltaS .ne. 0.0_RKIND) then
-              sumAreaDeltaS = sumAreaDeltaS + deltaS*areaCell(iCell)
-              sumArea = sumArea + areaCell(iCell)
+              indexForReproSum(2) = indexForReproSum(2) + 1
+              localArrayForReproSum(indexForReproSum(2),1) = deltaS
+              localArrayForReproSum(indexForReproSum(2),2) = areaCell(iCell)
            endif
         enddo
 
@@ -427,16 +438,18 @@ contains
 
       ! Global sum to subtract global mean of deltaS
       dminfo = domain % dminfo
-      sums(1) = sumAreaDeltaS
-      sums(2) = sumArea
-      call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
-      sumAreaDeltaSGlobal = reductions(1)
-      sumAreaGlobal       = reductions(2)
-      avgDeltaS1 = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
-      !LPV: There is no guarantee that a global sum of deltaS is BFB across
-      !decompositions, the next line rounds each value to 10 decimal places to
-      !ensure BFB results
-      avgDeltaS = float (int(avgDeltaS1 * 1.0E10_RKIND + 0.5_RKIND)) / 1.0E10_RKIND
+! first do 1 field sum for area
+      reductions(1) = mpas_global_sum(localArrayForReproSum(:,2), &
+                                           domain%dminfo%comm, indexForReproSum)
+! now do sum of 2 mupltiplied fields for area*deltaS
+      reductions(2) = mpas_global_sum(localArrayForReproSum(:,1), localArrayForReproSum(:,2), &
+                                           domain%dminfo%comm, indexForReproSum)
+
+      sumAreaDeltaSGlobal = reductions(2)
+      sumAreaGlobal       = reductions(1)
+      avgDeltaS = sumAreaDeltaSGlobal/(sumAreaGlobal + 1.e-20_RKIND)
+
+      deallocate (localArrayForReproSum)
 
       block => domain % blocklist
       do while (associated(block))
