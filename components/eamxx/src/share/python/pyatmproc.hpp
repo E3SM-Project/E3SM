@@ -15,6 +15,7 @@ struct PyAtmProc {
   PyGrid pygrid;
   std::map<std::string,PyField> fields;
   util::TimeStamp t0;
+  util::TimeStamp time;
   ATMBufferManager buffer;
 
   PyAtmProc (const PyGrid& pyg)
@@ -85,7 +86,7 @@ struct PyAtmProc {
     buffer.allocate();
     ap->init_buffers(buffer);
 
-    t0 = util::str_to_time_stamp(t0_str);
+    time = t0 = util::str_to_time_stamp(t0_str);
     for (auto it : fields) {
       auto& f = it.second.f;
       if (ap->has_required_field(f.get_header().get_identifier())) {
@@ -118,6 +119,11 @@ struct PyAtmProc {
     scorpio::release_file(ic_filename);
 
     return pybind11::cast(missing);
+  }
+
+  void run (double dt) {
+    ap->run(dt);
+    time += dt;
   }
 };
 
