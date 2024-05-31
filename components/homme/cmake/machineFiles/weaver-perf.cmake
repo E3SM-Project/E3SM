@@ -1,4 +1,4 @@
-# CMake Cache File for Weaver (IBM POWER 9 & NVIDIA TESLA V100s)
+# Performance CMake Cache File for Weaver (IBM POWER 9 & NVIDIA TESLA V100s)
 # Skyler Ruiter -- 5/30/24
 #
 #  Module list that worked for this cache file (throw into a script load-weaver)
@@ -57,7 +57,7 @@ SET (DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
 #SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
-SET (BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")	# Buidling without Parallel IO Lib
+SET (BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "") 	# Buidling without Parallel IO Lib
 SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
 SET (USE_QUEUING FALSE CACHE BOOL "")				# Use queing or not
