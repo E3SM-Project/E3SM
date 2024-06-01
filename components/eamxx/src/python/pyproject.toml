@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyeamxx"
+version = "0.0.1.dev6"
+dependencies = ["numpy", "mpi4py"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyeamxx", "libpyeamxx"]
+exclude = ["build_src", "tests"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"libpyeamxx" = ["*.so*"]

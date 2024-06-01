@@ -1,6 +1,0 @@
-
-# eamxx fails with gcc 13
-c_compiler_version:     # [linux]
-  - 12                  # [linux]
-cxx_compiler_version:   # [linux]
-  - 12                  # [linux]
