@@ -4,8 +4,9 @@ INFO:
 - pyeamxx is where we will house the python code
 
 TODO:
-- formalize the build
-  - need to build libpyeamxx and get all the shared objs there
-  - need to write down scripts for building and testing
 - add more python code to organize structures
-- establish ci
+- establish ci pipeline in scream/e3sm repos
+- add to cf (or alternatively sync with it)
+- decide how to deal with versioning
+- decide archs/pythons/mpis to tgt
+- figure out what's tripping cf

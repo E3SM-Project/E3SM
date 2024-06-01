@@ -1,3 +1,49 @@
-# add pyeamxx recipe here
-# get yaml-cpp, spdlog, netcdf, libnetcdf, lippnetcdf, etc. from cf
-# cannot get kokkos from cf, must build 
+package:
+  name: pyeamxx
+  version: 0.0.1.dev5
+
+source:
+  path: ../../../../../
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('fortran') }}
+  host:
+    - python
+    - pybind11
+    - setuptools
+    - build
+    - spdlog
+    - yaml-cpp
+    - openmpi
+    - hdf5 *=*openmpi*
+    - libnetcdf 
+    - netcdf-cxx4
+    - netcdf-fortran
+    - python
+    - numpy
+  run:
+    - spdlog
+    - yaml-cpp
+    - openmpi
+    - hdf5 *=*openmpi*
+    - libnetcdf 
+    - netcdf-cxx4
+    - netcdf-fortran
+    - python
+    - numpy
+    - mpi4py
+
+about:
+  home: https://github.com/E3SM-Project/scream
+  summary: Python wrapper for EAMxx
+
+extra:
+  recipe-maintainers:
+    - scream-team
