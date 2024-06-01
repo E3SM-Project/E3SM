@@ -1682,12 +1682,13 @@ if (l_tracer_aero) then
     ! add tendency from iac model component
      call co2_cycle_iac_ptend(state, pbuf, ptend,is_begc)
      call physics_update(state, ptend, ztodt, tend)
+     call get_carbon_air_fluxes(state, pbuf, ztodt) 
      !FIXMEB: Do we need to call "get_carbon_air_fluxes" here???
     
     ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-    call get_carbon_air_fluxes(state, pbuf, ztodt)
+    !call co2_cycle_set_ptend(state, pbuf, ptend)
+    !call physics_update(state, ptend, ztodt, tend)
+    !call get_carbon_air_fluxes(state, pbuf, ztodt)
 
     ! Chemistry calculation
     if (chem_is_active()) then

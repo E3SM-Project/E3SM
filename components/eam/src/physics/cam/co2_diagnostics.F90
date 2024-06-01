@@ -303,7 +303,7 @@ contains
       real(r8) :: air_flux(pcols)           ! aircraft carbon flux
       !------------------------------------------------------------------------
 
-      if ( .not. co2_transport() .or. .not. co2_readFlux_aircraft ) return
+      !if ( .not. co2_transport() .or. .not. co2_readFlux_aircraft ) return
 
       ! Set CO2 global index
       do m = 1, ncnst
@@ -314,7 +314,8 @@ contains
       end do
 
       ! acquire aircraft fluxes from physics buffer
-      index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      !index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      index_ac_CO2 = pbuf_get_index('iac_co2')
       call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
 
       ! initialize arrays

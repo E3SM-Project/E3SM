@@ -80,7 +80,6 @@
 <sim_year>2015-2100</sim_year>
 
 <!-- Time-variant CO2 fossil fuel emissions -->
-<co2flux_fuel_file sim_year="2015-2100">atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/co2_emission_data_SSP245_GCAM/ne30pg2_eam_CO2-em-anthro_input4MIPs_emissions_ScenarioMIP_PNNL-GCAM52-ssp245-1-0_gr_201401-210112_interp_months_c20240409.nc</co2flux_fuel_file>
 <aircraft_datapath>atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/co2_emission_data_SSP245_GCAM/</aircraft_datapath>
 
 </namelist_defaults>
