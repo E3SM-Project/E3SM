@@ -429,8 +429,9 @@ void call_function_dropmixnuc(
             atmosphere_for_column(dry_atmosphere, icol);
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
+        constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0u, mam4::ndrop::pver),
+            Kokkos::TeamVectorRange(team, 0u, pver),
             [&](int klev) {
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
@@ -522,12 +523,11 @@ void update_cloud_borne_aerosols(
 KOKKOS_INLINE_FUNCTION
 void update_interstitial_aerosols_levs(
     const haero::ThreadTeam &team, const int nlev, const int icol,
-    const int s_idx, const Real dt,
-    const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
+    const Real dt, const MAMAci::view_2d ptend_view,
     // output
     MAMAci::view_2d aero_mr) {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-    aero_mr(icol, kk) += ptend_q[s_idx](icol, kk) * dt;
+    aero_mr(icol, kk) += ptend_view(icol, kk) * dt;
   });
 }
 
@@ -548,12 +548,13 @@ void update_interstitial_aerosols(
       auto aero_mmr = dry_aero.int_aero_mmr[m][a];
 
       if(aero_mmr.data()) {
+        const auto ptend_view = ptend_q[s_idx];
         Kokkos::parallel_for(
             team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
               const int icol = team.league_rank();
               // update values for all levs at this column
-              update_interstitial_aerosols_levs(team, nlev, icol, s_idx, dt,
-                                                ptend_q,
+              update_interstitial_aerosols_levs(team, nlev, icol, dt,
+                                                ptend_view,
                                                 // output
                                                 aero_mmr);
             });
@@ -563,12 +564,13 @@ void update_interstitial_aerosols(
     }
     auto aero_nmr =
         dry_aero.int_aero_nmr[m];  // number mixing ratio for mode "m"
+    const auto ptend_view = ptend_q[s_idx];
     Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
           const int icol = team.league_rank();
           // update values for all levs at this column
-          update_interstitial_aerosols_levs(team, nlev, icol, s_idx, dt,
-                                            ptend_q,
+          update_interstitial_aerosols_levs(team, nlev, icol, dt,
+                                            ptend_view,
                                             // output
                                             aero_nmr);
         });
@@ -672,8 +674,9 @@ void call_hetfrz_compute_tendencies(
             ekat::subview(diagnostic_scratch[42], icol);
 
         // assign cloud fraction
+        constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0u, mam4::ndrop::pver),
+            Kokkos::TeamVectorRange(team, 0u, pver),
             [&](int klev) {
               diags.stratiform_cloud_fraction(klev) =
                   haero_atm.cloud_fraction(klev);
