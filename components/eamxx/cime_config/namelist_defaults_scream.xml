@@ -587,8 +587,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <dgnumwet type="real">1e-5</dgnumwet>
     <fracis type="real">1e-5</fracis>
     <cldfrac_tot type="real">0.5</cldfrac_tot>
-    <pbl_height type="real">25.0</pbl_height>
-    <phis type="real">0.1</phis>
     <dlf type="real">0.0</dlf>
     <dp_ccf type="real">0.0</dp_ccf>
     <sh_ccf type="real">0.0</sh_ccf>
