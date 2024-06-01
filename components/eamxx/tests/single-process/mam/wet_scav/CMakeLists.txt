@@ -7,7 +7,8 @@ CreateADUnitTest(${TEST_BASE_NAME}
   LABELS mam4_wetscav physics
   LIBS mam
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-)
+  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
+  )
 
 # Set AD configurable options
 SetVarDependingOnTestSize(NUM_STEPS 2 4 6)
