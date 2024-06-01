@@ -12,7 +12,7 @@ setup(
     description='EAMxx wrapper',
     packages=['', 'pyeamxx'],
     package_data={
-        '': ['libpyeamxx/*.so'],
+        '': ['libpyeamxx/*.so*'],
     },
     distclass=BinaryDistribution,
     zip_safe=False

@@ -11,6 +11,7 @@ build:
 requirements:
   build:
     - cmake
+    # - {{ stdlib('c') }}
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - {{ compiler('fortran') }}
@@ -20,24 +21,27 @@ requirements:
     - setuptools
     - build
     - spdlog
+    - fmt
     - yaml-cpp
-    - openmpi
-    - hdf5 *=*openmpi*
+    - mpich
+    - hdf5 *=*mpich*
     - libnetcdf 
     - netcdf-cxx4
     - netcdf-fortran
     - python
     - numpy
+    - mpi4py
   run:
-    - spdlog
-    - yaml-cpp
-    - openmpi
-    - hdf5 *=*openmpi*
-    - libnetcdf 
-    - netcdf-cxx4
-    - netcdf-fortran
+    - {{ pin_compatible('spdlog', max_pin='x.x') }}
+    - {{ pin_compatible('fmt', max_pin='x.x') }}
+    - {{ pin_compatible('yaml-cpp', max_pin='x.x') }}
+    - {{ pin_compatible('mpich', max_pin='x.x') }}
+    - hdf5 *=*mpich*
+    - {{ pin_compatible('libnetcdf', max_pin='x.x') }} 
+    - {{ pin_compatible('netcdf-cxx4', max_pin='x.x') }}
+    - {{ pin_compatible('netcdf-fortran', max_pin='x.x') }}
     - python
-    - numpy
+    - {{ pin_compatible('numpy', max_pin='x.x') }}
     - mpi4py
 
 about:

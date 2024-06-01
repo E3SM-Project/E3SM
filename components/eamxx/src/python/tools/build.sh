@@ -7,8 +7,8 @@ cmake \
     -B build_src \
     -DCMAKE_BUILD_TYPE='Release' \
     -DEAMXX_ENABLE_PYBIND='ON' \
-    -DNETCDF_FORTRAN_PATH=$PREFIX \
-    -DNETCDF_C_PATH=$PREFIX \
+    -DNetcdf_Fortran_PATH=$PREFIX \
+    -DNetcdf_C_PATH=$PREFIX \
     -DCMAKE_CXX_FLAGS='-fvisibility-inlines-hidden -fmessage-length=0 -Wno-use-after-free -Wno-unused-variable -Wno-maybe-uninitialized' \
     -DCMAKE_C_FLAGS='' \
     -DCMAKE_Fortran_FLAGS='-Wno-maybe-uninitialized -Wno-unused-dummy-argument' \
@@ -23,7 +23,8 @@ cmake \
 
 cmake --build build_src/src/python -j${CPU_COUNT:-128}
 
-find build_src -type f -name "*.so" | xargs cp -t libpyeamxx/
+find build_src -name "*.so*" | xargs cp -t libpyeamxx/
+for f in libpyeamxx/*.so*; do patchelf --set-rpath '$ORIGIN' --force-rpath $f; done
 
 $PYTHON -m build -w -n -x
 

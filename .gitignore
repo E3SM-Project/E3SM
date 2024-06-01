@@ -11,6 +11,7 @@
 
 # Shared libraries
 *.so
+*.so.*
 
 # Executables
 *.exe
