@@ -7,11 +7,12 @@ offering a strong foundation for managing the building process.
 
 The Omega build system has two modes: standalone and E3SM component.
 
-At the start of the Omega build, the system reads the E3SM machine file
-(`config_machines.xml`) for both standalone and E3SM component builds.
-Following this, it configures CMake variables and environment variables
-based on the computing system where the build is taking place, as well as
-user input from the CMake command-line.
+For standalone build, the Omega build creates a generic E3SM case and
+reads build configurations from the case. In E3SM component build, the
+Omega build reads build configrations from the E3SM case created by
+CIME build system. Following this, it configures CMake variables and
+environment variables based on the computing system where the build is
+taking place, as well as user input from the CMake command-line.
 
 For the Omega build system to function, a Python interpreter is necessary.
 The minimum version of CMake is 3.21.

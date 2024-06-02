@@ -69,6 +69,8 @@ if(OMEGA_BUILD_EXECUTABLE)
     PRIVATE
     ${OMEGA_LIB_NAME}
     OmegaLibFlags
-)
+  )
+
+  set_target_properties(${OMEGA_EXE_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 endif()

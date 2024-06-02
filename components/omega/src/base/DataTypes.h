@@ -45,9 +45,11 @@ using MemSpace = Kokkos::CudaSpace;
 using MemSpace = Kokkos::Experimental::HIPSpace;
 #elif OMEGA_ENABLE_OPENMP
 using MemSpace = Kokkos::HostSpace;
+#elif OMEGA_ENABLE_SERIAL
+using MemSpace = Kokkos::HostSpace;
 #else
-#error \
-    "None of OMEGA_ENABLE_CUDA, OMEGA_ENABLE_HIP, and OMEGA_ENABLE_OPENMP is defined."
+#error "None of OMEGA_ENABLE_CUDA, OMEGA_ENABLE_HIP, OMEGA_ENABLE_OPENMP, \
+OMEGA_ENABLE_SERIAL is defined."
 #endif
 
 // Set default tile length

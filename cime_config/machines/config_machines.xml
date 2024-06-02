@@ -1022,6 +1022,10 @@
         <command name="load">rocm/5.4.0</command>
       </modules>
       <modules compiler="crayomegagpu">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
+        <command name="switch">cce cce/15.0.1</command>
+        <command name="switch">craype craype/2.7.20</command>
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.4.0</command>
       </modules>
@@ -1052,9 +1056,6 @@
         <command name="load">rocm/5.4.0</command>
       </modules>
       <modules compiler="gnuomegagpu">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-        <command name="switch">gcc gcc/11.2.0</command>
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.4.0</command>
       </modules>
