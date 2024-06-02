@@ -459,8 +459,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 void MAMWetscav::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-
-  printf("Working on wet_sav \n");
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -508,6 +506,9 @@ void MAMWetscav::run_impl(const double dt) {
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+
+  // Making a local copy of 'nlev_' because we cannot use a member of a class inside a parallel_for.
+  const int nlev= nlev_;
 
   // loop over atmosphere columns and compute aerosol particle size
   Kokkos::parallel_for(
@@ -565,9 +566,20 @@ void MAMWetscav::run_impl(const double dt) {
                                     // output
                                     aerdepwetis_icol, aerdepwetcw_icol,
                                     work_icol);
+      team.team_barrier();
+      // update interstitial aerosol state
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+          for(int a = 0; a < mam4::num_species_mode(m); ++a) {
+            const auto q_aero_i = progs.q_aero_i[m][a];
+            const auto tends_q_aero_i =tends.q_aero_i[m][a];
+          q_aero_i(kk) += tends_q_aero_i(kk) * dt;
+        }
+        }
+      });
+
       });  // icol parallel_for loop
 
-  std::cout << "End of wetscav run" << std::endl;
 }
 
 // =========================================================================================
