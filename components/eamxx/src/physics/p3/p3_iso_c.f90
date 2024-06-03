@@ -17,7 +17,7 @@ contains
   subroutine append_precision(string, prefix)
 
     character(kind=c_char, len=256), intent(out) :: string
-    character(kind=c_char, len=*), intent(in) :: prefix
+    character(*), intent(in) :: prefix
     real(kind=c_real) :: s
 
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
