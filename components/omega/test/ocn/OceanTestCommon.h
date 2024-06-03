@@ -2,10 +2,8 @@
 #define OMEGA_OCEAN_TEST_COMMON_H
 
 #include "DataTypes.h"
-#include "Decomp.h"
 #include "Halo.h"
 #include "HorzMesh.h"
-#include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
@@ -330,42 +328,75 @@ struct ErrorMeasures {
 };
 
 // compute global normalized error measures based on the difference
-// between two cell fields
-inline int computeErrorsCell(ErrorMeasures &ErrorMeasures,
-                             const Array2DReal &NumFieldCell,
-                             const Array2DReal &ExactFieldCell,
-                             const HorzMesh *Mesh, int NVertLevels) {
+// between two fields
+inline int computeErrors(ErrorMeasures &ErrorMeasures,
+                         const Array2DReal &NumFieldElement,
+                         const Array2DReal &ExactFieldElement,
+                         const HorzMesh *Mesh, MeshElement Element,
+                         int NVertLevels) {
 
    int Err = 0;
 
-   auto &AreaCell = Mesh->AreaCell;
+   int NElementsOwned;
+   Array1DReal AreaElement;
+
+   switch (Element) {
+   case OnCell:
+      NElementsOwned = Mesh->NCellsOwned;
+      AreaElement    = Mesh->AreaCell;
+      break;
+   case OnVertex:
+      NElementsOwned = Mesh->NVerticesOwned;
+      AreaElement    = Mesh->AreaTriangle;
+      break;
+   case OnEdge:
+      NElementsOwned = Mesh->NEdgesOwned;
+      // need to compute areas associated with edges since we don't store those
+      // in the mesh class
+      {
+         auto &DcEdge = Mesh->DcEdge;
+         auto &DvEdge = Mesh->DvEdge;
+         parallelFor(
+             {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+                AreaElement(IEdge) = DcEdge(IEdge) * DvEdge(IEdge) / 2;
+             });
+      }
+      break;
+   default:
+      LOG_ERROR("computeErrors: element needs to be one of (OnCell, OnVertex, "
+                "OnEdge)");
+      return 1;
+   }
 
    // Compute element-wise errors
-   Array2DReal LInfCell("LInfCell", Mesh->NCellsOwned, NVertLevels);
-   Array2DReal L2Cell("L2Cell", Mesh->NCellsOwned, NVertLevels);
+   Array2DReal LInfElement("LInfElement", NElementsOwned, NVertLevels);
+   Array2DReal L2Element("L2Element", NElementsOwned, NVertLevels);
 
-   Array2DReal LInfScaleCell("LInfScaleCell", Mesh->NCellsOwned, NVertLevels);
-   Array2DReal L2ScaleCell("L2ScaleCell", Mesh->NCellsOwned, NVertLevels);
+   Array2DReal LInfScaleElement("LInfScaleElement", NElementsOwned,
+                                NVertLevels);
+   Array2DReal L2ScaleElement("L2ScaleElement", NElementsOwned, NVertLevels);
 
    parallelFor(
-       {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int K) {
-          const Real NumValCell   = NumFieldCell(ICell, K);
-          const Real ExactValCell = ExactFieldCell(ICell, K);
+       {NElementsOwned, NVertLevels}, KOKKOS_LAMBDA(int IElement, int K) {
+          const Real NumValElement   = NumFieldElement(IElement, K);
+          const Real ExactValElement = ExactFieldElement(IElement, K);
 
           // Errors
-          LInfCell(ICell, K)      = std::abs(NumValCell - ExactValCell);
-          LInfScaleCell(ICell, K) = std::abs(ExactValCell);
-          L2Cell(ICell, K) =
-              AreaCell(ICell) * LInfCell(ICell, K) * LInfCell(ICell, K);
-          L2ScaleCell(ICell, K) = AreaCell(ICell) * LInfScaleCell(ICell, K) *
-                                  LInfScaleCell(ICell, K);
+          LInfElement(IElement, K) = std::abs(NumValElement - ExactValElement);
+          LInfScaleElement(IElement, K) = std::abs(ExactValElement);
+          L2Element(IElement, K)        = AreaElement(IElement) *
+                                   LInfElement(IElement, K) *
+                                   LInfElement(IElement, K);
+          L2ScaleElement(IElement, K) = AreaElement(IElement) *
+                                        LInfScaleElement(IElement, K) *
+                                        LInfScaleElement(IElement, K);
        });
 
    // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfCell);
-   const Real L2ErrorLoc   = sum(L2Cell);
-   const Real LInfScaleLoc = maxVal(LInfScaleCell);
-   const Real L2ScaleLoc   = sum(L2ScaleCell);
+   const Real LInfErrorLoc = maxVal(LInfElement);
+   const Real L2ErrorLoc   = sum(L2Element);
+   const Real LInfScaleLoc = maxVal(LInfScaleElement);
+   const Real L2ScaleLoc   = sum(L2ScaleElement);
 
    MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
    Real LInfError, LInfScale;
@@ -382,7 +413,7 @@ inline int computeErrorsCell(ErrorMeasures &ErrorMeasures,
    Err += MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
 
    if (Err != 0)
-      LOG_ERROR("computeErrorsCell: MPI Allreduce error");
+      LOG_ERROR("computeErrors: MPI Allreduce error");
 
    if (L2Scale > 0) {
       L2Error = std::sqrt(L2Error / L2Scale);
@@ -393,142 +424,6 @@ inline int computeErrorsCell(ErrorMeasures &ErrorMeasures,
    ErrorMeasures.L2   = L2Error;
    ErrorMeasures.LInf = LInfError;
 
-   return Err;
-}
-
-// compute global normalized error measures based on the difference
-// between two vertex fields
-inline int computeErrorsVertex(ErrorMeasures &ErrorMeasures,
-                               const Array2DReal &NumFieldVertex,
-                               const Array2DReal &ExactFieldVertex,
-                               const HorzMesh *Mesh, int NVertLevels) {
-
-   int Err = 0;
-
-   const auto &AreaTriangle = Mesh->AreaTriangle;
-
-   // Compute element-wise errors
-   Array2DReal LInfVertex("LInfVertex", Mesh->NVerticesOwned, NVertLevels);
-   Array2DReal LInfScaleVertex("LInfScaleVertex", Mesh->NVerticesOwned,
-                               NVertLevels);
-   Array2DReal L2Vertex("L2Vertex", Mesh->NVerticesOwned, NVertLevels);
-   Array2DReal L2ScaleVertex("L2ScaleVertex", Mesh->NVerticesOwned,
-                             NVertLevels);
-   parallelFor(
-       {Mesh->NVerticesOwned, NVertLevels}, KOKKOS_LAMBDA(int IVertex, int K) {
-          const Real NumValVertex   = NumFieldVertex(IVertex, K);
-          const Real ExactValVertex = ExactFieldVertex(IVertex, K);
-
-          // Errors
-          LInfVertex(IVertex, K)      = std::abs(NumValVertex - ExactValVertex);
-          LInfScaleVertex(IVertex, K) = std::abs(ExactValVertex);
-          L2Vertex(IVertex, K)        = AreaTriangle(IVertex) *
-                                 LInfVertex(IVertex, K) *
-                                 LInfVertex(IVertex, K);
-          L2ScaleVertex(IVertex, K) = AreaTriangle(IVertex) *
-                                      LInfScaleVertex(IVertex, K) *
-                                      LInfScaleVertex(IVertex, K);
-       });
-
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfVertex);
-   const Real LInfScaleLoc = maxVal(LInfScaleVertex);
-   const Real L2ErrorLoc   = sum(L2Vertex);
-   const Real L2ScaleLoc   = sum(L2ScaleVertex);
-
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-   Real LInfError, LInfScale;
-   Err +=
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err +=
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
-   }
-
-   Real L2Error, L2Scale;
-   Err += MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err += MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-
-   if (Err != 0)
-      LOG_ERROR("computeErrorsCell: MPI Allreduce error");
-
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
-   }
-
-   ErrorMeasures.LInf = LInfError;
-   ErrorMeasures.L2   = L2Error;
-
-   return Err;
-}
-
-// compute global normalized error measures based on the difference
-// between two edge fields
-inline int computeErrorsEdge(ErrorMeasures &ErrMeasures,
-                             const Array2DReal &FieldEdge,
-                             const Array2DReal &ExactFieldEdge,
-                             const HorzMesh *Mesh, int NVertLevels) {
-
-   int Err = 0;
-
-   const auto &DcEdge = Mesh->DcEdge;
-   const auto &DvEdge = Mesh->DvEdge;
-
-   // Compute element-wise errors
-   Array2DReal LInfEdge("LInfEdge", Mesh->NEdgesOwned, NVertLevels);
-   Array2DReal L2Edge("L2Edge", Mesh->NEdgesOwned, NVertLevels);
-   Array2DReal LInfScaleEdge("LInfScaleEdge", Mesh->NEdgesOwned, NVertLevels);
-   Array2DReal L2ScaleEdge("L2ScaleEdge", Mesh->NEdgesOwned, NVertLevels);
-
-   parallelFor(
-       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
-          const Real NumValEdge   = FieldEdge(IEdge, K);
-          const Real ExactValEdge = ExactFieldEdge(IEdge, K);
-
-          LInfEdge(IEdge, K)      = std::abs(NumValEdge - ExactValEdge);
-          LInfScaleEdge(IEdge, K) = std::abs(ExactValEdge);
-          const Real AreaEdge     = DcEdge(IEdge) * DvEdge(IEdge) / 2;
-          L2Edge(IEdge, K) = AreaEdge * LInfEdge(IEdge, K) * LInfEdge(IEdge, K);
-          L2ScaleEdge(IEdge, K) =
-              AreaEdge * LInfScaleEdge(IEdge, K) * LInfScaleEdge(IEdge, K);
-       });
-
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfEdge);
-   const Real LInfScaleLoc = maxVal(LInfScaleEdge);
-   const Real L2ErrorLoc   = sum(L2Edge);
-   const Real L2ScaleLoc   = sum(L2ScaleEdge);
-
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-
-   Real LInfError, LInfScale;
-   Err +=
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err +=
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-
-   Real L2Error, L2Scale;
-   Err += MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err += MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-
-   if (Err != 0)
-      LOG_ERROR("computeErrorsCell: MPI Allreduce error");
-
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
-   }
-
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
-   }
-
-   ErrMeasures.L2   = L2Error;
-   ErrMeasures.LInf = LInfError;
    return Err;
 }
 

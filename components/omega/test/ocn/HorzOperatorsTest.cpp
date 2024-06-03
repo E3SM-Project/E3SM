@@ -199,8 +199,8 @@ int testDivergence(Real RTol) {
 
    // Compute error measures
    ErrorMeasures DivErrors;
-   Err += computeErrorsCell(DivErrors, NumDivCell, ExactDivCell, Mesh,
-                            NVertLevels);
+   Err += computeErrors(DivErrors, NumDivCell, ExactDivCell, Mesh, OnCell,
+                        NVertLevels);
 
    // Check error values
    if (!isApprox(DivErrors.LInf, Setup.ExpectedDivErrorLInf, RTol)) {
@@ -254,8 +254,8 @@ int testGradient(Real RTol) {
 
    // Compute error measures
    ErrorMeasures GradErrors;
-   Err += computeErrorsEdge(GradErrors, NumGradEdge, ExactGradEdge, Mesh,
-                            NVertLevels);
+   Err += computeErrors(GradErrors, NumGradEdge, ExactGradEdge, Mesh, OnEdge,
+                        NVertLevels);
 
    // Check error values
    if (!isApprox(GradErrors.LInf, Setup.ExpectedGradErrorLInf, RTol)) {
@@ -308,8 +308,8 @@ int testCurl(Real RTol) {
 
    // Compute error measures
    ErrorMeasures CurlErrors;
-   Err += computeErrorsVertex(CurlErrors, NumCurlVertex, ExactCurlVertex, Mesh,
-                              NVertLevels);
+   Err += computeErrors(CurlErrors, NumCurlVertex, ExactCurlVertex, Mesh,
+                        OnVertex, NVertLevels);
 
    // Check error values
    if (!isApprox(CurlErrors.LInf, Setup.ExpectedCurlErrorLInf, RTol)) {
@@ -366,8 +366,8 @@ int testRecon(Real RTol) {
 
    // Compute error measures
    ErrorMeasures ReconErrors;
-   Err += computeErrorsEdge(ReconErrors, NumReconEdge, ExactReconEdge, Mesh,
-                            NVertLevels);
+   Err += computeErrors(ReconErrors, NumReconEdge, ExactReconEdge, Mesh, OnEdge,
+                        NVertLevels);
 
    if (!isApprox(ReconErrors.LInf, Setup.ExpectedReconErrorLInf, RTol)) {
       Err++;
