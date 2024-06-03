@@ -415,7 +415,6 @@ _TESTS = {
     "fates_elm_developer" : {
         "inherit" : ("fates_elm_debug"),
         "tests" : (
-            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_sizeagemort",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
@@ -437,6 +436,7 @@ _TESTS = {
     "fates" : {
         "inherit" : ("fates_long_tests", "fates_elm_developer"),
         "tests" : (
+            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
             "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
