@@ -169,8 +169,6 @@ int main(int argc, char *argv[]) {
 
       // Test that the time level update is correct.
       DefState->updateTimeLevels();
-      DefState->copyToHost(0);
-      DefState->copyToHost(1);
 
       count                = 0;
       LayerThicknessH_def  = DefState->LayerThicknessH[1];

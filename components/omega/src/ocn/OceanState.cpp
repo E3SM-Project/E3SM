@@ -316,11 +316,16 @@ void OceanState::updateTimeLevels() {
    copyToDevice(NewLevel);
 
    Array2DR8 Temp;
+   HostArray2DR8 TempH;
 
    for (int Level = 0; Level < NTimeLevels - 1; Level++) {
       Temp                      = LayerThickness[Level + 1];
       LayerThickness[Level + 1] = LayerThickness[Level];
       LayerThickness[Level]     = Temp;
+
+      TempH                      = LayerThicknessH[Level + 1];
+      LayerThicknessH[Level + 1] = LayerThicknessH[Level];
+      LayerThicknessH[Level]     = TempH;
    }
 
    // Update time levels for normal velocity
@@ -332,6 +337,10 @@ void OceanState::updateTimeLevels() {
       Temp                      = NormalVelocity[Level + 1];
       NormalVelocity[Level + 1] = NormalVelocity[Level];
       NormalVelocity[Level]     = Temp;
+
+      TempH                      = NormalVelocityH[Level + 1];
+      NormalVelocityH[Level + 1] = NormalVelocityH[Level];
+      NormalVelocityH[Level]     = TempH;
    }
 
    // Update IOField data associations
