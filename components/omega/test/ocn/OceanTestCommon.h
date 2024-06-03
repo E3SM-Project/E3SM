@@ -59,123 +59,68 @@ KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
 enum class EdgeComponent { Normal, Tangential };
 enum class Geometry { Planar, Spherical };
 
-// set scalar field on cells based on analytical formula and optionally
-// exchange halos
+// set scalar field on chosen elements (cells/vertices/edges) based on
+// analytical formula and optionally exchange halos
 template <class Functor>
-int setScalarCell(const Functor &Fun, const Array2DReal &ScalarCell,
-                  Geometry Geom, const HorzMesh *Mesh, int NVertLevels,
-                  bool ExchangeHalos = true) {
+int setScalar(const Functor &Fun, const Array2DReal &ScalarElement,
+              Geometry Geom, const HorzMesh *Mesh, MeshElement Element,
+              int NVertLevels, bool ExchangeHalos = true) {
+
    int Err = 0;
 
-   auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
-   auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
+   int NElementsOwned;
+   Array1DReal XElement, YElement;
+   Array1DReal LonElement, LatElement;
 
-   auto LonCell = createDeviceMirrorCopy(Mesh->LonCellH);
-   auto LatCell = createDeviceMirrorCopy(Mesh->LatCellH);
+   switch (Element) {
+   case OnCell:
+      NElementsOwned = Mesh->NCellsOwned;
+      XElement       = createDeviceMirrorCopy(Mesh->XCellH);
+      YElement       = createDeviceMirrorCopy(Mesh->YCellH);
+      LonElement     = createDeviceMirrorCopy(Mesh->LonCellH);
+      LatElement     = createDeviceMirrorCopy(Mesh->LatCellH);
+      break;
+   case OnVertex:
+      NElementsOwned = Mesh->NVerticesOwned;
+      XElement       = createDeviceMirrorCopy(Mesh->XVertexH);
+      YElement       = createDeviceMirrorCopy(Mesh->YVertexH);
+      LonElement     = createDeviceMirrorCopy(Mesh->LonVertexH);
+      LatElement     = createDeviceMirrorCopy(Mesh->LatVertexH);
+      break;
+   case OnEdge:
+      NElementsOwned = Mesh->NEdgesOwned;
+      XElement       = createDeviceMirrorCopy(Mesh->XEdgeH);
+      YElement       = createDeviceMirrorCopy(Mesh->YEdgeH);
+      LonElement     = createDeviceMirrorCopy(Mesh->LonEdgeH);
+      LatElement     = createDeviceMirrorCopy(Mesh->LatEdgeH);
+      break;
+   default:
+      LOG_ERROR("setScalar: element needs to be one of (OnCell, OnVertex, "
+                "OnEdge)");
+      return 1;
+   }
 
    parallelFor(
-       {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int K) {
+       {NElementsOwned, NVertLevels}, KOKKOS_LAMBDA(int IElement, int K) {
           if (Geom == Geometry::Planar) {
-             const Real X         = XCell(ICell);
-             const Real Y         = YCell(ICell);
-             ScalarCell(ICell, K) = Fun(X, Y);
+             const Real X               = XElement(IElement);
+             const Real Y               = YElement(IElement);
+             ScalarElement(IElement, K) = Fun(X, Y);
           } else {
-             const Real Lon       = LonCell(ICell);
-             const Real Lat       = LatCell(ICell);
-             ScalarCell(ICell, K) = Fun(Lon, Lat);
+             const Real Lon             = LonElement(IElement);
+             const Real Lat             = LatElement(IElement);
+             ScalarElement(IElement, K) = Fun(Lon, Lat);
           }
        });
 
    if (ExchangeHalos) {
-      auto MyHalo      = Halo::getDefault();
-      auto ScalarCellH = createHostMirrorCopy(ScalarCell);
-      Err              = MyHalo->exchangeFullArrayHalo(ScalarCellH, OnCell);
+      auto MyHalo         = Halo::getDefault();
+      auto ScalarElementH = createHostMirrorCopy(ScalarElement);
+      Err = MyHalo->exchangeFullArrayHalo(ScalarElementH, Element);
       if (Err != 0)
-         LOG_ERROR("setScalarCell: error in halo exchange");
-      deepCopy(ScalarCell, ScalarCellH);
+         LOG_ERROR("setScalarElement: error in halo exchange");
+      deepCopy(ScalarElement, ScalarElementH);
    }
-   return Err;
-}
-
-// set scalar field on vertices based on analytical formula and optionally
-// exchange halos
-template <class Functor>
-int setScalarVertex(const Functor &Fun, const Array2DReal &ScalarVertex,
-                    Geometry Geom, const HorzMesh *Mesh, int NVertLevels,
-                    bool ExchangeHalos = true) {
-
-   int Err = 0;
-
-   auto XVertex = createDeviceMirrorCopy(Mesh->XVertexH);
-   auto YVertex = createDeviceMirrorCopy(Mesh->YVertexH);
-
-   auto LonVertex = createDeviceMirrorCopy(Mesh->LonVertexH);
-   auto LatVertex = createDeviceMirrorCopy(Mesh->LatVertexH);
-
-   parallelFor(
-       {Mesh->NVerticesOwned, NVertLevels}, KOKKOS_LAMBDA(int IVertex, int K) {
-          if (Geom == Geometry::Planar) {
-             const Real X             = XVertex(IVertex);
-             const Real Y             = YVertex(IVertex);
-             ScalarVertex(IVertex, K) = Fun(X, Y);
-          } else {
-             const Real Lon           = LonVertex(IVertex);
-             const Real Lat           = LatVertex(IVertex);
-             ScalarVertex(IVertex, K) = Fun(Lon, Lat);
-          }
-       });
-
-   if (ExchangeHalos) {
-      auto MyHalo        = Halo::getDefault();
-      auto ScalarVertexH = createHostMirrorCopy(ScalarVertex);
-      Err = MyHalo->exchangeFullArrayHalo(ScalarVertexH, OnVertex);
-      if (Err != 0)
-         LOG_ERROR("setScalarVertex: error in halo exchange");
-      deepCopy(ScalarVertex, ScalarVertexH);
-   }
-   return Err;
-}
-
-// set scalar field on edges based on analytical formula and optionally
-// exchange halos
-template <class Functor>
-int setScalarEdge(const Functor &Fun, const Array2DReal &ScalarFieldEdge,
-                  Geometry Geom, const HorzMesh *Mesh, int NVertLevels,
-                  bool ExchangeHalos = true) {
-
-   int Err = 0;
-
-   auto XEdge = createDeviceMirrorCopy(Mesh->XEdgeH);
-   auto YEdge = createDeviceMirrorCopy(Mesh->YEdgeH);
-
-   auto LonEdge = createDeviceMirrorCopy(Mesh->LonEdgeH);
-   auto LatEdge = createDeviceMirrorCopy(Mesh->LatEdgeH);
-
-   parallelFor(
-       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
-          Real VecFieldEdge;
-          if (Geom == Geometry::Planar) {
-             const Real XE = XEdge(IEdge);
-             const Real YE = YEdge(IEdge);
-
-             ScalarFieldEdge(IEdge, K) = Fun(XE, YE);
-          } else {
-             const Real LonE = LonEdge(IEdge);
-             const Real LatE = LatEdge(IEdge);
-
-             ScalarFieldEdge(IEdge, K) = Fun(LonE, LatE);
-          }
-       });
-
-   if (ExchangeHalos) {
-      auto MyHalo           = Halo::getDefault();
-      auto ScalarFieldEdgeH = createHostMirrorCopy(ScalarFieldEdge);
-      Err = MyHalo->exchangeFullArrayHalo(ScalarFieldEdgeH, OnEdge);
-      if (Err != 0)
-         LOG_ERROR("setScalarEdge: error in halo exchange");
-      deepCopy(ScalarFieldEdge, ScalarFieldEdgeH);
-   }
-
    return Err;
 }
 

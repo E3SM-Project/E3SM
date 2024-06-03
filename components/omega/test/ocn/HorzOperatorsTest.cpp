@@ -185,9 +185,9 @@ int testDivergence(Real RTol) {
 
    // Compute exact result
    Array2DReal ExactDivCell("ExactDivCell", Mesh->NCellsOwned, NVertLevels);
-   Err += setScalarCell(
+   Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactDivVec(X, Y); },
-       ExactDivCell, Geom, Mesh, NVertLevels, false);
+       ExactDivCell, Geom, Mesh, OnCell, NVertLevels, false);
 
    // Compute numerical result
    Array2DReal NumDivCell("NumDivCell", Mesh->NCellsOwned, NVertLevels);
@@ -229,11 +229,11 @@ int testGradient(Real RTol) {
 
    // Prepare operator input
    Array2DReal ScalarCell("ScalarCell", Mesh->NCellsSize, NVertLevels);
-   Err += setScalarCell(
+   Err += setScalar(
        KOKKOS_LAMBDA(Real Coord1, Real Coord2) {
           return Setup.exactScalar(Coord1, Coord2);
        },
-       ScalarCell, Geom, Mesh, NVertLevels);
+       ScalarCell, Geom, Mesh, OnCell, NVertLevels);
 
    // Compute exact result
    Array2DReal ExactGradEdge("ExactGradEdge", Mesh->NEdgesOwned, NVertLevels);
@@ -293,9 +293,9 @@ int testCurl(Real RTol) {
    // Compute exact result
    Array2DReal ExactCurlVertex("ExactCurlVertex", Mesh->NVerticesOwned,
                                NVertLevels);
-   Err += setScalarVertex(
+   Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactCurlVec(X, Y); },
-       ExactCurlVertex, Geom, Mesh, NVertLevels, false);
+       ExactCurlVertex, Geom, Mesh, OnVertex, NVertLevels, false);
 
    // Compute numerical result
    Array2DReal NumCurlVertex("NumCurlVertex", Mesh->NVerticesOwned,
