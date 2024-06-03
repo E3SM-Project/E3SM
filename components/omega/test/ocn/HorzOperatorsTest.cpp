@@ -14,8 +14,6 @@
 
 using namespace OMEGA;
 
-static_assert(VecLength == 1, "HorzOperatorsTest needs vector length to be 1");
-
 // analytical expressions for scalar and vector fields used as input for
 // operator tests together with exact values of operators for computing errors
 // and expected error values
@@ -174,7 +172,7 @@ int testDivergence(Real RTol) {
    TestSetup Setup;
 
    const auto &Mesh      = HorzMesh::getDefault();
-   const int NVertLevels = 1;
+   const int NVertLevels = 16;
 
    // Prepare operator input
    Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
@@ -227,7 +225,7 @@ int testGradient(Real RTol) {
    TestSetup Setup;
 
    const auto &Mesh      = HorzMesh::getDefault();
-   const int NVertLevels = 1;
+   const int NVertLevels = 16;
 
    // Prepare operator input
    Array2DReal ScalarCell("ScalarCell", Mesh->NCellsSize, NVertLevels);
@@ -281,7 +279,7 @@ int testCurl(Real RTol) {
    int Err = 0;
    TestSetup Setup;
    const auto &Mesh      = HorzMesh::getDefault();
-   const int NVertLevels = 1;
+   const int NVertLevels = 16;
 
    // Prepare operator input
    Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
@@ -336,7 +334,7 @@ int testRecon(Real RTol) {
    TestSetup Setup;
 
    const auto &Mesh      = HorzMesh::getDefault();
-   const int NVertLevels = 1;
+   const int NVertLevels = 16;
 
    // Prepare operator input
    Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
