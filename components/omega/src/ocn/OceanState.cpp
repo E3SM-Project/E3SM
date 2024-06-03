@@ -236,13 +236,17 @@ void OceanState::defineIOFields() {
    Err = StateMetaGroup->addField("NormalVelocity");
    Err = StateMetaGroup->addField("LayerThickness");
 
-   // Setup IOFields for state variables
+   // Define IOFields for state variables
    Err = OMEGA::IOField::define("NormalVelocity");
    Err = OMEGA::IOField::define("LayerThickness");
+
+   // Associate IOField with data
+   int CurLevel = NTimeLevels - 2;
+
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
-                                                      NormalVelocity[0]);
+                                                      NormalVelocity[CurLevel]);
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("LayerThickness",
-                                                      LayerThickness[0]);
+                                                      LayerThickness[CurLevel]);
 
 } // end defineIOFields
 
@@ -344,12 +348,13 @@ void OceanState::updateTimeLevels() {
    }
 
    // Update IOField data associations
-   int Err = 0;
+   int Err      = 0;
+   int CurLevel = NTimeLevels - 2;
 
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("NormalVelocity",
-                                                      NormalVelocity[0]);
+                                                      NormalVelocity[CurLevel]);
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>("LayerThickness",
-                                                      LayerThickness[0]);
+                                                      LayerThickness[CurLevel]);
 
 } // end updateTimeLevels
 
