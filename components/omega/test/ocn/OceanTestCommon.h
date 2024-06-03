@@ -301,6 +301,7 @@ inline int computeErrors(ErrorMeasures &ErrorMeasures,
       {
          auto &DcEdge = Mesh->DcEdge;
          auto &DvEdge = Mesh->DvEdge;
+         AreaElement  = Array1DReal("AreaEdge", Mesh->NEdgesOwned);
          parallelFor(
              {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
                 AreaElement(IEdge) = DcEdge(IEdge) * DvEdge(IEdge) / 2;
