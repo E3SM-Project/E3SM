@@ -228,6 +228,10 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 ############################
 
 add_default($nl, 'config_remove_AIS_coupler_runoff');
+add_default($nl, 'config_use_ocean_sea_ice_aerosols_coupling');
+add_default($nl, 'config_sediment_load1');
+add_default($nl, 'config_sediment_load2');
+add_default($nl, 'config_sediment_load3');
 
 ######################################
 # Namelist group: shortwaveRadiation #

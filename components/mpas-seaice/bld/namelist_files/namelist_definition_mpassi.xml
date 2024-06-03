@@ -1115,6 +1115,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_couple_ocean_sediments" type="logical"
+       category="biogeochemistry" group="biogeochemistry">
+Use ocean source of aerosols
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_atm_dust_file" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
 Read atmospheric dust fluxes from a file

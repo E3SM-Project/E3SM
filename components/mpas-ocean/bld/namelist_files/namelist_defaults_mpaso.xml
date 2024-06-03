@@ -336,6 +336,10 @@
 
 <!-- coupling -->
 <config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
+<config_use_ocean_sea_ice_aerosols_coupling>.false.</config_use_ocean_sea_ice_aerosols_coupling>
+<config_sediment_load1>1.0</config_sediment_load1>
+<config_sediment_load2>1.0</config_sediment_load2>
+<config_sediment_load3>1.0</config_sediment_load3>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>

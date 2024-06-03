@@ -1183,6 +1183,38 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ocean_sea_ice_aerosols_coupling" type="logical"
+	category="coupling" group="coupling">
+If true, couple ocean black carbon and dust aerosols (assumed a scaled function of riverRunoffFlux) to the sea ice model.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sediment_load1" type="real"
+	category="coupling" group="coupling">
+Scales river runoff flux to sediment load for sea ice zaero1
+
+Valid values: Real positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sediment_load2" type="real"
+	category="coupling" group="coupling">
+Scales river runoff flux to sediment load for sea ice zaero2
+
+Valid values: Real positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sediment_load3" type="real"
+	category="coupling" group="coupling">
+Scales river runoff flux to sediment load for sea ice zaero3
+
+Valid values: Real positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- shortwaveRadiation -->
 

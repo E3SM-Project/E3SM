@@ -890,6 +890,10 @@
 			possible_values="true or false"
 			icepack_name="tr_zaero"
 			/>
+               <nml_option name="config_couple_ocean_sediments" type="logical" default_value="false" units="unitless"
+                       description="Use ocean source of aerosols"
+                       possible_values="true or false"
+               />
 		<nml_option name="config_use_atm_dust_file" type="logical" default_value="false" units="unitless"
 			description="Read atmospheric dust fluxes from a file"
 			possible_values="true or false"

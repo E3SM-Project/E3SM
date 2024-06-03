@@ -703,6 +703,10 @@ if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 } else {
 	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".false.");
 }
+add_default($nl, 'config_use_ocean_sea_ice_aerosols_coupling');
+add_default($nl, 'config_sediment_load1');
+add_default($nl, 'config_sediment_load2');
+add_default($nl, 'config_sediment_load3');
 
 ######################################
 # Namelist group: shortwaveRadiation #

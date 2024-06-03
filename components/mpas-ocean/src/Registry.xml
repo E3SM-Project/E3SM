@@ -759,6 +759,22 @@
 					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_ocean_sea_ice_aerosols_coupling" type="logical" default_value=".false."
+					description="If true, couple ocean black carbon and dust aerosols (assumed a scaled function of riverRunoffFlux) to the sea ice model."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_sediment_load1" type="real" default_value="1.0"
+					description="Scales river runoff flux to sediment load for sea ice zaero1"
+					possible_values="Real positive values"
+		/>
+		<nml_option name="config_sediment_load2" type="real" default_value="1.0"
+					description="Scales river runoff flux to sediment load for sea ice zaero2"
+					possible_values="Real positive values"
+		/>
+		<nml_option name="config_sediment_load3" type="real" default_value="1.0"
+					description="Scales river runoff flux to sediment load for sea ice zaero3"
+					possible_values="Real positive values"
+		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none"

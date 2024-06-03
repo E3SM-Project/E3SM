@@ -3880,13 +3880,13 @@ contains
                   hum=oceanHumicsConc(iCell))
 #else
           do iBioTracers = 1, maxBCType
-             atmosBlackCarbonFlux(iBioTracers,iCell) =  1.e-12_RKIND
+             atmosBlackCarbonFlux(iBioTracers,iCell) =  0.0_RKIND !1.e-12_RKIND
           enddo
           if (.not. config_use_atm_dust_file) then
              do iBioTracers = 1, maxDustType
-                atmosDustFlux(iBioTracers,iCell) =  1.e-13_RKIND
-                atmosWetDustFlux(iBioTracers,iCell) =  1.e-13_RKIND * 0.5_RKIND
-                atmosDryDustFlux(iBioTracers,iCell) =  1.e-13_RKIND * 0.5_RKIND
+                atmosDustFlux(iBioTracers,iCell) =  0.0_RKIND !1.e-13_RKIND
+                atmosWetDustFlux(iBioTracers,iCell) =  0.0_RKIND !1.e-13_RKIND * 0.5_RKIND
+                atmosDryDustFlux(iBioTracers,iCell) =  0.0_RKIND !1.e-13_RKIND * 0.5_RKIND
              enddo
           endif
 #endif

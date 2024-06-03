@@ -1950,7 +1950,8 @@ contains
       config_use_modal_aerosols,        &
       config_use_zaerosols,             &
       config_use_column_biogeochemistry, &
-      config_couple_biogeochemistry_fields
+      config_couple_biogeochemistry_fields, &
+      config_couple_ocean_sediments
 
    character(len=strKIND), pointer ::   &
       config_column_physics_type,       &
@@ -2233,9 +2234,16 @@ contains
 
         ! set aerosols, if configured
         if (config_use_zaerosols) then
-           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
-           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
-           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
+           call mpas_pool_get_config(configs, "config_couple_ocean_sediments", config_couple_ocean_sediments)
+           if (config_couple_ocean_sediments) then
+              oceanZAerosolConc(1,i)        = x2i_i % rAttr(index_x2i_So_zaer1, n)
+              oceanZAerosolConc(2,i)        = x2i_i % rAttr(index_x2i_So_zaer2, n)
+              oceanZAerosolConc(3,i)        = x2i_i % rAttr(index_x2i_So_zaer3, n)
+           else
+              oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
+              oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
+              oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
+           end if
            oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
            oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
            oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
