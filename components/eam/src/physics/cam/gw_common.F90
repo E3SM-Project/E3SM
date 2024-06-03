@@ -1853,7 +1853,8 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
 
    DO i=its,ite
       !IF ((xland1(i)-1.5) .le. 0.) then
-       IF (xland1(i) .gt. 0.) then
+       !IF (xland1(i) .gt. 0..and.2._r8*var(i).gt.0) then
+        IF (xland1(i) .gt. 0.) then
           a1=0.00026615161_r8*var(i)**2_r8
           a2=a1*0.005363_r8
          DO k=kts,kte
@@ -1864,6 +1865,9 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
             vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
                            EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
             !IF(za(i,k) > 4000.) exit
+            !!
+            !write(iulog,*) "Jinbo Xie var(i),utendform(i,k),vtendform(i,k)",var(i),utendform(i,k),vtendform(i,k)
+            !!
          ENDDO
       ENDIF
    ENDDO

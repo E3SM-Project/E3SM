@@ -1097,6 +1097,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         !=======Jinbo Xie=========================
         !get the layer index of pblh in layer
         call pbuf_get_field(pbuf, pblh_idx, pblh)
+        !write(iulog,*)"Jinbo Xie state%var(:ncol)",state%var(:ncol)
         !!
         kpbl2d_in=0_r8
         do i=1,pcols
@@ -1135,7 +1136,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
         dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
         xland=cam_in%landfrac,br=state%ribulk(:ncol),&
-        var2d=state%var(:ncol),oc12d=state%oc(:ncol),&
+        var2d=state%var(:ncol),&
+        oc12d=state%oc(:ncol),&
         oa2d=state%oadir(:ncol,:),&
         ol2d=state%ol(:ncol,:),&
         znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&

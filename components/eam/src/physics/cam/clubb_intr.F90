@@ -1143,6 +1143,15 @@ end subroutine clubb_init_cnst
    use model_flags, only: ipdf_call_placement
    use advance_clubb_core_module, only: ipdf_post_advance_fields
 #endif
+ 
+   !=============Jinbo Xie=====================
+   use gw_common,          only: gwdo_gsd,grid_size,pblh_get_level_idx
+   use hycoef,             only: etamid
+   !use hb_diff,            only: rino_pub
+   use physconst,          only: rh2o,pi,rearth,r_universal
+   !get the znu,znw,p_top set to 0
+   use phys_grid, only: get_rlat_all_p
+   !=============Jinbo Xie=====================
 
    implicit none
 
@@ -1494,6 +1503,27 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
+   !==========Jinbo Xie==================
+        !simply add par
+        !for z,dz,from other files
+    real(r8) :: ztop(pcols,pver)             ! top interface height asl(m)
+    real(r8) :: zbot(pcols,pver)             ! bottom interface height asl(m)
+    real(r8) :: zmid(pcols,pver)             ! middle interface height asl(m)
+    real(r8) :: dz(pcols,pver)
+    !=======Jinbo Xie=========== 
+    real(r8) :: rlat(pcols)                 ! latitude in radians for columns
+    integer :: kpbl2d_in(pcols)
+    real(r8) :: ttgw(pcols,pver)                 ! temperature tendency
+    real(r8) :: utgw(pcols,pver)                 ! zonal wind tendency
+    real(r8) :: vtgw(pcols,pver)                 ! meridional wind tendency
+    !=======Jinbo Xie================
+    real(r8) :: dtaux3_fd(pcols,pver)
+    real(r8) :: dtauy3_fd(pcols,pver)
+    real(r8) :: dusfc_fd(pcols)
+    real(r8) :: dvsfc_fd(pcols)
+    !=======Jinbo Xie================
+    real(r8) :: dx(pcols),dy(pcols)
+    !=======Jinbo Xie================
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
@@ -1932,7 +1962,7 @@ end subroutine clubb_init_cnst
         !get the layer index of pblh in layer
         kpbl2d_in=0_r8
         do i=1,pcols
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-state%phis(i)/gravit,pblh(i))
+        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
         end do
         !rlat
         call get_rlat_all_p(lchnk, ncol, rlat)
@@ -1945,7 +1975,6 @@ end subroutine clubb_init_cnst
         !
         call grid_size(state,dx,dy)
 	!
-	!
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
         t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
@@ -1955,8 +1984,8 @@ end subroutine clubb_init_cnst
         rthblten=ttgw(:,pver:1:-1),&
         dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
         dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
-        xland=landfrac,br=state%ribulk,&
-        var2d=state%var,&
+        xland=cam_in%landfrac,br=state%ribulk,&
+        var2d=state%var30(:ncol),&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
         dx=dx,dy=dy,&
@@ -1966,11 +1995,11 @@ end subroutine clubb_init_cnst
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
         gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1 )
         !!=========Jinbo Xie=========
-        um_forcing(2:pverp)=um_forcing(2:pverp)+dtaux3_fd
-        vm_forcing(2:pverp)=vm_forcing(2:pverp)+dtauy3_fd
+        call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
+        call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
+        call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
+        call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
         !!=========Jinbo Xie=========
-
-
 
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
@@ -2136,6 +2165,17 @@ end subroutine clubb_init_cnst
          dum_core_rknd = real((ksrftms(i)*state1%v(i,pver)), kind = core_rknd)
          vpwp_sfc      = vpwp_sfc-(dum_core_rknd/rho_ds_zm(1))
        endif
+      !====================================================
+      !	Jinbo Xie
+      !----------------------------------------------------!
+      !Apply tofd
+      !----------------------------------------------------!
+      !tendency is flipped already
+        um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)
+        vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)
+      !	Jinbo Xie
+      !====================================================!
+      
 
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
