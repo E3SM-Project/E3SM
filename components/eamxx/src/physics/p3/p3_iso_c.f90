@@ -70,15 +70,15 @@ contains
     ok = .false.
 
 #ifdef SCREAM_DOUBLE_PRECISION
-    mu_r_filename  = lookup_file_dir//'/mu_r_table_vals.dat8'//C_NULL_CHAR
-    revap_filename = lookup_file_dir//'/revap_table_vals.dat8'//C_NULL_CHAR
-    vn_filename    = lookup_file_dir//'/vn_table_vals.dat8'//C_NULL_CHAR
-    vm_filename    = lookup_file_dir//'/vm_table_vals.dat8'//C_NULL_CHAR
+    mu_r_filename  = lookup_file_dir(1:len)//'/mu_r_table_vals.dat8'//C_NULL_CHAR
+    revap_filename = lookup_file_dir(1:len)//'/revap_table_vals.dat8'//C_NULL_CHAR
+    vn_filename    = lookup_file_dir(1:len)//'/vn_table_vals.dat8'//C_NULL_CHAR
+    vm_filename    = lookup_file_dir(1:len)//'/vm_table_vals.dat8'//C_NULL_CHAR
 #else
-    mu_r_filename  = lookup_file_dir//'/mu_r_table_vals.dat4'//C_NULL_CHAR
-    revap_filename = lookup_file_dir//'/revap_table_vals.dat4'//C_NULL_CHAR
-    vn_filename    = lookup_file_dir//'/vn_table_vals.dat4'//C_NULL_CHAR
-    vm_filename    = lookup_file_dir//'/vm_table_vals.dat4'//C_NULL_CHAR
+    mu_r_filename  = lookup_file_dir(1:len)//'/mu_r_table_vals.dat4'//C_NULL_CHAR
+    revap_filename = lookup_file_dir(1:len)//'/revap_table_vals.dat4'//C_NULL_CHAR
+    vn_filename    = lookup_file_dir(1:len)//'/vn_table_vals.dat4'//C_NULL_CHAR
+    vm_filename    = lookup_file_dir(1:len)//'/vm_table_vals.dat4'//C_NULL_CHAR
 #endif
 
     if (write_tables) then
