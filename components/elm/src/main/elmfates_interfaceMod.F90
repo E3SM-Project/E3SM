@@ -661,10 +661,12 @@ contains
                  write(iulog,*) 'that does not contain that variable in its valid set.'
                  write(iulog,*) 'You may have to increase the namelist setting: fates_history_dimlevel'
                  write(iulog,*) 'current fates_history_dimlevel: ',fates_history_dimlevel(:)
-                 !uncomment if you want to list all fates history variables in registry
-                 !do_fates_hist2: do nh = 1,fates_hist%num_history_vars()
-                 !   write(iulog,*) trim(fates_hist%hvars(nh)%vname)
-                 !end do do_fates_hist2
+                 if (debug) then
+                    !if you want to list all fates history variables in registry turn on debug
+                    do_fates_hist2: do nh = 1,fates_hist%num_history_vars()
+                       write(iulog,*) trim(fates_hist%hvars(nh)%vname)
+                    end do do_fates_hist2
+                 end if
                  call endrun(msg=errMsg(sourcefile, __LINE__))
               end if
            end if
