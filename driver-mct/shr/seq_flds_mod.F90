@@ -2533,7 +2533,7 @@ contains
        units    = 'm'
        attname  = 'Sw_Hs'
        call metadata_set(attname, longname, stdname, units)
-    
+       
        call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
        call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
        longname = 'Partitioned Stokes drift u component, wavenumber 1'

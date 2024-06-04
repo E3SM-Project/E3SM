@@ -58,16 +58,15 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
  
     if 'ww3' in case.get_value('COMP_WAV'):
        config['WAVSPEC'] = case.get_value('WAV_SPEC') 
-       config['wav_atm_coup'] = '.true.' if case.get_value('COMP_ATM') == 'eam' else '.false.'
-       config['wav_ocn_coup'] = '.true.' if case.get_value('COMP_OCN') == 'mpaso' else '.false.'
+       if 'eam' in case.get_value('COMP_ATM'):
+          config['wav_atm_coup'] = '.true.'
+       if 'mpaso' in case.get_value('COMP_OCN'):
+          config['wav_ocn_coup'] = '.true.'
+    
     elif 'dwav' in case.get_value('COMP_WAV'):
        config['WAVSPEC'] = 'sp36x36'
-       config['wav_atm_coup'] = '.false.'
-       config['wav_ocn_coup'] = '.false.'
     else:
        config['WAVSPEC'] = 'none'
-       config['wav_atm_coup'] = '.false.'
-       config['wav_ocn_coup'] = '.false.'
 
 
     docn_mode = case.get_value("DOCN_MODE")

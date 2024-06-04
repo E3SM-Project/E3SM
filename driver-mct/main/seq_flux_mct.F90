@@ -1453,7 +1453,9 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
-       index_w2x_Sw_Charn    = mct_aVect_indexRA(w2x,'Sw_Charn')
+       if (wav_ocn_coup .or. wav_atm_coup) then
+          index_w2x_Sw_Charn    = mct_aVect_indexRA(w2x,'Sw_Charn')
+       endif
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
             coldair_outbreak_mod=coldair_outbreak_mod)
