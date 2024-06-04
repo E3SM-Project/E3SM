@@ -373,5 +373,20 @@ inline int computeErrors(ErrorMeasures &ErrorMeasures,
    return Err;
 }
 
+inline int checkErrors(const std::string &TestSuite,
+                       const std::string &Variable, const ErrorMeasures &Errors,
+                       const ErrorMeasures &ExpectedErrors, Real RTol) {
+   int Err = 0;
+   if (!isApprox(Errors.LInf, ExpectedErrors.LInf, RTol)) {
+      Err++;
+      LOG_ERROR("{}: {} LInf FAIL", TestSuite, Variable);
+   }
+   if (!isApprox(Errors.L2, ExpectedErrors.L2, RTol)) {
+      Err++;
+      LOG_ERROR("{}: {} L2 FAIL", TestSuite, Variable);
+   }
+   return Err;
+}
+
 } // namespace OMEGA
 #endif
