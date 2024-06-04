@@ -140,6 +140,33 @@ target_compile_definitions(
   PRIVATE
   HORZOPERATORS_TEST_SPHERE_1
 )
+################
+# AuxVars test
+################
+
+add_omega_test(
+  AUXVARS_PLANE_TEST
+    testAuxiliaryVarsPlane.exe
+    ocn/AuxiliaryVarsTest.cpp
+    "-n;8"
+)
+target_compile_definitions(
+  testAuxiliaryVarsPlane.exe
+  PRIVATE
+  AUXVARS_TEST_PLANE
+)
+
+add_omega_test(
+  AUXVARS_SPHERE_TEST
+  testAuxiliaryVarsSphere.exe
+    ocn/AuxiliaryVarsTest.cpp
+    "-n;8"
+)
+target_compile_definitions(
+  testAuxiliaryVarsSphere.exe
+  PRIVATE
+  AUXVARS_TEST_SPHERE
+)
 
 #############
 # IO test
