@@ -6,7 +6,7 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
   LIBS shoc cld_fraction p3  mam
-  LABELS shoc cld p3 physics mam
+  LABELS shoc cld p3 physics mam4_aci
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
 )
@@ -36,6 +36,6 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS shoc cld p3 physics PEM mam
+  LABELS shoc cld p3 physics PEM mam4_aci
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
