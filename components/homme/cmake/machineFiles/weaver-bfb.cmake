@@ -71,7 +71,7 @@ SET (HOMMEXX_EXEC_SPACE "CUDA" CACHE STRING "")			# Define the execution space f
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")		# Cuda warps per team setting
 #SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")		# Build preqx with kokkos
 SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")		# Build theta with kokkos
-SET (HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")			# Enabling compose
+SET (HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")			# Enabling compose
 
 # Kokkos settings
 SET (ENABLE_OPENMP FALSE CACHE BOOL "")				# 
