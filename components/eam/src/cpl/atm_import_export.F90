@@ -2,9 +2,6 @@ module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
   use cam_logfile      , only: iulog
-  use spmd_utils,       only: masterproc
-  use time_manager,     only: get_nstep
-
   implicit none
 
 contains
@@ -24,8 +21,6 @@ contains
     use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
-    use cam_abortutils, only: endrun
-
     !
     ! Arguments
     !

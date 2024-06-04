@@ -1347,7 +1347,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
-            fsds(1,c),c==begchunk)
+            fsds(1,c))
 
        call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
        if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
@@ -1446,7 +1446,7 @@ end subroutine phys_final
 subroutine tphysac (ztodt,   cam_in,  &
        sgh,     sgh30,                                     &
        cam_out,  state,   tend,    pbuf,            &
-       fsds, is_begc    )
+       fsds    )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1515,7 +1515,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
-    logical:: is_begc
 
     !
     !---------------------------Local workspace-----------------------------

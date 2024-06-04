@@ -419,6 +419,7 @@ CONTAINS
           
           call atm_export( cam_out, a2x_a%rattr )
        else
+
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           call t_stopf('atm_read_srfrest_mct')

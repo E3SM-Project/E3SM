@@ -18,7 +18,6 @@ module co2_cycle
 
 use shr_kind_mod,   only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX, cl =>SHR_KIND_CL
 use co2_data_flux,  only: co2_data_flux_type
-use spmd_utils,      only: masterproc
 
 implicit none
 private
@@ -163,6 +162,8 @@ subroutine co2_cycle_readnl(nlfile)
            //' the ocn co2 flux.  Cannot do both.'
       call endrun(trim(err_str)//errmsg(__FILE__,__LINE__))
    end if
+   
+
 end subroutine co2_cycle_readnl
 
 !================================================================================================
@@ -203,6 +204,7 @@ subroutine co2_register
      end select
      
   end do
+
 end subroutine co2_register
 
 !================================================================================================
@@ -310,6 +312,7 @@ subroutine co2_init
     if (co2_readFlux_fuel) then
        call co2_data_flux_init ( co2flux_fuel_file, 'CO2_flux', data_flux_fuel )
     end if
+ 
   end subroutine co2_init
 
 !==========================================================================================
@@ -399,6 +402,7 @@ subroutine co2_init_cnst(name, q, gcid)
    case ('CO2')
       q = chem_surfvals_get('CO2MMR')
    end select
+
 end subroutine co2_init_cnst
 !===============================================================================
 
@@ -454,6 +458,7 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
       ptend%q(:ncol,k,co2_fff_glo_ind) = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
       ptend%q(:ncol,k,co2_glo_ind)     = gravit * state%rpdeldry(:ncol,k) * ac_CO2(:ncol,k)
    end do
+
 end subroutine co2_cycle_set_ptend
 
 
@@ -538,6 +543,7 @@ subroutine co2_cycle_set_cnst_type(cnst_type_loc, cnst_type_val)
    do m = 1, ncnst
       cnst_type_loc(c_i(m)) = cnst_type_val
    end do
+
 end subroutine co2_cycle_set_cnst_type
 !===============================================================================
  
