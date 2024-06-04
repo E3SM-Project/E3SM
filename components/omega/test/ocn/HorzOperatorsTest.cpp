@@ -6,6 +6,7 @@
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "mpi.h"
 
@@ -13,182 +14,10 @@
 
 using namespace OMEGA;
 
-// check if two real numbers are equal with a given relative tolerance
-bool isApprox(Real X, Real Y, Real RTol) {
-   return std::abs(X - Y) <= RTol * std::max(std::abs(X), std::abs(Y));
-}
-
-// convert spherical components of a vector to Cartesian
-KOKKOS_INLINE_FUNCTION void sphereToCartVec(Real (&CartVec)[3],
-                                            const Real (&SphereVec)[2],
-                                            Real Lon, Real Lat) {
-   using std::cos;
-   using std::sin;
-   CartVec[0] = -sin(Lon) * SphereVec[0] - sin(Lat) * cos(Lon) * SphereVec[1];
-   CartVec[1] = cos(Lon) * SphereVec[0] - sin(Lat) * sin(Lon) * SphereVec[1];
-   CartVec[2] = cos(Lat) * SphereVec[1];
-}
-
-// returns Cartesian components of unit vector tangent to the spherical arc
-// between Cartesian points X1 and X2 parametrized with t
-KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
-                                          const Real (&X1)[3],
-                                          const Real (&X2)[3], Real t = 0) {
-   const Real Radius =
-       Kokkos::sqrt(X1[0] * X1[0] + X1[1] * X1[1] + X1[2] * X1[2]);
-   Real XC[3];
-   Real DX[3];
-   for (int Dim = 0; Dim < 3; ++Dim) {
-      XC[Dim] = (1 - t) * X1[Dim] + t * X2[Dim];
-      DX[Dim] = X2[Dim] - X1[Dim];
-   }
-   const Real XCDotDX = XC[0] * DX[0] + XC[1] * DX[1] + XC[2] * DX[2];
-   const Real NormXC =
-       Kokkos::sqrt(XC[0] * XC[0] + XC[1] * XC[1] + XC[2] * XC[2]);
-
-   for (int Dim = 0; Dim < 3; ++Dim) {
-      const Real NormXC3 = NormXC * NormXC * NormXC;
-      TanVec[Dim] =
-          Radius / NormXC * DX[Dim] - (Radius * XCDotDX) / NormXC3 * XC[Dim];
-   }
-
-   const Real NormTanVec = Kokkos::sqrt(
-       TanVec[0] * TanVec[0] + TanVec[1] * TanVec[1] + TanVec[2] * TanVec[2]);
-   for (int Dim = 0; Dim < 3; ++Dim) {
-      TanVec[Dim] /= NormTanVec;
-   }
-}
-
-enum class EdgeOrientation { Normal, Tangential };
-
-template <class Functor>
-void computeVecFieldEdge(const Functor &Fun, const Array1DReal &VecFieldArr,
-                         EdgeOrientation EdgeOrient, const HorzMesh *Mesh) {
-   auto XEdge = createDeviceMirrorCopy(Mesh->XEdgeH);
-   auto YEdge = createDeviceMirrorCopy(Mesh->YEdgeH);
-   auto ZEdge = createDeviceMirrorCopy(Mesh->ZEdgeH);
-
-   auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
-   auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
-   auto ZCell = createDeviceMirrorCopy(Mesh->ZCellH);
-
-   auto XVertex = createDeviceMirrorCopy(Mesh->XVertexH);
-   auto YVertex = createDeviceMirrorCopy(Mesh->YVertexH);
-   auto ZVertex = createDeviceMirrorCopy(Mesh->ZVertexH);
-
-   auto LonEdge = createDeviceMirrorCopy(Mesh->LonEdgeH);
-   auto LatEdge = createDeviceMirrorCopy(Mesh->LatEdgeH);
-
-   auto &AngleEdge      = Mesh->AngleEdge;
-   auto &CellsOnEdge    = Mesh->CellsOnEdge;
-   auto &VerticesOnEdge = Mesh->VerticesOnEdge;
-
-   parallelFor(
-       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          Real VecFieldEdge;
-#ifdef HORZOPERATORS_TEST_PLANE
-          const Real XE = XEdge(IEdge);
-          const Real YE = YEdge(IEdge);
-
-          Real VecField[2];
-          Fun(VecField, XE, YE);
-
-          if (EdgeOrient == EdgeOrientation::Normal) {
-             const Real EdgeNormalX = std::cos(AngleEdge(IEdge));
-             const Real EdgeNormalY = std::sin(AngleEdge(IEdge));
-             VecFieldEdge =
-                 EdgeNormalX * VecField[0] + EdgeNormalY * VecField[1];
-          }
-
-          if (EdgeOrient == EdgeOrientation::Tangential) {
-             const Real EdgeTangentX = -std::sin(AngleEdge(IEdge));
-             const Real EdgeTangentY = std::cos(AngleEdge(IEdge));
-             VecFieldEdge =
-                 EdgeTangentX * VecField[0] + EdgeTangentY * VecField[1];
-          }
-#else
-          const Real LonE                = LonEdge(IEdge);
-          const Real LatE                = LatEdge(IEdge);
-
-          Real VecField[2];
-          Fun(VecField, LonE, LatE);
-
-          bool UseCartesianProjection = true;
-
-          if (UseCartesianProjection) {
-            Real VecFieldCart[3];
-            sphereToCartVec(VecFieldCart, VecField, LonE, LatE);
-
-            const Real EdgeCoords[3] = {XEdge[IEdge], YEdge[IEdge], ZEdge[IEdge]};
-
-            if (EdgeOrient == EdgeOrientation::Normal) {
-              const int JCell1 = CellsOnEdge(IEdge, 1);
-              const Real CellCoords[3] = {XCell(JCell1), YCell(JCell1), ZCell(JCell1)};
-
-              Real EdgeNormal[3];
-              tangentVector(EdgeNormal, EdgeCoords, CellCoords);
-              VecFieldEdge = EdgeNormal[0] * VecFieldCart[0] +
-                             EdgeNormal[1] * VecFieldCart[1] +
-                             EdgeNormal[2] * VecFieldCart[2];
-            }
-
-            if (EdgeOrient == EdgeOrientation::Tangential) {
-              const int JVertex1 = VerticesOnEdge(IEdge, 1);
-              const Real VertexCoords[3] = {XVertex(JVertex1), YVertex(JVertex1), ZVertex(JVertex1)};
-
-              Real EdgeTangent[3];
-              tangentVector(EdgeTangent, EdgeCoords, VertexCoords);
-              VecFieldEdge = EdgeTangent[0] * VecFieldCart[0] +
-                             EdgeTangent[1] * VecFieldCart[1] +
-                             EdgeTangent[2] * VecFieldCart[2];
-            }
-          } else {
-            if (EdgeOrient == EdgeOrientation::Normal) {
-              const Real EdgeNormalX      = std::cos(AngleEdge(IEdge));
-              const Real EdgeNormalY      = std::sin(AngleEdge(IEdge));
-              VecFieldEdge = EdgeNormalX * VecField[0] + EdgeNormalY * VecField[1];
-            }
-
-            if (EdgeOrient == EdgeOrientation::Tangential) {
-              const Real EdgeTangentX  = -std::sin(AngleEdge(IEdge));
-              const Real EdgeTangentY  = std::cos(AngleEdge(IEdge));
-              VecFieldEdge = EdgeTangentX * VecField[0] + EdgeTangentY * VecField[1];
-            }
-          }
-#endif
-          VecFieldArr[IEdge] = VecFieldEdge;
-       });
-}
-
-// temporary replacement for YAKL intrinsics
-Real maxVal(const Array1DReal &Arr) {
-   Real MaxVal;
-
-   parallelReduce(
-       {Arr.extent_int(0)},
-       KOKKOS_LAMBDA(int I, Real &Accum) {
-          Accum = Kokkos::max(Arr(I), Accum);
-       },
-       Kokkos::Max<Real>(MaxVal));
-
-   return MaxVal;
-}
-
-Real sum(const Array1DReal &Arr) {
-   Real Sum;
-
-   parallelReduce(
-       {Arr.extent_int(0)},
-       KOKKOS_LAMBDA(int I, Real &Accum) { Accum += Arr(I); }, Sum);
-
-   return Sum;
-}
-
-#ifdef HORZOPERATORS_TEST_PLANE
 // analytical expressions for scalar and vector fields used as input for
 // operator tests together with exact values of operators for computing errors
 // and expected error values
-struct TestSetup {
+struct TestSetupPlane {
    Real Pi = M_PI;
 
    // lengths of periodic planar mesh
@@ -238,13 +67,8 @@ struct TestSetup {
              std::sin(2 * Pi * Y / Ly);
    }
 };
-#endif
 
-#ifdef HORZOPERATORS_TEST_SPHERE_1
-// analytical expressions for scalar and vector fields used as input for
-// operator tests together with exact values of operators for computing errors
-// and expected error values
-struct TestSetup {
+struct TestSetupSphere1 {
    // radius of spherical mesh
    // TODO: get this from the mesh
    Real Radius = 6371220;
@@ -289,13 +113,8 @@ struct TestSetup {
              std::sin(Lat);
    }
 };
-#endif
 
-#ifdef HORZOPERATORS_TEST_SPHERE_2
-// analytical expressions for scalar and vector fields used as input for
-// operator tests together with exact values of operators for computing errors
-// and expected error values
-struct TestSetup {
+struct TestSetupSphere2 {
    // radius of spherical mesh
    // TODO: get this from the mesh
    Real Radius = 6371220;
@@ -331,409 +150,272 @@ struct TestSetup {
       return 2 * std::sin(Lat) / Radius;
    }
 };
+
+#ifdef HORZOPERATORS_TEST_PLANE
+constexpr Geometry Geom          = Geometry::Planar;
+constexpr char DefaultMeshFile[] = "OmegaPlanarMesh.nc";
+#else
+constexpr Geometry Geom          = Geometry::Spherical;
+constexpr char DefaultMeshFile[] = "OmegaSphereMesh.nc";
+#endif
+
+#if defined HORZOPERATORS_TEST_PLANE
+using TestSetup = TestSetupPlane;
+#elif defined HORZOPERATORS_TEST_SPHERE_1
+using TestSetup = TestSetupSphere1;
+#elif defined HORZOPERATORS_TEST_SPHERE_2
+using TestSetup = TestSetupSphere2;
 #endif
 
 int testDivergence(Real RTol) {
-   int Err;
+   int Err = 0;
    TestSetup Setup;
 
-   const auto &Mesh = HorzMesh::getDefault();
+   const auto &Mesh      = HorzMesh::getDefault();
+   const int NVertLevels = 16;
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
-
-   computeVecFieldEdge(
+   Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
+   Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, Mesh);
+       VecEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
 
-   // Perform halo exchange
-   auto MyHalo   = Halo::getDefault();
-   auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   deepCopy(VecEdge, VecEdgeH);
+   // Compute exact result
+   Array2DReal ExactDivCell("ExactDivCell", Mesh->NCellsOwned, NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactDivVec(X, Y); },
+       ExactDivCell, Geom, Mesh, OnCell, NVertLevels, false);
 
-#ifdef HORZOPERATORS_TEST_PLANE
-   auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
-   auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
-#else
-   auto XCell = createDeviceMirrorCopy(Mesh->LonCellH);
-   auto YCell = createDeviceMirrorCopy(Mesh->LatCellH);
-#endif
-   auto &AreaCell = Mesh->AreaCell;
-
-   // Compute element-wise errors
-   Array1DReal LInfCell("LInfCell", Mesh->NCellsOwned);
-   Array1DReal L2Cell("L2Cell", Mesh->NCellsOwned);
-
-   Array1DReal LInfScaleCell("LInfScaleCell", Mesh->NCellsOwned);
-   Array1DReal L2ScaleCell("L2ScaleCell", Mesh->NCellsOwned);
+   // Compute numerical result
+   Array2DReal NumDivCell("NumDivCell", Mesh->NCellsOwned, NVertLevels);
    DivergenceOnCell DivergenceCell(Mesh);
    parallelFor(
-       {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
-          // Numerical result
-          const Real DivCellNum = DivergenceCell(ICell, VecEdge);
-
-          // Exact result
-          const Real X            = XCell(ICell);
-          const Real Y            = YCell(ICell);
-          const Real DivCellExact = Setup.exactDivVec(X, Y);
-
-          // Errors
-          LInfCell(ICell)      = std::abs(DivCellNum - DivCellExact);
-          LInfScaleCell(ICell) = std::abs(DivCellExact);
-          L2Cell(ICell) = AreaCell(ICell) * LInfCell(ICell) * LInfCell(ICell);
-          L2ScaleCell(ICell) =
-              AreaCell(ICell) * LInfScaleCell(ICell) * LInfScaleCell(ICell);
+       {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int K) {
+          DivergenceCell(NumDivCell, ICell, K, VecEdge);
        });
 
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfCell);
-   const Real L2ErrorLoc   = sum(L2Cell);
-   const Real LInfScaleLoc = maxVal(LInfScaleCell);
-   const Real L2ScaleLoc   = sum(L2ScaleCell);
-
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-   Real LInfError, LInfScale;
-   Err =
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err =
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
-   }
-
-   Real L2Error, L2Scale;
-   Err = MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err = MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
-   }
+   // Compute error measures
+   ErrorMeasures DivErrors;
+   Err += computeErrors(DivErrors, NumDivCell, ExactDivCell, Mesh, OnCell,
+                        NVertLevels);
 
    // Check error values
-   if (Err == 0 && isApprox(LInfError, Setup.ExpectedDivErrorLInf, RTol) &&
-       isApprox(L2Error, Setup.ExpectedDivErrorL2, RTol)) {
-      return 0;
-   } else {
-      return 1;
+   if (!isApprox(DivErrors.LInf, Setup.ExpectedDivErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Divergence LInf FAIL");
    }
+
+   if (!isApprox(DivErrors.L2, Setup.ExpectedDivErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Divergence L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("OperatorsTest: Divergence PASS");
+   }
+
+   return Err;
 }
 
 int testGradient(Real RTol) {
-   int Err;
+   int Err = 0;
    TestSetup Setup;
 
-   const auto &Mesh = HorzMesh::getDefault();
-#ifdef HORZOPERATORS_TEST_PLANE
-   const auto XCell = createDeviceMirrorCopy(Mesh->XCellH);
-   const auto YCell = createDeviceMirrorCopy(Mesh->YCellH);
-#else
-   const auto XCell = createDeviceMirrorCopy(Mesh->LonCellH);
-   const auto YCell = createDeviceMirrorCopy(Mesh->LatCellH);
-#endif
+   const auto &Mesh      = HorzMesh::getDefault();
+   const int NVertLevels = 16;
 
    // Prepare operator input
-   Array1DReal ScalarCell("ScalarCell", Mesh->NCellsSize);
-   parallelFor(
-       {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
-          const Real X      = XCell(ICell);
-          const Real Y      = YCell(ICell);
-          ScalarCell(ICell) = Setup.exactScalar(X, Y);
-       });
-
-   // Perform halo exchange
-   auto MyHalo      = Halo::getDefault();
-   auto ScalarCellH = createHostMirrorCopy(ScalarCell);
-   MyHalo->exchangeFullArrayHalo(ScalarCellH, OnCell);
-   deepCopy(ScalarCell, ScalarCellH);
+   Array2DReal ScalarCell("ScalarCell", Mesh->NCellsSize, NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real Coord1, Real Coord2) {
+          return Setup.exactScalar(Coord1, Coord2);
+       },
+       ScalarCell, Geom, Mesh, OnCell, NVertLevels);
 
    // Compute exact result
-   Array1DReal ExactGradEdge("ExactGradEdge", Mesh->NEdgesOwned);
-   computeVecFieldEdge(
+   Array2DReal ExactGradEdge("ExactGradEdge", Mesh->NEdgesOwned, NVertLevels);
+   Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactGradScalarX(X, Y);
           VecField[1] = Setup.exactGradScalarY(X, Y);
        },
-       ExactGradEdge, EdgeOrientation::Normal, Mesh);
+       ExactGradEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
 
-   const auto &DcEdge = Mesh->DcEdge;
-   const auto &DvEdge = Mesh->DvEdge;
-   // Compute element-wise errors
-   Array1DReal LInfEdge("LInfEdge", Mesh->NEdgesOwned);
-   Array1DReal L2Edge("L2Edge", Mesh->NEdgesOwned);
-   Array1DReal LInfScaleEdge("LInfScaleEdge", Mesh->NEdgesOwned);
-   Array1DReal L2ScaleEdge("L2ScaleEdge", Mesh->NEdgesOwned);
+   // Compute numerical result
    GradientOnEdge GradientEdge(Mesh);
+   Array2DReal NumGradEdge("NumGradEdge", Mesh->NEdgesOwned, NVertLevels);
    parallelFor(
-       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          // Numerical result
-          const Real GradScalarNum = GradientEdge(IEdge, ScalarCell);
-
-          // Exact result
-          const Real GradScalarExact = ExactGradEdge(IEdge);
-
-          LInfEdge(IEdge)      = std::abs(GradScalarNum - GradScalarExact);
-          LInfScaleEdge(IEdge) = std::abs(GradScalarExact);
-          const Real AreaEdge  = DcEdge(IEdge) * DvEdge(IEdge) / 2;
-          L2Edge(IEdge)        = AreaEdge * LInfEdge(IEdge) * LInfEdge(IEdge);
-          L2ScaleEdge(IEdge) =
-              AreaEdge * LInfScaleEdge(IEdge) * LInfScaleEdge(IEdge);
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
+          GradientEdge(NumGradEdge, IEdge, K, ScalarCell);
        });
 
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfEdge);
-   const Real LInfScaleLoc = maxVal(LInfScaleEdge);
-   const Real L2ErrorLoc   = sum(L2Edge);
-   const Real L2ScaleLoc   = sum(L2ScaleEdge);
-
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-   Real LInfError, LInfScale;
-   Err =
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err =
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
-   }
-
-   Real L2Error, L2Scale;
-   Err = MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err = MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
-   }
+   // Compute error measures
+   ErrorMeasures GradErrors;
+   Err += computeErrors(GradErrors, NumGradEdge, ExactGradEdge, Mesh, OnEdge,
+                        NVertLevels);
 
    // Check error values
-   if (Err == 0 && isApprox(LInfError, Setup.ExpectedGradErrorLInf, RTol) &&
-       isApprox(L2Error, Setup.ExpectedGradErrorL2, RTol)) {
-      return 0;
-   } else {
-      return 1;
+   if (!isApprox(GradErrors.LInf, Setup.ExpectedGradErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Gradient LInf FAIL");
    }
+
+   if (!isApprox(GradErrors.L2, Setup.ExpectedGradErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Gradient L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("OperatorsTest: Gradient PASS");
+   }
+
+   return Err;
 }
 
 int testCurl(Real RTol) {
-   int Err;
+   int Err = 0;
    TestSetup Setup;
-   const auto &Mesh = HorzMesh::getDefault();
+   const auto &Mesh      = HorzMesh::getDefault();
+   const int NVertLevels = 16;
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
-
-   computeVecFieldEdge(
+   Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
+   Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, Mesh);
+       VecEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
 
-   // Perform halo exchange
-   auto MyHalo   = Halo::getDefault();
-   auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   deepCopy(VecEdge, VecEdgeH);
+   // Compute exact result
+   Array2DReal ExactCurlVertex("ExactCurlVertex", Mesh->NVerticesOwned,
+                               NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactCurlVec(X, Y); },
+       ExactCurlVertex, Geom, Mesh, OnVertex, NVertLevels, false);
 
-#ifdef HORZOPERATORS_TEST_PLANE
-   const auto XVertex = createDeviceMirrorCopy(Mesh->XVertexH);
-   const auto YVertex = createDeviceMirrorCopy(Mesh->YVertexH);
-#else
-   const auto XVertex = createDeviceMirrorCopy(Mesh->LonVertexH);
-   const auto YVertex = createDeviceMirrorCopy(Mesh->LatVertexH);
-#endif
-   const auto &AreaTriangle = Mesh->AreaTriangle;
-
-   // Compute element-wise errors
-   Array1DReal LInfVertex("LInfVertex", Mesh->NVerticesOwned);
-   Array1DReal LInfScaleVertex("LInfScaleVertex", Mesh->NVerticesOwned);
-   Array1DReal L2Vertex("L2Vertex", Mesh->NVerticesOwned);
-   Array1DReal L2ScaleVertex("L2ScaleVertex", Mesh->NVerticesOwned);
+   // Compute numerical result
+   Array2DReal NumCurlVertex("NumCurlVertex", Mesh->NVerticesOwned,
+                             NVertLevels);
    CurlOnVertex CurlVertex(Mesh);
    parallelFor(
-       {Mesh->NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
-          // Numerical result
-          const Real CurlNum = CurlVertex(IVertex, VecEdge);
-
-          // Exact result
-          const Real X         = XVertex(IVertex);
-          const Real Y         = YVertex(IVertex);
-          const Real CurlExact = Setup.exactCurlVec(X, Y);
-
-          // Errors
-          LInfVertex(IVertex)      = std::abs(CurlNum - CurlExact);
-          LInfScaleVertex(IVertex) = std::abs(CurlExact);
-          L2Vertex(IVertex) =
-              AreaTriangle(IVertex) * LInfVertex(IVertex) * LInfVertex(IVertex);
-          L2ScaleVertex(IVertex) = AreaTriangle(IVertex) *
-                                   LInfScaleVertex(IVertex) *
-                                   LInfScaleVertex(IVertex);
+       {Mesh->NVerticesOwned, NVertLevels}, KOKKOS_LAMBDA(int IVertex, int K) {
+          CurlVertex(NumCurlVertex, IVertex, K, VecEdge);
        });
 
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfVertex);
-   const Real LInfScaleLoc = maxVal(LInfScaleVertex);
-   const Real L2ErrorLoc   = sum(L2Vertex);
-   const Real L2ScaleLoc   = sum(L2ScaleVertex);
-
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-   Real LInfError, LInfScale;
-   Err =
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err =
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
-   }
-
-   Real L2Error, L2Scale;
-   Err = MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err = MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
-   }
+   // Compute error measures
+   ErrorMeasures CurlErrors;
+   Err += computeErrors(CurlErrors, NumCurlVertex, ExactCurlVertex, Mesh,
+                        OnVertex, NVertLevels);
 
    // Check error values
-   if (Err == 0 && isApprox(LInfError, Setup.ExpectedCurlErrorLInf, RTol) &&
-       isApprox(L2Error, Setup.ExpectedCurlErrorL2, RTol)) {
-      return 0;
-   } else {
-      return 1;
+   if (!isApprox(CurlErrors.LInf, Setup.ExpectedCurlErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Curl LInf FAIL");
    }
+
+   if (!isApprox(CurlErrors.L2, Setup.ExpectedCurlErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Curl L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("OperatorsTest: Curl PASS");
+   }
+
+   return Err;
 }
 
 int testRecon(Real RTol) {
-   int Err;
+   int Err = 0;
    TestSetup Setup;
 
-   const auto &Mesh = HorzMesh::getDefault();
+   const auto &Mesh      = HorzMesh::getDefault();
+   const int NVertLevels = 16;
 
    // Prepare operator input
-   Array1DReal VecEdge("VecEdge", Mesh->NEdgesSize);
-
-   computeVecFieldEdge(
+   Array2DReal VecEdge("VecEdge", Mesh->NEdgesSize, NVertLevels);
+   Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       VecEdge, EdgeOrientation::Normal, Mesh);
-
-   // Perform halo exchange
-   auto MyHalo   = Halo::getDefault();
-   auto VecEdgeH = createHostMirrorCopy(VecEdge);
-   MyHalo->exchangeFullArrayHalo(VecEdgeH, OnEdge);
-   deepCopy(VecEdge, VecEdgeH);
+       VecEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
 
    // Compute exact result
-   Array1DReal ExactReconEdge("ExactReconEdge", Mesh->NEdgesOwned);
+   Array2DReal ExactReconEdge("ExactReconEdge", Mesh->NEdgesOwned, NVertLevels);
 
-   computeVecFieldEdge(
+   Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.exactVecX(X, Y);
           VecField[1] = Setup.exactVecY(X, Y);
        },
-       ExactReconEdge, EdgeOrientation::Tangential, Mesh);
+       ExactReconEdge, EdgeComponent::Tangential, Geom, Mesh, NVertLevels,
+       false);
 
-   const auto &DcEdge = Mesh->DcEdge;
-   const auto &DvEdge = Mesh->DvEdge;
-
-   // Compute element-wise errors
-   Array1DReal LInfEdge("LInfEdge", Mesh->NEdgesOwned);
-   Array1DReal LInfScaleEdge("LInfScaleEdge", Mesh->NEdgesOwned);
-   Array1DReal L2Edge("L2Edge", Mesh->NEdgesOwned);
-   Array1DReal L2ScaleEdge("L2ScaleEdge", Mesh->NEdgesOwned);
+   // Compute numerical result
+   Array2DReal NumReconEdge("NumReconEdge", Mesh->NEdgesOwned, NVertLevels);
    TangentialReconOnEdge TanReconEdge(Mesh);
    parallelFor(
-       {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
-          // Numerical result
-          const Real VecReconNum = TanReconEdge(IEdge, VecEdge);
-
-          // Exact result
-          const Real VecReconExact = ExactReconEdge(IEdge);
-
-          // Errors
-          LInfEdge(IEdge)      = std::abs(VecReconNum - VecReconExact);
-          LInfScaleEdge(IEdge) = std::abs(VecReconExact);
-          const Real AreaEdge  = DcEdge(IEdge) * DvEdge(IEdge) / 2;
-          L2Edge(IEdge)        = AreaEdge * LInfEdge(IEdge) * LInfEdge(IEdge);
-          L2ScaleEdge(IEdge) =
-              AreaEdge * LInfScaleEdge(IEdge) * LInfScaleEdge(IEdge);
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int K) {
+          TanReconEdge(NumReconEdge, IEdge, K, VecEdge);
        });
 
-   // Compute global normalized error norms
-   const Real LInfErrorLoc = maxVal(LInfEdge);
-   const Real LInfScaleLoc = maxVal(LInfScaleEdge);
-   const Real L2ErrorLoc   = sum(L2Edge);
-   const Real L2ScaleLoc   = sum(L2ScaleEdge);
+   // Compute error measures
+   ErrorMeasures ReconErrors;
+   Err += computeErrors(ReconErrors, NumReconEdge, ExactReconEdge, Mesh, OnEdge,
+                        NVertLevels);
 
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
-   Real LInfError, LInfScale;
-   Err =
-       MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);
-   Err =
-       MPI_Allreduce(&LInfScaleLoc, &LInfScale, 1, MPI_RealKind, MPI_MAX, Comm);
-   if (LInfScale > 0) {
-      LInfError /= LInfScale;
+   if (!isApprox(ReconErrors.LInf, Setup.ExpectedReconErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Recon LInf FAIL");
    }
 
-   Real L2Error, L2Scale;
-   Err = MPI_Allreduce(&L2ErrorLoc, &L2Error, 1, MPI_RealKind, MPI_SUM, Comm);
-   Err = MPI_Allreduce(&L2ScaleLoc, &L2Scale, 1, MPI_RealKind, MPI_SUM, Comm);
-   if (L2Scale > 0) {
-      L2Error = std::sqrt(L2Error / L2Scale);
-   } else {
-      L2Error = std::sqrt(L2Error);
+   if (!isApprox(ReconErrors.L2, Setup.ExpectedReconErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("OperatorsTest: Recon L2 FAIL");
    }
 
-   // Check error values
-   if (Err == 0 && isApprox(LInfError, Setup.ExpectedReconErrorLInf, RTol) &&
-       isApprox(L2Error, Setup.ExpectedReconErrorL2, RTol)) {
-      return 0;
-   } else {
-      return 1;
+   if (Err == 0) {
+      LOG_INFO("OperatorsTest: Recon PASS");
    }
+
+   return Err;
 }
 
 //------------------------------------------------------------------------------
 // The initialization routine for Operators testing
-int initOperatorsTest(int argc, char *argv[]) {
-
-   MPI_Init(&argc, &argv);
-   Kokkos::initialize(argc, argv);
-
+int initOperatorsTest(const std::string &MeshFile) {
    int Err = 0;
 
    MachEnv::init(MPI_COMM_WORLD);
    MachEnv *DefEnv  = MachEnv::getDefaultEnv();
    MPI_Comm DefComm = DefEnv->getComm();
 
-   Err = IO::init(DefComm);
-   if (Err != 0) {
+   int IOErr = IO::init(DefComm);
+   if (IOErr != 0) {
+      Err++;
       LOG_ERROR("OperatorsTest: error initializing parallel IO");
    }
 
-#ifdef HORZOPERATORS_TEST_PLANE
-   Err = Decomp::init("OmegaPlanarMesh.nc");
-#else
-   Err = Decomp::init("OmegaSphereMesh.nc");
-#endif
-   if (Err != 0) {
+   int DecompErr = Decomp::init(MeshFile);
+   if (DecompErr != 0) {
+      Err++;
       LOG_ERROR("OperatorsTest: error initializing default decomposition");
    }
 
-   Err = Halo::init();
-   if (Err != 0) {
+   int HaloErr = Halo::init();
+   if (HaloErr != 0) {
+      Err++;
       LOG_ERROR("OperatorsTest: error initializing default halo");
    }
 
-   Err = HorzMesh::init();
-   if (Err != 0) {
+   int MeshErr = HorzMesh::init();
+   if (MeshErr != 0) {
+      Err++;
       LOG_ERROR("OperatorsTest: error initializing default mesh");
    }
 
@@ -745,54 +427,34 @@ void finalizeOperatorsTest() {
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();
-   Kokkos::finalize();
-   MPI_Finalize();
 }
 
-int main(int argc, char *argv[]) {
-   int Err = initOperatorsTest(argc, argv);
+void operatorsTest(const std::string &MeshFile = DefaultMeshFile) {
+   int Err = initOperatorsTest(MeshFile);
    if (Err != 0) {
       LOG_CRITICAL("OperatorsTest: Error initializing");
    }
 
    const Real RTol = sizeof(Real) == 4 ? 1e-2 : 1e-10;
 
-   int DivErr = testDivergence(RTol);
-   if (DivErr == 0) {
-      LOG_INFO("OperatorsTest: Divergence PASS");
-   } else {
-      Err = DivErr;
-      LOG_INFO("OperatorsTest: Divergence FAIL");
-   }
-
-   int GradErr = testGradient(RTol);
-   if (GradErr == 0) {
-      LOG_INFO("OperatorsTest: Gradient PASS");
-   } else {
-      Err = GradErr;
-      LOG_INFO("OperatorsTest: Gradient FAIL");
-   }
-
-   int CurlErr = testCurl(RTol);
-   if (CurlErr == 0) {
-      LOG_INFO("OperatorsTest: Curl PASS");
-   } else {
-      Err = CurlErr;
-      LOG_INFO("OperatorsTest: Curl FAIL");
-   }
-
-   int ReconErr = testRecon(RTol);
-   if (Err == 0) {
-      LOG_INFO("OperatorsTest: Recon PASS");
-   } else {
-      Err = ReconErr;
-      LOG_INFO("OperatorsTest: Recon FAIL");
-   }
+   Err += testDivergence(RTol);
+   Err += testGradient(RTol);
+   Err += testCurl(RTol);
+   Err += testRecon(RTol);
 
    if (Err == 0) {
       LOG_INFO("OperatorsTest: Successful completion");
    }
-
    finalizeOperatorsTest();
+}
+
+int main(int argc, char *argv[]) {
+   MPI_Init(&argc, &argv);
+   Kokkos::initialize(argc, argv);
+
+   operatorsTest();
+
+   Kokkos::finalize();
+   MPI_Finalize();
 } // end of main
 //===-----------------------------------------------------------------------===/
