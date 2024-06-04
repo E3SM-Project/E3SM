@@ -459,7 +459,7 @@ end subroutine co2_cycle_set_ptend
 
 !===============================================================================
 
-subroutine co2_cycle_iac_ptend(state, pbuf, ptend, is_begc)
+subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
 
    !-------------------------------------------------------------------------------
    ! Purpose:
@@ -480,7 +480,6 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend, is_begc)
       type(physics_state), intent(in)    :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       type(physics_ptend), intent(out)   :: ptend     ! indivdual parameterization tendencies
-      logical:: is_begc
    
       ! Local variables
       logical :: lq(pcnst)

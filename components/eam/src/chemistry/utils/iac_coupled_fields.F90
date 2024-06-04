@@ -35,7 +35,7 @@ module iac_coupled_fields
 
   ! Public data
   public iac_vertical_emiss
-  logical, protected :: iac_present=.false.
+  logical, public, protected :: iac_present=.false.
 
   !------------------------------------------------
   ! This is the chunked and columnated data from the iac coupling

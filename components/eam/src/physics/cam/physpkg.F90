@@ -1496,8 +1496,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend, co2_readFlux_aircraft
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
+    use iac_coupled_fields, only: iac_present, iac_co2_name
 
     implicit none
 
@@ -1679,16 +1680,18 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
     
-    ! add tendency from iac model component
-     call co2_cycle_iac_ptend(state, pbuf, ptend,is_begc)
-     call physics_update(state, ptend, ztodt, tend)
-     call get_carbon_air_fluxes(state, pbuf, ztodt) 
-     !FIXMEB: Do we need to call "get_carbon_air_fluxes" here???
-    
-    ! add tendency from aircraft emissions
-    !call co2_cycle_set_ptend(state, pbuf, ptend)
-    !call physics_update(state, ptend, ztodt, tend)
-    !call get_carbon_air_fluxes(state, pbuf, ztodt)
+    if(iac_present) then
+      ! add tendency from iac model component
+      call co2_cycle_iac_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      ! Compute diagnostics (supply optional iac_co2_name to get_carbon_air_fluxes for iac)
+      call get_carbon_air_fluxes(state, pbuf, ztodt, iac_co2_name) 
+    else if(co2_readFlux_aircraft) then
+      ! add tendency from aircraft emissions
+      call co2_cycle_set_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      call get_carbon_air_fluxes(state, pbuf, ztodt)
+    endif
 
     ! Chemistry calculation
     if (chem_is_active()) then
