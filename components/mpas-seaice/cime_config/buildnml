@@ -319,7 +319,7 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
 
     elif ice_grid == 'RRSwISC6to18E3r5':
-        decomp_date = '20240327'
+        decomp_date = '20240404'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '20240327'
         grid_prefix = 'mpassi.RRSwISC6to18E3r5'
