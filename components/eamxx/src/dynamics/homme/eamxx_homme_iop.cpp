@@ -594,9 +594,9 @@ apply_iop_forcing(const Real dt)
             // Restrict nudging of T and qv to certain levels if requested by user
             // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
             // is in units of [hPa], thus convert iop_nudge_tq_low/high
-            Mask nudge_level;
-            for (int p=0; p<Pack::n; ++p) {
-              const auto lev = k*Pack::n + p;
+            Mask nudge_level(false);
+            int max_size = hyam.size();
+            for (int lev=k*Pack::n, p = 0; p < Pack::n && lev < max_size; ++lev, ++p) {
               const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
               nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
                                  and
