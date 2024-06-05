@@ -60,9 +60,7 @@ OceanState::OceanState(
     Halo *MeshHalo_,         //< [in] Halo for Mesh
     const int NVertLevels_,  //< [in] number of vertical levels
     const int NTimeLevels_   //< [in] number of time levels
-    )
-    : LayerThicknessH(NTimeLevels_), NormalVelocityH(NTimeLevels_),
-      LayerThickness(NTimeLevels_), NormalVelocity(NTimeLevels_) {
+) {
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
    NCellsOwned = Mesh->NCellsOwned;

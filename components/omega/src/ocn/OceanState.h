@@ -64,16 +64,22 @@ class OceanState {
    I4 NEdgesAll;   ///< Total number (owned+halo) of local edges
    I4 NEdgesSize;  ///< Array length (incl padding, bndy) for edge dim
 
+   static const I4 MaxTimeLevels = 5; ///< Maximum number of time levels
+
    I4 NTimeLevels; ///< Number of time levels in state variable arrays
    I4 NVertLevels; ///< Number of vertical levels in state variable arrays
 
    // Prognostic variables
 
-   std::vector<Array2DR8> LayerThickness;      ///< Device LayerThickness array
-   std::vector<HostArray2DR8> LayerThicknessH; ///< Host LayerThickness array
+   Kokkos::Array<Array2DR8, MaxTimeLevels>
+       LayerThickness; ///< Device LayerThickness array
+   Kokkos::Array<HostArray2DR8, MaxTimeLevels>
+       LayerThicknessH; ///< Host LayerThickness array
 
-   std::vector<Array2DR8> NormalVelocity;      ///< Device LayerThickness array
-   std::vector<HostArray2DR8> NormalVelocityH; ///< Host LayterThickness array
+   Kokkos::Array<Array2DR8, MaxTimeLevels>
+       NormalVelocity; ///< Device LayerThickness array
+   Kokkos::Array<HostArray2DR8, MaxTimeLevels>
+       NormalVelocityH; ///< Host LayterThickness array
 
    // Methods
 
