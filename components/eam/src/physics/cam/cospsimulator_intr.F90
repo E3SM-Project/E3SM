@@ -1062,22 +1062,22 @@ CONTAINS
        call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clliqmodis ( time, plev, tau, loc )
-       call addfld ('CLLIQMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('CLLIQMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud-top Pressure vs Cloud Optical Thickness for Liquid-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clicemodis ( time, plev, tau, loc )
-       call addfld ('CLICEMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('CLICEMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud-top Pressure vs Cloud Optical Thickness for Ice-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clrimodis ( time, plev, tau, loc )
-       call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud Optical Thickness vs Cloud Particle Size for Ice-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clrlmodis ( time, plev, tau, loc )
-       call addfld ('CLRLMODIS',(/'cosp_tau_modis','cosp_reffliq  '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('CLRLMODIS',(/'cosp_tau_modis','cosp_reffliq  '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud Optical Thickness vs Cloud Particle Size for Liquid-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float iwprimodis ( time, reffice, iwp, loc )
-       call addfld ('IWPRIMODIS',(/'cosp_iwp_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('IWPRIMODIS',(/'cosp_iwp_modis','cosp_reffice  '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud Water Path vs Cloud Particle Size for Ice-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! float lwprlmodis ( time, reffliq, lwp, loc )
-       call addfld ('LWPRLMODIS',(/'cosp_lwp_modis','cosp_reffliq  '/),'A','%','MODIS Cloud Area Fraction',            &
+       call addfld ('LWPRLMODIS',(/'cosp_lwp_modis','cosp_reffliq  '/),'A','%','MODIS Cloud-Fraction Joint Histogram of Cloud Water Path vs Cloud Particle Size for Liquid-topped Clouds', &
             flag_xyfill=.true., fill_value=R_UNDEF)
        
        !! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
