@@ -84,55 +84,62 @@ int globalSum(const R8 *Val, const MPI_Comm Comm, R8 *Res) {
 // Global sum arrays
 //////////
 // I4 or I8 array
-template <class T, int dim>
-typename std::enable_if<std::is_integral<T>::value, // value is true if T is an
-                                                    // integer type
-                        T>::type                    // return type is T
-globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-          const MPI_Comm Comm, T *GlobalSum,
+template <typename T, typename IT>
+std::enable_if_t<std::is_integral_v<typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, IT *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
-   T LocalSum = 0;
+   IT LocalSum = 0;
+   int dim     = arr.rank;
+   int i, imin, imax;
    if (IndxRange == nullptr) {
-      LocalSum = yakl::intrinsics::sum(arr);
+      imin = 0;
+      imax = arr.size();
    } else {
-      for (int i = (*IndxRange)[0]; i < (*IndxRange)[dim * 2 - 1]; i++) {
-         LocalSum += arr.data()[i];
-      }
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
+   }
+   for (i = imin; i < imax; i++) {
+      LocalSum += arr.data()[i];
    }
    return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
 }
 
 // R4 array
-template <int dim>
-int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, R4 *GlobalSum,
-              const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R4 *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    R8 GlobalTmp = 0.0, LocalSum = 0.0;
+   int dim = arr.rank;
+   int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
-      LocalSum = yakl::intrinsics::sum(arr);
+      imin = 0;
+      imax = arr.size();
    } else {
-      for (int i = (*IndxRange)[0]; i < (*IndxRange)[dim * 2 - 1]; i++) {
-         LocalSum += arr.data()[i];
-      }
+      imin = (*IndxRange)[0];
+      imax = (*IndxRange)[dim * 2 - 1];
    }
-   int ierr =
-       MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+   for (i = imin; i < imax; i++) {
+      LocalSum += arr.data()[i];
+   }
+   ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
    *GlobalSum = GlobalTmp;
    return ierr;
 }
 
 // R8 array
-template <int dim>
-int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
-              const MPI_Comm Comm, R8 *GlobalSum,
-              const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R8 *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -159,17 +166,17 @@ int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
 // Global sum with product
 //////////
 // I4 or I8 array
-template <class T, int dim>
-typename std::enable_if<std::is_integral<T>::value, T>::type
-globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-          yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
-          const MPI_Comm Comm, T *GlobalSum,
+template <typename T, typename IT>
+std::enable_if_t<std::is_integral_v<typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
+          const MPI_Comm Comm, IT *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    T LocalSum = 0;
+   int dim    = arr.rank;
    int i, imin, imax;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -181,16 +188,17 @@ globalSum(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // R4 array
-template <int dim>
-int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr2,
-              const MPI_Comm Comm, R4 *GlobalSum,
-              const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<R4> arr, const Kokkos::View<R4> arr2,
+          const MPI_Comm Comm, R4 *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    R8 GlobalTmp = 0.0, LocalSum = 0.0;
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -204,18 +212,19 @@ int globalSum(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // R8 array
-template <int dim>
-int globalSum(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const arr2,
-              const MPI_Comm Comm, R8 *GlobalSum,
-              const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const Kokkos::View<R8> arr, const Kokkos::View<R8> arr2,
+          const MPI_Comm Comm, R8 *GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -295,17 +304,18 @@ int globalSum(const std::vector<R8> scalars, const MPI_Comm Comm,
 }
 
 // I4 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<I4> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+          std::vector<I4> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    I4 LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -321,17 +331,18 @@ int globalSum(
 }
 
 // I8 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<I8> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+          std::vector<I8> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    I8 LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -347,17 +358,18 @@ int globalSum(
 }
 
 // R4 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<R4> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+          std::vector<R4> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    R8 GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -376,20 +388,21 @@ int globalSum(
 }
 
 // R8 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<R8> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+          std::vector<R8> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -420,19 +433,19 @@ int globalSum(
 // Global sum multi-field with product
 //////////
 // I4 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>> arrays,
-    const std::vector<yakl::Array<I4, dim, yakl::memHost, yakl::styleC>>
-        arrays2,
-    const MPI_Comm Comm, std::vector<I4> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays,
+          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
+          std::vector<I4> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    I4 LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -448,19 +461,19 @@ int globalSum(
 }
 
 // I8 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>> arrays,
-    const std::vector<yakl::Array<I8, dim, yakl::memHost, yakl::styleC>>
-        arrays2,
-    const MPI_Comm Comm, std::vector<I8> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays,
+          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
+          std::vector<I8> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    I8 LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -476,19 +489,19 @@ int globalSum(
 }
 
 // R4 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>> arrays,
-    const std::vector<yakl::Array<R4, dim, yakl::memHost, yakl::styleC>>
-        arrays2,
-    const MPI_Comm Comm, std::vector<R4> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays,
+          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
+          std::vector<R4> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    R8 GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -507,22 +520,22 @@ int globalSum(
 }
 
 // R8 arrays
-template <int dim>
-int globalSum(
-    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>> arrays,
-    const std::vector<yakl::Array<R8, dim, yakl::memHost, yakl::styleC>>
-        arrays2,
-    const MPI_Comm Comm, std::vector<R8> GlobalSum,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalSum(const std::vector<Kokkos::View<T>> arrays,
+          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
+          std::vector<R8> GlobalSum,
+          const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
+   int dim   = arrays[0].rank;
    double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
@@ -553,35 +566,36 @@ int globalSum(
 // Global minval
 //////////
 // Array
-template <class T, int dim>
-int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-                 const MPI_Comm Comm, T GlobalMinVal,
-                 const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMinVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMinVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   T LocalMinVal = arr.data()[imin];
+   IT LocalMinVal = arr.data()[imin];
    for (i = imin + 1; i < imax; i++) {
       if (LocalMinVal > arr.data()[i]) {
          LocalMinVal = arr.data()[i];
       }
    }
 
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
                            Comm);
    }
@@ -589,20 +603,21 @@ int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // Array with mask
-template <class T, int dim>
-int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-                 yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
-                 const MPI_Comm Comm, T GlobalMinVal,
-                 const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMinVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
+             const MPI_Comm Comm, IT GlobalMinVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   T tmp, LocalMinVal = arr.data()[imin] * arr2.data()[imin];
+   IT tmp, LocalMinVal = arr.data()[imin] * arr2.data()[imin];
    for (i = imin + 1; i < imax; i++) {
       tmp = arr.data()[i] * arr2.data()[i];
       if (LocalMinVal > tmp) {
@@ -610,16 +625,16 @@ int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
       }
    }
 
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
                            Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
                            Comm);
    }
@@ -627,21 +642,22 @@ int globalMinVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // Array multi-field
-template <class T, int dim>
-int globalMinVal(
-    const std::vector<yakl::Array<T, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<T> GlobalMinVal,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMinVal(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+             std::vector<IT> GlobalMinVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arrays[0].rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
    int ifld, nFlds = arrays.size();
-   T LocalMinVal[nFlds];
+   IT LocalMinVal[nFlds];
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalMinVal[ifld] = arrays[ifld].data()[imin];
       for (i = imin + 1; i < imax; i++) {
@@ -650,16 +666,16 @@ int globalMinVal(
          }
       }
    }
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_INT32_T,
                            MPI_MIN, Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_INT64_T,
                            MPI_MIN, Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_FLOAT,
                            MPI_MIN, Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(LocalMinVal, &GlobalMinVal[0], nFlds, MPI_DOUBLE,
                            MPI_MIN, Comm);
    }
@@ -670,35 +686,36 @@ int globalMinVal(
 // Global maxval
 //////////
 // Array
-template <class T, int dim>
-int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-                 const MPI_Comm Comm, T GlobalMaxVal,
-                 const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMaxVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMaxVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   T LocalMaxVal = arr.data()[imin];
+   IT LocalMaxVal = arr.data()[imin];
    for (i = imin + 1; i < imax; i++) {
       if (LocalMaxVal < arr.data()[i]) {
          LocalMaxVal = arr.data()[i];
       }
    }
 
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
                            Comm);
    }
@@ -706,20 +723,21 @@ int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // Array with mask
-template <class T, int dim>
-int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
-                 yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr2,
-                 const MPI_Comm Comm, T GlobalMaxVal,
-                 const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMaxVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
+             const MPI_Comm Comm, IT GlobalMaxVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arr.totElems();
+      imax = arr.size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   T tmp, LocalMaxVal = arr.data()[imin] * arr2.data()[imin];
+   IT tmp, LocalMaxVal = arr.data()[imin] * arr2.data()[imin];
    for (i = imin + 1; i < imax; i++) {
       tmp = arr.data()[i] * arr2.data()[i];
       if (LocalMaxVal < tmp) {
@@ -727,16 +745,16 @@ int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
       }
    }
 
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
                            Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
                            Comm);
    }
@@ -744,21 +762,22 @@ int globalMaxVal(yakl::Array<T, dim, yakl::memHost, yakl::styleC> const arr,
 }
 
 // Array multi-field
-template <class T, int dim>
-int globalMaxVal(
-    const std::vector<yakl::Array<T, dim, yakl::memHost, yakl::styleC>> arrays,
-    const MPI_Comm Comm, std::vector<T> GlobalMaxVal,
-    const std::vector<I4> *IndxRange = nullptr) {
+template <typename T, typename IT>
+std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
+globalMaxVal(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
+             std::vector<IT> GlobalMaxVal,
+             const std::vector<I4> *IndxRange = nullptr) {
+   int dim = arrays[0].rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
-      imax = arrays[0].totElems();
+      imax = arrays[0].size();
    } else {
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
    int ifld, nFlds = arrays.size();
-   T LocalMaxVal[nFlds];
+   IT LocalMaxVal[nFlds];
    for (ifld = 0; ifld < nFlds; ifld++) {
       LocalMaxVal[ifld] = arrays[ifld].data()[imin];
       for (i = imin + 1; i < imax; i++) {
@@ -767,16 +786,16 @@ int globalMaxVal(
          }
       }
    }
-   if (typeid(T) == typeid(I4)) {
+   if (typeid(IT) == typeid(I4)) {
       ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_INT32_T,
                            MPI_MAX, Comm);
-   } else if (typeid(T) == typeid(I8)) {
+   } else if (typeid(IT) == typeid(I8)) {
       ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_INT64_T,
                            MPI_MAX, Comm);
-   } else if (typeid(T) == typeid(R4)) {
+   } else if (typeid(IT) == typeid(R4)) {
       ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_FLOAT,
                            MPI_MAX, Comm);
-   } else if (typeid(T) == typeid(R8)) {
+   } else if (typeid(IT) == typeid(R8)) {
       ierr = MPI_Allreduce(LocalMaxVal, &GlobalMaxVal[0], nFlds, MPI_DOUBLE,
                            MPI_MAX, Comm);
    }
@@ -786,50 +805,46 @@ int globalMaxVal(
 ///-----------------------------------------------------------------------------
 /// Get MIN-value across all MPI processors in the MachEnv
 ///-----------------------------------------------------------------------------
-int GlobalMin(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
+int globalMin(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MIN, Comm);
 }
 
-int GlobalMin(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
+int globalMin(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MIN, Comm);
 }
 
-int GlobalMin(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
+int globalMin(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MIN, Comm);
 }
 
-int GlobalMin(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
+int globalMin(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MIN, Comm);
 }
 
-template <int dim>
-int GlobalMin(yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
+globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MIN,
                         Comm);
 }
 
-template <int dim>
-int GlobalMin(yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
+globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MIN,
                         Comm);
 }
 
-template <int dim>
-int GlobalMin(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MIN,
                         Comm);
 }
 
-template <int dim>
-int GlobalMin(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MIN,
                         Comm);
 }
@@ -837,50 +852,46 @@ int GlobalMin(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
 ///-----------------------------------------------------------------------------
 /// Get MAX-value across all MPI processors in the MachEnv
 ///-----------------------------------------------------------------------------
-int GlobalMax(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
+int globalMax(const I4 *Val, I4 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_INT32_T, MPI_MAX, Comm);
 }
 
-int GlobalMax(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
+int globalMax(const I8 *Val, I8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_INT64_T, MPI_MAX, Comm);
 }
 
-int GlobalMax(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
+int globalMax(const R4 *Val, R4 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_FLOAT, MPI_MAX, Comm);
 }
 
-int GlobalMax(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
+int globalMax(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MAX, Comm);
 }
 
-template <int dim>
-int GlobalMax(yakl::Array<I4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I4, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
+globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MAX,
                         Comm);
 }
 
-template <int dim>
-int GlobalMax(yakl::Array<I8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<I8, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
+globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MAX,
                         Comm);
 }
 
-template <int dim>
-int GlobalMax(yakl::Array<R4, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R4, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
+globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MAX,
                         Comm);
 }
 
-template <int dim>
-int GlobalMax(yakl::Array<R8, dim, yakl::memHost, yakl::styleC> const in,
-              yakl::Array<R8, dim, yakl::memHost, yakl::styleC> out,
-              const MPI_Comm Comm) {
+template <typename T>
+std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
+globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MAX,
                         Comm);
 }
