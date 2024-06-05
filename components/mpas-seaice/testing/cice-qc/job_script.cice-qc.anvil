@@ -14,7 +14,11 @@ source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
 
 export HDF5_USE_FILE_LOCKING=FALSE
 
-export BASE=/lcrc/group/acme/ac.dcomeau/scratch/chrys/20221218.DMPAS-JRA1p5.TL319_EC30to60E2r2.chrysalis.column-package.intel/run
-export TEST=/lcrc/group/acme/ac.dcomeau/scratch/chrys/20221218.DMPAS-JRA1p5.TL319_EC30to60E2r2.chrysalis.icepack.intel/run
+# paths should end in the directory containing mpassi.hist files (run.k001 and/or run.k000 if using output from the E3SM-Polar-Developer script)
+export BASE=/lcrc/group/acme/ac.dcomeau/scratch/chrys/20221218.DMPAS-JRA1p5.TL319_EC30to60E2r2.anvil.column-package.intel/run
+export TEST=/lcrc/group/acme/ac.dcomeau/scratch/chrys/20221218.DMPAS-JRA1p5.TL319_EC30to60E2r2.anvil.icepack.intel/run
+
+#export BASE=/lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbaseline.emc.qcbaseline20240413.master.E3SM-Project.anvil/run.k000
+#export TEST=/lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbaseline.emc.update_icepack_20240412.master.E3SM-Project.anvil/run.k000
 
 srun -N 1 -n 1 python mpas-seaice.t-test.py $BASE $TEST
