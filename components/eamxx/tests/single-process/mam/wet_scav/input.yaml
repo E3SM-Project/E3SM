@@ -10,21 +10,20 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_wetscav]
-  mam_wetscav:
-    number_of_subcycles: ${NUM_SUBCYCLES}
-    compute_tendencies: [all]
-    lambda_low: 0.001
 
 grids_manager:
   Type: Mesh Free
-  grids_names: [Physics]
-  Physics:
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
     type: point_grid
+    aliases: [Physics]
     number_of_global_columns:   218
     number_of_vertical_levels:  72
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   cldn_prev_step: 0.5
   cldn: 0.5
