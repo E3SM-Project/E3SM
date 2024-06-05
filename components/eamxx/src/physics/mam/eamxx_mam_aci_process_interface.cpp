@@ -149,7 +149,7 @@ void MAMAci::set_grids(
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_layout_mid =
-      make_layout({ncol_, num_aero_modes, nlev_}, {"ncol", "nmodes", "lev"});
+      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "NMODES", "LEV"});
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar4d_layout_mid, m, grid_name);

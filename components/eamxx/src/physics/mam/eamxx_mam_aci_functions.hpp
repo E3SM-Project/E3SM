@@ -431,8 +431,7 @@ void call_function_dropmixnuc(
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0u, pver),
-            [&](int klev) {
+            Kokkos::TeamVectorRange(team, 0u, pver), [&](int klev) {
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
               // get state_q at a grid cell (col,lev)
@@ -521,11 +520,12 @@ void update_cloud_borne_aerosols(
 
 // Update interstitial aerosols using tendencies - levels
 KOKKOS_INLINE_FUNCTION
-void update_interstitial_aerosols_levs(
-    const haero::ThreadTeam &team, const int nlev, const int icol,
-    const Real dt, const MAMAci::view_2d ptend_view,
-    // output
-    MAMAci::view_2d aero_mr) {
+void update_interstitial_aerosols_levs(const haero::ThreadTeam &team,
+                                       const int nlev, const int icol,
+                                       const Real dt,
+                                       const MAMAci::view_2d ptend_view,
+                                       // output
+                                       MAMAci::view_2d aero_mr) {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
     aero_mr(icol, kk) += ptend_view(icol, kk) * dt;
   });
@@ -569,8 +569,7 @@ void update_interstitial_aerosols(
         team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
           const int icol = team.league_rank();
           // update values for all levs at this column
-          update_interstitial_aerosols_levs(team, nlev, icol, dt,
-                                            ptend_view,
+          update_interstitial_aerosols_levs(team, nlev, icol, dt, ptend_view,
                                             // output
                                             aero_nmr);
         });
@@ -675,12 +674,11 @@ void call_hetfrz_compute_tendencies(
 
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0u, pver),
-            [&](int klev) {
-              diags.stratiform_cloud_fraction(klev) =
-                  haero_atm.cloud_fraction(klev);
-            });
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
+                             [&](int klev) {
+                               diags.stratiform_cloud_fraction(klev) =
+                                   haero_atm.cloud_fraction(klev);
+                             });
         //-------------------------------------------------------------
         // Heterogeneous freezing
         // frzimm, frzcnt, frzdep are the outputs of
