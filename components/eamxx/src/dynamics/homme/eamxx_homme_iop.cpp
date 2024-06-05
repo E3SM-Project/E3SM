@@ -338,28 +338,22 @@ apply_iop_forcing(const Real dt)
   // TODO: Create a memory buffer for this class
   //       and add the below WSM and views
   WorkspaceMgr eamxx_wsm(NLEVI, 7+qsize, policy_eamxx);
-  WorkspaceMgr homme_wsm(NLEV, 16 + (theta_hydrostatic_mode ? 16 : 0), policy_homme);
   view_Nd<Pack, 4>
     rstar      ("rstar",       nelem, NGP, NGP, NLEV),
     exner      ("exner",       nelem, NGP, NGP, NLEV),
     temperature("temperature", nelem, NGP, NGP, NLEV);
 
-  // Lambda for computing rstar, exner, and temperature from Hommexx
+  // Lambda for computing temperature from Hommexx
   auto compute_homme_states = [&] () {
-    Kokkos::parallel_for("compute_rstar_exner_and_temperature", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    Kokkos::parallel_for("compute_temperature_for_iop", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
       KV kv(team);
       const int ie  =  team.league_rank();
 
       // Get temp views from workspace
-      auto ws = homme_wsm.get_workspace(team);
-      auto pnh_slot   = ws.take_macro_block("pnh"  , NGP*NGP);
-      uview_2d<Pack> pnh(reinterpret_cast<Pack*>(pnh_slot.data()), NGP*NGP, NLEV);
-
-      // Get temp views from workspace
-      auto ws2 = eamxx_wsm.get_workspace(team);
+      auto ws = eamxx_wsm.get_workspace(team);
       uview_1d<Pack> pmid, pint, pdel;
-      ws2.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
-                                        {&pmid,  &pint,  &pdel});
+      ws.take_many_contiguous_unsafe<1>({"pmid"},
+                                        {&pmid});
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
         const int igp = idx/NGP;
@@ -368,49 +362,26 @@ apply_iop_forcing(const Real dt)
         auto ps_i = ps_dyn(ie, igp, jgp);
         auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
         auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-        auto phi_int_i     = ekat::subview(phi_int_dyn, ie, igp, jgp);
         auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-        auto pnh_i         = ekat::subview(pnh, idx);
-        auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
-        auto exner_i       = ekat::subview(exner, ie, igp, jgp);
         auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
 
         // Compute reference pressures and layer thickness.
         // TODO: Allow geometry data to allocate packsize
         auto s_pmid = ekat::scalarize(pmid);
-        auto s_pint = ekat::scalarize(pint);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels+1), [&](const int& k) {
-          s_pint(k) = hyai(k)*ps0 + hybi(k)*ps_i;
-          if (k < total_levels) {
-            s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-          }
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
+          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
         });
         team.team_barrier();
 
         // Reinterperate into views of Homme::Scalar for calling Hommexx function.
         Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> dp3d_scalar(reinterpret_cast<Homme::Scalar*>(dp3d_i.data()), NLEV);
         Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> vtheta_dp_scalar(reinterpret_cast<Homme::Scalar*>(vtheta_dp_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> phi_int_scalar(reinterpret_cast<Homme::Scalar*>(phi_int_i.data()), NLEVI);
         Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> pnh_scalar(reinterpret_cast<Homme::Scalar*>(pnh_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> exner_scalar(reinterpret_cast<Homme::Scalar*>(exner_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> rstar_scalar(reinterpret_cast<Homme::Scalar*>(rstar_i.data()), NLEV);
         Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> temperature_scalar(reinterpret_cast<Homme::Scalar*>(temperature_i.data()), NLEV);
 
-        // Compute exner from EOS
-        if (theta_hydrostatic_mode) {
-          auto hydro_p_int = ws.take("hydro_p_int");
-          Homme::ExecViewUnmanaged<Homme::Scalar[NLEVI]> hydro_p_int_scalar(reinterpret_cast<Homme::Scalar*>(hydro_p_int.data()), NLEVI);
-          elem_ops.compute_hydrostatic_p(kv, dp3d_scalar, hydro_p_int_scalar, pnh_scalar);
-          eos.compute_exner(kv, pnh_scalar, exner_scalar);
-          ws.release(hydro_p_int);
-        } else {
-          eos.compute_pnh_and_exner(kv, vtheta_dp_scalar, phi_int_scalar, pnh_scalar, exner_scalar);
-        }
-
-        // Compute temperature
+        // Compute temperature from virtual potential temperature
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
-          auto& T_val = vtheta_dp_i(k);
+          auto T_val = vtheta_dp_i(k);
 	  T_val /= dp3d_i(k);
 	  T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
 	  temperature_i(k) = PF::calculate_T_from_theta(T_val,pmid(k));
@@ -419,12 +390,11 @@ apply_iop_forcing(const Real dt)
       });
 
       // Release WS views
-      ws.release_macro_block(pnh_slot, NGP*NGP);
-      ws2.release_many_contiguous<3>({&pmid, &pint, &pdel});
+      ws.release_many_contiguous<1>({&pmid});
     });
   };
 
-  // Preprocess some homme states to get temperature and exner
+  // Preprocess some homme states to get temperature
   compute_homme_states();
   Kokkos::fence();
 
@@ -500,8 +470,6 @@ apply_iop_forcing(const Real dt)
       auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
       auto Q_i           = Kokkos::subview(Q_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
       auto Qdp_i         = Kokkos::subview(Qdp_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
-      auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
-      auto exner_i       = ekat::subview(exner, ie, igp, jgp);
       auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
 
       // Compute reference pressures and layer thickness.
@@ -517,10 +485,6 @@ apply_iop_forcing(const Real dt)
 
       team.team_barrier();
 
-      // Reinterperate into views of Homme::Scalar for calling Hommexx function.
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
-      Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> rstar_scalar(reinterpret_cast<Homme::Scalar*>(rstar_i.data()), NLEV);
-
       // Compute Qdp from updated Q
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV*qsize), [&] (const int k) {
         const int ilev = k/qsize;
@@ -532,7 +496,7 @@ apply_iop_forcing(const Real dt)
       });
       team.team_barrier();
 
-      // Recompute rstar with updated qv, and convert updated temperature back to potential temperature
+      // Convert updated temperature back to psuedo density virtual potential temperature
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
           const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
 	  vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
@@ -661,6 +625,7 @@ apply_iop_forcing(const Real dt)
             temperature_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
 
             // Convert updated temperature back to potential temperature
+	    // NEED TO REPLACE THIS DEFINITION!
             vtheta_dp_i(k) = temperature_i(k)*rstar_i(k)*dp3d_i(k)/(Rair*exner_i(k));
           }
           if (iop_nudge_uv) {
