@@ -109,8 +109,9 @@ bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=s
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <class T, typename RealT>
-bool check_range_k(T x, RealT xmin, RealT xmax, std::string msg, std::ostream& out=std::cout) {
+template <class T>
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);
