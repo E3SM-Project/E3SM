@@ -4,7 +4,14 @@
 #include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 #include "cpp/extensions/fluxes_byband/mo_fluxes_byband.h"
+#include "cpp/examples/mo_load_coefficients.h"
 #include "cpp/rrtmgp_const.h"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
+#include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
+#include "cpp/rte/mo_rte_sw.h"
+#include "cpp/rte/mo_rte_lw.h"
+#include "examples/all-sky/mo_load_cloud_coefficients.h"
 
 #include "rrtmgp_utils.hpp"
 
@@ -152,7 +159,7 @@ int get_wavelength_index_lw(double wavelength);
 
 // New interface for Kokkos and flexible types
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <typename RealT=double, typename LayoutT=Kokkos::LayoutLeft, typename DeviceT=DefaultDevice>
+template <typename RealT=Real, typename LayoutT=Kokkos::LayoutLeft, typename DeviceT=DefaultDevice>
 struct rrtmgp_interface {
 
 using MDRP = typename conv::MDRP<LayoutT>;
@@ -469,8 +476,8 @@ static void rrtmgp_main(
 #endif
 
   // Convert cloud physical properties to optical properties for input to RRTMGP
-  OpticalProps2strK clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei);
-  OpticalProps1sclK clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei);
+  OpticalProps2strK<RealT, LayoutT, DeviceT> clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei);
+  OpticalProps1sclK<RealT, LayoutT, DeviceT> clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei);
   Kokkos::deep_copy(cld_tau_sw_bnd, clouds_sw.tau);
   Kokkos::deep_copy(cld_tau_lw_bnd, clouds_lw.tau);
 
@@ -640,7 +647,7 @@ static void rrtmgp_sw(
 
   // Subset gases
   auto gas_names = gas_concs.get_gas_names();
-  GasConcsK gas_concs_day;
+  GasConcsK<RealT, LayoutT, DeviceT> gas_concs_day;
   gas_concs_day.init(gas_names, nday, nlay);
   for (int igas = 0; igas < ngas; igas++) {
     auto vmr_day = view_t<RealT**>("vmr_day", nday, nlay);
@@ -653,7 +660,7 @@ static void rrtmgp_sw(
   }
 
   // Subset aerosol optics
-  OpticalProps2strK aerosol_day;
+  OpticalProps2strK<RealT, LayoutT, DeviceT> aerosol_day;
   aerosol_day.init(k_dist.get_band_lims_wavenumber());
   aerosol_day.alloc_2str(nday, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,nday}), KOKKOS_LAMBDA(int ibnd, int ilay, int iday) {
@@ -664,7 +671,7 @@ static void rrtmgp_sw(
 
   // Subset cloud optics
   // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
-  OpticalProps2strK clouds_day;
+  OpticalProps2strK<RealT, LayoutT, DeviceT> clouds_day;
   clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
   clouds_day.alloc_2str(nday, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,nday}), KOKKOS_LAMBDA(int igpt, int ilay, int iday) {
@@ -690,7 +697,7 @@ static void rrtmgp_sw(
   auto bnd_flux_up_day = view_t<RealT***>("bnd_flux_up_day", nday, nlay+1, nbnd);
   auto bnd_flux_dn_day = view_t<RealT***>("bnd_flux_dn_day", nday, nlay+1, nbnd);
   auto bnd_flux_dn_dir_day = view_t<RealT***>("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
-  FluxesBybandK fluxes_day;
+  FluxesBybandK<RealT, LayoutT, DeviceT> fluxes_day;
   fluxes_day.flux_up         = flux_up_day;
   fluxes_day.flux_dn         = flux_dn_day;
   fluxes_day.flux_dn_dir     = flux_dn_dir_day;
@@ -699,10 +706,10 @@ static void rrtmgp_sw(
   fluxes_day.bnd_flux_dn_dir = bnd_flux_dn_dir_day;
 
   // Allocate space for optical properties
-  OpticalProps2strK optics;
+  OpticalProps2strK<RealT, LayoutT, DeviceT> optics;
   optics.alloc_2str(nday, nlay, k_dist);
 
-  OpticalProps2strK optics_no_aerosols;
+  OpticalProps2strK<RealT, LayoutT, DeviceT> optics_no_aerosols;
   if (extra_clnsky_diag) {
     // Allocate space for optical properties (no aerosols)
     optics_no_aerosols.alloc_2str(nday, nlay, k_dist);
@@ -1195,8 +1202,8 @@ static void mixing_ratio_to_cloud_mass(
  * property look-up tables, but could be used to limit other
  * fields as well.
  */
-template<class S, class T>
-static void limit_to_bounds_k(S const &arr_in, T const lower, T const upper, S &arr_out) {
+template<typename InT, typename T, typename OutT>
+static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
   Kokkos::parallel_for(arr_in.size(), KOKKOS_LAMBDA(int i) {
     arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
   });
@@ -1291,7 +1298,7 @@ static OpticalProps1sclK<RealT, LayoutT, DeviceT> get_cloud_optics_lw(
 }
 
 template <typename CldT, typename PlayT>
-OpticalProps2strK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
+static OpticalProps2strK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
   OpticalProps2strK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist, CldT &cld, PlayT &p_lay) {
   // Initialized subsampled optics
@@ -1342,7 +1349,7 @@ OpticalProps2strK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
 }
 
 template <typename CldT, typename PlayT>
-OpticalProps1sclK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
+static OpticalProps1sclK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
   OpticalProps1sclK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist,
   CldT &cld, PlayT &p_lay) {

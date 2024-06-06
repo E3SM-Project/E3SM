@@ -28,6 +28,10 @@ public:
   template<typename ScalarT>
   using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
+  using layout_t = typename ekat::KokkosTypes<DefaultDevice>::Layout;
+
+  using interface_t = rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
+
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -92,7 +96,7 @@ public:
   GasConcs                 m_gas_concs;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-  GasConcsK                m_gas_concs_k;
+  GasConcsK<Real, layout_t, DefaultDevice> m_gas_concs_k;
 #endif
 
   // Prescribed greenhouse gas surface concentrations in moles / moles air
@@ -137,15 +141,15 @@ public:
     real1d sfc_flux_dif_nir;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real1dk mu0_k;
-    real1dk sfc_alb_dir_vis_k;
-    real1dk sfc_alb_dir_nir_k;
-    real1dk sfc_alb_dif_vis_k;
-    real1dk sfc_alb_dif_nir_k;
-    real1dk sfc_flux_dir_vis_k;
-    real1dk sfc_flux_dir_nir_k;
-    real1dk sfc_flux_dif_vis_k;
-    real1dk sfc_flux_dif_nir_k;
+    view_1d_real mu0_k;
+    view_1d_real sfc_alb_dir_vis_k;
+    view_1d_real sfc_alb_dir_nir_k;
+    view_1d_real sfc_alb_dif_vis_k;
+    view_1d_real sfc_alb_dif_nir_k;
+    view_1d_real sfc_flux_dir_vis_k;
+    view_1d_real sfc_flux_dir_nir_k;
+    view_1d_real sfc_flux_dif_vis_k;
+    view_1d_real sfc_flux_dif_nir_k;
 #endif
 
     // 2d size (ncol, nlay)
@@ -168,21 +172,21 @@ public:
     real2d lw_heating;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real2dk p_lay_k;
-    real2dk t_lay_k;
-    real2dk z_del_k;
-    real2dk p_del_k;
-    real2dk qc_k;
-    real2dk nc_k;
-    real2dk qi_k;
-    real2dk cldfrac_tot_k;
-    real2dk eff_radius_qc_k;
-    real2dk eff_radius_qi_k;
-    real2dk tmp2d_k;
-    real2dk lwp_k;
-    real2dk iwp_k;
-    real2dk sw_heating_k;
-    real2dk lw_heating_k;
+    view_2d_real p_lay_k;
+    view_2d_real t_lay_k;
+    view_2d_real z_del_k;
+    view_2d_real p_del_k;
+    view_2d_real qc_k;
+    view_2d_real nc_k;
+    view_2d_real qi_k;
+    view_2d_real cldfrac_tot_k;
+    view_2d_real eff_radius_qc_k;
+    view_2d_real eff_radius_qi_k;
+    view_2d_real tmp2d_k;
+    view_2d_real lwp_k;
+    view_2d_real iwp_k;
+    view_2d_real sw_heating_k;
+    view_2d_real lw_heating_k;
 #endif
 
     // 2d size (ncol, nlay+1)
@@ -212,28 +216,28 @@ public:
     real2d lw_clnsky_flux_dn;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real2dk p_lev_k;
-    real2dk t_lev_k;
-    real2dk sw_flux_up_k;
-    real2dk sw_flux_dn_k;
-    real2dk sw_flux_dn_dir_k;
-    real2dk lw_flux_up_k;
-    real2dk lw_flux_dn_k;
-    real2dk sw_clnclrsky_flux_up_k;
-    real2dk sw_clnclrsky_flux_dn_k;
-    real2dk sw_clnclrsky_flux_dn_dir_k;
-    real2dk sw_clrsky_flux_up_k;
-    real2dk sw_clrsky_flux_dn_k;
-    real2dk sw_clrsky_flux_dn_dir_k;
-    real2dk sw_clnsky_flux_up_k;
-    real2dk sw_clnsky_flux_dn_k;
-    real2dk sw_clnsky_flux_dn_dir_k;
-    real2dk lw_clnclrsky_flux_up_k;
-    real2dk lw_clnclrsky_flux_dn_k;
-    real2dk lw_clrsky_flux_up_k;
-    real2dk lw_clrsky_flux_dn_k;
-    real2dk lw_clnsky_flux_up_k;
-    real2dk lw_clnsky_flux_dn_k;
+    view_2d_real p_lev_k;
+    view_2d_real t_lev_k;
+    view_2d_real sw_flux_up_k;
+    view_2d_real sw_flux_dn_k;
+    view_2d_real sw_flux_dn_dir_k;
+    view_2d_real lw_flux_up_k;
+    view_2d_real lw_flux_dn_k;
+    view_2d_real sw_clnclrsky_flux_up_k;
+    view_2d_real sw_clnclrsky_flux_dn_k;
+    view_2d_real sw_clnclrsky_flux_dn_dir_k;
+    view_2d_real sw_clrsky_flux_up_k;
+    view_2d_real sw_clrsky_flux_dn_k;
+    view_2d_real sw_clrsky_flux_dn_dir_k;
+    view_2d_real sw_clnsky_flux_up_k;
+    view_2d_real sw_clnsky_flux_dn_k;
+    view_2d_real sw_clnsky_flux_dn_dir_k;
+    view_2d_real lw_clnclrsky_flux_up_k;
+    view_2d_real lw_clnclrsky_flux_dn_k;
+    view_2d_real lw_clrsky_flux_up_k;
+    view_2d_real lw_clrsky_flux_dn_k;
+    view_2d_real lw_clnsky_flux_up_k;
+    view_2d_real lw_clnsky_flux_dn_k;
 #endif
 
     // 3d size (ncol, nlay+1, nswbands)
@@ -244,10 +248,10 @@ public:
     real3d sw_bnd_flux_dif;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real3dk sw_bnd_flux_up_k;
-    real3dk sw_bnd_flux_dn_k;
-    real3dk sw_bnd_flux_dir_k;
-    real3dk sw_bnd_flux_dif_k;
+    view_3d_real sw_bnd_flux_up_k;
+    view_3d_real sw_bnd_flux_dn_k;
+    view_3d_real sw_bnd_flux_dir_k;
+    view_3d_real sw_bnd_flux_dif_k;
 #endif
 
     // 3d size (ncol, nlay+1, nlwbands)
@@ -256,8 +260,8 @@ public:
     real3d lw_bnd_flux_dn;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real3dk lw_bnd_flux_up_k;
-    real3dk lw_bnd_flux_dn_k;
+    view_3d_real lw_bnd_flux_up_k;
+    view_3d_real lw_bnd_flux_dn_k;
 #endif
 
     // 2d size (ncol, nswbands)
@@ -266,8 +270,8 @@ public:
     real2d sfc_alb_dif;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real2dk sfc_alb_dir_k;
-    real2dk sfc_alb_dif_k;
+    view_2d_real sfc_alb_dir_k;
+    view_2d_real sfc_alb_dif_k;
 #endif
 
     // 3d size (ncol, nlay, n[sw,lw]bands)
@@ -278,10 +282,10 @@ public:
     real3d aero_tau_lw;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real3dk aero_tau_sw_k;
-    real3dk aero_ssa_sw_k;
-    real3dk aero_g_sw_k;
-    real3dk aero_tau_lw_k;
+    view_3d_real aero_tau_sw_k;
+    view_3d_real aero_ssa_sw_k;
+    view_3d_real aero_g_sw_k;
+    view_3d_real aero_tau_lw_k;
 #endif
 
     // 3d size (ncol, nlay, n[sw,lw]bnds)
@@ -290,8 +294,8 @@ public:
     real3d cld_tau_lw_bnd;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real3dk cld_tau_sw_bnd_k;
-    real3dk cld_tau_lw_bnd_k;
+    view_3d_real cld_tau_sw_bnd_k;
+    view_3d_real cld_tau_lw_bnd_k;
 #endif
 
     // 3d size (ncol, nlay, n[sw,lw]gpts)
@@ -300,8 +304,8 @@ public:
     real3d cld_tau_lw_gpt;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-    real3dk cld_tau_sw_gpt_k;
-    real3dk cld_tau_lw_gpt_k;
+    view_3d_real cld_tau_sw_gpt_k;
+    view_3d_real cld_tau_lw_gpt_k;
 #endif
 
   };
