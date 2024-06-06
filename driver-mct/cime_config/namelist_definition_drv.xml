@@ -212,6 +212,7 @@
     <desc>TRUE if wave atm coupling turned on.</desc>
     <values>
       <value>.false.</value>
+      <value WAV_ATM_COUP=".true.">.true.</value>
     </values>
   </entry>
 
@@ -222,6 +223,7 @@
     <desc>TRUE if wave ocean coupling turned on.</desc>
     <values>
       <value>.false.</value>
+      <value WAV_OCN_COUP=".true.">.true.</value>
     </values>
   </entry>
 
