@@ -352,8 +352,7 @@ apply_iop_forcing(const Real dt)
       // Get temp views from workspace
       auto ws = eamxx_wsm.get_workspace(team);
       uview_1d<Pack> pmid, pint, pdel;
-      ws.take_many_contiguous_unsafe<1>({"pmid"},
-                                        {&pmid});
+      ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
         const int igp = idx/NGP;
@@ -594,10 +593,16 @@ apply_iop_forcing(const Real dt)
       KV kv(team);
       const int ie  =  team.league_rank();
 
+      // Get temp views from workspace
+      auto ws = eamxx_wsm.get_workspace(team);
+      uview_1d<Pack> pmid, pint, pdel;
+      ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
+
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
         const int igp = idx/NGP;
         const int jgp = idx%NGP;
 
+        auto ps_i          = ps_dyn(ie, igp, jgp);
         auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
         auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
         auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
@@ -606,6 +611,14 @@ apply_iop_forcing(const Real dt)
         auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
         auto u_i           = ekat::subview(v_dyn, ie, 0, igp, jgp);
         auto v_i           = ekat::subview(v_dyn, ie, 1, igp, jgp);
+
+	// Compute reference pressures and layer thickness.
+        // TODO: Allow geometry data to allocate packsize
+        auto s_pmid = ekat::scalarize(pmid);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
+          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
+        });
+        team.team_barrier();
 
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&](const int& k) {
           if (iop_nudge_tq) {
@@ -624,9 +637,9 @@ apply_iop_forcing(const Real dt)
             qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
             temperature_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
 
-            // Convert updated temperature back to potential temperature
-	    // NEED TO REPLACE THIS DEFINITION!
-            vtheta_dp_i(k) = temperature_i(k)*rstar_i(k)*dp3d_i(k)/(Rair*exner_i(k));
+            // Convert updated temperature back to virtual potential temperature
+	    const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
+	    vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
           }
           if (iop_nudge_uv) {
             u_i(k).update(u_mean(k) - u_iop(k), -dt/rtau, 1.0);
@@ -634,6 +647,8 @@ apply_iop_forcing(const Real dt)
           }
         });
       });
+      // Release WS views
+      ws.release_many_contiguous<1>({&pmid});
     });
   }
 }
