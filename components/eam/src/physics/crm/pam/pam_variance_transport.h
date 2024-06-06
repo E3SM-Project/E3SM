@@ -36,11 +36,11 @@ inline void pam_variance_transport_diagnose( pam::PamCoupler &coupler ) {
   auto ny           = coupler.get_option<int>("crm_ny");
   auto nx           = coupler.get_option<int>("crm_nx");
   //------------------------------------------------------------------------------------------------
-  auto temp         = dm_device.get<real,4>("temp"       );
-  auto rhov         = dm_device.get<real,4>("water_vapor");
-  auto rhoc         = dm_device.get<real,4>("cloud_water");
-  auto rhoi         = dm_device.get<real,4>("ice"        );
-  auto uvel         = dm_device.get<real,4>("uvel"       );
+  auto temp         = dm_device.get<real const,4>("temp"       );
+  auto rhov         = dm_device.get<real const,4>("water_vapor");
+  auto rhoc         = dm_device.get<real const,4>("cloud_water");
+  auto rhoi         = dm_device.get<real const,4>("ice"        );
+  auto uvel         = dm_device.get<real const,4>("uvel"       );
   auto vt_temp      = dm_device.get<real,2>("vt_temp"       );
   auto vt_rhov      = dm_device.get<real,2>("vt_rhov"       );
   auto vt_uvel      = dm_device.get<real,2>("vt_uvel"       );
