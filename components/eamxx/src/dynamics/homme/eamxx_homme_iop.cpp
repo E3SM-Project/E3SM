@@ -339,8 +339,6 @@ apply_iop_forcing(const Real dt)
   //       and add the below WSM and views
   WorkspaceMgr eamxx_wsm(NLEVI, 7+qsize, policy_eamxx);
   view_Nd<Pack, 4>
-    rstar      ("rstar",       nelem, NGP, NGP, NLEV),
-    exner      ("exner",       nelem, NGP, NGP, NLEV),
     temperature("temperature", nelem, NGP, NGP, NLEV);
 
   // Lambda for computing temperature from Hommexx
@@ -381,9 +379,9 @@ apply_iop_forcing(const Real dt)
         // Compute temperature from virtual potential temperature
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
           auto T_val = vtheta_dp_i(k);
-	  T_val /= dp3d_i(k);
-	  T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
-	  temperature_i(k) = PF::calculate_T_from_theta(T_val,pmid(k));
+          T_val /= dp3d_i(k);
+          T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
+          temperature_i(k) = PF::calculate_T_from_theta(T_val,pmid(k));
         });
 
       });
@@ -498,7 +496,7 @@ apply_iop_forcing(const Real dt)
       // Convert updated temperature back to psuedo density virtual potential temperature
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
           const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
-	  vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
+          vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
       });
 
     // Release WS views
@@ -511,7 +509,7 @@ apply_iop_forcing(const Real dt)
     // and observed quantities of T, Q, u, and
 
     if (iop_nudge_tq) {
-      // Compute rstar, exner and temperature from Hommexx
+      // Compute temperature from Hommexx
       compute_homme_states();
       Kokkos::fence();
     }
@@ -605,8 +603,6 @@ apply_iop_forcing(const Real dt)
         auto ps_i          = ps_dyn(ie, igp, jgp);
         auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
         auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-        auto rstar_i       = ekat::subview(rstar, ie, igp, jgp);
-        auto exner_i       = ekat::subview(exner, ie, igp, jgp);
         auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
         auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
         auto u_i           = ekat::subview(v_dyn, ie, 0, igp, jgp);
