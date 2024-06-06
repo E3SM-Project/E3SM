@@ -61,8 +61,8 @@ inline int pam_driver_set_subcycle_timestep( pam::PamCoupler &coupler, real crm_
   });
   // calculate max U and W
   parallel_for( SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens) , YAKL_LAMBDA (int k, int j, int i, int n) {
-    yakl::atomicMax(uvel_max(k,n), sqrt(uvel(k,j,i,n)*uvel(k,j,i,n)) );
-    yakl::atomicMax(wvel_max(k,n), fabs(wvel(k,j,i,n)) );
+    yakl::atomicMax(uvel_max(k,n), std::abs(uvel(k,j,i,n)) );
+    yakl::atomicMax(wvel_max(k,n), std::abs(wvel(k,j,i,n)) );
   });
   // find max CFL between horizontal and vertical CFL values
   parallel_for( SimpleBounds<2>(crm_nz,nens) , YAKL_LAMBDA (int k, int n) {
