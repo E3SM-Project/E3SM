@@ -9,3 +9,7 @@ TODO:
 - establish ci pipeline in scream/e3sm repos
 - decide how to deal with versioning
 - decide archs/pythons/mpis to tgt
+
+USER:
+- conda install pyeamxx -c mahf708/label/$mac (mac is chrysalis or pm-cpu)
+- see example in components/eamxx/tests/python/pyp3

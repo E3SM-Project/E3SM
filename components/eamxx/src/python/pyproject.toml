@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyeamxx"
-version = "0.0.1.dev6"
+version = "0.0.1"
 dependencies = ["numpy", "mpi4py"]
 
 [tool.setuptools.packages.find]
