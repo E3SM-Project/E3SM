@@ -73,7 +73,7 @@ inline int pam_driver_set_subcycle_timestep( pam::PamCoupler &coupler, real crm_
     cfl_max(k,n) = max(cfl_u,cfl_w);
   });
   // calculate final CFL across ensemble
-  real cfl_loc = pmax(cfl_max.data());
+  real cfl_loc = yakl::intrinsics::maxval(cfl_max);
   cfl = max(cfl,cfl_loc);
   // update number of subcycles and time step
   num_subcycle = max(num_subcycle,max(1,static_cast<int>(ceil(cfl/0.7))));
