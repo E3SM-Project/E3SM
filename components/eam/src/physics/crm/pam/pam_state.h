@@ -156,7 +156,6 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   parallel_for(SimpleBounds<2>(nz+1,nens), YAKL_LAMBDA (int k, int iens) {
     hmean_pint(k,iens) = 0;
     if (k < nz) { 
-      hmean_pmid (k,iens) = 0;
       hmean_rho_d(k,iens) = 0;
       hmean_rho_v(k,iens) = 0;
       hmean_rho_c(k,iens) = 0;
