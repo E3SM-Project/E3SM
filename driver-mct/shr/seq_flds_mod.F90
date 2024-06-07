@@ -163,7 +163,9 @@ module seq_flds_mod
   logical            :: rof_sed             ! .true. if river model includes sediment
 
   character(len=CS)  :: wav_ocn_coup     ! 'two' if wave-ocean two-way coupling turned on
-  character(len=CS)  :: wav_atm_coup     ! 'two' if wave-ocean two-way coupling turned on
+  character(len=CS)  :: wav_atm_coup     ! 'two' if wave-atm two-way coupling turned on
+  character(len=CS)  :: wav_ice_coup     ! 'two' if wave-ice two-way coupling turned on
+>>>>>>> 48258e2298 (change all wave coupling namelists from boolean to char.)
   !----------------------------------------------------------------------------
   ! metadata
   !----------------------------------------------------------------------------
@@ -392,7 +394,7 @@ contains
          glc_nec, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
-         wav_ocn_coup, wav_atm_coup
+         wav_ocn_coup, wav_atm_coup, wav_ice_coup
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -438,6 +440,7 @@ contains
        rof_sed   = .false.
        wav_ocn_coup = 'none'
        wav_atm_coup = 'none'
+       wav_ice_coup = 'none'
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -475,6 +478,7 @@ contains
     call shr_mpi_bcast(rof_sed,   mpicom)
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
     call shr_mpi_bcast(wav_atm_coup, mpicom)
+    call shr_mpi_bcast(wav_ice_coup, mpicom)
 
     call glc_elevclass_init(glc_nec)
 
@@ -660,7 +664,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_u")
        call seq_flds_add(a2x_states_to_rof,"Sa_u")
     endif
-    call seq_flds_add(x2w_states,"Sa_u")
+    if (wav_atm_coup .ne. 'none') call seq_flds_add(x2w_states,"Sa_u")
     longname = 'Zonal wind at the lowest model level'
     stdname  = 'eastward_wind'
     units    = 'm s-1'
@@ -675,7 +679,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_v")
        call seq_flds_add(a2x_states_to_rof,"Sa_v")
     endif
-    call seq_flds_add(x2w_states,"Sa_v")
+    if (wav_atm_coup .ne. 'none')  call seq_flds_add(x2w_states,"Sa_v")
     longname = 'Meridional wind at the lowest model level'
     stdname  = 'northward_wind'
     units    = 'm s-1'
@@ -724,7 +728,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_tbot")
        call seq_flds_add(a2x_states_to_rof,"Sa_tbot")
     endif
-    call seq_flds_add(x2w_states,"Sa_tbot")
+    if (wav_atm_coup .ne. 'none') call seq_flds_add(x2w_states,"Sa_tbot")
     longname = 'Temperature at the lowest model level'
     stdname  = 'air_temperature'
     units    = 'K'
@@ -1524,7 +1528,7 @@ contains
     ! Fractional ice coverage wrt ocean
     call seq_flds_add(i2x_states,"Si_ifrac")
     call seq_flds_add(x2o_states,"Si_ifrac")
-    call seq_flds_add(x2w_states,"Si_ifrac")
+    if (wav_ice_coup .ne. 'none') call seq_flds_add(x2w_states,"Si_ifrac")
     longname = 'Fractional ice coverage wrt ocean'
     stdname  = 'sea_ice_area_fraction'
     units    = '1'
@@ -2186,7 +2190,7 @@ contains
 
     ! Sea ice thickness
     call seq_flds_add(i2x_states,"Si_ithick")
-    call seq_flds_add(x2w_states,"Si_ithick")
+    if (wav_ice_coup .ne. 'none') call seq_flds_add(x2w_states,"Si_ithick")
     longname = 'Sea ice thickness'
     stdname  = 'sea_ice_thickness'
     units    = 'm'
@@ -2697,7 +2701,7 @@ contains
 
     if (wav_atm_coup == 'two' .or. wav_ocn_coup == 'two') then
        call seq_flds_add(w2x_states,'Sw_Charn')
-       call seq_flds_add(x2o_states,'Sw_Charn')
+       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Charn')
        longname = 'Charnock coefficent based on sea state'
        stdname  = 'Charnock_coefficent_based_on_sea_state'
        units    = ''

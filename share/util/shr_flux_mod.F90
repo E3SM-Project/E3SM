@@ -541,7 +541,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             endif
          endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
-        if (wav_atm_coup) then 
+        if (wav_atm_coup .eq. 'two') then 
            call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
                  & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
                  & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
@@ -2646,7 +2646,7 @@ zrt=zrft ! reference height for st.diagn.T,q
     tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10))
     qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10))
 
-    if (wav_atm_coup) then
+    if (wav_atm_coup .eq. 'two') then
        charn = charnsea !use Charnock coefficient from active wave model (Janssen 1989, 1991)
     else
        ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)

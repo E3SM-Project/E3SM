@@ -1453,8 +1453,8 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
-       if (wav_ocn_coup .or. wav_atm_coup) then
-          index_w2x_Sw_Charn    = mct_aVect_indexRA(w2x,'Sw_Charn')
+       if (wav_ocn_coup == 'two' .or. wav_atm_coup == 'two') then
+          index_w2x_Sw_Charn = mct_aVect_indexRA(w2x,'Sw_Charn')
        endif
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
@@ -1560,7 +1560,7 @@ contains
              tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
              vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
-             if (wav_atm_coup) charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
+             if (wav_atm_coup == 'two') charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
              if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
              if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = o2x%rAttr(index_o2x_So_roce_HDO, n)
              if ( index_o2x_So_roce_18O /= 0 ) roce_18O(n) = o2x%rAttr(index_o2x_So_roce_18O, n)
@@ -1639,7 +1639,7 @@ contains
             duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
        u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
-       if (wav_atm_coup) then     
+       if (wav_atm_coup == 'two') then     
           call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
             tocn , emask, seq_flux_atmocn_minwind, &

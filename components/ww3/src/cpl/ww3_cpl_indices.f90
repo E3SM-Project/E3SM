@@ -47,13 +47,8 @@ module ww3_cpl_indices
 contains
 
   subroutine ww3_cpl_indices_set( )
-<<<<<<< HEAD
 
-    use seq_flds_mod, only : wav_ocn_coup
-=======
-    
-    use seq_flds_mod, only : wav_atm_coup, wav_ocn_coup
->>>>>>> 88ee649dd6 (adding wav_atm_coup and wav_ocn_coup flags)
+     use seq_flds_mod, only : wav_atm_coup, wav_ocn_coup
     type(mct_aVect) :: w2x      ! temporary
     type(mct_aVect) :: x2w      ! temporary
 
@@ -75,7 +70,7 @@ contains
     index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
     index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
 
-    if (wav_ocn_coup .or. wav_atm_coup) then
+    if (wav_ocn_coup .eq. 'two' .or. wav_atm_coup .eq. 'two') then
        index_w2x_Sw_Charn     = mct_avect_indexra(w2x,'Sw_Charn') ! Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
     endif
     if (wav_ocn_coup .eq. 'two') then
