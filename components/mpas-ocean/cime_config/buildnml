@@ -39,7 +39,6 @@ def buildnml(case, caseroot, compname):
     ocn_tidal_mixing  = case.get_value("MPASO_TIDAL_MIXING")
     glc_nzoc          = case.get_value("GLC_NZOC")
     ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
-    wav_ocn_coup      = case.get_value("WAV_OCN_COUP")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
@@ -996,7 +995,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
             lines.append('</stream>')
             lines.append('')
-            if wav_ocn_coup == 'true':
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
                 lines.append('<stream name="waveOutput"')
                 lines.append('        type="output"')
                 lines.append('        precision="single"')
@@ -1536,7 +1535,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="ecosys_diag_CO3"/>')
                 lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
                 lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
-            if wav_ocn_coup == 'true':
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
                 lines.append('    <var name="peakWaveFrequency"/>')
                 lines.append('    <var name="peakWaveDirection"/>')
                 lines.append('    <var name="significantWaveHeight"/>')

@@ -338,6 +338,17 @@
     </values>
   </entry>
 
+  <entry id="wav_ice_coup">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>One- or Two-way coupling between Wave and Sea Ice.</desc>
+    <values>
+      <value>none</value>
+      <value WAV_ICE_COUP="oneway">oneway</value>
+    </values>
+  </entry>
+
   <entry id="add_iac_to_cplstate">
     <type>logical</type>
     <category>seq_flds</category>

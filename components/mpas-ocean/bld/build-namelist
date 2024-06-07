@@ -444,8 +444,8 @@ my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
 my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
-
-my $wav_ocn_coup           = "$xmlvars{'WAV_OCN_COUP'}";
+my $COMP_OCN               = "$xmlvars{'COMP_OCN'}";
+my $COMP_WAV               = "$xmlvars{'COMP_WAV'}";
 
 my $output_r = "./${CASE}.mpaso.r";
 my $output_h = "./${CASE}.mpaso.h";
@@ -679,7 +679,7 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
-if ($wav_ocn_coup eq 'true' ) {
+if ($COMP_WAV eq 'ww3' and $COMP_OCN eq 'mpaso' ) {
 	add_default($nl, 'config_cvmix_kpp_use_theory_wave', 'val'=>'.false.');
 	add_default($nl, 'config_cvmix_kpp_use_active_wave', 'val'=>'.true.');
 	add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt', 'val'=>'LWF16');
@@ -694,7 +694,7 @@ if ($wav_ocn_coup eq 'true' ) {
 # Namelist group: wave_coupling #
 #################################
 
-if ($wav_ocn_coup eq 'true' ) {
+if ($COMP_WAV eq 'ww3' and $COMP_OCN eq 'mpaso' ) {
 	add_default($nl, 'config_use_active_wave', 'val'=>'.true.');
 	add_default($nl, 'config_momentum_use_active_wave', 'val'=>'.true.');
 } else {
