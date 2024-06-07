@@ -259,15 +259,11 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
           SET(OpenMP_C_FLAGS "-qsmp=omp:nested_par -qsuppress=1520-045:1506-793")
         ENDIF ()
       ENDIF ()
-      # This file is needed for the timing library - this is currently
-      # inaccessible from the timing CMake script
-      SET(OpenMP_Fortran_FLAGS "${OpenMP_C_FLAGS}")
       MESSAGE(STATUS "OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
       MESSAGE(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
       MESSAGE(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
       MESSAGE(STATUS "OpenMP_EXE_LINKER_FLAGS: ${OpenMP_EXE_LINKER_FLAGS}")
-      # The fortran openmp flag should be the same as the C Flag
-      SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_C_FLAGS}")
+      SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
       SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
       SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
