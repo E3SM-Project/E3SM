@@ -54,7 +54,6 @@ for the CLM data in the CESM distribution
 <frivinp_mesh rof_grid="r2" >share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc</frivinp_mesh>
 
 <!-- WRM -->
-
 <paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS3_c20161220_updated_20170314.nc</paraFile>
 <demandPath rof_grid="NLDAS" >rof/mosart/NLDAS2_GCAM_water_demand_</demandPath> 
 <ExtractionFlag>1</ExtractionFlag>

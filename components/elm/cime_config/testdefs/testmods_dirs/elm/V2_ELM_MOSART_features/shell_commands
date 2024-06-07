@@ -1,2 +1,2 @@
 #!/bin/bash
-./xmlchange --id ELM_BLDNML_OPTS --val "-bgc cn -irrig .true."
+./xmlchange --id ELM_BLDNML_OPTS --val "-bgc cn -irrig .true. -tw_irr_on"

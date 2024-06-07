@@ -275,7 +275,7 @@
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
-      <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU|GSW|E3SMWCv2|CPLWCH)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_DATM%JRA.*_MPASO%OECO" >CO2A</value>
