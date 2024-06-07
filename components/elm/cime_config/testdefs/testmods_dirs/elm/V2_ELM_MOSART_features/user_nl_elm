@@ -4,7 +4,6 @@
  do_transient_crops = .true.
  irrigate = .true.
  create_crop_landunit = .true.
- tw_irr = .true.
  extra_gw_irr = .false.
  firrig_data = .true.
  use_lake_wat_storage=.true.
