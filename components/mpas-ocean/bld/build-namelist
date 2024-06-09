@@ -761,7 +761,6 @@ add_default($nl, 'config_self_attraction_and_loading_beta');
 
 add_default($nl, 'config_use_frazil_ice_formation');
 add_default($nl, 'config_frazil_in_open_ocean');
-add_default($nl, 'config_frazil_under_land_ice');
 add_default($nl, 'config_frazil_heat_of_fusion');
 add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
@@ -777,12 +776,16 @@ add_default($nl, 'config_frazil_use_surface_pressure');
 
 if ($OCN_ISMF eq 'coupled') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"coupled");
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_ISMF eq 'internal') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_ISMF eq 'data') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");
+	add_default($nl, 'config_frazil_under_land_ice');
 } else {
 	add_default($nl, 'config_land_ice_flux_mode');
+	add_default($nl, 'config_frazil_under_land_ice');
 }
 if ($OCN_TIDAL_MIXING eq 'true') {
 	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_alpha', 'val'=>"0.777");
