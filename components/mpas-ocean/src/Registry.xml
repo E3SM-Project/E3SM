@@ -940,7 +940,7 @@
 					description="If frazil formation is used, controls if frazil fluxes are computed in the open ocean (as opposed to under land ice)."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".true."
+		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".false."
 					description="If frazil formation is used, controls if frazil fluxes are computed under land ice."
 					possible_values=".true. or .false."
 		/>

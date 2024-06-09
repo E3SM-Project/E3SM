@@ -375,7 +375,7 @@
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
-<config_frazil_under_land_ice>.true.</config_frazil_under_land_ice>
+<config_frazil_under_land_ice>.false.</config_frazil_under_land_ice>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
 <config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
