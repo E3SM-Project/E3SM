@@ -1,10 +1,12 @@
 #ifndef PYATMPROC_HPP
 #define PYATMPROC_HPP
 
+#include "physics/register_physics.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_output_manager.hpp"
-#include "physics/register_physics.hpp"
+
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 #include "pyparamlist.hpp"
@@ -139,6 +141,8 @@ struct PyAtmProc {
     // Create a grids manager on the fly
     auto gm = std::make_shared<SingleGridGM>(phys_grid.grid);
 
+    // Make sure diagnostics are available, then create the output mgr
+    register_diagnostics();
     output_mgr = std::make_shared<OutputManager>();
     output_mgr->setup(phys_grid.grid->get_comm(),params,fm,gm,t0,t0,false);
     output_mgr->set_logger(ap->get_logger());
