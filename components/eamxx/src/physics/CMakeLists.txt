@@ -1,3 +1,5 @@
+add_library(eamxx_physics INTERFACE)
+
 # Build shared physics functions first, so other parametrizations can use them
 add_subdirectory(share)
 
