@@ -3,7 +3,6 @@
 #include "pygrid.hpp"
 #include "pyatmproc.hpp"
 #include "pyparamlist.hpp"
-#include "pyp3.cpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -35,7 +34,6 @@ PYBIND11_MODULE (libpyeamxx_ext,m) {
   pybind_pyfield(m);
   pybind_pygrid(m);
   pybind_pyatmproc(m);
-  pybind_pyp3(m);
 }
 
 } // namespace scream

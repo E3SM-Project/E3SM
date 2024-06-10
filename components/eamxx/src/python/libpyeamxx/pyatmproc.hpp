@@ -4,8 +4,10 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_output_manager.hpp"
+#include "physics/register_physics.hpp"
 #include "pygrid.hpp"
 #include "pyfield.hpp"
+#include "pyparamlist.hpp"
 
 #include <ekat/io/ekat_yaml.hpp>
 
@@ -16,7 +18,7 @@ namespace scream {
 
 struct PyAtmProc {
   std::shared_ptr<AtmosphereProcess> ap;
-  PyGrid pygrid;
+  PyGrid phys_grid;
   std::map<std::string,PyField> fields;
   util::TimeStamp t0;
   util::TimeStamp time;
@@ -24,65 +26,56 @@ struct PyAtmProc {
 
   std::shared_ptr<OutputManager> output_mgr;
 
-  PyAtmProc (const PyGrid& pyg)
-   : pygrid(pyg)
-   , t0({2000,1,1},{0,0,0})
+  PyAtmProc (const PyParamList& params, const PyGrid& phys_grid_in)
+   : phys_grid(phys_grid_in)
   {
-    // TODO: make t0 configurable?
+    // Get the comm
+    const auto& comm = phys_grid.grid->get_comm();
+
+    // Create a grids manager on the fly
+    auto gm = std::make_shared<SingleGridGM>(phys_grid.grid);
+
+    // Create the atm proc
+    register_physics();
+    auto& apf = AtmosphereProcessFactory::instance();
+    const auto& ap_type = params.pl.isParameter("Type")
+                        ? params.pl.get<std::string>("Type")
+                        : params.pl.name();
+    ap = apf.create(ap_type,comm,params.pl);
+
+    // Create the fields
+    ap->set_grids(gm);
+    create_fields();
   }
 
   // I don't think virtual is needed, but just in case
   virtual ~PyAtmProc () = default;
 
-  std::map<std::string,PyField> create_fields () {
-    std::map<std::string,PyField> pyfields;
+  void create_fields () {
+    // Create  fields that are input/output to the atm proc
     for (const auto& req : ap->get_required_field_requests()) {
-      if (pyfields.count(req.fid.name())==0) {
-        pyfields.emplace(req.fid.name(),PyField(req.fid,req.pack_size));
-      }
+      const auto& fn = req.fid.name();
+      auto it_bool = fields.emplace(fn,PyField(req.fid,req.pack_size));
+      ap->set_required_field(it_bool.first->second.f.get_const());
     }
     for (const auto& req : ap->get_computed_field_requests()) {
-      if (pyfields.count(req.fid.name())==0) {
-        pyfields.emplace(req.fid.name(),PyField(req.fid,req.pack_size));
-      }
-    }
-
-    return pyfields;
-  }
-
-  void set_fields(const std::map<std::string,PyField>& pyfields) {
-    for (const auto& it : pyfields) {
-      const auto& f = it.second.f;
-      const auto& fid = f.get_header().get_identifier();
-      if (ap->has_required_field(fid)) {
-        ap->set_required_field(f.get_const());
-        fields[fid.name()] = it.second;   
-      }
-      if (ap->has_computed_field(fid)) {
-        ap->set_computed_field(f);
-        fields[fid.name()] = it.second;   
-      }
+      const auto& fn = req.fid.name();
+      auto it_bool = fields.emplace(fn,PyField(req.fid,req.pack_size));
+      ap->set_computed_field(it_bool.first->second.f);
     }
   }
 
   PyField get_field(const std::string& name) {
     auto it = fields.find(name);
 
-    auto fnames = [&]() {
-      std::string s;
-      for (auto it : fields) {
-        if (s=="") {
-          s += it.first;
-        } else {
-          s += ", " + it.first;
-        }
-      }
-      return s;
+    auto print_key = [](auto it) {
+      return it.first;
     };
     EKAT_REQUIRE_MSG (it!=fields.end(),
-        "Error! Field not found in list of P3 fields.\n"
+        "Error! Field not found among this atm proc fields.\n"
+        "  - atm proc name: " + ap->name() + "\n"
         "  - field name: " + name + "\n"
-        "  - p3 fields: " + fnames() + "\n");
+        "  - atm proc fields: " + ekat::join(fields,print_key,",") + "\n");
 
     return it->second;
   }
@@ -123,7 +116,7 @@ struct PyAtmProc {
         }
       }
     }
-    AtmosphereInput reader (ic_filename,pygrid.grid,ic_fields,true);
+    AtmosphereInput reader (ic_filename,phys_grid.grid,ic_fields,true);
     reader.read_variables();
     scorpio::release_file(ic_filename);
 
@@ -136,7 +129,7 @@ struct PyAtmProc {
     auto params = ekat::parse_yaml_file(yaml_file);
 
     // Stuff all fields in a field manager
-    auto fm = std::make_shared<FieldManager>(pygrid.grid);
+    auto fm = std::make_shared<FieldManager>(phys_grid.grid);
     fm->registration_begins();
     fm->registration_ends();
     for (auto it : fields) {
@@ -144,10 +137,10 @@ struct PyAtmProc {
     }
 
     // Create a grids manager on the fly
-    auto gm = std::make_shared<SingleGridGM>(pygrid.grid);
+    auto gm = std::make_shared<SingleGridGM>(phys_grid.grid);
 
     output_mgr = std::make_shared<OutputManager>();
-    output_mgr->setup(pygrid.grid->get_comm(),params,fm,gm,t0,t0,false);
+    output_mgr->setup(phys_grid.grid->get_comm(),params,fm,gm,t0,t0,false);
     output_mgr->set_logger(ap->get_logger());
   }
 
@@ -164,7 +157,7 @@ struct PyAtmProc {
 inline void pybind_pyatmproc(pybind11::module& m)
 {
   pybind11::class_<PyAtmProc>(m,"AtmProc")
-    .def(pybind11::init<const PyGrid&>())
+    .def(pybind11::init<const PyParamList&, const PyGrid&>())
     .def("get_field",&PyAtmProc::get_field)
     .def("initialize",&PyAtmProc::initialize)
     .def("setup_output",&PyAtmProc::setup_output)

@@ -35,6 +35,8 @@ protected:
 struct PyGrid {
   std::shared_ptr<AbstractGrid> grid;
 
+  PyGrid () = default;
+
   PyGrid(const std::string& name, int ncols, int nlevs)
   {
     ekat::Comm comm(MPI_COMM_WORLD);
