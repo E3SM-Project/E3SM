@@ -28,8 +28,8 @@ struct TestSetupPlane {
    ErrorMeasures ExpectedVelocityDivErrors   = {0.00124886886594453264,
                                                 0.00124886886590973452};
 
-   ErrorMeasures ExpectedFluxThickErrors = {0.000890795148016506602,
-                                            0.000741722075349612398};
+   ErrorMeasures ExpectedFluxThickErrors = {0.0218166134247192549,
+                                            0.0171404379252105554};
    ErrorMeasures ExpectedMeanThickErrors = {0.000890795148016506602,
                                             0.000741722075349612398};
 
@@ -94,8 +94,8 @@ struct TestSetupSphere {
    ErrorMeasures ExpectedVelocityDivErrors   = {0.0136595773989793799,
                                                 0.00367052484586382699};
 
-   ErrorMeasures ExpectedFluxThickErrors = {0.000800109287518277435,
-                                            0.000406527457820634436};
+   ErrorMeasures ExpectedFluxThickErrors = {0.0159821090867812224,
+                                            0.010364511516135164};
    ErrorMeasures ExpectedMeanThickErrors = {0.000800109287518277435,
                                             0.000406527457820634436};
 

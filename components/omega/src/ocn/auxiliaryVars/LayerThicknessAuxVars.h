@@ -7,10 +7,15 @@
 
 namespace OMEGA {
 
+enum FluxThickEdgeOption { Center, Upwind };
+
 class LayerThicknessAuxVars {
  public:
    Array2DReal FluxLayerThickEdge;
    Array2DReal MeanLayerThickEdge;
+
+   // TODO(mwarusz): get this from config
+   FluxThickEdgeOption FluxThickEdgeChoice = Upwind;
 
    LayerThicknessAuxVars(const HorzMesh *mesh, int NVertLevels)
        : FluxLayerThickEdge("FluxLayerThickEdge", mesh->NEdgesSize,
@@ -28,12 +33,32 @@ class LayerThicknessAuxVars {
 
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const int K = KStart + KVec;
-         // TODO: add upwind option
-         FluxLayerThickEdge(IEdge, K) =
-             0.5_Real * (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
-
          MeanLayerThickEdge(IEdge, K) =
              0.5_Real * (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
+      }
+
+      switch (FluxThickEdgeChoice) {
+      case Center:
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const int K = KStart + KVec;
+            FluxLayerThickEdge(IEdge, K) =
+                0.5_Real *
+                (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
+         }
+         break;
+      case Upwind:
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const int K = KStart + KVec;
+            if (NormalVelEdge(IEdge, K) > 0) {
+               FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell0, K);
+            } else if (NormalVelEdge(IEdge, K) < 0) {
+               FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell1, K);
+            } else {
+               FluxLayerThickEdge(IEdge, K) = Kokkos::max(
+                   LayerThickCell(JCell0, K), LayerThickCell(JCell1, K));
+            }
+         }
+         break;
       }
    }
 
