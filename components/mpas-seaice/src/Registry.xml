@@ -5402,7 +5402,7 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-3"
-		     description="All bio tracers including those not used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     description="All possible bio tracers in order: maxAlgaeType, nitrate, maxDOCType, maxDICType, chl (maxAlgaeType), ammonium, silicate, DMSPp, DMSPd,  DMS, Nonreactive nitrate, maxDONType, dFe (maxFeType, umol/m3), pFe (maxFeType, umol/m3), maxBCType (kg/m3), maxDustType (kg/m3), humic carbon"
 		     icepack_name="ocean_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5410,7 +5410,7 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-3"
-		     description="Only bio tracers used in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon,dissolved inorganic carbon, ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m3, particulate iron in umol/m3, humic carbon, black carbon1 in mg/m3, black carbon2 in mg/m3,dust1 in mg/m3, dust2 in mg/m3, dust3 in mg/m3, dust4 in mg/m3"
+		     description="Bio tracers used in the order of oceanBioConcentrations"
 		     icepack_name="ocean_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5418,7 +5418,7 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Only bio tracers used and added to sea ice bottom in the order: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Bio tracers used and added to sea ice bottom in the order of oceanBioConcentrations"
 		     icepack_name="ocean_bio"
 		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
 		/>
@@ -5498,7 +5498,7 @@
 		<var name="oceanZAerosolConc"
 		     type="real"
 		     dimensions="maxAerosolType nCells Time"
-		     units="mg m-3"
+		     units="kg m-3"
                      description="Surface ocean aerosol concentration"
 		/>
 		<var name="oceanAlgaeFlux"
@@ -5672,13 +5672,13 @@
 		<var name="oceanDustIronFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
-		     units="mg m-2 s-1"
+		     units="kg m-2 s-1"
                      description="Total iron dust flux to ocean weighted by ice area fraction"
 		/>
 		<var name="oceanBlackCarbonFluxArea"
 		     type="real"
 		     dimensions="nCells Time"
-		     units="mg m-2 s-1"
+		     units="kg m-2 s-1"
                      description="Total black carbon flux to ocean weighted by ice area fraction"
 		/>
 		<var name="bioTracerShortwave"
@@ -5810,13 +5810,13 @@
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in kg/m2, black carbon2 in kg/m2,dust1 in kg/m2, dust2 in kg/m2, dust3 in kg/m2, dust4 in kg/m2"
 		/>
 		<var name="totalVerticalBiologySnow"
 		     type="real"
 		     dimensions="nZBGCTracers nCells Time"
 		     units="mmol m-2"
-		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in mg/m2, black carbon2 in mg/m2,dust1 in mg/m2, dust2 in mg/m2, dust3 in mg/m2, dust4 in mg/m2"
+		     description="Tracers are ordered: diatom nitrogen, smallPlankton nitrogen, phaeocystis nitrogen, nitrate, polysaccarid carbon, lipid carbon, dissolved inorganic carbon,ammonium, silicate, DMSPp, DMSPd, DMS, Nonreactive nitrate, Protein nitrogen, dissolved iron in umol/m2, particulate iron in umol/m2, humic carbon, black carbon1 in kg/m2, black carbon2 in kg/m2,dust1 in kg/m2, dust2 in kg/m2, dust3 in kg/m2, dust4 in kg/m2"
 		/>
 		<var name="totalVerticalSalinity"
 		     type="real"

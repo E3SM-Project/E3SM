@@ -187,7 +187,7 @@ module seaice_constants
   real(kind=RKIND), public :: &
        skeletalLayerThickness             = 0.03_RKIND    , & ! (m) skeletal layer thickness
        gramsCarbonPerMolCarbon            = 12.0107_RKIND , & ! g carbon per mol carbon
-       kilogramsToMicrograms              = 1.0e9_RKIND   , & ! kg to ug conversion
+       microgramsPerKilograms             = 1.0e9_RKIND   , & ! kg to ug conversion
        gramsIronPerMolIron                = 55.845_RKIND      ! g iron per mol iron
 
   ! ocean biogeochemistry ISPOL values

@@ -2750,8 +2750,8 @@ contains
                      oceanNitrateConc(iCell), &
                      oceanSilicateConc(iCell),&
                      oceanZAerosolConc(:,iCell), &
-                     carbonToNitrogenRatioAlgae, &
-                     carbonToNitrogenRatioDON)
+                     carbonToNitrogenRatioAlgae(:), &
+                     carbonToNitrogenRatioDON(:))
 
              enddo ! iCell
           else if (trim(config_column_physics_type) == "column_package") then
@@ -2775,8 +2775,8 @@ contains
                      maxDONType, &
                      maxIronType, &
                      maxAerosolType, &
-                     carbonToNitrogenRatioAlgae, &
-                     carbonToNitrogenRatioDON)
+                     carbonToNitrogenRatioAlgae(:), &
+                     carbonToNitrogenRatioDON(:))
 
              enddo ! iCell
 
