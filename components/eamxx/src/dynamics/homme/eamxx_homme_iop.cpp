@@ -356,7 +356,7 @@ apply_iop_forcing(const Real dt)
         const int igp = idx/NGP;
         const int jgp = idx%NGP;
 
-        auto ps_i = ps_dyn(ie, igp, jgp);
+        auto ps_i          = ps_dyn(ie, igp, jgp);
         auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
         auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
         auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
