@@ -21,7 +21,10 @@ EXECUTE_PROCESS(COMMAND nf-config --prefix
   ERROR_VARIABLE  NFCONFIG_ERROR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-SET (NetCDF_Fortran_PATH /projects/ppc64le-pwr9-rhel8/tpls/netcdf-fortran/4.6.0/gcc/11.3.0/openmpi/4.1.4/5ka6asw CACHE FILEPATH "") # NEEDED
+#SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
+
+# Set the path manually otherwise /home/projects/e3sm/scream/libs/netcdf-fortran/install/weaver will get grabbed
+SET (NetCDF_Fortran_PATH /projects/ppc64le-pwr9-rhel8/tpls/netcdf-fortran/4.6.0/gcc/11.3.0/openmpi/4.1.4/5ka6asw CACHE FILEPATH "")
 
 EXECUTE_PROCESS(COMMAND nc-config --prefix
   RESULT_VARIABLE NCCONFIG_RESULT
@@ -33,7 +36,9 @@ SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "") # NEEDED
 
 # TPL settings
 #SET (PnetCDF_PATH /projects/ppc64le-pwr9-rhel8/tpls/parallel-netcdf/1.12.3/gcc/11.3.0/openmpi/4.1.4/pp6jcjk CACHE FILEPATH "")
-SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
+
+# disable CPRNC and compile locally (make -j1 cprnc) otherwise ctest fails (why??)
+#SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
 
 # Compilers
 SET (CMAKE_C_COMPILER mpicc CACHE STRING "")
@@ -56,6 +61,7 @@ SET (OPT_FLAGS "-O0" CACHE STRING "")
 SET (DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
+SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")			# Allow MPI on device
 SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
 SET (BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")	# Buidling without Parallel IO Lib
 SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
@@ -71,7 +77,7 @@ SET (HOMMEXX_EXEC_SPACE "CUDA" CACHE STRING "")			# Define the execution space f
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")		# Cuda warps per team setting
 #SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")		# Build preqx with kokkos
 SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")		# Build theta with kokkos
-SET (HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")			# Enabling compose
+SET (HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")			# Enabling compose (SL tracers)
 
 # Kokkos settings
 SET (ENABLE_OPENMP FALSE CACHE BOOL "")				# 
