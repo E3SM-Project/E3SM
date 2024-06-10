@@ -16,6 +16,11 @@ struct PyParamList {
     parse_dict(d,pl);
   }
 
+  PyParamList(const pybind11::dict& d, const std::string& name) {
+    pl.rename(name);
+    parse_dict(d,pl);
+  }
+
   void parse_dict(const pybind11::dict& d, ekat::ParameterList& p) {
     for (auto item : d) {
       const std::string key = pybind11::str(item.first);
@@ -78,7 +83,8 @@ inline void pybind_pyparamlist (pybind11::module& m)
 {
   // Param list
   pybind11::class_<PyParamList>(m,"ParameterList")
-    .def(pybind11::init<const pybind11::dict&>());
+    .def(pybind11::init<const pybind11::dict&>())
+    .def(pybind11::init<const pybind11::dict&,const std::string&>());
 }
 
 } // namespace scream
