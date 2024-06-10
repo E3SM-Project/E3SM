@@ -56,6 +56,7 @@ SET (OPT_FLAGS "-O3" CACHE STRING "")
 SET (DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
+SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")                 # Allow MPI on device
 #SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
 SET (BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "") 	# Buidling without Parallel IO Lib
 SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
@@ -63,7 +64,7 @@ SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
 SET (USE_QUEUING FALSE CACHE BOOL "")				# Use queing or not
 SET (USE_TRILINOS OFF CACHE BOOL "")				# Use trilinos or not
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")			# Use parallel netcdf
-SET (USE_NUM_PROCS 4 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
+SET (USE_NUM_PROCS 2 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
 SET (HAVE_EXTRAE TRUE CACHE BOOL "")				# 
 SET (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")			# Use column orientation for openmp
 SET (ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")			# Use horizontal orientation for openmp
