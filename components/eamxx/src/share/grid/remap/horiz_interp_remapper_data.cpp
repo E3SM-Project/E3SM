@@ -80,6 +80,12 @@ get_my_triplets (const std::string& map_file) const
   scorpio::read_var(map_file,"row",rows.data());
   scorpio::read_var(map_file,"S"  ,S.data());
 
+  // Previously, we added 1 to their length, to avoid nullptr in scorpio::read.
+  // However, we later do range loops on these vectors, so resize them back to nlweights
+  cols.resize(nlweights);
+  rows.resize(nlweights);
+  S.resize(nlweights);
+
   scorpio::release_file(map_file);
 
   // 1.2 Dofs in grid are likely 0-based, while row/col ids in map file
