@@ -1027,13 +1027,10 @@ contains
              ! nothing to do here if the cell is land
              if (maxLevelCell(iCell) <= 0) cycle
 
-             if (landIceMask(iCell) == 1) then
-                landIceFraction(iCell) = landIceFracObserved(iCell)
-             end if
-
-             if (landIceFloatingMask(iCell) == 1) then
-                landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
-             end if
+             ! don't mask these because we may want to include melt that bleeds
+             ! into the open ocean
+             landIceFraction(iCell) = landIceFracObserved(iCell)
+             landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
 
              landIceDraft(iCell) = landIceDraftObserved(iCell)
              landIcePressure(iCell) = landIcePressureObserved(iCell)
