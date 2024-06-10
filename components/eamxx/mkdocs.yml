@@ -9,6 +9,7 @@ nav:
     - 'Model output': 'user/model_output.md'
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
+    - 'COSP': 'user/cosp.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
