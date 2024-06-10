@@ -285,44 +285,41 @@ contains
       end do ! end of columns loop
       
       ! Consider adapting this check to be fates compliant (rgk 04-2017)
-      if (.not. use_fates) then
 #ifndef _OPENACC
-         if (err_found .and. nstep > 1) then
-            c = err_index
-            write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input                 = ',col_cinputs(c)*dt
-            write(iulog,*)'output                = ',col_coutputs(c)*dt
-            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-            write(iulog,*)'begcb                 = ',col_begcb(c)
-            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-            write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
-            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+       if (err_found .and. nstep > 1) then
+          c = err_index
+          write(iulog,*)'column cbalance error = ', col_errcb(c), c
+          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+          write(iulog,*)'input                 = ',col_cinputs(c)*dt
+          write(iulog,*)'output                = ',col_coutputs(c)*dt
+          write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+          write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+          write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+          write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+          write(iulog,*)'begcb                 = ',col_begcb(c)
+          write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+          write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
+          write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
-            if (ero_ccycle) then
-               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-            end if
+          if (ero_ccycle) then
+             write(iulog,*)'erosion               = ',som_c_yield(c)*dt
+          end if
 
-            if (use_pflotran .and. pf_cmode) then
-               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-            end if
+          if (use_pflotran .and. pf_cmode) then
+             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+          end if
 
-            if (use_pflotran .and. pf_cmode) then
-               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-            end if
+          if (use_pflotran .and. pf_cmode) then
+             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+          end if
 
-            call endrun(msg=errMsg(__FILE__, __LINE__))
-         else
-             if (masterproc .and. nstep < 2) then
-                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-             end if
-         end if
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       else
+           if (masterproc .and. nstep < 2) then
+              write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+           end if
+       end if
 #endif
-      end if
-
 
     end associate
 
@@ -624,7 +621,6 @@ contains
       ! set time steps
       dt = dtime_mod
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
-
       err_found = .false.
 
       if(.not.use_fates)then
@@ -907,7 +903,14 @@ contains
          grc_som_c_leached         => grc_cf%som_c_leached         , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
          grc_som_c_yield           => grc_cf%somc_yield            , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
          grc_cinputs               => grc_cf%cinputs               , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
-         grc_coutputs              => grc_cf%coutputs                & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         grc_coutputs              => grc_cf%coutputs              , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         beg_totpftc               => grc_cs%beg_totpftc          , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         beg_cwdc                  => grc_cs%beg_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc               => grc_cs%beg_totsomc          , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc               => grc_cs%beg_totlitc          , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc              => grc_cs%beg_totprodc         , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc                => grc_cs%beg_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cropseedc_deficit     => grc_cs%beg_cropseedc_deficit  & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          )
 
       ! c2g states
@@ -946,13 +949,21 @@ contains
       call c2g(bounds, col_som_c_leached(bounds%begc:bounds%endc), grc_som_c_leached(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
       call c2g(bounds, col_som_c_yield(bounds%begc:bounds%endc), grc_som_c_yield(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')  
 
+      if (use_fates) then 
+        call c2g(bounds, col_cf%litfall(bounds%begc:bounds%endc), grc_cinputs(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      end if 
+         
       dt = real( get_step_size(), r8 )
       nstep = get_nstep()
 
       do g = bounds%begg, bounds%endg
-         grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
+
+         if (.not. use_fates) then 
+           grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
+         end if 
 
          grc_coutputs(g) = grc_er(g) + grc_fire_closs(g) + grc_hrv_xsmrpool_to_atm(g) + &
               grc_prod1c_loss(g) + grc_prod10c_loss(g) + grc_prod100c_loss(g) - grc_som_c_leached(g) + &
@@ -964,7 +975,7 @@ contains
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
-         if (grc_errcb(g) > error_tol .and. nstep > 1) then
+         if (abs(grc_errcb(g)) > error_tol .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
             write(iulog,*)'input               = ', grc_cinputs(g)*dt
@@ -973,6 +984,11 @@ contains
             write(iulog,*)'fire                = ', grc_fire_closs(g)*dt
             write(iulog,*)'hrv_to_atm          = ', grc_hrv_xsmrpool_to_atm(g)*dt
             write(iulog,*)'leach               = ', grc_som_c_leached(g)*dt
+            write(iulog,*)'prod1c_loss         = ', grc_prod1c_loss(g)*dt
+            write(iulog,*)'prod10c_loss        = ', grc_prod10c_loss(g)*dt
+            write(iulog,*)'prod100c_loss       = ', grc_prod100c_loss(g)*dt
+            write(iulog,*)'som_c_leached       = ', grc_som_c_leached(g)*dt
+            write(iulog,*)'dwt_conv_cflux      = ', grc_dwt_conv_cflux(g)*dt
 
             if (ero_ccycle) then
                write(iulog,*)'erosion             = ',grc_som_c_yield(g)*dt
@@ -981,6 +997,14 @@ contains
             write(iulog,*)'begcb               = ', beg_totc(g)
             write(iulog,*)'endcb               = ', end_totc(g)
             write(iulog,*)'delta store         = ', end_totc(g) - beg_totc(g)
+
+            write(iulog,*)'Delta totpftc       = ', end_totpftc(g) - beg_totpftc(g) 
+            write(iulog,*)'Delta cwdc          = ', end_cwdc(g) - beg_cwdc(g) 
+            write(iulog,*)'Delta totlitc       = ', end_totlitc(g) - beg_totlitc(g)
+            write(iulog,*)'Delta totsomc       = ', end_totsomc(g) - beg_totsomc(g)
+            write(iulog,*)'Delta totprodc      = ', end_totprodc(g) - beg_totprodc(g)
+            write(iulog,*)'Delta ctrunc        = ', end_ctrunc(g) - beg_ctrunc(g)
+            write(iulog,*)'Delta crop deficit  = ', end_cropseedc_deficit(g) - beg_cropseedc_deficit(g)
 
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if

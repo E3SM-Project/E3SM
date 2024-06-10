@@ -120,13 +120,11 @@ CONTAINS
        scmMode, scm_multcols, scmlat, scmlon, scm_nx, scm_ny)
 
     ! !DESCRIPTION: initialize docn model
-    use mct_mod
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
 #include "moab/MOABConfig.h"
-    use iMOAB, only: iMOAB_RegisterApplication, iMOAB_LoadMesh, &
-                     iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
                      iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
@@ -171,13 +169,12 @@ CONTAINS
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
 #ifdef HAVE_MOAB
-    character*100  tagname
+    character*400  tagname
     real(R8) latv, lonv
     integer iv, tagindex
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
-    integer :: mpigrp          ! mpigrp
 #endif
 
     !--- formats ---
@@ -522,35 +519,6 @@ CONTAINS
 
   end subroutine docn_comp_init
 
-#ifdef HAVE_MOAB
-  !===============================================================================
-
-  subroutine moab_init_tag(tagname, avx, index, dataarr)
-
-    ! !DESCRIPTION:  run method for docn model
-    use iMOAB, only: iMOAB_SetDoubleTagStorage, &
-                     iMOAB_SetDoubleTagStorageWithGid
-    implicit none
-
-    integer :: ierr, n, lsize, tagindex
-    character(len=*), intent(in) :: tagname
-    type(mct_aVect), intent(in) :: avx
-    integer, intent(in) :: index
-    real(R8), intent(inout) :: dataarr(:)
-
-   lsize = mct_avect_lsize(avx)
-   !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
-   dataarr(:) = avx%rAttr(index, :)
-   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
-                                       0, & ! data on vertices
-                                       dataarr )
-   if (ierr > 0 )  &
-      call errorout(ierr, 'Error: fail to set tag values for ' // tagname )
-
-  end subroutine moab_init_tag
-
-#endif
-
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
@@ -561,6 +529,7 @@ CONTAINS
     use iMOAB, only: iMOAB_GetMeshInfo, &
                      iMOAB_SetDoubleTagStorage, &
                      iMOAB_WriteMesh
+    use seq_flds_mod, only: moab_set_tag_from_av
 #endif
 
     implicit none
@@ -845,63 +814,45 @@ CONTAINS
 
    ! set dense double tags on vertices of the temporary DOCN app
    ! first set o2x data
-   call moab_init_tag( 'So_t'//C_NULL_CHAR, o2x, &
-                        kt, data)
+   call moab_set_tag_from_av('So_t'//C_NULL_CHAR, o2x, kt, mpoid, data, lsize) 
 
-   call moab_init_tag( 'So_s'//C_NULL_CHAR, o2x, &
-                        ks, data)
+   call moab_set_tag_from_av('So_s'//C_NULL_CHAR, o2x, ks, mpoid, data, lsize)
 
-   call moab_init_tag( 'So_u'//C_NULL_CHAR, o2x, &
-                        ku, data)
+   call moab_set_tag_from_av( 'So_u'//C_NULL_CHAR, o2x, ku, mpoid, data, lsize)
 
-   call moab_init_tag( 'So_v'//C_NULL_CHAR, o2x, &
-                        kv, data)
+   call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
 
-   call moab_init_tag( 'So_dhdx'//C_NULL_CHAR, o2x, &
-                        kdhdx, data)
+   call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
 
-   call moab_init_tag( 'So_dhdy'//C_NULL_CHAR, o2x, &
-                        kdhdy, data)
+   call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
 
-   call moab_init_tag( 'Fioo_q'//C_NULL_CHAR, o2x, &
-                        kq, data)
+   call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
    if (kswp /= 0) then
-      call moab_init_tag( 'So_fswpen'//C_NULL_CHAR, o2x, &
-                           kswp, data)
+      call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
    endif
 
    ! next set x2o data
-   call moab_init_tag( 'Foxx_swnet'//C_NULL_CHAR, x2o, &
-                        kswnet, data)
+   call moab_set_tag_from_av( 'Foxx_swnet'//C_NULL_CHAR, x2o, kswnet, mpoid, data, lsize)
 
-   call moab_init_tag( 'Foxx_lwup'//C_NULL_CHAR, x2o, &
-                        klwup, data)
+   call moab_set_tag_from_av( 'Foxx_lwup'//C_NULL_CHAR, x2o, klwup, mpoid, data, lsize)
 
-   call moab_init_tag( 'Foxx_sen'//C_NULL_CHAR, x2o, &
-                        ksen, data)
+   call moab_set_tag_from_av( 'Foxx_sen'//C_NULL_CHAR, x2o, ksen, mpoid, data, lsize)
 
-   call moab_init_tag( 'Foxx_lat'//C_NULL_CHAR, x2o, &
-                        klat, data)
+   call moab_set_tag_from_av( 'Foxx_lat'//C_NULL_CHAR, x2o, klat, mpoid, data, lsize)
 
-   call moab_init_tag( 'Foxx_rofi'//C_NULL_CHAR, x2o, &
-                        krofi, data)
+   call moab_set_tag_from_av( 'Foxx_rofi'//C_NULL_CHAR, x2o, krofi, mpoid, data, lsize)
 
-   call moab_init_tag( 'Faxa_lwdn'//C_NULL_CHAR, x2o, &
-                        klwdn, data)
+   call moab_set_tag_from_av( 'Faxa_lwdn'//C_NULL_CHAR, x2o, klwdn, mpoid, data, lsize)
 
-   call moab_init_tag( 'Faxa_snow'//C_NULL_CHAR, x2o, &
-                        ksnow, data)
+   call moab_set_tag_from_av( 'Faxa_snow'//C_NULL_CHAR, x2o, ksnow, mpoid, data, lsize)
 
-   call moab_init_tag( 'Fioi_melth'//C_NULL_CHAR, x2o, &
-                        kmelth, data)
+   call moab_set_tag_from_av( 'Fioi_melth'//C_NULL_CHAR, x2o, kmelth, mpoid, data, lsize)
 
    ! next set avstrm data
-   call moab_init_tag( 'strm_h'//C_NULL_CHAR, avstrm, &
-                        kh, data)
+   call moab_set_tag_from_av( 'strm_h'//C_NULL_CHAR, avstrm, kh, mpoid, data, lsize)
 
-   call moab_init_tag( 'strm_qbot'//C_NULL_CHAR, avstrm, &
-                        kqbot, data)
+   call moab_set_tag_from_av( 'strm_qbot'//C_NULL_CHAR, avstrm, kqbot, mpoid, data, lsize)
 
 
 #ifdef MOABDEBUG

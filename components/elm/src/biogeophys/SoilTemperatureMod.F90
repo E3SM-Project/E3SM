@@ -746,7 +746,7 @@ contains
     integer                , intent(in)  :: jtop(bounds%begc: )                        ! top level at each column
     integer                , intent(in)  :: jbot(bounds%begc: )                        ! bottom level at each column
     logical                , intent(in)  :: urban_column                               ! Is true if solving temperature for urban column, otherwise false
-    real(r8)               , intent(out) :: tvector( bounds%begc: , -nlevsno: )        ! Numerical solution of temperature
+    real(r8)               , intent(inout) :: tvector( bounds%begc: , -nlevsno: )      ! Numerical solution of temperature
     !
     ! !LOCAL VARIABLES:
     integer            :: c, fc, j
