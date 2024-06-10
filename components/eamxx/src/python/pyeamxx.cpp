@@ -5,8 +5,6 @@
 #include "pyparamlist.hpp"
 
 #include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
 
 namespace py = pybind11;
 namespace scream {
@@ -21,7 +19,7 @@ void finalize () {
   finalize_scream_session();
 }
 
-PYBIND11_MODULE (libpyeamxx_ext,m) {
+PYBIND11_MODULE (pyeamxx,m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 
