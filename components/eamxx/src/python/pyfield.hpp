@@ -66,6 +66,9 @@ struct PyField {
   void sync_to_host () {
     f.sync_to_host();
   }
+  void sync_to_dev () {
+    f.sync_to_dev();
+  }
   void print() const {
     print_field_hyperslab(f);
   }
@@ -133,6 +136,7 @@ inline void pybind_pyfield (pybind11::module& m) {
     .def(pybind11::init<>())
     .def("get",&PyField::get)
     .def("sync_to_host",&PyField::sync_to_host)
+    .def("sync_to_dev",&PyField::sync_to_dev)
     .def("print",&PyField::print);
 }
 
