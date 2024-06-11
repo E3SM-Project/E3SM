@@ -64,8 +64,12 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
       const int jpack = idx % npacks;
       const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
       const auto range_mask = range_pack < num_levs;
-      auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), false, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
-                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");
+      if (T_mid(icol,jpack) >= 273.15) 
+         {auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), false, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
+                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");}
+      else 
+         {auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), true, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
+                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");} 
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 
   });
