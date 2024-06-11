@@ -16,7 +16,7 @@ Field (const identifier_type& id,
        const ViewT& view_d)
  : Field(id)
 {
-  constexpr auto N = ViewT::Rank;
+  constexpr int N = ViewT::rank;
   using ScalarT  = typename ViewT::traits::value_type;
   using ExeSpace = typename ViewT::traits::execution_space;
 
