@@ -25,7 +25,6 @@ struct PyField {
   }
 
   pybind11::array get () const {
-
     const auto& fh  = f.get_header();
     const auto& fid = fh.get_identifier();
 
@@ -35,19 +34,33 @@ struct PyField {
         "Error! Cannot get the array for a field that is a subfield of another. Please, get array of parent field.\n"
         "  - field name : " + fid.name() + "\n"
         "  - parent name: " + fh.get_parent().lock()->get_identifier().name() + "\n");
-    pybind11::dtype dt;
 
+    // Get array shape and strides.
+    // NOTE: since the field may be padded, the strides do not necessarily
+    //       match the dims. Also, the strides must be grabbed from the
+    //       actual view, since the layout doesn't know them.
+    pybind11::array::ShapeContainer shape (fid.get_layout().dims());
+    std::vector<ssize_t> strides;
+
+    pybind11::dtype dt;
     switch (fid.data_type()) {
-      case DataType::IntType:     dt = pybind11::dtype::of<int>();    break;
-      case DataType::FloatType:   dt = pybind11::dtype::of<float>();  break;
-      case DataType::DoubleType:  dt = pybind11::dtype::of<double>(); break;
-      default:                    EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
+      case DataType::IntType:
+        dt = get_dt_and_set_strides<int>(strides);
+        break;
+      case DataType::FloatType:
+        dt = get_dt_and_set_strides<float>(strides);
+        break;
+      case DataType::DoubleType:
+        dt = get_dt_and_set_strides<double>(strides);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized/unsupported data type.\n");
     }
 
-    pybind11::array::ShapeContainer shape (fid.get_layout().dims());
+    // NOTE: you MUST set the parent handle, or else you won't have view semantic
     auto data = f.get_internal_view_data_unsafe<void,Host>();
-    // auto data = reinterpret_cast<void*>(f.get_internal_view_data_unsafe<char,Host>());
-    return pybind11::array(dt,shape,data);
+    auto this_obj = pybind11::cast(this);
+    return pybind11::array(dt,shape,strides,data,pybind11::handle(this_obj));
   }
 
   void sync_to_host () {
@@ -55,6 +68,62 @@ struct PyField {
   }
   void print() const {
     print_field_hyperslab(f);
+  }
+private:
+
+  template<typename T>
+  pybind11::dtype get_dt_and_set_strides (std::vector<ssize_t>& strides) const
+  {
+    strides.resize(f.rank());
+    switch (f.rank()) {
+      case 1:
+      {
+        auto v = f.get_view<const T*,Host>();
+        strides[0] = v.stride(0)*sizeof(T);
+        break;
+      }
+      case 2:
+      {
+        auto v = f.get_view<const T**,Host>();
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
+        break;
+      }
+      case 3:
+      {
+        auto v = f.get_view<const T***,Host>();
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
+        strides[2] = v.stride(2)*sizeof(T);
+        break;
+      }
+      case 4:
+      {
+        auto v = f.get_view<const T****,Host>();
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
+        strides[2] = v.stride(2)*sizeof(T);
+        strides[3] = v.stride(3)*sizeof(T);
+        break;
+      }
+      case 5:
+      {
+        auto v = f.get_view<const T*****,Host>();
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
+        strides[2] = v.stride(2)*sizeof(T);
+        strides[3] = v.stride(3)*sizeof(T);
+        strides[4] = v.stride(4)*sizeof(T);
+        break;
+      }
+      default:
+        EKAT_ERROR_MSG (
+            "Unsupported field rank in PyField.\n"
+            " - field name: " + f.name() + "\n"
+            " - field rnak: " + std::to_string(f.rank()) + "\n");
+    }
+
+    return pybind11::dtype::of<T>();
   }
 };
 
