@@ -185,6 +185,35 @@ add_omega_test(
     "-n;8"
 )
 
+#####################
+# TendencyTerms test
+#####################
+
+add_omega_test(
+    TEND_PLANE_TEST
+    testTendencyTermsPlane.exe
+    ocn/TendencyTermsTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
+target_compile_definitions(
+  testTendencyTermsPlane.exe
+  PRIVATE
+  TENDENCYTERMS_TEST_PLANE
+)
+
+add_omega_test(
+  TEND_SPHERE_TEST
+    testTendencyTermsSphere.exe
+    ocn/TendencyTermsTest.cpp
+    "-n 8;--cpu-bind=cores"
+)
+target_compile_definitions(
+  testTendencyTermsSphere.exe
+  PRIVATE
+  TENDENCYTERMS_TEST_SPHERE
+)
+
+
 ##################
 # Time Manager test
 ##################
