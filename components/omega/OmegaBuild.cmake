@@ -18,6 +18,8 @@ set(E3SM_CIME_ROOT                "${E3SM_ROOT}/cime")
 set(E3SM_CIMECONFIG_ROOT          "${E3SM_ROOT}/cime_config")
 set(E3SM_EXTERNALS_ROOT           "${E3SM_ROOT}/externals")
 
+set(CASEROOT                      "${OMEGA_BUILD_DIR}/e3smcase")
+
 ###########################
 # Macros                  #
 ###########################
@@ -34,13 +36,109 @@ macro(common)
     set(OMEGA_LINK_OPTIONS "")
   endif()
 
-  if(NOT Python_FOUND)
-    find_package (Python COMPONENTS Interpreter)
+endmacro()
 
-    if(NOT Python_FOUND)
-      message(FATAL_ERROR "Python is not available, CMake will exit." )
-    endif()
+macro(run_bash_command command outvar)
+
+  execute_process(
+	COMMAND bash -c "${command}"
+	OUTPUT_VARIABLE ${outvar}
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+endmacro()
+
+macro(cime_xmlquery query outvar)
+
+  run_bash_command("cd ${CASEROOT} && ./xmlquery ${query} --value" ${outvar})
+
+endmacro()
+
+macro(read_cime_config)
+
+  set(NEWCASE_COMMAND "${E3SM_ROOT}/cime/scripts/create_newcase \
+    --res T62_oQU120 \
+    --compset CMPASO-NYF \
+    --handle-preexisting-dirs r \
+    --case ${CASEROOT}")
+
+  if(NOT "${OMEGA_CIME_MACHINE}" STREQUAL "")
+    set(NEWCASE_COMMAND "${NEWCASE_COMMAND} --machine ${OMEGA_CIME_MACHINE}")
   endif()
+
+  if(NOT "${OMEGA_CIME_COMPILER}" STREQUAL "")
+    set(NEWCASE_COMMAND "${NEWCASE_COMMAND} --compiler ${OMEGA_CIME_COMPILER}")
+  endif()
+
+  run_bash_command("${NEWCASE_COMMAND}" NEWCASE_OUTPUT)
+  run_bash_command("cd ${CASEROOT} && ./case.setup" CASESETUP_OUTPUT)
+  run_bash_command("source ${CASEROOT}/.env_mach_specific.sh && env" ENV_OUTPUT)
+
+  string(REPLACE "\n" ";" lines ${ENV_OUTPUT})
+
+  # set env. variables
+  foreach(line ${lines})
+    string(REGEX MATCH "([A-Za-z_][A-Za-z0-9_]*)=(.*)" ENV_LINE ${line})
+    set(ENV_VAR "${CMAKE_MATCH_1}")
+    set(ENV_VAL "${CMAKE_MATCH_2}")
+
+    if(NOT "${ENV_VAR}" STREQUAL "")
+        set(ENV{${ENV_VAR}} "${ENV_VAL}")
+		#message(STATUS "${ENV_VAR}: ${ENV_VAL}")
+    endif()
+  endforeach()
+
+  # Read .case.run.sh script in case directory
+  file(READ "${CASEROOT}/.case.run.sh" CASE_RUN)
+
+  # Convert a string to a list
+  string(REPLACE "\n" ";" lines ${CASE_RUN})
+
+  # get mpi launch command-line arguments
+  foreach(line ${lines})
+    string(FIND ${line} "e3sm.exe" _LINE_FOUND)
+    if(NOT _LINE_FOUND EQUAL -1)
+        string(REPLACE " " ";" args ${line})
+        set(SKIP_ARG FALSE)
+        list(GET args 0 OMEGA_MPI_EXEC)
+        list(REMOVE_AT args 0)
+        set(OMEGA_MPI_ARGS)
+        foreach(arg ${args})
+            if("${SKIP_ARG}" STREQUAL "TRUE")
+                set(SKIP_ARG FALSE)
+                continue()
+            endif()
+
+            string(FIND "${arg}" "e3sm.exe" _ARG_FOUND)
+
+            if(NOT _ARG_FOUND EQUAL -1)
+                break()
+
+            elseif("${arg}" STREQUAL "-n" OR "${arg}" STREQUAL "-N" OR
+                   "${arg}" STREQUAL "-c")
+                set(SKIP_ARG TRUE)
+
+            else()
+                list(APPEND OMEGA_MPI_ARGS "${arg}")
+            endif()
+        endforeach()
+    endif()
+  endforeach()
+
+  cime_xmlquery("MPILIB" MPILIB_NAME)
+  cime_xmlquery("GMAKE_J" GMAKE_J)
+  cime_xmlquery("BUILD_THREADED" BUILD_THREADED)
+  cime_xmlquery("THREAD_COUNT" THREAD_COUNT)
+  cime_xmlquery("COMPILER" COMPILER)
+  cime_xmlquery("MACH" MACH)
+
+  if("${BUILD_THREADED}" STREQUAL "TRUE")
+    option(compile_threaded "" ON)
+  endif()
+
+  set(SRCROOT "${E3SM_ROOT}")
+
+  include("${CASEROOT}/Macros.cmake")
 
 endmacro()
 
@@ -48,50 +146,14 @@ endmacro()
 # and detect OMEGA_ARCH and compilers
 macro(init_standalone_build)
 
-  # update CMake configuration with CIME configuration
-  set(_TMP_CMAKE_FILE ${OMEGA_BUILD_DIR}/_Omega.cmake)
-  set(_PY_OPTS "-p;${E3SM_CIME_ROOT};-o;${_TMP_CMAKE_FILE}")
-
-  if(OMEGA_CIME_COMPILER)
-    list(APPEND _PY_OPTS "-c" "${OMEGA_CIME_COMPILER}")
-  endif()
-
-  if(OMEGA_CIME_MACHINE)
-    list(APPEND _PY_OPTS "-m" "${OMEGA_CIME_MACHINE}")
-  endif()
-
-  if(OMEGA_BUILD_TYPE STREQUAL "Debug")
-
-    list(APPEND _PY_OPTS "-d")
-
-    execute_process(COMMAND ${Python_EXECUTABLE} create_scripts.py ${_PY_OPTS}
-      WORKING_DIRECTORY ${OMEGA_SOURCE_DIR}
-      OUTPUT_VARIABLE _MACHINE_INFO
-      ERROR_VARIABLE _ERROR_INFO)
-
-      message(STATUS "create_scripts.py output: ${_MACHINE_INFO}")
-      message(STATUS "create_scripts.py error: ${_ERROR_INFO}")
-
-  else()
-
-    execute_process(COMMAND ${Python_EXECUTABLE} create_scripts.py ${_PY_OPTS}
-      OUTPUT_QUIET ERROR_QUIET
-      WORKING_DIRECTORY ${OMEGA_SOURCE_DIR}
-      OUTPUT_VARIABLE _MACHINE_INFO)
-
-  endif()
-
-  include(${_TMP_CMAKE_FILE})
-
-  if(NOT OMEGA_BUILD_TYPE STREQUAL "Debug")
-    file(REMOVE ${_TMP_CMAKE_FILE})
-  endif()
+  # get cime configuration
+  read_cime_config()
 
   # find compilers
   if(OMEGA_C_COMPILER)
     find_program(_OMEGA_C_COMPILER ${OMEGA_C_COMPILER})
 
-  elseif(MPILIB STREQUAL "mpi-serial")
+  elseif("${MPILIB}" STREQUAL "mpi-serial")
     find_program(_OMEGA_C_COMPILER ${SCC})
 
   else()
@@ -108,7 +170,7 @@ macro(init_standalone_build)
   if(OMEGA_CXX_COMPILER)
     find_program(_OMEGA_CXX_COMPILER ${OMEGA_CXX_COMPILER})
 
-  elseif(MPILIB STREQUAL "mpi-serial")
+  elseif("${MPILIB}" STREQUAL "mpi-serial")
     find_program(_OMEGA_CXX_COMPILER ${SCXX})
 
   else()
@@ -125,7 +187,7 @@ macro(init_standalone_build)
   if(OMEGA_Fortran_COMPILER)
     find_program(_OMEGA_Fortran_COMPILER ${OMEGA_Fortran_COMPILER})
 
-  elseif(MPILIB STREQUAL "mpi-serial")
+  elseif("${MPILIB}" STREQUAL "mpi-serial")
     find_program(_OMEGA_Fortran_COMPILER ${SFC})
 
   else()
@@ -144,7 +206,7 @@ macro(init_standalone_build)
   message(STATUS "OMEGA_Fortran_COMPILER = ${OMEGA_Fortran_COMPILER}")
 
   # detect OMEGA_ARCH if not provided
-  if(NOT OMEGA_ARCH)
+  if("${OMEGA_ARCH}" STREQUAL "")
 
     if(USE_CUDA)
       set(OMEGA_ARCH "CUDA")
@@ -172,18 +234,61 @@ macro(init_standalone_build)
         elseif(_NVCC_CHECK AND _NVIDIA_CHECK)
           set(OMEGA_ARCH "CUDA")
 
-        else()
+        elseif(compile_threaded)
           set(OMEGA_ARCH "OPENMP")
 
+        else()
+          set(OMEGA_ARCH "SERIAL")
+
         endif()
-      else()
+
+      elseif(compile_threaded)
         set(OMEGA_ARCH "OPENMP")
+
+      else()
+        set(OMEGA_ARCH "SERIAL")
 
       endif()
     endif()
   endif()
 
   message(STATUS "OMEGA_ARCH = ${OMEGA_ARCH}")
+
+  # create a env script
+  set(_EnvScript ${OMEGA_BUILD_DIR}/omega_env.sh)
+  file(WRITE ${_EnvScript}  "#!/usr/bin/env bash\n\n")
+  file(APPEND ${_EnvScript} "source ./e3smcase/.env_mach_specific.sh\n\n")
+  if("${OMEGA_ARCH}" STREQUAL "OPENMP")
+    file(APPEND ${_EnvScript} "export OMP_NUM_THREADS=${THREAD_COUNT}\n\n")
+    if(DEFINED ENV{OMP_PROC_BIND})
+      file(APPEND ${_EnvScript} "export OMP_PROC_BIND=$ENV{OMP_PROC_BIND}\n\n")
+    else()
+      file(APPEND ${_EnvScript} "export OMP_PROC_BIND=spread\n\n")
+    endif()
+    if(DEFINED ENV{OMP_PLACES})
+      file(APPEND ${_EnvScript} "export OMP_PLACES=$ENV{OMP_PLACES}\n\n")
+    else()
+      file(APPEND ${_EnvScript} "export OMP_PLACES=threads\n\n")
+    endif()
+  endif()
+
+  # create a build script
+  set(_BuildScript ${OMEGA_BUILD_DIR}/omega_build.sh)
+  file(WRITE ${_BuildScript}  "#!/usr/bin/env bash\n\n")
+  file(APPEND ${_BuildScript} "source ./omega_env.sh\n\n")
+  file(APPEND ${_BuildScript} "make -j ${GMAKE_J}\n\n")
+
+  # create a run script
+  set(_RunScript ${OMEGA_BUILD_DIR}/omega_run.sh)
+  file(WRITE ${_RunScript}  "#!/usr/bin/env bash\n\n")
+  file(APPEND ${_RunScript} "source ./omega_env.sh\n\n")
+  file(APPEND ${_RunScript} "./src/omega.exe 1000\n\n")
+
+  # create a ctest script
+  set(_CtestScript ${OMEGA_BUILD_DIR}/omega_ctest.sh)
+  file(WRITE ${_CtestScript}  "#!/usr/bin/env bash\n\n")
+  file(APPEND ${_CtestScript} "source ./omega_env.sh\n\n")
+  file(APPEND ${_CtestScript} "ctest --output-on-failure $* # --rerun-failed\n\n")
 
   # create a profile script
   set(_ProfileScript ${OMEGA_BUILD_DIR}/omega_profile.sh)
@@ -213,8 +318,16 @@ macro(init_standalone_build)
 #    list(APPEND OMEGA_LINK_OPTIONS ${_SLIBS})
 #  endif()
 
+  if(OMEGA_CXX_FLAGS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_CXX_FLAGS}")
+  endif()
+
+#  if(OMEGA_EXE_LINKER_FLAGS)
+#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OMEGA_EXE_LINKER_FLAGS}")
+#  endif()
+
   # set CXX compiler *before* calling CMake project()
-  if(OMEGA_ARCH STREQUAL "CUDA")
+  if("${OMEGA_ARCH}" STREQUAL "CUDA")
 
     if(NOT OMEGA_CUDA_COMPILER)
       find_program(OMEGA_CUDA_COMPILER
@@ -233,28 +346,16 @@ macro(init_standalone_build)
     set(CMAKE_CXX_COMPILER ${OMEGA_CUDA_COMPILER})
     set(CMAKE_CUDA_HOST_COMPILER ${OMEGA_CXX_COMPILER})
 
-    # overwrite CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS defined in
-    # cime configuration because those could break CUDA build
-    if(OMEGA_CXX_FLAGS)
-      set(CMAKE_CXX_FLAGS ${OMEGA_CXX_FLAGS})
-
-    else()
-      set(CMAKE_CXX_FLAGS "")
-    endif()
-
     if(OMEGA_CUDA_FLAGS)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_CUDA_FLAGS}")
     endif()
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ccbin ${CMAKE_CUDA_HOST_COMPILER}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-gpu-targets")
-
-    if(OMEGA_EXE_LINKER_FLAGS)
-      set(CMAKE_EXE_LINKER_FLAGS ${OMEGA_EXE_LINKER_FLAGS})
-
-    else()
-      set(CMAKE_EXE_LINKER_FLAGS "")
+    string(FIND "${CMAKE_CXX_FLAGS}" "--ccbin" pos)
+    if(${pos} EQUAL -1)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ccbin ${CMAKE_CUDA_HOST_COMPILER}")
     endif()
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-gpu-targets")
 
     message(STATUS "CMAKE_CUDA_HOST_COMPILER = ${CMAKE_CUDA_HOST_COMPILER}")
 
@@ -266,7 +367,7 @@ macro(init_standalone_build)
     file(APPEND ${_ProfileScript} "    --trace=cuda,nvtx,osrt \\\n")
     file(APPEND ${_ProfileScript} "    ./src/omega.exe 1000")
 
-  elseif(OMEGA_ARCH STREQUAL "HIP")
+  elseif("${OMEGA_ARCH}" STREQUAL "HIP")
 
     if(NOT OMEGA_HIP_COMPILER)
       find_program(OMEGA_HIP_COMPILER "hipcc")
@@ -282,20 +383,16 @@ macro(init_standalone_build)
     set(CMAKE_HIP_COMPILER ${OMEGA_HIP_COMPILER})
     set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
 
-    if(OMEGA_CXX_FLAGS)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_CXX_FLAGS}")
-    endif()
-
     if(OMEGA_HIP_FLAGS)
       set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OMEGA_HIP_FLAGS}")
     endif()
 
-    if(${MPILIB_NAME} STREQUAL "mpich")
+    if("${MPILIB_NAME}" STREQUAL "mpich")
       if(NOT $ENV{MPICH_CXX})
         set(ENV{MPICH_CXX} ${OMEGA_HIP_COMPILER})
       endif()
 
-    elseif(${MPILIB_NAME} STREQUAL "openmpi")
+    elseif("${MPILIB_NAME}" STREQUAL "openmpi")
       if(NOT $ENV{OMPI_CXX})
         set(ENV{OMPI_CXX} ${OMEGA_HIP_COMPILER})
       endif()
@@ -309,7 +406,7 @@ macro(init_standalone_build)
     file(APPEND ${_ProfileScript} "rocprof --hip-trace --hsa-trace --timestamp on \\\n")
     file(APPEND ${_ProfileScript} "    -o \$OUTFILE ./src/omega.exe 1000")
 
-  elseif(OMEGA_ARCH STREQUAL "SYCL")
+  elseif("${OMEGA_ARCH}" STREQUAL "SYCL")
     set(CMAKE_CXX_COMPILER ${OMEGA_SYCL_COMPILER})
 
     if(OMEGA_SYCL_FLAGS)
@@ -321,16 +418,32 @@ macro(init_standalone_build)
 
   endif()
 
+  execute_process(COMMAND chmod +x ${_EnvScript})
+  execute_process(COMMAND chmod +x ${_BuildScript})
+  execute_process(COMMAND chmod +x ${_RunScript})
+  execute_process(COMMAND chmod +x ${_CtestScript})
   execute_process(COMMAND chmod +x ${_ProfileScript})
 
   if(KOKKOS_OPTIONS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_OPTIONS}")
+
+    string(REPLACE " " ";" opts ${KOKKOS_OPTIONS})
+    foreach(opt ${opts})
+      string(REGEX MATCH "-D[ \t]*([A-Za-z_][A-Za-z0-9_]*)=(.*)" KOPT ${opt})
+      set(KOPT_VAR "${CMAKE_MATCH_1}")
+      set(KOPT_VAL "${CMAKE_MATCH_2}")
+
+      if(NOT "${KOPT_VAR}" STREQUAL "")
+        option(${KOPT_VAR} "" ${KOPT_VAL})
+      endif()
+    endforeach()
+
     unset(KOKKOS_OPTIONS)
+
   endif()
 
   message(STATUS "CMAKE_CXX_COMPILER     = ${CMAKE_CXX_COMPILER}")
   message(STATUS "CMAKE_CXX_FLAGS        = ${CMAKE_CXX_FLAGS}")
-  message(STATUS "CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
+#  message(STATUS "CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
 
 endmacro()
 
@@ -382,7 +495,7 @@ macro(update_variables)
   # Set the build type
   set(CMAKE_BUILD_TYPE ${OMEGA_BUILD_TYPE})
 
-  if(OMEGA_BUILD_TYPE STREQUAL "Debug")
+  if("${OMEGA_BUILD_TYPE}" STREQUAL "Debug")
     set(OMEGA_DEBUG ON)
   endif()
 
@@ -445,25 +558,23 @@ macro(update_variables)
     set(CMAKE_INSTALL_PREFIX ${OMEGA_INSTALL_PREFIX})
   endif()
 
-  if(OMEGA_ARCH STREQUAL "CUDA")
+  if("${OMEGA_ARCH}" STREQUAL "CUDA")
     option(Kokkos_ENABLE_CUDA "" ON)
     option(Kokkos_ENABLE_CUDA_LAMBDA "" ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOMEGA_TARGET_DEVICE")
 
-  elseif(OMEGA_ARCH STREQUAL "HIP")
+  elseif("${OMEGA_ARCH}" STREQUAL "HIP")
     option(Kokkos_ENABLE_HIP "" ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOMEGA_TARGET_DEVICE")
 
-  elseif(OMEGA_ARCH STREQUAL "SYCL")
+  elseif("${OMEGA_ARCH}" STREQUAL "SYCL")
     option(Kokkos_ENABLE_SYCL "" ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOMEGA_TARGET_DEVICE")
 
-  elseif(OMEGA_ARCH STREQUAL "OPENMP")
-    set(ENV{OMP_PROC_BIND} "spread")
-    set(ENV{OMP_PLACES} "threads")
+  elseif("${OMEGA_ARCH}" STREQUAL "OPENMP")
     option(Kokkos_ENABLE_OPENMP "" ON)
 
-  elseif(OMEGA_ARCH STREQUAL "THREADS")
+  elseif("${OMEGA_ARCH}" STREQUAL "THREADS")
     option(Kokkos_ENABLE_THREADS "" ON)
 
   else()
@@ -496,10 +607,10 @@ macro(check_setup)
 
   #message("OMEGA_BUILD_MODE = ${OMEGA_BUILD_MODE}")
 
-  if(OMEGA_BUILD_MODE STREQUAL "E3SM")
+  if("${OMEGA_BUILD_MODE}" STREQUAL "E3SM")
     message(STATUS "*** Omega E3SM-component Build ***")
 
-  elseif(${OMEGA_BUILD_MODE} STREQUAL "STANDALONE")
+  elseif("${OMEGA_BUILD_MODE}" STREQUAL "STANDALONE")
     message(STATUS "*** Omega Standalone Build ***")
 
   else()

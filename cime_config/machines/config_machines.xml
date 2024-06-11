@@ -966,7 +966,7 @@
     <DESC>Frontier exascale supercomputer at ORNL. 9408 nodes, Node: 4 AMD MI250X GPUs (2 GCDs) ~ 8 GPUs, 512 GB HDB2E, AMD EPYC 64 cores, 512GB DDR4 </DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
+    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu,crayomegagpu,amdomegagpu,gnuomegagpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/frontier</SAVE_TIMING_DIR>
@@ -986,6 +986,10 @@
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">8</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="crayclanggpu">8</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="amdclanggpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnuomegagpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="crayomegagpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="amdomegagpu">8</MAX_MPITASKS_PER_NODE>
+
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -1017,6 +1021,15 @@
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.4.0</command>
       </modules>
+      <modules compiler="crayomegagpu">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
+        <command name="switch">cce cce/15.0.1</command>
+        <command name="switch">craype craype/2.7.20</command>
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
+      </modules>
+
       <modules compiler="amdclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
@@ -1025,6 +1038,13 @@
       <modules compiler="amdclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
       </modules>
+      <modules compiler="amdomegagpu">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
+        <command name="switch">amd amd/5.4.0</command>
+        <command name="load">craype-accel-amd-gfx90a</command>
+      </modules>
+
       <modules compiler="gnu.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
@@ -1035,6 +1055,11 @@
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.4.0</command>
       </modules>
+      <modules compiler="gnuomegagpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
+      </modules>
+
       <modules>
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
@@ -1085,6 +1110,13 @@
     <environment_variables compiler="amdclang.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables compiler="crayomegagpu" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/crayclang-15.0.1; else echo "$ADIOS2_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="amdomegagpu" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+    </environment_variables>
+
   </machine>
 
   <machine MACH="crusher">
