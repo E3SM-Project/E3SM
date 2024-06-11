@@ -1079,7 +1079,7 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool, scratchPool, forcingPool
+      type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool, scratchPool, diagnosticsPool
 
       integer, pointer :: config_rx1_outer_iter_count, config_rx1_inner_iter_count, &
                           config_rx1_horiz_smooth_open_ocean_cells, config_rx1_min_levels
@@ -1095,7 +1095,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zInterface, &
                                                     goalStretch, goalWeight
-      integer, dimension(:), pointer :: landIceMask
+      integer, dimension(:), pointer :: sshAdjustmentMask
       real (kind=RKIND), dimension(:), pointer :: ssh, bottomDepth, refBottomDepth, zTop, zBot, zBotNew, &
                                         refLayerThickness
 
@@ -1142,14 +1142,14 @@ contains
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-        call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+        call mpas_pool_get_array(diagnosticsPool, 'sshAdjustmentMask', sshAdjustmentMask)
 
         maxLevelCell(nCells+1) = -1
         do iCell = 1, nCells
@@ -1163,7 +1163,7 @@ contains
 
         ! initialize the smoothing mask to valid cells under land ice
         smoothingMask(:) = 0
-        where((maxLevelCell(:) > 0) .and. (landIceMask(:) == 1))
+        where((maxLevelCell(:) > 0) .and. (sshAdjustmentMask(:) == 1))
           smoothingMask(:) = 1
         end where
 
