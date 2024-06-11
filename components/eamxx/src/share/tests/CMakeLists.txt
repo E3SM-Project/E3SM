@@ -14,6 +14,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test fields
   CreateUnitTest(field "field_tests.cpp")
 
+  # Test fields
+  CreateUnitTest(subfield "subfield_tests.cpp")
+
   # Test field utils
   CreateUnitTest(field_utils "field_utils.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
