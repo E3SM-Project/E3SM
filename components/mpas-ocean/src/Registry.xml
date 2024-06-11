@@ -110,6 +110,9 @@
 			description="Number of wavenumbers used to reconstruct Stokes drift depth profile"
 			definition="6"
 		/>
+		<dim name="nSubgridTableLevels" definition="namelist:config_subgrid_table_levels"
+			description="Number of subgrid look-up table levels"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -477,6 +480,14 @@
 					description="Background vertical diffusion applied to tracer quantities"
 					possible_values="Any positive real value."
 		/>
+		<nml_option name="config_cvmix_background_diffusion_passive" type="real" default_value="1.0e-5" units="m^2 s^-1"
+					description="Background vertical diffusion applied to passive tracer quantities"
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_background_diffusion_passive_enable" type="logical" default_value=".false."
+					description="flag to enable using a different background vertical diffusion for passive tracers"
+					possible_values=".true. or .false."
+					/>
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^-1"
 					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
@@ -829,8 +840,8 @@
 					description="Controls if self-attraction and loading is applied to ssh"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="1.0" units="km"
-					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
+		<nml_option name="config_self_attraction_loading_depth_cutoff" type="real" default_value="10.0" units="m"
+					description="Defines depths over which ssh is smoothed to zero for SAL calculation."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc"
@@ -954,12 +965,8 @@
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_sea_ice_reference_salinity" type="real" default_value="4.0" units="1.e-3"
-					description="assumed salinity of frazil ice in the open ocean."
+					description="assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0."
 					possible_values="Any positive real number."
-		/>
-		<nml_option name="config_frazil_land_ice_reference_salinity" type="real" default_value="0.0" units="1.e-3"
-					description="assumed salinity of frazil ice under land ice."
-					possible_values="Any non-negative real number."
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"
@@ -1011,10 +1018,6 @@
 					description="The constant heat transport velocity through the boundary layer under land ice used in the ISOMIP test cases."
 					possible_values="Any positive real number"
 		/>
-		<nml_option name="config_land_ice_flux_rms_tidal_velocity" type="real" default_value="5e-2" units="m s^-1"
-					description="Parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity"
-					possible_values="Any non-negative real number"
-		/>
 		<nml_option name="config_land_ice_flux_jenkins_heat_transfer_coefficient" type="real" default_value="0.011"
 					description="constant nondimensional heat transfer coefficient across the ice-ocean boundary layer"
 					possible_values="Any positive real number"
@@ -1022,6 +1025,18 @@
 		<nml_option name="config_land_ice_flux_jenkins_salt_transfer_coefficient" type="real" default_value="3.1e-4"
 					description="constant nondimensional salt transfer coefficient across the ice-ocean boundary layer"
 					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_alpha" type="real" default_value="1"
+					description="alpha from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, alpha = 0.777 when TMIX compset on"
+					possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_A0" type="real" default_value="0"
+					description="A0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, A0 = 0.656 when TMIX compset on"
+					possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_U0" type="real" default_value="5e-2" units="m s^-1"
+					description="U0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, U0 = 0.003 m/s when TMIX compset on"
+					possible_values="Any non-negative real number"
 		/>
 	</nml_record>
 
@@ -1108,13 +1123,25 @@
 					description="If true, topographic wave drag is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4"
+		<nml_option name="config_topographic_wave_drag_scheme" type="character" default_value="ZAE" units="unitless"
+					description="Which of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or LGF: Local generation formula"
+					possible_values="JSL or ZAE or LGF"
+		/>
+		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="0.3" units="unitless"
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
-					possible_values="any positive real, typically 5.0e-4"
+					possible_values="any positive real"
 		/>
 		<nml_option name="config_thickness_drag_type" type="character" default_value="centered"
 					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
 					possible_values="'harmonic-mean', 'centered'"
+		/>
+		<nml_option name="config_topographic_wave_drag_cutoff_depth" type="real" default_value="500" units="m"
+					description="Specifies minimum depth at which topographic wave drag is applied"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_topographic_wave_drag_cutoff_width" type="real" default_value="10" units="m"
+					description="Width over which the topographic wave drag is progressively turned off"
+					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -1182,6 +1209,14 @@
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
 					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
 					possible_values="Real value greater or equal to 0."
+		/>
+		<nml_option name="config_use_subgrid_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use subgrid wetting and drying algorithm"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_ssh_gradient_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use take into account the ssh gradient across previously flux-limited edges in the wetting and drying algorithm"
+					possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<nml_record name="ocean_constants">
@@ -1606,6 +1641,12 @@
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
+	<nml_record name="init_mode_subgrid">
+		<nml_option name="config_subgrid_table_levels" type="integer" default_value="-1"
+					description="Number of levels in subgrid lookup tables"
+					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition."
+		/>
+	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
@@ -1637,6 +1678,7 @@
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
+		<package name="subgridWetDryPKG" description="This package includes variables required for subgrid wetting and drying."/>
 	</packages>
 
 	<streams>
@@ -1962,7 +2004,7 @@
             <var name="gotmEpsbTopOfCell"/>
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
-            <var name="ssh_sal"/>
+            <var name="pgf_sal"/>
 		</stream>
 
 		<stream name="output"
@@ -2200,6 +2242,7 @@
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
+			<var name="velocityTidalRMS"/>
 			<var name="topDragMagnitude"/>
 			<var name="landIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
@@ -2262,7 +2305,13 @@
 				filename_template="topographic_wave_drag.nc"
 				runtime_format="single_file"
 				mode="forward;analysis">
-			<var name="topographic_wave_drag"/>
+			<var name="topo_rinv"/>
+			<var name="topo_buoyancy_N1V"/>
+			<var name="topo_buoyancy_N1B"/>
+			<var name="bathy_stddev"/>
+			<var name="bed_slope_edges"/>
+			<var name="lonGradEdge"/>
+			<var name="latGradEdge"/>
 		</stream>
 
 	</streams>
@@ -2461,10 +2510,10 @@
 			 description="Reconstruction weights associated with each of the edgesOnEdge, used to reconstruct the tangentialVelocity from normalVelocities on neighboring edges."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between verticesOnEdge."
+			 description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-			 description="Length of each edge, computed as the distance between cellsOnEdge."
+			 description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 			 description="Angle the edge normal makes with local eastward direction."
@@ -2611,6 +2660,67 @@
 		/>
 		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
 			 description="Distance of each cell to nearest coastline cell."
+		/>
+                <!-- FIELDS FOR SUBGIRD WETTING AND DRYING-->
+		<var name="subgridWetVolumeCellTable" type="real" dimensions="nSubgridTableLevels nCells" units="m"
+			 description="Pre-computed wet volume per unit area for each cell at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetVolumeEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed wet volume per unit area for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetVolumeVertexTable" type="real" dimensions="nSubgridTableLevels nVertices" units="m"
+			 description="Pre-computed wet volume per unit area for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshCellTableRange" type="real" dimensions="R3 nCells" units="m"
+			 description="Range of ssh values used for cell lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshEdgeTableRange" type="real" dimensions="R3 nEdges" units="m"
+			 description="Range of ssh vaules used for edge lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshVertexTableRange" type="real" dimensions="R3 nVertices" units="m"
+			 description="Range of ssh vaules used for vertex lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeBathymetryMean" type="real" dimensions="nEdges" units="m"
+			 description="Mean bathymetry on edge from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridVertexBathymetryMean" type="real" dimensions="nVertices" units="m"
+			 description="Mean bathymetry on vertex from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridCellBathymetryMin" type="real" dimensions="nCells" units="m"
+			 description="Minimum bathymetry on cell from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeBathymetryMin" type="real" dimensions="nEdges" units="m"
+			 description="Minimum bathymetry on edge from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridVertexBathymetryMin" type="real" dimensions="nVertices" units="m"
+			 description="Minimum bathymetry on vertex from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridLayerThicknessDebug" type="real" dimensions="nCells" units="m"
+			 description="Debug field"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionCellTable" type="real" dimensions="nSubgridTableLevels nCells" units="m"
+			 description="Pre-computed wet fraction for each cell at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed wet fraction for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionVertexTable" type="real" dimensions="nSubgridTableLevels nVertices" units="m"
+			 description="Pre-computed wet fraction for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
 		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
@@ -3099,6 +3209,10 @@
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="vertDiffPassiveTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
+			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically) for passive tracers"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: bulk Richardson number"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
@@ -3233,13 +3347,41 @@
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
-		<var name="topographic_wave_drag" type="real" dimensions="nEdges" units="1"
+		<var name="topo_rinv" type="real" dimensions="nEdges" units="unitless"
 			description="wave drag coefficient or 1/(rinv) where rinv is the e-folding time used in HyCOM"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="topo_buoyancy_N1V" type="real" dimensions="nEdges" units="unitless"
+			description="Vertically averaged buoyancy frequencies from WOA 2013 data"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="topo_buoyancy_N1B" type="real" dimensions="nEdges" units="unitless"
+			description="Bottom buoyancy frequencies from WOA 2013 data"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="bathy_stddev" type="real" dimensions="nEdges" units="unitless"
+			description="Standard deviation of the bathymetry within a given cell"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="bed_slope_edges" type="real" dimensions="nEdges" units="unitless"
+			description="The integral gradient average per cell"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="lonGradEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Meridional gradient of bathymetry"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="latGradEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Zonal gradient of bathymetry"
 			packages="topographicWaveDragPKG"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
+			packages="landIceFluxesPKG"
+		/>
+		<var name="velocityTidalRMS" type="real" dimensions="nCells" units="m s^-1"
+			description="Root mean square tidal velocity from tidal model for drag and melt parametrizations"
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^-2"
@@ -3419,12 +3561,12 @@
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="ssh_sal" type="real" dimensions="nCells Time" units="m"
-			description="sea surface height perturbation from self-attraction and loading"
+		<var name="pgf_sal" type="real" dimensions="nCells Time" units="m"
+			description="Barotropic pressure perturbation due to self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
-			description="gradient of sea surface height perturbation from self-attraction and loading"
+		<var name="pgf_sal_grad" type="real" dimensions="nEdges Time" units=""
+			description="Gradient of barotropic pressure perturbation due to self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
 		/>
 		<!-- FIELD split_explicit AB2 time stepping -->
@@ -3435,6 +3577,30 @@
 		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
                         description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="layerThicknessCellWetDry" type="real" dimensions="nVertLevels nCells Time" units="m"
+			description="intermediate estimate total layer thickness for wetting/drying purposes"
+			packages="forwardMode"
+		/>
+		<var name="sshCellWetDry" type="real" dimensions="nCells Time" units="m"
+			description="intermediate estimate ssh for wetting/drying purposes"
+			packages="forwardMode"
+		/>
+		<var name="temp_twd" type="real" dimensions="nEdges Time" units=""
+			description="tendency perturbation due to topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="normalCoeffTWD" type="real" dimensions="nEdges" units=""
+			description="Coefficient multiplied by the normal velocity in the topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tangentialCoeffTWD" type="real" dimensions="nEdges" units=""
+			description="Coefficient multiplied by the tangential velocity in the topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="topographicWaveDrag" type="real" dimensions="nEdges" units=""
+			description="topographic wave drag multiplicative factor"
+			packages="tidalPotentialForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
@@ -3622,6 +3788,7 @@
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
 
+
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
@@ -3703,6 +3870,21 @@
 		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
+		<var name="avgLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+		         description="Time-averaged sum of freshwater fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgLandIceHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
+			 description="Time-averaged sum of heat fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgRemovedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			 description="Time-averaged sum of freshwater fluxes associated with removed liquid runoff fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="avgRemovedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			 description="Time-averaged sum of freshwater fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
+	        />
+		<var name="avgRemovedIceRunoffHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
+			 description="Time-averaged sum of heat fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
 
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
 		<var name="landIceFraction" type="real" dimensions="nCells Time" units="1"
@@ -3744,7 +3926,11 @@
 			/>
 		</var_array>
 		<var name="landIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			description="Flux of mass through the ocean surface. Positive into ocean."
+			description="Flux of mass through the ocean surface due to interface melt/freeze. Positive into ocean."
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
+		/>
+		<var name="landIceFreshwaterFluxTotal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Total flux of mass through the ocean surface that includes interface melt freeze and column averaged frazil freeze rate. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
@@ -3842,6 +4028,10 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Flux of frazil ice mass through the ocean surface. Negative is defined as mass leaving the ocean."
+			packages="frazilIce"
 		/>
 
 		<!-- Fields for tidal potential forcing -->

@@ -83,6 +83,7 @@
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP585_transient</value>
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
       <value compset="SSP370(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP370_transient</value>
+      <value compset="SSP245(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP245_transient</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
       <!-- Use cases for SCREAM compsets -->
@@ -93,7 +94,15 @@
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
       <value compset="1850(?:SOI)?_EAM%AR5sf_ELM">1850_CMIP6_control</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
-
+      <!-- BGCv2 compsets (use V2 land new features configuration)-->
+      <value compset="1850.*_*CNPRDCTCBCPHS" >1850_PHS_control</value>
+      <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
+      <value compset="1850.*_*CNPRDCTCBCTGU" >1850_TGU_control</value>
+      <value compset="1850.*_*CNPRDCTCBCPHSTGUWFM" >1850_PHSTGUWFM_control</value>
+      <value compset="20TR.*_*CNPRDCTCBCPHS" >20thC_PHS_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCPHSTGUWFM" >20thC_PHSTGUWFM_transient</value>
     </values>
     <group>run_component_elm</group>
     <file>env_run.xml</file>
@@ -126,6 +135,12 @@
       <value compset="_ELM%[^_]*CRDCTCBC"   >-bgc bgc -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNRDCTCBC"  >-bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCPHS" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCTGU" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -topounit</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCWFM" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -irrig .true. -tw_irr_on </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCPHSTGUWFM" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress -topounit -irrig .true. -tw_irr_on</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBC-CROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -crop </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCWFM-CROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -crop -irrig .true. -tw_irr_on </value>
       <value compset="_ELM%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPRDCTCBCTOP">-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>

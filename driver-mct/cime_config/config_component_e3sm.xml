@@ -172,6 +172,19 @@
     <desc>Turn on the passing of water isotope fields through the coupler</desc>
   </entry>
 
+  <entry id="FLDS_POLAR">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_MPASO%[^_]*ISMF">TRUE</value>
+      <value compset="_MPASSI%DIB_">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of polar fields through the coupler</desc>
+  </entry>
+
   <entry id="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
@@ -262,9 +275,10 @@
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
-      <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU|GSW|E3SMWCv2|CPLWCH)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
+      <value compset="_DATM%JRA.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
       <value compset="_MPASSI_MPASO_.*_BGC%BCRC" >CO2C</value>
