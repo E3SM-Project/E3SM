@@ -1576,7 +1576,7 @@ SUBROUTINE overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_a
   REAL(R8), DIMENSION(jall,nreconstruction)  , INTENT(OUT) :: weights_all
   INTEGER, DIMENSION(jall)  , INTENT(OUT) :: weights_lgr_index_all
   
-  REAL(R8), DIMENSION(ncorner,ntarget), INTENT(IN) :: target_corner_lon, target_corner_lat
+  REAL(R8), DIMENSION(ncorner,ntarget), INTENT(INOUT) :: target_corner_lon, target_corner_lat
   
   INTEGER,  DIMENSION(ncorner+1) :: ipanel_array, ipanel_tmp
   REAL(R8), DIMENSION(ncorner)  :: lat, lon
