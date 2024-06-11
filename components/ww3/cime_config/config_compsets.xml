@@ -25,6 +25,11 @@
   </compset>
 
   <compset>
+    <alias>F1850-WW3</alias>
+    <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
     <alias>DTESTM-JRA1p5-WW3</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_WW3%sp36x36_TEST</lname>
   </compset>
