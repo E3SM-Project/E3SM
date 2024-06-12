@@ -173,11 +173,12 @@ void MLCorrection::run_impl(const double dt) {
     const auto num_levs = m_num_levs;
     const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
     
+    const auto &qv_told = qv_in.get_view<const Real **>();
     const auto &qv_tnew = get_field_in("qv").get_view<const Real **>();
     Kokkos::parallel_for("Compute WVP diff", policy,
                          KOKKOS_LAMBDA(const MT& team) {
       const int icol = team.league_rank();
-      auto qold_icol = ekat::subview(qv_in,icol);
+      auto qold_icol = ekat::subview(qv_told,icol);
       auto qnew_icol = ekat::subview(qv_tnew,icol);
       auto rho_icol  = ekat::subview(pseudo_density,icol);
       Real net_column_moistening = 0;
@@ -195,7 +196,7 @@ void MLCorrection::run_impl(const double dt) {
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs),
                               [&] (const int& ilev, Real& lsum) {
         lsum += (qnew_icol(ilev)-qold_icol(ilev)) * rho_icol(ilev) / g;
-      },,Kokkos::Sum<Real>(net_column_moistening));
+      },Kokkos::Sum<Real>(net_column_moistening));
       team.team_barrier();
       // Adjust Precipitation
       //  - Note, we subtract the water vapor path because positive precip represents
@@ -220,16 +221,9 @@ void MLCorrection::run_impl(const double dt) {
           }
 	});
       }
-      if (precip_liq_surf_mass(icol)<0) {
-        Kokkos::single(Kokkos::PerTeam(team), [&] {
-          precip_liq_surf_mass(icol) = 0.0;
-	});
-      }
-      if (precip_ice_surf_mass(icol)<0) {
-        Kokkos::single(Kokkos::PerTeam(team), [&] {
-          precip_ice_surf_mass(icol) = 0.0;
-	});
-      }
+      // Note, with the above formulation it is possible for the precipitation to go negative.
+      // We rely on the field property checker defined in the intialization function to repair
+      // any instances of negative precipitation.
     });
   }
 }
