@@ -726,7 +726,7 @@ void compute_wet_mixing_ratios(const Team& team,
 
 // Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
 // "packs". Following function copies a 2d view till model levels
-KOKKOS_INLINE_FUNCTION
+inline
 void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
                          const_view_2d &inp_view,             //input view to copy
                          const int dim,                       //dimension till view should be copied

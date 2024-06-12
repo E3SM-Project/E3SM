@@ -301,6 +301,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
   // store rest fo the atm fields in dry_atm_in
+  dry_atm_.z_surf = 0;
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
