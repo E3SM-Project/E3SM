@@ -341,15 +341,15 @@ apply_iop_forcing(const Real dt)
   view_Nd<Pack, 4>
     temperature("temperature", nelem, NGP, NGP, NLEV);
 
-  // Lambda for computing temperature from Hommexx
-  auto compute_homme_states = [&] () {
+  // Lambda for computing temperature
+  auto compute_temperature = [&] () {
     Kokkos::parallel_for("compute_temperature_for_iop", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
       KV kv(team);
       const int ie  =  team.league_rank();
 
       // Get temp views from workspace
       auto ws = eamxx_wsm.get_workspace(team);
-      uview_1d<Pack> pmid, pint, pdel;
+      uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
@@ -370,12 +370,6 @@ apply_iop_forcing(const Real dt)
         });
         team.team_barrier();
 
-        // Reinterperate into views of Homme::Scalar for calling Hommexx function.
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> dp3d_scalar(reinterpret_cast<Homme::Scalar*>(dp3d_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> vtheta_dp_scalar(reinterpret_cast<Homme::Scalar*>(vtheta_dp_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> qv_scalar(reinterpret_cast<Homme::Scalar*>(qv_i.data()), NLEV);
-        Homme::ExecViewUnmanaged<Homme::Scalar[NLEV]> temperature_scalar(reinterpret_cast<Homme::Scalar*>(temperature_i.data()), NLEV);
-
         // Compute temperature from virtual potential temperature
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
           auto T_val = vtheta_dp_i(k);
@@ -392,7 +386,7 @@ apply_iop_forcing(const Real dt)
   };
 
   // Preprocess some homme states to get temperature
-  compute_homme_states();
+  compute_temperature();
   Kokkos::fence();
 
   // Apply IOP forcing
@@ -509,8 +503,8 @@ apply_iop_forcing(const Real dt)
     // and observed quantities of T, Q, u, and
 
     if (iop_nudge_tq) {
-      // Compute temperature from Hommexx
-      compute_homme_states();
+      // Compute temperature
+      compute_temperature();
       Kokkos::fence();
     }
 
@@ -593,7 +587,7 @@ apply_iop_forcing(const Real dt)
 
       // Get temp views from workspace
       auto ws = eamxx_wsm.get_workspace(team);
-      uview_1d<Pack> pmid, pint, pdel;
+      uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
