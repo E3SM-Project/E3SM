@@ -50,7 +50,7 @@ int outputTestResult(std::string const &TestName, std::string const &Expected,
          std::cout << TestName << ": PASS" << std::endl;
       } else {
          std::cout << TestName << ": FAIL" << std::endl;
-         RetVal = -1;
+         RetVal += 1;
       }
    } else {
       std::string Actual = Msgs[0];
@@ -68,7 +68,7 @@ int outputTestResult(std::string const &TestName, std::string const &Expected,
          std::cout << TestName << ": PASS" << std::endl;
       } else {
          std::cout << TestName << ": FAIL" << std::endl;
-         RetVal = -1;
+         RetVal += 1;
       }
    }
 
@@ -83,13 +83,13 @@ int testDefaultLogLevel() {
    LOG_DEBUG("This shouldn't be logged.");
 
    // check if no debug log
-   RetVal -= outputTestResult("Default log level 1", std::string(""), EndsWith);
+   RetVal += outputTestResult("Default log level 1", std::string(""), EndsWith);
 
    const std::string TMSG2 = "This should be logged.";
    LOG_INFO(TMSG2);
 
    // check if this is info log
-   RetVal -= outputTestResult("Default log level 2", TMSG2, EndsWith);
+   RetVal += outputTestResult("Default log level 2", TMSG2, EndsWith);
 
    return RetVal;
 }
@@ -108,13 +108,13 @@ int testKokkosDataTypes() {
       LOG_INFO("1d var {}", test1d);
 
       // check if HostArray1DReal is detected
-      RetVal -=
+      RetVal +=
           outputTestResult("Kokkos data type 1", "HostArray1DReal", Contains);
 
       LOG_INFO("2d var {}", test2d);
 
       // check if HostArray2DReal is detected
-      RetVal -=
+      RetVal +=
           outputTestResult("Kokkos data type 2", "HostArray2DReal", Contains);
    }
    Kokkos::finalize();
@@ -141,17 +141,17 @@ int main(int argc, char **argv) {
 
       initLogging(logger);
 
-      RetVal -= testDefaultLogLevel();
-      RetVal -= testKokkosDataTypes();
+      RetVal += testDefaultLogLevel();
+      RetVal += testKokkosDataTypes();
 
       // std::remove(LogFilePath.c_str());
 
    } catch (const std::exception &Ex) {
       std::cout << Ex.what() << ": FAIL" << std::endl;
-      RetVal -= -1;
+      RetVal += 1;
    } catch (...) {
       std::cout << "Unknown: FAIL" << std::endl;
-      RetVal -= -1;
+      RetVal += 1;
    }
 
    return RetVal;

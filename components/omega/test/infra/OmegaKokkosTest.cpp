@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
             if (result != solution) {
                std::cout << "  FAIL: result( " << result << " ) != solution( "
                          << solution << " )" << std::endl;
-               RetVal -= -1;
+               RetVal += 1;
             }
 
             // Calculate time.
@@ -128,11 +128,14 @@ int main(int argc, char **argv) {
 
    } catch (const std::exception &Ex) {
       std::cout << Ex.what() << ": FAIL" << std::endl;
-      RetVal -= -1;
+      RetVal += 1;
    } catch (...) {
       std::cout << "Unknown: FAIL" << std::endl;
-      RetVal -= -1;
+      RetVal += 1;
    }
+
+   if (RetVal >= 256)
+      RetVal = 255;
 
    return RetVal;
 }
