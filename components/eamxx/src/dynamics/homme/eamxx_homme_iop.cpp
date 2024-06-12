@@ -10,11 +10,8 @@
 // Homme includes
 #include "Context.hpp"
 #include "ColumnOps.hpp"
-#include "ElementOps.hpp"
-#include "EquationOfState.hpp"
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
-#include "KernelVariables.hpp"
 #include "SimulationParams.hpp"
 #include "Types.hpp"
 
@@ -225,13 +222,7 @@ void HommeDynamics::
 apply_iop_forcing(const Real dt)
 {
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-
-  using EOS = Homme::EquationOfState;
-  using ElementOps = Homme::ElementOps;
-  using KV = Homme::KernelVariables;
-
   using PF = PhysicsFunctions<DefaultDevice>;
-
   using ColOps = ColumnOps<DefaultDevice, Real>;
   using C = physics::Constants<Real>;
   constexpr Real Rair = C::Rair;
@@ -268,7 +259,7 @@ apply_iop_forcing(const Real dt)
   const auto hyai = m_dyn_grid->get_geometry_data("hyai").get_view<const Real*>();
   const auto hybi = m_dyn_grid->get_geometry_data("hybi").get_view<const Real*>();
 
-  // Homme element states and EOS/EO classes
+  // Homme element states
   auto ps_dyn = get_internal_field("ps_dyn").get_view<Real***>();
   auto dp3d_dyn = get_internal_field("dp3d_dyn").get_view<Pack****>();
   auto vtheta_dp_dyn = get_internal_field("vtheta_dp_dyn").get_view<Pack****>();
@@ -277,11 +268,6 @@ apply_iop_forcing(const Real dt)
   auto Q_dyn = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
   auto Qdp_dyn = get_internal_field("Qdp_dyn").get_view<Pack*****>();
 
-  EOS eos;
-  eos.init(params.theta_hydrostatic_mode, hvcoord);
-
-  ElementOps elem_ops;
-  elem_ops.init(hvcoord);
   const bool use_moisture = (params.moisture == Homme::MoistDry::MOIST);
 
   // Load data from IOP files, if necessary
