@@ -571,65 +571,63 @@ apply_iop_forcing(const Real dt)
     // Apply relaxation
     const auto rtau = std::max(dt, iop_nudge_tscale);
     Kokkos::parallel_for("apply_domain_relaxation",
-                          policy_homme,
+                          policy_eamxx,
                           KOKKOS_LAMBDA (const KT::MemberType& team) {
-      KV kv(team);
-      const int ie  =  team.league_rank();
+
+      const int ie  =  team.league_rank()/(NGP*NGP);
+      const int igp = (team.league_rank()/NGP)%NGP;
+      const int jgp =  team.league_rank()%NGP;
 
       // Get temp views from workspace
       auto ws = eamxx_wsm.get_workspace(team);
       uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
-        const int igp = idx/NGP;
-        const int jgp = idx%NGP;
+      auto ps_i          = ps_dyn(ie, igp, jgp);
+      auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+      auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+      auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+      auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+      auto u_i           = ekat::subview(v_dyn, ie, 0, igp, jgp);
+      auto v_i           = ekat::subview(v_dyn, ie, 1, igp, jgp);
 
-        auto ps_i          = ps_dyn(ie, igp, jgp);
-        auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
-        auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-        auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-        auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
-        auto u_i           = ekat::subview(v_dyn, ie, 0, igp, jgp);
-        auto v_i           = ekat::subview(v_dyn, ie, 1, igp, jgp);
-
-	// Compute reference pressures and layer thickness.
-        // TODO: Allow geometry data to allocate packsize
-        auto s_pmid = ekat::scalarize(pmid);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
-          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-        });
-        team.team_barrier();
-
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&](const int& k) {
-          if (iop_nudge_tq) {
-            // Restrict nudging of T and qv to certain levels if requested by user
-            // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
-            // is in units of [hPa], thus convert iop_nudge_tq_low/high
-            Mask nudge_level(false);
-            int max_size = hyam.size();
-            for (int lev=k*Pack::n, p = 0; p < Pack::n && lev < max_size; ++lev, ++p) {
-              const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
-              nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
-                                 and
-                                 pressure_from_iop >= iop_nudge_tq_high*100);
-            }
-
-            qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
-            temperature_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
-
-            // Convert updated temperature back to virtual potential temperature
-	    const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
-	    vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
-          }
-          if (iop_nudge_uv) {
-            u_i(k).update(u_mean(k) - u_iop(k), -dt/rtau, 1.0);
-            v_i(k).update(v_mean(k) - v_iop(k), -dt/rtau, 1.0);
-          }
-        });
+      // Compute reference pressures and layer thickness.
+      // TODO: Allow geometry data to allocate packsize
+      auto s_pmid = ekat::scalarize(pmid);
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
+        s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
       });
-      // Release WS views
-      ws.release_many_contiguous<1>({&pmid});
+      team.team_barrier();
+
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&](const int& k) {
+        if (iop_nudge_tq) {
+          // Restrict nudging of T and qv to certain levels if requested by user
+          // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
+          // is in units of [hPa], thus convert iop_nudge_tq_low/high
+          Mask nudge_level(false);
+          int max_size = hyam.size();
+          for (int lev=k*Pack::n, p = 0; p < Pack::n && lev < max_size; ++lev, ++p) {
+            const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
+            nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
+                               and
+                               pressure_from_iop >= iop_nudge_tq_high*100);
+          }
+
+          qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
+          temperature_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
+
+          // Convert updated temperature back to virtual potential temperature
+	  const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
+	  vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
+        }
+        if (iop_nudge_uv) {
+          u_i(k).update(u_mean(k) - u_iop(k), -dt/rtau, 1.0);
+          v_i(k).update(v_mean(k) - v_iop(k), -dt/rtau, 1.0);
+        }
+      });
+
+    // Release WS views
+    ws.release_many_contiguous<1>({&pmid});
     });
   }
 }
