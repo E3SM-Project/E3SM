@@ -310,15 +310,10 @@ apply_iop_forcing(const Real dt)
                                   : m_iop->get_iop_field("v").get_view<const Pack*>();
   }
 
-  // Team policy and workspace manager for both homme and scream
-  // related loops. We need separate policies since hommexx functions used here
-  // assume they are called inside nested loops for elements and Gaussian points,
-  // whereas EAMxx function we use expects a single level of parallelism
-  // for elements and Guassian points.
+  // Team policy and workspace manager for eamxx
   // TODO: scream::ColumnOps functions could take an arbitary loop boundary
   //       (TeamVectorRange, TeamThreadRange, ThreadVectorRange) so that
   //       all 3 kernel launches here could be combined.
-  const auto policy_homme = ESU::get_default_team_policy(nelem, NLEV);
   const auto policy_eamxx = ESU::get_default_team_policy(nelem*NGP*NGP, NLEV);
 
   // TODO: Create a memory buffer for this class
