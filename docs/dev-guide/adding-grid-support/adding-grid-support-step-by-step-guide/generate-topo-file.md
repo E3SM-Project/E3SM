@@ -78,14 +78,16 @@ make
 !!! NOTE
     You can safely ignore compiler warnings that look like this:
 
-    `Warning: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)`
+    ```
+    Warning: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)
+    ```
 
     These are a result of how we interface with the netcdf fortran routines, but fixing the warnings by switching from `#include <netcdf.inc>` to `use netcdf` can lead to other problems on certain machines.
 
 ## Step-by-Step Topography Generation
 
 !!! NOTE
-    Copying and pasting the relevant steps below is an easy way to step through the blocks of commands. Alternatively, a batch script is provided below that can be used to execute all steps at once in a batch job. 
+    Copying and pasting the relevant steps below is an easy way to step through the blocks of commands. Alternatively, a batch script is provided below that can be used to execute all steps at once in a batch job.
 
 1. ### **Activate the E3SM Unified Env**
 
@@ -102,9 +104,9 @@ make
     ```
 
 1. ### **Specify Source and Target Resolution**
-    
-    We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from `ne3000pg1` to a chosen target resolution, in this case `ne30` :
-    
+
+    We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from `ne3000pg1` to a chosen target resolution, in this case `ne30`:
+
     ```shell
     NE_SRC=3000
     NE_DST=30
@@ -116,13 +118,12 @@ make
     NE_SRC=90
     NE_DST=4
     ```
+
     !!! NOTE
         For grids with regional refinement (RRM) there is no corresponding "ne" value - so a slightly modified workflow is needed. This entails modifying the grid file generation step, and then modifying topo and map file paths to accomodate the new RRM grid name.
 
-        (Hopefully we added a batch script above/below to provide an example of this modified workflow?)
-
 1. ### **Specify File Paths**
-    
+
     First we need to set some enviroment variables that point to various "root" directories where we will be writing and/or reading files. It
 
     ```shell
@@ -134,7 +135,7 @@ make
     ```
 
     Example path settings:
-        
+
     - Perlmutter (NERSC):
 
         ```shell
@@ -193,7 +194,7 @@ make
     !!!WARNING
         This step can potentially take a very long time - several hours for each map file in some cases!
         The use of `--mpi_nbr=32` will leverage parallelization via `mbtemptest` to dramatically reduce the time to generate mapping files, but this may not work on all machines. Feel free to experiment with a different number of tasks to optimize for the machine you are using. You can also drop this argument entirely if it is causing problems, but be sure to plan for hours of execution time.
-    
+
     !!!NOTE
         If you see an error from these `ncremap` commands that looks like: `srun: error: Job request does not match any supported policy.` and you are on a login node then you will need to either launch an interactive compute node or use a batch job script.
 
@@ -207,7 +208,7 @@ make
     ```
 
 1. ### **Remap Topograpy**
-    
+
     The first command here will essentially create a copy of the source data, which is needed later on when calculating SGH.
 
     ```shell
@@ -273,7 +274,7 @@ make
 
 ## Batch script to streamline all steps
 
-Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. 
+Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise.
 
 Here is a check list of things to do before submitting this script:
 
@@ -298,48 +299,38 @@ To submit the slurm batch job use `sbatch <script>`
     #SBATCH --mail-type=END,FAIL
     #---------------------------------------------------------------------------
     # Make sure all these lines are correct for the machine
-
     source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
-
+    # Specify source and target resolutions
     NE_SRC=3000 ; NE_DST=30
-
     # NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing
-
+    # Specify root paths
     timestamp=$(date +%Y%m%d)
-
     SCRATCH=/lcrc/group/e3sm/${USER}/scratch/chrys
     e3sm_root=${SCRATCH}/tmp_e3sm_src # make sure this contains an up-to-date clone of E3SM
     grid_root=${SCRATCH}/files_grid
     map_root=${SCRATCH}/files_map
     topo_root=${SCRATCH}/files_topo
     DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
-
+    # argument for ncremap to select TempestRemap or mbtempest backend
     MAP_ARGS=
     # MAP_ARGS+="--mpi_nbr=32"
-
     #---------------------------------------------------------------------------
-
     # Stop script execution on error
     set -e
-
     # ANSI color codes for highlighting terminal output
     RED='\033[0;31m' ; GRN='\033[0;32m' CYN='\033[0;36m' ; NC='\033[0m'
-
     # start timer for entire script
     start=`date +%s`
-
     #---------------------------------------------------------------------------
-
+    # Specify topo file names - including temporary files that will be deleted
     topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube${NE_SRC}.nc
     topo_file_1=${topo_root}/tmp_USGS-topo_ne${NE_DST}np4.nc
     topo_file_2=${topo_root}/tmp_USGS-topo_ne${NE_DST}np4_smoothedx6t.nc
     topo_file_3=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothedx6t_${timestamp}.nc
-
+    # Specify map file name
     map_file_src_to_np4=${map_root}/map_ne${NE_SRC}pg1_to_ne${NE_DST}np4_fv2se_flx.nc
-
     #---------------------------------------------------------------------------  
     # print some useful things
-
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
     echo 
@@ -361,57 +352,44 @@ To submit the slurm batch job use `sbatch <script>`
     echo
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
-
     #---------------------------------------------------------------------------
-
+    # Make sure paths exist
     mkdir -p ${grid_root} ${map_root} ${topo_root}
-
-    if [ ! -d ${grid_root} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${grid_root} ; fi
-    if [ ! -d ${map_root}  ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${map_root} ; fi
-    if [ ! -d ${topo_root} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${topo_root} ; fi
-
+    if [ ! -d ${DIN_LOC_ROOT} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${DIN_LOC_ROOT} ; fi
+    if [ ! -d ${e3sm_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${e3sm_root} ; fi
+    if [ ! -d ${grid_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${grid_root} ; fi
+    if [ ! -d ${map_root}     ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${map_root} ; fi
+    if [ ! -d ${topo_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${topo_root} ; fi
     #---------------------------------------------------------------------------
-
     # set to echo commands
     set -x
-
     #---------------------------------------------------------------------------
-    # Create Grid and Map Files
-
-    # Grid for source high res topo
+    # Create grid for source high res topo
     GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
-
-    # Grid for target EAM grid
+    # Create grid for target EAM grid
     GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
     GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
-
-    # Map from source to target np4 
+    #---------------------------------------------------------------------------
+    # Create map from source to target np4 
     time ncremap ${MAP_ARGS} -a fv2se_flx \
       --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \
       --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \
       --map_file=${map_file_src_to_np4} \
       --tmp_dir=${map_root}
-
     #---------------------------------------------------------------------------
-    # Remap Topograpy
-
-    # Map high-res topo to target np4 grid
+    # Remap high-res topo to target np4 grid
     ncremap -m ${map_file_src_to_np4} -i ${topo_file_0} -o ${topo_file_1}
-
     # Compute phi_s on the target np4 grid
     ncap2 -O -s 'PHIS=terr*9.80616' ${topo_file_1} ${topo_file_1}
-
     # rename the column dimension to be "ncol"
     ncrename -d grid_size,ncol ${topo_file_1}
-
     #---------------------------------------------------------------------------
     # Apply Smoothing
-
     cd ${e3sm_root}/components/homme
     ${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
-
+    # Create namelist file for HOMME
     cat <<EOF > input.nl
     &ctl_nl
     mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"
@@ -428,33 +406,27 @@ To submit the slurm batch job use `sbatch <script>`
     infilenames = '${topo_file_1}', '${topo_file_2}'
     /
     EOF
-
-    mpirun -np 8 ${e3sm_root}/components/homme/src/tool/homme_tool < input.nl
-
+    # run homme_tool for topography smoothing
+    srun -n 8 ${e3sm_root}/components/homme/src/tool/homme_tool < input.nl
     # rename output file to remove "1.nc" suffix
     mv ${topo_file_2}1.nc ${topo_file_2}
-
     #---------------------------------------------------------------------------
-    # Compute SGH
-
+    # Compute SGH with cube_to_target
     ${e3sm_root}/components/eam/tools/topo_tool/cube_to_target/cube_to_target \
       --target-grid ${grid_root}/scrip_ne${NE_DST}pg2.nc \
       --input-topography ${topo_file_0} \
       --smoothed-topography ${topo_file_2} \
       --output-topography ${topo_file_3}
-
-    # Append the GLL phi_s data to the output of step 4.
+    # Append the GLL phi_s data to the output
     ncks -A ${topo_file_2} ${topo_file_3}
-
     #---------------------------------------------------------------------------
     # Clean up Temporary Files
-
     rm ${topo_root}/tmp_USGS-topo_ne${NE_DST}*
-
     #---------------------------------------------------------------------------
-
+    # stop echoing commands
     set +x
-
+    #---------------------------------------------------------------------------
+    # Check that final topo output file was created
     if [ ! -f ${topo_file_3} ]; then
       echo
       echo -e ${RED} Failed to create topography file - Errors ocurred ${NC}
@@ -465,16 +437,14 @@ To submit the slurm batch job use `sbatch <script>`
       echo $topo_file_3
       echo
     fi
-
-    # Calculate overall run time for this script
+    #---------------------------------------------------------------------------
+    # Indicate overall run time for this script
     end=`date +%s`
     runtime_sc=$(( end - start ))
     runtime_mn=$(( runtime_sc/60 ))
     runtime_hr=$(( runtime_mn/60 ))
     echo -e    ${CYN} overall runtime: ${NC} ${runtime_sc} seconds / ${runtime_mn} minutes / ${runtime_hr} hours
     echo
-
-
     #---------------------------------------------------------------------------
     ```
 </details>
@@ -483,57 +453,47 @@ To submit the slurm batch job use `sbatch <script>`
     <summary>batch_topo_slurm_nersc.sh</summary>
     ```shell
     #!/bin/bash
-    #SBATCH --account=e3sm
+    #SBATCH --account=m3312
     #SBATCH --constraint=cpu
     #SBATCH --qos=regular
     #SBATCH --job-name=generate_topo
     #SBATCH --output=slurm-%x-%j.out
-    #SBATCH --time=24:00:00
+    #SBATCH --time=1:00:00
     #SBATCH --nodes=1
     #SBATCH --mail-type=END,FAIL
     #---------------------------------------------------------------------------
     # Make sure all these lines are correct for the machine
-
     source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
-
+    # Specify source and target resolutions
     NE_SRC=3000 ; NE_DST=30
-
     # NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing
-
+    # Specify root paths
     timestamp=$(date +%Y%m%d)
-
     e3sm_root=${SCRATCH}/tmp_e3sm_src # make sure this contains an up-to-date clone of E3SM
     grid_root=${SCRATCH}/files_grid
     map_root=${SCRATCH}/files_map
     topo_root=${SCRATCH}/files_topo
     DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
-
+    # argument for ncremap to select TempestRemap or mbtempest backend
     MAP_ARGS=
     # MAP_ARGS+="--mpi_nbr=32"
-
     #---------------------------------------------------------------------------
-
     # Stop script execution on error
     set -e
-
     # ANSI color codes for highlighting terminal output
     RED='\033[0;31m' ; GRN='\033[0;32m' CYN='\033[0;36m' ; NC='\033[0m'
-
     # start timer for entire script
     start=`date +%s`
-
     #---------------------------------------------------------------------------
-
+    # Specify topo file names - including temporary files that will be deleted
     topo_file_0=${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube${NE_SRC}.nc
     topo_file_1=${topo_root}/tmp_USGS-topo_ne${NE_DST}np4.nc
     topo_file_2=${topo_root}/tmp_USGS-topo_ne${NE_DST}np4_smoothedx6t.nc
     topo_file_3=${topo_root}/USGS-topo_ne${NE_DST}np4_smoothedx6t_${timestamp}.nc
-
+    # Specify map file name
     map_file_src_to_np4=${map_root}/map_ne${NE_SRC}pg1_to_ne${NE_DST}np4_fv2se_flx.nc
-
     #---------------------------------------------------------------------------  
     # print some useful things
-
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
     echo 
@@ -555,57 +515,44 @@ To submit the slurm batch job use `sbatch <script>`
     echo
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
-
     #---------------------------------------------------------------------------
-
+    # Make sure paths exist
     mkdir -p ${grid_root} ${map_root} ${topo_root}
-
-    if [ ! -d ${grid_root} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${grid_root} ; fi
-    if [ ! -d ${map_root}  ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${map_root} ; fi
-    if [ ! -d ${topo_root} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${topo_root} ; fi
-
+    if [ ! -d ${DIN_LOC_ROOT} ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${DIN_LOC_ROOT} ; fi
+    if [ ! -d ${e3sm_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${e3sm_root} ; fi
+    if [ ! -d ${grid_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${grid_root} ; fi
+    if [ ! -d ${map_root}     ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${map_root} ; fi
+    if [ ! -d ${topo_root}    ]; then echo -e ${RED}ERROR directory does not exist:${NC} ${topo_root} ; fi
     #---------------------------------------------------------------------------
-
     # set to echo commands
     set -x
-
     #---------------------------------------------------------------------------
-    # Create Grid and Map Files
-
-    # # Grid for source high res topo
-    # GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
-    # ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
-
-    # # Grid for target EAM grid
-    # GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
-    # GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
-    # ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
-
-    # # Map from source to target np4 
-    # time ncremap ${MAP_ARGS} -a fv2se_flx \
-    #   --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \
-    #   --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \
-    #   --map_file=${map_file_src_to_np4} \
-    #   --tmp_dir=${map_root}
-
+    # Create grid for source high res topo
+    GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
+    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
+    # Create grid for target EAM grid
+    GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
+    GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
+    ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
     #---------------------------------------------------------------------------
-    # Remap Topograpy
-
-    # Map high-res topo to target np4 grid
+    # Create map from source to target np4 
+    time ncremap ${MAP_ARGS} -a fv2se_flx \
+      --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \
+      --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \
+      --map_file=${map_file_src_to_np4} \
+      --tmp_dir=${map_root}
+    #---------------------------------------------------------------------------
+    # Remap high-res topo to target np4 grid
     ncremap -m ${map_file_src_to_np4} -i ${topo_file_0} -o ${topo_file_1}
-
     # Compute phi_s on the target np4 grid
     ncap2 -O -s 'PHIS=terr*9.80616' ${topo_file_1} ${topo_file_1}
-
     # rename the column dimension to be "ncol"
     ncrename -d grid_size,ncol ${topo_file_1}
-
     #---------------------------------------------------------------------------
     # Apply Smoothing
-
     cd ${e3sm_root}/components/homme
     ${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
-
+    # Create namelist file for HOMME
     cat <<EOF > input.nl
     &ctl_nl
     mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"
@@ -622,33 +569,27 @@ To submit the slurm batch job use `sbatch <script>`
     infilenames = '${topo_file_1}', '${topo_file_2}'
     /
     EOF
-
+    # run homme_tool for topography smoothing
     srun -n 8 ${e3sm_root}/components/homme/src/tool/homme_tool < input.nl
-
     # rename output file to remove "1.nc" suffix
     mv ${topo_file_2}1.nc ${topo_file_2}
-
     #---------------------------------------------------------------------------
-    # Compute SGH
-
+    # Compute SGH with cube_to_target
     ${e3sm_root}/components/eam/tools/topo_tool/cube_to_target/cube_to_target \
       --target-grid ${grid_root}/scrip_ne${NE_DST}pg2.nc \
       --input-topography ${topo_file_0} \
       --smoothed-topography ${topo_file_2} \
       --output-topography ${topo_file_3}
-
-    # Append the GLL phi_s data to the output of step 4.
+    # Append the GLL phi_s data to the output
     ncks -A ${topo_file_2} ${topo_file_3}
-
     #---------------------------------------------------------------------------
     # Clean up Temporary Files
-
     rm ${topo_root}/tmp_USGS-topo_ne${NE_DST}*
-
     #---------------------------------------------------------------------------
-
+    # stop echoing commands
     set +x
-
+    #---------------------------------------------------------------------------
+    # Check that final topo output file was created
     if [ ! -f ${topo_file_3} ]; then
       echo
       echo -e ${RED} Failed to create topography file - Errors ocurred ${NC}
@@ -659,16 +600,14 @@ To submit the slurm batch job use `sbatch <script>`
       echo $topo_file_3
       echo
     fi
-
-    # Calculate overall run time for this script
+    #---------------------------------------------------------------------------
+    # Indicate overall run time for this script
     end=`date +%s`
     runtime_sc=$(( end - start ))
     runtime_mn=$(( runtime_sc/60 ))
     runtime_hr=$(( runtime_mn/60 ))
     echo -e    ${CYN} overall runtime: ${NC} ${runtime_sc} seconds / ${runtime_mn} minutes / ${runtime_hr} hours
     echo
-
-
     #---------------------------------------------------------------------------
     ```
 </details>
