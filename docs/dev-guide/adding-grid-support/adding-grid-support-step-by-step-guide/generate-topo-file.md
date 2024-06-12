@@ -76,13 +76,7 @@ make
 ```
 
 !!! NOTE
-    You can safely ignore compiler warnings that look like this:
-
-    ```
-    Warning: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)
-    ```
-
-    These are a result of how we interface with the netcdf fortran routines, but fixing the warnings by switching from `#include <netcdf.inc>` to `use netcdf` can lead to other problems on certain machines.
+    You can safely ignore compiler warnings that look like `Warning: Rank mismatch...`. These are a result of how we interface with the netcdf fortran routines, but fixing the warnings by switching from `#include <netcdf.inc>` to `use netcdf` can lead to other problems on certain machines.
 
 ## Step-by-Step Topography Generation
 
@@ -303,14 +297,16 @@ To submit the slurm batch job use `sbatch <script>`
     # Specify source and target resolutions
     NE_SRC=3000 ; NE_DST=30
     # NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing
-    # Specify root paths
+    # Specify time stamp for creation date
     timestamp=$(date +%Y%m%d)
+    # Specify E3SM source code path - preferably a fresh clone
     SCRATCH=/lcrc/group/e3sm/${USER}/scratch/chrys
-    e3sm_root=${SCRATCH}/tmp_e3sm_src # make sure this contains an up-to-date clone of E3SM
+    e3sm_root=${SCRATCH}/tmp_e3sm_src
+    # Specify root paths
     grid_root=${SCRATCH}/files_grid
     map_root=${SCRATCH}/files_map
     topo_root=${SCRATCH}/files_topo
-    DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
+    DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
     # argument for ncremap to select TempestRemap or mbtempest backend
     MAP_ARGS=
     # MAP_ARGS+="--mpi_nbr=32"
@@ -333,7 +329,7 @@ To submit the slurm batch job use `sbatch <script>`
     # print some useful things
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
-    echo 
+    echo
     echo   NE_SRC              = $NE_SRC
     echo   NE_DST              = $NE_DST
     echo
@@ -365,16 +361,16 @@ To submit the slurm batch job use `sbatch <script>`
     set -x
     #---------------------------------------------------------------------------
     # Create grid for source high res topo
-    GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
+    GenerateCSMesh --alt --res ${NE_SRC} --file ${grid_root}/exodus_ne${NE_SRC}.g
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
     # Create grid for target EAM grid
     GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
     GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
     #---------------------------------------------------------------------------
-    # Create map from source to target np4 
+    # Create map from source to target np4
     time ncremap ${MAP_ARGS} -a fv2se_flx \
-      --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \
+      --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc \
       --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \
       --map_file=${map_file_src_to_np4} \
       --tmp_dir=${map_root}
@@ -453,12 +449,12 @@ To submit the slurm batch job use `sbatch <script>`
     <summary>batch_topo_slurm_nersc.sh</summary>
     ```shell
     #!/bin/bash
-    #SBATCH --account=m3312
+    #SBATCH --account=e3sm
     #SBATCH --constraint=cpu
     #SBATCH --qos=regular
     #SBATCH --job-name=generate_topo
     #SBATCH --output=slurm-%x-%j.out
-    #SBATCH --time=1:00:00
+    #SBATCH --time=24:00:00
     #SBATCH --nodes=1
     #SBATCH --mail-type=END,FAIL
     #---------------------------------------------------------------------------
@@ -467,9 +463,11 @@ To submit the slurm batch job use `sbatch <script>`
     # Specify source and target resolutions
     NE_SRC=3000 ; NE_DST=30
     # NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing
-    # Specify root paths
+    # Specify time stamp for creation date
     timestamp=$(date +%Y%m%d)
-    e3sm_root=${SCRATCH}/tmp_e3sm_src # make sure this contains an up-to-date clone of E3SM
+    # Specify E3SM source code path - preferably a fresh clone
+    e3sm_root=${SCRATCH}/tmp_e3sm_src
+    # Specify root paths
     grid_root=${SCRATCH}/files_grid
     map_root=${SCRATCH}/files_map
     topo_root=${SCRATCH}/files_topo
@@ -496,7 +494,7 @@ To submit the slurm batch job use `sbatch <script>`
     # print some useful things
     echo --------------------------------------------------------------------------------
     echo --------------------------------------------------------------------------------
-    echo 
+    echo
     echo   NE_SRC              = $NE_SRC
     echo   NE_DST              = $NE_DST
     echo
@@ -528,16 +526,16 @@ To submit the slurm batch job use `sbatch <script>`
     set -x
     #---------------------------------------------------------------------------
     # Create grid for source high res topo
-    GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g
+    GenerateCSMesh --alt --res ${NE_SRC} --file ${grid_root}/exodus_ne${NE_SRC}.g
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc
     # Create grid for target EAM grid
     GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g
     GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform
     ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc
     #---------------------------------------------------------------------------
-    # Create map from source to target np4 
+    # Create map from source to target np4
     time ncremap ${MAP_ARGS} -a fv2se_flx \
-      --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \
+      --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc \
       --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \
       --map_file=${map_file_src_to_np4} \
       --tmp_dir=${map_root}
