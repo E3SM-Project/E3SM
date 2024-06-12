@@ -2073,13 +2073,14 @@ make
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You can safely ignore compiler warnings that look like this:</p>
-<p><code>Warning: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)</code></p>
+<div class="highlight"><pre><span></span><code>Warning: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)
+</code></pre></div>
 <p>These are a result of how we interface with the netcdf fortran routines, but fixing the warnings by switching from <code>#include &lt;netcdf.inc&gt;</code> to <code>use netcdf</code> can lead to other problems on certain machines.</p>
 </div>
 <h2 id="step-by-step-topography-generation">Step-by-Step Topography Generation</h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Copying and pasting the relevant steps below is an easy way to step through the blocks of commands. Alternatively, a batch script is provided below that can be used to execute all steps at once in a batch job. </p>
+<p>Copying and pasting the relevant steps below is an easy way to step through the blocks of commands. Alternatively, a batch script is provided below that can be used to execute all steps at once in a batch job.</p>
 </div>
 <ol>
 <li>
@@ -2093,7 +2094,7 @@ make
 </li>
 <li>
 <h3 id="specify-source-and-target-resolution"><strong>Specify Source and Target Resolution</strong></h3>
-<p>We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from <code>ne3000pg1</code> to a chosen target resolution, in this case <code>ne30</code> :</p>
+<p>We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from <code>ne3000pg1</code> to a chosen target resolution, in this case <code>ne30</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span>
 <span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
 </code></pre></div>
@@ -2104,7 +2105,6 @@ make
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For grids with regional refinement (RRM) there is no corresponding "ne" value - so a slightly modified workflow is needed. This entails modifying the grid file generation step, and then modifying topo and map file paths to accomodate the new RRM grid name.</p>
-<p>(Hopefully we added a batch script above/below to provide an example of this modified workflow?)</p>
 </div>
 </li>
 <li>
@@ -2244,7 +2244,7 @@ ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span>
 </li>
 </ol>
 <h2 id="batch-script-to-streamline-all-steps">Batch script to streamline all steps</h2>
-<p>Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise. </p>
+<p>Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise.</p>
 <p>Here is a check list of things to do before submitting this script:</p>
 <ul>
 <li>Build <code>homme_tool</code></li>
@@ -2266,48 +2266,38 @@ ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span>
 <span class="c1">#SBATCH --mail-type=END,FAIL</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Make sure all these lines are correct for the machine</span>
-
 <span class="nb">source</span><span class="w"> </span>/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
-
+<span class="c1"># Specify source and target resolutions</span>
 <span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
-
 <span class="c1"># NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing</span>
-
+<span class="c1"># Specify root paths</span>
 <span class="nv">timestamp</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>
-
 <span class="nv">SCRATCH</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys
 <span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src<span class="w"> </span><span class="c1"># make sure this contains an up-to-date clone of E3SM</span>
 <span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_grid
 <span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_map
 <span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_topo
 <span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
-
+<span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
 <span class="nv">MAP_ARGS</span><span class="o">=</span>
 <span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
 <span class="c1"># Stop script execution on error</span>
 <span class="nb">set</span><span class="w"> </span>-e
-
 <span class="c1"># ANSI color codes for highlighting terminal output</span>
 <span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
-
 <span class="c1"># start timer for entire script</span>
 <span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># Specify topo file names - including temporary files that will be deleted</span>
 <span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.nc
 <span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4.nc
 <span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t.nc
 <span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t_<span class="si">${</span><span class="nv">timestamp</span><span class="si">}</span>.nc
-
+<span class="c1"># Specify map file name</span>
 <span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1_to_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_fv2se_flx.nc
-
 <span class="c1">#---------------------------------------------------------------------------  </span>
 <span class="c1"># print some useful things</span>
-
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>
@@ -2329,57 +2319,44 @@ ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span>
 <span class="nb">echo</span>
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># Make sure paths exist</span>
 mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>
-
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">  </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">     </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
-
 <span class="c1"># set to echo commands</span>
 <span class="nb">set</span><span class="w"> </span>-x
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Create Grid and Map Files</span>
-
-<span class="c1"># Grid for source high res topo</span>
+<span class="c1"># Create grid for source high res topo</span>
 GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span><span class="w">  </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g
 ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc
-
-<span class="c1"># Grid for target EAM grid</span>
+<span class="c1"># Create grid for target EAM grid</span>
 GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g
 GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
 ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc
-
-<span class="c1"># Map from source to target np4 </span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Create map from source to target np4 </span>
 <span class="nb">time</span><span class="w"> </span>ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_ARGS</span><span class="si">}</span><span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc<span class="w">  </span><span class="se">\</span>
 <span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--tmp_dir<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Remap Topograpy</span>
-
-<span class="c1"># Map high-res topo to target np4 grid</span>
+<span class="c1"># Remap high-res topo to target np4 grid</span>
 ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1"># Compute phi_s on the target np4 grid</span>
 ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
 ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Apply Smoothing</span>
-
 <span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
 <span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
-
+<span class="c1"># Create namelist file for HOMME</span>
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;ctl_nl</span>
 <span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
@@ -2396,33 +2373,27 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
-
-mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
-
+<span class="c1"># run homme_tool for topography smoothing</span>
+srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
 <span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
 mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Compute SGH</span>
-
+<span class="c1"># Compute SGH with cube_to_target</span>
 <span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target/cube_to_target<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--target-grid<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--input-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--smoothed-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--output-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
-
-<span class="c1"># Append the GLL phi_s data to the output of step 4.</span>
+<span class="c1"># Append the GLL phi_s data to the output</span>
 ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Clean up Temporary Files</span>
-
 rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>*
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># stop echoing commands</span>
 <span class="nb">set</span><span class="w"> </span>+x
-
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Check that final topo output file was created</span>
 <span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
 <span class="w">  </span><span class="nb">echo</span>
 <span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span><span class="w"> </span>Failed<span class="w"> </span>to<span class="w"> </span>create<span class="w"> </span>topography<span class="w"> </span>file<span class="w"> </span>-<span class="w"> </span>Errors<span class="w"> </span>ocurred<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
@@ -2433,16 +2404,14 @@ rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</
 <span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$topo_file_3</span>
 <span class="w">  </span><span class="nb">echo</span>
 <span class="k">fi</span>
-
-<span class="c1"># Calculate overall run time for this script</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Indicate overall run time for this script</span>
 <span class="nv">end</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
 <span class="nv">runtime_sc</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">start</span><span class="w"> </span><span class="k">))</span>
 <span class="nv">runtime_mn</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_sc</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
 <span class="nv">runtime_hr</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_mn</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
 <span class="nb">echo</span><span class="w"> </span>-e<span class="w">    </span><span class="si">${</span><span class="nv">CYN</span><span class="si">}</span><span class="w"> </span>overall<span class="w"> </span>runtime:<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">runtime_sc</span><span class="si">}</span><span class="w"> </span>seconds<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_mn</span><span class="si">}</span><span class="w"> </span>minutes<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_hr</span><span class="si">}</span><span class="w"> </span>hours
 <span class="nb">echo</span>
-
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 </code></pre></div>
 </details>
@@ -2450,57 +2419,47 @@ rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</
 <details>
     <summary>batch_topo_slurm_nersc.sh</summary>
     <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
-<span class="c1">#SBATCH --account=e3sm</span>
+<span class="c1">#SBATCH --account=m3312</span>
 <span class="c1">#SBATCH --constraint=cpu</span>
 <span class="c1">#SBATCH --qos=regular</span>
 <span class="c1">#SBATCH --job-name=generate_topo</span>
 <span class="c1">#SBATCH --output=slurm-%x-%j.out</span>
-<span class="c1">#SBATCH --time=24:00:00</span>
+<span class="c1">#SBATCH --time=1:00:00</span>
 <span class="c1">#SBATCH --nodes=1</span>
 <span class="c1">#SBATCH --mail-type=END,FAIL</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Make sure all these lines are correct for the machine</span>
-
 <span class="nb">source</span><span class="w"> </span>/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
-
+<span class="c1"># Specify source and target resolutions</span>
 <span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
-
 <span class="c1"># NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing</span>
-
+<span class="c1"># Specify root paths</span>
 <span class="nv">timestamp</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>
-
 <span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src<span class="w"> </span><span class="c1"># make sure this contains an up-to-date clone of E3SM</span>
 <span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_grid
 <span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_map
 <span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_topo
 <span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
-
+<span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
 <span class="nv">MAP_ARGS</span><span class="o">=</span>
 <span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
 <span class="c1"># Stop script execution on error</span>
 <span class="nb">set</span><span class="w"> </span>-e
-
 <span class="c1"># ANSI color codes for highlighting terminal output</span>
 <span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
-
 <span class="c1"># start timer for entire script</span>
 <span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># Specify topo file names - including temporary files that will be deleted</span>
 <span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.nc
 <span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4.nc
 <span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t.nc
 <span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t_<span class="si">${</span><span class="nv">timestamp</span><span class="si">}</span>.nc
-
+<span class="c1"># Specify map file name</span>
 <span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1_to_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_fv2se_flx.nc
-
 <span class="c1">#---------------------------------------------------------------------------  </span>
 <span class="c1"># print some useful things</span>
-
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>
@@ -2522,57 +2481,44 @@ rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</
 <span class="nb">echo</span>
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
 <span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># Make sure paths exist</span>
 mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>
-
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">  </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
-
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">     </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
-
 <span class="c1"># set to echo commands</span>
 <span class="nb">set</span><span class="w"> </span>-x
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Create Grid and Map Files</span>
-
-<span class="c1"># # Grid for source high res topo</span>
-<span class="c1"># GenerateCSMesh --alt --res ${NE_SRC}  --file ${grid_root}/exodus_ne${NE_SRC}.g</span>
-<span class="c1"># ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_SRC}.g  --out ${grid_root}/scrip_ne${NE_SRC}pg1.nc</span>
-
-<span class="c1"># # Grid for target EAM grid</span>
-<span class="c1"># GenerateCSMesh --alt --res ${NE_DST} --file ${grid_root}/exodus_ne${NE_DST}.g</span>
-<span class="c1"># GenerateVolumetricMesh --in ${grid_root}/exodus_ne${NE_DST}.g --out ${grid_root}/exodus_ne${NE_DST}pg2.g --np 2 --uniform</span>
-<span class="c1"># ConvertMeshToSCRIP --in ${grid_root}/exodus_ne${NE_DST}pg2.g --out ${grid_root}/scrip_ne${NE_DST}pg2.nc</span>
-
-<span class="c1"># # Map from source to target np4 </span>
-<span class="c1"># time ncremap ${MAP_ARGS} -a fv2se_flx \</span>
-<span class="c1">#   --src_grd=${grid_root}/scrip_ne${NE_SRC}pg1.nc  \</span>
-<span class="c1">#   --dst_grd=${grid_root}/exodus_ne${NE_DST}.g \</span>
-<span class="c1">#   --map_file=${map_file_src_to_np4} \</span>
-<span class="c1">#   --tmp_dir=${map_root}</span>
-
+<span class="c1"># Create grid for source high res topo</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span><span class="w">  </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc
+<span class="c1"># Create grid for target EAM grid</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Remap Topograpy</span>
-
-<span class="c1"># Map high-res topo to target np4 grid</span>
+<span class="c1"># Create map from source to target np4 </span>
+<span class="nb">time</span><span class="w"> </span>ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_ARGS</span><span class="si">}</span><span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc<span class="w">  </span><span class="se">\</span>
+<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tmp_dir<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Remap high-res topo to target np4 grid</span>
 ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1"># Compute phi_s on the target np4 grid</span>
 ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
 ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Apply Smoothing</span>
-
 <span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
 <span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
-
+<span class="c1"># Create namelist file for HOMME</span>
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;ctl_nl</span>
 <span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
@@ -2589,33 +2535,27 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
-
+<span class="c1"># run homme_tool for topography smoothing</span>
 srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
-
 <span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
 mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-<span class="c1"># Compute SGH</span>
-
+<span class="c1"># Compute SGH with cube_to_target</span>
 <span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target/cube_to_target<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--target-grid<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--input-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--smoothed-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--output-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
-
-<span class="c1"># Append the GLL phi_s data to the output of step 4.</span>
+<span class="c1"># Append the GLL phi_s data to the output</span>
 ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Clean up Temporary Files</span>
-
 rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>*
-
 <span class="c1">#---------------------------------------------------------------------------</span>
-
+<span class="c1"># stop echoing commands</span>
 <span class="nb">set</span><span class="w"> </span>+x
-
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Check that final topo output file was created</span>
 <span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
 <span class="w">  </span><span class="nb">echo</span>
 <span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span><span class="w"> </span>Failed<span class="w"> </span>to<span class="w"> </span>create<span class="w"> </span>topography<span class="w"> </span>file<span class="w"> </span>-<span class="w"> </span>Errors<span class="w"> </span>ocurred<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
@@ -2626,16 +2566,14 @@ rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</
 <span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$topo_file_3</span>
 <span class="w">  </span><span class="nb">echo</span>
 <span class="k">fi</span>
-
-<span class="c1"># Calculate overall run time for this script</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Indicate overall run time for this script</span>
 <span class="nv">end</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
 <span class="nv">runtime_sc</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">start</span><span class="w"> </span><span class="k">))</span>
 <span class="nv">runtime_mn</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_sc</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
 <span class="nv">runtime_hr</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_mn</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
 <span class="nb">echo</span><span class="w"> </span>-e<span class="w">    </span><span class="si">${</span><span class="nv">CYN</span><span class="si">}</span><span class="w"> </span>overall<span class="w"> </span>runtime:<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">runtime_sc</span><span class="si">}</span><span class="w"> </span>seconds<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_mn</span><span class="si">}</span><span class="w"> </span>minutes<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_hr</span><span class="si">}</span><span class="w"> </span>hours
 <span class="nb">echo</span>
-
-
 <span class="c1">#---------------------------------------------------------------------------</span>
 </code></pre></div>
 </details>
