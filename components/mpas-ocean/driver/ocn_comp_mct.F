@@ -2702,7 +2702,8 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux
+                                               avgRemovedIceRunoffHeatFlux, &
+                                               riverRunoffFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
@@ -4037,7 +4038,8 @@ contains
                                                    avgRemovedRiverRunoffFlux, &
                                                    avgRemovedIceRunoffFlux, &
                                                    avgLandIceHeatFlux, &
-                                                   avgRemovedIceRunoffHeatFlux
+                                                   avgRemovedIceRunoffHeatFlux, &
+                                                   riverRunoffFlux
    
       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                       avgSSHGradient, avgOceanSurfacePhytoC, &

@@ -2703,13 +2703,14 @@ contains
           call MPAS_pool_get_dimension(block % dimensions, "maxAerosolType", maxAerosolType)
           call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
 
+          !NJ
           atmosBioFluxes = 0.0_RKIND
           do iCell = 1, nCells
              do iBio = 1, maxBCType
-                atmosBlackCarbonFlux(iBio,iCell) =  1.e-12_RKIND
+                atmosBlackCarbonFlux(iBio,iCell) =  0.0_RKIND !1.e-12_RKIND
              enddo
              do iBio = 1, maxDustType
-                atmosDustFlux(iBio,iCell) =  1.e-13_RKIND
+                atmosDustFlux(iBio,iCell) =  0.0_RKIND !1.e-13_RKIND
              enddo
           enddo ! iCell
 
