@@ -49,9 +49,11 @@ get_my_triplets (const std::string& map_file) const
   int nlweights = scorpio::get_dimlen_local(map_file,"n_s");
 
   // 1.1 Read a chunk of triplets col indices
-  std::vector<gid_type> cols(nlweights);
-  std::vector<gid_type> rows(nlweights);
-  std::vector<Real>  S(nlweights);
+  // NOTE: add 1 so that we don't pass nullptr to scorpio read routines (which would trigger
+  //       a runtime error). Don't worry though: we never access the last entry of these vectors
+  std::vector<gid_type> cols(nlweights+1,-1);
+  std::vector<gid_type> rows(nlweights+1,-1);
+  std::vector<Real>  S(nlweights+1,0);
 
   // Figure out if we are reading the right map, that is:
   //  - n_a or n_b matches the fine grid ncols
@@ -77,6 +79,12 @@ get_my_triplets (const std::string& map_file) const
   scorpio::read_var(map_file,"col",cols.data());
   scorpio::read_var(map_file,"row",rows.data());
   scorpio::read_var(map_file,"S"  ,S.data());
+
+  // Previously, we added 1 to their length, to avoid nullptr in scorpio::read.
+  // However, we later do range loops on these vectors, so resize them back to nlweights
+  cols.resize(nlweights);
+  rows.resize(nlweights);
+  S.resize(nlweights);
 
   scorpio::release_file(map_file);
 
