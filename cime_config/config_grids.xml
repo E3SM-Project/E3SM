@@ -2583,7 +2583,7 @@
       <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx3v7.090911.nc</file>
       <file grid="atm|lnd" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU480.240513.nc</file>
       <file grid="atm|lnd" mask="oQU240">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU240.240513.nc</file>
-      <file grid="atm|lnd" mask="oQU240wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU240wLI_mask.240513.nc</file>
+      <file grid="atm|lnd" mask="oQU240wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU240wLI.240513.nc</file>
       <file grid="atm|lnd" mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU120.240513.nc</file>
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oEC60to30v3.240513.nc</file>
       <file grid="atm|lnd" mask="oEC60to30v3wLI">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oEC60to30v3wLI.240513.nc</file>
