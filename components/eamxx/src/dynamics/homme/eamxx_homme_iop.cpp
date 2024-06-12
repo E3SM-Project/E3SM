@@ -343,41 +343,36 @@ apply_iop_forcing(const Real dt)
 
   // Lambda for computing temperature
   auto compute_temperature = [&] () {
-    Kokkos::parallel_for("compute_temperature_for_iop", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
-      KV kv(team);
-      const int ie  =  team.league_rank();
+    Kokkos::parallel_for("compute_temperature_for_iop", policy_eamxx, KOKKOS_LAMBDA (const KT::MemberType& team) {
+      const int ie  =  team.league_rank()/(NGP*NGP);
+      const int igp = (team.league_rank()/NGP)%NGP;
+      const int jgp =  team.league_rank()%NGP;
 
       // Get temp views from workspace
       auto ws = eamxx_wsm.get_workspace(team);
       uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
-        const int igp = idx/NGP;
-        const int jgp = idx%NGP;
+      auto ps_i          = ps_dyn(ie, igp, jgp);
+      auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+      auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+      auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+      auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
 
-        auto ps_i          = ps_dyn(ie, igp, jgp);
-        auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
-        auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-        auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-        auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+      // Compute reference pressures and layer thickness.
+      // TODO: Allow geometry data to allocate packsize
+      auto s_pmid = ekat::scalarize(pmid);
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
+        s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
+      });
+      team.team_barrier();
 
-        // Compute reference pressures and layer thickness.
-        // TODO: Allow geometry data to allocate packsize
-        auto s_pmid = ekat::scalarize(pmid);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels), [&](const int& k) {
-          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-        });
-        team.team_barrier();
-
-        // Compute temperature from virtual potential temperature
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
-          auto T_val = vtheta_dp_i(k);
-          T_val /= dp3d_i(k);
-          T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
-          temperature_i(k) = PF::calculate_T_from_theta(T_val,pmid(k));
-        });
-
+      // Compute temperature from virtual potential temperature
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
+        auto T_val = vtheta_dp_i(k);
+        T_val /= dp3d_i(k);
+        T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
+        temperature_i(k) = PF::calculate_T_from_theta(T_val,pmid(k));
       });
 
       // Release WS views
@@ -441,61 +436,57 @@ apply_iop_forcing(const Real dt)
   Kokkos::fence();
 
   // Postprocess homme states Qdp and vtheta_dp
-  Kokkos::parallel_for("compute_qdp_and_vtheta_dp", policy_homme, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    KV kv(team);
-    const int ie  =  team.league_rank();
+  Kokkos::parallel_for("compute_qdp_and_vtheta_dp", policy_eamxx, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int ie  =  team.league_rank()/(NGP*NGP);
+    const int igp = (team.league_rank()/NGP)%NGP;
+    const int jgp =  team.league_rank()%NGP;
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NGP*NGP), [&] (const int idx) {
-      const int igp = idx/NGP;
-      const int jgp = idx%NGP;
+    // Get temp views from workspace
+    auto ws = eamxx_wsm.get_workspace(team);
+    uview_1d<Pack> pmid, pint, pdel;
+    ws.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
+                                      {&pmid,  &pint,  &pdel});
 
-      // Get temp views from workspace
-      auto ws = eamxx_wsm.get_workspace(team);
-      uview_1d<Pack> pmid, pint, pdel;
-      ws.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
-                                        {&pmid,  &pint,  &pdel});
+    auto ps_i          = ps_dyn(ie, igp, jgp);
+    auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
+    auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
+    auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
+    auto Q_i           = Kokkos::subview(Q_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
+    auto Qdp_i         = Kokkos::subview(Qdp_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
+    auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
 
-      auto ps_i          = ps_dyn(ie, igp, jgp);
-      auto dp3d_i        = ekat::subview(dp3d_dyn, ie, igp, jgp);
-      auto vtheta_dp_i   = ekat::subview(vtheta_dp_dyn, ie, igp, jgp);
-      auto qv_i          = ekat::subview(Q_dyn, ie, 0, igp, jgp);
-      auto Q_i           = Kokkos::subview(Q_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
-      auto Qdp_i         = Kokkos::subview(Qdp_dyn, ie, Kokkos::ALL(), igp, jgp, Kokkos::ALL());
-      auto temperature_i = ekat::subview(temperature, ie, igp, jgp);
+    // Compute reference pressures and layer thickness.
+    // TODO: Allow geometry data to allocate packsize
+    auto s_pmid = ekat::scalarize(pmid);
+    auto s_pint = ekat::scalarize(pint);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels+1), [&](const int& k) {
+      s_pint(k) = hyai(k)*ps0 + hybi(k)*ps_i;
+      if (k < total_levels) {
+        s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
+      }
+    });
 
-      // Compute reference pressures and layer thickness.
-      // TODO: Allow geometry data to allocate packsize
-      auto s_pmid = ekat::scalarize(pmid);
-      auto s_pint = ekat::scalarize(pint);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, total_levels+1), [&](const int& k) {
-        s_pint(k) = hyai(k)*ps0 + hybi(k)*ps_i;
-        if (k < total_levels) {
-          s_pmid(k) = hyam(k)*ps0 + hybm(k)*ps_i;
-        }
-      });
+    team.team_barrier();
 
+    // Compute Qdp from updated Q
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV*qsize), [&] (const int k) {
+      const int ilev = k/qsize;
+      const int q = k%qsize;
+
+      Qdp_i(q, ilev) = Q_i(q, ilev)*dp3d_i(ilev);
+      // For BFB on restarts, Q needs to be updated after we compute Qdp
+      Q_i(q, ilev) = Qdp_i(q, ilev)/dp3d_i(ilev);
+    });
       team.team_barrier();
 
-      // Compute Qdp from updated Q
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV*qsize), [&] (const int k) {
-        const int ilev = k/qsize;
-        const int q = k%qsize;
-
-        Qdp_i(q, ilev) = Q_i(q, ilev)*dp3d_i(ilev);
-        // For BFB on restarts, Q needs to be updated after we compute Qdp
-        Q_i(q, ilev) = Qdp_i(q, ilev)/dp3d_i(ilev);
-      });
-      team.team_barrier();
-
-      // Convert updated temperature back to psuedo density virtual potential temperature
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
-          const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
-          vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
-      });
+    // Convert updated temperature back to psuedo density virtual potential temperature
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
+        const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
+        vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
+    });
 
     // Release WS views
     ws.release_many_contiguous<3>({&pmid, &pint, &pdel});
-    });
   });
 
   if (iop_nudge_tq or iop_nudge_uv) {
