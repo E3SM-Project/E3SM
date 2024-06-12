@@ -1,5 +1,7 @@
 # Generate mapping files
 
+[Back to Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
+
 In order to pass data between different components at runtime, a set of mapping files between each component is generated offline.
 
 See [Recommended Mapping Procedures for E3SM Atmosphere Grids](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/178848194/Recommended+Mapping+Procedures+for+E3SM+Atmosphere+Grids) for a discussion of different remap algorithms and when to use each.

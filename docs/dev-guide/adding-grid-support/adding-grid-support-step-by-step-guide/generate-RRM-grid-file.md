@@ -1,5 +1,7 @@
 # Generate a RRM Grid File with SQuadGen
 
+[Back to Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
+
 <!-- disable linter checks for inline html to allow collapsable code sections -->
 <!-- markdownlint-disable MD033 --> <!-- no-inline-html -->
 

@@ -1,5 +1,7 @@
 # Generate a new Grid File
 
+[Back to Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
+
 In order to generate mapping files between a new atmosphere grid and the surface component grids, we need a file that describes the new grid. [TempestRemap](https://github.com/ClimateGlobalChange/tempestremap) is our preferred tool for grid file generation because it can handle the spectral element grids used by the atmosphere dycore. The initial grid file will be saved in an "exodus" file with a `.g` extension (see [Types of Grid Description Files](../adding-grid-support-grid-types.md) for more info). TempestRemap can be installed via conda.
 
 ## Generating a Standard Exodus Grid File
