@@ -189,15 +189,22 @@ contains
                melt_profile(j) = 0.0_r8
             else if (j .eq. k_frz) then
                melt_profile(j) = excess_ice(c,j) + ((z2-alt(c))/(z2-z1))*excess_ice(c,j+1) ! TODO: check indices here!!
+               ! remove melted excess ice:
+               excess_ice(c,j) = 0._r8
+               excess_ice(c,j+1) = excess_ice(c,j+1)*(1._r8 - min(1._r8,(z2-alt(c))/(z2-z1)))
             else
                melt_profile(j) = excess_ice(c,j)
+               ! remove melted excess ice
+               excess_ice(c,j) = 0._r8
             end if
             ! calculate subsidence at this layer:
             melt_profile(j) = melt_profile(j) * dzsoi(j)
          end do
 
          ! subsidence is integral of melt profile:
-         subsidence(c) = subsidence(c) + sum(melt_profile)
+         if ((year .ge. 1989) .and. (altmax_ever(c) .ge. altmax_1989(c))) then
+            subsidence(c) = subsidence(c) + sum(melt_profile)
+         end if
 
          ! limit subsidence to 0.4 m
          subsidence(c) = min(0.4_r8, subsidence(c))
