@@ -10103,8 +10103,6 @@ contains
          config_biogrid_bottom_molecular_sublayer, &
          config_bio_gravity_drainage_length_scale, &
          config_biogrid_top_molecular_sublayer, &
-         config_new_ice_fraction_biotracer, &
-         config_fraction_biotracer_in_frazil, &
          config_snow_porosity_at_ice_surface, &
          config_ratio_Si_to_N_diatoms, &
          config_ratio_Si_to_N_small_plankton, &
@@ -10122,8 +10120,6 @@ contains
          config_ratio_Fe_to_DOC_saccharids, &
          config_ratio_Fe_to_DOC_lipids, &
          config_respiration_fraction_of_growth, &
-         config_rapid_mobile_to_stationary_time, &
-         config_long_mobile_to_stationary_time, &
          config_algal_maximum_velocity, &
          config_ratio_Fe_to_dust, &
          config_solubility_of_Fe_in_dust, &
@@ -10190,37 +10186,6 @@ contains
          config_DMSP_to_DMS_conversion_fraction, &
          config_DMSP_to_DMS_conversion_time, &
          config_DMS_oxidation_time, &
-         config_mobility_type_diatoms, &
-         config_mobility_type_small_plankton, &
-         config_mobility_type_phaeocystis, &
-         config_mobility_type_nitrate, &
-         config_mobility_type_ammonium, &
-         config_mobility_type_silicate, &
-         config_mobility_type_DMSPp, &
-         config_mobility_type_DMSPd, &
-         config_mobility_type_humics, &
-         config_mobility_type_saccharids, &
-         config_mobility_type_lipids, &
-         config_mobility_type_inorganic_carbon, &
-         config_mobility_type_proteins, &
-         config_mobility_type_dissolved_iron, &
-         config_mobility_type_particulate_iron, &
-         config_mobility_type_black_carbon1, &
-         config_mobility_type_black_carbon2, &
-         config_mobility_type_dust1, &
-         config_mobility_type_dust2, &
-         config_mobility_type_dust3, &
-         config_mobility_type_dust4, &
-         config_ratio_C_to_N_diatoms, &
-         config_ratio_C_to_N_small_plankton, &
-         config_ratio_C_to_N_phaeocystis, &
-         config_ratio_chla_to_N_diatoms, &
-         config_ratio_chla_to_N_small_plankton, &
-         config_ratio_chla_to_N_phaeocystis, &
-         config_scales_absorption_diatoms, &
-         config_scales_absorption_small_plankton, &
-         config_scales_absorption_phaeocystis, &
-         config_ratio_C_to_N_proteins, &
          config_fallen_snow_radius, &
          config_new_snow_density, &
          config_max_snow_density, &
@@ -10335,8 +10300,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_bio_gravity_drainage_length_scale", &
                                                  config_bio_gravity_drainage_length_scale)
     call MPAS_pool_get_config(domain % configs, "config_biogrid_top_molecular_sublayer", config_biogrid_top_molecular_sublayer)
-    call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", config_new_ice_fraction_biotracer)
-    call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", config_fraction_biotracer_in_frazil)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_diatoms", config_ratio_Si_to_N_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_small_plankton", config_ratio_Si_to_N_small_plankton)
@@ -10354,8 +10317,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_saccharids", config_ratio_Fe_to_DOC_saccharids)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_DOC_lipids", config_ratio_Fe_to_DOC_lipids)
     call MPAS_pool_get_config(domain % configs, "config_respiration_fraction_of_growth", config_respiration_fraction_of_growth)
-    call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", config_rapid_mobile_to_stationary_time)
-    call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", config_long_mobile_to_stationary_time)
     call MPAS_pool_get_config(domain % configs, "config_algal_maximum_velocity", config_algal_maximum_velocity)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_dust", config_ratio_Fe_to_dust)
     call MPAS_pool_get_config(domain % configs, "config_solubility_of_Fe_in_dust", config_solubility_of_Fe_in_dust)
@@ -10431,37 +10392,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_fraction", config_DMSP_to_DMS_conversion_fraction)
     call MPAS_pool_get_config(domain % configs, "config_DMSP_to_DMS_conversion_time", config_DMSP_to_DMS_conversion_time)
     call MPAS_pool_get_config(domain % configs, "config_DMS_oxidation_time", config_DMS_oxidation_time)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_diatoms", config_mobility_type_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_small_plankton", config_mobility_type_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_phaeocystis", config_mobility_type_phaeocystis)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_nitrate", config_mobility_type_nitrate)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_ammonium", config_mobility_type_ammonium)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_silicate", config_mobility_type_silicate)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPp", config_mobility_type_DMSPp)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_DMSPd", config_mobility_type_DMSPd)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_inorganic_carbon", config_mobility_type_inorganic_carbon)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon1", config_mobility_type_black_carbon1)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_black_carbon2", config_mobility_type_black_carbon2)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust1", config_mobility_type_dust1)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust2", config_mobility_type_dust2)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust3", config_mobility_type_dust3)
-    call MPAS_pool_get_config(domain % configs, "config_mobility_type_dust4", config_mobility_type_dust4)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_diatoms", config_ratio_chla_to_N_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_small_plankton", config_ratio_chla_to_N_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_chla_to_N_phaeocystis", config_ratio_chla_to_N_phaeocystis)
-    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_diatoms", config_scales_absorption_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_small_plankton", config_scales_absorption_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_scales_absorption_phaeocystis", config_scales_absorption_phaeocystis)
-    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
     call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
     call MPAS_pool_get_config(domain % configs, "config_fallen_snow_radius", config_fallen_snow_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
@@ -10763,14 +10693,10 @@ contains
          grid_o_in               = config_biogrid_bottom_molecular_sublayer, &
          l_sk_in                 = config_bio_gravity_drainage_length_scale, &
          grid_o_t_in             = config_biogrid_top_molecular_sublayer, &
-         !initbio_frac_in         = config_new_ice_fraction_biotracer, &
-         !frazil_scav_in          = config_fraction_biotracer_in_frazil, &
          !grid_oS_in              = config_zsalinity_molecular_sublayer, &
          !l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
          fr_resp_in              = config_respiration_fraction_of_growth, &
-         tau_min_in              = config_rapid_mobile_to_stationary_time, &
-         tau_max_in              = config_long_mobile_to_stationary_time, &
          algal_vel_in            = config_algal_maximum_velocity, &
          R_dFe2dust_in           = config_ratio_Fe_to_dust, &
          dustFe_sol_in           = config_solubility_of_Fe_in_dust, &
@@ -10790,37 +10716,6 @@ contains
          y_sk_DMS_in             = config_DMSP_to_DMS_conversion_fraction, &
          t_sk_conv_in            = config_DMSP_to_DMS_conversion_time, &
          t_sk_ox_in              = config_DMS_oxidation_time, &
-         algaltype_diatoms_in    = config_mobility_type_diatoms, &
-         algaltype_sp_in         = config_mobility_type_small_plankton, &
-         algaltype_phaeo_in      = config_mobility_type_phaeocystis, &
-         nitratetype_in          = config_mobility_type_nitrate, &
-         ammoniumtype_in         = config_mobility_type_ammonium, &
-         silicatetype_in         = config_mobility_type_silicate, &
-         dmspptype_in            = config_mobility_type_DMSPp, &
-         dmspdtype_in            = config_mobility_type_DMSPd, &
-         humtype_in              = config_mobility_type_humics, &
-         doctype_s_in            = config_mobility_type_saccharids, &
-         doctype_l_in            = config_mobility_type_lipids, &
-         dictype_1_in            = config_mobility_type_inorganic_carbon, &
-         dontype_protein_in      = config_mobility_type_proteins, &
-         fedtype_1_in            = config_mobility_type_dissolved_iron, &
-         feptype_1_in            = config_mobility_type_particulate_iron, &
-         zaerotype_bc1_in        = config_mobility_type_black_carbon1, &
-         zaerotype_bc2_in        = config_mobility_type_black_carbon2, &
-         zaerotype_dust1_in      = config_mobility_type_dust1, &
-         zaerotype_dust2_in      = config_mobility_type_dust2, &
-         zaerotype_dust3_in      = config_mobility_type_dust3, &
-         zaerotype_dust4_in      = config_mobility_type_dust4, &
-         ratio_C2N_diatoms_in    = config_ratio_C_to_N_diatoms, &
-         ratio_C2N_sp_in         = config_ratio_C_to_N_small_plankton, &
-         ratio_C2N_phaeo_in      = config_ratio_C_to_N_phaeocystis, &
-         ratio_chl2N_diatoms_in  = config_ratio_chla_to_N_diatoms, &
-         ratio_chl2N_sp_in       = config_ratio_chla_to_N_small_plankton, &
-         ratio_chl2N_phaeo_in    = config_ratio_chla_to_N_phaeocystis, &
-         F_abs_chl_diatoms_in    = config_scales_absorption_diatoms, &
-         F_abs_chl_sp_in         = config_scales_absorption_small_plankton, &
-         F_abs_chl_phaeo_in      = config_scales_absorption_phaeocystis, &
-         ratio_C2N_proteins_in   = config_ratio_C_to_N_proteins, &
          !conserv_check_in        = , &
          snwgrain_in             = config_use_snow_grain_radius, &
          snwredist_in            = config_snow_redistribution_scheme, &
