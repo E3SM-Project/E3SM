@@ -16,10 +16,14 @@
 # errors.
 if (USE_KOKKOS)
 
-  # Kokkos will be built in the sharedlibs if Kokkos_ROOT is
-  # unset.
   if (NOT DEFINED ENV{Kokkos_ROOT})
-    set(ENV{Kokkos_ROOT} ${INSTALL_SHAREDPATH})
+    # We should use the kokkos from Trilinos if we are using Trilinos
+    if (USE_TRILINOS)
+      set (ENV{Kokkos_ROOT} ${Trilinos_ROOT})
+    else()
+      # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
+      set(ENV{Kokkos_ROOT} ${INSTALL_SHAREDPATH})
+    endif()
   endif()
 
   find_package(Kokkos REQUIRED)
