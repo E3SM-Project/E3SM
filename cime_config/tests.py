@@ -723,6 +723,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-aci",
         )
     },
 

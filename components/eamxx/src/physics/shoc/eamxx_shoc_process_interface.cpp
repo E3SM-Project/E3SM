@@ -85,6 +85,9 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
   add_field<Computed>("inv_qc_relvar", scalar3d_mid, pow(kg/kg,2), grid_name, ps);
+  add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,        grid_name, ps);
+  add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,       grid_name, ps);
+  add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
@@ -178,7 +181,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt, &m_buffer.tkh
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
   };
 
@@ -250,6 +253,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
   const auto& cldfrac_liq         = get_field_out("cldfrac_liq").get_view<Spack**>();
+  const auto& cldfrac_liq_prev    = get_field_out("cldfrac_liq_prev").get_view<Spack**>();
   const auto& sgs_buoy_flux       = get_field_out("sgs_buoy_flux").get_view<Spack**>();
   const auto& tk                  = get_field_out("eddy_diff_mom").get_view<Spack**>();
   const auto& inv_qc_relvar       = get_field_out("inv_qc_relvar").get_view<Spack**>();
@@ -294,7 +298,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,inv_exner,thlm,qw);
+                                wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev);
 
   // Input Variables:
   input.zt_grid     = shoc_preprocess.zt_grid;
@@ -327,11 +331,12 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Output Variables
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
   output.shoc_ql2 = shoc_ql2;
+  output.tkh      = get_field_out("eddy_diff_heat").get_view<Spack**>();
 
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
-  history_output.w_sec     = m_buffer.w_sec;
+  history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
   history_output.qwthl_sec = m_buffer.qwthl_sec;
@@ -364,7 +369,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.tabs = m_buffer.tabs;
   temporaries.dz_zt = m_buffer.dz_zt;
   temporaries.dz_zi = m_buffer.dz_zi;
-  temporaries.tkh = m_buffer.tkh;
 #endif
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,

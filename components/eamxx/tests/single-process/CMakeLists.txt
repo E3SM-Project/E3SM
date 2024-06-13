@@ -20,6 +20,7 @@ if (SCREAM_ENABLE_MAM)
   # corresponding test here needs to be reworked with valid aerosol
   # initial conditions.
   add_subdirectory(mam/optics)
+  add_subdirectory(mam/aci)
 endif()
 if (SCREAM_TEST_LEVEL GREATER_EQUAL SCREAM_TEST_LEVEL_EXPERIMENTAL)
   add_subdirectory(zm)
