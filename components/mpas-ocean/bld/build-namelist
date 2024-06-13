@@ -1041,7 +1041,7 @@ if ($OCN_FORCING eq 'datm_forced_restoring') {
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
-	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
+	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_use_activeTracers_surface_restoring');
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring');

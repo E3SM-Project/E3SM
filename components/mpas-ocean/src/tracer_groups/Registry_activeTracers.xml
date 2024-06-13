@@ -31,9 +31,9 @@
 			description="If true, apply monthly salinity restoring using a uniform piston velocity, defined at run-time by config_salinity_restoring_constant_piston_velocity.  When false, salinity piston velocity is specified in the input file by salinityPistonVelocity, which may be spatially variable."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_surface_salinity_monthly_restoring_compute_interval" type="character" default_value="0000-00-01_00:00:00"
+		<nml_option name="config_surface_salinity_monthly_restoring_compute_interval" type="character" default_value="dt"
 			description="Time interval to compute salinity restoring tendency."
-			possible_values="Any valid time stamp or 'dt'"
+			possible_values="Any valid time stamp e.g. format '0000-00-01_00:00:00' or 'dt'"
 		/>
 		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="1.585e-5" units="m/year"
 			description="When config_use_surface_salinity_monthly_restoring is true, this flag provides a run-time override of the salinityPistonVelocity variable in the input files.  It is uniform over the domain, and controls the rate at which salinity is restored to salinitySurfaceRestoringValue"
@@ -43,8 +43,8 @@
 			description="Maximum allowable difference between surface salinity and climatology, in grams salt per kilogram seawater."
 			possible_values="any non-negative number"
 		/>
-		<nml_option name="config_salinity_restoring_under_sea_ice" type="logical" default_value=".false."
-			description="Flag to enable salinity restoring under sea ice.  The default setting is false, where salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction.  If true, full salinity restoring is used everywhere, regardless of iceFraction value"
+		<nml_option name="config_salinity_restoring_under_sea_ice" type="logical" default_value=".true."
+			description="Flag to enable salinity restoring under sea ice.  The default setting is true, meaning that full salinity restoring is used everywhere, regardless of iceFraction value, except under ice shelves. If false, the salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction."
 			possible_values=".true. or .false."
 		/>
 	</nml_record>

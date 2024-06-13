@@ -2769,7 +2769,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
 Time interval to compute salinity restoring tendency.
 
-Valid values: Any valid time stamp or 'dt'
+Valid values: Any valid time stamp e.g. format '0000-00-01_00:00:00' or 'dt'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2791,7 +2791,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_under_sea_ice" type="logical"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-Flag to enable salinity restoring under sea ice.  The default setting is false, where salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction.  If true, full salinity restoring is used everywhere, regardless of iceFraction value
+Flag to enable salinity restoring under sea ice.  The default setting is true, meaning that full salinity restoring is used everywhere, regardless of iceFraction value, except under ice shelves. If false, the salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
