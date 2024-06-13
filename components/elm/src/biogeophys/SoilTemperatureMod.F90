@@ -834,7 +834,7 @@ contains
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use elm_varctl      , only : iulog
+    use elm_varctl      , only : iulog, use_snow_thk
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -847,7 +847,7 @@ contains
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: l,c,j                     ! indices
+    integer  :: l,c,j,i                     ! indices
     integer  :: nlevbed                   ! # levels to bedrock
     integer  :: fc                        ! lake filtered column indices
     real(r8) :: dksat                     ! thermal conductivity for saturated soil (j/(k s m))
@@ -856,6 +856,11 @@ contains
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
     character(len=64) :: event
+    
+    real(r8), parameter :: rho_ice     = 917._r8
+    real(r8) :: k_snw_vals(5)
+    real(r8) :: k_snw_tmps(5)
+    data k_snw_tmps(:) /223.0, 248.0, 263.0, 268.0, 273.0/
     !-----------------------------------------------------------------------
     event = 'SoilThermProp'
     call t_start_lnd( event )
@@ -943,14 +948,54 @@ contains
                   endif
                endif
             endif
+            
+            if (use_snow_thk) then ! chose which snow thermal conductivity to use 
+               if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
+                    bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
+                    !write(iulog,*)"CAW bw(c,j)",bw(c,j)
 
-            ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
-            ! Only examine levels from snl(c)+1 -> 0 where snl(c) < 1
-            if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
-               bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
-               thk(c,j) = tkair + (7.75e-5_r8 *bw(c,j) + 1.105e-6_r8*bw(c,j)*bw(c,j))*(tkice-tkair)
-            end if
+                       do i = 1, 5
+                        if (i == 1) then
+                            k_snw_vals(i) = 2.564 * (bw(c,j)/ rho_ice)**2 - 0.059 * (bw(c,j)/ rho_ice) + 0.0205
+                        else if (i == 2) then
+                            k_snw_vals(i) = 2.172 * (bw(c,j)/ rho_ice)**2 + 0.015 * (bw(c,j)/ rho_ice) + 0.0252
+                        else if (i == 3) then
+                            k_snw_vals(i) = 1.985 * (bw(c,j)/ rho_ice)**2 + 0.073 * (bw(c,j)/ rho_ice) + 0.0336
+                        else if (i == 4) then
+                            k_snw_vals(i) = 1.883 * (bw(c,j)/ rho_ice)**2 + 0.107 * (bw(c,j)/ rho_ice) + 0.0386
+                        else if (i == 5) then
+                            k_snw_vals(i) = 1.776 * (bw(c,j)/ rho_ice)**2 + 0.147 * (bw(c,j)/ rho_ice) + 0.0455
+                        end if
+                       end do
 
+                       do i = 1, size(k_snw_tmps) - 1
+                        if (k_snw_tmps(i) <= t_soisno(c,j) .and. t_soisno(c,j) <= k_snw_tmps(i + 1)) then
+                            thk(c,j) = k_snw_vals(i) + (t_soisno(c,j) - k_snw_tmps(i))*(k_snw_vals(i + 1)-k_snw_vals(i))/(k_snw_tmps(i + 1)-k_snw_tmps(i))
+                        end if
+                       end do
+
+                     ! Handle edge cases if t_soisno(c,j) is outside the given range
+                       if (t_soisno(c,j) < k_snw_tmps(1)) then
+                           thk(c,j) = k_snw_vals(1)
+                       else if (t_soisno(c,j) > k_snw_tmps(size(k_snw_tmps))) then
+                           thk(c,j) = k_snw_vals(size(k_snw_tmps))
+                       end if
+
+                     !  write(iulog,*)"CAW snow layer:",j
+                     !  write(iulog,*)"CAW snow temp:",t_soisno(c,j)
+                     !  write(iulog,*)"CAW snow density:",bw(c,j)
+                     !  write(iulog,*)"CAW snow thk:",thk(c,j) 
+               end if
+
+
+            else 
+                    ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
+                    ! Only examine levels from snl(c)+1 -> 0 where snl(c) < 1
+                    if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
+                       bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
+                       thk(c,j) = tkair + (7.75e-5_r8 *bw(c,j) + 1.105e-6_r8*bw(c,j)*bw(c,j))*(tkice-tkair)
+                    end if
+            endif
          end do
       end do
 
