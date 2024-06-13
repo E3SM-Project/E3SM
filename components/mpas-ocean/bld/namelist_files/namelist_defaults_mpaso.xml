@@ -106,6 +106,7 @@
 <config_use_mom_del2 ocn_grid="FRISwISC04to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC02to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC01to60E3r1">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.true.</config_use_mom_del2>
 <config_mom_del2>10.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
@@ -121,6 +122,7 @@
 <config_mom_del2 ocn_grid="FRISwISC04to60E3r1">154.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC02to60E3r1">77.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC01to60E3r1">38.5</config_mom_del2>
+<config_mom_del2 ocn_grid="RRSwISC6to18E3r5">100.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
@@ -565,7 +567,7 @@
 <config_btr_dt ocn_grid="FRISwISC04to60E3r1">'0000_00:00:05'</config_btr_dt>
 <config_btr_dt ocn_grid="FRISwISC02to60E3r1">'0000_00:00:02.5'</config_btr_dt>
 <config_btr_dt ocn_grid="FRISwISC01to60E3r1">'0000_00:00:01.25'</config_btr_dt>
-<config_btr_dt ocn_grid="RRSwISC6to18E3r5">'0000_00:00:10'</config_btr_dt>
+<config_btr_dt ocn_grid="RRSwISC6to18E3r5">'0000_00:00:05'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
