@@ -63,7 +63,7 @@ module li_subglacial_hydro
    real(kind=RKIND), parameter :: MIN_PHISLOPE_GL = 1e-10_RKIND
 
    !Undefined value
-   real(kind=RKIND), parameter :: UNDEFINED = 9.99e30_RKIND
+   real(kind=RKIND), parameter :: UNDEFINED = 0.0_RKIND
 
 !***********************************************************************
    contains
