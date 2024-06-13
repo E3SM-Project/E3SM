@@ -233,8 +233,8 @@ TEST_CASE("aerocom_cld") {
 
     // Case 5a: test independence of ice and liq fractions
     cd_v(0, 3) = 1.0;
-    cd_v(0, 8) = 1.0;
-    cd_v(0, 9) = 0.2;
+    cd_v(0, 7) = 1.0;
+    cd_v(0, 8) = 0.2;
     qc.deep_copy(1.0);
     qi.deep_copy(0.0);  // zero ice!
     cd.sync_to_dev();
