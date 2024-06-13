@@ -10,14 +10,6 @@ string(APPEND KOKKOS_OPTIONS " -DKokkos_ARCH_AMPERE80=On -DKokkos_ENABLE_CUDA=On
 set(CMAKE_CUDA_ARCHITECTURES "80")
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
-
-#if (COMP_NAME STREQUAL elm)
-#  # don't build with ACC, default for GNU is not not build with ACC
-#else()
-#  string(APPEND CMAKE_Fortran_FLAGS " -fopenacc")
-#  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenacc")
-#endif()
-
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
