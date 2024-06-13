@@ -1009,7 +1009,13 @@ contains
          !$acc                   velocityTidalRMS)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc exit data delete(topographic_wave_drag)
+         !$acc exit data delete(topo_rinv)
+         !$acc exit data delete(topo_buoyancy_N1V)
+         !$acc exit data delete(topo_buoyancy_N1B)
+         !$acc exit data delete(bathy_stddev)
+         !$acc exit data delete(bed_slope_edges)
+         !$acc exit data delete(lonGradEdge)
+         !$acc exit data delete(latGradEdge)
          !$acc exit data delete(temp_twd)
          !$acc exit data delete(normalCoeffTWD)
          !$acc exit data delete(tangentialCoeffTWD)
