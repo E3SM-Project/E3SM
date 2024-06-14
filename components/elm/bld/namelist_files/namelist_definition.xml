@@ -395,6 +395,19 @@ Full pathname of unified land use harmonization data file. This causes the land-
 types to vary over time.
 </entry>
 
+<entry id="fates_history_dimlevel" type="integer(2)" category="physics"
+       group="elm_inparm" valid_values="0,1,2" >
+Setting for what types of FATES history to be allocate and
+calculated at the dynamics timestep (1st integer) and the
+model timestep (2nd integer). This must be consistent with
+hist_fincl*, ie output variables must not be listed if the
+output level is not enabled.
+0 = no fates history variables are calculated or allocated
+1 = only time x space (3d) fates history variables allowed
+2 = multiplexed dimensioned fates history is also allowed
+(Only relevant if FATES is on)
+</entry>
+
 <entry id="use_hydrstress" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.

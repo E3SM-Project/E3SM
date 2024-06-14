@@ -813,7 +813,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
                      "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
                      "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad", "use_fates_luh",
-                     "fluh_timeseries");
+                     "fluh_timeseries","fates_history_dimlevel");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -3397,7 +3397,8 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh',                'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
-
+     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_history_dimlevel','use_fates'=>$nl_flags->{'use_fates'});
+    
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
     my $var = "use_fates_sp";
@@ -3412,6 +3413,10 @@ sub setup_logic_fates {
           # spit-fire can't be on with FATES SP mode is active
           if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
                 fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
+          }
+          # hydro isn't currently supported to work when FATES SP mode is active
+          if (&value_is_true( $nl->get_value('use_fates_planthydro') )) {
+                fatal_error('fates sp mode is currently not supported to work with fates hydro');
           }
        }
     }
