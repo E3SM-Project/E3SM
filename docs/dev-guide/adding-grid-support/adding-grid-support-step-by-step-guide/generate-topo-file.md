@@ -93,10 +93,16 @@ make
     source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
     ```
 
-    Chrysalis (ANL/LCRC):
+    Chrysalis (LCRC):
 
     ```shell
     source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+    ```
+
+    For unsupported machines you may need to build the unified environment:
+
+    ```shell
+    conda install -c conda-forge -c e3sm e3sm-unified
     ```
 
 1. ### **Specify Source and Target Resolution**
