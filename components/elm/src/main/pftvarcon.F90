@@ -1093,12 +1093,25 @@ contains
     if (.not. readv ) bendresist(:) = 1._r8
     call ncd_io('vegshape', vegshape, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) vegshape(:) = 1._r8
+   ! check validity
+    do i = 0, npft -1
+      if (bendresist(i) .gt. 1.0_r8 .or. bendresist(i) .le. 0._r8) then
+         call endrun(msg="Non-physical selection of bendresist parameter, set between 0 and 1"//errMsg(__FILE__, __LINE__))
+      end if
+      if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .le. 0_r8) then
+         call endrun(msg="Non-physical selection of vegshape parameter, set between 0 and 2"//errMsg(__FILE__, __LINE__))
+      end if
+   end do
     call ncd_io('stocking', stocking, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) stocking(:) = 1000._r8
+    ! convert from stems/ha -> stems/m2
+    do i = 0, npft
+      stocking(i) = stocking(i) / 10000._r8
+    end do 
     call ncd_io('taper', taper, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) then
       taper(:) = 200._r8
-      do i = 0, npft - 1
+      do i = 0, npft
         ! RPF 240331 - need to revisit this section when integrating with IM4,
         ! to make consistent with attempt to remove hard-coded pft numbers.
         if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) taper(i) = 10.0_r8 ! shrubs
