@@ -13,7 +13,7 @@ If you wish to add a new ocean and sea-ice mesh you will need to use the compass
 
 1. [Generate a new grid file                               ](adding-grid-support-step-by-step-guide/generate-new-grid-file.md)
 1. [Generate mapping files                                 ](adding-grid-support-step-by-step-guide/generate-mapping-files.md)
-1. [Generate domain files                                  ](/generate_domain_files/)
+1. [Generate domain files                                  ](../../generate_domain_files/index.md)
 1. [Generate a topography file                             ](adding-grid-support-step-by-step-guide/generate-topo-file.md)
 1. [Generate atmospheric initial condition                 ](adding-grid-support-step-by-step-guide/generate-atm-initial-condition.md)
 1. [Generate land input data (*fsurdat*)                   ](adding-grid-support-step-by-step-guide/generate-lnd-input-data.md)

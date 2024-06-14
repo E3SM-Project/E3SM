@@ -1,7 +1,5 @@
 # Generate mapping files
 
-[Back to Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
-
 In order to pass data between different components at runtime, a set of mapping files between each component is generated offline.
 
 See [Recommended Mapping Procedures for E3SM Atmosphere Grids](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/178848194/Recommended+Mapping+Procedures+for+E3SM+Atmosphere+Grids) for a discussion of different remap algorithms and when to use each.
@@ -45,7 +43,7 @@ Chrysalis (LCRC):
 
 ## Create Mapping Files
 
-ncremap provides a convient 
+ncremap provides a convient
 
 We can use ncremap to generate ALL the needed mapping files between two grids, in this example the ne4 atmosphere and the oQU240 ocean grid (for the moment, we will put the land on the same grid as the atmosphere):
 
@@ -54,3 +52,5 @@ atm_grid_file=ne4.g
 ocn_grid_file=/global/cfs/cdirs/e3sm/inputdata/cpl/gridmaps/oQU240/ocean.QU.240km.scrip.151209.nc
 cd ${output_root} && ncremap -P mwf -s $ocn_grid_file -g $atm_grid_file --nm_src=oQU240 --nm_dst=ne4np4 --dt_sng=20181114
 ```
+
+Back to step-by-step guide for [Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)

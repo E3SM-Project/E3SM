@@ -1,10 +1,8 @@
+# Generate a Topography File
+
 <!-- disable certain linter checks here for more readable nested markdown  -->
 <!-- markdownlint-disable  MD007 --> <!-- ul-indent -->
 <!-- markdownlint-disable  MD033 --> <!-- no-inline-html -->
-
-# Generate a Topography File
-
-[Back to Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
 
 Topography needs to be interpolated from a high resolution dataset, and then doctored a bit to allow the model to run stably with the new topography. More information can be found in the following paper:  
 
@@ -617,3 +615,5 @@ To submit the slurm batch job use `sbatch <script>`
     #---------------------------------------------------------------------------
     ```
 </details>
+
+Back to step-by-step guide for [Adding Support for New Grids](../adding-grid-support-step-by-step-guide.md)
