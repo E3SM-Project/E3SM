@@ -8,8 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <complex>
+using std::complex;
+
 #include "DataTypes.h"
-#include <complex.h>
 
 namespace OMEGA {
 
@@ -18,15 +20,15 @@ static int R8SumInitialized = 0;
 static MPI_Op MPI_SUMDD; // special MPI operator for reproducible R8 sum
 
 void ddSum(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataType) {
-   double _Complex *dda = (double _Complex *)InBuffer;
-   double _Complex *ddb = (double _Complex *)OutBuffer;
+   complex<double> *dda = (complex<double> *)InBuffer;
+   complex<double> *ddb = (complex<double> *)OutBuffer;
    double e, t1, t2;
    for (int i = 0; i < *Len; i++) {
-      t1 = creal(dda[i]) + creal(ddb[i]);
-      e  = t1 - creal(dda[i]);
-      t2 = ((creal(ddb[i]) - e) + (creal(dda[i]) - (t1 - e))) + cimag(dda[i]) +
-           cimag(ddb[i]);
-      ddb[i] = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      t1 = real(dda[i]) + real(ddb[i]);
+      e  = t1 - real(dda[i]);
+      t2 = ((real(ddb[i]) - e) + (real(dda[i]) - (t1 - e))) + imag(dda[i]) +
+           imag(ddb[i]);
+      ddb[i] = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
    }
 }
 
@@ -71,12 +73,12 @@ int globalSum(const R8 *Val, const MPI_Comm Comm, R8 *Res) {
       globalSumInit();
    }
 
-   double _Complex LocalTmp  = CMPLX(*Val, 0.0);
-   double _Complex GlobalTmp = CMPLX(0.0, 0.0);
+   complex<double> LocalTmp(*Val, 0.0);
+   complex<double> GlobalTmp(0.0, 0.0);
 
    int ierr = MPI_Allreduce(&LocalTmp, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
                             MPI_SUMDD, Comm);
-   *Res     = creal(GlobalTmp);
+   *Res     = real(GlobalTmp);
    return ierr;
 }
 
@@ -84,9 +86,9 @@ int globalSum(const R8 *Val, const MPI_Comm Comm, R8 *Res) {
 // Global sum arrays
 //////////
 // I4 or I8 array
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_integral_v<typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, IT *GlobalSum,
+globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, IT *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    IT LocalSum = 0;
    int dim     = arr.rank;
@@ -105,9 +107,9 @@ globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, IT *GlobalSum,
 }
 
 // R4 array
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R4 *GlobalSum,
+globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, R4 *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    R8 GlobalTmp = 0.0, LocalSum = 0.0;
    int dim = arr.rank;
@@ -128,9 +130,9 @@ globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R4 *GlobalSum,
 }
 
 // R8 array
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R8 *GlobalSum,
+globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, R8 *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
@@ -146,19 +148,19 @@ globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R8 *GlobalSum,
    }
 
    // Accumulate the local sum using Knuth's algorithm
-   double _Complex LocalSum = CMPLX(0.0, 0.0), GlobalTmp = CMPLX(0.0, 0.0);
+   complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
    double e, t1, t2, ai;
    for (i = imin; i < imax; i++) {
       ai = arr.data()[i];
-      t1 = ai + creal(LocalSum);
+      t1 = ai + real(LocalSum);
       e  = t1 - ai;
-      t2 = ((creal(LocalSum) - e) + (ai - (t1 - e))) + cimag(LocalSum);
+      t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
       // The result is t1 + t2, after normalization.
-      LocalSum = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
    }
    ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
                               MPI_SUMDD, Comm);
-   *GlobalSum = creal(GlobalTmp);
+   *GlobalSum = real(GlobalTmp);
    return ierr;
 }
 
@@ -166,9 +168,9 @@ globalSum(const Kokkos::View<T> arr, const MPI_Comm Comm, R8 *GlobalSum,
 // Global sum with product
 //////////
 // I4 or I8 array
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_integral_v<typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
+globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
           const MPI_Comm Comm, IT *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    T LocalSum = 0;
@@ -188,9 +190,9 @@ globalSum(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
 }
 
 // R4 array
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<R4> arr, const Kokkos::View<R4> arr2,
+globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
           const MPI_Comm Comm, R4 *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    R8 GlobalTmp = 0.0, LocalSum = 0.0;
@@ -212,9 +214,9 @@ globalSum(const Kokkos::View<R4> arr, const Kokkos::View<R4> arr2,
 }
 
 // R8 array
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const Kokkos::View<R8> arr, const Kokkos::View<R8> arr2,
+globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
           const MPI_Comm Comm, R8 *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
@@ -231,19 +233,19 @@ globalSum(const Kokkos::View<R8> arr, const Kokkos::View<R8> arr2,
    }
 
    // Accumulate the local sum using Knuth's algorithm
-   double _Complex LocalSum = CMPLX(0.0, 0.0), GlobalTmp = CMPLX(0.0, 0.0);
+   complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
    double e, t1, t2, ai;
    for (i = imin; i < imax; i++) {
       ai = arr.data()[i] * arr2.data()[i];
-      t1 = ai + creal(LocalSum);
+      t1 = ai + real(LocalSum);
       e  = t1 - ai;
-      t2 = ((creal(LocalSum) - e) + (ai - (t1 - e))) + cimag(LocalSum);
+      t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
       // The result is t1 + t2, after normalization.
-      LocalSum = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
    }
    ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
                               MPI_SUMDD, Comm);
-   *GlobalSum = creal(GlobalTmp);
+   *GlobalSum = real(GlobalTmp);
    return ierr;
 }
 
@@ -289,25 +291,25 @@ int globalSum(const std::vector<R8> scalars, const MPI_Comm Comm,
       globalSumInit();
    }
    int nFlds = scalars.size();
-   double _Complex LocalTmp[nFlds], GlobalTmp[nFlds];
+   complex<double> LocalTmp[nFlds], GlobalTmp[nFlds];
    int i, ierr;
    for (i = 0; i < nFlds; i++) {
-      LocalTmp[i]  = CMPLX(scalars[i], 0.0);
-      GlobalTmp[i] = CMPLX(0.0, 0.0);
+      LocalTmp[i]  = complex<double>(scalars[i], 0.0);
+      GlobalTmp[i] = complex<double>(0.0, 0.0);
    }
    ierr = MPI_Allreduce(LocalTmp, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
                         MPI_SUMDD, Comm);
    for (i = 0; i < nFlds; i++) {
-      GlobalSum[i] = creal(GlobalTmp[i]);
+      GlobalSum[i] = real(GlobalTmp[i]);
    }
    return ierr;
 }
 
 // I4 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-          std::vector<I4> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const MPI_Comm Comm, std::vector<I4> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
@@ -331,10 +333,10 @@ globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
 }
 
 // I8 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-          std::vector<I8> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const MPI_Comm Comm, std::vector<I8> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
@@ -358,12 +360,12 @@ globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
 }
 
 // R4 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-          std::vector<R4> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const MPI_Comm Comm, std::vector<R4> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
-   int i, imin, imax, ifld;
+   int i, imin, imax, ifld, ierr;
    int nFlds = arrays.size();
    int dim   = arrays[0].rank;
    R8 GlobalTmp[nFlds], LocalSum[nFlds];
@@ -388,18 +390,18 @@ globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
 }
 
 // R8 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-          std::vector<R8> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const MPI_Comm Comm, std::vector<R8> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
-   int i, imin, imax, ifld;
+   int i, imin, imax, ifld, ierr;
    int nFlds = arrays.size();
    int dim   = arrays[0].rank;
-   double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
+   complex<double> GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
       imax = arrays[0].size();
@@ -409,22 +411,22 @@ globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
    }
    double e, t1, t2, ai;
    for (ifld = 0; ifld < nFlds; ifld++) {
-      LocalSum[ifld] = CMPLX(0.0, 0.0);
+      LocalSum[ifld] = complex<double>(0.0, 0.0);
       for (i = imin; i < imax; i++) {
          ai = arrays[ifld].data()[i];
-         t1 = ai + creal(LocalSum[ifld]);
+         t1 = ai + real(LocalSum[ifld]);
          e  = t1 - ai;
-         t2 = ((creal(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
-              cimag(LocalSum[ifld]);
+         t2 = ((real(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
+              imag(LocalSum[ifld]);
          // The result is t1 + t2, after normalization.
-         LocalSum[ifld] = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+         LocalSum[ifld] = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
       }
-      GlobalTmp[ifld] = CMPLX(0.0, 0.0);
+      GlobalTmp[ifld] = complex<double>(0.0, 0.0);
    }
    ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
                         MPI_SUMDD, Comm);
    for (ifld = 0; ifld < nFlds; ifld++) {
-      GlobalSum[ifld] = creal(GlobalTmp[ifld]);
+      GlobalSum[ifld] = real(GlobalTmp[ifld]);
    }
    return ierr;
 }
@@ -433,11 +435,11 @@ globalSum(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
 // Global sum multi-field with product
 //////////
 // I4 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays,
-          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
-          std::vector<I4> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const std::vector<Kokkos::View<T, ML, MS>> arrays2,
+          const MPI_Comm Comm, std::vector<I4> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
@@ -461,11 +463,11 @@ globalSum(const std::vector<Kokkos::View<T>> arrays,
 }
 
 // I8 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays,
-          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
-          std::vector<I8> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const std::vector<Kokkos::View<T, ML, MS>> arrays2,
+          const MPI_Comm Comm, std::vector<I8> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    int i, imin, imax, ifld;
    int nFlds = arrays.size();
@@ -489,13 +491,13 @@ globalSum(const std::vector<Kokkos::View<T>> arrays,
 }
 
 // R4 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays,
-          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
-          std::vector<R4> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const std::vector<Kokkos::View<T, ML, MS>> arrays2,
+          const MPI_Comm Comm, std::vector<R4> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
-   int i, imin, imax, ifld;
+   int i, imin, imax, ifld, ierr;
    int nFlds = arrays.size();
    int dim   = arrays[0].rank;
    R8 GlobalTmp[nFlds], LocalSum[nFlds];
@@ -520,19 +522,19 @@ globalSum(const std::vector<Kokkos::View<T>> arrays,
 }
 
 // R8 arrays
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalSum(const std::vector<Kokkos::View<T>> arrays,
-          const std::vector<Kokkos::View<T>> arrays2, const MPI_Comm Comm,
-          std::vector<R8> GlobalSum,
+globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+          const std::vector<Kokkos::View<T, ML, MS>> arrays2,
+          const MPI_Comm Comm, std::vector<R8> GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    if (!R8SumInitialized) {
       globalSumInit();
    }
-   int i, imin, imax, ifld;
+   int i, imin, imax, ifld, ierr;
    int nFlds = arrays.size();
    int dim   = arrays[0].rank;
-   double _Complex GlobalTmp[nFlds], LocalSum[nFlds];
+   complex<double> GlobalTmp[nFlds], LocalSum[nFlds];
    if (IndxRange == nullptr) {
       imin = 0;
       imax = arrays[0].size();
@@ -542,22 +544,22 @@ globalSum(const std::vector<Kokkos::View<T>> arrays,
    }
    double e, t1, t2, ai;
    for (ifld = 0; ifld < nFlds; ifld++) {
-      LocalSum[ifld] = CMPLX(0.0, 0.0);
+      LocalSum[ifld] = complex<double>(0.0, 0.0);
       for (i = imin; i < imax; i++) {
          ai = arrays[ifld].data()[i] * arrays2[ifld].data()[i];
-         t1 = ai + creal(LocalSum[ifld]);
+         t1 = ai + real(LocalSum[ifld]);
          e  = t1 - ai;
-         t2 = ((creal(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
-              cimag(LocalSum[ifld]);
+         t2 = ((real(LocalSum[ifld]) - e) + (ai - (t1 - e))) +
+              imag(LocalSum[ifld]);
          // The result is t1 + t2, after normalization.
-         LocalSum[ifld] = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+         LocalSum[ifld] = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
       }
-      GlobalTmp[ifld] = CMPLX(0.0, 0.0);
+      GlobalTmp[ifld] = complex<double>(0.0, 0.0);
    }
    ierr = MPI_Allreduce(LocalSum, GlobalTmp, nFlds, MPI_C_DOUBLE_COMPLEX,
                         MPI_SUMDD, Comm);
    for (ifld = 0; ifld < nFlds; ifld++) {
-      GlobalSum[ifld] = creal(GlobalTmp[ifld]);
+      GlobalSum[ifld] = real(GlobalTmp[ifld]);
    }
    return ierr;
 }
@@ -566,10 +568,10 @@ globalSum(const std::vector<Kokkos::View<T>> arrays,
 // Global minval
 //////////
 // Array
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMinVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMinVal,
-             const std::vector<I4> *IndxRange = nullptr) {
+globalMinVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
+             IT GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -603,11 +605,11 @@ globalMinVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMinVal,
 }
 
 // Array with mask
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMinVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
-             const MPI_Comm Comm, IT GlobalMinVal,
-             const std::vector<I4> *IndxRange = nullptr) {
+globalMinVal(const Kokkos::View<T, ML, MS> arr,
+             const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
+             IT GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -642,10 +644,10 @@ globalMinVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
 }
 
 // Array multi-field
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMinVal(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-             std::vector<IT> GlobalMinVal,
+globalMinVal(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+             const MPI_Comm Comm, std::vector<IT> GlobalMinVal,
              const std::vector<I4> *IndxRange = nullptr) {
    int dim = arrays[0].rank;
    int i, imin, imax, ierr;
@@ -686,10 +688,10 @@ globalMinVal(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
 // Global maxval
 //////////
 // Array
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMaxVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMaxVal,
-             const std::vector<I4> *IndxRange = nullptr) {
+globalMaxVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
+             IT GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -723,11 +725,11 @@ globalMaxVal(const Kokkos::View<T> arr, const MPI_Comm Comm, IT GlobalMaxVal,
 }
 
 // Array with mask
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMaxVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
-             const MPI_Comm Comm, IT GlobalMaxVal,
-             const std::vector<I4> *IndxRange = nullptr) {
+globalMaxVal(const Kokkos::View<T, ML, MS> arr,
+             const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
+             IT GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -762,10 +764,10 @@ globalMaxVal(const Kokkos::View<T> arr, const Kokkos::View<T> arr2,
 }
 
 // Array multi-field
-template <typename T, typename IT>
+template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
-globalMaxVal(const std::vector<Kokkos::View<T>> arrays, const MPI_Comm Comm,
-             std::vector<IT> GlobalMaxVal,
+globalMaxVal(const std::vector<Kokkos::View<T, ML, MS>> arrays,
+             const MPI_Comm Comm, std::vector<IT> GlobalMaxVal,
              const std::vector<I4> *IndxRange = nullptr) {
    int dim = arrays[0].rank;
    int i, imin, imax, ierr;
@@ -821,30 +823,34 @@ int globalMin(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MIN, Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
-globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MIN,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
-globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MIN,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MIN,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalMin(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMin(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MIN,
                         Comm);
 }
@@ -868,30 +874,34 @@ int globalMax(const R8 *Val, R8 *Res, const MPI_Comm Comm) {
    return MPI_Allreduce(Val, Res, 1, MPI_DOUBLE, MPI_MAX, Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I4, typename Kokkos::View<T>::value_type>, int>
-globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT32_T, MPI_MAX,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<I8, typename Kokkos::View<T>::value_type>, int>
-globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_INT64_T, MPI_MAX,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R4, typename Kokkos::View<T>::value_type>, int>
-globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_FLOAT, MPI_MAX,
                         Comm);
 }
 
-template <typename T>
+template <typename T, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<R8, typename Kokkos::View<T>::value_type>, int>
-globalMax(Kokkos::View<T> const in, Kokkos::View<T> out, const MPI_Comm Comm) {
+globalMax(Kokkos::View<T, ML, MS> const in, Kokkos::View<T, ML, MS> out,
+          const MPI_Comm Comm) {
    return MPI_Allreduce(in.data(), out.data(), in.size(), MPI_DOUBLE, MPI_MAX,
                         Comm);
 }

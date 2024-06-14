@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
    res = "FAIL";
    if (MyResI8 == MyInt8 * MySize)
       res = "PASS";
-   printf("Global sum I8:    %s (exp,act=%lld,%lld)\n", res, MyInt8 * MySize,
+   printf("Global sum I8:    %s (exp,act=%ld,%ld)\n", res, MyInt8 * MySize,
           MyResI8);
 
    err = OMEGA::globalSum(&MyR4, Comm, &MyResR4);
@@ -94,14 +94,14 @@ int main(int argc, char *argv[]) {
    res = "FAIL";
    if (MyResI4 == Sum1D * MySize)
       res = "PASS";
-   printf("Global sum A1DI4: %s (exp,act=%d,%d)\n", res, Sum1D * MySize,
+   printf("Global sum A1DI4: %s (exp,act=%ld,%d)\n", res, Sum1D * MySize,
           MyResI4);
 
    err = OMEGA::globalSum(HostArr2DI4, Comm, &MyResI4);
    res = "FAIL";
    if (MyResI4 == Sum2D * MySize)
       res = "PASS";
-   printf("Global sum A2DI4: %s (exp,act=%d,%d)\n", res, Sum2D * MySize,
+   printf("Global sum A2DI4: %s (exp,act=%ld,%d)\n", res, Sum2D * MySize,
           MyResI4);
    // HostArr1DI4.deallocate();
    // HostArr2DI4.deallocate();
@@ -123,14 +123,14 @@ int main(int argc, char *argv[]) {
    res = "FAIL";
    if (MyResI8 == Sum1D * MySize)
       res = "PASS";
-   printf("Global sum A1DI8: %s (exp,act=%d,%d)\n", res, Sum1D * MySize,
+   printf("Global sum A1DI8: %s (exp,act=%ld,%ld)\n", res, Sum1D * MySize,
           MyResI8);
 
    err = OMEGA::globalSum(HostArr2DI8, Comm, &MyResI8);
    res = "FAIL";
    if (MyResI8 == Sum2D * MySize)
       res = "PASS";
-   printf("Global sum A2DI8: %s (exp,act=%d,%d)\n", res, Sum2D * MySize,
+   printf("Global sum A2DI8: %s (exp,act=%ld,%ld)\n", res, Sum2D * MySize,
           MyResI8);
    // HostArr1DI8.deallocate();
    // HostArr2DI8.deallocate();
@@ -168,45 +168,44 @@ int main(int argc, char *argv[]) {
    OMEGA::HostArray1DR8 HostArr1DR8("HostArrD1R8", NumCells);
    OMEGA::HostArray2DR8 HostArr2DR8("HostArrD2R8", NumCells, NumVertLvls);
    OMEGA::R8 Sum1DR8 = 0.0, Sum2DR8 = 0.0, d = 0.0;
-   double _Complex LocalSum1D = CMPLX(0.0, 0.0);
-   double _Complex LocalSum2D = CMPLX(0.0, 0.0);
+   complex<double> LocalSum1D(0.0, 0.0), LocalSum2D(0.0, 0.0);
    double e, t1, t2, ai;
    for (i = 0; i < NumCells; i++) {
       HostArr1DR8(i) = i + 0.0000000000001;
       // local ddsum
       ai = HostArr1DR8(i);
-      t1 = ai + creal(LocalSum1D);
+      t1 = ai + real(LocalSum1D);
       e  = t1 - ai;
-      t2 = ((creal(LocalSum1D) - e) + (ai - (t1 - e))) + cimag(LocalSum1D);
-      LocalSum1D = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      t2 = ((real(LocalSum1D) - e) + (ai - (t1 - e))) + imag(LocalSum1D);
+      LocalSum1D = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
       for (j = 0; j < NumVertLvls; j++) {
          HostArr2DR8(i, j) = d;
          d += 1.0000000000001;
          ai = HostArr2DR8(i, j);
-         t1 = ai + creal(LocalSum2D);
+         t1 = ai + real(LocalSum2D);
          e  = t1 - ai;
-         t2 = ((creal(LocalSum2D) - e) + (ai - (t1 - e))) + cimag(LocalSum2D);
-         LocalSum2D = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+         t2 = ((real(LocalSum2D) - e) + (ai - (t1 - e))) + imag(LocalSum2D);
+         LocalSum2D = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
       }
    }
-   Sum1DR8   = creal(LocalSum1D);
-   Sum2DR8   = creal(LocalSum2D);
+   Sum1DR8   = real(LocalSum1D);
+   Sum2DR8   = real(LocalSum2D);
    MyResReal = 0.0;
    err       = OMEGA::globalSum(HostArr1DR8, Comm, &MyResReal);
    if (err != 0) {
       printf("Global sum A1DR8: globalSum call FAIL");
    }
    // perform serial sum across all MPI tasks
-   double _Complex SerialSum = CMPLX(0.0, 0.0);
+   complex<double> SerialSum(0.0, 0.0);
    for (i = 0; i < MySize; i++) {
       // ddsum across tasks
-      t1 = Sum1DR8 + creal(SerialSum);
+      t1 = Sum1DR8 + real(SerialSum);
       e  = t1 - Sum1DR8;
-      t2 = ((creal(SerialSum) - e) + (Sum1DR8 - (t1 - e))) + cimag(SerialSum);
-      SerialSum = CMPLX(t1 + t2, t2 - ((t1 + t2) - t1));
+      t2 = ((real(SerialSum) - e) + (Sum1DR8 - (t1 - e))) + imag(SerialSum);
+      SerialSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
    }
    res              = "FAIL";
-   OMEGA::R8 expSum = creal(SerialSum);
+   OMEGA::R8 expSum = real(SerialSum);
    if (MyResReal == expSum)
       res = "PASS";
    printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expSum,
@@ -238,7 +237,7 @@ int main(int argc, char *argv[]) {
    res    = "FAIL";
    if (MyResI8 == MySize - 1)
       res = "PASS";
-   printf("Global max I4:    %s (exp,act=%d,%d)\n", res, MySize - 1, MyResI8);
+   printf("Global max I4:    %s (exp,act=%d,%ld)\n", res, MySize - 1, MyResI8);
 
    OMEGA::R8 MyR8Tmp = MyTask + MyR8;
    err               = OMEGA::globalMin(&MyR8Tmp, &MyResR8, Comm);
