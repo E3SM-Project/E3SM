@@ -308,7 +308,7 @@ To submit the slurm batch job use `sbatch <script>`
     grid_root=${SCRATCH}/files_grid
     map_root=${SCRATCH}/files_map
     topo_root=${SCRATCH}/files_topo
-    DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
+    DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
     # argument for ncremap to select TempestRemap or mbtempest backend
     MAP_ARGS=
     # MAP_ARGS+="--mpi_nbr=32"
