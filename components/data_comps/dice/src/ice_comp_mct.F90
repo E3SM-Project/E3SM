@@ -16,7 +16,11 @@ module ice_comp_mct
   use dice_comp_mod   , only: dice_comp_init, dice_comp_run, dice_comp_final
   use dice_shr_mod    , only: dice_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_i2x_fields, seq_flds_x2i_fields, seq_flds_i2o_per_cat
-
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : MPSIID !            iMOAB app id for ice
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -51,7 +55,9 @@ CONTAINS
 
   !===============================================================================
   subroutine ice_init_mct( EClock, cdata, x2i, i2x, NLFilename )
-
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
     ! !DESCRIPTION: initialize dice model
     implicit none
 
@@ -73,6 +79,16 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+#ifdef HAVE_MOAB
+    character(CL)        :: filePath ! generic file path
+    character(CL)        :: fileName ! generic file name
+    character(CS)        :: timeName ! domain file: time variable name
+    character(CS)        :: lonName  ! domain file: lon  variable name
+    character(CS)        :: latName  ! domain file: lat  variable name
+    character(CS)        :: hgtName  ! domain file: hgt  variable name
+    character(CS)        :: maskName ! domain file: mask variable name
+    character(CS)        :: areaName ! domain file: area variable name
+#endif
     character(*), parameter :: subName = "(ice_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -146,6 +162,22 @@ CONTAINS
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon)
 
+
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("DICE")//C_NULL_CHAR, mpicom, compid, MPSIID)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data ice comp'
+      call shr_sys_abort(subname//' ERROR in registering data ice comp')
+    endif
+    if (my_task == master_task) then
+       call shr_stream_getDomainInfo(SDICE%stream(1), filePath,fileName,timeName,lonName, &
+               latName,hgtName,maskName,areaName)
+       call shr_stream_getFile(filePath,fileName)
+       ! send path of ice domain to MOAB coupler.
+       call seq_infodata_PutData( infodata, ice_domain=fileName)
+       write(logunit,*), ' filename: ', filename
+    endif
+#endif
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from dice
     !----------------------------------------------------------------------------
