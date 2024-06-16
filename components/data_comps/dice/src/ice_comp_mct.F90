@@ -155,7 +155,13 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize dice
     !----------------------------------------------------------------------------
-
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("DICE")//C_NULL_CHAR, mpicom, compid, MPSIID)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data ice comp'
+      call shr_sys_abort(subname//' ERROR in registering data ice comp')
+    endif
+#endif
     call dice_comp_init(Eclock, x2i, i2x, &
          seq_flds_x2i_fields, seq_flds_i2x_fields, seq_flds_i2o_per_cat, &
          SDICE, gsmap, ggrid, mpicom, compid, my_task, master_task, &
@@ -164,11 +170,6 @@ CONTAINS
 
 
 #ifdef HAVE_MOAB
-    ierr = iMOAB_RegisterApplication(trim("DICE")//C_NULL_CHAR, mpicom, compid, MPSIID)
-    if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in registering data ice comp'
-      call shr_sys_abort(subname//' ERROR in registering data ice comp')
-    endif
     if (my_task == master_task) then
        call shr_stream_getDomainInfo(SDICE%stream(1), filePath,fileName,timeName,lonName, &
                latName,hgtName,maskName,areaName)
