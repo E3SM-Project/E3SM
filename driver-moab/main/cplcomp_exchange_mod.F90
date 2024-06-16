@@ -1359,7 +1359,7 @@ contains
             endif
          endif
          ! in case of domain read, we need to compute the comm graph
-        if ( trim(ocn_domain) /= 'none' ) then
+         if ( trim(ocn_domain) /= 'none' ) then
             ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
             typeA = 2 ! point cloud on component PEs
             typeB = 3 ! full mesh on coupler pes, we just read it
@@ -1596,7 +1596,17 @@ contains
                if (seq_comm_iamroot(CPLID)) then
                   write(logunit,'(A)') subname//' load ice domain mesh from file '//trim(ice_domain)
                endif
-
+#ifdef MOABDEBUG
+      !        debug test
+               outfile = 'recSeaIceInit.h5m'//C_NULL_CHAR
+               wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !        write out the mesh file to disk
+               ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+               if (ierr .ne. 0) then
+                 write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+                 call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+               endif
+#endif
             endif
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
@@ -1618,7 +1628,6 @@ contains
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-
             tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 ! 
@@ -1659,6 +1668,22 @@ contains
                endif
             endif
          endif
+        ! in case of ice domain read, we need to compute the comm graph
+        if ( trim(ice_domain) /= 'none' ) then
+            ! we are now on joint pes, compute comm graph between data ice and coupler model ice
+            typeA = 2 ! point cloud on component PEs
+            typeB = 3 ! full mesh on coupler pes, we just read it
+            ierr = iMOAB_ComputeCommGraph( MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+               typeA, typeB, id_old, id_join) 
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for data ice model '
+               call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
+            endif
+            ! also, frac, area, aream, masks has to come from ice MPSIID , not from domain file reader
+            ! this is hard to digest :(
+            tagname = 'area:aream:frac:mask'//C_NULL_CHAR
+            call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
+         endif 
 
       endif
      ! rof
@@ -1810,14 +1835,14 @@ contains
        ! basically, use the initial partitioning
        ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
        if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot send element tag')
+          call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
        endif
 
     endif
     if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
        ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
        if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot receive element tag')
+          call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
        endif
     endif
 
