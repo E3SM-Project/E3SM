@@ -21,10 +21,7 @@ EXECUTE_PROCESS(COMMAND nf-config --prefix
   ERROR_VARIABLE  NFCONFIG_ERROR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-#SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
-
-# Set the path manually otherwise /home/projects/e3sm/scream/libs/netcdf-fortran/install/weaver will get grabbed
-SET (NetCDF_Fortran_PATH /projects/ppc64le-pwr9-rhel8/tpls/netcdf-fortran/4.6.0/gcc/11.3.0/openmpi/4.1.4/5ka6asw CACHE FILEPATH "")
+SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
 
 EXECUTE_PROCESS(COMMAND nc-config --prefix
   RESULT_VARIABLE NCCONFIG_RESULT
