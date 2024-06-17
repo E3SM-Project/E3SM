@@ -240,7 +240,20 @@ module elm_varctl
   integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
                                                                         ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
 
+  ! FATES history dimension level
+  ! fates can produce history at either the daily timescale (dynamics)
+  ! and the model step timescale. It can also generate output on the extra dimension
+  ! Performing this output can be expensive, so we allow different history dimension
+  ! levels.
+  ! The first index is output at the model timescale
+  ! The second index is output at the dynamics (daily) timescale      
+  ! 0 - no output
+  ! 1 - include only column level means (3D)
+  ! 2 - include output that includes the 4th dimension
 
+  integer, dimension(2), public   :: fates_history_dimlevel = (/2,2/)
+
+  
   !----------------------------------------------------------
   !  BeTR switches
   !----------------------------------------------------------
