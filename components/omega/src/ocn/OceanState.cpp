@@ -86,13 +86,6 @@ OceanState::OceanState(
                                          NEdgesSize, NVertLevels);
    }
 
-   // Create state device arrays
-   for (int I = 0; I < NTimeLevels; I++) {
-      LayerThickness[I] = Array2DR8("LayerThickness" + std::to_string(I),
-                                    NCellsSize, NVertLevels);
-      NormalVelocity[I] = Array2DR8("NormalVelocity" + std::to_string(I),
-                                    NEdgesSize, NVertLevels);
-   }
 
    // Open the state file for reading (assume IO has already been initialized)
    I4 Err;
@@ -115,7 +108,10 @@ OceanState::OceanState(
    }
 
    // Copy host data to device
-   copyToDevice(0);
+   for (int I = 0; I < NTimeLevels; I++) {
+      LayerThickness[I] = createDeviceMirrorCopy(LayerThicknessH[I]);
+      NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);  
+   }
 
    // Associate this instance with a name
    AllOceanStates.emplace(Name, *this);
@@ -321,13 +317,8 @@ void OceanState::updateTimeLevels() {
    HostArray2DR8 TempH;
 
    for (int Level = 0; Level < NTimeLevels - 1; Level++) {
-      Temp                      = LayerThickness[Level + 1];
-      LayerThickness[Level + 1] = LayerThickness[Level];
-      LayerThickness[Level]     = Temp;
-
-      TempH                      = LayerThicknessH[Level + 1];
-      LayerThicknessH[Level + 1] = LayerThicknessH[Level];
-      LayerThicknessH[Level]     = TempH;
+      std::swap(LayerThickness[Level + 1], LayerThickness[Level]);
+      std::swap(LayerThicknessH[Level + 1], LayerThicknessH[Level]);
    }
 
    // Update time levels for normal velocity
@@ -336,13 +327,8 @@ void OceanState::updateTimeLevels() {
    copyToDevice(NewLevel);
 
    for (int Level = 0; Level < NTimeLevels - 1; Level++) {
-      Temp                      = NormalVelocity[Level + 1];
-      NormalVelocity[Level + 1] = NormalVelocity[Level];
-      NormalVelocity[Level]     = Temp;
-
-      TempH                      = NormalVelocityH[Level + 1];
-      NormalVelocityH[Level + 1] = NormalVelocityH[Level];
-      NormalVelocityH[Level]     = TempH;
+      std::swap(NormalVelocity[Level + 1], NormalVelocity[Level]);
+      std::swap(NormalVelocityH[Level + 1], NormalVelocityH[Level]);
    }
 
    // Update IOField data associations
