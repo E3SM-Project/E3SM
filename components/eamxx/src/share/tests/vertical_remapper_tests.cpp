@@ -15,32 +15,6 @@ cmvc (const ViewT& v) {
   return vh;
 }
 
-class VerticalRemapperTester : public VerticalRemapper {
-public:
-  VerticalRemapperTester (const grid_ptr_type& src_grid,
-                          const std::string&   map_file,
-                          const Field&         lev_prof,
-                          const Field&         ilev_prof,
-                          const Real           mask_val)
-   : VerticalRemapper(src_grid, map_file, lev_prof, ilev_prof, mask_val)
-  {
-    // Nothing to do
-  }
-};
-
-template<typename ViewT>
-bool contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
-  const auto vh = cmvc (v);
-  const auto beg = vh.data();
-  const auto end = vh.data() + vh.size();
-  for (auto it=beg; it!=end; ++it) {
-    if (*it == entry) {
-      return true;
-    }
-  }
-  return false;
-}
-
 void print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
     printf("%s",msg.c_str());
@@ -180,7 +154,7 @@ TEST_CASE ("vertical_remap") {
   }
   pmid_src.sync_to_dev();
   pint_src.sync_to_dev();
-  auto remap = std::make_shared<VerticalRemapperTester>(src_grid,filename,pmid_src,pint_src,mask_val);
+  auto remap = std::make_shared<VerticalRemapper>(src_grid,filename,pmid_src,pint_src,mask_val);
   print (" -> creating grid and remapper ... done!\n",comm);
 
   // -------------------------------------- //

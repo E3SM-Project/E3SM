@@ -42,7 +42,8 @@ add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/ma
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
   eamxx_mam_microphysics_process_interface.cpp
-  eamxx_mam_optics_process_interface.cpp)
+  eamxx_mam_optics_process_interface.cpp
+  eamxx_mam_aci_process_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 add_dependencies(mam mam4xx)
 target_include_directories(mam PUBLIC
