@@ -20,10 +20,10 @@ OceanState(const std::string &Name, ///< [in] Name for mesh
            const int NTimeLevels_   ///< [in] Number of time levels
 );
 ```
-allocates the `normalVelocity` and `layerThickness` arrays for a given number of time levels.
+allocates the `NormalVelocity` and `LayerThickness` arrays for a given number of time levels.
 The current time level is then registered with the IO infrastructure.
 
-After initialization, the default mesh object can be retrieved via:
+After initialization, the default state object can be retrieved via:
 ```
 OMEGA::OceanState *State = OMEGA::OceanState::getDefault();
 ```

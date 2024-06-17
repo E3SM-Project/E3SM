@@ -109,7 +109,7 @@ OceanState::OceanState(
    // Destroy the parallel IO decompositions
    finalizeParallelIO();
 
-   // Register fields and metadate for IO
+   // Register fields and metadata for IO
    if (Name != "Default") {
       defineIOFields();
    }
@@ -128,7 +128,7 @@ OceanState::~OceanState() {
 
    // No operations needed, Kokkos arrays removed when no longer in scope
 
-} // end deconstructor
+} // end destructor
 
 //------------------------------------------------------------------------------
 // Removes a state from list by name
@@ -184,7 +184,7 @@ void OceanState::initParallelIO(Decomp *MeshDecomp) {
    Err = IO::createDecomp(EdgeDecompR8, IO::IOTypeR8, NDims, EdgeDims,
                           NEdgesAll * NVertLevels, EdgeID, Rearr);
    if (Err != 0)
-      LOG_CRITICAL("OceanStateh: error creating edge IO decomposition");
+      LOG_CRITICAL("OceanState: error creating edge IO decomposition");
 
 } // end initParallelIO
 

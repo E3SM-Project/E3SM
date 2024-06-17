@@ -77,16 +77,16 @@ class OceanState {
        LayerThicknessH; ///< Host LayerThickness array
 
    Kokkos::Array<Array2DR8, MaxTimeLevels>
-       NormalVelocity; ///< Device LayerThickness array
+       NormalVelocity; ///< Device NormalVelocity array
    Kokkos::Array<HostArray2DR8, MaxTimeLevels>
-       NormalVelocityH; ///< Host LayterThickness array
+       NormalVelocityH; ///< Host NormalVelocity array
 
    // Methods
 
    /// Initialize Omega local state
    static int init();
 
-   /// Construct a new local mesh for a given decomposition
+   /// Construct a new local state for a given decomposition
    OceanState(const std::string &Name, ///< [in] Name for mesh
               HorzMesh *Mesh,          ///< [in] Horizontal mesh
               Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
