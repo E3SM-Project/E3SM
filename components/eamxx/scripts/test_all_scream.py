@@ -714,12 +714,12 @@ class TestAllScream(object):
     def baselines_to_be_generated(self):
     ###############################################################################
         """
-        Return list of baselines to generate. Baselines need to be generated if
-         - they are missing
+        Return list of baselines to generate. Baselines will always be generated
+        for tests that use baselines.
         """
         ret = []
         for test in self._tests:
-            if test.baselines_missing:
+            if test.uses_baselines:
                 ret.append(test)
 
         return ret
