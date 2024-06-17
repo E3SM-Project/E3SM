@@ -311,26 +311,23 @@ apply_iop_forcing(const Real dt)
   }
 
   // Team policy and workspace manager for eamxx
-  // TODO: scream::ColumnOps functions could take an arbitary loop boundary
-  //       (TeamVectorRange, TeamThreadRange, ThreadVectorRange) so that
-  //       all 3 kernel launches here could be combined.
-  const auto policy_eamxx = ESU::get_default_team_policy(nelem*NGP*NGP, NLEV);
+  const auto policy_iop = ESU::get_default_team_policy(nelem*NGP*NGP, NLEV);
 
   // TODO: Create a memory buffer for this class
   //       and add the below WSM and views
-  WorkspaceMgr eamxx_wsm(NLEVI, 7+qsize, policy_eamxx);
+  WorkspaceMgr iop_wsm(NLEVI, 7+qsize, policy_iop);
   view_Nd<Pack, 4>
     temperature("temperature", nelem, NGP, NGP, NLEV);
 
   // Lambda for computing temperature
   auto compute_temperature = [&] () {
-    Kokkos::parallel_for("compute_temperature_for_iop", policy_eamxx, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    Kokkos::parallel_for("compute_temperature_for_iop", policy_iop, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int ie  =  team.league_rank()/(NGP*NGP);
       const int igp = (team.league_rank()/NGP)%NGP;
       const int jgp =  team.league_rank()%NGP;
 
       // Get temp views from workspace
-      auto ws = eamxx_wsm.get_workspace(team);
+      auto ws = iop_wsm.get_workspace(team);
       uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
@@ -349,7 +346,7 @@ apply_iop_forcing(const Real dt)
       team.team_barrier();
 
       // Compute temperature from virtual potential temperature
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, NLEV), [&] (const int k) {
         auto T_val = vtheta_dp_i(k);
         T_val /= dp3d_i(k);
         T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv_i(k));
@@ -366,13 +363,13 @@ apply_iop_forcing(const Real dt)
   Kokkos::fence();
 
   // Apply IOP forcing
-  Kokkos::parallel_for("apply_iop_forcing", policy_eamxx, KOKKOS_LAMBDA (const KT::MemberType& team) {
+  Kokkos::parallel_for("apply_iop_forcing", policy_iop, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank()/(NGP*NGP);
     const int igp = (team.league_rank()/NGP)%NGP;
     const int jgp =  team.league_rank()%NGP;
 
     // Get temp views from workspace
-    auto ws = eamxx_wsm.get_workspace(team);
+    auto ws = iop_wsm.get_workspace(team);
     uview_1d<Pack> pmid, pint, pdel;
     ws.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
                                       {&pmid,  &pint,  &pdel});
@@ -417,13 +414,13 @@ apply_iop_forcing(const Real dt)
   Kokkos::fence();
 
   // Postprocess homme states Qdp and vtheta_dp
-  Kokkos::parallel_for("compute_qdp_and_vtheta_dp", policy_eamxx, KOKKOS_LAMBDA (const KT::MemberType& team) {
+  Kokkos::parallel_for("compute_qdp_and_vtheta_dp", policy_iop, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank()/(NGP*NGP);
     const int igp = (team.league_rank()/NGP)%NGP;
     const int jgp =  team.league_rank()%NGP;
 
     // Get temp views from workspace
-    auto ws = eamxx_wsm.get_workspace(team);
+    auto ws = iop_wsm.get_workspace(team);
     uview_1d<Pack> pmid, pint, pdel;
     ws.take_many_contiguous_unsafe<3>({"pmid", "pint", "pdel"},
                                       {&pmid,  &pint,  &pdel});
@@ -450,7 +447,7 @@ apply_iop_forcing(const Real dt)
     team.team_barrier();
 
     // Compute Qdp from updated Q
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV*qsize), [&] (const int k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, NLEV*qsize), [&] (const int k) {
       const int ilev = k/qsize;
       const int q = k%qsize;
 
@@ -461,7 +458,7 @@ apply_iop_forcing(const Real dt)
       team.team_barrier();
 
     // Convert updated temperature back to psuedo density virtual potential temperature
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NLEV), [&] (const int k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, NLEV), [&] (const int k) {
         const auto th = PF::calculate_theta_from_T(temperature_i(k),pmid(k));
         vtheta_dp_i(k) = PF::calculate_virtual_temperature(th,qv_i(k))*dp3d_i(k);
     });
@@ -552,7 +549,7 @@ apply_iop_forcing(const Real dt)
     // Apply relaxation
     const auto rtau = std::max(dt, iop_nudge_tscale);
     Kokkos::parallel_for("apply_domain_relaxation",
-                          policy_eamxx,
+                          policy_iop,
                           KOKKOS_LAMBDA (const KT::MemberType& team) {
 
       const int ie  =  team.league_rank()/(NGP*NGP);
@@ -560,7 +557,7 @@ apply_iop_forcing(const Real dt)
       const int jgp =  team.league_rank()%NGP;
 
       // Get temp views from workspace
-      auto ws = eamxx_wsm.get_workspace(team);
+      auto ws = iop_wsm.get_workspace(team);
       uview_1d<Pack> pmid;
       ws.take_many_contiguous_unsafe<1>({"pmid"},{&pmid});
 
