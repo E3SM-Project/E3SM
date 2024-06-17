@@ -80,6 +80,7 @@ if(theta_hydrostatic_mode){
   Errors::check_option("init_simulation_params_c","vtheta_thresh",vtheta_thresh,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+  Errors::check_option("init_simulation_params_c","theta_hydrostatic_mode",theta_hydrostatic_mode,{0,1});
 #ifndef SCREAM
   Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
 #else
@@ -142,6 +143,11 @@ if(theta_hydrostatic_mode){
   params.dp3d_thresh                   = dp3d_thresh;
   params.vtheta_thresh                 = vtheta_thresh;
   params.internal_diagnostics_level    = internal_diagnostics_level;
+
+
+  std::cout << "In transfer routine AFTER ASSIGNMENT params.theta_hydrostatic_mode =" << params.theta_hydrostatic_mode << "\n";
+
+
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit
@@ -377,7 +383,7 @@ void init_functors_c (const int& allocate_buffer)
   auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff      = c.create_if_not_there<ForcingFunctor>();
   auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),tracers.num_tracers(),
-                                                      params.theta_hydrostatic_mode);
+                                                      (bool)params.theta_hydrostatic_mode);
   auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
 
   auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();

@@ -103,7 +103,7 @@ AtmosphereDriver(const ekat::Comm& atm_comm,
 
 AtmosphereDriver::~AtmosphereDriver ()
 {
-  finalize();
+//  finalize();
 }
 
 void AtmosphereDriver::

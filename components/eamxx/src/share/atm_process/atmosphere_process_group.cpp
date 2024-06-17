@@ -439,7 +439,8 @@ std::cout << "OG T field (" <<std::to_string(ii)<<","<<std::to_string(jj)<<") = 
                       (get_subcycle_iter()==get_num_subcycles()-1);
   for (auto atm_proc : m_atm_processes) {
 
-std::cout << "OG  proc begin ------------------------ " << atm_proc->name() << " dt="<<std::to_string(dt) <<"\n"<<std::flush;
+//std::cout << "OG  proc begin ------------------------ " << atm_proc->name() << " dt="<<std::to_string(dt) <<"\n"<<std::flush;
+std::cout << "OG  proc begin ------------------------ " << atm_proc->name() << std::flush;
 
 
   fm->get_field("T_mid").sync_to_host();
@@ -467,7 +468,7 @@ std::cout << "OG  proc AFTER RUN " << atm_proc->name() <<"\n"<<std::flush;
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-    m_atm_logger->debug("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
+//    m_atm_logger->debug("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
 
 std::cout << "OG AFTER mem usage " << atm_proc->name() <<"\n"<<std::flush;

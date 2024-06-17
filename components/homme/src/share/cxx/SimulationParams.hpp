@@ -105,7 +105,7 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   use_cpstar: " << (use_cpstar ? "yes" : "no") << "\n";
   out << "   transport_alg: " << transport_alg << "\n";
   out << "   disable_diagnostics: " << (disable_diagnostics ? "yes" : "no") << "\n";
-  out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
+  out << "   theta_hydrostatic_mode: " << ( (bool)theta_hydrostatic_mode ? "yes" : "no") << "\n";
   out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
   out << "   nsplit: " << nsplit << "\n";
   out << "   scale_factor: " << scale_factor << "\n";

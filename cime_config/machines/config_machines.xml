@@ -3415,12 +3415,12 @@
        <modules>
 	       <!--<command name="purge"></command>-->
 	       <!--<command name="use">/soft/modulefiles</command>-->
-	  <command name="load">spack-pe-gcc/0.6.1-23.275.2 cmake python/3.10.10</command>
+	  <command name="load">spack-pe-gcc/0.7.0-24.086.0 cmake python/3.10.11</command>
 	  <!--<command name="use">/soft/restricted/CNDA/updates/modulefiles</command>-->
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2023.12.15.002</command>
-          <command name="load">mpich/icc-all-pmix-gpu/52.2</command>
+          <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
+          <command name="load">mpich/icc-all-pmix-gpu/20231026</command>	  
           <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
           <!--command name="load">intel_compute_runtime/release/22.43.24595.30</command-->
         </modules>
@@ -3436,12 +3436,15 @@
 	<env name="NETCDF_C_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
         <env name="NETCDF_FORTRAN_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
 	<env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/pnetcdf</env>
+     <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
+                <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/bin:$ENV{PATH}</env>
 	<env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
+	     <env name="ZES_ENABLE_SYSMAN">1</env> <!-- REALLY NEEDED!!!!!!!!!! -->
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
@@ -3606,12 +3609,12 @@
        <modules>
                <!--<command name="purge"></command>-->
                <!--<command name="use">/soft/modulefiles</command>-->
-          <command name="load">spack-pe-gcc/0.6.1-23.275.2 cmake python/3.10.10</command>
+          <command name="load">spack-pe-gcc/0.7.0-24.086.0 cmake python/3.10.11</command>
           <!--<command name="use">/soft/restricted/CNDA/updates/modulefiles</command>-->
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2023.12.15.002</command>
-          <command name="load">mpich/icc-all-pmix-gpu/52.2</command>
+          <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
+          <command name="load">mpich/icc-all-pmix-gpu/20231026</command>
           <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
           <!--command name="load">intel_compute_runtime/release/22.43.24595.30</command-->
         </modules>
