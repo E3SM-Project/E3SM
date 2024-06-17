@@ -93,16 +93,6 @@ if [ $skip_testing -eq 0 ]; then
       fi
   fi
 
-  # AT runs may need an upstream merge in order to ensure that any DIFFs
-  # are caused by this PR and not simply because the PR is too far behind master.
-  if [ -z "$SCREAM_FAKE_ONLY" && $is_at_run == 1 ]; then
-      ./scripts/git-merge-ref origin/master
-      if [[ $? != 0 ]]; then
-          echo "MERGE FAILED! Please resolve conflicts"
-          exit 1
-      fi
-  fi
-
   SA_FAILURES_DETAILS=""
   # Run scream stand-alone tests (SA)
   if [ $test_SA -eq 1 ]; then
