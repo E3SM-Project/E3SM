@@ -251,7 +251,7 @@ Table 3. Definition of element groups used to build the discrete system.
 
 ### 3.2 Operator Formulation
 
-The TRiSK formulation of the discrete operators are as follows.
+The TRiSK formulation of the discrete operators are as follows. See [Bishnu et al. 2023](https://gmd.copernicus.org/articles/16/5539/2023) section 4.1 and Figure 1 for a discription and documentation of convergence rates, as well as [Bishnu et al. 2021](https://doi.org/10.5281/zenodo.7439539). All TRiSK spatial operators show second-order convergence on a uniform hexagon grid, except for the curl on vertices, which is first order. The curl interpolated from vertices to cell centers regains second order converence. The rates of convergence are typically less than second order on nonuniform meshes, including spherical meshes.
 
 #### 3.2.1. Divergence
 The divergence operator maps a vector field's edge normal component $F_e$ to a cell center ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 21) is
