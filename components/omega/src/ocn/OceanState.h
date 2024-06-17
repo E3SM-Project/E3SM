@@ -50,6 +50,7 @@ class OceanState {
    // number of retrievals required.
 
    std::string StateFileName;
+   std::string Name;
    int StateFileID;
 
    // Sizes and global IDs
@@ -80,6 +81,11 @@ class OceanState {
        NormalVelocity; ///< Device NormalVelocity array
    Kokkos::Array<HostArray2DR8, MaxTimeLevels>
        NormalVelocityH; ///< Host NormalVelocity array
+
+   // IOField names
+   // These are appended with the State name for non-Default state instances
+   std::string LayerThicknessIOName; ///< IOField name for LayerThickness
+   std::string NormalVelocityIOName; ///< IOField name for NormalVelocity
 
    // Methods
 
