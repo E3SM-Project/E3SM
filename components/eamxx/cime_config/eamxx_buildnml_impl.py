@@ -17,6 +17,8 @@ class MockCase(object):
 
     def __init__(self, kv_dict):
         self._kv_dict = dict(kv_dict)
+        if 'SCREAM_CMAKE_OPTIONS' not in self._kv_dict.keys():
+            self._kv_dict['SCREAM_CMAKE_OPTIONS'] = "SCREAM_NUM_VERTICAL_LEV 10"
 
     def get_value(self, key):
         if key in self._kv_dict:

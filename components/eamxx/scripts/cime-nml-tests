@@ -429,6 +429,7 @@ def scripts_tests(machine=None):
     if machine:
         expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
         CONFIG["machine"] = machine
+        setup_mach_env(machine)
 
     unittest.main(verbosity=2)
 

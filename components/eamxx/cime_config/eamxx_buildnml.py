@@ -11,12 +11,14 @@ import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
 
 # Add path to scream libs
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+EAMXXROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(EAMXXROOT, "scripts"))
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
+from utils import run_cmd_no_fail
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
@@ -163,6 +165,22 @@ def perform_consistency_checks(case, xml):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
      For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    >>> case = MockCase({'SCREAM_CMAKE_OPTIONS':'SCREAM_NUM_VERTICAL_LEV 15'})
+    >>> xml_str = '''
+    ... <params>
+    ...   <initial_conditions>
+    ...     <Filename>{}/eamxx_buildnml_unittest.nc</Filename>
+    ...   </initial_conditions>
+    ... </params>
+    ... '''.format(os.path.join(EAMXXROOT,'cime_config/tests'))
+    >>> xml = ET.fromstring(xml_str)
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'SCREAM_CMAKE_OPTIONS':'SCREAM_NUM_VERTICAL_LEV 20'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Error! IC file contains a number of levels different from the cmake option SCREAM_NUM_VERTICAL_LEV
+      ic file, lev: 15
+      SCREAM_NUM_VERTICAL_LEV: 20
     """
 
     # RRTMGP can be supercycled. Restarts cannot fall in the middle
@@ -204,6 +222,27 @@ def perform_consistency_checks(case, xml):
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+
+    # Check that SCREAM_NUM_VERTICAL_LEV matches nlev in the IC file
+    scream_opts = case.get_value("SCREAM_CMAKE_OPTIONS")
+    tokens = scream_opts.split()
+    expect (len(tokens) % 2 == 0, "Error! SCREAM_CMAKE_OPTIONS should contain a string of the form 'option1 value1 option2 value2 ...'\n")
+    it = iter(tokens)
+    cmake_args_dict = {}
+    for item in it:
+        cmake_args_dict[item] = next(it)
+
+    nlevs_cmake = int(cmake_args_dict['SCREAM_NUM_VERTICAL_LEV'])
+    ic_xml = find_node(xml,"initial_conditions")
+    if ic_xml is not None:
+        ic_fname = get_child(ic_xml,"Filename")
+        cmd = f"ncdump -h {ic_fname.text}" + " | sed '/variables:/q' | awk '/\<lev/{ print $3 }'"
+        nlevs_ic = int(run_cmd_no_fail(cmd))
+        expect (nlevs_cmake == nlevs_ic,
+                "Error! IC file contains a number of levels different from the cmake option SCREAM_NUM_VERTICAL_LEV\n"
+                f"  ic file, lev: {nlevs_ic}\n"
+                f"  SCREAM_NUM_VERTICAL_LEV: {nlevs_cmake}")
+
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
