@@ -10,7 +10,7 @@ from utils import check_minimum_python_version, expect, ensure_pylint, get_times
 
 check_minimum_python_version(3, 6)
 
-from machines_specs import is_machine_supported
+from machines_specs import is_machine_supported, setup_mach_env
 
 import unittest, argparse, sys, os, shutil
 from pathlib import Path

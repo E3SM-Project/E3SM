@@ -151,7 +151,7 @@ if [ $skip_testing -eq 0 ]; then
         scripts_fail=1
       fi
 
-      ./scripts/cime-nml-tests
+      ./scripts/cime-nml-tests -m mappy
       if [[ $? != 0 ]]; then
         fails=$fails+1;
         scripts_fail=1
