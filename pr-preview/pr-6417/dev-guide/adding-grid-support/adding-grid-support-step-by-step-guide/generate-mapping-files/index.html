@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.26">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
     
     
       
@@ -295,8 +295,6 @@
         
       
         
-          
-        
       
     
     
@@ -389,16 +387,81 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Development
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding Support for New Grids
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1876,7 +1939,6 @@
 
 
 <h1 id="generate-mapping-files">Generate mapping files</h1>
-<p><a href="../">Back to Adding Support for New Grids</a></p>
 <p>In order to pass data between different components at runtime, a set of mapping files between each component is generated offline.</p>
 <p>See <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/178848194/Recommended+Mapping+Procedures+for+E3SM+Atmosphere+Grids">Recommended Mapping Procedures for E3SM Atmosphere Grids</a> for a discussion of different remap algorithms and when to use each.</p>
 <p>TempestRemap and ESMF are the backends that generate the mapping weights, but this is all nicely encapsulated using ncremap. Tempest is the preferred method for creating mapping files. ncremap will call TempestRemap or ESMF depending on the algorithm argument and input file types. If exodus files are provided (i.e. <code>*.g</code>) then TempestRemap commands will be used. The ESMF tools are adequate for making atmosphere-only-type component sets for E3SM, but this tool is less conservative than TempestRemap. If you are making grids for a coupled run, then TempestRemap should be used wherever possible. Currently, TempestRemap has trouble with masked grids, such those that are needed for land data generation, so ESMF is still required for certain tasks.</p>
@@ -1902,12 +1964,13 @@
 <div class="highlight"><pre><span></span><code>
 </code></pre></div>
 <h2 id="create-mapping-files">Create Mapping Files</h2>
-<p>ncremap provides a convient </p>
+<p>ncremap provides a convient</p>
 <p>We can use ncremap to generate ALL the needed mapping files between two grids, in this example the ne4 atmosphere and the oQU240 ocean grid (for the moment, we will put the land on the same grid as the atmosphere):</p>
 <div class="highlight"><pre><span></span><code><span class="nv">atm_grid_file</span><span class="o">=</span>ne4.g
 <span class="nv">ocn_grid_file</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata/cpl/gridmaps/oQU240/ocean.QU.240km.scrip.151209.nc
 <span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">output_root</span><span class="si">}</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ncremap<span class="w"> </span>-P<span class="w"> </span>mwf<span class="w"> </span>-s<span class="w"> </span><span class="nv">$ocn_grid_file</span><span class="w"> </span>-g<span class="w"> </span><span class="nv">$atm_grid_file</span><span class="w"> </span>--nm_src<span class="o">=</span>oQU240<span class="w"> </span>--nm_dst<span class="o">=</span>ne4np4<span class="w"> </span>--dt_sng<span class="o">=</span><span class="m">20181114</span>
 </code></pre></div>
+<p>Back to step-by-step guide for <a href="../">Adding Support for New Grids</a></p>
 
 
 
