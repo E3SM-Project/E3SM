@@ -236,7 +236,7 @@ def perform_consistency_checks(case, xml):
     ic_xml = find_node(xml,"initial_conditions")
     if ic_xml is not None:
         ic_fname = get_child(ic_xml,"Filename")
-        cmd = f"ncdump -h {ic_fname.text}" + " | sed '/variables:/q' | awk '/\<lev/{ print $3 }'"
+        cmd = f"ncdump -h {ic_fname.text}" + r" | sed '/variables:/q' | awk '/\<lev/{ print $3 }'"
         nlevs_ic = int(run_cmd_no_fail(cmd))
         expect (nlevs_cmake == nlevs_ic,
                 "Error! IC file contains a number of levels different from the cmake option SCREAM_NUM_VERTICAL_LEV\n"
