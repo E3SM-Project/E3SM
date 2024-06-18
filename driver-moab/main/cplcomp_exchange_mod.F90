@@ -1596,6 +1596,15 @@ contains
                if (seq_comm_iamroot(CPLID)) then
                   write(logunit,'(A)') subname//' load ice domain mesh from file '//trim(ice_domain)
                endif
+               ! need to add global id tag to the app, it will be used in restart
+               tagtype = 0  ! dense, integer
+               numco = 1
+               tagname='GLOBAL_ID'//C_NULL_CHAR
+               ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in adding global id tag to icex'
+                  call shr_sys_abort(subname//' ERROR in adding global id tag to icex ')
+               endif
 #ifdef MOABDEBUG
       !        debug test
                outfile = 'recSeaIceInit.h5m'//C_NULL_CHAR
