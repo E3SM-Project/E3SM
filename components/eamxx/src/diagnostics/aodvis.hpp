@@ -26,7 +26,7 @@ class AODVis : public AtmosphereDiagnostic {
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
   int m_ncols;
   int m_nlevs;

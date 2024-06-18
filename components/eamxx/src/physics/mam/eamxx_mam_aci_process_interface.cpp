@@ -564,14 +564,9 @@ void MAMAci::run_impl(const double dt) {
                      // output
                      w0_, rho_);
 
-  // Get w_sec_int_ from w_sec_mid_
-  compute_values_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
-                               // output
-                               w_sec_int_);
-  Kokkos::fence();  // wait for w_sec_int_ to be computed.
-  compute_tke_using_w_sec(team_policy, w_sec_int_, nlev_,
-                          // output
-                          tke_);
+  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_, w_sec_int_,
+                            // output
+                            tke_);
 
   Kokkos::fence();  // wait for tke_ to be computed.
   compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
@@ -583,7 +578,7 @@ void MAMAci::run_impl(const double dt) {
       aitken_dry_dia_,
       ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
 
-  Kokkos::fence();  // wait for aitken_dry_dia_ to be computed.
+  Kokkos::fence();  // wait for aitken_dry_dia_ to be copied.
 
   //  Compute Ice nucleation
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
@@ -608,16 +603,10 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();  // wait for rpdel_ to be computed.
 
-  // Get kvh_int_ from kvh_mid_
-  compute_values_at_interfaces(team_policy, kvh_mid_, dry_atm_.dz, nlev_,
-                               // output
-                               kvh_int_);
-
-  Kokkos::fence();
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
-  call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_int_, wsub_,
+  call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_,
                            cloud_frac_, cloud_frac_prev_, dry_aero_, nlev_,
                            // output
                            coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_,

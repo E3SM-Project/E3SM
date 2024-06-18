@@ -15,7 +15,7 @@ class AeroComCld : public AtmosphereDiagnostic {
   AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic
-  std::string name() const;
+  std::string name() const override;
 
   // Set the grid
   void set_grids(
@@ -25,7 +25,7 @@ class AeroComCld : public AtmosphereDiagnostic {
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
   // Grid info
   int m_ncols;
