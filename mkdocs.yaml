@@ -10,6 +10,7 @@ nav:
       - Introduction: 'dev-guide/index.md'
       - Adding Support for New Grids: 'dev-guide/adding-grid-support/index.md'
   - Components: '*include ./components/*/mkdocs.yml'
+  - Tools:      '*include ./tools/*/mkdocs.yml'
   - More Information:
     - 'E3SM-Project' : 'http://docs.e3sm.org'
     - 'e3sm.org' : 'http://e3sm.org'
