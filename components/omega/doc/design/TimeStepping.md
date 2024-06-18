@@ -75,8 +75,10 @@ $$
 \boldsymbol{u}^{n+1} = \boldsymbol{u}^n + \mathcal{RHS}_u \left( \boldsymbol{u}^n,h^{n+1} \right) \Delta t
 $$
 Here the variables are discretized in time only. Spatial discretization can be shown with a subscript if desired, using $u^n_e, h^n_i, \phi^n_i$ etc.
-Note that the tracer equation is thickness-weighted, but we divide by the thickness in order to obtain the tracer variable $\phi$, which has units of concentration.
+The time domain is discretized into steps $t_0, t_1, ... t_n, t_{n+1}$ where $t_{n+1} = t_n+\Delta t$. The superscript indicates the time on all variables. For example, $h^n = h\left( t_n \right)$.
 
+
+Note that the tracer equation is thickness-weighted, but we divide by the thickness in order to obtain the tracer variable $\phi$, which has units of concentration.
 One might argue that the tracer equation could use $h^{n+1}$ in the right-hand-side calculation, because that quantity is available from the previous computation. However, that would violate the consistency of the solution method of the thickness and tracer equations, and cause the globally-integrated tracer to not be conserved. Like the continuous equations, when we set $\phi=1$ the numerical method for $\phi h$ must reduce to the numerical method for $h$.
 
 
