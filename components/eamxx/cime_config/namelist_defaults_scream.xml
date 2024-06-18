@@ -38,7 +38,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
     <!-- For intenal testing only -->
-    <selector name="test_sel" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NNUM_TRACERS ([0-9]+).*"/>
+    <selector name="test_sel" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_TRACERS ([0-9]+).*"/>
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
