@@ -5,6 +5,8 @@
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
 
+#include <string>
+
 namespace OMEGA {
 
 class VorticityAuxVars {
@@ -16,21 +18,10 @@ class VorticityAuxVars {
    Array2DReal NormRelVortEdge;
    Array2DReal NormPlanetVortEdge;
 
-   VorticityAuxVars(const HorzMesh *mesh, int NVertLevels)
-       : RelVortVertex("RelVortVertex", mesh->NVerticesSize, NVertLevels),
-         NormRelVortVertex("NormRelVortVertex", mesh->NVerticesSize,
-                           NVertLevels),
-         NormPlanetVortVertex("NormPlanetVortVertex", mesh->NVerticesSize,
-                              NVertLevels),
-         NormRelVortEdge("NormRelVortEdge", mesh->NEdgesSize, NVertLevels),
-         NormPlanetVortEdge("NormPlanetVortEdge", mesh->NEdgesSize,
-                            NVertLevels),
-         VertexDegree(mesh->VertexDegree), CellsOnVertex(mesh->CellsOnVertex),
-         EdgesOnVertex(mesh->EdgesOnVertex),
-         EdgeSignOnVertex(mesh->EdgeSignOnVertex), DcEdge(mesh->DcEdge),
-         KiteAreasOnVertex(mesh->KiteAreasOnVertex),
-         AreaTriangle(mesh->AreaTriangle), FVertex(mesh->FVertex),
-         VerticesOnEdge(mesh->VerticesOnEdge) {}
+   VorticityAuxVars(const HorzMesh *mesh, int NVertLevels);
+
+   void addMetaData() const;
+   void defineIOFields() const;
 
    KOKKOS_FUNCTION void
    computeVarsOnVertex(int IVertex, int KChunk,
@@ -96,6 +87,13 @@ class VorticityAuxVars {
    Array1DR8 AreaTriangle;
    Array2DI4 VerticesOnEdge;
    Array1DR8 FVertex;
+
+   // names used in defining MetaData and IOFields
+   static const std::string RelVortVertexName;
+   static const std::string NormRelVortVertexName;
+   static const std::string NormPlanetVortVertexName;
+   static const std::string NormRelVortEdgeName;
+   static const std::string NormPlanetVortEdgeName;
 };
 
 } // namespace OMEGA

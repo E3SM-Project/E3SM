@@ -44,7 +44,7 @@ if(GKlib_FOUND)
 endif()
 
 # Add source files for the library
-file(GLOB _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
+file(GLOB_RECURSE _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
 
 add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
 

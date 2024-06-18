@@ -3,8 +3,10 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "MetaData.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "auxiliaryVars/KineticAuxVars.h"
@@ -163,9 +165,10 @@ constexpr char DefaultMeshFile[] = "OmegaSphereMesh.nc";
 using TestSetup                  = TestSetupSphere;
 #endif
 
+constexpr int NVertLevels = 16;
+
 int initState(const Array2DReal &LayerThickCell,
-              const Array2DReal &NormalVelEdge, HorzMesh *Mesh,
-              int NVertLevels) {
+              const Array2DReal &NormalVelEdge, HorzMesh *Mesh) {
    int Err = 0;
 
    TestSetup Setup;
@@ -214,8 +217,7 @@ int initState(const Array2DReal &LayerThickCell,
 }
 
 int testKineticAuxVars(const Array2DReal &LayerThicknessCell,
-                       const Array2DReal &NormalVelocityEdge, int NVertLevels,
-                       Real RTol) {
+                       const Array2DReal &NormalVelocityEdge, Real RTol) {
    int Err = 0;
    TestSetup Setup;
 
@@ -267,8 +269,7 @@ int testKineticAuxVars(const Array2DReal &LayerThicknessCell,
 }
 
 int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
-                              const Array2DReal &NormalVelEdge, int NVertLevels,
-                              Real RTol) {
+                              const Array2DReal &NormalVelEdge, Real RTol) {
    int Err = 0;
    TestSetup Setup;
 
@@ -315,8 +316,7 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
 }
 
 int testVorticityAuxVars(const Array2DReal &LayerThickCell,
-                         const Array2DReal &NormalVelEdge, int NVertLevels,
-                         Real RTol) {
+                         const Array2DReal &NormalVelEdge, Real RTol) {
    TestSetup Setup;
    int Err = 0;
 
@@ -466,10 +466,18 @@ int initAuxVarsTest(const std::string &mesh) {
       LOG_ERROR("AuxVarsTest: error initializing default mesh");
    }
 
+   const auto &Mesh = HorzMesh::getDefault();
+   MetaDim::create("NCells", Mesh->NCellsSize);
+   MetaDim::create("NVertices", Mesh->NVerticesSize);
+   MetaDim::create("NEdges", Mesh->NEdgesSize);
+   MetaDim::create("NVertLevels", NVertLevels);
+   MetaGroup::create("auxiliaryVars");
+
    return Err;
 }
 
 void finalizeAuxVarsTest() {
+   IOField::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();
@@ -483,19 +491,16 @@ void auxVarsTest(const std::string &mesh = DefaultMeshFile) {
    }
 
    const auto &Mesh = HorzMesh::getDefault();
-   int NVertLevels  = 16;
 
    Array2DReal LayerThickCell("LayerThickCell", Mesh->NCellsSize, NVertLevels);
    Array2DReal NormalVelEdge("NormalVelEdge", Mesh->NEdgesSize, NVertLevels);
-   Err += initState(LayerThickCell, NormalVelEdge, Mesh, NVertLevels);
+   Err += initState(LayerThickCell, NormalVelEdge, Mesh);
 
    const Real RTol = sizeof(Real) == 4 ? 1e-2 : 1e-10;
 
-   Err += testKineticAuxVars(LayerThickCell, NormalVelEdge, NVertLevels, RTol);
-   Err += testLayerThicknessAuxVars(LayerThickCell, NormalVelEdge, NVertLevels,
-                                    RTol);
-   Err +=
-       testVorticityAuxVars(LayerThickCell, NormalVelEdge, NVertLevels, RTol);
+   Err += testKineticAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testLayerThicknessAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testVorticityAuxVars(LayerThickCell, NormalVelEdge, RTol);
 
    if (Err == 0) {
       LOG_INFO("AuxVarsTest: Successful completion");

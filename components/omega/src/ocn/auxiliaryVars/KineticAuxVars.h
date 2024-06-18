@@ -5,6 +5,8 @@
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
 
+#include <string>
+
 namespace OMEGA {
 
 class KineticAuxVars {
@@ -12,12 +14,10 @@ class KineticAuxVars {
    Array2DReal KineticEnergyCell;
    Array2DReal VelocityDivCell;
 
-   KineticAuxVars(const HorzMesh *mesh, int NVertLevels)
-       : KineticEnergyCell("KineticEnergyCell", mesh->NCellsSize, NVertLevels),
-         VelocityDivCell("VelocityDivCell", mesh->NCellsSize, NVertLevels),
-         NEdgesOnCell(mesh->NEdgesOnCell), EdgesOnCell(mesh->EdgesOnCell),
-         EdgeSignOnCell(mesh->EdgeSignOnCell), DcEdge(mesh->DcEdge),
-         DvEdge(mesh->DvEdge), AreaCell(mesh->AreaCell) {}
+   KineticAuxVars(const HorzMesh *mesh, int NVertLevels);
+
+   void addMetaData() const;
+   void defineIOFields() const;
 
    KOKKOS_FUNCTION void
    computeVarsOnCell(int ICell, int KChunk,
@@ -55,6 +55,10 @@ class KineticAuxVars {
    Array1DR8 DcEdge;
    Array1DR8 DvEdge;
    Array1DR8 AreaCell;
+
+   // names used in defining MetaData and IOFields
+   static const std::string KineticEnergyCellName;
+   static const std::string VelocityDivCellName;
 };
 
 } // namespace OMEGA

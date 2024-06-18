@@ -5,6 +5,8 @@
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
 
+#include <string>
+
 namespace OMEGA {
 
 enum FluxThickEdgeOption { Center, Upwind };
@@ -17,12 +19,10 @@ class LayerThicknessAuxVars {
    // TODO(mwarusz): get this from config
    FluxThickEdgeOption FluxThickEdgeChoice = Upwind;
 
-   LayerThicknessAuxVars(const HorzMesh *mesh, int NVertLevels)
-       : FluxLayerThickEdge("FluxLayerThickEdge", mesh->NEdgesSize,
-                            NVertLevels),
-         MeanLayerThickEdge("MeanLayerThickEdge", mesh->NEdgesSize,
-                            NVertLevels),
-         CellsOnEdge(mesh->CellsOnEdge) {}
+   LayerThicknessAuxVars(const HorzMesh *mesh, int NVertLevels);
+
+   void addMetaData() const;
+   void defineIOFields() const;
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,
@@ -64,6 +64,10 @@ class LayerThicknessAuxVars {
 
  private:
    Array2DI4 CellsOnEdge;
+
+   // names used in defining MetaData and IOFields
+   static const std::string FluxLayerThickEdgeName;
+   static const std::string MeanLayerThickEdgeName;
 };
 
 } // namespace OMEGA
