@@ -8,7 +8,7 @@ module SurfaceAlbedoType
   use decompMod      , only : bounds_type
   use elm_varpar     , only : numrad, nlevcan, nlevsno
   use abortutils     , only : endrun
-  use elm_varctl     , only : fsurdat, iulog
+  use elm_varctl     , only : fsurdat, iulog, use_finetop_rad
   use elm_varcon     , only : grlnd
   use ColumnType     , only : col_pp
    
@@ -59,6 +59,7 @@ module SurfaceAlbedoType
   type, public :: surfalb_type
 
      real(r8), pointer :: coszen_col           (:)   => null() ! col cosine of solar zenith angle
+     real(r8), pointer :: cosinc_col           (:)   => null() ! col cosine of solar incident angle (local)
      real(r8), pointer :: albd_patch           (:,:) => null() ! patch surface albedo (direct)   (numrad)
      real(r8), pointer :: albi_patch           (:,:) => null() ! patch surface albedo (diffuse)  (numrad)
      real(r8), pointer :: albgrd_pur_col       (:,:) => null() ! col pure snow ground direct albedo     (numrad)
@@ -255,6 +256,7 @@ contains
     begc = bounds%begc; endc = bounds%endc
 
     allocate(this%coszen_col         (begc:endc))              ; this%coszen_col         (:)   = spval
+    allocate(this%cosinc_col         (begc:endc))              ; this%cosinc_col         (:)   = spval
     allocate(this%albgrd_col         (begc:endc,numrad))       ; this%albgrd_col         (:,:) =spval
     allocate(this%albgri_col         (begc:endc,numrad))       ; this%albgri_col         (:,:) =spval
     allocate(this%albsnd_hst_col     (begc:endc,numrad))       ; this%albsnd_hst_col     (:,:) = spval
@@ -333,6 +335,11 @@ contains
     call hist_addfld1d (fname='COSZEN', units='1', &
          avgflag='A', long_name='cosine of solar zenith angle', &
          ptr_col=this%coszen_col, default='inactive')
+
+    this%cosinc_col(begc:endc) = spval
+    call hist_addfld1d (fname='COSINC', units='1', &
+         avgflag='A', long_name='cosine of solar incident angle (local surface)', &
+        ptr_col=this%cosinc_col, default='inactive')
 
     this%albgri_col(begc:endc,:) = spval
     call hist_addfld2d (fname='ALBGRD', units='proportion', type2d='numrad', &
@@ -449,6 +456,13 @@ contains
          dim1name='column', &
          long_name='cosine of solar zenith angle', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%coszen_col)
+
+    if (use_finetop_rad) then
+         call restartvar(ncid=ncid, flag=flag, varname='cosinc', xtype=ncd_double,  &
+              dim1name='column', &
+              long_name='cosine of solar incident angle (local surface)', units='1', &
+              interpinic_flag='interp', readvar=readvar, data=this%cosinc_col)
+     end if
 
     call restartvar(ncid=ncid, flag=flag, varname='albd', xtype=ncd_double,  &
          dim1name='pft', dim2name='numrad', switchdim=.true., &

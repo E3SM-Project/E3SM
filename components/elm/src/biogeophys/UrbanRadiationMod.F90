@@ -13,7 +13,7 @@ module UrbanRadiationMod
   use decompMod         , only : bounds_type
   use elm_varpar        , only : numrad
   use elm_varcon        , only : isecspday, degpsec, namel
-  use elm_varctl        , only : iulog
+  use elm_varctl        , only : iulog, use_finetop_rad
   use abortutils        , only : endrun
   use UrbanParamsType   , only : urbanparams_type
   use atm2lndType       , only : atm2lnd_type
@@ -116,10 +116,10 @@ contains
          canyon_hwr         =>    lun_pp%canyon_hwr                             , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width
          wtroad_perv        =>    lun_pp%wtroad_perv                            , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road
 
-         forc_solad         =>    top_af%solad                               , & ! Input:  [real(r8) (:,:) ]  direct beam radiation  (vis=forc_sols , nir=forc_soll ) (W/m**2)
-         forc_solai         =>    top_af%solai                               , & ! Input:  [real(r8) (:,:) ]  diffuse beam radiation (vis=forc_sols , nir=forc_soll ) (W/m**2)
-         forc_solar         =>    top_af%solar                               , & ! Input:  [real(r8) (:)   ]  incident solar radiation (W/m**2)
-         forc_lwrad         =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
+         forc_solad         =>    top_af%solad_pp                               , & ! Input:  [real(r8) (:,:) ]  direct beam radiation under PP (vis=forc_sols , nir=forc_soll ) (W/m**2)
+         forc_solai         =>    top_af%solai_pp                               , & ! Input:  [real(r8) (:,:) ]  diffuse beam radiation under PP (vis=forc_sols , nir=forc_soll ) (W/m**2)
+         forc_solar         =>    top_af%solar_pp                               , & ! Input:  [real(r8) (:)   ]  incident solar radiation under PP (W/m**2)
+         forc_lwrad         =>    top_af%lwrad_pp                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation under PP (W/m**2)
 
          frac_sno           =>    col_ws%frac_sno               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
 
@@ -156,6 +156,13 @@ contains
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &
          )
+
+      if (.not. use_finetop_rad) then
+         forc_solad(:,:) = top_af%solad(:,:)
+         forc_solai(:,:) = top_af%solai(:,:)
+         forc_solar(:)   = top_af%solar(:)
+         forc_lwrad(:)   = top_af%lwrad(:)
+      end if
 
       ! Define fields that appear on the restart file for non-urban landunits
 

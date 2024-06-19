@@ -1812,7 +1812,7 @@ contains
      use elm_varpar       , only : nlevsno, numrad
      use elm_time_manager , only : get_nstep
      use shr_const_mod    , only : SHR_CONST_PI
-     use elm_varctl       , only : snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+     use elm_varctl       , only : snow_shape, snicar_atm_type, use_dust_snow_internal_mixing, use_finetop_rad
      !
      ! !ARGUMENTS:
      integer           , intent(in)  :: flg_snw_ice                                        ! flag: =1 when called from CLM, =2 when called from CSIM
@@ -1868,6 +1868,7 @@ contains
      !integer :: trip                               ! flag: =1 to redo RT calculation if result is unrealistic
      !integer :: flg_dover                          ! defines conditions for RT redo (explained below)
 
+     real(r8):: slope_rad, deg2rad
      real(r8):: albedo                             ! temporary snow albedo [frc]
      real(r8):: flx_sum                            ! temporary summation variable for NIR weighting
      real(r8):: albout_lcl(numrad_snw)             ! snow albedo by band [frc]
@@ -2140,6 +2141,7 @@ contains
        ! Define constants
        pi = SHR_CONST_PI
        nint_snw_rds_min = nint(snw_rds_min)
+       deg2rad = SHR_CONST_PI/180._r8
 
        ! always use Delta approximation for snow
        DELTA = 1
@@ -2202,6 +2204,7 @@ contains
       ! (when called from CSIM, there is only one column)
        do fc = 1,num_nourbanc
           c_idx = filter_nourbanc(fc)
+          g_idx = col_pp%gridcell(c_idx)
 
           ! Zero absorbed radiative fluxes:
           do i=-nlevsno+1,1,1
@@ -2265,6 +2268,13 @@ contains
                 lat_coord         = -90
                 lon_coord         = 0
              endif ! end if flg_snw_ice == 1
+
+             if (use_finetop_rad) then
+                slope_rad = grc_pp%slope_deg(g_idx) * deg2rad
+                h2osno_liq_lcl = h2osno_liq_lcl * cos(slope_rad)
+                h2osno_ice_lcl = h2osno_ice_lcl * cos(slope_rad)
+                h2osno_lcl = h2osno_lcl * cos(slope_rad)
+             endif
 
 #ifdef MODAL_AER
            !mgf++

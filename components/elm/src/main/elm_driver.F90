@@ -83,7 +83,7 @@ module elm_driver
   !
   use filterMod              , only : setFilters
   !
-  use atm2lndMod             , only : downscale_forcings
+  use atm2lndMod             , only : downscale_forcings, topographic_effects_on_radiation
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
   use lnd2iacMod             , only : lnd2iac_type
@@ -182,6 +182,7 @@ module elm_driver
   use CNPBudgetMod                , only : CNPBudget_SetBeginningMonthlyStates, CNPBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
+  use elm_varctl                  , only : use_finetop_rad
 
   use timeinfoMod
   !
@@ -687,6 +688,12 @@ contains
             filter(nc)%num_nolakep, filter(nc)%nolakep, &
             filter(nc)%num_soilp  , filter(nc)%soilp,   &
             canopystate_vars, energyflux_vars)
+
+       if (use_finetop_rad) then
+            call topographic_effects_on_radiation(bounds_clump, &
+                 atm2lnd_vars, nextsw_cday, declinp1, &
+                 lnd2atm_vars)
+       endif
 
        call downscale_forcings(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &

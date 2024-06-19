@@ -15,6 +15,7 @@ module GridcellType
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
   use topounit_varcon, only : max_topounits
+  use elm_varpar     , only : ndir_horizon_angle
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -50,6 +51,12 @@ module GridcellType
      real(r8), pointer :: terrain_config (:) => null()   ! mean of (terrain configuration factor / cos(slope))
      real(r8), pointer :: sinsl_cosas  (:) => null()     ! sin(slope)*cos(aspect) / cos(slope)
      real(r8), pointer :: sinsl_sinas  (:) => null()     ! sin(slope)*sin(aspect) / cos(slope)
+
+     real(r8), pointer :: slope_deg                   (:) => null()     ! gridcell slope in degree (0-90)
+     real(r8), pointer :: aspect_deg                  (:) => null()     ! gridcell aspect in degree (0-360)
+     real(r8), pointer :: horizon_angle_deg           (:,:) => null()   ! horizon angles in degree (0-90)
+     real(r8), pointer :: sky_view_factor             (:) => null()     ! sky view factor (unitless, 0-1)
+     real(r8), pointer :: terrain_config_factor       (:) => null()     ! terrain configuration factor (unitless, 0-1)
      
      ! Daylength
      real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (seconds)
@@ -115,6 +122,12 @@ contains
     allocate(this%sinsl_cosas(begg:endg)) ; this%sinsl_cosas(:) = ispval      ! sin(slope)*cos(aspect) / cos(slope)
     allocate(this%sinsl_sinas(begg:endg)) ; this%sinsl_sinas(:) = ispval      ! sin(slope)*sin(aspect) / cos(slope)
     
+    allocate(this%slope_deg           (begg:endg)) ; this%slope_deg            (:) = ispval
+    allocate(this%aspect_deg          (begg:endg)) ; this%aspect_deg           (:) = ispval
+    allocate(this%horizon_angle_deg   (begg:endg,1:ndir_horizon_angle)) ; this%horizon_angle_deg(:,:) = ispval
+    allocate(this%sky_view_factor     (begg:endg)) ; this%sky_view_factor      (:) = ispval
+    allocate(this%terrain_config_factor(begg:endg)) ; this%terrain_config_factor(:) = ispval
+
     ! This is initiailized in module DayLength
     allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = spval
     allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = spval
@@ -167,7 +180,12 @@ contains
     deallocate(this%terrain_config   ) 
     deallocate(this%sinsl_cosas      )
     deallocate(this%sinsl_sinas      )
-    
+    deallocate(this%slope_deg            )
+    deallocate(this%aspect_deg           )
+    deallocate(this%horizon_angle_deg    )
+    deallocate(this%sky_view_factor      )
+    deallocate(this%terrain_config_factor)
+
   end subroutine grc_pp_clean
 
 end module GridcellType

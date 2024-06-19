@@ -14,7 +14,7 @@ module SurfaceAlbedoMod
   use landunit_varcon   , only : istsoil, istcrop, istdlak
   use elm_varcon        , only : grlnd, namep, namet
   use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad
+  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad, use_finetop_rad
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, SNICAR_AD_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
@@ -93,6 +93,7 @@ contains
       !$acc routine seq
     use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad
     use shr_orb_mod
+    use shr_const_mod   , only : SHR_CONST_PI
 
     !
     ! !ARGUMENTS:
@@ -134,8 +135,12 @@ contains
     real(r8) :: ws              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is SAI
     real(r8) :: blai(bounds%begp:bounds%endp)              ! lai buried by snow: tlai - elai
     real(r8) :: bsai(bounds%begp:bounds%endp)              ! sai buried by snow: tsai - esai
+    real(r8) :: sza,saa,deg2rad,slope_rad,aspect_rad
+
     real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
     real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (pft)
+    real(r8) :: cosinc_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar incidence angle to local surface for next time step (grc)
+    real(r8) :: cosinc_patch    (bounds%begp:bounds%endp)                                 ! cosine solar incidence angle to local surface for next time step (pft)
     real(r8) :: rho(bounds%begp:bounds%endp,numrad)        ! leaf/stem refl weighted by fraction LAI and SAI
     real(r8) :: tau(bounds%begp:bounds%endp,numrad)        ! leaf/stem tran weighted by fraction LAI and SAI
     real(r8) :: albsfc          (bounds%begc:bounds%endc,numrad)                          ! albedo of surface underneath snow (col,bnd)
@@ -198,6 +203,7 @@ contains
           ncan          =>    surfalb_vars%ncan_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers
           nrad          =>    surfalb_vars%nrad_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
           coszen_col    =>    surfalb_vars%coszen_col             , & ! Output:  [real(r8) (:)   ]  cosine of solar zenith angle
+          cosinc_col    =>    surfalb_vars%cosinc_col             , & ! Output:  [real(r8) (:)   ]  cosine of solar zenith angle
           albgrd        =>    surfalb_vars%albgrd_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (direct)
           albgri        =>    surfalb_vars%albgri_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (diffuse)
           albsod        =>    surfalb_vars%albsod_col             , & ! Output:  [real(r8) (:,:) ]  direct-beam soil albedo (col,bnd) [frc]
@@ -235,17 +241,38 @@ contains
 
     ! Cosine solar zenith angle for next time step
 
+    deg2rad = SHR_CONST_PI/180._r8
     do g = bounds%begg,bounds%endg
        coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+
+       if (use_finetop_rad) then
+         ! solar zenith angle
+         sza = acos(coszen_gcell(g))
+         ! solar azimuth angle
+         saa = shr_orb_azimuth(nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1, sza)
+
+         slope_rad = grc_pp%slope_deg(g) * deg2rad
+         aspect_rad = grc_pp%aspect_deg(g) * deg2rad
+
+         cosinc_gcell(g) = cos(slope_rad) * coszen_gcell(g) + sin(slope_rad) * sin(sza) * cos(aspect_rad - saa)
+         cosinc_gcell(g) = max(-1._r8, min(cosinc_gcell(g), 1._r8))
+         !write(iulog,*) 'cosinc_gcell',cosinc_gcell(g)
+         !write(iulog,*) 'coszen_gcell',coszen_gcell(g)
+         if (cosinc_gcell(g) <= 0._r8) cosinc_gcell(g) = 0.1_r8 ! although direct solar radiation is zero, we need to calculate diffuse albedo in this case
+       else
+         cosinc_gcell(g) = coszen_gcell(g)
+       endif
     end do
     do c = bounds%begc,bounds%endc
        g = col_pp%gridcell(c)
        coszen_col(c) = coszen_gcell(g)
+       cosinc_col(c) = cosinc_gcell(g)
     end do
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
        g = veg_pp%gridcell(p)
-          coszen_patch(p) = coszen_gcell(g)
+       coszen_patch(p) = coszen_gcell(g)
+       cosinc_patch(p) = cosinc_gcell(g)
     end do
 
     ! Initialize output because solar radiation only done if coszen > 0
@@ -305,7 +332,7 @@ contains
 
        call SoilAlbedo(bounds, &
             num_nourbanc, filter_nourbanc, &
-         coszen_col(bounds%begc:bounds%endc), &
+         cosinc_col(bounds%begc:bounds%endc), &
          albsnd(bounds%begc:bounds%endc, :), &
             albsni(bounds%begc:bounds%endc, :), &
             lakestate_vars, surfalb_vars)
@@ -373,7 +400,7 @@ contains
           flg_slr = 1; ! direct-beam
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -384,7 +411,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
                 call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -399,7 +426,7 @@ contains
           flg_slr = 2; ! diffuse
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -410,7 +437,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -435,7 +462,7 @@ contains
           flg_slr = 1; ! direct-beam
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -446,7 +473,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -460,7 +487,7 @@ contains
           flg_slr = 2; ! diffuse
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -471,7 +498,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -496,7 +523,7 @@ contains
           flg_slr = 1; ! direct-beam
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -507,7 +534,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -521,7 +548,7 @@ contains
           flg_slr = 2; ! diffuse
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -532,7 +559,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -548,7 +575,7 @@ contains
           flg_slr = 1; ! direct-beam
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -559,7 +586,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -573,7 +600,7 @@ contains
           flg_slr = 2; ! diffuse
           if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                                coszen_col(bounds%begc:bounds%endc), &
+                                cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
                                 h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -584,7 +611,7 @@ contains
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
           else
               call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -601,7 +628,7 @@ contains
        flg_slr = 1; ! direct-beam
        if (use_snicar_ad) then
            call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -612,7 +639,7 @@ contains
                              flx_absd_snw(bounds%begc:bounds%endc, :, :) )
        else
             call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                           coszen_col(bounds%begc:bounds%endc), &
+                           cosinc_col(bounds%begc:bounds%endc), &
                            flg_slr, &
                            h2osno_liq(bounds%begc:bounds%endc, :), &
                            h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -626,7 +653,7 @@ contains
        flg_slr = 2; ! diffuse
        if (use_snicar_ad) then
            call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             coszen_col(bounds%begc:bounds%endc), &
+                             cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
                              h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -637,7 +664,7 @@ contains
                              flx_absi_snw(bounds%begc:bounds%endc, :, :) )
        else
             call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                           coszen_col(bounds%begc:bounds%endc), &
+                           cosinc_col(bounds%begc:bounds%endc), &
                            flg_slr, &
                            h2osno_liq(bounds%begc:bounds%endc, :), &
                            h2osno_ice(bounds%begc:bounds%endc, :), &
@@ -948,12 +975,11 @@ contains
       endif
 
       call TwoStream (bounds, filter_vegsol, num_vegsol, &
-               coszen_patch(bounds%begp:bounds%endp), &
+               cosinc_patch(bounds%begp:bounds%endp), &
                rho(bounds%begp:bounds%endp, :), &
                tau(bounds%begp:bounds%endp, :), &
                canopystate_vars, surfalb_vars, &
                nextsw_cday, declinp1)
-
     endif
 
        ! Determine values for non-vegetated patches where coszen > 0
@@ -981,7 +1007,7 @@ contains
                                   coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars, .false.)
     endif
 
-     end associate
+    end associate
 
    end subroutine SurfaceAlbedo
 
@@ -1139,6 +1165,7 @@ contains
      use elm_varpar, only : numrad, nlevcan
      use elm_varcon, only : omegas, tfrz, betads, betais
      use elm_varctl, only : iulog, use_top_solar_rad
+     use shr_const_mod   , only : SHR_CONST_PI
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds
@@ -1154,7 +1181,7 @@ contains
      
      !
      ! !LOCAL VARIABLES:
-     integer  :: fp,p,c,iv        ! array indices
+     integer  :: fp,p,c,iv,g      ! array indices
      integer  :: ib               ! waveband number
      real(r8) :: cosz             ! 0.001 <= coszen <= 1.000
      real(r8) :: asu              ! single scattering albedo
@@ -1188,6 +1215,9 @@ contains
      real(r8) :: laisum                                            ! cumulative lai+sai for canopy layer (at middle of layer)
      real(r8) :: extkb                                             ! direct beam extinction coefficient
      real(r8) :: extkn                                             ! nitrogen allocation coefficient
+     real(r8) :: deg2rad,slope_rad
+     real(r8) :: elaislope(bounds%begp:bounds%endp)         ! elai projected to slope
+     real(r8) :: esaislope(bounds%begp:bounds%endp)         ! esai projected to slope
      !-----------------------------------------------------------------------
 
      ! Enforce expected array sizes
@@ -1235,11 +1265,23 @@ contains
           ftii          =>    surfalb_vars%ftii_patch               & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flx
           )
 
+    deg2rad = SHR_CONST_PI/180._r8
     ! Calculate two-stream parameters that are independent of waveband:
     ! chil, gdir, twostext, avmu, and temp0 and temp2 (used for asu)
 
     do fp = 1,num_vegsol
        p = filter_vegsol(fp)
+       g = veg_pp%gridcell(p)
+
+       slope_rad = grc_pp%slope_deg(g) * deg2rad
+       
+       if (use_finetop_rad) then
+         elaislope(p) = elai(p) * cos(slope_rad)
+         esaislope(p) = esai(p) * cos(slope_rad)
+       else
+         elaislope(p) = elai(p)
+         esaislope(p) = esai(p)
+       endif
 
        ! note that the following limit only acts on cosz values > 0 and less than
        ! 0.001, not on values cosz = 0, since these zero have already been filtered
@@ -1344,9 +1386,9 @@ contains
           ! Absorbed, reflected, transmitted fluxes per unit incoming radiation
           ! for full canopy
 
-          t1 = min(h*(elai(p)+esai(p)), 40._r8)
+          t1 = min(h*(elaislope(p)+esaislope(p)), 40._r8)
           s1 = exp(-t1)
-          t1 = min(twostext(p)*(elai(p)+esai(p)), 40._r8)
+          t1 = min(twostext(p)*(elaislope(p)+esaislope(p)), 40._r8)
           s2 = exp(-t1)
 
           ! Direct beam
@@ -1469,7 +1511,7 @@ contains
                 fsun_z(p,1) = (1._r8 - s2) / t1
 
                 ! absorbed PAR (per unit sun/shade lai+sai)
-                laisum = elai(p)+esai(p)
+                laisum = elaislope(p)+esaislope(p)
                 fabd_sun_z(p,1) = fabd_sun(p,ib) / (fsun_z(p,1)*laisum)
                 fabi_sun_z(p,1) = fabi_sun(p,ib) / (fsun_z(p,1)*laisum)
                 fabd_sha_z(p,1) = fabd_sha(p,ib) / ((1._r8 - fsun_z(p,1))*laisum)
@@ -1478,11 +1520,11 @@ contains
                 ! leaf to canopy scaling coefficients
                 extkn = 0.30_r8
                 extkb = twostext(p)
-                vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elai(p))) / (extkn + extkb)
-                vcmaxcintsha(p) = (1._r8 - exp(-extkn*elai(p))) / extkn - vcmaxcintsun(p)
-                if (elai(p)  >  0._r8) then
-                  vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elai(p))
-                  vcmaxcintsha(p) = vcmaxcintsha(p) / ((1._r8 - fsun_z(p,1))*elai(p))
+                vcmaxcintsun(p) = (1._r8 - exp(-(extkn+extkb)*elaislope(p))) / (extkn + extkb)
+                vcmaxcintsha(p) = (1._r8 - exp(-extkn*elaislope(p))) / extkn - vcmaxcintsun(p)
+                if (elaislope(p)  >  0._r8) then
+                  vcmaxcintsun(p) = vcmaxcintsun(p) / (fsun_z(p,1)*elaislope(p))
+                  vcmaxcintsha(p) = vcmaxcintsha(p) / ((1._r8 - fsun_z(p,1))*elaislope(p))
                 else
                   vcmaxcintsun(p) = 0._r8
                   vcmaxcintsha(p) = 0._r8
