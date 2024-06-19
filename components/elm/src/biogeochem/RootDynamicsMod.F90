@@ -39,7 +39,7 @@ contains
   !
   subroutine RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars,  &
-       cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
+       cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars, dt)
     !
     ! !DESCRIPTION:
     ! This routine determine the fine root distribution
@@ -62,12 +62,12 @@ contains
     type(crop_type)          , intent(in)    :: crop_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
+    real(r8)                 , intent(in)    :: dt                 ! radiation time step delta t (seconds)
 
     !
     ! !LOCAL VARIABLES:
 
     integer  :: f,c,p,lev,j                                    ! indices
-    real(r8) :: dt                                             ! radiation time step delta t (seconds)
     real(r8) :: w_limit(bounds%begp:bounds%endp)               ! soil water weighting factor
     real(r8) :: rswa(bounds%begp:bounds%endp,1:nlevgrnd)       ! soil water availability in each soil layer
     real(r8) :: rsmn(bounds%begp:bounds%endp,1:nlevgrnd)       ! soil nitrogen availability in each soil layer
