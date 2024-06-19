@@ -770,6 +770,16 @@ add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
+if ($OCN_ISMF eq 'coupled') {
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
+} elsif ($OCN_ISMF eq 'internal') {
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
+} elsif ($OCN_ISMF eq 'data') {
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_frazil_under_land_ice');
+}
+
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################
