@@ -11,6 +11,7 @@ MODULE shr_orb_mod
   !----------------------------------------------------------------------------
   ! PUBLIC: Interfaces and global data
   !----------------------------------------------------------------------------
+  public :: shr_orb_azimuth
   public :: shr_orb_cosz
   public :: shr_orb_params
   public :: shr_orb_decl
@@ -47,6 +48,42 @@ CONTAINS
   END SUBROUTINE set_constant_zenith_angle_deg
 
   !=======================================================================
+  !=======================================================================
+  real(SHR_KIND_R8) pure function shr_orb_azimuth(jday,lat,lon,declin,z)
+
+    !----------------------------------------------------------------------------
+    !
+    ! function returns the solar azimuth angle.
+    ! azimuth angle is defined with respect to north, positive to east
+    ! based on Sproul, Renewable Energy, 2007
+    !
+    !----------------------------------------------------------------------------
+    real   (SHR_KIND_R8),intent(in) :: jday   ! Julian cal day (1.xx to 365.xx)
+    real   (SHR_KIND_R8),intent(in) :: lat    ! Centered latitude  (radians)
+    real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
+    real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination  (radians)
+    real   (SHR_KIND_R8),intent(in) :: z      ! Solar zenith angle (radians)
+  
+    real(SHR_KIND_R8) :: hour_angle
+    !----------------------------------------------------------------------------
+ 
+    hour_angle = 2.0_SHR_KIND_R8*pi*((jday-floor(jday)) - 0.5_SHR_KIND_R8) + lon
+
+    ! constrain hour_angle to [-pi,pi] to determine east/west below
+    if(hour_angle > pi) hour_angle = hour_angle - 2.0_SHR_KIND_R8*pi
+
+    shr_orb_azimuth = (sin(declin)*cos(lat) - cos(declin)*sin(lat)*cos(hour_angle))/ sin(z)
+  
+    shr_orb_azimuth = max(-1._SHR_KIND_R8, min(shr_orb_azimuth, 1._SHR_KIND_R8))
+
+    shr_orb_azimuth = acos(shr_orb_azimuth)
+
+    ! azimuth is east for times between midnight and noon (h < 0)
+    ! azimuth is west for times between noon and midnight (h > 0)
+    if(hour_angle > 0.) shr_orb_azimuth = 2.0_SHR_KIND_R8*pi - shr_orb_azimuth
+  
+  end function shr_orb_azimuth
+
   !=======================================================================
 
   real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg,uniform_angle)
