@@ -166,9 +166,6 @@ if [ $skip_testing -eq 0 ]; then
     # Also, for the nightlies, we use a separate job to run CIME tests
     if [[ -z "$SCREAM_FAKE_ONLY" && $is_at_run == 1 ]]; then
 
-      if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
-      fi
-
       if [[ $test_v0 == 1 ]]; then
         ../../cime/scripts/create_test e3sm_scream_v0 -c -b master --wait
         if [[ $? != 0 ]]; then
