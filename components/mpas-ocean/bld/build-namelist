@@ -782,7 +782,7 @@ if ($OCN_ISMF eq 'coupled') {
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_ISMF eq 'data') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");
-	add_default($nl, 'config_frazil_under_land_ice');
+	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".false.");
 } else {
 	add_default($nl, 'config_land_ice_flux_mode');
 	add_default($nl, 'config_frazil_under_land_ice');
