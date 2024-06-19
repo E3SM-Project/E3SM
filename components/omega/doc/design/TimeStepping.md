@@ -92,4 +92,24 @@ Design specifics will be added at a later time.
 
 ## 5 Verification and Testing
 
-The timestepping is an intrinsic part of the Omega-0 model, so the verification and testing are identical to those in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document.
+The timestepping will be tested with a time-only convergence test on the equations
+$$
+\frac{\partial \boldsymbol{u}}{\partial t} = 
+ -Ra \, \boldsymbol{u}
+\hspace{1cm}   (1)
+$$
+
+$$
+\frac{\partial h}{\partial t} = 0
+\hspace{1cm}   (2)
+$$
+
+$$
+\frac{\partial h \phi}{\partial t} = 
+- \frac{h}{\tau} \left( \phi - \phi_0 \right)
+\hspace{1cm}   (3)
+$$
+
+Where the initial conditions for $\boldsymbol{u}$ and $\phi$ are uniformly one, the tracer restoring value in this case is $\phi_0=0$, and the solution is simply exponential decay to zero.
+
+The timestepping is an intrinsic part of the Omega-0 model, so the verification and testing are identical to those in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document. The timestepping will be tested with convergence tests in time using the manufactured solution test case.
