@@ -72,6 +72,8 @@ module elm_varpar
 
   integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
+  integer, parameter :: ndir_horizon_angle = 8    ! number of directions for horizon angle
+
   ! constants for decomposition cascade
 
   integer :: i_met_lit 
