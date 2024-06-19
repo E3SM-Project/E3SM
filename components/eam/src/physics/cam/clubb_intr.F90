@@ -2969,6 +2969,7 @@ end subroutine clubb_init_cnst
            vmag_gust_dp(i) = ugust(min(prec_gust(i),6.94444e-4_r8)) ! Limit for the ZM gustiness equation set in Redelsperger et al. (2000)
            vmag_gust_dp(i) = max(0._r8, vmag_gust_dp(i) )
            vmag_gust_cl(i) = sqrt(max(0._r8,up2b(i)+vp2b(i)))
+           ! vmag_gust_cl(i) = min(6.53197_r8,sqrt(max(0._r8,up2b(i)+vp2b(i))))
            vmag_gust(i)    = sqrt(gust_facc * vmag_gust_cl(i)**2 &
                 + gust_fac(i) * vmag_gust_dp(i)**2)
           do k=1,pver

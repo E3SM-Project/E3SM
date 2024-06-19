@@ -40,6 +40,7 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
+  use VegetationDataType    , only : veg_cs
 
   !!! using elm_instMod messes with the compilation order
   use elm_instMod           , only : alm_fates, soil_water_retention_curve
@@ -322,6 +323,7 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                               &
+         deadstemc            => veg_cs%deadstemc                             , & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C
          snl                  => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers
          dayl                 => grc_pp%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
          max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
@@ -463,7 +465,8 @@ contains
          p = filter_nolakeurbanp(fp)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
-         if (frac_veg_nosno(p) == 0) then
+         ! if (frac_veg_nosno(p) == 0) then
+         if (frac_veg_nosno(p) == 0 .or. deadstemc(p) < 0._r8) then
             btran(p) = 0._r8
             t_veg(p) = forc_t(t)
             cf_bare  = forc_pbot(t)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8

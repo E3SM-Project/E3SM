@@ -29,6 +29,7 @@ module CanopyTemperatureMod
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_wf
+  use VegetationDataType   , only : veg_cs
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -112,6 +113,7 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          &
+         deadstemc        =>    veg_cs%deadstemc                      , & ! Input:  [real(r8) (:) ] (gC/m2) dead stem C
          snl              =>    col_pp%snl                            , & ! Input:  [integer  (:)   ] number of snow layers
          dz               =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ] layer depth (m)
          zii              =>    col_pp%zii                            , & ! Output: [real(r8) (:)   ] convective boundary height [m]
@@ -402,6 +404,7 @@ contains
          if( .not.(veg_pp%is_fates(p))) then
             z0m(p)    = z0mr(veg_pp%itype(p)) * htop(p)
             displa(p) = displar(veg_pp%itype(p)) * htop(p)
+            if (deadstemc(p) < 0._r8) displa(p) = 0._r8
          end if
       end do
 
