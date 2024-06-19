@@ -72,7 +72,7 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -p -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m \$machine"
+  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -p -c EKAT_DISABLE_TPL_WARNINGS=ON -m \$machine"
   # pm-gpu needs to do work in scratch area in order not to fill home quota
   if [[ "$SCREAM_MACHINE" == "pm-gpu" ]]; then
       TAS_ARGS="${TAS_ARGS} -w /pscratch/sd/e/e3smtest/e3sm_scratch/pm-gpu/ctest-build"
@@ -165,18 +165,6 @@ if [ $skip_testing -eq 0 ]; then
     #
     # Also, for the nightlies, we use a separate job to run CIME tests
     if [[ -z "$SCREAM_FAKE_ONLY" && $is_at_run == 1 ]]; then
-
-      if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
-        # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
-        # are caused by this PR and not simply because the PR is too far behind master.
-        if [ -n "$PULLREQUESTNUM" ]; then
-          ./scripts/git-merge-ref origin/master
-          if [[ $? != 0 ]]; then
-              echo "MERGE FAILED! Please resolve conflicts"
-              exit 1
-          fi
-        fi
-      fi
 
       if [[ $test_v0 == 1 ]]; then
         ../../cime/scripts/create_test e3sm_scream_v0 -c -b master --wait
