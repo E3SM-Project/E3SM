@@ -253,7 +253,7 @@ contains
         integer, parameter :: nSums = 2
         real (kind=RKIND), dimension(nSums) :: reductions
 
-        integer, dimension(nSums) :: indexForReproSum
+        integer, dimension(2) :: indexForReproSum  ! min, max indices for 1 dimensional sums
         real (kind=RKIND), dimension(:,:), allocatable :: &
            localArrayForReproSum
 
@@ -422,6 +422,9 @@ contains
 
         endif
 
+      ! For reproducible sums like mpas_global_sum_mod(), the range must be specified in min/max pairs for each array dimension. 
+      ! In this case, the array is getting packed in advance so the min is always 1 but the max can vary. 
+      ! Both need to be provided for the interface.
         indexForReproSum(1) = 1
         indexForReproSum(2) = 0
         do iCell=1,nCellsSolve
