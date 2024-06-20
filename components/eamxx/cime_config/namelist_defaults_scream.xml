@@ -37,8 +37,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <selector name="hgrid" case_env="ATM_GRID"/>
     <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
-    <!-- For intenal testing only -->
-    <selector name="test_sel" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_TRACERS ([0-9]+).*"/>
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
@@ -303,10 +301,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
-      <my_param test_sel="1" append="base">3,4</my_param>
-      <my_param test_sel="1" append="last">5,6</my_param>
-      <my_param test_sel="2" append="last">3,4</my_param>
-      <my_param test_sel="2" append="base">5,6</my_param>
+      <my_param nlev="1" append="base">3,4</my_param>
+      <my_param nlev="1" append="last">5,6</my_param>
+      <my_param nlev="2" append="last">3,4</my_param>
+      <my_param nlev="2" append="base">5,6</my_param>
     </testOnly>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
