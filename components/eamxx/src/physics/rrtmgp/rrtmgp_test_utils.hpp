@@ -42,14 +42,14 @@ void write_fluxes(
 #endif
 
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <typename RealT=scream::Real, typename LayoutT=Kokkos::LayoutLeft, typename DeviceT=DefaultDevice>
+template <typename RealT=scream::Real, typename LayoutT=Kokkos::LayoutRight, typename DeviceT=DefaultDevice>
 struct rrtmgp_test_utils {
 
-using real1dk = typename ekat::KokkosTypes<DeviceT>::template view_1d<RealT>;
-using real2dk = typename ekat::KokkosTypes<DeviceT>::template view_2d<RealT>;
-using real3dk = typename ekat::KokkosTypes<DeviceT>::template view_3d<RealT>;
-using MDRP = typename conv::MDRP<LayoutT>;
 using interface_t = scream::rrtmgp::rrtmgp_interface<RealT, LayoutT, DeviceT>;
+using real1dk = typename interface_t::view_t<RealT*>;
+using real2dk = typename interface_t::view_t<RealT**>;
+using real3dk = typename interface_t::view_t<RealT***>;
+using MDRP = typename conv::MDRP<LayoutT>;
 
 static bool all_close(real2dk &arr1, real2dk &arr2, double tolerance)
 {

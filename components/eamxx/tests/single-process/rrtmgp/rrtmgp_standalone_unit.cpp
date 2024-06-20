@@ -422,6 +422,13 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 TEST_CASE("rrtmgp_scream_standalone_k", "") {
+  using interface_t = scream::rrtmgp::rrtmgp_interface<>;
+  using MDRP = interface_t::MDRP;
+  using utils_t = rrtmgpTest::rrtmgp_test_utils<>;
+  using real1dk = interface_t::view_t<Real*>;
+  using real2dk = interface_t::view_t<Real**>;
+  using real3dk = interface_t::view_t<Real***>;
+
   // Get baseline name (needs to be passed as an arg)
   std::string inputfile = ekat::TestSession::get().params.at("rrtmgp_inputfile");
   std::string baseline = ekat::TestSession::get().params.at("rrtmgp_baseline");
@@ -439,7 +446,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   real2dk sw_flux_dn_dir_ref;
   real2dk lw_flux_up_ref;
   real2dk lw_flux_dn_ref;
-  rrtmgpTest::read_fluxes(baseline, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
+  utils_t::read_fluxes(baseline, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
 
   // Load ad parameter list
   std::string fname = "input_unit.yaml";
@@ -526,11 +533,11 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   // this will copy the first column of the input data (the first profile) ncol
   // times. We will then fill some fraction of these columns with clouds for
   // the test problem.
-  GasConcsK gas_concs;
+  GasConcsK<Real, Kokkos::LayoutRight, DefaultDevice> gas_concs;
   real2dk col_dry;
   read_atmos(inputfile, p_lay_all, t_lay_all, p_lev_all, t_lev_all, gas_concs, col_dry, ncol_all);
   // Setup dummy problem; need to use tmp arrays with ncol_all size
-  rrtmgpTest::dummy_atmos(
+  utils_t::dummy_atmos(
     inputfile, ncol_all, p_lay_all, t_lay_all,
     sfc_alb_dir_vis_all, sfc_alb_dir_nir_all,
     sfc_alb_dif_vis_all, sfc_alb_dif_nir_all,
@@ -547,7 +554,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
     sfc_alb_dif_nir(icol) = sfc_alb_dif_nir_all(icol_all);
     mu0(icol) = mu0_all(icol_all);
   });
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     auto icol_all = ncol * irank + icol;
     p_lay(icol,ilay) = p_lay_all(icol_all,ilay);
     t_lay(icol,ilay) = t_lay_all(icol_all,ilay);
@@ -557,14 +564,14 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
     rei(icol,ilay) = rei_all(icol_all,ilay);
     cld(icol,ilay) = cld_all(icol_all,ilay);
   });
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay+1,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     auto icol_all = ncol * irank + icol;
     p_lev(icol,ilay) = p_lev_all(icol_all,ilay);
     t_lev(icol,ilay) = t_lev_all(icol_all,ilay);
   });
 
   // Need to calculate a dummy pseudo_density for our test problem
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
   });
 
@@ -573,13 +580,13 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto qc = real2dk("qc", ncol, nlay);
   auto nc = real2dk("nc", ncol, nlay);
   auto qi = real2dk("qi", ncol, nlay);
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
     qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
   });
 
   // Copy gases from gas_concs to gas_vmr array
-  Kokkos::parallel_for(conv::get_mdrp<3>({ncol,nlay,ngas}), KOKKOS_LAMBDA(int icol, int ilay, int igas) {
+  Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,ngas}), KOKKOS_LAMBDA(int icol, int ilay, int igas) {
     auto icol_all = ncol * irank + icol;
     gas_vmr(icol,ilay,igas) = gas_concs.concs(icol_all,ilay,igas);
   });
@@ -691,7 +698,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
       const int i = team.league_rank();
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
-        if (k < nlay) t_lay(i+1,k+1) = d_tmid(i,k);
+        if (k < nlay) t_lay(i,k) = d_tmid(i,k);
 
         sw_flux_up_test(i,k)     = d_sw_flux_up(i,k);
         sw_flux_dn_test(i,k)     = d_sw_flux_dn(i,k);
@@ -722,7 +729,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto sw_flux_dn_dir_loc = real2dk("sw_flux_dn_dir_loc", ncol, nlay+1);
   auto lw_flux_up_loc     = real2dk("lw_flux_up_loc"    , ncol, nlay+1);
   auto lw_flux_dn_loc     = real2dk("lw_flux_dn_loc"    , ncol, nlay+1);
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay+1,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
     auto icol_all = ncol * irank + icol;
     sw_flux_up_loc(icol,ilay) = sw_flux_up_ref(icol_all,ilay);
     sw_flux_dn_loc(icol,ilay) = sw_flux_dn_ref(icol_all,ilay);
@@ -730,11 +737,11 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
     lw_flux_up_loc(icol,ilay) = lw_flux_up_ref(icol_all,ilay);
     lw_flux_dn_loc(icol,ilay) = lw_flux_dn_ref(icol_all,ilay);
   });
-  REQUIRE(rrtmgpTest::all_close(sw_flux_up_loc    , sw_flux_up_test    , 1.0));
-  REQUIRE(rrtmgpTest::all_close(sw_flux_dn_loc    , sw_flux_dn_test    , 1.0));
-  REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_loc, sw_flux_dn_dir_test, 1.0));
-  REQUIRE(rrtmgpTest::all_close(lw_flux_up_loc    , lw_flux_up_test    , 1.0));
-  REQUIRE(rrtmgpTest::all_close(lw_flux_dn_loc    , lw_flux_dn_test    , 1.0));
+  REQUIRE(utils_t::all_close(sw_flux_up_loc    , sw_flux_up_test    , 1.0));
+  REQUIRE(utils_t::all_close(sw_flux_dn_loc    , sw_flux_dn_test    , 1.0));
+  REQUIRE(utils_t::all_close(sw_flux_dn_dir_loc, sw_flux_dn_dir_test, 1.0));
+  REQUIRE(utils_t::all_close(lw_flux_up_loc    , lw_flux_up_test    , 1.0));
+  REQUIRE(utils_t::all_close(lw_flux_dn_loc    , lw_flux_dn_test    , 1.0));
 
   // Finalize the driver. YAKL will be finalized inside
   // RRTMGPRadiation::finalize_impl after RRTMGP has had the
