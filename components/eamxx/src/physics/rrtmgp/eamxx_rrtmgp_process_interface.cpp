@@ -926,7 +926,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // check_range_k will fail due to looking at unused values. Once rrtmgp can handle
       // packs, this won't be necessary.
       auto subview_1dk = [&](const ureal1dk& v) -> ureal1dk {
-        ureal1dk subv(v, std::make_pair(0, ncol));
+        ureal1dk subv(v, std::make_pair(beg, beg+ncol));
 #ifdef RRTMGP_ENABLE_YAKL
         real1dk rv(v.label(), ncol);
         Kokkos::deep_copy(rv, subv);
@@ -936,7 +936,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #endif
       };
       auto subview_1dkc = [&](const cureal1dk& v) -> cureal1dk {
-        cureal1dk subv(v, std::make_pair(0, ncol));
+        cureal1dk subv(v, std::make_pair(beg, beg+ncol));
 #ifdef RRTMGP_ENABLE_YAKL
         creal1dk rv(v.label(), ncol);
         Kokkos::deep_copy(rv, subv);
@@ -966,7 +966,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #endif
       };
       auto subview_3dk = [&](const ureal3dk& v) -> ureal3dk {
-        ureal3dk subv(v, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);
+        ureal3dk subv(v, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL); // The range assumes these are buffer views, not fields
 #ifdef RRTMGP_ENABLE_YAKL
         real3dk rv(v.label(), ncol, v.extent(1), v.extent(2));
         Kokkos::deep_copy(rv, subv);
