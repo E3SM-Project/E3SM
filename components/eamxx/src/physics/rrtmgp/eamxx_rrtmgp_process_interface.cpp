@@ -19,28 +19,6 @@
 
 namespace scream {
 
-template <typename View1, typename View2>
-void check_views2(const View1& view1, const View2& view2)
-{
-  constexpr auto krank1 = View1::rank;
-  constexpr auto krank2 = View2::rank;
-
-  RRT_REQUIRE(krank1 == krank2, "Rank mismatch for: " << view1.label());
-  RRT_REQUIRE(krank1 == 2,      "Rank mismatch for: " << view1.label());
-
-  for (auto r = 0; r < krank1; ++r) {
-    RRT_REQUIRE(view1.extent(r) == view2.extent(r), "Dim mismatch for: " << view1.label() << ", rank: " << r << ", " << view1.extent(r) << " != " <<  view2.extent(r));
-  }
-
-  for (auto i = 0; i < view1.extent(0); ++i) {
-    for (auto j = 0; j < view1.extent(1); ++j) {
-      const auto data1 = view1(i, j);
-      const auto data2 = view2(i, j);
-      RRT_REQUIRE(data1 == data2, "Data mismatch for: " << view1.label() << ", i: " << i << ", j: " << j << ", " << data1 << " != " << data2);
-    }
-  }
-}
-
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
 using MemberType = KT::MemberType;
@@ -967,8 +945,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         return subv;
 #endif
       };
-      auto subview_2dk = [&](const ureal2dk& v) -> ureal2dk {
-        ureal2dk subv(v, std::make_pair(0, ncol), Kokkos::ALL);
+      auto subview_2dk = [&](const ureal2dk& v, const int inner_dim) -> ureal2dk {
+        ureal2dk subv(v, std::make_pair(0, ncol), std::make_pair(0, inner_dim));
 #ifdef RRTMGP_ENABLE_YAKL
         real2dk rv(v.label(), ncol, v.extent(1));
         Kokkos::deep_copy(rv, subv);
@@ -981,16 +959,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
         cureal2dk subv(v, std::make_pair(beg, beg+ncol), std::make_pair(0, inner_dim));
 #ifdef RRTMGP_ENABLE_YAKL
         creal2dk rv(v.label(), ncol, v.extent(1));
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
-      auto subview_2dk_new = [&](const ureal2dk& v, const int inner_dim) -> ureal2dk {
-        ureal2dk subv(v, std::make_pair(0, ncol), std::make_pair(0, inner_dim));
-#ifdef RRTMGP_ENABLE_YAKL
-        real2dk rv(v.label(), ncol, v.extent(1));
         Kokkos::deep_copy(rv, subv);
         return rv;
 #else
@@ -1027,26 +995,26 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cldfrac_tot_k     = m_buffer.cldfrac_tot_k;
       auto rel_k             = subview_2dkc(d_rel, m_nlay);
       auto rei_k             = subview_2dkc(d_rei, m_nlay);
-      auto sw_flux_up_k      = subview_2dk_new(d_sw_flux_up, m_nlay+1);
-      auto sw_flux_dn_k      = subview_2dk_new(d_sw_flux_dn, m_nlay+1);
-      auto sw_flux_dn_dir_k  = subview_2dk_new(d_sw_flux_dn_dir, m_nlay+1);
-      auto lw_flux_up_k      = subview_2dk_new(d_lw_flux_up, m_nlay+1);
-      auto lw_flux_dn_k      = subview_2dk_new(d_lw_flux_dn, m_nlay+1);
-      auto sw_clnclrsky_flux_up_k      = subview_2dk_new(d_sw_clnclrsky_flux_up, m_nlay+1);
-      auto sw_clnclrsky_flux_dn_k      = subview_2dk_new(d_sw_clnclrsky_flux_dn, m_nlay+1);
-      auto sw_clnclrsky_flux_dn_dir_k  = subview_2dk_new(d_sw_clnclrsky_flux_dn_dir, m_nlay+1);
-      auto sw_clrsky_flux_up_k      = subview_2dk_new(d_sw_clrsky_flux_up, m_nlay+1);
-      auto sw_clrsky_flux_dn_k      = subview_2dk_new(d_sw_clrsky_flux_dn, m_nlay+1);
-      auto sw_clrsky_flux_dn_dir_k  = subview_2dk_new(d_sw_clrsky_flux_dn_dir, m_nlay+1);
-      auto sw_clnsky_flux_up_k      = subview_2dk_new(d_sw_clnsky_flux_up, m_nlay+1);
-      auto sw_clnsky_flux_dn_k      = subview_2dk_new(d_sw_clnsky_flux_dn, m_nlay+1);
-      auto sw_clnsky_flux_dn_dir_k  = subview_2dk_new(d_sw_clnsky_flux_dn_dir, m_nlay+1);
-      auto lw_clnclrsky_flux_up_k   = subview_2dk_new(d_lw_clnclrsky_flux_up, m_nlay+1);
-      auto lw_clnclrsky_flux_dn_k   = subview_2dk_new(d_lw_clnclrsky_flux_dn, m_nlay+1);
-      auto lw_clrsky_flux_up_k      = subview_2dk_new(d_lw_clrsky_flux_up, m_nlay+1);
-      auto lw_clrsky_flux_dn_k      = subview_2dk_new(d_lw_clrsky_flux_dn, m_nlay+1);
-      auto lw_clnsky_flux_up_k      = subview_2dk_new(d_lw_clnsky_flux_up, m_nlay+1);
-      auto lw_clnsky_flux_dn_k      = subview_2dk_new(d_lw_clnsky_flux_dn, m_nlay+1);
+      auto sw_flux_up_k      = subview_2dk(d_sw_flux_up, m_nlay+1);
+      auto sw_flux_dn_k      = subview_2dk(d_sw_flux_dn, m_nlay+1);
+      auto sw_flux_dn_dir_k  = subview_2dk(d_sw_flux_dn_dir, m_nlay+1);
+      auto lw_flux_up_k      = subview_2dk(d_lw_flux_up, m_nlay+1);
+      auto lw_flux_dn_k      = subview_2dk(d_lw_flux_dn, m_nlay+1);
+      auto sw_clnclrsky_flux_up_k      = subview_2dk(d_sw_clnclrsky_flux_up, m_nlay+1);
+      auto sw_clnclrsky_flux_dn_k      = subview_2dk(d_sw_clnclrsky_flux_dn, m_nlay+1);
+      auto sw_clnclrsky_flux_dn_dir_k  = subview_2dk(d_sw_clnclrsky_flux_dn_dir, m_nlay+1);
+      auto sw_clrsky_flux_up_k      = subview_2dk(d_sw_clrsky_flux_up, m_nlay+1);
+      auto sw_clrsky_flux_dn_k      = subview_2dk(d_sw_clrsky_flux_dn, m_nlay+1);
+      auto sw_clrsky_flux_dn_dir_k  = subview_2dk(d_sw_clrsky_flux_dn_dir, m_nlay+1);
+      auto sw_clnsky_flux_up_k      = subview_2dk(d_sw_clnsky_flux_up, m_nlay+1);
+      auto sw_clnsky_flux_dn_k      = subview_2dk(d_sw_clnsky_flux_dn, m_nlay+1);
+      auto sw_clnsky_flux_dn_dir_k  = subview_2dk(d_sw_clnsky_flux_dn_dir, m_nlay+1);
+      auto lw_clnclrsky_flux_up_k   = subview_2dk(d_lw_clnclrsky_flux_up, m_nlay+1);
+      auto lw_clnclrsky_flux_dn_k   = subview_2dk(d_lw_clnclrsky_flux_dn, m_nlay+1);
+      auto lw_clrsky_flux_up_k      = subview_2dk(d_lw_clrsky_flux_up, m_nlay+1);
+      auto lw_clrsky_flux_dn_k      = subview_2dk(d_lw_clrsky_flux_dn, m_nlay+1);
+      auto lw_clnsky_flux_up_k      = subview_2dk(d_lw_clnsky_flux_up, m_nlay+1);
+      auto lw_clnsky_flux_dn_k      = subview_2dk(d_lw_clnsky_flux_dn, m_nlay+1);
       auto sw_bnd_flux_up_k  = m_buffer.sw_bnd_flux_up_k;
       auto sw_bnd_flux_dn_k  = m_buffer.sw_bnd_flux_dn_k;
       auto sw_bnd_flux_dir_k = m_buffer.sw_bnd_flux_dir_k;
@@ -1225,9 +1193,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #ifdef RRTMGP_ENABLE_YAKL
       real2d tmp2d = subview_2d(m_buffer.tmp2d);
 #endif
-#ifdef RRTMGP_ENABLE_KOKKOS
-      real2dk tmp2d_k = subview_2dk(m_buffer.tmp2d_k);
-#endif
       for (int igas = 0; igas < m_ngas; igas++) {
         auto name = m_gas_names[igas];
         auto full_name = name + "_volume_mix_ratio";
@@ -1235,22 +1200,22 @@ void RRTMGPRadiation::run_impl (const double dt) {
         // 'o3' is marked as 'Required' rather than 'Computed', so we need to get the proper field
         auto f = name=="o3" ? get_field_in(full_name) : get_field_out(full_name);
         auto d_vmr = f.get_view<const Real**>();
+#ifdef RRTMGP_ENABLE_KOKKOS
+        auto tmp2d_k = subview_2dkc(d_vmr, m_nlay);
+#endif
 
+#ifdef RRTMGP_ENABLE_YAKL
         // Copy to YAKL
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
-#ifdef RRTMGP_ENABLE_YAKL
             tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
-            tmp2d_k(i,k) = d_vmr(icol,k);
-#endif
           });
         });
         Kokkos::fence();
+#endif
 
         // Populate GasConcs object
 #ifdef RRTMGP_ENABLE_YAKL
