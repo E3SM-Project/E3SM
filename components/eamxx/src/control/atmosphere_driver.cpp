@@ -103,7 +103,8 @@ AtmosphereDriver(const ekat::Comm& atm_comm,
 
 AtmosphereDriver::~AtmosphereDriver ()
 {
-//  finalize();
+//	std::cout << "OG   ------------------ I AM CALLING FINALIZE \n" << std::flush;
+  finalize();
 }
 
 void AtmosphereDriver::
@@ -209,39 +210,25 @@ setup_iop ()
 void AtmosphereDriver::create_atm_processes()
 {
 
-	std::cout << "OG cinit 1 \n" << std::flush;
-
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
-	std::cout << "OG cinit 2 \n" << std::flush;
   start_timer("EAMxx::init");
-	std::cout << "OG cinit 3 \n" << std::flush;
   start_timer("EAMxx::create_atm_processes");
-	std::cout << "OG cinit 4 \n" << std::flush;
 
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
-	std::cout << "OG cinit 5 \n" << std::flush;
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
-	std::cout << "OG cinit 6 \n" << std::flush;
   atm_proc_params.rename("EAMxx");
-	std::cout << "OG cinit 7 \n" << std::flush;
   atm_proc_params.set("Logger",m_atm_logger);
-	std::cout << "OG cinit 8 \n" << std::flush;
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
-	std::cout << "OG cinit 9 \n" << std::flush;
 
   m_ad_status |= s_procs_created;
-	std::cout << "OG cinit 10 \n" << std::flush;
   stop_timer("EAMxx::create_atm_processes");
-	std::cout << "OG cinit 11 \n" << std::flush;
   stop_timer("EAMxx::init");
-	std::cout << "OG cinit 12 \n" << std::flush;
   m_atm_logger->info("[EAMxx] create_atm_processes  ... done!");
-	std::cout << "OG cinit 13 \n" << std::flush;
 }
 
 void AtmosphereDriver::create_grids()
@@ -1524,25 +1511,16 @@ initialize_constant_field(const FieldIdentifier& fid,
 
 void AtmosphereDriver::initialize_atm_procs ()
 {
-	std::cout << "OG init 1 \n" << std::flush;
   m_atm_logger->info("[EAMxx] initialize_atm_procs ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_atm_procs");
-	std::cout << "OG init 2 \n" << std::flush;
 
   // Initialize memory buffer for all atm processes
-	std::cout << "OG hhhinit 3 \n" << std::flush;
   m_memory_buffer = std::make_shared<ATMBufferManager>();
-	std::cout << "OG init 4 \n" << std::flush;
-
-
 
   m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
-	std::cout << "OG init 5 \n" << std::flush;
   m_memory_buffer->allocate();
-	std::cout << "OG init 6 \n" << std::flush;
   m_atm_process_group->init_buffers(*m_memory_buffer);
-	std::cout << "OG init 7 \n" << std::flush;
 
   const bool restarted_run = m_case_t0 < m_run_t0;
 
@@ -1551,24 +1529,19 @@ void AtmosphereDriver::initialize_atm_procs ()
     setup_surface_coupling_processes();
   }
 
-	std::cout << "OG init 8 \n" << std::flush;
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
-	std::cout << "OG init 9 \n" << std::flush;
 
   // Create and add energy and mass conservation check to appropriate atm procs
   setup_column_conservation_checks();
-	std::cout << "OG init 10 \n" << std::flush;
 
   // If user requests it, we set up NaN checks for all computed fields after each atm proc run
   if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",true)) {
     m_atm_process_group->add_postcondition_nan_checks();
   }
 
-	std::cout << "OG init 11 \n" << std::flush;
   // Add additional column data fields to pre/postcondition checks (if they exist)
   add_additional_column_data_to_property_checks();
-	std::cout << "OG init 12 \n" << std::flush;
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
@@ -1577,14 +1550,12 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_field_mgrs.erase(gn);
   }
 
-	std::cout << "OG init 13 \n" << std::flush;
   m_ad_status |= s_procs_inited;
 
   stop_timer("EAMxx::initialize_atm_procs");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_atm_procs ... done!");
 
-	std::cout << "OG init 14 \n" << std::flush;
   report_res_dep_memory_footprint ();
 }
 
@@ -1622,30 +1593,21 @@ initialize (const ekat::Comm& atm_comm,
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
-  std::cout << "IN DRIVER        1         \n";
-
-
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
-
-
-  std::cout << "IN DRIVER         2        \n";
 
   // Print current timestamp information
   m_atm_logger->log(ekat::logger::LogLevel::info,
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
-
-  std::cout << "IN DRIVER          3       \n";
   // Reset accum fields to 0
   // Note: at the 1st timestep this is redundant, since we did it at init,
   //       to ensure t=0 INSTANT output was correct. However, it's not a
   //       very expensive operation, so it's not worth the effort of the
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
-
-  std::cout << "IN DRIVER           4      \n" << std::flush;
+  
   // Tell the output managers that we're starting a timestep. This is usually
   // a no-op, but some diags *may* require to do something. E.g., a diag that
   // computes tendency of an arbitrary quantity may want to store a copy of
@@ -1660,7 +1622,6 @@ void AtmosphereDriver::run (const int dt) {
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
 
-  std::cout << "IN DRIVER            5     \n"<< std::flush;
   // Some accumulated fields need to be divided by dt at the end of the atm step
   for (auto fm_it : m_field_mgrs) {
     const auto& fm = fm_it.second;
@@ -1674,12 +1635,8 @@ void AtmosphereDriver::run (const int dt) {
     }
   }
 
-  std::cout << "IN DRIVER             6    \n"<<std::flush;
   // Update current time stamps
   m_current_ts += dt;
-
-  std::cout << "IN DRIVER              7   \n";
-
 
 #if 1
   // Update output streams
@@ -1687,7 +1644,6 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-
 #endif
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
