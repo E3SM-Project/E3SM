@@ -834,7 +834,7 @@ contains
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use elm_varctl      , only : iulog, use_snow_thk
+    use elm_varctl      , only : iulog, use_T_rho_dependent_snowthk
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -949,7 +949,7 @@ contains
                endif
             endif
             
-            if (use_snow_thk) then ! chose which snow thermal conductivity to use 
+            if (use_T_rho_dependent_snowthk) then ! chose which snow thermal conductivity to use 
                if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
                     bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
                     !write(iulog,*)"CAW bw(c,j)",bw(c,j)

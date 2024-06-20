@@ -376,11 +376,11 @@ module elm_varctl
   logical, public :: use_snicar_ad       = .false.
   logical, public :: use_extrasnowlayers = .false.
   logical, public :: use_firn_percolation_and_compaction  = .false.
-  logical, public :: use_snow_thk        = .false.
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
+  logical, public :: use_T_rho_dependent_snowthk     = .false.
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.

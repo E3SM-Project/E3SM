@@ -285,7 +285,7 @@ contains
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
-         use_snow_thk, use_vancouver, use_mexicocity, use_noio
+         use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -727,10 +727,14 @@ contains
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extrasnowlayers, 1, MPI_LOGICAL, 0, mpicom, ier)
 <<<<<<< HEAD
+<<<<<<< HEAD
     call mpi_bcast (use_firn_percolation_and_compaction, 1, MPI_LOGICAL, 0, mpicom, ier)
 =======
     call mpi_bcast (use_snow_thk, 1, MPI_LOGICAL, 0, mpicom, ier)
 >>>>>>> aa0f583905 (Added new snow Thermal Conductivity in SoilTemperatureMod.F90)
+=======
+    call mpi_bcast (use_T_rho_dependent_snowthk, 1, MPI_LOGICAL, 0, mpicom, ier)
+>>>>>>> 7d87f8c1ac (changed flag name for new snow thk flag to be more descriptive)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1035,10 +1039,14 @@ contains
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
 <<<<<<< HEAD
+<<<<<<< HEAD
     write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction
 =======
     write(iulog,*) '    use_snow_thk = ', use_snow_thk
 >>>>>>> aa0f583905 (Added new snow Thermal Conductivity in SoilTemperatureMod.F90)
+=======
+    write(iulog,*) '    use_T_rho_dependent_snowthk = ', use_T_rho_dependent_snowthk
+>>>>>>> 7d87f8c1ac (changed flag name for new snow thk flag to be more descriptive)
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
