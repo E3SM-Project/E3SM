@@ -856,6 +856,7 @@ using real3dk = interface_t::view_t<scream::Real***>;
 using int1dk = interface_t::view_t<int*>;
 using int2dk = interface_t::view_t<int**>;
 using int3dk = interface_t::view_t<int***>;
+using MDRP = interface_t::MDRP;
 
 TEST_CASE("rrtmgp_test_heating_k") {
   // Initialize Kokkos
@@ -1082,7 +1083,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // Need to initialize RRTMGP with dummy gases
   logger->info("Init gases...\n");
-  GasConcsK gas_concs;
+  GasConcsK<scream::Real, Kokkos::LayoutRight, DefaultDevice> gas_concs;
   string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
   gas_concs.init(gas_names,ncol,nlay);
   logger->info("Init RRTMGP...\n");
@@ -1100,7 +1101,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   auto sw_bnd_flux_dir = real3dk("sw_bnd_flux_dir", ncol, nlay+1, nbnd);
   auto sw_bnd_flux_dif = real3dk("sw_bnd_flux_dif", ncol, nlay+1, nbnd);
   logger->info("Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
@@ -1132,7 +1133,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in NIR bands
   logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
@@ -1163,7 +1164,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in VIS bands
   logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
@@ -1194,7 +1195,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in all bands
   logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1.0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 2.0;
@@ -1293,13 +1294,13 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
     cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
     // Check answers by computing new cldfrac from mask
     Kokkos::deep_copy(cldfrac_from_mask, 0.0);
-    Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+    Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
       for (int igpt = 0; igpt < ngpt; ++igpt) {
         real cldmask_real = cldmask(icol,ilay,igpt);
         cldfrac_from_mask(icol,ilay) += cldmask_real;
       }
     });
-    Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+    Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
       cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
     });
     // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be sure
