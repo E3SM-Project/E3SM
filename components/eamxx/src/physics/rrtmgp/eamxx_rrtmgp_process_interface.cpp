@@ -946,7 +946,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #endif
       };
       auto subview_2dk = [&](const ureal2dk& v, const int inner_dim) -> ureal2dk {
-        ureal2dk subv(v, std::make_pair(0, ncol), std::make_pair(0, inner_dim));
+        ureal2dk subv(v, std::make_pair(beg, beg+ncol), std::make_pair(0, inner_dim));
 #ifdef RRTMGP_ENABLE_YAKL
         real2dk rv(v.label(), ncol, v.extent(1));
         Kokkos::deep_copy(rv, subv);
