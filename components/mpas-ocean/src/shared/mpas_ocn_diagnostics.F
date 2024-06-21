@@ -886,9 +886,15 @@ contains
          ! Use centered (mean) thickness as flux value
 
          if ( config_use_subgrid_wetting_drying ) then
+#ifdef MPAS_OPENACC
+         !$acc update host(ssh)
+#endif
 
             call ocn_subgrid_layerThickEdgeFlux_center(ssh, layerThickEdgeFlux)
 
+#ifdef MPAS_OPENACC
+         !$acc update device(layerThickEdgeFlux)
+#endif
          else
 
 #ifdef MPAS_OPENACC
@@ -915,8 +921,15 @@ contains
          ! Use upwind thickness as the edge flux value
 
          if (config_use_subgrid_wetting_drying) then
+#ifdef MPAS_OPENACC
+         !$acc update host(ssh, normalVelocity, layerThickness)
+#endif
 
             call ocn_subgrid_layerThickEdgeFlux_upwind(ssh, normalVelocity, layerThickness, layerThickEdgeFlux)
+
+#ifdef MPAS_OPENACC
+         !$acc update device(layerThickEdgeFlux)
+#endif
 
          else
 #ifdef MPAS_OPENACC
@@ -2631,6 +2644,9 @@ contains
 #endif
 
       if (config_use_subgrid_wetting_drying) then
+#ifdef MPAS_OPENACC
+      !$acc update host(layerThickness)
+#endif
          do iCell = 1, nCells
                call ocn_subgrid_ssh_lookup(layerThickness(1,iCell), &
                                            subgridWetVolumeCellTable(:,iCell), &
@@ -2642,6 +2658,9 @@ contains
                zTop(1,iCell) = ssh(iCell)
                zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
          end do
+#ifdef MPAS_OPENACC
+      !$acc update device(zTop, zMid, ssh)
+#endif
       end if
 
    end subroutine ocn_diagnostic_solve_z_coordinates!}}}
