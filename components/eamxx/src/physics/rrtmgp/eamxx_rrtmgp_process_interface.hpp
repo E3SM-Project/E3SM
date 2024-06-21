@@ -34,7 +34,9 @@ public:
 
   using layout_t = typename ekat::KokkosTypes<DefaultDevice>::Layout;
 
+#ifdef RRTMGP_ENABLE_KOKKOS
   using interface_t = rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
+#endif
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);

@@ -1293,8 +1293,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       // Compute layer cloud mass (per unit area)
 #ifdef RRTMGP_ENABLE_YAKL
-      interface_t::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
-      interface_t::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
+      rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
+      rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       interface_t::mixing_ratio_to_cloud_mass(qc_k, cldfrac_tot_k, p_del_k, lwp_k);
