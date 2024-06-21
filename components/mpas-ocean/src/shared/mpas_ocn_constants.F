@@ -65,6 +65,7 @@ module ocn_constants
 
    real (kind=RKIND), public :: &
       T0_Kelvin        ,&! zero point for Celsius
+      pi               ,&! pi
       mpercm           ,&! meters per m
       cmperm           ,&! m per meter
       days_per_second  ,&! days per second
