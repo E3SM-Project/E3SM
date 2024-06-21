@@ -25,22 +25,18 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  rprdsh: 1e-5
-  rprddp: 1e-5
-  evapcsh: 1e-5
-  evapcdp: 1e-5
+  rprdsh: 0.
+  rprddp: 0.
+  evapcsh: 0.
+  evapcdp: 0.
   cldst: 1e-5
   qme: 1e-5
   prain: 1e-5
   evapr: 1e-5
   icwmrdp: 1e-5
   icwmrsh: 1e-5
-  rprddp: 1e-5
-  rprdsh: 1e-5
   sh_frac: 0.
   dp_frac: 0.
-  evapcsh: 1e-5
-  evapcdp: 1e-5
   bcphiwet: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
   bcphidry: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
   ocphiwet: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
