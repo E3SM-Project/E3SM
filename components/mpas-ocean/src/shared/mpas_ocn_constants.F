@@ -117,6 +117,7 @@ contains
        !-----------------------------------------------------------------------
 
        T0_Kelvin = 273.16_RKIND               ! zero point for Celsius
+       pi        = 3.141592_RKIND             ! pi
        rho_air   = 1.2_RKIND                  ! ambient air density (kg/m^3)
        rho_sw    = config_density0            ! density of salt water (kg/m^3)
        rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
@@ -159,6 +160,7 @@ contains
 
 #ifdef MPAS_ESM_SHR_CONST
        T0_Kelvin              = SHR_CONST_TKFRZ         ! zero point for Celsius
+       pi                     = SHR_CONST_PI            ! zero point for Celsius
        cp_sw                  = SHR_CONST_CPSW          ! erg/g/K
        cp_air                 = SHR_CONST_CPDAIR        ! J/kg/K
        rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
