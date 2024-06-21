@@ -33,8 +33,8 @@ initial_conditions:
   qme: 1e-5
   prain: 1e-5
   evapr: 1e-5
-  icwmrdp: 1e-5
-  icwmrsh: 1e-5
+  icwmrdp: 0.
+  icwmrsh: 0.
   sh_frac: 0.
   dp_frac: 0.
   bcphiwet: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]

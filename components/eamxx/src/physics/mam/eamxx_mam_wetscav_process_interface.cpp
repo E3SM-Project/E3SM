@@ -104,6 +104,16 @@ void MAMWetscav::set_grids(
   // Rain production, deep convection [kg/kg/s]
   add_field<Required>("rprddp", scalar3d_mid, kg / kg / s, grid_name);
 
+  // In cloud water mixing ratio, deep convection [kg/kg]
+  add_field<Required>("icwmrdp", scalar3d_mid, kg / kg, grid_name);
+
+  // In cloud water mixing ratio, shallow convection [kg/kg]
+  add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
+
+  // evaporation from stratiform rain [kg/kg/s]
+  // FIXME: Get it from P3
+  add_field<Required>("evapr", scalar3d_mid, kg / kg / s, grid_name);
+
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -117,23 +127,9 @@ void MAMWetscav::set_grids(
   //     grid_name);  // net condensation/evaporation of cloud water [kg/kg/s]
   add_field<Updated>("prain", scalar3d_mid, kg / kg / s,
                      grid_name);  // stratiform rain production rate [kg/kg/s]
-  add_field<Updated>(
-      "evapr", scalar3d_mid, kg / kg / s,
-      grid_name);  // evaporation from stratiform rain [kg/kg/s] //NOT updated
 
   // -- Input variables that exists in PBUF in EAM (in wetdep.F90)
-  add_field<Updated>("icwmrdp", scalar3d_mid, kg / kg,
-                     grid_name);  // In cloud water mixing ratio, deep
-                                  // convection [kg/kg] //NOT updated
-  add_field<Updated>("icwmrsh", scalar3d_mid, kg / kg,
-                     grid_name);  // In cloud water mixing ratio, shallow
-                                  // convection [kg/kg] //NOT updated
 
-  // in cloud water mixing ratio, deep shallow [kg/kg]
-  add_field<Updated>("icwmrsh", scalar3d_mid, nondim, grid_name);
-  // add_field<Updated>(
-  //     "icwmrdp", scalar3d_mid, nondim,
-  //     grid_name);
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -482,18 +478,20 @@ void MAMWetscav::run_impl(const double dt) {
   // Rain production, deep convection [kg/kg/s]
   auto rprddp = get_field_in("rprddp").get_view<const Real **>();
 
+  // In cloud water mixing ratio, deep convection
+  auto icwmrdp = get_field_in("icwmrdp").get_view<const Real **>();
+
+  // In cloud water mixing ratio, shallow convection
+  auto icwmrsh = get_field_in("icwmrsh").get_view<const Real **>();
+
+  // evaporation from stratiform rain [kg/kg/s]
+  // FIXME: Get it from P3
+  auto evapr = get_field_in("evapr").get_view<const Real **>();
+
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "Updated" or pure inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-  auto dlf   = get_field_out("dlf").get_view<Real **>();
-  auto evapr = get_field_out("evapr").get_view<Real **>();
-
-  auto icwmrsh = get_field_out("icwmrsh")
-                     .get_view<Real **>();  // in cloud water mixing ratio,
-                                            // shallow convection
-  auto icwmrdp =
-      get_field_out("icwmrdp")
-          .get_view<Real **>();  // in cloud water mixing ratio, deep convection
+  auto dlf = get_field_out("dlf").get_view<Real **>();
 
   auto prain = get_field_out("prain")
                    .get_view<Real **>();  // stratiform rain production rate
