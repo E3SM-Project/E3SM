@@ -145,6 +145,7 @@ contains
        numpft      = mxpft   ! actual # of patches (without bare) (50 = 14+36)
        numcft      =  36     ! actual # of crops
        crop_prog   = .true.  ! If prognostic crops is turned on
+       mxpft_nc    = mxpft   ! maximum number of PFTs
     else
        numpft      = numveg  ! actual # of patches (without bare) (16 = 14+2)
        numcft      =   2     ! actual # of crops
