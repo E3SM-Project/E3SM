@@ -81,18 +81,18 @@ void MAMWetscav::set_grids(
                       grid_name);  // total pressure
 
   // -- Input variables that exists in PBUF in EAM
-  static constexpr auto nondim =
-      Units::nondimensional();  // for variables that are fractions etc.
+  // for variables that are fractions etc.
+  static constexpr auto nondim = Units::nondimensional();
 
-  // Deep convective cloud fraction [fraction] //NOT updated
+  // Deep convective cloud fraction [fraction]
   add_field<Required>("dp_frac", scalar3d_mid, nondim, grid_name);
 
-  // MUST FIXME: cldt and cldn are the same variables. They must be their
-  // previous step values.
-  add_field<Updated>("cldn", scalar3d_mid, nondim,
-                     grid_name);  // layer cloud fraction [fraction]
-  add_field<Updated>("cldt", scalar3d_mid, nondim,
-                     grid_name);  //??
+  // Shallow convective cloud fraction [fraction] //NOT updated
+  add_field<Required>("sh_frac", scalar3d_mid, nondim, grid_name);
+
+  // Total cloud fraction [fraction]
+  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+
   add_field<Updated>("rprdsh", scalar3d_mid, kg / kg / s,
                      grid_name);  // rain production, shallow convection
                                   // [kg/kg/s] //NOT updated
@@ -108,10 +108,6 @@ void MAMWetscav::set_grids(
 
   // -- Input variables that exists in PBUF in EAM (in wetdep.F90) in the
   // "inputs" data structure
-  // MUST FIXME: cldt and cldn are the same variables. They must be their
-  // previous step values.
-  // add_field<Updated>("cldt_prev_step", scalar3d_mid, nondim,
-  //                     grid_name);  // total cloud fraction [fraction]
 
   // FIXME: we do not need qme
   // add_field<Required>(
@@ -133,9 +129,6 @@ void MAMWetscav::set_grids(
   // add_field<Required>("rprddp", scalar3d_mid, kg / kg / s,
   //                     grid_name);  // Rain production, deep convection
   //                     [kg/kg/s]
-  add_field<Updated>(
-      "sh_frac", scalar3d_mid, nondim,
-      grid_name);  // Shallow convective cloud fraction [fraction] //NOT updated
 
   // in cloud water mixing ratio, deep shallow [kg/kg]
   add_field<Updated>("icwmrsh", scalar3d_mid, nondim, grid_name);
@@ -473,14 +466,18 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
-  // inputs/outputs
-  auto dlf  = get_field_out("dlf").get_view<Real **>();
-  auto cldn = get_field_out("cldn").get_view<Real **>();
+  // inputs
+  // Shallow convective cloud fraction [fraction]
+  auto sh_frac = get_field_in("sh_frac").get_view<const Real **>();
 
-  // where is cldt_prev_step used?
-  // auto cldt_prev_step = get_field_out("cldt_prev_step").get_view< Real **>();
-  // //FIXME: Is it same as cldn_prev_step??
-  auto cldt  = get_field_out("cldt").get_view<Real **>();  //??
+  // Deep convective cloud fraction [fraction]
+  auto dp_frac = get_field_in("dp_frac").get_view<const Real **>();
+
+  // Total cloud fraction
+  auto cldt = get_field_in("cldfrac_liq").get_view<const Real **>();  //??
+
+  // inputs/outputs
+  auto dlf   = get_field_out("dlf").get_view<Real **>();
   auto evapr = get_field_out("evapr").get_view<Real **>();
   auto rprdsh =
       get_field_out("rprdsh").get_view<Real **>();  // rain production, shallow
@@ -490,9 +487,6 @@ void MAMWetscav::run_impl(const double dt) {
       get_field_out("evapcsh")
           .get_view<Real **>();  // Evaporation rate of shallow convective
                                  // precipitation >=0. [kg/kg/s]
-  auto sh_frac =
-      get_field_out("sh_frac")
-          .get_view<Real **>();  // Shallow convective cloud fraction [fraction]
   auto rprddp =
       get_field_out("rprddp")
           .get_view<Real **>();  // rain production, deep convection [kg/kg/s]
@@ -500,8 +494,6 @@ void MAMWetscav::run_impl(const double dt) {
       get_field_out("evapcdp")
           .get_view<Real **>();  //  Evaporation rate of deep convective
                                  //  precipitation >=0. [kg/kg/s]
-  // Deep convective cloud fraction [fraction]
-  auto dp_frac = get_field_in("dp_frac").get_view<const Real **>();
 
   auto icwmrsh = get_field_out("icwmrsh")
                      .get_view<Real **>();  // in cloud water mixing ratio,
@@ -545,8 +537,6 @@ void MAMWetscav::run_impl(const double dt) {
         mam4::Tendencies tends =
             mam_coupling::interstitial_aerosols_tendencies_for_column(
                 dry_aero_tends, icol);
-        // shallow_convective_cloud_fraction
-        auto cldn_icol = ekat::subview(cldn, icol);
         /// shallow_convective_precipitation_production
         auto rprdsh_icol = ekat::subview(rprdsh, icol);
         // deep_convective_precipitation_production
@@ -581,9 +571,9 @@ void MAMWetscav::run_impl(const double dt) {
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
             // inputs
-            cldt_icol, cldn_icol, rprdsh_icol, rprddp_icol, evapcdp_icol,
-            evapcsh_icol, dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol,
-            evapr_icol, dlf_icol, prain_icol,
+            cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
+            dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, evapr_icol,
+            dlf_icol, prain_icol,
             // in/out
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             // output
