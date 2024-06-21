@@ -10,7 +10,7 @@ from utils import check_minimum_python_version, expect, ensure_pylint, get_times
 
 check_minimum_python_version(3, 6)
 
-from machines_specs import is_machine_supported, setup_mach_env
+from machines_specs import is_machine_supported
 
 import unittest, argparse, sys, os, shutil
 from pathlib import Path
@@ -202,12 +202,12 @@ class TestBuildnml(unittest.TestCase):
         self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
 
         # Test case 1: append to base, then to last. Should give all 3 entries stacked
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_TRACERS 1'", from_dir=case)
+        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 1'", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
         self._get_values(case,"my_param","1,2,3,4,5,6")
 
         # Test case 2: append to last, then to base. Should give 1st and 3rd entry
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_TRACERS 2'", from_dir=case)
+        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 2'", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
         self._get_values(case,"my_param","1,2,5,6")
 
@@ -429,7 +429,6 @@ def scripts_tests(machine=None):
     if machine:
         expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
         CONFIG["machine"] = machine
-        setup_mach_env(machine)
 
     unittest.main(verbosity=2)
 
