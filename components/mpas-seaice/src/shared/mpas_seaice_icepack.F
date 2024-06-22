@@ -340,7 +340,6 @@ contains
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
        call icepack_init_itd(&
-            nCategories, &
             categoryThicknessLimits)
 
        call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -400,7 +399,6 @@ contains
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
        call icepack_init_thermo(&
-            nIceLayers, &
             initialSalinityProfileVertical)
        call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
@@ -864,8 +862,6 @@ contains
 
     integer, pointer :: &
          nCellsSolve, &
-         nIceLayers, &
-         nSnowLayers, &
          nCategories
 
     integer :: &
@@ -883,8 +879,6 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
 
        call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
 
@@ -906,8 +900,6 @@ contains
                   initialSalinityProfile(:,iCell), &
                   initialMeltingTemperatureProfile(:,iCell), &
                   surfaceTemperature(1,iCategory,iCell), &
-                  nIceLayers, &
-                  nSnowLayers, &
                   iceEnthalpy(:,iCategory,iCell), &
                   snowEnthalpy(:,iCategory,iCell))
 
@@ -1745,9 +1737,6 @@ contains
           call icepack_warnings_clear()
           call icepack_step_therm1(&
                dt=config_dt, &
-               ncat=nCategories, &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
                aicen_init=iceAreaCategoryInitial(:,iCell), &
                vicen_init=iceVolumeCategoryInitial(:,iCell), &
                vsnon_init=snowVolumeCategoryInitial(:,iCell), &
@@ -2163,9 +2152,6 @@ contains
          oceanHeatFlux, &
          freezeOnset, &
          categoryThicknessLimits, &
-         biologyGrid, &
-         verticalGrid, &
-         interfaceBiologyGrid, &
          frazilGrowthDiagnostic
 !         frazilGrowthDiagnostic, &
 !         WaveFrequency,      &
@@ -2314,9 +2300,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrationsInUse", oceanBioConcentrationsInUse)
-       call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-       call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
@@ -2365,12 +2348,7 @@ contains
 
           call icepack_step_therm2(&
                dt=config_dt, &
-               ncat=nCategories, &
-               nilyr=nIcelayers, &
-               nslyr=nSnowLayers, &
                hin_max=categoryThicknessLimits(:), &
-               nbtrcr=ciceTracerObject % nBioTracers, &
-               nblyr=nBioLayers, &
                aicen=iceAreaCategory(1,:,iCell), &
                vicen=iceVolumeCategory(1,:,iCell), &
                vsnon=snowVolumeCategory(1,:,iCell), &
@@ -2397,9 +2375,6 @@ contains
                fresh=oceanFreshWaterFlux(iCell), &
                fsalt=oceanSaltFlux(iCell), &
                fhocn=oceanHeatFlux(iCell), &
-               bgrid=biologyGrid(:), &
-               cgrid=verticalGrid(:), &
-               igrid=interfaceBiologyGrid(:),  &
                faero_ocn=oceanAerosolFlux(:,iCell), &
                first_ice=newlyFormedIceLogical(:), & 
                flux_bio=oceanBioFluxesTemp(:,iCell), &
@@ -2772,9 +2747,6 @@ contains
           call icepack_step_snow (&
                dt=config_dt, &
                wind=windSpeed(iCell), &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
-               ncat=nCategories, &
                aice=iceAreaCell(iCell), &
                aicen=iceAreaCategory(1,:,iCell), &
                vicen=iceVolumeCategory(1,:,iCell), &
@@ -2895,9 +2867,7 @@ contains
          shortwaveIRDirectDown, &
          shortwaveIRDiffuseDown, &
          solarZenithAngleCosine, &
-         snowfallRate, &
-         verticalShortwaveGrid, &
-         verticalGrid
+         snowfallRate
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          surfaceShortwaveFlux, &
@@ -3065,8 +3035,6 @@ contains
        call MPAS_pool_get_array(ponds, "pondLidMeltFluxFraction", pondLidMeltFluxFraction)
 
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
-       call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
-       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -3117,8 +3085,6 @@ contains
 
           call icepack_step_radiation(&
                dt=config_dt, &
-               swgrid=verticalShortwaveGrid(:), &
-               igrid=verticalGrid(:), &
                fbri=brineFraction(1,:,iCell), &
                aicen=iceAreaCategory(1,:,iCell), &
                vicen=iceVolumeCategory(1,:,iCell), &
@@ -3236,12 +3202,7 @@ contains
     ! dimensions
     integer, pointer :: &
          nCellsSolve, &
-         nCategories, &
-         nIceLayers, &
-         nSnowLayers, &
-         nAerosols, &
-         nBioLayers, &
-         nBioLayersP1
+         nCategories
 
     ! variables
     real(kind=RKIND), dimension(:), pointer :: &
@@ -3330,11 +3291,6 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
-       call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
-       call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
-       call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
 
        call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
@@ -3401,10 +3357,6 @@ contains
           call icepack_step_ridge(&
                dt=dynamicsTimeStep, &
                ndtd=config_dynamics_subcycle_number, &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
-               nblyr=nBioLayers, &
-               ncat=nCategories, &
                hin_max=categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
                rdg_conv=ridgeConvergence(iCell), &
                rdg_shear=ridgeShear(iCell), &
@@ -3424,7 +3376,6 @@ contains
                fpond=pondFreshWaterFlux(iCell), &
                fresh=oceanFreshWaterFlux(iCell), &
                fhocn=oceanHeatFlux(iCell), &
-               n_aero=nAerosols, &
                faero_ocn=oceanAerosolFlux(:,iCell), & ! DC no fiso_ocn argument
                aparticn=ridgeParticipationFunction(:,iCell), &
                krdgn=ratioRidgeThicknessToIce(:,iCell), &
@@ -3525,10 +3476,7 @@ contains
     integer, pointer :: &
          nCellsSolve, &
          nCategories, &
-         nIceLayers, &
-         nSnowLayers, &
          nzAerosols, &
-         nBioLayers, &
          nBioLayersP1, &
          nAlgae, &
          maxBCType, &
@@ -3543,10 +3491,6 @@ contains
          netSpecificAlgalGrowthRate, &
          primaryProduction, &
          netBrineHeight, &
-         biologyGrid, &
-         interfaceBiologyGrid, &
-         interfaceGrid, &
-         verticalGrid, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
@@ -3698,10 +3642,7 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
-       call MPAS_pool_get_dimension(mesh, "nBioLayers", nBioLayers)
        call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_dimension(mesh, "nAlgae", nAlgae)
        call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
@@ -3728,10 +3669,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "brineBottomChange", brineBottomChange)
        call MPAS_pool_get_array(biogeochemistry, "brineTopChange", brineTopChange)
        call MPAS_pool_get_array(biogeochemistry, "bioPorosity", bioPorosity)
-       call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
-       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity", bioDiffusivity)
        call MPAS_pool_get_array(biogeochemistry, "bioPermeability", bioPermeability)
        call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux", bioShortwaveFlux)
@@ -3958,14 +3895,6 @@ contains
                snow_bio_net=totalVerticalBiologySnow(:,iCell), &
                totalChla=totalChlorophyll(iCell), &
                fswthrun=penetratingShortwaveFlux(:,iCell), &
-               bgrid=biologyGrid, &
-               igrid=interfaceBiologyGrid, &
-               icgrid=interfaceGrid, &
-               cgrid=verticalGrid, &
-               nblyr=nBioLayers, &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
-               ncat=nCategories, &
                meltbn=basalIceMeltCategory(:,iCell), &
                melttn=surfaceIceMeltCategory(:,iCell), &
                congeln=congelationCategory(:,iCell), &
@@ -4369,8 +4298,7 @@ contains
          iCell
 
     integer, pointer :: &
-         nCellsSolve, &
-         nCategories
+         nCellsSolve
 
     integer, dimension(:), pointer :: &
          indexToCellID
@@ -4392,7 +4320,6 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
        call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
@@ -4417,7 +4344,6 @@ contains
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call icepack_aggregate(                    &
-               nCategories,                          &
                iceAreaCategory(1,:,iCell),           &
                tracerArrayCategory,                  & ! trcrn
                iceVolumeCategory(1,:,iCell),         &
@@ -4427,7 +4353,6 @@ contains
                iceVolumeCell(iCell),                 &
                snowVolumeCell(iCell),                &
                openWaterArea(iCell),                 &
-               ciceTracerObject % nTracers,          &
                ciceTracerObject % parentIndex,       & ! trcr_depend
                ciceTracerObject % firstAncestorMask, & ! trcr_base
                ciceTracerObject % ancestorNumber,    & ! n_trcr_strata
@@ -5570,17 +5495,11 @@ contains
        initialSalinityProfile, &
        initialMeltingTemperatureProfile, &
        surfaceTemperature, &
-       nIceLayers, &
-       nSnowLayers, &
        iceEnthalpy, &
        snowEnthalpy)
 
     use icepack_intfc, only: &
          icepack_init_trcr
-
-    integer, intent(in) :: &
-         nIceLayers, & ! number of ice layers
-         nSnowLayers   ! number of snow layers
 
     real(kind=RKIND), intent(in) :: &
          airTemperature, &      ! air temperature (C)
@@ -5602,8 +5521,6 @@ contains
          initialSalinityProfile, &
          initialMeltingTemperatureProfile, &
          surfaceTemperature, &
-         nIceLayers, &
-         nSnowLayers, &
          iceEnthalpy, &
          snowEnthalpy)
 
@@ -14177,13 +14094,7 @@ contains
          brineFraction
 
     integer, pointer :: &
-         nCellsSolve, &
-         nIceLayers, &
-         nBioLayers, &
-         nBioLayersP1, &
-         nBioLayersP2, &
-         nCategories, &
-         nShortwaveBio
+         nCellsSolve
 
     integer :: &
          iCell
@@ -14253,21 +14164,13 @@ contains
        call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-       call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
-       call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
-       call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
-       call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP2", nBioLayersP2)
-       call MPAS_pool_get_dimension(block % dimensions, "nShortwaveBio", nShortwaveBio)
 
        call icepack_init_hbrine(&
-            bgrid=biologyGrid, &
-            igrid=interfaceBiologyGrid, &
-            cgrid=verticalGrid, &
-            icgrid=interfaceGrid, &
-            swgrid=verticalShortwaveGrid, &
-            nblyr=nBioLayers, &
-            nilyr=nIceLayers, &
+            bgrid_out=biologyGrid, &
+            igrid_out=interfaceBiologyGrid, &
+            cgrid_out=verticalGrid, &
+            icgrid_out=interfaceGrid, &
+            swgrid_out=verticalShortwaveGrid, &
             phi_snow=config_snow_porosity_at_ice_surface)
 
        do iCell = 1, nCellsSolve
@@ -14302,11 +14205,6 @@ contains
                   hum=oceanHumicsConc(iCell))
 
              call icepack_init_bgc(&
-                  ncat=nCategories, &
-                  nblyr=nBioLayers, &
-                  nilyr=nIceLayers, &
-                  cgrid=verticalGrid, &
-                  igrid=interfaceBiologyGrid, &
                   sicen=iceSalinity(:,:,iCell), &
                   trcrn=tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
                   sss=seaSurfaceSalinity(iCell), &

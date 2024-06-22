@@ -784,8 +784,6 @@ contains
                   initialSalinityProfile(:,iCell), &
                   initialMeltingTemperatureProfile(:,iCell), &
                   surfaceTemperature(1,1,iCell), &
-                  nIceLayers, &
-                  nSnowLayers, &
                   iceEnthalpy(:,1,iCell), &
                   snowEnthalpy(:,1,iCell))
              call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -990,8 +988,6 @@ contains
                      initialSalinityProfile(:,iCell), &
                      initialMeltingTemperatureProfile(:,iCell), &
                      surfaceTemperature(1,iCategory,iCell), &
-                     nIceLayers, &
-                     nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
                 call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -1148,7 +1144,6 @@ contains
 
        if (trim(config_column_physics_type) == "icepack") then
           call icepack_init_itd(&
-               nCategories, &
                categoryThicknessLimits)
           call seaice_icepack_write_warnings(icepack_warnings_aborted())
        else if (trim(config_column_physics_type) == "column_package") then
@@ -1341,8 +1336,6 @@ contains
                   initialSalinityProfile(:,iCell), &
                   initialMeltingTemperatureProfile(:,iCell), &
                   surfaceTemperature(1,iCategory,iCell), &
-                  nIceLayers, &
-                  nSnowLayers, &
                   iceEnthalpy(:,iCategory,iCell), &
                   snowEnthalpy(:,iCategory,iCell))
              call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -1562,8 +1555,6 @@ contains
                      initialSalinityProfile(:,iCell), &
                      initialMeltingTemperatureProfile(:,iCell), &
                      surfaceTemperature(1,iCategory,iCell), &
-                     nIceLayers, &
-                     nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
                 call seaice_icepack_write_warnings(icepack_warnings_aborted())
