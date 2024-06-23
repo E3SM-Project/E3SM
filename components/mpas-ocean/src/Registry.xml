@@ -766,8 +766,12 @@
 		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
-		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false."
-					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
+		<nml_option name="config_remove_ais_river_runoff" type="logical" default_value=".false."
+					description="If true, liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_remove_ais_ice_runoff" type="logical" default_value=".false."
+					description="If true, solid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -3761,7 +3765,7 @@
 			 packages="thicknessBulkPKG"
 		/>
 		<var name="removedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_ais_river_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
@@ -3769,7 +3773,7 @@
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="removedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_ais_ice_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
