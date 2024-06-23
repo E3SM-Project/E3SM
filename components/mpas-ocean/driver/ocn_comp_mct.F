@@ -96,9 +96,9 @@ module ocn_comp_mct
   private :: ocn_export_moab
   private :: ocn_import_moab
   integer , private :: mblsize, totalmbls, totalmbls_r
-  real (kind=RKIND) , allocatable, private :: o2x_om(:,:) 
+  real (kind=RKIND) , allocatable, private :: o2x_om(:,:)
 
-  real (kind=RKIND) , allocatable, private :: x2o_om(:,:) 
+  real (kind=RKIND) , allocatable, private :: x2o_om(:,:)
   integer :: mpicom_moab
 #endif
 
@@ -238,7 +238,7 @@ contains
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
-#endif 
+#endif
 
 #endif
     interface
@@ -652,7 +652,7 @@ contains
    totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
    allocate (o2x_om(lsize, nsend) )
    o2x_om = 0._r8
-  ! define tags according to the seq_flds_o2x_fields 
+  ! define tags according to the seq_flds_o2x_fields
    tagtype = 1  ! dense, double
    numco = 1 !  one value per cell / entity
    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
@@ -667,7 +667,7 @@ contains
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
 
-   totalmbls_r = mblsize * nrecv ! size of the double array for importing 
+   totalmbls_r = mblsize * nrecv ! size of the double array for importing
    allocate (x2o_om(lsize, nrecv) )
    x2o_om = 0._r8
 
@@ -681,7 +681,7 @@ contains
    if ( ierr /= 0 ) then
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
-   
+
    ! add domain tags
    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
    tagtype = 1
@@ -690,7 +690,7 @@ contains
       write(ocnLogUnit,*) 'Fail to set define dom fields '
    endif
    ent_type = 1 ! cells
-      
+
 
 #endif
 !-----------------------------------------------------------------------
@@ -897,7 +897,7 @@ contains
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ocn
     modelStr='ocn init'
-    mpicom_moab = mpicom_o ! save it for run method 
+    mpicom_moab = mpicom_o ! save it for run method
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -912,7 +912,7 @@ contains
        call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
     endif
 #endif
-    
+
 
     itimestep = 0
 
@@ -1001,7 +1001,7 @@ contains
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr, tagname
-#endif 
+#endif
 #endif
 
       iam = domain % dminfo % my_proc_id
@@ -1055,7 +1055,7 @@ contains
          call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
       endif
 #endif
-      
+
 
       ! Ensures MPAS AM write/compute startup steps are performed
       call ocn_analysis_compute_startup(domain_ptr, ierr)
@@ -1738,8 +1738,6 @@ contains
    real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
 
    real (kind=RKIND), pointer :: config_density0
-
-   real (kind=RKIND), pointer :: totalRemovedRiverRunoffFlux, totalRemovedIceRunoffFlux
 
    type (block_type), pointer :: block_ptr
 
@@ -2613,23 +2611,6 @@ contains
       end if
    endif
 
-   ! global sum of removed runoff
-   if (config_remove_AIS_coupler_runoff) then
-      call MPAS_dmpar_sum_real(domain % dminfo, removedRiverRunoffFluxThisProc, removedRiverRunoffFluxReduced)
-      call MPAS_dmpar_sum_real(domain % dminfo, removedIceRunoffFluxThisProc, removedIceRunoffFluxReduced)
-      block_ptr => domain % blocklist
-      do while(associated(block_ptr))
-         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-
-         call mpas_pool_get_array(forcingPool, 'totalRemovedRiverRunoffFlux', totalRemovedRiverRunoffFlux)
-         call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffFlux', totalRemovedIceRunoffFlux)
-         totalRemovedRiverRunoffFlux = removedRiverRunoffFluxReduced
-         totalRemovedIceRunoffFlux = removedIceRunoffFluxReduced
-
-         block_ptr => block_ptr % next
-      end do
-   endif
-
 !-----------------------------------------------------------------------
 !EOC
 
@@ -3160,7 +3141,7 @@ contains
 !  This routine receives message from cpl7 driver
 !
 !    The following fields are always received from the coupler:
-! 
+!
 !    o  taux   -- zonal wind stress (taux)                 (W/m2   )
 !    o  tauy   -- meridonal wind stress (tauy)             (W/m2   )
 !    o  snow   -- water flux due to snow                   (kg/m2/s)
@@ -3176,15 +3157,15 @@ contains
 !    o  ifrac  -- ice fraction                             (%)
 !    o  rofl   -- river runoff flux                        (kg/m2/s)
 !    o  rofi   -- ice runoff flux                          (kg/m2/s)
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  pbot   -- bottom atm pressure                      (Pa)
 !    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
 !    o  co2prog-- bottom atm level prognostic co2
 !    o  co2diag-- bottom atm level diagnostic co2
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -3193,7 +3174,7 @@ contains
 ! !INPUT/OUTPUT PARAMETERS:
 
    ! type(mct_aVect)   , intent(inout) :: x2o_o
-   ! instead, we will get x2o_om from MPOID 
+   ! instead, we will get x2o_om from MPOID
 
 ! !OUTPUT PARAMETERS:
 
@@ -3246,8 +3227,6 @@ contains
    real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
 
    real (kind=RKIND), pointer :: config_density0
-
-   real (kind=RKIND), pointer :: totalRemovedRiverRunoffFlux, totalRemovedIceRunoffFlux
 
    type (block_type), pointer :: block_ptr
 
@@ -3337,7 +3316,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
     integer :: cur_ocn_stepno
@@ -3354,7 +3333,7 @@ contains
     if (ierr > 0 )  then
        write(ocnLogUnit,*) 'Fail to write ocean state '
     endif
-#endif   
+#endif
    errorCode = 0
 
 !  get moab tags from MPOID
@@ -3726,7 +3705,7 @@ contains
               iceFluxDMS(i) = x2o_om(n, index_x2o_Fioi_dms)
            endif
            if ( iceFluxDMSPField % isActive ) then
-              !JW TODO: dmspp? dmspd? the sum? 
+              !JW TODO: dmspp? dmspd? the sum?
               iceFluxDMSP(i) = x2o_om(n, index_x2o_Fioi_dmspp)
            endif
          endif
@@ -3939,22 +3918,6 @@ contains
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
    endif
-
-   ! global sum of removed runoff
-   if (config_remove_AIS_coupler_runoff) then
-      call MPAS_dmpar_sum_real(domain % dminfo, removedRiverRunoffFluxThisProc, removedRiverRunoffFluxReduced)
-      call MPAS_dmpar_sum_real(domain % dminfo, removedIceRunoffFluxThisProc, removedIceRunoffFluxReduced)
-      block_ptr => domain % blocklist
-      do while(associated(block_ptr))
-         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-
-         call mpas_pool_get_array(forcingPool, 'totalRemovedRiverRunoffFlux', totalRemovedRiverRunoffFlux)
-         call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffFlux', totalRemovedIceRunoffFlux)
-         totalRemovedRiverRunoffFlux = removedRiverRunoffFluxReduced
-         totalRemovedIceRunoffFlux = removedIceRunoffFluxReduced
-
-         block_ptr => block_ptr % next
-      end do
    endif
 
 !-----------------------------------------------------------------------
@@ -3983,9 +3946,9 @@ contains
       integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                            index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity, &
                            index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
-   
+
       type (block_type), pointer :: block_ptr
-   
+
       type (mpas_pool_type), pointer :: meshPool,             &
                                           forcingPool,          &
                                           statePool,            &
@@ -3994,9 +3957,9 @@ contains
                                           ecosysSeaIceCoupling, &
                                           DMSSeaIceCoupling,    &
                                           MacroMoleculesSeaIceCoupling
-   
+
       integer, dimension(:), pointer :: landIceMask
-   
+
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                    avgTotalFreshWaterTemperatureFlux, &
                                                    avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
@@ -4017,13 +3980,13 @@ contains
                                                    avgRemovedIceRunoffFlux, &
                                                    avgLandIceHeatFlux, &
                                                    avgRemovedIceRunoffHeatFlux
-   
+
       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                       avgSSHGradient, avgOceanSurfacePhytoC, &
                                                       avgOceanSurfaceDOC, layerThickness
-   
+
       real (kind=RKIND) :: surfaceFreezingTemp
-   
+
       logical, pointer :: frazilIceActive,          &
                            config_remove_AIS_coupler_runoff, &
                            config_use_ecosysTracers, &
@@ -4032,12 +3995,12 @@ contains
                            config_use_ecosysTracers_sea_ice_coupling, &
                            config_use_DMSTracers_sea_ice_coupling,  &
                            config_use_MacroMoleculesTracers_sea_ice_coupling
-   
+
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
-   
+
       logical :: keepFrazil
 
-   
+
       ! get configure options
       call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
       call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
@@ -4051,18 +4014,18 @@ contains
                                                    config_use_DMSTracers_sea_ice_coupling)
       call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                    config_use_MacroMoleculesTracers_sea_ice_coupling)
-   
+
       n = 0
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-   
+
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-   
+
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-   
+
          call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperatureSurfaceValue)
          call mpas_pool_get_dimension(forcingPool, 'index_avgSalinitySurfaceValue', index_salinitySurfaceValue)
          call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
@@ -4070,10 +4033,10 @@ contains
          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
 
-   
+
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-   
+
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
          call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
          call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
@@ -4094,18 +4057,18 @@ contains
            call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
            call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
         endif
-   
+
          ! BGC fields
          if (config_use_ecosysTracers) then
-   
+
             call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
             call mpas_pool_get_array(ecosysAuxiliary, 'avgCO2_gas_flux', avgCO2_gas_flux)
-   
+
          end if
-   
+
          if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
             call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
-   
+
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
             call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
@@ -4118,32 +4081,32 @@ contains
          endif
          if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
             call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
-   
+
             call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMS', avgOceanSurfaceDMS)
             call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMSP', avgOceanSurfaceDMSP)
          endif
          if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
             call mpas_pool_get_subpool(forcingPool, 'MacroMoleculesSeaIceCoupling', MacroMoleculesSeaIceCoupling)
-   
+
             call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDOC', avgOceanSurfaceDOC)
             call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDON', avgOceanSurfaceDON)
          endif
    !    call mpas_pool_get_array(forcingPool, 'CO2Flux', CO2Flux)
    !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
    !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
-   
+
          do i = 1, nCellsSolve
             n = n + 1
-   
+
             o2x_om(n, index_o2x_So_t) = avgTracersSurfaceValue(index_temperatureSurfaceValue, i)
             o2x_om(n, index_o2x_So_s) = avgTracersSurfaceValue(index_salinitySurfaceValue, i)
             o2x_om(n, index_o2x_So_u) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
             o2x_om(n, index_o2x_So_v) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
-   
+
             o2x_om(n, index_o2x_So_ssh)  = ssh(i)
             o2x_om(n, index_o2x_So_dhdx) = avgSSHGradient(index_avgZonalSSHGradient, i)
             o2x_om(n, index_o2x_So_dhdy) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
-   
+
             o2x_om(n, index_o2x_Faoo_h2otemp) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
 
             if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
@@ -4164,31 +4127,31 @@ contains
                      keepFrazil = .false.
                   end if
                end if
-   
+
                if ( keepFrazil ) then
-   
+
                   ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
                   if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
-   
-                  seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion 
-   
+
+                  seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion
+
                   ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
                   ! top layer of the ocean
                   else
-   
+
                   surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
-                     pressure=0.0_RKIND,  inLandIceCavity=.false.) 
-   
+                     pressure=0.0_RKIND,  inLandIceCavity=.false.)
+
                   seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
                                  - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
-   
+
                   end if
-   
+
                   o2x_om(n, index_o2x_Fioo_q) = seaIceEnergy(i) / ocn_cpl_dt
                   o2x_om(n, index_o2x_Fioo_frazil) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
-   
+
                else
-   
+
                   o2x_om(n, index_o2x_Fioo_q)      = 0.0_RKIND
                   o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
                   if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
@@ -4196,13 +4159,13 @@ contains
                      o2x_om(n, index_o2x_Foxo_frazil_li) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
                   endif
                end if
-   
+
                ! Reset SeaIce Energy and Accumulated Frazil Ice
                seaIceEnergy(i) = 0.0_RKIND
                accumulatedFrazilIceMass(i) = 0.0_RKIND
                frazilSurfacePressure(i) = 0.0_RKIND
             end if
-   
+
             ! BGC fields
             if (config_use_ecosysTracers) then
                ! convert from mmolC/m2/s to kg CO2/m2/s
@@ -4233,7 +4196,7 @@ contains
                o2x_om(n, index_o2x_So_doc2) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
                o2x_om(n, index_o2x_So_don1) = max(0.0_RKIND,avgOceanSurfaceDON(i))
             endif
-      
+
             if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
                   trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
                o2x_om(n, index_o2x_So_blt) = landIceBoundaryLayerTracers(indexBLT,i)
@@ -4241,9 +4204,9 @@ contains
                o2x_om(n, index_o2x_So_htv) = landIceTracerTransferVelocities(indexHeatTrans,i)
                o2x_om(n, index_o2x_So_stv) = landIceTracerTransferVelocities(indexSaltTrans,i)
                o2x_om(n, index_o2x_So_rhoeff) = 0.0_RKIND
-            endif 
+            endif
          end do
-   
+
          block_ptr => block_ptr % next
       end do
 
@@ -4264,7 +4227,7 @@ contains
       ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
 #endif
    end subroutine ocn_export_moab!}}}
-#endif  
+#endif
 
 end module ocn_comp_mct
 

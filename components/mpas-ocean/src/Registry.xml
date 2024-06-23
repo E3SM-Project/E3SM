@@ -3764,20 +3764,12 @@
 			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="totalRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
-			 description="Global sum of fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG"
-		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="removedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
-		/>
-		<var name="totalRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
-			 description="Global sum of fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
