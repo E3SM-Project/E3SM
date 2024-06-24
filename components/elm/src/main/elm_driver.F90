@@ -12,7 +12,7 @@ module elm_driver
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
-  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_firn_percolation_and_compaction
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use elm_varctl             , only : use_erosion, use_fates_sp, use_fan
   use elm_varctl             , only : mpi_sync_nstep_freq
@@ -1622,7 +1622,7 @@ contains
          ! Save snow mass at previous time step
          h2osno_old(c) = h2osno(c)
 
-         if (.not. use_extrasnowlayers) then
+         if (.not. use_firn_percolation_and_compaction) then
             ! Decide whether to cap snow
             if (h2osno(c) > h2osno_max) then
                do_capsnow(c) = .true.
@@ -1790,7 +1790,7 @@ contains
          qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
          qflx_snow_grnd_col  (bounds%begc:bounds%endc))
 
-    if (.not. use_extrasnowlayers) then
+    if (.not. use_firn_percolation_and_compaction) then
        call p2c (bounds, num_allc, filter_allc, &
             veg_wf%qflx_snwcp_liq(bounds%begp:bounds%endp), &
             col_wf%qflx_snwcp_liq(bounds%begc:bounds%endc))

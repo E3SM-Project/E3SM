@@ -11,7 +11,7 @@ module SnowSnicarMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use elm_varctl      , only : iulog, use_extrasnowlayers
+  use elm_varctl      , only : iulog, use_firn_percolation_and_compaction
   use elm_varcon      , only : namec 
   use shr_const_mod   , only : SHR_CONST_RHOICE
   use abortutils      , only : endrun
@@ -1435,13 +1435,13 @@ contains
             !               RE-FREEZING
             !
             ! new snowfall [kg/m2]
-            if (do_capsnow(c_idx) .and. .not. use_extrasnowlayers) then
+            if (do_capsnow(c_idx) .and. .not. use_firn_percolation_and_compaction) then
                newsnow = max(0._r8, (qflx_snwcp_ice(c_idx)*dtime))
             else
                newsnow = max(0._r8, (qflx_snow_grnd_col(c_idx)*dtime))
             endif
 
-            if (use_extrasnowlayers) then
+            if (use_firn_percolation_and_compaction) then
                 snw_rds_refrz   = 1500._r8
             else
                 snw_rds_refrz   = 1000._r8 

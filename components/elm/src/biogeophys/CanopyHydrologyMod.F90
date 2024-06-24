@@ -16,7 +16,7 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate, use_extrasnowlayers
+  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate, use_firn_percolation_and_compaction
   use LandunitType      , only : lun_pp
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -433,7 +433,7 @@ contains
 
           qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
 
-          if (.not. use_extrasnowlayers) then
+          if (.not. use_firn_percolation_and_compaction) then
              if (do_capsnow(c)) then
                 qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
                 qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
@@ -491,7 +491,7 @@ contains
 
        ! Determine snow height and snow water
        
-       if (use_extrasnowlayers) then
+       if (use_firn_percolation_and_compaction) then
           call NewSnowBulkDensity(bounds, num_nolakec, filter_nolakec, &
                                   top_as, bifall(bounds%begc:bounds%endc))
        end if
@@ -517,13 +517,13 @@ contains
              swe_old(c,j)=h2osoi_liq(c,j)+h2osoi_ice(c,j)
           enddo
 
-          if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+          if (do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
              dz_snowf = 0._r8
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
              frac_sno(c)=1._r8
              int_snow(c) = 5.e2_r8
           else
-             if (.not. use_extrasnowlayers) then
+             if (.not. use_firn_percolation_and_compaction) then
                 if (forc_t(t) > tfrz + 2._r8) then
                    bifall(c)=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
                 else if (forc_t(t) > tfrz - 15._r8) then
@@ -662,7 +662,7 @@ contains
           ! as the surface air temperature
 
           newnode = 0    ! flag for when snow node will be initialized
-          if (.not. use_extrasnowlayers) then
+          if (.not. use_firn_percolation_and_compaction) then
              if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
                 newnode = 1
                 snl(c) = -1

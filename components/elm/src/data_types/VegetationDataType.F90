@@ -5494,20 +5494,20 @@ module VegetationDataType
          avgflag='A', long_name='excess rainfall due to snow capping', &
          ptr_patch=this%qflx_snwcp_liq, c2l_scale_type='urbanf', default='inactive')
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_rain_grnd(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
             avgflag='A', long_name='rain on ground after interception', &
             ptr_patch=this%qflx_rain_grnd, default='inactive', c2l_scale_type='urbanf')
 
-    end if
+    !end if
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_snow_grnd(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
             avgflag='A', long_name='snow on ground after interception', &
             ptr_patch=this%qflx_snow_grnd, default='inactive', c2l_scale_type='urbanf')
-    end if
+    !end if
 
     if (use_cn) then
        this%qflx_evap_grnd(begp:endp) = spval
@@ -5537,12 +5537,12 @@ module VegetationDataType
             ptr_patch=this%qflx_dew_grnd, default='inactive', c2l_scale_type='urbanf')
     end if
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_sub_snow(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
             avgflag='A', long_name='sublimation rate from snow pack', &
             ptr_patch=this%qflx_sub_snow, default='inactive', c2l_scale_type='urbanf')
-    end if
+    !end if
 
     if (use_cn) then
        this%qflx_dew_snow(begp:endp) = spval

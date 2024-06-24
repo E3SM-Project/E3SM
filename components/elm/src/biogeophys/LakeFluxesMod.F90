@@ -52,7 +52,7 @@ contains
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use elm_varctl          , only : iulog, use_lch4, use_extrasnowlayers
+    use elm_varctl          , only : iulog, use_lch4, use_firn_percolation_and_compaction
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
@@ -695,7 +695,7 @@ contains
          qflx_dirct_rain(p) = 0._r8
          qflx_leafdrip(p) = 0._r8
 
-         if (.not. use_extrasnowlayers) then
+         if (.not. use_firn_percolation_and_compaction) then
             ! Because they will be used in pft2col initialize here.
             ! This will be overwritten in LakeHydrology
             qflx_snwcp_ice(p) = 0._r8
