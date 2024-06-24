@@ -136,7 +136,7 @@
 			possible_values="Any real positive number."
 		/>
 		<nml_option name="config_global_ocean_topography_source" type="character" default_value="latlon_file" units="unitless"
-			description="If 'latlon_file', reads in topography from file specified in config_global_ocean_topography_file. If 'mpas_variable', reads in topography from mpas variable bed_elevation, and optionally oceanFracObserved, landIceDraftObserved, landIceThkObserved, landIceFracObserved, and landIceGroundedFracObserved"
+			description="If 'latlon_file', reads in topography from file specified in config_global_ocean_topography_file. If 'mpas_variable', reads in topography from mpas variable bed_elevation, and optionally oceanFracObserved, landIceDraftObserved, landIceThkObserved, landIceFracObserved, and landIceFloatingFracObserved"
 			possible_values="'latlon_file' or 'mpas_variable'"
 		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
@@ -198,46 +198,6 @@
 		<nml_option name="config_global_ocean_depress_by_land_ice" type="logical" default_value=".false." units="unitless"
 			description="Logical flag that controls if sea surface pressure and layer thicknesses should be altered by an overlying ice sheet/shelf."
 			possible_values=".true. or .false."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_file" type="character" default_value="none" units="unitless"
-			description="Path to the land ice topography initial condition file."
-			possible_values="path/to/land_ice_topography/file.nc"
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_nlat_dimname" type="character" default_value="none" units="unitless"
-			description="Dimension name for the latitude in the land ice topography file."
-			possible_values="Dimension name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_nlon_dimname" type="character" default_value="none" units="unitless"
-			description="Dimension name for the longitude in the land ice topography file."
-			possible_values="Dimension name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_latlon_degrees" type="logical" default_value=".true." units="unitless"
-			description="Logical flag that controls if the Lat/Lon fields for land ice topography should be converted to radians. True means input is degrees, false means input is radians."
-			possible_values=".true. or .false."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_lat_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the latitude in the land ice topography file."
-			possible_values="Variable name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_lon_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the longitude in the land ice topography file."
-			possible_values="Variable name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_thickness_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the land ice thickness in the land ice topography file."
-			possible_values="Variable name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_draft_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the land ice draft in the land ice topography file."
-			possible_values="Variable name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_ice_frac_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the land ice fraction in the land ice topography file."
-			possible_values="Variable name from input file."
-		/>
-		<nml_option name="config_global_ocean_land_ice_topo_grounded_frac_varname" type="character" default_value="none" units="unitless"
-			description="Variable name for the grounded land ice fraction in the land ice topography file."
-			possible_values="Variable name from input file."
 		/>
 		<nml_option name="config_global_ocean_use_constant_land_ice_cavity_temperature" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that controls if ocean temperature in land-ice cavities is set to a constant temperature."
@@ -397,14 +357,17 @@
 		<var name="landIceDraftObserved" type="real" dimensions="nCells" units="m"
 			 description="z-coordinate of land ice bottom, read in from data file"
 		/>
+		<var name="landIcePressureObserved" type="real" dimensions="nCells" units="m"
+			 description="Pressure of land ice on the ocean surface, read in from data file"
+		/>
 		<var name="landIceThkObserved" type="real" dimensions="nCells" units="m"
 			 description="Thickness of land ice, read in from data file"
 		/>
 		<var name="landIceFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="Fraction of land ice, read in from data file"
 		/>
-		<var name="landIceGroundedFracObserved" type="real" dimensions="nCells" units="unitless"
-			 description="Fraction of grounded land ice, read in from data file"
+		<var name="landIceFloatingFracObserved" type="real" dimensions="nCells" units="unitless"
+			 description="Fraction of floating land ice, read in from data file"
 		/>
 	</var_struct>
 	<var_struct name="criticalPassages" time_levs="1" mode="init" packages="criticalPassages">

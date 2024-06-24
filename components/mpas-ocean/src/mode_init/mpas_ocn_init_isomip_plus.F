@@ -529,9 +529,9 @@ contains
 
           do iCell = 1,nCells
             if(landIceFraction(iCell) > 0.01_RKIND) then
-              modifyLandIcePressureMask(iCell) = 1
+              sshAdjustmentMask(iCell) = 1
             else
-              modifyLandIcePressureMask(iCell) = 0
+              sshAdjustmentMask(iCell) = 0
             end if
           end do
 
@@ -605,7 +605,7 @@ contains
               ssh(iCell) = 0.0_RKIND
               landIceFraction(iCell) = 0.0_RKIND
               landIceMask(iCell) = 0
-              modifyLandIcePressureMask(iCell) = 0
+              sshAdjustmentMask(iCell) = 0
             end if
           end do !iCell
 

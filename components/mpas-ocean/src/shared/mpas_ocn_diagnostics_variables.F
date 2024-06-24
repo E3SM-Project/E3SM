@@ -127,7 +127,7 @@ module ocn_diagnostics_variables
    integer, dimension(:), pointer :: smoothingMask
    real (kind=RKIND), dimension(:,:), pointer :: verticalStretch
 
-   integer, dimension(:), pointer :: modifyLandIcePressureMask
+   integer, dimension(:), pointer :: sshAdjustmentMask
 
    real (kind=RKIND), dimension(:,:), pointer :: velocityMeridional
    real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
@@ -697,8 +697,8 @@ contains
       call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', &
                 verticalStretchField, 1)
       call mpas_pool_get_array(diagnosticsPool, &
-               'modifyLandIcePressureMask', &
-                modifyLandIcePressureMask)
+               'sshAdjustmentMask', &
+                sshAdjustmentMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
