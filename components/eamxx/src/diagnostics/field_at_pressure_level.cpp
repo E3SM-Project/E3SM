@@ -116,8 +116,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
   using MemberType = typename KT::MemberType;
-  using view_1d = typename KT::template view_1d<Real>;
-  using view_2d = typename KT::template view_2d<Real>;
 
   //This is 2D source pressure
   const Field& p_src = get_field_in(m_pressure_name);
