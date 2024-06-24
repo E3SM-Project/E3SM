@@ -19,10 +19,24 @@ module dust_model
   public :: dust_init
   public :: dust_active
 
+#if ( defined MOSAIC_SPECIES )
+  integer, parameter :: dust_nbin = 6
+  integer, parameter :: dust_nnum = 2
+#else
   integer, parameter :: dust_nbin = 2
   integer, parameter :: dust_nnum = 2
+#endif
 
-#if  ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
+  character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', &
+                                                                      'ca_a1 ', 'ca_a3 ', &
+                                                                      'co3_a1', 'co3_a3', &
+                                                                      'num_a1', 'num_a3' /)
+  real(r8),         parameter :: dust_dmt_grd(dust_nnum+1) = (/0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
+  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8, 0.989_r8, &
+                                                                   0.011_r8, 0.989_r8, &
+                                                                   0.011_r8, 0.989_r8 /)
+#elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
 ! Zender03: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
@@ -40,8 +54,13 @@ module dust_model
 #endif
 
   integer  :: dust_indices(dust_nbin+dust_nnum)
+#if ( defined MOSAIC_SPECIES )
+  real(r8) :: dust_dmt_vwr(dust_nnum)
+  real(r8) :: dust_stk_crc(dust_nnum)
+#else
   real(r8) :: dust_dmt_vwr(dust_nbin)
   real(r8) :: dust_stk_crc(dust_nbin)
+#endif
 
   real(r8)          :: dust_emis_fact = -1.e36_r8        ! tuning parameter for dust emissions
   character(len=cl) :: soil_erod_file = 'soil_erod_file' ! full pathname for soil erodibility dataset
@@ -113,7 +132,11 @@ module dust_model
    
     call  soil_erod_init( dust_emis_fact, soil_erod_file )
 
+#if ( defined MOSAIC_SPECIES )
+    call dust_set_params( dust_nnum, dust_dmt_grd, dust_dmt_vwr, dust_stk_crc )
+#else
     call dust_set_params( dust_nbin, dust_dmt_grd, dust_dmt_vwr, dust_stk_crc )
+#endif
 
     if (masterproc) write(iulog,*) "modal_aero, dust_init: dust_emis_scheme = ",dust_emis_scheme
 
@@ -137,6 +160,12 @@ module dust_model
     integer :: i, m, idst, inum
     real(r8) :: x_mton
     real(r8),parameter :: soil_erod_threshold = 0.1_r8
+#if ( defined MOSAIC_SPECIES )
+    real(r8),parameter :: frc_caco3 = 0.05_r8                           ! fraction of dust emitted as caco3
+    real(r8),parameter :: frc_ca    = frc_caco3 * 0.4004308_r8          ! fraction of dust emitted as ca
+    real(r8),parameter :: frc_co3   = frc_caco3 - frc_ca                ! fraction of dust emitted as co3
+    real(r8),parameter :: frc_oin   = 1.0_r8 - frc_caco3                ! fraction of dust emitted as oin (=dst)
+#endif
 
     ! set dust emissions
 
@@ -148,6 +177,30 @@ module dust_model
 
        if( soil_erod(i) .lt. soil_erod_threshold ) soil_erod(i) = 0._r8
 
+#if ( defined MOSAIC_SPECIES )
+       idst = dust_indices(1)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_oin * dust_emis_sclfctr(1) * soil_erod(i)/soil_erod_fact*1.15_r8
+       idst = dust_indices(2)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_oin * dust_emis_sclfctr(2) * soil_erod(i)/soil_erod_fact*1.15_r8
+
+       idst = dust_indices(3)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_ca  * dust_emis_sclfctr(3) * soil_erod(i)/soil_erod_fact*1.15_r8
+       idst = dust_indices(4)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_ca  * dust_emis_sclfctr(4) * soil_erod(i)/soil_erod_fact*1.15_r8
+
+       idst = dust_indices(5)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_co3 * dust_emis_sclfctr(5) * soil_erod(i)/soil_erod_fact*1.15_r8
+       idst = dust_indices(6)
+       cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 * frc_co3 * dust_emis_sclfctr(6) * soil_erod(i)/soil_erod_fact*1.15_r8
+
+       inum = dust_indices(dust_nbin+1)
+       x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(1)**3._r8))
+       cflx(i,inum) = ( cflx(i,dust_indices(1)) + cflx(i,dust_indices(3)) + cflx(i,dust_indices(5)) ) * x_mton
+
+       inum = dust_indices(dust_nbin+2)
+       x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(2)**3._r8))
+       cflx(i,inum) = ( cflx(i,dust_indices(2)) + cflx(i,dust_indices(4)) + cflx(i,dust_indices(6)) ) * x_mton
+#else
        ! rebin and adjust dust emissons..
        do m = 1,dust_nbin
 
@@ -167,6 +220,7 @@ module dust_model
           cflx(i,inum) = cflx(i,idst)*x_mton
 
        enddo
+#endif
 
     end do col_loop
 
