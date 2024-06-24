@@ -98,14 +98,14 @@ struct TestSetupSphere {
    // TODO: get this from the mesh
    Real Radius = 6371220;
 
-   Real ExpectedDivErrorLInf     = 0.01365957739897967656;
+   Real ExpectedDivErrorLInf     = 0.0136595773989796766;
    Real ExpectedDivErrorL2       = 0.00367052484586384131;
-   Real ExpectedPVErrorLInf      = 0.02192177966087570373;
-   Real ExpectedPVErrorL2        = 0.01225374183678303031;
+   Real ExpectedPVErrorLInf      = 0.0219217796608757037;
+   Real ExpectedPVErrorL2        = 0.0122537418367830303;
    Real ExpectedGradErrorLInf    = 0.00187912292540623471;
    Real ExpectedGradErrorL2      = 0.00149841802817334935;
-   Real ExpectedLaplaceErrorLInf = -999999.;
-   Real ExpectedLaplaceErrorL2   = -999999.;
+   Real ExpectedLaplaceErrorLInf = 0.281930203304510130;
+   Real ExpectedLaplaceErrorL2   = 0.270530313560271740;
 
    KOKKOS_FUNCTION Real vectorX(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
@@ -133,18 +133,20 @@ struct TestSetupSphere {
       return -4 * std::cos(Lon) * std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
 
-
    KOKKOS_FUNCTION Real curl(Real Lon, Real Lat) const {
       return -4 * std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 2) *
              std::sin(Lat);
    }
 
    KOKKOS_FUNCTION Real laplaceVecX(Real Lon, Real Lat) const {
-      return 0;
+      return std::cos(Lat) * (std::pow(std::sin(Lat), 2) * (17 - 37 *
+             std::pow(std::sin(Lon), 2)) + 11 * std::pow(std::sin(Lon), 2)
+             - 5) / Radius;
    }
 
    KOKKOS_FUNCTION Real laplaceVecY(Real Lon, Real Lat) const {
-      return 0;
+      return std::sin(Lon) * std::cos(Lon) * std::sin(Lat) * std::cos(Lat) *
+             (96 * std::pow(std::cos(Lat), 2) - 22) / Radius;
    }
 
    KOKKOS_FUNCTION Real layerThick(Real Lon, Real Lat) const {
