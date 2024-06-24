@@ -334,6 +334,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
+  start_timer("EAMxx::IO::" + m_params.name());
 
   // Check if this is a write step (and what kind)
   // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
@@ -545,6 +546,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
   }
 
+  stop_timer("EAMxx::IO::" + m_params.name());
   stop_timer(timer_root);
 }
 /*===============================================================================================*/

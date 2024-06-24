@@ -724,6 +724,7 @@ void AtmosphereDriver::initialize_output_managers () {
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    params.rename(ekat::split(fname,"/").back());
     auto& checkpoint_pl = params.sublist("Checkpoint Control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
