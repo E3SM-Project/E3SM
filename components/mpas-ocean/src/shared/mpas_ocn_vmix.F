@@ -1462,6 +1462,7 @@ contains
          !$acc    vertViscTopOfCell, vertViscTopOfEdge) &
          !$acc    private(cell1, cell2, k, Nsurf, N)
 #else
+         !$omp parallel
          !$omp do schedule(runtime) private(cell1, cell2, k, Nsurf, N)
 #endif
          do iEdge=1,nEdgesOwned
@@ -1480,6 +1481,7 @@ contains
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
+         !$omp end parallel
 #endif
          call mpas_timer_stop('GOTM avg')
       endif
@@ -1588,7 +1590,7 @@ contains
 
 
 #ifdef MPAS_OPENACC
-                  !$acc parallel loop gang vector collapse(3) present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
+                  !$acc parallel loop present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
 #else
                   !$omp parallel
                   !$omp do schedule(runtime) private(k, iTracer)
