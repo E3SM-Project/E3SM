@@ -40,6 +40,9 @@ The time stepping code must be written in such a way that other time stepping sc
 
 The total volume (area integrated layer thickness $h$) and total tracer (area integrated $\phi$) must be conserved. This means that the totals should remain constant to machine precision in time.
 
+### 2.6 Requirement: The RHS must accept a time argument
+
+For the manufactured solution and time-dependant forcing (winds, tides), the right-hand side functions must accept a specific time argument, which is the time that the RHS is associated with.
 
 ## 3 Algorithmic Formulation
 
@@ -50,29 +53,29 @@ The primary time stepping scheme will be forward-backward. This scheme is common
 Given the shallow water equations introduced in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document, we may consolidate the right-hand-side tendency terms to express them as
 
 $$
-\frac{\partial \boldsymbol{u}}{\partial t} = \mathcal{RHS}_u \left( \boldsymbol{u},h \right),
+\frac{\partial \boldsymbol{u}}{\partial t} = \mathcal{RHS}_u \left( \boldsymbol{u},h,t \right),
 $$
 
 $$
-\frac{\partial h}{\partial t} = \mathcal{RHS}_h \left( \boldsymbol{u},h \right),
+\frac{\partial h}{\partial t} = \mathcal{RHS}_h \left( \boldsymbol{u},h,t \right),
 $$
 
 $$
-\frac{\partial h \phi}{\partial t} = \mathcal{RHS}_\phi \left( \boldsymbol{u},h,\phi \right).
+\frac{\partial h \phi}{\partial t} = \mathcal{RHS}_\phi \left( \boldsymbol{u},h,\phi,t \right).
 $$
 
 The forward-backward scheme is simply a single forward time step, but always using the most recent information available:
 
 $$
-h^{n+1} = h^n + \mathcal{RHS}_h \left( \boldsymbol{u}^n,h^n \right) \Delta t
+h^{n+1} = h^n + \mathcal{RHS}_h \left( \boldsymbol{u}^n,h^n,t^n \right) \Delta t
 $$
 
 $$
-\phi^{n+1} = \frac{1}{h^{n+1}} \left( \phi^n h^n + \mathcal{RHS}_\phi \left( \boldsymbol{u}^n,h^n,\phi^n \right) \Delta t \right)
+\phi^{n+1} = \frac{1}{h^{n+1}} \left( \phi^n h^n + \mathcal{RHS}_\phi \left( \boldsymbol{u}^n,h^n,\phi^n, t^n \right) \Delta t \right)
 $$
 
 $$
-\boldsymbol{u}^{n+1} = \boldsymbol{u}^n + \mathcal{RHS}_u \left( \boldsymbol{u}^n,h^{n+1} \right) \Delta t
+\boldsymbol{u}^{n+1} = \boldsymbol{u}^n + \mathcal{RHS}_u \left( \boldsymbol{u}^n,h^{n+1}, t^{n+1} \right) \Delta t
 $$
 Here the variables are discretized in time only. Spatial discretization can be shown with a subscript if desired, using $u^n_e, h^n_i, \phi^n_i$ etc.
 The time domain is discretized into steps $t_0, t_1, ... t_n, t_{n+1}$ where $t_{n+1} = t_n+\Delta t$. The superscript indicates the time on all variables. For example, $h^n = h\left( t_n \right)$.
