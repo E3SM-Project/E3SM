@@ -10,6 +10,7 @@
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 #include "pyparamlist.hpp"
+#include "pyeamxx.hpp"
 
 #include <ekat/io/ekat_yaml.hpp>
 
@@ -20,7 +21,6 @@ namespace scream {
 
 struct PyAtmProc {
   std::shared_ptr<AtmosphereProcess> ap;
-  PyGrid phys_grid;
   std::map<std::string,PyField> fields;
   util::TimeStamp t0;
   util::TimeStamp time;
@@ -28,14 +28,10 @@ struct PyAtmProc {
 
   std::shared_ptr<OutputManager> output_mgr;
 
-  PyAtmProc (const PyParamList& params, const PyGrid& phys_grid_in)
-   : phys_grid(phys_grid_in)
+  PyAtmProc (const PyParamList& params)
   {
     // Get the comm
-    const auto& comm = phys_grid.grid->get_comm();
-
-    // Create a grids manager on the fly
-    auto gm = std::make_shared<SingleGridGM>(phys_grid.grid);
+    const auto& comm = PySession::get().comm;
 
     // Create the atm proc
     register_physics();
@@ -46,6 +42,7 @@ struct PyAtmProc {
     ap = apf.create(ap_type,comm,params.pl);
 
     // Create the fields
+    auto gm = PySession::get().gm;
     ap->set_grids(gm);
     create_fields();
   }
@@ -118,33 +115,41 @@ struct PyAtmProc {
         }
       }
     }
-    AtmosphereInput reader (ic_filename,phys_grid.grid,ic_fields,true);
-    reader.read_variables();
+    if (ic_fields.size()>0) {
+      const auto& gn = ic_fields[0].get_header().get_identifier().get_grid_name();
+      auto gm = PySession::get().gm;
+      auto grid = gm->get_grid(gn);
+      AtmosphereInput reader (ic_filename,grid,ic_fields,true);
+      reader.read_variables();
+    }
     scorpio::release_file(ic_filename);
 
     return pybind11::cast(missing);
   }
 
   void setup_output (const std::string& yaml_file) {
+    auto comm = PySession::get().comm;
 
     // Load output params
     auto params = ekat::parse_yaml_file(yaml_file);
 
     // Stuff all fields in a field manager
-    auto fm = std::make_shared<FieldManager>(phys_grid.grid);
-    fm->registration_begins();
-    fm->registration_ends();
-    for (auto it : fields) {
-      fm->add_field(it.second.f);
+    auto gm = PySession::get().gm;
+    std::map<std::string,std::shared_ptr<FieldManager>> fms;
+    for (auto it : gm->get_repo()) {
+      fms[it.first] = std::make_shared<FieldManager>(it.second);
+      fms[it.first]->registration_begins();
+      fms[it.first]->registration_ends();
     }
-
-    // Create a grids manager on the fly
-    auto gm = std::make_shared<SingleGridGM>(phys_grid.grid);
+    for (auto it : fields) {
+      const auto& gn = it.second.f.get_header().get_identifier().get_grid_name();
+      fms.at(gn)->add_field(it.second.f);
+    }
 
     // Make sure diagnostics are available, then create the output mgr
     register_diagnostics();
     output_mgr = std::make_shared<OutputManager>();
-    output_mgr->setup(phys_grid.grid->get_comm(),params,fm,gm,t0,t0,false);
+    output_mgr->setup(comm,params,fms,gm,t0,t0,false);
     output_mgr->set_logger(ap->get_logger());
   }
 
@@ -161,7 +166,7 @@ struct PyAtmProc {
 inline void pybind_pyatmproc(pybind11::module& m)
 {
   pybind11::class_<PyAtmProc>(m,"AtmProc")
-    .def(pybind11::init<const PyParamList&, const PyGrid&>())
+    .def(pybind11::init<const PyParamList&>())
     .def("get_field",&PyAtmProc::get_field)
     .def("initialize",&PyAtmProc::initialize)
     .def("setup_output",&PyAtmProc::setup_output)
