@@ -118,7 +118,6 @@ void MLCorrection::run_impl(const double dt) {
   // to use with precip adjustment.
   auto qv_src = get_field_in("qv");
   auto qv_in = qv_src.clone();
-  qv_in.deep_copy(qv_src);
 
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
