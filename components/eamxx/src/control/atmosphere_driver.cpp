@@ -1609,7 +1609,7 @@ void AtmosphereDriver::run (const int dt) {
   // that quantity at the beginning of the timestep. Or they may need to store
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
-  for (auto it : m_output_managers) {
+  for (auto& it : m_output_managers) {
     it.init_timestep(m_current_ts,dt);
   }
 

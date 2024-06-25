@@ -283,6 +283,10 @@ public:
     m_iop = iop;
   }
 
+  std::shared_ptr<logger_t> get_logger () const {
+    return m_atm_logger;
+  }
+
 protected:
 
   // Sends a message to the atm log
