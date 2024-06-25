@@ -3,6 +3,8 @@
 #include "ekat/util/ekat_units.hpp"
 #include "share/field/field_utils.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 
 namespace scream {
 // =========================================================================================
@@ -68,6 +70,7 @@ void MLCorrection::set_grids(
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 }
 
+// =========================================================================================
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
   fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy  
@@ -81,6 +84,16 @@ void MLCorrection::initialize_impl(const RunType /* run_type */) {
   ML_model_uv = py_correction.attr("get_ML_model")(m_ML_model_path_uv);
   ML_model_sfc_fluxes = py_correction.attr("get_ML_model")(m_ML_model_path_sfc_fluxes);
   ekat::enable_fpes(fpe_mask);
+
+  // Enforce bounds on quantities adjusted by ML using Field Property Checks
+  using LowerBound = FieldLowerBoundCheck;
+  add_postcondition_check<LowerBound>(get_field_out("precip_liq_surf_mass"),m_grid,0,true);
+  add_postcondition_check<LowerBound>(get_field_out("precip_ice_surf_mass"),m_grid,0,true);
+  // Add sanity property check for other variables.
+  using Interval = FieldWithinIntervalCheck;
+  add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
+  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
+  add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
 }
 
 // =========================================================================================
@@ -101,8 +114,10 @@ void MLCorrection::run_impl(const double dt) {
   const auto &v               = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
 
   // For precipitation adjustment we need to track the change in column integrated 'qv'
-  decltype(qv) qv_told("", qv.extent(0), qv.extent(1));
-  Kokkos::deep_copy(qv_told,qv);
+  // So we clone the original qv before ML changes the state so we can back out a qv_tend
+  // to use with precip adjustment.
+  auto qv_src = get_field_in("qv");
+  auto qv_in = qv_src.clone();
 
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
@@ -157,6 +172,7 @@ void MLCorrection::run_impl(const double dt) {
     const auto num_levs = m_num_levs;
     const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
     
+    const auto &qv_told = qv_in.get_view<const Real **>();
     const auto &qv_tnew = get_field_in("qv").get_view<const Real **>();
     Kokkos::parallel_for("Compute WVP diff", policy,
                          KOKKOS_LAMBDA(const MT& team) {
@@ -166,10 +182,20 @@ void MLCorrection::run_impl(const double dt) {
       auto rho_icol  = ekat::subview(pseudo_density,icol);
       Real net_column_moistening = 0;
       // Compute WaterVaporPath Difference
+      // The water vapor path (WVP) is calculated as the integral of d_qv over the vertical column
+      // which is converted to the units of precipitation which are kg/m*m
+      //     WVP = sum( d_qv * pseudo_density / gravity ),
+      //       where d_qv = qv_new - qv_old
+      //       units sanity check
+      //       	d_qv = kg/kg
+      //       	pseudo_density = Pa = kg/m/s2
+      //       	gravity = m/s2
+      //       d_qv * pseduo_density / gravity = kg/kg * kg/m/s2 * s2/m = kg/m2
+      // Compute WaterVaporPath Difference
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs),
                               [&] (const int& ilev, Real& lsum) {
         lsum += (qnew_icol(ilev)-qold_icol(ilev)) * rho_icol(ilev) / g;
-      },net_column_moistening);
+      },Kokkos::Sum<Real>(net_column_moistening));
       team.team_barrier();
       // Adjust Precipitation
       //  - Note, we subtract the water vapor path because positive precip represents
@@ -187,23 +213,16 @@ void MLCorrection::run_impl(const double dt) {
         // Apply all the adjustment to a single phase based on surface temperature
         Kokkos::single(Kokkos::PerTeam(team), [&] {
           auto T_icol = ekat::subview(T_mid,icol);
-          if (T_icol(m_num_levs-1)>273.15) {
+          if (T_icol(num_levs-1)>273.15) {
             precip_liq_surf_mass(icol) -= net_column_moistening;
           } else {
             precip_ice_surf_mass(icol) -= net_column_moistening;
           }
 	});
       }
-      if (precip_liq_surf_mass(icol)<0) {
-        Kokkos::single(Kokkos::PerTeam(team), [&] {
-          precip_liq_surf_mass(icol) = 0.0;
-	});
-      }
-      if (precip_ice_surf_mass(icol)<0) {
-        Kokkos::single(Kokkos::PerTeam(team), [&] {
-          precip_ice_surf_mass(icol) = 0.0;
-	});
-      }
+      // Note, with the above formulation it is possible for the precipitation to go negative.
+      // We rely on the field property checker defined in the intialization function to repair
+      // any instances of negative precipitation.
     });
   }
 }
