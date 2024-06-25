@@ -4,7 +4,7 @@ Atmospheric dry deposition of aerosols at the surface depends on certain surface
 
 For unstructured grids it was determined to create this offline interpolation tool rather than generalize the subroutine interp_map.
 
-Be sure to activate the E3SM unified environment when performing the steps below.
+Be sure to activate the [E3SM unified environment](https://e3sm.org/resources/tools/other-tools/e3sm-unified-environment/) when performing the steps below.
 
 ## Map File Generation
 
