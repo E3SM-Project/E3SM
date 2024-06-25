@@ -235,6 +235,21 @@
     </mach>
   </grid>
   <grid name="l%360x720cru">
+    <mach name="pm-cpu|muller-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>elm: pm-cpu 2 nodes for grid l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>192</ntasks_atm>
+          <ntasks_lnd>192</ntasks_lnd>
+          <ntasks_rof>192</ntasks_rof>
+          <ntasks_ice>192</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+          <ntasks_glc>192</ntasks_glc>
+          <ntasks_wav>192</ntasks_wav>
+          <ntasks_cpl>192</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="anvil">
       <pes compset="any" pesize="any">
         <comment>elm: anvil PEs for grid l%360x720cru</comment>
