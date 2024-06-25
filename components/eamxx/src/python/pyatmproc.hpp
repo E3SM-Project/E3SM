@@ -49,6 +49,11 @@ struct PyAtmProc {
   // I don't think virtual is needed, but just in case
   virtual ~PyAtmProc () = default;
 
+  PyParamList get_params () const {
+    PyParamList pypl(ap->get_params());
+    return pypl;
+  }
+
   void create_fields () {
     // Create  fields that are input/output to the atm proc
     for (const auto& req : ap->get_required_field_requests()) {
@@ -167,6 +172,7 @@ inline void pybind_pyatmproc(pybind11::module& m)
     .def(pybind11::init<const pybind11::dict&,const std::string&>())
     .def("get_field",&PyAtmProc::get_field)
     .def("initialize",&PyAtmProc::initialize)
+    .def("get_params",&PyAtmProc::get_params)
     .def("setup_output",&PyAtmProc::setup_output)
     .def("run",&PyAtmProc::run)
     .def("read_ic",&PyAtmProc::read_ic);

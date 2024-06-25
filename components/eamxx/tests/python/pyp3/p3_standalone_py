@@ -41,6 +41,14 @@ def main ():
     pyeamxx.create_grids_manager(ncols,nlevs,str(ic_file))
 
     p3 = pyeamxx.AtmProc(yaml_input['atmosphere_processes']['p3'],'p3')
+    params = p3.get_params()
+    old = params.get_dbl('max_total_ni')
+    print (f"max_total_ni: {params.get_dbl('max_total_ni')}")
+    params.set("max_total_ni",1000000.0)
+    print (f"max_total_ni: {params.get_dbl('max_total_ni')}")
+    params.set("max_total_ni",old)
+    print (f"max_total_ni: {params.get_dbl('max_total_ni')}")
+
     missing = p3.read_ic(str(ic_file))
     if len(missing)>0:
         print (f"WARNING! The following input fields were not found in the IC file, and must be manually initialized: {missing}")
