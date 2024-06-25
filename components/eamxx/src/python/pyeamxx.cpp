@@ -20,6 +20,11 @@ void initialize (MPI_Comm mpi_comm) {
   initialize_scream_session(comm.am_i_root());
   scorpio::init_subsystem(comm);
 
+  // Register everything in the eamxx factories
+  register_physics();
+  register_dynamics();
+  register_diagnostics();
+
   auto& s = PySession::get();
   s.comm = comm;
   s.inited = true;

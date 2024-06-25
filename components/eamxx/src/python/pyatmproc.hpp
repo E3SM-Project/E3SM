@@ -1,8 +1,6 @@
 #ifndef PYATMPROC_HPP
 #define PYATMPROC_HPP
 
-#include "physics/register_physics.hpp"
-#include "diagnostics/register_diagnostics.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_output_manager.hpp"
@@ -34,7 +32,6 @@ struct PyAtmProc {
     const auto& comm = PySession::get().comm;
 
     // Create the atm proc
-    register_physics();
     auto& apf = AtmosphereProcessFactory::instance();
     const auto& ap_type = params.pl.isParameter("Type")
                         ? params.pl.get<std::string>("Type")
@@ -146,8 +143,7 @@ struct PyAtmProc {
       fms.at(gn)->add_field(it.second.f);
     }
 
-    // Make sure diagnostics are available, then create the output mgr
-    register_diagnostics();
+    // Create/setup the output mgr
     output_mgr = std::make_shared<OutputManager>();
     output_mgr->setup(comm,params,fms,gm,t0,t0,false);
     output_mgr->set_logger(ap->get_logger());
