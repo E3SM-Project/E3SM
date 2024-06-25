@@ -40,8 +40,7 @@ def main ():
     nlevs = 72
     pyeamxx.create_grids_manager(ncols,nlevs,str(ic_file))
 
-    p3params = pyeamxx.ParameterList(yaml_input['atmosphere_processes']['p3'],'p3')
-    p3 = pyeamxx.AtmProc(p3params)
+    p3 = pyeamxx.AtmProc(yaml_input['atmosphere_processes']['p3'],'p3')
     missing = p3.read_ic(str(ic_file))
     if len(missing)>0:
         print (f"WARNING! The following input fields were not found in the IC file, and must be manually initialized: {missing}")
