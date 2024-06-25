@@ -207,6 +207,21 @@ size_t dtype_size (const std::string& dtype) {
   return 0;
 }
 
+int pio_iotype (IOType iotype) {
+  int iotype_int;
+  auto& s = ScorpioSession::instance();
+  switch(iotype){
+    case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
+    case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
+    case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
+    case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
+    case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
+    default:
+      EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
+  }
+  return iotype_int;
+}
+
 // ====================== Local utilities ========================== //
 
 namespace impl {
@@ -313,9 +328,9 @@ void init_subsystem(const ekat::Comm& comm, const int atm_id)
   s.pio_rearranger = PIO_REARR_SUBSET;
   s.pio_format     = PIO_64BIT_DATA;
 #if PIO_USE_PNETCDF
-  s.pio_type_default = PIO_IOTYPE_PNETCDF;
+  s.pio_type_default = pio_iotype(IOType::PnetCDF);
 #elif PIO_USE_NETCDF
-  s.pio_type_default = PIO_IOTYPE_NETCDF;
+  s.pio_type_default = pio_iotype(IOType::NetCDF);
 #else
 #error "Standalone EAMxx requires either PNETCDF or NETCDF iotype to be available in Scorpio"
 #endif
@@ -395,9 +410,7 @@ void register_file (const std::string& filename,
   if (f.mode == Unset) {
     // First time we ask for this file. Call PIO open routine(s)
     int err;
-    int iotype_int = iotype==IOType::DefaultIOType
-                   ? s.pio_type_default
-                   : static_cast<int>(iotype);
+    int iotype_int = pio_iotype(iotype);
     if (mode & Read) {
       auto write = mode & Write ? PIO_WRITE : PIO_NOWRITE;
       err = PIOc_openfile(s.pio_sysid,&f.ncid,&iotype_int,filename.c_str(),write);
