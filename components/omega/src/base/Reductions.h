@@ -12,6 +12,7 @@
 using std::complex;
 
 #include "DataTypes.h"
+#include "OmegaKokkos.h"
 
 namespace OMEGA {
 
@@ -100,8 +101,15 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, IT *GlobalSum,
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   for (i = imin; i < imax; i++) {
-      LocalSum += arr.data()[i];
+   if (Kokkos::SpaceAccessibility<MS,
+                                  Kokkos::HostSpace>::accessible) { // on host
+      for (i = imin; i < imax; i++) {
+         LocalSum += arr.data()[i];
+      }
+   } else { // on device
+      parallelReduce(
+          {imax}, KOKKOS_LAMBDA(int i, IT &Accum) { Accum += arr.data()[i]; },
+          LocalSum);
    }
    return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
 }
@@ -121,8 +129,14 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, R4 *GlobalSum,
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   for (i = imin; i < imax; i++) {
-      LocalSum += arr.data()[i];
+   if (Kokkos::SpaceAccessibility<MS, Kokkos::HostSpace>::accessible) {
+      for (i = imin; i < imax; i++) {
+         LocalSum += arr.data()[i];
+      }
+   } else {
+      parallelReduce(
+          {imax}, KOKKOS_LAMBDA(int i, R8 &Accum) { Accum += arr.data()[i]; },
+          LocalSum);
    }
    ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
    *GlobalSum = GlobalTmp;
@@ -147,20 +161,29 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, R8 *GlobalSum,
       imax = (*IndxRange)[dim * 2 - 1];
    }
 
-   // Accumulate the local sum using Knuth's algorithm
-   complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
-   double e, t1, t2, ai;
-   for (i = imin; i < imax; i++) {
-      ai = arr.data()[i];
-      t1 = ai + real(LocalSum);
-      e  = t1 - ai;
-      t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
-      // The result is t1 + t2, after normalization.
-      LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
+   if (Kokkos::SpaceAccessibility<MS, Kokkos::HostSpace>::accessible) {
+      // Accumulate the local sum using Knuth's algorithm
+      complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
+      double e, t1, t2, ai;
+      for (i = imin; i < imax; i++) {
+         ai = arr.data()[i];
+         t1 = ai + real(LocalSum);
+         e  = t1 - ai;
+         t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
+         // The result is t1 + t2, after normalization.
+         LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
+      }
+      ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
+                                 MPI_SUMDD, Comm);
+      *GlobalSum = real(GlobalTmp);
+   } else {
+      R8 LocalSum = 0.0, GlobalTmp = 0.0;
+      parallelReduce(
+          {imax}, KOKKOS_LAMBDA(int i, R8 &Accum) { Accum += arr.data()[i]; },
+          LocalSum);
+      ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+      *GlobalSum = GlobalTmp;
    }
-   ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
-                              MPI_SUMDD, Comm);
-   *GlobalSum = real(GlobalTmp);
    return ierr;
 }
 
@@ -183,8 +206,18 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   for (i = imin; i < imax; i++) {
-      LocalSum += arr.data()[i] * arr2.data()[i];
+   if (Kokkos::SpaceAccessibility<MS,
+                                  Kokkos::HostSpace>::accessible) { // on host
+      for (i = imin; i < imax; i++) {
+         LocalSum += arr.data()[i] * arr2.data()[i];
+      }
+   } else { // on device
+      parallelReduce(
+          {imax},
+          KOKKOS_LAMBDA(int i, IT &Accum) {
+             Accum += arr.data()[i] * arr2.data()[i];
+          },
+          LocalSum);
    }
    return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
 }
@@ -205,8 +238,17 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
       imin = (*IndxRange)[0];
       imax = (*IndxRange)[dim * 2 - 1];
    }
-   for (i = imin; i < imax; i++) {
-      LocalSum += arr.data()[i] * arr2.data()[i];
+   if (Kokkos::SpaceAccessibility<MS, Kokkos::HostSpace>::accessible) {
+      for (i = imin; i < imax; i++) {
+         LocalSum += arr.data()[i] * arr2.data()[i];
+      }
+   } else {
+      parallelReduce(
+          {imax},
+          KOKKOS_LAMBDA(int i, R8 &Accum) {
+             Accum += arr.data()[i] * arr2.data()[i];
+          },
+          LocalSum);
    }
    ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
    *GlobalSum = GlobalTmp;
@@ -232,20 +274,32 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
       imax = (*IndxRange)[dim * 2 - 1];
    }
 
-   // Accumulate the local sum using Knuth's algorithm
-   complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
-   double e, t1, t2, ai;
-   for (i = imin; i < imax; i++) {
-      ai = arr.data()[i] * arr2.data()[i];
-      t1 = ai + real(LocalSum);
-      e  = t1 - ai;
-      t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
-      // The result is t1 + t2, after normalization.
-      LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
+   if (Kokkos::SpaceAccessibility<MS, Kokkos::HostSpace>::accessible) {
+      // Accumulate the local sum using Knuth's algorithm
+      complex<double> LocalSum(0.0, 0.0), GlobalTmp(0.0, 0.0);
+      double e, t1, t2, ai;
+      for (i = imin; i < imax; i++) {
+         ai = arr.data()[i] * arr2.data()[i];
+         t1 = ai + real(LocalSum);
+         e  = t1 - ai;
+         t2 = ((real(LocalSum) - e) + (ai - (t1 - e))) + imag(LocalSum);
+         // The result is t1 + t2, after normalization.
+         LocalSum = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
+      }
+      ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
+                                 MPI_SUMDD, Comm);
+      *GlobalSum = real(GlobalTmp);
+   } else {
+      R8 LocalSum = 0.0, GlobalTmp = 0.0;
+      parallelReduce(
+          {imax},
+          KOKKOS_LAMBDA(int i, R8 &Accum) {
+             Accum += arr.data()[i] * arr2.data()[i];
+          },
+          LocalSum);
+      ierr = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+      *GlobalSum = GlobalTmp;
    }
-   ierr       = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
-                              MPI_SUMDD, Comm);
-   *GlobalSum = real(GlobalTmp);
    return ierr;
 }
 
