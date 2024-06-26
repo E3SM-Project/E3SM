@@ -10,8 +10,8 @@
 #include "mpi.h"
 
 #include <cmath>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <stdio.h>
 
 using namespace OMEGA;
@@ -74,17 +74,14 @@ struct TestSetupPlane {
 
    KOKKOS_FUNCTION Real layerThick(Real X, Real Y) const {
       return 2. + std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
-      //return 1.;
    }
 
    KOKKOS_FUNCTION Real planetaryVort(Real X, Real Y) const {
       return std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
-      //return 0.;
    }
 
    KOKKOS_FUNCTION Real normRelVort(Real X, Real Y) const {
       return curl(X, Y) / layerThick(X, Y);
-      //return 1.;
    }
 
    KOKKOS_FUNCTION Real normPlanetVort(Real X, Real Y) const {
@@ -139,9 +136,11 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real laplaceVecX(Real Lon, Real Lat) const {
-      return std::cos(Lat) * (std::pow(std::sin(Lat), 2) * (17 - 37 *
-             std::pow(std::sin(Lon), 2)) + 11 * std::pow(std::sin(Lon), 2)
-             - 5) / Radius;
+      return std::cos(Lat) *
+             (std::pow(std::sin(Lat), 2) *
+                  (17 - 37 * std::pow(std::sin(Lon), 2)) +
+              11 * std::pow(std::sin(Lon), 2) - 5) /
+             Radius;
    }
 
    KOKKOS_FUNCTION Real laplaceVecY(Real Lon, Real Lat) const {
@@ -154,7 +153,7 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real planetaryVort(Real Lon, Real Lat) const {
-      return std::sin(Lat);;
+      return std::sin(Lat);
    }
 
    KOKKOS_FUNCTION Real normRelVort(Real Lon, Real Lat) const {
@@ -191,7 +190,7 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
                                  NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.divergence(X,Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.divergence(X, Y); },
        ExactThickFluxDiv, Geom, Mesh, OnCell, NVertLevels, false);
 
    // Set input array
@@ -209,9 +208,9 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
                                NVertLevels);
    ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
-         ThickFluxDivOnC(NumThickFluxDiv, ICell, KLevel, ThickFluxEdge);
-      });
+       {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
+          ThickFluxDivOnC(NumThickFluxDiv, ICell, KLevel, ThickFluxEdge);
+       });
 
    // Compute errors
    ErrorMeasures TFDivErrors;
@@ -254,9 +253,10 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
           VecField[0] = (Setup.normRelVort(X, Y) + Setup.normPlanetVort(X, Y)) *
                         Setup.layerThick(X, Y) * Setup.vectorX(X, Y);
           VecField[1] = (Setup.normRelVort(X, Y) + Setup.normPlanetVort(X, Y)) *
-                        Setup.layerThick(X, Y) * Setup.vectorY(X, Y);;
+                        Setup.layerThick(X, Y) * Setup.vectorY(X, Y);
        },
-       ExactPotVortHAdv, EdgeComponent::Tangential, Geom, Mesh, NVertLevels, false);
+       ExactPotVortHAdv, EdgeComponent::Tangential, Geom, Mesh, NVertLevels,
+       false);
 
    // Set input arrays
    Array2DR8 NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize, NVertLevels);
@@ -268,13 +268,13 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
    Array2DR8 NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize,
                                 NVertLevels);
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normPlanetVort(X,Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normPlanetVort(X, Y); },
        NormPlanetVortEdge, Geom, Mesh, OnEdge, NVertLevels);
 
    Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThick(X,Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThick(X, Y); },
        LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
 
    Array2DR8 NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLevels);
@@ -291,10 +291,10 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
 
    PotentialVortHAdvOnEdge PotVortHAdvOnE(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
-         PotVortHAdvOnE(NumPotVortHAdv, IEdge, KLevel, NormRelVortEdge,
-                        NormPlanetVortEdge, LayerThickEdge, NormVelEdge);
-      });
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          PotVortHAdvOnE(NumPotVortHAdv, IEdge, KLevel, NormRelVortEdge,
+                         NormPlanetVortEdge, LayerThickEdge, NormVelEdge);
+       });
 
    // Compute errors
    ErrorMeasures PotVortHAdvErrors;
@@ -341,17 +341,17 @@ int testKEGrad(int NVertLevels, Real RTol) {
    Array2DReal KECell("KECell", Mesh->NCellsSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalar(X,Y); },
-       KECell, Geom, Mesh, OnCell, NVertLevels);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalar(X, Y); }, KECell,
+       Geom, Mesh, OnCell, NVertLevels);
 
    // Compute numerical result
    Array2DReal NumKEGrad("NumKEGrad", Mesh->NEdgesOwned, NVertLevels);
 
    KEGradOnEdge KEGradOnE(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
-         KEGradOnE(NumKEGrad, IEdge, KLevel, KECell);
-      });
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          KEGradOnE(NumKEGrad, IEdge, KLevel, KECell);
+       });
 
    // Compute errors
    ErrorMeasures KEGradErrors;
@@ -374,7 +374,7 @@ int testKEGrad(int NVertLevels, Real RTol) {
    }
 
    return Err;
-} // end testKEGrad 
+} // end testKEGrad
 
 int testSSHGrad(int NVertLevels, Real RTol) {
 
@@ -399,17 +399,17 @@ int testSSHGrad(int NVertLevels, Real RTol) {
    Array2DReal SSHCell("SSHCell", Mesh->NCellsSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalar(X,Y); },
-       SSHCell, Geom, Mesh, OnCell, NVertLevels);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalar(X, Y); }, SSHCell,
+       Geom, Mesh, OnCell, NVertLevels);
 
    // Compute numerical result
    Array2DReal NumSSHGrad("NumSSHGrad", Mesh->NEdgesOwned, NVertLevels);
 
    SSHGradOnEdge SSHGradOnE(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
-         SSHGradOnE(NumSSHGrad, IEdge, KLevel, SSHCell);
-      });
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          SSHGradOnE(NumSSHGrad, IEdge, KLevel, SSHCell);
+       });
 
    // Compute errors
    ErrorMeasures SSHGradErrors;
@@ -432,7 +432,7 @@ int testSSHGrad(int NVertLevels, Real RTol) {
    }
 
    return Err;
-} // end testSSHGrad 
+} // end testSSHGrad
 
 int testVelDiff(int NVertLevels, Real RTol) {
 
@@ -460,23 +460,23 @@ int testVelDiff(int NVertLevels, Real RTol) {
    Array2DReal DivCell("DivCell", Mesh->NCellsSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.divergence(X,Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.divergence(X, Y); },
        DivCell, Geom, Mesh, OnCell, NVertLevels);
 
    Array2DReal RVortVertex("RVortVertex", Mesh->NVerticesSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.curl(X,Y); },
-       RVortVertex, Geom, Mesh, OnVertex, NVertLevels);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.curl(X, Y); }, RVortVertex,
+       Geom, Mesh, OnVertex, NVertLevels);
 
    // Compute numerical result
    Array2DReal NumVelDiff("NumVelDiff", Mesh->NEdgesOwned, NVertLevels);
 
    VelocityDiffusionOnEdge VelDiffOnE(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
-         VelDiffOnE(NumVelDiff, IEdge, KLevel, DivCell, RVortVertex);
-      });
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          VelDiffOnE(NumVelDiff, IEdge, KLevel, DivCell, RVortVertex);
+       });
 
    // Compute errors
    ErrorMeasures VelDiffErrors;
@@ -529,14 +529,14 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
    Array2DReal DivCell("DivCell", Mesh->NCellsSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.divergence(X,Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.divergence(X, Y); },
        DivCell, Geom, Mesh, OnCell, NVertLevels);
 
    Array2DReal RVortVertex("RVortVertex", Mesh->NVerticesSize, NVertLevels);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.curl(X,Y); },
-       RVortVertex, Geom, Mesh, OnVertex, NVertLevels);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.curl(X, Y); }, RVortVertex,
+       Geom, Mesh, OnVertex, NVertLevels);
 
    // Compute numerical result
    Array2DReal NumVelHyperDiff("NumVelHyperDiff", Mesh->NEdgesOwned,
@@ -544,9 +544,9 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
 
    VelocityHyperDiffOnEdge VelHyperDiffOnE(Mesh, TendConfig);
    parallelFor(
-      {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
-         VelHyperDiffOnE(NumVelHyperDiff, IEdge, KLevel, DivCell, RVortVertex);
-      });
+       {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          VelHyperDiffOnE(NumVelHyperDiff, IEdge, KLevel, DivCell, RVortVertex);
+       });
 
    // Compute errors
    ErrorMeasures VelHyperDiffErrors;
@@ -555,7 +555,7 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
 
    // Check error values
    if (!isApprox(VelHyperDiffErrors.LInf, Setup.ExpectedLaplaceErrorLInf,
-       RTol)) {
+                 RTol)) {
       Err++;
       LOG_ERROR("TendencyTermsTest: VelHyperDiff LInf FAIL");
    }

@@ -126,8 +126,8 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
-   // TODO: implement setMasks during Mesh constructor 
-   //setMasks()
+   // TODO: implement setMasks during Mesh constructor
+   // setMasks()
 
    // set mesh scaling coefficients
    setMeshScaling();
