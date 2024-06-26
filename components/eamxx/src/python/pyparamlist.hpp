@@ -35,6 +35,9 @@ struct PyParamList {
     return spl;
   }
 
+  bool get_bool (const std::string& name) const {
+    return pl_ref.get().get<bool>(name);
+  }
   int get_int (const std::string& name) const {
     return pl_ref.get().get<int>(name);
   }
@@ -132,12 +135,14 @@ inline void pybind_pyparamlist (pybind11::module& m)
     .def(pybind11::init<const pybind11::dict&,const std::string&>())
     .def("sublist",&PyParamList::sublist)
     .def("print",&PyParamList::print)
+    .def("set",&PyParamList::set<bool>)
     .def("set",&PyParamList::set<int>)
     .def("set",&PyParamList::set<double>)
     .def("set",&PyParamList::set<std::string>)
     .def("set",&PyParamList::set<std::vector<int>>)
     .def("set",&PyParamList::set<std::vector<double>>)
     .def("set",&PyParamList::set<std::vector<std::string>>)
+    .def("get_bool",&PyParamList::get_bool)
     .def("get_int",&PyParamList::get_int)
     .def("get_dbl",&PyParamList::get_dbl)
     .def("get_str",&PyParamList::get_str)
