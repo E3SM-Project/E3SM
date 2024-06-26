@@ -7,19 +7,67 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+#include <functional>
+
 namespace scream {
 
 struct PyParamList {
   ekat::ParameterList pl;
+  std::reference_wrapper<ekat::ParameterList> pl_ref;
 
-  PyParamList(const pybind11::dict& d) {
+  PyParamList (ekat::ParameterList& src)
+   : pl_ref(src)
+  {}
+
+  PyParamList(const pybind11::dict& d)
+   : PyParamList(d,"")
+  {}
+
+  PyParamList(const pybind11::dict& d, const std::string& name)
+   : pl(name)
+   , pl_ref(pl)
+  {
     parse_dict(d,pl);
   }
 
-  PyParamList(const pybind11::dict& d, const std::string& name) {
-    pl.rename(name);
-    parse_dict(d,pl);
+  PyParamList sublist (const std::string& name) {
+    PyParamList spl(pl.sublist(name));
+    return spl;
   }
+
+  bool get_bool (const std::string& name) const {
+    return pl_ref.get().get<bool>(name);
+  }
+  int get_int (const std::string& name) const {
+    return pl_ref.get().get<int>(name);
+  }
+  double get_dbl (const std::string& name) const {
+    return pl_ref.get().get<double>(name);
+  }
+  std::string get_str (const std::string& name) const {
+    return pl_ref.get().get<std::string>(name);
+  }
+
+  std::vector<int> get_int_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<int>>(name);
+  }
+  std::vector<double> get_dbl_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<double>>(name);
+  }
+  std::vector<std::string> get_str_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<std::string>>(name);
+  }
+
+  template<typename T>
+  void set (const std::string& name, T val) {
+    pl_ref.get().set(name,val);
+  }
+
+  void print () {
+    pl_ref.get().print();
+  }
+
+private:
 
   void parse_dict(const pybind11::dict& d, ekat::ParameterList& p) {
     for (auto item : d) {
@@ -84,7 +132,23 @@ inline void pybind_pyparamlist (pybind11::module& m)
   // Param list
   pybind11::class_<PyParamList>(m,"ParameterList")
     .def(pybind11::init<const pybind11::dict&>())
-    .def(pybind11::init<const pybind11::dict&,const std::string&>());
+    .def(pybind11::init<const pybind11::dict&,const std::string&>())
+    .def("sublist",&PyParamList::sublist)
+    .def("print",&PyParamList::print)
+    .def("set",&PyParamList::set<bool>)
+    .def("set",&PyParamList::set<int>)
+    .def("set",&PyParamList::set<double>)
+    .def("set",&PyParamList::set<std::string>)
+    .def("set",&PyParamList::set<std::vector<int>>)
+    .def("set",&PyParamList::set<std::vector<double>>)
+    .def("set",&PyParamList::set<std::vector<std::string>>)
+    .def("get_bool",&PyParamList::get_bool)
+    .def("get_int",&PyParamList::get_int)
+    .def("get_dbl",&PyParamList::get_dbl)
+    .def("get_str",&PyParamList::get_str)
+    .def("get_int_vec",&PyParamList::get_int_vec)
+    .def("get_dbl_vec",&PyParamList::get_dbl_vec)
+    .def("get_str_vec",&PyParamList::get_str_vec);
 }
 
 } // namespace scream
