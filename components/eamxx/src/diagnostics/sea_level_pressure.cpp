@@ -17,10 +17,8 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();

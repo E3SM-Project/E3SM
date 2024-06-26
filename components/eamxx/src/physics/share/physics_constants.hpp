@@ -95,6 +95,7 @@ struct Constants
   static constexpr Scalar basetemp      = 300.0;
   static constexpr Scalar r_earth       = 6.376e6; // Radius of the earth in m
   static constexpr Scalar stebol        = 5.67e-8; // Stefan-Boltzmann's constant (W/m^2/K^4)
+  static constexpr Scalar omega         = 7.292e-5; // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;

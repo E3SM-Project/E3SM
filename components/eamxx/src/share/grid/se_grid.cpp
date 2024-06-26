@@ -1,6 +1,7 @@
 #include "share/grid/se_grid.hpp"
+#include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos//ekat_subview_utils.hpp"
+#include <ekat/kokkos/ekat_subview_utils.hpp>
 
 namespace scream {
 
@@ -29,6 +30,9 @@ SEGrid (const std::string& grid_name,
   const auto units = ekat::units::Units::nondimensional();
   m_cg_dofs_gids = Field(FieldIdentifier("cg_gids",FieldLayout({CMP},{get_num_local_dofs()}),units,this->name(),DataType::IntType));
   m_cg_dofs_gids.allocate_view();
+
+  m_partitioned_dim_gids = Field(FieldIdentifier("el_gids",FieldLayout({EL},{m_num_local_elem}),units,this->name(),DataType::IntType));
+  m_partitioned_dim_gids.allocate_view();
 }
 
 FieldLayout
@@ -36,33 +40,41 @@ SEGrid::get_2d_scalar_layout () const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
+  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-SEGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const
+SEGrid::get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({EL,vector_tag,GP,GP},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp});
+  FieldLayout fl({EL,CMP,GP,GP},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp});
+  fl.rename_dim(1,vec_dim_name);
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-SEGrid::get_2d_tensor_layout (const std::vector<FieldTag>& cmp_tags,
-                              const std::vector<int>& cmp_dims) const
+SEGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
+                              const std::vector<std::string>& cmp_names) const
 {
+  EKAT_REQUIRE_MSG (cmp_names.size()==cmp_dims.size(),
+      "[SEGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names,",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
+
   using namespace ShortFieldTagsNames;
 
-  std::vector<FieldTag> tags = {EL};
-  std::vector<int>      dims = {m_num_local_elem};
+  FieldLayout fl;
 
-  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
-  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
-  tags.push_back(GP);
-  tags.push_back(GP);
-  dims.push_back(m_num_gp);
-  dims.push_back(m_num_gp);
-  return FieldLayout(tags,dims);
+  fl = fl.append_dim(EL,m_num_local_elem);
+
+  for (size_t i=0; i<cmp_dims.size(); ++i) {
+    fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
+  }
+  fl.append_dim(GP,m_num_gp);
+
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
@@ -73,56 +85,50 @@ SEGrid::get_3d_scalar_layout (const bool midpoints) const
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl});
+  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-SEGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const
+SEGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
+                              const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({EL,vector_tag,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
+  FieldLayout fl({EL,CMP,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
+  fl.rename_dim(1,vec_dim_name);
+  return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
 SEGrid::get_3d_tensor_layout (const bool midpoints,
-                              const std::vector<FieldTag>& cmp_tags,
-                              const std::vector<int>& cmp_dims) const
+                              const std::vector<int>& cmp_dims,
+                              const std::vector<std::string>& cmp_names) const
 {
+  EKAT_REQUIRE_MSG (cmp_names.size()==cmp_dims.size(),
+      "[SEGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names,",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
+
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  std::vector<FieldTag> tags = {EL};
-  std::vector<int>      dims = {m_num_local_elem};
+  FieldLayout fl;
 
-  tags.insert(tags.end(),cmp_tags.begin(),cmp_tags.end());
-  dims.insert(dims.end(),cmp_dims.begin(),cmp_dims.end());
-  tags.push_back(GP);
-  tags.push_back(GP);
-  tags.push_back(VL);
-  dims.push_back(m_num_gp);
-  dims.push_back(m_num_gp);
-  dims.push_back(nvl);
-  return FieldLayout(tags,dims);
-}
+  fl.append_dim(EL,m_num_local_elem);
 
-Field SEGrid::get_cg_dofs_gids ()
-{
-  EKAT_REQUIRE_MSG (m_cg_dofs_gids.is_allocated(),
-      "Error! CG dofs have not been created yet.\n");
-  return m_cg_dofs_gids;
-}
+  for (size_t i=0; i<cmp_dims.size(); ++i) {
+    fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
+  }
+  fl.append_dim(GP,m_num_gp);
+  fl.append_dim(VL,nvl);
 
-Field SEGrid::get_cg_dofs_gids () const
-{
-  EKAT_REQUIRE_MSG (m_cg_dofs_gids.is_allocated(),
-      "Error! CG dofs have not been created yet.\n");
-  return m_cg_dofs_gids.get_const();
+  return fl.rename_dims(m_special_tag_names);
 }
 
 std::shared_ptr<AbstractGrid> SEGrid::clone (const std::string& clone_name, const bool shallow) const

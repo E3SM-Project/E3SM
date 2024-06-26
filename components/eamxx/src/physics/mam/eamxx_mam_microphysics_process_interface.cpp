@@ -91,13 +91,10 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  auto q_unit = kg/kg; // mass mixing ratios [kg stuff / kg air]
-  q_unit.set_string("kg/kg");
-  auto n_unit = 1/kg;  // number mixing ratios [# / kg air]
-  n_unit.set_string("#/kg");
-  Units nondim(0,0,0,0,0,0,0);
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  Units nondim = Units::nondimensional();
+  Units n_unit (1/kg,"#/kg");  // number mixing ratios [# / kg air]
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
@@ -125,8 +122,8 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name); // Temperature
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
-  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // specific humidity
-  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
+  add_field<Required>("qv", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // specific humidity
+  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // ice wet mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // p_del, hydrostatic pressure
@@ -134,7 +131,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_field<Updated>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid wet mixing ratio
+  add_field<Updated>("qc", scalar3d_layout_mid, kg/kg, grid_name, "tracers"); // cloud liquid wet mixing ratio
   add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // cloud liquid wet number mixing ratio
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
@@ -144,7 +141,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, kg/kg, grid_name, "tracers");
       }
     }
   }
@@ -152,7 +149,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // aerosol-related gases: mass mixing ratios
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, kg/kg, grid_name, "tracers");
   }
 
   // Tracers group -- do we need this in addition to the tracers above? In any
@@ -204,7 +201,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   wet_atm_.nc = get_field_out("nc").get_view<Real**>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
   wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
+  
 
   dry_atm_.T_mid     = get_field_in("T_mid").get_view<const Real**>();
   dry_atm_.p_mid     = get_field_in("p_mid").get_view<const Real**>();
@@ -212,6 +209,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
   dry_atm_.phis      = get_field_in("phis").get_view<const Real*>();
+  dry_atm_.omega     = get_field_in("omega").get_view<const Real**>();
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;
   dry_atm_.z_iface   = buffer_.z_iface;
@@ -222,9 +220,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.ni        = buffer_.ni_dry;
   dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf = 0.0; // FIXME: for now
-
-  const auto& tracers = get_group_out("tracers");
-  const auto& tracers_info = tracers.m_info;
 
   // perform any initialization work
   if (run_type==RunType::Initial) {
@@ -311,6 +306,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
 
+  const_view_1d &col_latitudes = col_latitudes_;
+  mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
+  mam_coupling::AerosolState  &dry_aero = dry_aero_;
+  mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
+  const int nlev = nlev_;
+  const Config &config = config_;
   // FIXME: read relevant linoz climatology data from file(s) based on time
 
   // FIXME: read relevant chlorine loading data from file based on time
@@ -319,22 +320,21 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const int icol = team.league_rank(); // column index
 
-    Real col_lat = col_latitudes_(icol); // column latitude (degrees?)
+    Real col_lat = col_latitudes(icol); // column latitude (degrees?)
 
     // fetch column-specific atmosphere state data
-    auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
-    auto z_iface = ekat::subview(dry_atm_.z_iface, icol);
-    Real z_surf = dry_atm_.z_surf;
-    Real phis = dry_atm_.phis(icol);
+    auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    auto z_iface = ekat::subview(dry_atm.z_iface, icol);
+    Real phis = dry_atm.phis(icol);
 
     // set surface state data
     haero::Surface sfc{};
 
     // fetch column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
+    mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero, icol);
 
     // set up diagnostics
-    mam4::Diagnostics diags(nlev_);
+    mam4::Diagnostics diags(nlev);
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
@@ -353,7 +353,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     mam4::ColumnView lwc; // FIXME: liquid water cloud content: where do we get this?
     mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
       atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc,
-      atm.cloud_fraction, esfact, photo_table_, photo_work_arrays);
+      atm.cloud_fraction, esfact, photo_table, photo_work_arrays);
 
     // compute external forcings at time t(n+1) [molecules/cm^3/s]
     constexpr int extcnt = mam4::gas_chemistry::extcnt;
@@ -362,10 +362,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     mam4::mo_setext::extfrc_set(forcings, extfrc);
 
     // compute aerosol microphysics on each vertical level within this column
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
 
       constexpr int num_modes = mam4::AeroConfig::num_modes();
-      constexpr int num_aero_ids = mam4::AeroConfig::num_aerosol_ids();
       constexpr int gas_pcnst = mam_coupling::gas_pcnst();
       constexpr int nqtendbb = mam_coupling::nqtendbb();
 
@@ -436,7 +435,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       constexpr int indexm = 0;  // FIXME: index of xhnm in invariants array (??)
       Real cldnum = 0.0; // FIXME: droplet number concentration: where do we get this?
       setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
-        cldfrac, cldnum, invariants[indexm], config_.setsox, vmrcw, vmr);
+        cldfrac, cldnum, invariants[indexm], config.setsox, vmrcw, vmr);
 
       // calculate aerosol water content using water uptake treatment
       // * dry and wet diameters [m]
@@ -449,7 +448,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
 
       // do aerosol microphysics (gas-aerosol exchange, nucleation, coagulation)
-      impl::modal_aero_amicphys_intr(config_.amicphys, step_, dt, t, pmid, pdel,
+      impl::modal_aero_amicphys_intr(config.amicphys, step_, dt, t, pmid, pdel,
                                      zm, pblh, qv, cldfrac, vmr, vmrcw, vmr_pregaschem,
                                      vmr_precldchem, vmrcw_precldchem, vmr_tendbb,
                                      vmrcw_tendbb, dgncur_a, dgncur_awet,
@@ -474,15 +473,15 @@ void MAMMicrophysics::run_impl(const double dt) {
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
         linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
         linoz_dPmL_dO3col(icol, k), linoz_cariolle_psc(icol, k),
-        chlorine_loading, config_.linoz.psc_T, vmr[o3_ndx],
+        chlorine_loading, config.linoz.psc_T, vmr[o3_ndx],
         do3_linoz, do3_linoz_psc, ss_o3,
         o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
 
       // update source terms above the ozone decay threshold
-      if (k > nlev_ - config_.linoz.o3_lbl - 1) {
+      if (k > nlev - config.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
-        mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config_.linoz.o3_sfc,
-          config_.linoz.o3_tau, do3_mass);
+        mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config.linoz.o3_sfc,
+          config.linoz.o3_tau, do3_mass);
       }
 
       // ... check for negative values and reset to zero

@@ -58,19 +58,16 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(true,2);
 
   constexpr int ps = 1;
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
 
   /* ----------------------- WARNING --------------------------------*/
@@ -86,7 +83,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
   if (ekat::contains(m_fields_nudge,"qv")) {
-    add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
+    add_field<Updated>("qv",    scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
   }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
@@ -356,7 +353,7 @@ void Nudging::run_impl (const double dt)
     Real var_fill_value = constants::DefaultFillValue<Real>().value;
     // Query the helper field for the fill value, if not present use default
     if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<float>("mask_value");
+      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
     }
 
     const int ncols = fl.dim(0);
