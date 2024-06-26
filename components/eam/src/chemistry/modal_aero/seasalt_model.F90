@@ -32,12 +32,18 @@ module seasalt_model
 
 #if  ( defined MODAL_AERO_9MODE )
   integer, parameter :: nslt = 4
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
+  integer, parameter :: nslt = 9
 #elif ( defined MODAL_AERO_5MODE )
   integer, parameter :: nslt = 3  
 #else
   integer, parameter :: nslt = max(3,ntot_amode-3)
 #endif
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
+  integer, parameter :: nnum = 3
+#else
   integer, parameter :: nnum = nslt
+#endif
 
 #if  ( defined MODAL_AERO_7MODE )
   integer, parameter :: nslt_om = 0
@@ -54,6 +60,17 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
+  integer, parameter :: nslt_om = 3
+  integer, parameter :: nnum_om = 1
+  integer, parameter :: om_num_modes = 3
+  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
+          'cl_a1 ', 'cl_a2 ', 'cl_a3 ', &
+          'so4_a1', 'so4_a2', 'so4_a3', &
+          'mom_a1', 'mom_a2', 'mom_a4', &
+          'num_a1', 'num_a2', 'num_a3', 'num_a4'/)
+  integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
 #elif( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
@@ -180,6 +197,17 @@ module seasalt_model
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)  ! accu, aitken, coarse
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
+    real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
+         (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
+            0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &
+            0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &
+            0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
+    real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
+         (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &  ! accu, aitken, coarse
+            1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &
+            1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &
+            1.0e-6_r8,   0.08e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, POM accu
 #elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
@@ -468,6 +496,11 @@ end subroutine ocean_data_readnl
    real(r8) :: F_eff(pcols) ! optional diagnostic output
 
    integer  :: m_om ! integer for iteration
+#if ( defined MOSAIC_SPECIES )
+   real(r8), parameter :: frc_em(nslt) = (/0.3854417_r8, 0.3854417_r8, 0.3854417_r8, &
+                                           0.5375583_r8, 0.5375583_r8, 0.5375583_r8, &
+                                           0.077_r8,     0.077_r8,     0.077_r8/)
+#endif
 
     fi(:ncol,:nsections) = fluxes( srf_temp, u10cubed, ncol )
 
@@ -526,7 +559,15 @@ end subroutine ocean_data_readnl
        ! Index of mass mode
        mm = seasalt_indices(ibin)
        ! Index of number mode
+#if ( defined MOSAIC_SPECIES )
+       if (ibin >= 4) then
+          mn = -1
+       else
+          mn = seasalt_indices(nslt+nslt_om+ibin)
+       endif
+#else
        mn = seasalt_indices(nslt+nslt_om+ibin)
+#endif
 
        if (mn>0) then
 !! Total number flux per mode
@@ -570,6 +611,18 @@ end subroutine ocean_data_readnl
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
+#if ( defined MOSAIC_SPECIES )
+             if ((ibin==3).or.(ibin==6).or.(ibin==9)) then
+                cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol) * frc_em(ibin)
+             else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
+                cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol) * frc_em(ibin)
+             else if ( ( mixing_state == 0 ) .or. ( mixing_state == 2 ) ) then
+                cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol) * &
+                     (1._r8 - om_ssa(:ncol, i)) * frc_em(ibin)
+             else
+                call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
+             endif
+#else
              if ((ibin==3).or.(ibin==4)) then
                 ! Don't apply OM parameterization to fine or coarse SS mode
                 cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol)
@@ -589,6 +642,7 @@ end subroutine ocean_data_readnl
                 ! Unknown mixing state assumption
                 call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
              endif
+#endif
           endif
        else
           if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
