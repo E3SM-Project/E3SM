@@ -19,6 +19,15 @@ void initialize (MPI_Comm mpi_comm) {
   ekat::Comm comm(mpi_comm);
   initialize_scream_session(comm.am_i_root());
   scorpio::init_subsystem(comm);
+
+  // Register everything in the eamxx factories
+  register_physics();
+  register_dynamics();
+  register_diagnostics();
+
+  auto& s = PySession::get();
+  s.comm = comm;
+  s.inited = true;
 }
 
 void initialize () {
@@ -28,6 +37,10 @@ void initialize (pybind11::object py_comm) {
   initialize(get_c_comm(py_comm));
 }
 void finalize () {
+  auto& s = PySession::get();
+  s.gm = nullptr;
+  s.inited = false;
+
   scorpio::finalize_subsystem();
   finalize_scream_session();
 }
