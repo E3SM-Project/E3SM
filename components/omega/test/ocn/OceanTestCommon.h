@@ -379,11 +379,13 @@ inline int checkErrors(const std::string &TestSuite,
    int Err = 0;
    if (!isApprox(Errors.LInf, ExpectedErrors.LInf, RTol)) {
       Err++;
-      LOG_ERROR("{}: {} LInf FAIL", TestSuite, Variable);
+      LOG_ERROR("{}: {} LInf FAIL, expected {}, got {}", TestSuite, Variable,
+                ExpectedErrors.LInf, Errors.LInf);
    }
    if (!isApprox(Errors.L2, ExpectedErrors.L2, RTol)) {
       Err++;
-      LOG_ERROR("{}: {} L2 FAIL", TestSuite, Variable);
+      LOG_ERROR("{}: {} L2 FAIL, expected {}, got {}", TestSuite, Variable,
+                ExpectedErrors.L2, Errors.L2);
    }
    return Err;
 }
