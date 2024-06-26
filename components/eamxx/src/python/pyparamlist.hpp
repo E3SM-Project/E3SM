@@ -45,6 +45,16 @@ struct PyParamList {
     return pl_ref.get().get<std::string>(name);
   }
 
+  std::vector<int> get_int_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<int>>(name);
+  }
+  std::vector<double> get_dbl_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<double>>(name);
+  }
+  std::vector<std::string> get_str_vec (const std::string& name) const {
+    return pl_ref.get().get<std::vector<std::string>>(name);
+  }
+
   template<typename T>
   void set (const std::string& name, T val) {
     pl_ref.get().set(name,val);
@@ -125,9 +135,15 @@ inline void pybind_pyparamlist (pybind11::module& m)
     .def("set",&PyParamList::set<int>)
     .def("set",&PyParamList::set<double>)
     .def("set",&PyParamList::set<std::string>)
+    .def("set",&PyParamList::set<std::vector<int>>)
+    .def("set",&PyParamList::set<std::vector<double>>)
+    .def("set",&PyParamList::set<std::vector<std::string>>)
     .def("get_int",&PyParamList::get_int)
     .def("get_dbl",&PyParamList::get_dbl)
-    .def("get_str",&PyParamList::get_str);
+    .def("get_str",&PyParamList::get_str)
+    .def("get_int_vec",&PyParamList::get_int_vec)
+    .def("get_dbl_vec",&PyParamList::get_dbl_vec)
+    .def("get_str_vec",&PyParamList::get_str_vec);
 }
 
 } // namespace scream
