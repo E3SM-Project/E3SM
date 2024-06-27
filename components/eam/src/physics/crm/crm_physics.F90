@@ -1379,8 +1379,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'output_ni_mean',         crm_output%ni_mean,         '' )
       call pam_mirror_array_readwrite( 'output_qm_mean',         crm_output%qm_mean,         '' )
       call pam_mirror_array_readwrite( 'output_bm_mean',         crm_output%bm_mean,         '' )
-      call pam_mirror_array_readwrite( 'output_rho_d_mean',         crm_output%rho_d_mean,         '' )
-      call pam_mirror_array_readwrite( 'output_rho_v_mean',         crm_output%rho_v_mean,         '' )
+      call pam_mirror_array_readwrite( 'output_rho_d_mean',      crm_output%rho_d_mean,         '' )
+      call pam_mirror_array_readwrite( 'output_rho_v_mean',      crm_output%rho_v_mean,         '' )
 
       call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
       call pam_mirror_array_readwrite( 'output_t_ls',        crm_output%t_ls,        '' )
