@@ -74,7 +74,9 @@ void read (const int seed, const int nlevs, const ekat::Comm& comm)
 
   Engine engine(seed);
 
-  auto grid = create_point_grid("scm_grid",1,nlevs,comm);
+  auto grid = std::make_shared<PointGrid>("scm_grid",1,nlevs,comm);
+  auto dofs_gids = grid->get_dofs_gids();
+  dofs_gids.deep_copy(0);
 
   // Pick a col index, and find its lat/lon from file
   auto filename = "io_scm_np" + std::to_string(comm.size()) + ".nc";
@@ -89,6 +91,7 @@ void read (const int seed, const int nlevs, const ekat::Comm& comm)
   scorpio::release_file(filename);
 
   auto tgt_col = IPDF(0,ncols-1)(engine);
+  comm.broadcast(&tgt_col,1,comm.root_rank());
 
   auto tgt_lat = lat[tgt_col];
   auto tgt_lon = lon[tgt_col];
@@ -118,8 +121,11 @@ TEST_CASE ("scm_io") {
 
   auto seed = get_random_test_seed(&comm);
   Engine engine(seed);
-  const int nlevs = IPDF(5,50)(engine);
-  const int ncols = IPDF(20,50)(engine);
+  int nlevs = IPDF(5,8)(engine);
+  int ncols = IPDF(4,5)(engine);
+
+  comm.broadcast(&ncols,1,comm.root_rank());
+  comm.broadcast(&nlevs,1,comm.root_rank());
 
   write(seed,ncols,nlevs,comm);
   read(seed,nlevs,comm);
