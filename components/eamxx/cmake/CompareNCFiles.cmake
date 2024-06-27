@@ -13,19 +13,19 @@ function(CompareNCFiles)
   set (argsMv LABELS FIXTURES_REQUIRED)
 
   cmake_parse_arguments(PARSE "${options}" "${args1v}" "${argsMv}" ${ARGN})
-  CheckMacroArgs(CompareNCFilesFamily PARSE "${options}" "${args1v}" "${argsMv}")
+  CheckMacroArgs(CompareNCFiles PARSE "${options}" "${args1v}" "${argsMv}")
 
   # Sanity checks
   if (NOT PARSE_TEST_NAME)
-    message ("Error! CompareNCFilesPair requires the keyword argument TEST_NAME")
+    message ("Error! CompareNCFiles requires the keyword argument TEST_NAME")
     message (FATAL_ERROR "Aborting...")
   endif()
   if (NOT PARSE_SRC_FILE)
-    message ("Error! CompareNCFilesPair requires the keyword argument SRC_FILE")
+    message ("Error! CompareNCFiles requires the keyword argument SRC_FILE")
     message (FATAL_ERROR "Aborting...")
   endif()
   if (NOT PARSE_TGT_FILE)
-    message ("Error! CompareNCFilesPair requires the keyword argument TGT_FILE")
+    message ("Error! CompareNCFiles requires the keyword argument TGT_FILE")
     message (FATAL_ERROR "Aborting...")
   endif()
 

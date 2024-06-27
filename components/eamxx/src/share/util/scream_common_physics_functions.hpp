@@ -95,6 +95,19 @@ struct PhysicsFunctions
   static ScalarT calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure);
 
   //-----------------------------------------------------------------------------------------------//
+  // Converts potential temperature to liquid potental temperature:
+  //   theta_l = theta - (theta / temperature) * (LatVap/Cpair) * qc,
+  // where
+  //   theta  is the potential temperature, [K]
+  //   temperature  is the temperature, [K]
+  //   qc is the cloud liquid mixing ratio, [kg/kg]
+  //   and the others are constants 
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_thetal_from_theta(const ScalarT& theta, const ScalarT& temperature, const ScalarT& qc);
+
+  //-----------------------------------------------------------------------------------------------//
   // Converts potential temperature to temperature using Exners function:
   //   temperature = theta*exner(pressure),
   // where
@@ -121,7 +134,7 @@ struct PhysicsFunctions
 
   //-----------------------------------------------------------------------------------------------//
   // Compute virtual temperature
-  //   T_virtual = temperature * (qv+ep_2)/(qv+1)
+  //   T_virtual = temperature * (1+(-1+1/ep_2)*qv)
   // where
   //   ep_2        is ratio of molecular mass of water to the molecular mass of dry air
   //   temperature is the atmospheric temperature.  Units in [K].
@@ -392,6 +405,13 @@ struct PhysicsFunctions
                                       const InputProviderP& pressure,
                                       const view_1d<ScalarT>& theta);
 
+  template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_thetal_from_theta(const MemberType& team,
+                                      const InputProviderTheta& theta,
+                                      const InputProviderT& temperature,
+                                      const InputProviderQ& qc,
+                                      const view_1d<ScalarT>& thetal);  
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void calculate_T_from_theta (const MemberType& team,

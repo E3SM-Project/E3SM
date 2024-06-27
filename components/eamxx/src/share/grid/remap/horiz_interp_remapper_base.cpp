@@ -96,7 +96,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
       "[HorizInterpRemapperBase] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(tgt_layout));
+      " - input layout: " + tgt_layout.to_string());
 
   return create_layout (tgt_layout, m_src_grid);
 }
@@ -109,7 +109,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
       "[HorizInterpRemapperBase] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + to_string(src_layout));
+      " - input layout: " + src_layout.to_string());
 
   return create_layout (src_layout, m_tgt_grid);
 }
@@ -118,46 +118,54 @@ FieldLayout HorizInterpRemapperBase::
 create_layout (const FieldLayout& fl_in,
                const grid_ptr_type& grid) const
 {
-  using namespace ShortFieldTagsNames;
-  const auto type = get_layout_type(fl_in.tags());
         auto fl_out = FieldLayout::invalid();
+  using namespace ShortFieldTagsNames;
   const bool midpoints = fl_in.has_tag(LEV);
-  const bool is3d = fl_in.has_tag(LEV) or fl_in.has_tag(ILEV);
-  switch (type) {
-    case LayoutType::Scalar2D: [[ fallthrough ]];
-    case LayoutType::Scalar3D:
-      fl_out = is3d
-             ? grid->get_3d_scalar_layout(midpoints)
-             : grid->get_2d_scalar_layout();
+  std::vector<std::string> tdims_names;
+  std::string vdim_name;
+  switch (fl_in.type()) {
+    case LayoutType::Scalar0D: [[ fallthrough ]];
+    case LayoutType::Vector0D: [[ fallthrough ]];
+    case LayoutType::Tensor0D:
+      // 0d layouts are the same on all grids
+      fl_out = fl_in;
       break;
-    case LayoutType::Vector2D: [[ fallthrough ]];
-    case LayoutType::Vector3D:
-    {
-      auto vtag = fl_in.get_vector_tag();
-      auto vdim = fl_in.dim(vtag);
-      fl_out = is3d
-             ? grid->get_3d_vector_layout(midpoints,vtag,vdim)
-             : grid->get_2d_vector_layout(vtag,vdim);
+    case LayoutType::Scalar1D:
+      // 1d layouts require the grid correct number of levs
+      fl_out = grid->get_vertical_layout(midpoints);
       break;
-    }
-
-    case LayoutType::Tensor2D: [[ fallthrough ]];
-    case LayoutType::Tensor3D:
-    {
-      auto ttags = fl_in.get_tensor_tags();
-      std::vector<int> tdims;
-      for (auto idx : fl_in.get_tensor_dims()) {
-        tdims.push_back(fl_in.dim(idx));
+    case LayoutType::Vector1D:
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_vertical_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
+      break;
+    case LayoutType::Scalar2D:
+      fl_out = grid->get_2d_scalar_layout();
+      break;
+    case LayoutType::Vector2D:
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_2d_vector_layout(fl_in.get_vector_dim(),vdim_name);
+      break;
+    case LayoutType::Tensor2D:
+      for (auto idx  : fl_in.get_tensor_components_ids()) {
+        tdims_names.push_back(fl_in.names()[idx]);
       }
-      fl_out = is3d
-             ? grid->get_3d_tensor_layout(midpoints,ttags,tdims)
-             : grid->get_2d_tensor_layout(ttags,tdims);
+      fl_out = grid->get_2d_tensor_layout(fl_in.get_tensor_dims(),tdims_names);
       break;
-    }
-
+    case LayoutType::Scalar3D:
+      fl_out = grid->get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
+      break;
+    case LayoutType::Tensor3D:
+      for (auto idx  : fl_in.get_tensor_components_ids()) {
+        tdims_names.push_back(fl_in.names()[idx]);
+      }
+      fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims(),tdims_names);
     default:
       EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
-                      " - layout: " + to_string(fl_in) + "\n");
+                      " - layout: " + fl_in.to_string() + "\n");
   }
   return fl_out;
 }
@@ -177,7 +185,7 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
   EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
       "Error! Cannot register a field without COL tag in RefiningRemapperP2P.\n"
       "  - field name: " + src.name() + "\n"
-      "  - field layout: " + to_string(src.get_layout()) + "\n");
+      "  - field layout: " + src.get_layout().to_string() + "\n");
   m_src_fields.push_back(field_type(src));
   m_tgt_fields.push_back(field_type(tgt));
 }
@@ -214,7 +222,7 @@ void HorizInterpRemapperBase::create_ov_fields ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_type==InterpType::Refine ? m_tgt_fields[i] : m_src_fields[i];
     const auto& fid = f.get_header().get_identifier();
-    const auto layout = fid.get_layout().clone_with_different_extent(0,num_ov_gids);
+    const auto layout = fid.get_layout().clone().reset_dim(0,num_ov_gids);
     FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
 
     auto& ov_f = m_ov_fields.emplace_back(ov_fid);

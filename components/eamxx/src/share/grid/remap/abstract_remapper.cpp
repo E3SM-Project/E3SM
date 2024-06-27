@@ -33,18 +33,18 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
   EKAT_REQUIRE_MSG(is_valid_src_layout(src.get_layout()),
       "Error! Source field has an invalid layout.\n"
       " - field name  : " + src.name() + "\n"
-      " - field layout: " + to_string(src.get_layout()) + "\n");
+      " - field layout: " + src.get_layout().to_string() + "\n");
   EKAT_REQUIRE_MSG(is_valid_tgt_layout(tgt.get_layout()),
       "Error! Source field has an invalid layout.\n"
       " - field name  : " + tgt.name() + "\n"
-      " - field layout: " + to_string(tgt.get_layout()) + "\n");
+      " - field layout: " + tgt.get_layout().to_string() + "\n");
 
   EKAT_REQUIRE_MSG(compatible_layouts(src.get_layout(),tgt.get_layout()),
       "Error! Source and target layouts are not compatible.\n"
       " - src name: " + src.name() + "\n"
       " - tgt name: " + tgt.name() + "\n"
-      " - src layout: " + to_string(src.get_layout()) + "\n"
-      " - tgt layout: " + to_string(tgt.get_layout()) + "\n");
+      " - src layout: " + src.get_layout().to_string() + "\n"
+      " - tgt layout: " + tgt.get_layout().to_string() + "\n");
 
   do_register_field (src,tgt);
 

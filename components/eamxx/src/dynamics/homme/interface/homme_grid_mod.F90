@@ -105,18 +105,18 @@ contains
   ! Note: dg_grid=.true. is to request dofs for a Discontinuous Galerkin grid,
   !       that is, corresponding edge dofs on bordering elems have different gids.
   !       If dg_grid=.false., the shared dofs have the same gid.
-  subroutine get_dyn_grid_data_f90 (dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, lat_ptr, lon_ptr) bind(c)
+  subroutine get_dyn_grid_data_f90 (dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, elgid_ptr, lat_ptr, lon_ptr) bind(c)
     use dimensions_mod,    only: nelemd, np
     use dyn_grid_mod,      only: get_my_dyn_data
     !
     ! Input(s)
     !
-    type (c_ptr), intent(in) :: dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, lat_ptr, lon_ptr
+    type (c_ptr), intent(in) :: dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, elgid_ptr, lat_ptr, lon_ptr
     !
     ! Local(s)
     !
     real(kind=c_double), pointer :: lat (:,:,:), lon(:,:,:)
-    integer(kind=c_int), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:)
+    integer(kind=c_int), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:), elgid(:)
 
     ! Sanity check
     call check_grids_inited(.true.)
@@ -124,10 +124,11 @@ contains
     call c_f_pointer (dg_gids_ptr, dg_gids, [nelemd*np*np])
     call c_f_pointer (cg_gids_ptr, cg_gids, [nelemd*np*np])
     call c_f_pointer (elgpgp_ptr,  elgpgp,  [3,nelemd*np*np])
+    call c_f_pointer (elgid_ptr,   elgid,   [nelemd])
     call c_f_pointer (lat_ptr,     lat,     [np,np,nelemd])
     call c_f_pointer (lon_ptr,     lon,     [np,np,nelemd])
 
-    call get_my_dyn_data (dg_gids, cg_gids, elgpgp, lat, lon)
+    call get_my_dyn_data (dg_gids, cg_gids, elgpgp, elgid, lat, lon)
   end subroutine get_dyn_grid_data_f90
 
   subroutine get_phys_grid_data_f90 (pg_type, gids_ptr, lat_ptr, lon_ptr, area_ptr) bind(c)

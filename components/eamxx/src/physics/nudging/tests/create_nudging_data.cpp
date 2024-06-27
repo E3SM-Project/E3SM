@@ -20,7 +20,7 @@ TEST_CASE("create_nudging_data") {
   const auto t0    = get_t0();
 
   // Initialize the pio_subsystem for this test:
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // Create a grids manager
   const auto gm = create_gm(comm,ngcols,nlevs);
@@ -56,5 +56,5 @@ TEST_CASE("create_nudging_data") {
   om2->finalize();
   om3->finalize();
 
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }

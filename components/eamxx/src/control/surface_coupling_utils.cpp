@@ -11,7 +11,7 @@ void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader>& f
   const auto& layout = fh->get_identifier().get_layout();
   const auto& dims = layout.dims();
 
-  auto lt = get_layout_type(layout.tags());
+  auto lt = layout.type();
   const bool scalar   = lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D;
   const bool vector   = lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
   const bool layout3d = lt==LayoutType::Scalar3D || lt==LayoutType::Vector3D;
@@ -50,7 +50,7 @@ void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader>& f
     EKAT_REQUIRE_MSG(parent->get_parent().lock() == nullptr,
                      "Error! Currently support isn't added for fields with grandparents.\n");
 
-    const auto parent_lt = get_layout_type(parent->get_identifier().get_layout().tags());
+    const auto parent_lt = parent->get_identifier().get_layout().type();
 
     EKAT_REQUIRE_MSG(parent_lt==LayoutType::Vector3D,
                      "Error! SurfaceCoupling expects all subfields to have parents "

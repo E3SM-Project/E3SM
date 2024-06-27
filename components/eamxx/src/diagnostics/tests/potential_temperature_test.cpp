@@ -40,7 +40,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
-void run(std::mt19937_64& engine)
+void run(std::mt19937_64& engine, int int_ptype)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
@@ -67,7 +67,8 @@ void run(std::mt19937_64& engine)
 
   // Input (randomized) views
   view_1d temperature("temperature",num_mid_packs),
-          pressure("pressure",num_mid_packs);
+          pressure("pressure",num_mid_packs),
+          condensate("condensate",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
@@ -85,9 +86,10 @@ void run(std::mt19937_64& engine)
   ekat::ParameterList params;
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  std::string ptype = int_ptype == 0 ? "Tot" : "Liq";
+  params.set("Temperature Kind", ptype);
   auto diag = diag_factory.create("PotentialTemperature",comm,params);
   diag->set_grids(gm);
-
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -114,13 +116,18 @@ void run(std::mt19937_64& engine)
     const auto& T_mid_v = T_mid_f.get_view<Pack**>();
     const auto& p_mid_f = input_fields["p_mid"];
     const auto& p_mid_v = p_mid_f.get_view<Pack**>();
+    const auto& q_mid_f = input_fields["qc"];
+    const auto& q_mid_v = q_mid_f.get_view<Pack**>();
     for (int icol=0;icol<ncols;icol++) {
       const auto& T_sub = ekat::subview(T_mid_v,icol);
       const auto& p_sub = ekat::subview(p_mid_v,icol);
+      const auto& q_sub = ekat::subview(q_mid_v,icol);
       ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
       ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
+      ekat::genRandArray(dview_as_real(condensate),  engine, pdf_pres);
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
+      Kokkos::deep_copy(q_sub,condensate);
     }
 
     // Run diagnostic and compare with manual calculation
@@ -133,7 +140,10 @@ void run(std::mt19937_64& engine)
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        theta_v(icol,jpack) = PF::calculate_theta_from_T(T_mid_v(icol,jpack),p_mid_v(icol,jpack));
+        auto theta = PF::calculate_theta_from_T(T_mid_v(icol,jpack),p_mid_v(icol,jpack));
+        if (int_ptype==1) {
+          theta_v(icol,jpack) = theta - (theta/T_mid_v(icol,jpack)) * (PC::LatVap/PC::Cpair) * q_mid_v(icol,jpack);
+        } else { theta_v(icol,jpack) = theta; }
       });
       team.team_barrier();
     });
@@ -159,7 +169,9 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine);
+    for (const int int_ptype : {0,1}) {
+    run<Device>(engine, int_ptype);
+  }
   }
   printf("ok!\n");
 

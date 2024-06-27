@@ -3,19 +3,18 @@ namespace scream::impl {
 KOKKOS_INLINE_FUNCTION
 void compute_o3_column_density(const ThreadTeam& team, const haero::Atmosphere& atm,
                                const mam4::Prognostics &progs, ColumnView o3_col_dens) {
-  constexpr int nabscol = mam4::gas_chemistry::nabscol;     // number of absorbing densities
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
   constexpr int nfs = mam4::gas_chemistry::nfs;             // number of "fixed species"
-  constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
+  // constexpr Real mwdry = 1.0/haero::Constants::molec_weight_dry_air;
 
   Real o3_col_deltas[mam4::nlev+1] = {}; // o3 column density above model [1/cm^2]
   // NOTE: if we need o2 column densities, set_ub_col and setcol must be changed
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, atm.num_levels()), [&](const int k) {
 
-    Real temp = atm.temperature(k);
-    Real pmid = atm.pressure(k);
+    // Real temp = atm.temperature(k);
+    // Real pmid = atm.pressure(k);
     Real pdel = atm.hydrostatic_dp(k);
-    Real qv   = atm.vapor_mixing_ratio(k);
+    // Real qv   = atm.vapor_mixing_ratio(k);
 
     // ... map incoming mass mixing ratios to working array
     Real q[gas_pcnst], qqcw[gas_pcnst];
@@ -23,8 +22,8 @@ void compute_o3_column_density(const ThreadTeam& team, const haero::Atmosphere& 
 
     // ... set atmosphere mean mass to the molecular weight of dry air
     //     and compute water vapor vmr
-    Real mbar = mwdry;
-    Real h2ovmr = mam4::conversions::vmr_from_mmr(qv, mbar);
+    // Real mbar = mwdry;
+    // Real h2ovmr = mam4::conversions::vmr_from_mmr(qv, mbar);
 
     // ... Xform from mmr to vmr
     Real vmr[gas_pcnst], vmrcw[gas_pcnst];

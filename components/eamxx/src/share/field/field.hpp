@@ -181,8 +181,9 @@ public:
   ST* get_internal_view_data_unsafe () const {
     // Check that the scalar type is correct
     using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
-                       or std::is_same<nonconst_ST,char>::value),
+    EKAT_REQUIRE_MSG ((std::is_same<nonconst_ST,char>::value or std::is_same<nonconst_ST,void>::value or
+                       (field_valid_data_types().has_t<nonconst_ST>() and
+                        get_data_type<nonconst_ST>()==m_header->get_identifier().data_type())),
           "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
@@ -237,15 +238,24 @@ public:
   //     to store a stride for the slowest dimension.
   //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
   Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-                       const int idim, const int index, const bool dynamic = false) const;
+                  const int idim, const int index, const bool dynamic = false) const;
   Field subfield (const std::string& sf_name, const int idim,
-                       const int index, const bool dynamic = false) const;
+                  const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
-
+  // extracts a subfield composed of multiple slices in a continuous range of indices
+  // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
+  // but NOT subf = f.subfield(:, [1, 3, 4], :)
+  Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+                  const int idim, const int index_beg, const int index_end) const;
+  Field subfield (const std::string& sf_name, const int idim,
+                  const int index_beg, const int index_end) const;
+  Field subfield (const int idim, const int index_beg, const int index_end) const;
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
   Field get_component (const int i, const bool dynamic = false);
+  // version for slicing across multiple, contiguous indices
+  Field get_components (const int beg, const int end);
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
@@ -303,25 +313,32 @@ protected:
   if_t<(N<=2),
        get_view_type<data_nd_t<T,N-1>,HD>>
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
-    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
+    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
+                    "dimension without losing LayoutRight.\n");
   }
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
 
-  // Metadata (name, rank, dims, customere/providers, time stamp, ...)
-  std::shared_ptr<header_type>            m_header;
+  // NOTE: DO NOT USE--it only returns an error and is here to protect
+  // against compiler errors related to sliced subviews in get_strided_view()
+  template<HostOrDevice HD,typename T,int N>
+  auto get_ND_view () const
+    -> if_t<(N >= MaxRank + 1), get_view_type<data_nd_t<T,N>,HD>>;
+
+  // Metadata (name, rank, dims, customer/providers, time stamp, ...)
+  std::shared_ptr<header_type> m_header;
 
   // Actual data.
-  dual_view_t<char*>    m_data;
+  dual_view_t<char*> m_data;
 
   // Whether this field is read-only
-  bool                  m_is_read_only = false;
+  bool m_is_read_only = false;
 };
 
 // We use this to find a Field in a std container.

@@ -1,4 +1,6 @@
 #include "share/io/scream_io_utils.hpp"
+
+#include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_utils.hpp"
 
 #include <fstream>
@@ -68,6 +70,26 @@ std::string find_filename_in_rpointer (
   broadcast_string(filename,comm,comm.root_rank());
 
   return filename;
+}
+
+void write_timestamp (const std::string& filename, const std::string& ts_name,
+                      const util::TimeStamp& ts, const bool write_nsteps)
+{
+  scorpio::set_attribute(filename,"GLOBAL",ts_name,ts.to_string());
+  if (write_nsteps) {
+    scorpio::set_attribute(filename,"GLOBAL",ts_name+"_nsteps",ts.get_num_steps());
+  }
+}
+
+util::TimeStamp read_timestamp (const std::string& filename,
+                                const std::string& ts_name,
+                                const bool read_nsteps)
+{
+  auto ts = util::str_to_time_stamp(scorpio::get_attribute<std::string>(filename,"GLOBAL",ts_name));
+  if (read_nsteps and scorpio::has_attribute(filename,"GLOBAL",ts_name+"_nsteps")) {
+    ts.set_num_steps(scorpio::get_attribute<int>(filename,"GLOBAL",ts_name+"_nsteps"));
+  }
+  return ts;
 }
 
 } // namespace scream

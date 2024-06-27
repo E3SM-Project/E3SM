@@ -61,4 +61,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Test wind speed diagnostic
   CreateDiagTest(wind_speed "wind_speed_tests.cpp")
+
+  # Test AODVIS
+  CreateDiagTest(aodvis "aodvis_test.cpp")
+
+  # Test "number" paths
+  CreateDiagTest(number_paths "number_paths_tests.cpp")
+
+  # Test AEROCOM_CLD
+  CreateDiagTest(aerocom_cld "aerocom_cld_test.cpp")
+
 endif()

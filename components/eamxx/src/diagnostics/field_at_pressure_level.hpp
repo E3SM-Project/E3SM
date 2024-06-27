@@ -16,12 +16,6 @@ class FieldAtPressureLevel : public AtmosphereDiagnostic
 {
 public:
 
-  using KT = KokkosTypes<DefaultDevice>;
-  template <typename S>
-  using view_1d = typename KT::template view_1d<S>;
-  template <typename S>
-  using view_2d = typename KT::template view_2d<S>;
-
   // Constructors
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -39,14 +33,10 @@ public:
 protected:
   void initialize_impl (const RunType /*run_type*/);
 
-  using Pack1 = ekat::Pack<Real,1>;
-
   std::string         m_pressure_name;
   std::string         m_field_name;
   std::string         m_diag_name;
 
-  view_1d<Pack1>      m_p_tgt;
-  Field               m_mask_field;
   Real                m_pressure_level;
   int                 m_num_levs;
   Real                m_mask_val;

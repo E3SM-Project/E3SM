@@ -7,7 +7,7 @@ TEST_CASE("create_map_file")
   using namespace scream;
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // Add a dof in the middle of two coarse dofs
   const int ngdofs_src = 12;
@@ -21,21 +21,15 @@ TEST_CASE("create_map_file")
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename, "n_a", "n_a", ngdofs_src, false);
-  scorpio::register_dimension(filename, "n_b", "n_b", ngdofs_tgt, false);
-  scorpio::register_dimension(filename, "n_s", "n_s", nnz,        false);
+  scorpio::define_dim(filename, "n_a", ngdofs_src);
+  scorpio::define_dim(filename, "n_b", ngdofs_tgt);
+  scorpio::define_dim(filename, "n_s", nnz);
 
-  scorpio::register_variable(filename, "col", "col", "1", {"n_s"}, "int",    "int",    "");
-  scorpio::register_variable(filename, "row", "row", "1", {"n_s"}, "int",    "int",    "");
-  scorpio::register_variable(filename, "S",   "S",   "1", {"n_s"}, "double", "double", "");
+  scorpio::define_var(filename, "col", {"n_s"}, "int");
+  scorpio::define_var(filename, "row", {"n_s"}, "int");
+  scorpio::define_var(filename, "S",   {"n_s"}, "double");
 
-  std::vector<scorpio::offset_t> dofs(nnz);
-  std::iota(dofs.begin(),dofs.end(),0);
-  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
-
-  scorpio::eam_pio_enddef(filename);
+  scorpio::enddef(filename);
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
@@ -54,10 +48,10 @@ TEST_CASE("create_map_file")
       S[ngdofs_src+2*i+1] = 0.5;
   }
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),nnz);
-  scorpio::grid_write_data_array(filename,"col",col.data(),nnz);
-  scorpio::grid_write_data_array(filename,"S",  S.data(),  nnz);
+  scorpio::write_var(filename,"row",row.data());
+  scorpio::write_var(filename,"col",col.data());
+  scorpio::write_var(filename,"S",  S.data());
 
-  scorpio::eam_pio_closefile(filename);
-  scorpio::eam_pio_finalize();
+  scorpio::release_file(filename);
+  scorpio::finalize_subsystem();
 }

@@ -1,6 +1,7 @@
 #ifndef SCREAM_IO_FILE_SPECS_HPP
 #define SCREAM_IO_FILE_SPECS_HPP
 
+#include "share/io/scream_scorpio_types.hpp"
 #include "share/io/scream_io_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
@@ -79,6 +80,8 @@ struct IOFileSpecs {
 
   bool is_open = false;
   std::string filename;
+
+  scorpio::IOType iotype = scorpio::IOType::Invalid;
 
   // If positive, flush the output file every these many snapshots
   int flush_frequency = std::numeric_limits<int>::max();

@@ -16,12 +16,13 @@ class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic
 public:
   using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
+  using C             = physics::Constants<Real>;
 
   // Constructors
   PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
-  std::string name () const { return "PotentialTemperature"; }
+  std::string name () const;
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -36,6 +37,9 @@ protected:
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
+
+  // What type of potential temperature to compute
+  std::string m_ptype;
 
 }; // class PotentialTemperatureDiagnostic
 

@@ -265,14 +265,13 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
                          const Real extfrc[mam4::gas_chemistry::extcnt], // in
                          Real q[mam4::gas_chemistry::gas_pcnst], // VMRs, inout
                          Real invariants[mam4::gas_chemistry::nfs]) { // out
-  constexpr Real rga = 1.0/haero::Constants::gravity;
-  constexpr Real m2km = 0.01; // converts m -> km
+  // constexpr Real rga = 1.0/haero::Constants::gravity;
+  // constexpr Real m2km = 0.01; // converts m -> km
 
   // The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
   constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
   constexpr int extcnt = mam4::gas_chemistry::extcnt;       // number of species with external forcing
-  constexpr int nabscol = mam4::gas_chemistry::nabscol;     // number of "absorbing column densities"
   constexpr int indexm = 0;  // FIXME: index of total atm density in invariants array
 
   constexpr int phtcnt = mam4::mo_photo::phtcnt; // number of photolysis reactions
@@ -296,7 +295,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   //                         "so4_a3", "bc_a3", "pom_a3", "soa_a3", "mom_a3",
   //                         "num_a3", "pom_a4", "bc_a4", "mom_a4", "num_a4"};
   constexpr int ndx_h2so4 = 2;
-  constexpr int o3_ndx = 0;
   // std::string extfrc_list[] = {"SO2", "so4_a1", "so4_a2", "pom_a4", "bc_a4",
   //                              "num_a1", "num_a2", "num_a3", "num_a4", "SOAG"};
   constexpr int synoz_ndx = -1;
@@ -305,16 +303,13 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // FIXME: For now, we fix the zenith angle. At length, we need to compute it
   // FIXME: from EAMxx's current set of orbital parameters, which requires some
   // FIXME: conversation with the EAMxx team.
-  Real zen_angle = 0.0; // [deg]
 
   // xform geopotential height from m to km and pressure from Pa to mb
-  Real zsurf = rga * phis;
-  Real zintr = m2km * zi;
-  Real zmid = m2km * (zm + zsurf);
-  Real zint = m2km * (zi + zsurf);
+  // Real zsurf = rga * phis;
+  // Real zmid = m2km * (zm + zsurf);
 
   // ... compute the column's invariants
-  Real h2ovmr = q[0];
+  // Real h2ovmr = q[0];
   // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: not ported yet
 
   // ... set rates for "tabular" and user specified reactions
@@ -349,7 +344,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   //sethet(het_rates, pmid, zmid, phis, temp, cmfdqr, prain, nevapr, delt,
   //       invariants[indexm], q);
 
-  int ltrop_sol = 0; // apply solver to all levels
 
   // save h2so4 before gas phase chem (for later new particle nucleation)
   Real del_h2so4_gasprod = q[ndx_h2so4];

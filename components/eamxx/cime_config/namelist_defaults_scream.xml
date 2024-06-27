@@ -234,6 +234,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
     </shoc>
 
+    <!-- MAM4xx-ACI -->
+    <mam4_aci inherit="atm_proc_base">
+      <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
+      <top_level_mam4xx type="integer" doc="Top level for MAM4xx">6</top_level_mam4xx>
+    </mam4_aci>
+
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
@@ -481,6 +487,33 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
+    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+    <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum>
+        <bc_c1 type="real">0.0</bc_c1>
+    <bc_c3 type="real">0.0</bc_c3>
+    <bc_c4 type="real">0.0</bc_c4>
+    <dst_c1 type="real">0.0</dst_c1>
+    <dst_c3 type="real">0.0</dst_c3>
+    <so4_c1 type="real">0.0</so4_c1>
+    <so4_c2 type="real">0.0</so4_c2>
+    <so4_c3 type="real">0.0</so4_c3>
+    <pom_c1 type="real">0.0</pom_c1>
+    <pom_c3 type="real">0.0</pom_c3>
+    <pom_c4 type="real">0.0</pom_c4>
+    <soa_c1 type="real">0.0</soa_c1>
+    <soa_c2 type="real">0.0</soa_c2>
+    <soa_c3 type="real">0.0</soa_c3>
+    <nacl_c1 type="real">0.0</nacl_c1>
+    <nacl_c2 type="real">0.0</nacl_c2>
+    <nacl_c3 type="real">0.0</nacl_c3>
+    <mom_c1 type="real">0.0</mom_c1>
+    <mom_c2 type="real">0.0</mom_c2>
+    <mom_c3 type="real">0.0</mom_c3>
+    <mom_c4 type="real">0.0</mom_c4>
+    <num_c1 type="real">0.0</num_c1>
+    <num_c2 type="real">0.0</num_c2>
+    <num_c3 type="real">0.0</num_c3>
+    <num_c4 type="real">0.0</num_c4>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
@@ -503,6 +536,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)"/>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
+      <iotype>default</iotype>
       <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
@@ -551,6 +585,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <iop_dosubsidence COMPSET=".*DYCOMSrf01">true</iop_dosubsidence>
     <iop_srf_prop type="logical" doc="Use IOP file specified surface values in surface coupling importer.">false</iop_srf_prop>
     <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
+    <iop_nudge_uv type="logical" doc="Nudge winds to those in the IOP file.">false</iop_nudge_uv>
+    <iop_nudge_tq type="logical" doc="Nudge thermodynamics to those in the IOP file.">false</iop_nudge_tq>
+    <iop_nudge_tq_low type="real" doc="Lowest layer to apply nudging for t and q (pressure in hPa).">1100</iop_nudge_tq_low>
+    <iop_nudge_tq_high type="real" doc="Highest layer to apply nudging for t and q (pressure in hPa).">0</iop_nudge_tq_high>
+    <iop_nudge_tscale type="real" doc="Time scale to nudge thermodynamics or winds to.">10800</iop_nudge_tscale>
+    <iop_coriolis type="logical" doc="Apply coriolis forcing to winds based on large scale winds in IOP file.">false</iop_coriolis>
   </iop_options>
 
   <!-- Homme control namelist -->

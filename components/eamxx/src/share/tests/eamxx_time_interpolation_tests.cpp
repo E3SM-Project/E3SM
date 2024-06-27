@@ -139,7 +139,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   // Setup basic test
   printf("   - Test Basics...\n");
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
   auto seed = get_random_test_seed(&comm);
   std::mt19937_64 engine(seed); 
   const auto t0 = init_timestamp();
@@ -229,7 +229,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   printf("                        ... DONE\n");
 
   // All done with IO
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 
   printf("TimeInterpolation - From File Case...DONE\n\n\n");
 } // TEST_CASE eamxx_time_interpolation_data_from_file
@@ -350,7 +350,9 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
 
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    int gl_size = fl.size();
+    grid->get_comm().all_reduce(&gl_size,1,MPI_SUM);
+    FID fid("f_"+std::to_string(gl_size),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize (f,engine,my_pdf);

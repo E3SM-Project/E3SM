@@ -2,6 +2,7 @@
 #define SCREAM_COSP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
@@ -19,6 +20,9 @@ class Cosp : public AtmosphereProcess
 {
 
 public:
+  using PF  = scream::PhysicsFunctions<HostDevice>;
+  using KT  = KokkosTypes<DefaultDevice>;
+  using KTH = KokkosTypes<HostDevice>;
 
   // Constructors
   Cosp (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -49,7 +53,12 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
+#ifdef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+public:
+#endif
   void run_impl        (const double dt);
+protected:
   void finalize_impl   ();
 
   // cosp frequency; positive is interpreted as number of steps, negative as number of hours
@@ -60,8 +69,8 @@ protected:
   Int m_num_cols; 
   Int m_num_subcols;
   Int m_num_levs;
-  Int m_num_isccptau = 7;
-  Int m_num_isccpctp = 7;
+  Int m_num_tau = 7;
+  Int m_num_ctp = 7;
   Int m_num_cth = 16;
 
   std::shared_ptr<const AbstractGrid> m_grid;

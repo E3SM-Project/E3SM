@@ -44,7 +44,7 @@ TEST_CASE("nudging_tests") {
   };
 
   // Init scorpio
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // A refined grid, with one extra node in between each of the coarse ones
   const int ngcols_fine = 2*ngcols_data - 1;
@@ -169,6 +169,9 @@ TEST_CASE("nudging_tests") {
       auto fine_h = fine.get_view<Real**,Host>();
       auto data_h = data.get_view<Real**,Host>();
       const bool is_pmid = data.name()=="p_mid";
+      const int nlevs_fine = 2*nlevs_data-1;
+      const int top = 0;
+      const int bot = nlevs_fine-1;
       for (int icol=0; icol<ncols_data; ++icol) {
         // Even entries match original data
         for (int ilev=0; ilev<nlevs_data; ++ilev) {
@@ -179,8 +182,6 @@ TEST_CASE("nudging_tests") {
           fine_h(icol,2*ilev+1) = (fine_h(icol,2*ilev)+fine_h(icol,2*ilev+2))/2;
         }
         if (not in_bounds) {
-          const int top = 0;
-          const int bot = 2*nlevs_data - 1;
           fine_h(icol,top) *= 0.5;
           fine_h(icol,bot) *= is_pmid ? 2 : 1;
         }
@@ -295,7 +296,7 @@ TEST_CASE("nudging_tests") {
       int ncols = fid.get_layout().dim(0);
       comm.all_reduce(&ncols,1,MPI_SUM);
 
-      FieldLayout glb_layout = fid.get_layout().clone_with_different_extent(0,ncols);
+      FieldLayout glb_layout = fid.get_layout().clone().reset_dim(0,ncols);
       FieldIdentifier glb_fid(fid.name(),glb_layout,fid.get_units(),fid.get_grid_name());
       Field glb(glb_fid);
       glb.allocate_view();
@@ -462,5 +463,5 @@ TEST_CASE("nudging_tests") {
   }
 
   // Clean up scorpio
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }

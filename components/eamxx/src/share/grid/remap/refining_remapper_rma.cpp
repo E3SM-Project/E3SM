@@ -121,7 +121,7 @@ void RefiningRemapperRMA::setup_mpi_data_structures ()
     const auto& fh = f.get_header();
     const auto& fap = fh.get_alloc_properties();
     const auto& layout = fh.get_identifier().get_layout();
-    m_col_size[i]   = layout.strip_dim(COL).size();
+    m_col_size[i]   = layout.clone().strip_dim(COL).size();
 
     const int col_stride = m_col_stride[i] = fap.get_num_scalars() / layout.dim(COL);
 

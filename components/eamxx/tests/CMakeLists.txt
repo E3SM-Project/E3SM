@@ -63,11 +63,15 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   set(EAMxx_tests_IC_FILE_72lev         "screami_unit_tests_ne2np4L72_20220822.nc")
   set(EAMxx_tests_IC_FILE_128lev        "screami_unit_tests_ne2np4L128_20220822.nc")
   set(EAMxx_tests_TOPO_FILE             "USGS-gtopo30_ne2np4pg2_x6t_20230331.nc")
-  set(EAMxx_tests_IC_FILE_MAM4xx_72lev  "scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc")
+  set(EAMxx_tests_IC_FILE_MAM4xx_72lev  "screami_unit_tests_mam4xx_ne2np4L72_20240329.nc")
 
   # Testing individual atm processes
   add_subdirectory(single-process)
 
   # Testing multiple atm processes coupled together
   add_subdirectory(multi-process)
+
+  if (EAMXX_ENABLE_PYBIND)
+    add_subdirectory(python)
+  endif()
 endif()

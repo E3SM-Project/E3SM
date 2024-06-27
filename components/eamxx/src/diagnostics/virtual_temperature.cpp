@@ -15,9 +15,6 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
@@ -27,8 +24,8 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",       scalar3d_layout_mid, K,  grid_name, ps);
-  add_field<Required>("qv",          scalar3d_layout_mid, Q,  grid_name, ps);
+  add_field<Required>("T_mid",       scalar3d_layout_mid, K,     grid_name, ps);
+  add_field<Required>("qv",          scalar3d_layout_mid, kg/kg, grid_name, ps);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);

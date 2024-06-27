@@ -16,7 +16,7 @@ endif()
 
 if (NOT SCREAM_LIB_ONLY)
   # For testing, add some more sources and modules directory
-  target_sources (tms PUBLIC
+  target_sources (tms PRIVATE
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam/trb_mtn_stress.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/tms_iso_c.f90
     ${CMAKE_CURRENT_SOURCE_DIR}/tms_functions_f90.cpp
@@ -28,3 +28,6 @@ if (NOT SCREAM_LIB_ONLY)
 
   add_subdirectory(tests)
 endif()
+
+# Add this library to eamxx_physics
+target_link_libraries(eamxx_physics INTERFACE tms)

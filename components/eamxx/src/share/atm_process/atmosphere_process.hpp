@@ -1,8 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include "control/intensive_observation_period.hpp"
-
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
@@ -78,7 +77,6 @@ public:
   using ci_string = ekat::CaseInsensitiveString;
   using logger_t  = ekat::logger::LoggerBase;
   using LogLevel  = ekat::logger::LogLevel;
-  using any_ptr_t = std::shared_ptr<ekat::any>;
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;
@@ -268,8 +266,8 @@ public:
   //  - these maps are: data_name -> ekat::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<any_ptr_t>& get_restart_extra_data () const { return m_restart_extra_data; }
-        strmap_t<any_ptr_t>& get_restart_extra_data ()       { return m_restart_extra_data; }
+  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
@@ -283,6 +281,10 @@ public:
   // Set IOP object
   virtual void set_iop(const iop_ptr& iop) {
     m_iop = iop;
+  }
+
+  std::shared_ptr<logger_t> get_logger () const {
+    return m_atm_logger;
   }
 
 protected:
@@ -477,7 +479,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<any_ptr_t>  m_restart_extra_data;
+  strmap_t<ekat::any>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize

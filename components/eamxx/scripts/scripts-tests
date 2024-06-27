@@ -214,7 +214,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "./test-all-scream -m $machine -p -i -c EKAT_DISABLE_TPL_WARNINGS=ON",
+        "./test-all-scream -m $machine -p -c EKAT_DISABLE_TPL_WARNINGS=ON",
         "./test-all-scream -m $machine -t dbg",
     ]
 
@@ -390,7 +390,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
             # Start a couple new tests, baselines will be generated in ctest-build/baselines
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE1"
-            opts = " -g -t dbg -t sp --no-tests"
+            opts = "-b LOCAL -g -t dbg -t sp"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -400,56 +400,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
             # Re-run reusing baselines from above
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE2"
-            opts = "--baseline-dir LOCAL -t dbg -t sp --no-tests"
+            opts = "-b LOCAL -t dbg -t sp"
             cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
-
-            # Re-run dbg reusing baselines from above with a fake commit that's not ahead
-            # The flag -u implies -g, but nothing should happen, since SCREAM_FAKE_AHEAD=0
-            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=0 SCREAM_FAKE_GIT_HEAD=FAKE2"
-            opts = "--baseline-dir LOCAL -t dbg -u --no-tests"
-            cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-
-            test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
-
-            # Re-run dbg reusing baselines from above but expire them
-            # The flag -u implies -g, and since SCREAM_FAKE_AHEAD=1, baseline should be regenerated
-            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
-            opts = "--baseline-dir LOCAL -t dbg -u --no-tests"
-            cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-
-            test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
-
-            # Re-run reusing some baselines and expiring others
-            # The dbg baselines were generated in the prev step, so this should only gen the sp baselines
-            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
-            opts = "--baseline-dir LOCAL -t dbg -t sp -u --no-tests"
-            cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-
-            test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE2")
-
-            # Re-run without reusing baselines, should force regeneration
-            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE3"
-            opts = "-g -t dbg -t sp --no-tests"
-            cmd = self.get_cmd(f"{env} ./test-all-scream -m $machine {opts}",
-                               self._machine)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-
-            test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE3")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE3")
 
         else:
             self.skipTest("Skipping full run")

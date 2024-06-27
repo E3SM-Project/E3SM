@@ -2,14 +2,12 @@ set(SCREAM_CONTROL_SOURCES
   atmosphere_driver.cpp
   atmosphere_surface_coupling_importer.cpp
   atmosphere_surface_coupling_exporter.cpp
-  intensive_observation_period.cpp
   surface_coupling_utils.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
   atmosphere_driver.hpp
   atmosphere_surface_coupling.hpp
-  intensive_observation_period.hpp
   surface_coupling_utils.hpp
 )
 

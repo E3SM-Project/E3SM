@@ -148,6 +148,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   const int nsteps = num_output_steps*freq;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
     // Update time
     t += dt;
 
@@ -247,10 +248,10 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Check that the fill value gets appropriately set for each variable
-  Real fill_out;
   for (const auto& fn: fnames) {
-    scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
-    REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
+    // NOTE: use float, since default fp_precision for I/O is 'single'
+    auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
+    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
   }
 }
 
@@ -270,7 +271,7 @@ TEST_CASE ("io_filled") {
   };
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   auto seed = get_random_test_seed(&comm);
 
@@ -294,7 +295,7 @@ TEST_CASE ("io_filled") {
       print(" PASS\n");
     }
   }
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace

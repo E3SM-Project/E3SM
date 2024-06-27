@@ -33,12 +33,12 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>1 && layout.rank()<=6,
       "Error! Field rank not supported by FieldAtLevel.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   // Figure out the level
   const auto& location = m_params.get<std::string>("vertical_location");
@@ -65,7 +65,7 @@ initialize_impl (const RunType /*run_type*/)
   }
 
   // All good, create the diag output
-  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  FieldIdentifier d_fid (m_diag_name,layout.clone().strip_dim(tag),fid.get_units(),fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

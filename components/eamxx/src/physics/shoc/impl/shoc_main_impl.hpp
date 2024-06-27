@@ -119,6 +119,7 @@ void Functions<S,D>::shoc_main_internal(
   // Output Variables
   Scalar&                      pblh,
   const uview_1d<Spack>&       shoc_ql2,
+  const uview_1d<Spack>&       tkh,
   // Diagnostic Output Variables
   const uview_1d<Spack>&       shoc_mix,
   const uview_1d<Spack>&       w_sec,
@@ -137,10 +138,10 @@ void Functions<S,D>::shoc_main_internal(
 {
 
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi, tkh;
-  workspace.template take_many_and_reset<6>(
-    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi", "tkh"},
-    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
+  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi;
+  workspace.template take_many_and_reset<5>(
+    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi"},
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
 
   // Local scalars
   Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
@@ -311,8 +312,8 @@ void Functions<S,D>::shoc_main_internal(
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<6>(
-    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
+  workspace.template release_many_contiguous<5>(
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
 }
 #else
 template<typename S, typename D>
@@ -371,6 +372,7 @@ void Functions<S,D>::shoc_main_internal(
   // Output Variables
   const view_1d<Scalar>&      pblh,
   const view_2d<Spack>&       shoc_ql2,
+  const view_2d<Spack>&       tkh,
   // Diagnostic Output Variables
   const view_2d<Spack>&       shoc_mix,
   const view_2d<Spack>&       w_sec,
@@ -404,8 +406,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>& shoc_qv,
   const view_2d<Spack>& shoc_tabs,
   const view_2d<Spack>& dz_zt,
-  const view_2d<Spack>& dz_zi,
-  const view_2d<Spack>& tkh)
+  const view_2d<Spack>& dz_zi)
 {
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
@@ -643,6 +644,7 @@ Int Functions<S,D>::shoc_main(
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
+    const auto tkh_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
@@ -674,7 +676,7 @@ Int Functions<S,D>::shoc_main(
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
-                       pblh_s, shoc_ql2_s,                                    // Output
+                       pblh_s, shoc_ql2_s, tkh_s,                             // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
@@ -698,7 +700,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output
     shoc_input_output.shoc_ql, // Input/Output
-    shoc_output.pblh, shoc_output.shoc_ql2, // Output
+    shoc_output.pblh, shoc_output.shoc_ql2, shoc_output.tkh, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
@@ -707,7 +709,7 @@ Int Functions<S,D>::shoc_main(
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
     shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
     shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv,
-    shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi, shoc_temporaries.tkh);
+    shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi);
 #endif
 
   auto finish = std::chrono::steady_clock::now();

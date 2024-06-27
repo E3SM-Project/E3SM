@@ -48,7 +48,7 @@ void FieldIdentifier::update_identifier () {
   m_identifier += ">";
   m_identifier += "(" + ekat::join(m_layout.dims(),",") + ")";
 
-  m_identifier += " [" + m_units.get_string() + "]";
+  m_identifier += " [" + m_units.to_string() + "]";
 }
 
 // Free functions for identifiers comparison

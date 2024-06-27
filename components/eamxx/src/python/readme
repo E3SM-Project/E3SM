@@ -1,0 +1,15 @@
+INFO:
+- EAMxx python bindings
+- pyeamxx is where we will house the python code
+- libpyeamxx is where we will house the extensions
+- packaging moved to https://github.com/mahf708/experimental-scream-feedstock
+
+TODO:
+- add more python code to organize structures
+- establish ci pipeline in scream/e3sm repos
+- decide how to deal with versioning
+- decide archs/pythons/mpis to tgt
+
+USER:
+- conda install pyeamxx -c mahf708/label/$mac (mac is chrysalis or pm-cpu)
+- see example in components/eamxx/tests/python/pyp3

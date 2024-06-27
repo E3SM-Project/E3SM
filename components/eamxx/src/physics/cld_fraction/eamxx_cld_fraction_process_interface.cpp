@@ -24,8 +24,6 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
   m_grid = grids_manager->get_grid("Physics");
@@ -40,7 +38,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("qi",          scalar3d_layout_mid, Q,      grid_name,"tracers",ps);
+  add_field<Required>("qi",          scalar3d_layout_mid, kg/kg,  grid_name,"tracers",ps);
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used strictly as output

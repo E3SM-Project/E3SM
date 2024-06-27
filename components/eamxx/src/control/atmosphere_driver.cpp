@@ -140,11 +140,10 @@ init_scorpio(const int atm_id)
   // Init scorpio right away, in case some class (atm procs, grids,...)
   // needs to source some data from NC files during construction,
   // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+  EKAT_REQUIRE_MSG (!scorpio::is_subsystem_inited(),
       "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
       "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+  scorpio::init_subsystem(m_atm_comm,atm_id);
 
   // In CIME runs, gptl is already inited. In standalone runs, it might
   // not be, depending on what scorpio does.
@@ -199,9 +198,6 @@ setup_iop ()
                                                        nlevs,
                                                        hyam,
                                                        hybm);
-
-  auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
 
   // Set IOP object in atm processes
   m_atm_process_group->set_iop(m_iop);
@@ -713,7 +709,7 @@ void AtmosphereDriver::initialize_output_managers () {
     }
     om.set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,*it.second);
+      om.add_global(it.first,it.second);
     }
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
@@ -728,6 +724,7 @@ void AtmosphereDriver::initialize_output_managers () {
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    params.rename(ekat::split(fname,"/").back());
     auto& checkpoint_pl = params.sublist("Checkpoint Control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
@@ -909,7 +906,7 @@ void AtmosphereDriver::restart_model ()
   }
 
   // Restart the num steps counter in the atm time stamp
-  int nsteps = scorpio::get_attribute<int>(filename,"nsteps");
+  int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
   m_current_ts.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
@@ -917,18 +914,22 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
-
-    auto data = scorpio::get_any_attribute(filename,name);
-    EKAT_REQUIRE_MSG (any->content().type()==data.content().type(),
-        "Error! Type mismatch for restart global attribute.\n"
-        " - file name: " + filename + "\n"
-        " - att  name: " + name + "\n"
-        " - expected type: " + any->content().type().name() + "\n"
-        " - actual type: " + data.content().type().name() + "\n"
-        "NOTE: the above names use type_info::name(), which returns an implementation defined string,\n"
-        "      with no guarantees. In particular, the string can be identical for several types,\n"
-        "      and/or change between invocations of the same program.\n");
-    *any = data;
+    if (any.isType<int>()) {
+      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
+    } else if (any.isType<std::int64_t>()) {
+      ekat::any_cast<std::int64_t>(any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
+    } else if (any.isType<float>()) {
+      ekat::any_cast<float>(any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
+    } else if (any.isType<double>()) {
+      ekat::any_cast<double>(any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
+    } else if (any.isType<std::string>()) {
+      ekat::any_cast<std::string>(any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
+    } else {
+      EKAT_ERROR_MSG (
+          "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
+          " - extra data name  : " + name + "\n"
+          " - extra data typeid: " + any.content().type().name() + "\n");
+    }
   }
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
@@ -1031,19 +1032,19 @@ void AtmosphereDriver::set_initial_conditions ()
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
       if (fname == "phis") {
-        // The eamxx field "phis" corresponds to the name
-        // "PHIS_d" on the GLL and Point grids and "PHIS"
-        // on the PG2 grid in the topography file.
+        // For GLL points, phis corresponds to "PHIS_d" in the
+        // topography file. On PG2 grid, dynamics will take care
+        // of computing phis, so do not add to initialized fields.
         if (grid_name == "Physics PG2") {
-          this_grid_topo_file_fnames.push_back("PHIS");
+          // Skip
         } else if (grid_name == "Physics GLL" ||
                    grid_name == "Point Grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
+          this_grid_topo_eamxx_fnames.push_back(fname);
+          fields_inited[grid_name].push_back(fname);
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back(fname);
-	fields_inited[grid_name].push_back(fname);
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
@@ -1141,9 +1142,14 @@ void AtmosphereDriver::set_initial_conditions ()
   if (m_iop) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
+    // We use a single topo file for both GLL and PG2 runs. All
+    // lat/lon data in topo file is defined in terms of PG2 grid,
+    // so if we have a topo field on GLL grid, we need to setup
+    // io info using the IC file (which is always GLL).
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (ic_fields_names[grid_name].size() > 0) {
+      if (ic_fields_names[grid_name].size() > 0 or
+	  topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
                                 ic_pl.get<std::string>("Filename")
@@ -1597,6 +1603,16 @@ void AtmosphereDriver::run (const int dt) {
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
 
+  // Tell the output managers that we're starting a timestep. This is usually
+  // a no-op, but some diags *may* require to do something. E.g., a diag that
+  // computes tendency of an arbitrary quantity may want to store a copy of
+  // that quantity at the beginning of the timestep. Or they may need to store
+  // the timestamp at the beginning of the timestep, so that we can compute
+  // dt at the end.
+  for (auto& it : m_output_managers) {
+    it.init_timestep(m_current_ts,dt);
+  }
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
@@ -1660,6 +1676,9 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     m_atm_process_group = nullptr;
   }
 
+  // Destroy iop
+  m_iop = nullptr;
+
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
 
@@ -1681,9 +1700,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     finalize_gptl();
   }
 
-  // Finalize scorpio
-  if (scorpio::is_eam_pio_subsystem_inited()) {
-    scorpio::eam_pio_finalize();
+  // Finalize scorpio. Check, just in case we're calling finalize after
+  // an exception, thrown before the AD (and scorpio) was inited
+  if (scorpio::is_subsystem_inited()) {
+    scorpio::finalize_subsystem();
   }
 
   m_atm_logger->info("[EAMxx] Finalize ... done!");

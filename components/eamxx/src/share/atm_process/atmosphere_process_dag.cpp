@@ -146,7 +146,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       s.back() = ')';
 
       if (verbosity>2) {
-        s += " [" + fid.get_units().get_string() + "]";
+        s += " [" + fid.get_units().to_string() + "]";
       }
     }
     return s;

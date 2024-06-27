@@ -25,14 +25,13 @@ P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterLis
 void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
+  using namespace ekat::prefixes;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
-  auto micron = m / 1000000;
-  auto m2 = m * m;
+  auto micron = micro*m;
+  auto m2 = pow(m,2);
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
@@ -73,27 +72,27 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_field<Updated>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Updated>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Updated>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Updated>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Updated>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Updated>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Updated>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Updated>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Updated>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qv",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qc",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qr",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qi",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qm",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+  add_field<Updated>("nc",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
+  add_field<Updated>("nr",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
+  add_field<Updated>("ni",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
+  add_field<Updated>("bm",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
   if (infrastructure.prescribedCCN) {
     add_field<Required>("nccn",               scalar3d_layout_mid, 1/kg,     grid_name, ps);
   }
-  add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
-  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
-  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
-  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa,       grid_name, ps);
-  add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
-  add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
+  add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,         grid_name, ps);
+  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, pow(kg/kg,2), grid_name, ps);
+  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,           grid_name, ps);
+  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa,           grid_name, ps);
+  add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, kg/kg,        grid_name, ps);
+  add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,            grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
@@ -106,9 +105,9 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
   //       yet to reset these values at the beginning of the atmosphere timestep.  When this
   //       mechanism is developed we should add these variables to the accumulated variables.
-  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
-  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, Q, grid_name, ps);
-  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
+  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
+  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
+  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks

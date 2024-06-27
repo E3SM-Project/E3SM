@@ -4,7 +4,7 @@ filename_prefix: p3_standalone_output
 Averaging Type: Instant
 Field Names:
   - T_mid
-  - T_mid_at_2m_above_sealevel
+  - T_mid_at_2m_above_surface
   - T_prev_micro_step
   - qv
   - qc

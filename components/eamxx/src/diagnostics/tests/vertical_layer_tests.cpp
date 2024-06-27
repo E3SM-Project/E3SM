@@ -1,20 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/vertical_layer.hpp"
 #include "diagnostics/register_diagnostics.hpp"
-
 #include "physics/share/physics_constants.hpp"
-
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "share/field/field_utils.hpp"
-
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-
-#include <iomanip>
+#include "share/grid/mesh_free_grids_manager.hpp"
 
 namespace scream {
 
@@ -39,23 +27,13 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 }
 
 //-----------------------------------------------------------------------------------------------//
-template<typename DeviceT>
-void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_level = false)
+template<typename DeviceT, int N>
+void run (const std::string& diag_name, const std::string& location)
 {
-  using PF         = scream::PhysicsFunctions<DeviceT>;
-  using PC         = scream::physics::Constants<Real>;
-  using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using KT         = ekat::KokkosTypes<DeviceT>;
-  using ExecSpace  = typename KT::ExeSpace;
-  using MemberType = typename KT::MemberType;
-  using view_1d    = typename KT::template view_1d<Pack>;
-  using rview_1d   = typename KT::template view_1d<Real>;
-  using view_2d    = typename KT::template view_2d<Pack>;
+  using PC = scream::physics::Constants<Real>;
 
-  const     int packsize = SCREAM_PACK_SIZE;
+  const     int packsize = N;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
-  const     int num_mid_packs    = ekat::npack<Pack>(num_levs);
-  const     int num_mid_packs_p1 = ekat::npack<Pack>(num_levs+1);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -64,51 +42,25 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
   const int ncols = 1;
   auto gm = create_gm(comm,ncols,num_levs);
 
-  // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
-
-  // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          pseudodensity("pseudodensity",num_mid_packs),
-          pressure("pressure",num_mid_packs),
-          watervapor("watervapor",num_mid_packs);
-
-  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
-  };
-
-  // Construct random input data
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_qv(1e-6,1e-3),
-       pdf_pseudodens(1.0,100.0),
-       pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0),
-       pdf_phis(0.0,10000.0);
-
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
-  // Construct the Diagnostic
-  ekat::ParameterList params;
-  std::string diag_name;
-  if (diag_type == "thickness") {
-    diag_name = "dz";
-  }
-  else if (diag_type == "interface") {
-    diag_name = from_sea_level ? "z_int" : "geopotential_int";
-  } else if (diag_type == "midpoint") {
-    diag_name = from_sea_level ? "z_mid" : "geopotential_mid";
-  }
-  params.set<std::string>("diag_name", diag_name);
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create(diag_name,comm,params);
+  
+  // Construct the Diagnostic
+  ekat::ParameterList params;
+  std::string name = diag_name;
+  if (location=="midpoints") {
+    name += "_mid";
+  } else if (location=="interfaces") {
+    name += "_int";
+  }
+  params.set<std::string>("diag_name", name);
+  auto diag = diag_factory.create(name,comm,params);
   diag->set_grids(gm);
 
-  // Helpful bools
-  const bool only_compute_dz = (diag_type == "thickness");
-  const bool is_interface_layout = (diag_type == "interface");
-  const bool generate_phis_data = (not only_compute_dz and not from_sea_level);
+  const bool needs_phis = diag_name=="z" or diag_name=="geopotential";
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -120,89 +72,80 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     diag->set_required_field(f.get_const());
-    REQUIRE_THROWS(diag->set_computed_field(f));
     input_fields.emplace(name,f);
   }
 
-  // Initialize the diagnostic
+  // Can't set computed fields in the diag
+  REQUIRE_THROWS(diag->set_computed_field(input_fields.begin()->second));
+
+  // Note: we are not testing the calculate_dz utility. We are testing
+  //       the diag class, so use some inputs that make checking results easier
+  //       With these inputs, T_virt=T, and dz=8*rd/g
+  const Real g = PC::gravit;
+  const Real rho_val = 4;
+  const Real qv_val = 0;
+  const Real p_val = 2;
+  const Real T_val = 4;
+  const Real c1 = -PC::ONE + PC::ONE / PC::ep_2;
+  const Real Tvirt_val = T_val*(PC::ONE + c1*qv_val);
+  const Real dz_val = (PC::RD/g) * rho_val*Tvirt_val / p_val;
+  const Real phis_val = 3;
+
+  input_fields["T_mid"].deep_copy(T_val);
+  input_fields["p_mid"].deep_copy(p_val);
+  input_fields["pseudo_density"].deep_copy(rho_val);
+  input_fields["qv"].deep_copy(qv_val);
+  if (needs_phis) {
+    input_fields["phis"].deep_copy(phis_val);
+  }
+
+  // Initialize and run the diagnostic
   diag->initialize(t0,RunType::Initial);
+  diag->compute_diagnostic();
+  const auto& diag_out = diag->get_diagnostic();
+  diag_out.sync_to_host();
+  auto d_h = diag_out.get_view<Real**,Host>();
 
-  // Run tests
-  {
-    // Construct random data to use for test
-    // Get views of input data and set to random values
-    const auto& T_mid_f       = input_fields["T_mid"];
-    const auto& T_mid_v       = T_mid_f.get_view<Pack**>();
-    const auto& pseudo_dens_f = input_fields["pseudo_density"];
-    const auto& pseudo_dens_v = pseudo_dens_f.get_view<Pack**>();
-    const auto& p_mid_f       = input_fields["p_mid"];
-    const auto& p_mid_v       = p_mid_f.get_view<Pack**>();
-    const auto& qv_mid_f      = input_fields["qv"];
-    const auto& qv_mid_v      = qv_mid_f.get_view<Pack**>();
-    Field phis_f;
-    rview_1d phis_v;
-    if (generate_phis_data) {
-      phis_f = input_fields["phis"];
-      phis_v = phis_f.get_view<Real*>();
+  // Compare against expected value
+  const auto last_int = num_levs;
+  const auto last_mid = last_int-1;
+
+  // Precompute surface value and increment depending on the diag type
+  Real delta, surf_val;
+  if (diag_name=="height") {
+    surf_val = 0;
+    delta = dz_val;
+  } else if (diag_name=="z") {
+    surf_val = phis_val/g;
+    delta = dz_val;
+  } else {
+    surf_val = phis_val;
+    delta = dz_val*g;
+  }
+
+  for (int icol=0; icol<ncols; ++icol) {
+    Real prev_int_val = surf_val;
+
+    if (location=="interfaces") {
+      // Check surface value
+      REQUIRE (d_h(icol,num_levs)==prev_int_val);
     }
 
-    for (int icol=0;icol<ncols;icol++) {
-      const auto& T_sub      = ekat::subview(T_mid_v,icol);
-      const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
-      const auto& p_sub      = ekat::subview(p_mid_v,icol);
-      const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
-      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
-      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
-      Kokkos::deep_copy(T_sub,temperature);
-      Kokkos::deep_copy(pseudo_sub,pseudodensity);
-      Kokkos::deep_copy(p_sub,pressure);
-      Kokkos::deep_copy(qv_sub,watervapor);
-    }
-    if (generate_phis_data) {
-      ekat::genRandArray(phis_v, engine, pdf_phis);
-    }
-
-    // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic();
-    const auto& diag_out = diag->get_diagnostic();
-
-    // Need to generate temporary values for calculation
-    const auto& dz_v   = view_2d("",ncols, num_mid_packs);
-    const auto& zmid_v = view_2d("",ncols, num_mid_packs);
-    const auto& zint_v = view_2d("",ncols, num_mid_packs_p1);
-
-    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-      const int icol = team.league_rank();
-
-      const auto& dz_s = ekat::subview(dz_v,icol);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        dz_s(jpack) = PF::calculate_dz(pseudo_dens_v(icol,jpack),p_mid_v(icol,jpack),T_mid_v(icol,jpack),qv_mid_v(icol,jpack));
-      });
-      team.team_barrier();
-
-      if (not only_compute_dz) {
-        const auto& zint_s = ekat::subview(zint_v,icol);
-        const Real surf_geopotential = from_sea_level ? 0.0 : phis_v(icol);
-        PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,zint_s);
-
-        if (not is_interface_layout) {
-          const auto& zmid_s = ekat::subview(zmid_v,icol);
-          PF::calculate_z_mid(team,num_levs,zint_s,zmid_s);
+    for (int ilev=last_mid; ilev>=0; --ilev) {
+      if (diag_name=="dz") {
+        REQUIRE (d_h(icol,ilev)==dz_val);
+      } else {
+        // If interface, check value, otherwise perform int->mid averaging and check value
+        auto int_val = prev_int_val + delta;
+        if (location=="interfaces") {
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(int_val,1e-5));
+        } else {
+          auto mid_val = (int_val + prev_int_val) / 2;
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(mid_val,1e-5));
         }
+        prev_int_val = int_val;
       }
-    });
-    Kokkos::fence();
-
-    Field diag_calc = diag_out.clone();
-    auto field_v = diag_calc.get_view<Pack**>();
-
-    if (diag_type == "thickness")      Kokkos::deep_copy(field_v, dz_v);
-    else if (diag_type == "interface") Kokkos::deep_copy(field_v, zint_v);
-    else if (diag_type == "midpoint")  Kokkos::deep_copy(field_v, zmid_v);
-    diag_calc.sync_to_host();
-    REQUIRE(views_are_equal(diag_out,diag_calc));
+    }
   }
 
   // Finalize the diagnostic
@@ -215,29 +158,36 @@ TEST_CASE("vertical_layer_test", "vertical_layer_test]"){
   using scream::Real;
   using Device = scream::DefaultDevice;
 
-  constexpr int num_runs = 5;
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto root_print = [&](const std::string& msg) {
+    if (comm.am_i_root()) {
+      printf("%s",msg.c_str());
+    }
+  };
+  auto do_run = [&] (auto int_const) {
+    constexpr int N = decltype(int_const)::value;
+    root_print("\n");
+    root_print(" -> Testing diagnostic for pack_size=" + std::to_string(N) + "\n");
+    for (std::string loc : {"midpoints","interfaces"}) {
+      for (std::string diag : {"geopotential","height","z"}) {
+        std::string msg = "    -> Testing diag=" + diag + " at " + loc + " ";
+        std::string dots (50-msg.size(),'.');
+        root_print (msg + dots + "\n");
+        run<Device,N>(diag, loc);
+        root_print (msg + dots + " PASS!\n");
+      }
+    }
+    std::string msg = "    -> Testing diag=dz ";
+    std::string dots (50-msg.size(),'.');
+    root_print (msg + dots + "\n");
+    run<Device, N>("dz", "UNUSED");
+    root_print (msg + dots + " PASS!\n");
+  };
 
-  auto engine = scream::setup_random_test();
-
-  printf(" -> Number of randomized runs: %d, Pack<Real,%d> scalar type\n\n", num_runs, SCREAM_PACK_SIZE);
-
-  printf(" -> Testing dz...");
-  for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine, "thickness");
+  if (SCREAM_PACK_SIZE!=1) {
+    do_run(std::integral_constant<int,1>());
   }
-  printf("ok!\n");
-  printf(" -> Testing z_int/geopotential_int...");
-  for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine, "interface", irun%2==0); // alternate from_sea_level=true/false
-  }
-  printf("ok!\n");
-  printf(" -> Testing z_mid/geopotential_mid...");
-  for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine, "midpoint", irun%2==0); // alternate from_sea_level=true/false
-  }
-  printf("ok!\n");
-
-  printf("\n");
+  do_run(std::integral_constant<int,SCREAM_PACK_SIZE>());
 
 } // TEST_CASE
 

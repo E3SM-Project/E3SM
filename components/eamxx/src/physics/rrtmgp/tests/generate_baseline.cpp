@@ -1,12 +1,13 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/rrtmgp/mo_garand_atmos_io.h"
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
 
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
+// From RRTMGP submodule
+#include <cpp/rrtmgp/mo_gas_concentrations.h>
+#include <mo_garand_atmos_io.h>
 
-#include "YAKL.h"
+#include <YAKL.h>
 
 #include <ekat/logging/ekat_logger.hpp>
 
@@ -70,8 +71,9 @@ int main (int argc, char** argv) {
     real2d t_lay ("t_lay", ncol, nlay);
     real2d p_lev ("p_lev", ncol, nlay+1);
     real2d t_lev ("t_lev", ncol, nlay+1);
+    real2d col_dry;
     GasConcs gas_concs;
-    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
+    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
 
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
@@ -203,6 +205,7 @@ int main (int argc, char** argv) {
     t_lay.deallocate();
     p_lev.deallocate();
     t_lev.deallocate();
+    col_dry.deallocate();
     sfc_alb_dir_vis.deallocate();
     sfc_alb_dir_nir.deallocate();
     sfc_alb_dif_vis.deallocate();

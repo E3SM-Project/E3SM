@@ -87,7 +87,7 @@ void perturb (const Field& f,
                    "Error! Trying to perturb field \""+f.name()+"\", but field "
 	                 "does not have LEV or ILEV as last dimension.\n"
                    "  - field name: " + f.name() + "\n"
-                   "  - field layout: " + to_string(fl) + "\n");
+                   "  - field layout: " + fl.to_string() + "\n");
 
   if (fl.has_tag(COL)) {
     // If field has a column dimension, it should be the first dimension
@@ -95,7 +95,7 @@ void perturb (const Field& f,
                      "Error! Trying to perturb field \""+f.name()+"\", but field "
 	                   "does not have COL as first dimension.\n"
                      "  - field name: " + f.name() + "\n"
-                     "  - field layout: " + to_string(fl) + "\n");
+                     "  - field layout: " + fl.to_string() + "\n");
 
     const auto& dof_gids_fl = dof_gids.get_header().get_identifier().get_layout();
     EKAT_REQUIRE_MSG(dof_gids_fl.dim(0) == fl.dim(COL),
@@ -103,7 +103,7 @@ void perturb (const Field& f,
                      "perturbed field's column dimension.\n"
                      "  - dof_gids dim: " + std::to_string(dof_gids_fl.dim(0)) + "\n"
                      "  - field name: " + f.name() + "\n"
-                     "  - field layout: " + to_string(fl) + "\n");
+                     "  - field layout: " + fl.to_string() + "\n");
     EKAT_REQUIRE_MSG(dof_gids.data_type() == DataType::IntType,
                      "Error! DoF GIDs field must have \"int\" as data type.\n");
   }

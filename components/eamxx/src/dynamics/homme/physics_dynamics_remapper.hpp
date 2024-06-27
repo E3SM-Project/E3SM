@@ -46,7 +46,7 @@ public:
 
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags());
+    return src.type()==tgt.type();
   }
 
 protected:
@@ -135,8 +135,8 @@ protected:
   //       so we'll just force to call this as pack_view<const T>(v).
   template<typename NewValueT, typename OldViewT>
   KOKKOS_INLINE_FUNCTION
-  view_Nd<NewValueT,OldViewT::Rank> pack_view (const OldViewT& v) const {
-    constexpr int N = OldViewT::Rank;
+  view_Nd<NewValueT,OldViewT::rank> pack_view (const OldViewT& v) const {
+    constexpr int N = OldViewT::rank;
     Kokkos::LayoutRight kl;
     for (int i=0; i<N; ++i) {
       kl.dimension[i] = v.extent(i);

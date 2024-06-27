@@ -51,6 +51,10 @@ public:
   // Getting the diagnostic output
   Field get_diagnostic () const;
 
+  // Allows the diagnostic to save some start-of-step quantity (e.g., in case
+  // we need to compute tendencies, or accumulated stuff)
+  virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
+
   void compute_diagnostic (const double dt = 0);
 protected:
 
