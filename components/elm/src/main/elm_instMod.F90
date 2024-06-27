@@ -352,7 +352,6 @@ contains
               snow_depth_col(c) = h2osno_col(c) / bdsno
            endif
        endif
-       snow_depth_col(c)  = h2osno_col(c) / bdsno
     end do
 
    ! Initialize urban constants
