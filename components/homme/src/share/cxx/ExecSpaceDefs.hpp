@@ -383,11 +383,19 @@ struct Dispatch<HommexxGPU> {
     // serialize parallel scans.
 
     // Detect the value type
+#ifdef HOMMEXX_ENABLE_GPU
+    using value_type =
+      typename Kokkos::Impl::FunctorAnalysis
+        < Kokkos::Impl::FunctorPatternInterface::SCAN
+        , void
+        , Lambda, void >::value_type ;
+#else
     using value_type =
       typename Kokkos::Impl::FunctorAnalysis
         < Kokkos::Impl::FunctorPatternInterface::SCAN
         , void
         , Lambda >::value_type ;
+#endif
 
     // All threads init result.
     value_type accumulator = Kokkos::reduction_identity<value_type>::sum();
