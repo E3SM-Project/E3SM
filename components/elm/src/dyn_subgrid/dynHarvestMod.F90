@@ -199,7 +199,8 @@ contains
     ! Harvest mortality routine for coupled carbon-nitrogen code (CN)
     
     ! !USES:
-    use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
+    use pftvarcon       , only : pprodharv10
+    use pftvarcon       , only : woody
     use elm_varcon      , only : secspday
     use elm_time_manager, only : get_days_per_year
     use GridcellType   , only : grc_pp
@@ -374,7 +375,7 @@ contains
       ! If this is a tree pft, then
       ! get the annual harvest "mortality" rate (am) from harvest array
       ! and convert to rate per second
-      if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
+      if (woody(ivt(p)) == 1.0_r8) then
 
          if (do_harvest) then
             am = 0._r8

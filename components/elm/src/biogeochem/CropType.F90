@@ -417,7 +417,7 @@ contains
     use restUtilMod
     use ncdio_pio
     use VegetationType , only : veg_pp                
-    use pftvarcon      , only : npcropmin, npcropmax
+    use pftvarcon      , only : iscft
     !
     ! !ARGUMENTS:
     class(crop_type), intent(inout)  :: this
@@ -454,7 +454,7 @@ contains
                interpinic_flag='copy', readvar=readvar, data=restyear)
           if (readvar) then
              do p = bounds%begp, bounds%endp
-                if (veg_pp%itype(p) >= npcropmin .and. veg_pp%itype(p) <= npcropmax .and. &
+                if (iscft(veg_pp%itype(p)) >= 1 .and. &
                      veg_pp%active(p)) then
                    this%nyrs_crop_active_patch(p) = restyear
                 end if
