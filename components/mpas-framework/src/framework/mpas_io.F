@@ -23,7 +23,11 @@ module mpas_io
 #endif
 
    integer, parameter :: MPAS_INT_FILLVAL = PIO_FILL_INT
+#ifndef HAVE_ADIOS
+   character, parameter :: MPAS_CHAR_FILLVAL = "C"
+#else
    character, parameter :: MPAS_CHAR_FILLVAL = achar(PIO_FILL_CHAR)
+#endif
 
 #ifdef SINGLE_PRECISION
    real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = PIO_FILL_FLOAT
