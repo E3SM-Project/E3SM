@@ -1823,6 +1823,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
+      real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
@@ -1868,6 +1869,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
+      call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       ! Calculate terms needed for opening (melt) rate
 
@@ -1886,6 +1888,12 @@ module li_subglacial_hydro
       ! Note: an edge with only one grounded cell neighbor is called floating, so this logic retains channel vars
       ! on those edges to allow channel discharge across GL
       where (.not. ( (li_mask_is_grounded_ice(edgeMask)) .or. (hydroMarineMarginMask==1) ) )
+         channelArea = 0.0_RKIND
+         channelDischarge = 0.0_RKIND
+      end where
+
+      ! Similar to waterFlux, shut of channelDischarge if no water upstream. Prevents self-sustaining channels in the absence of distributed water
+      where (waterThicknessEdgeUpwind == 0.0_RKIND)
          channelArea = 0.0_RKIND
          channelDischarge = 0.0_RKIND
       end where
