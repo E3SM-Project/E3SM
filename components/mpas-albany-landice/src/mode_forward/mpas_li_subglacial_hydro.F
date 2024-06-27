@@ -110,6 +110,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
+      real (kind=RKIND), dimension(:), pointer :: hydropotential
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: tillMax
       real (kind=RKIND), pointer :: rhoi, rhoo
@@ -202,19 +203,23 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
          call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+         call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
          call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
          
          waterPressure = max(0.0_RKIND, waterPressure)
          waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
          
-         ! set pressure correctly on ice-free land and in ocean
+         ! set pressure and hydropotential correctly on ice-free land and in ocean
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          ! 
+         
          where ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
+            hydropotential = rho_water * gravity * bedTopography
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography < config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
+            hydropotential = 0.0_RKIND
          end where
         
          ! Initialize diagnostic pressure variables
