@@ -387,7 +387,7 @@ struct Dispatch<HommexxGPU> {
       typename Kokkos::Impl::FunctorAnalysis
         < Kokkos::Impl::FunctorPatternInterface::SCAN
         , void
-        , Lambda >::value_type ;
+        , Lambda, void >::value_type ;
 
     // All threads init result.
     value_type accumulator = Kokkos::reduction_identity<value_type>::sum();

@@ -122,10 +122,10 @@ macro(createTestExec execName execType macroNP macroNC
 
   target_link_libraries(${execName} csm_share)
 
-  # IF (CXXLIB_SUPPORTED_CACHE)
-  #  MESSAGE(STATUS "   Linking Fortran with -cxxlib")
-  #  TARGET_LINK_LIBRARIES(${execName} -cxxlib)
-  #ENDIF ()
+  IF (CXXLIB_SUPPORTED_CACHE)
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${execName} -cxxlib)
+  ENDIF ()
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
@@ -246,10 +246,10 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     target_link_libraries(${execName} piof)
   endif()
 
-  #  IF (CXXLIB_SUPPORTED_CACHE)
-  #  MESSAGE(STATUS "   Linking Fortran with -cxxlib")
-  #  TARGET_LINK_LIBRARIES(${libName} -cxxlib)
-  #ENDIF ()
+  IF (CXXLIB_SUPPORTED_CACHE)
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${libName} -cxxlib)
+  ENDIF ()
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
