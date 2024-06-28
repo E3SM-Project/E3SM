@@ -84,16 +84,6 @@ CONTAINS
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
     character(*), parameter :: subName = "(lnd_init_mct) "
     !-------------------------------------------------------------------------------
-#ifdef HAVE_MOAB
-    character(CL)        :: filePath ! generic file path
-    character(CL)        :: fileName ! generic file name
-    character(CS)        :: timeName ! domain file: time variable name
-    character(CS)        :: lonName  ! domain file: lon  variable name
-    character(CS)        :: latName  ! domain file: lat  variable name
-    character(CS)        :: hgtName  ! domain file: hgt  variable name
-    character(CS)        :: maskName ! domain file: mask variable name
-    character(CS)        :: areaName ! domain file: area variable name
-#endif
 
     ! Set cdata pointers
     call seq_cdata_setptrs(cdata, &
@@ -176,13 +166,9 @@ CONTAINS
          scmMode, scmlat, scmlon)
 #ifdef HAVE_MOAB
      if (my_task == master_task) then
-          call shr_stream_getDomainInfo(SDLND%stream(1), filePath,fileName,timeName,lonName, &
-               latName,hgtName,maskName,areaName)
-          call shr_stream_getFile(filePath,fileName)
-          ! send path of data lnd domain to MOAB coupler.
-          call seq_infodata_PutData( infodata, lnd_domain=fileName) ! we use the same one for regular case
+          call seq_infodata_PutData( infodata, lnd_domain=SDLND%domainFile) ! we use the same one for regular case
           ! in regular case, it is copied from fatmlndfrc ; so we don't know if it is data land or not
-          write(logunit,*), ' filename: ', filename
+          write(logunit,*), ' use this land domain file: ', SDLND%domainFile
      endif
 #endif
     !----------------------------------------------------------------------------
