@@ -54,6 +54,8 @@ int initDecompTest() {
 //
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -116,18 +118,21 @@ int main(int argc, char *argv[]) {
       if (SumCells == RefSumCells) {
          LOG_INFO("DecompTest: Sum cell ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("DecompTest: Sum cell ID test FAIL {} {}", SumCells,
                   RefSumCells);
       }
       if (SumEdges == RefSumEdges) {
          LOG_INFO("DecompTest: Sum edge ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("DecompTest: Sum edge ID test FAIL {} {}", SumEdges,
                   RefSumEdges);
       }
       if (SumVertices == RefSumVertices) {
          LOG_INFO("DecompTest: Sum vertex ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("DecompTest: Sum vertex ID test FAIL {} {}", SumVertices,
                   RefSumVertices);
       }
@@ -141,6 +146,11 @@ int main(int argc, char *argv[]) {
    }
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/

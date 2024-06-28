@@ -54,6 +54,8 @@ void InitMachEnvs() {
 //
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
 
@@ -96,6 +98,7 @@ int main(int argc, char *argv[]) {
    if (MyTask == WorldTask)
       std::cout << "DefaultEnv task test: PASS" << std::endl;
    else {
+      RetVal += 1;
       std::cout << "DefaultEnv task test: FAIL "
                 << "MyTask, WorldTask = " << MyTask << WorldTask << std::endl;
    }
@@ -104,6 +107,7 @@ int main(int argc, char *argv[]) {
    if (MySize == WorldSize)
       std::cout << "DefaultEnv NumTasks test: PASS" << std::endl;
    else {
+      RetVal += 1;
       std::cout << "DefaultEnv NumTasks test: FAIL "
                 << "MySize, WorldSize = " << MySize << " " << WorldSize
                 << std::endl;
@@ -113,6 +117,7 @@ int main(int argc, char *argv[]) {
    if (MyMaster == WorldMaster)
       std::cout << "DefaultEnv master task test: PASS" << std::endl;
    else {
+      RetVal += 1;
       std::cout << "DefaultEnv master task test: FAIL "
                 << "MyMaster, WorldMaster = " << MyMaster << " " << WorldMaster
                 << std::endl;
@@ -122,12 +127,15 @@ int main(int argc, char *argv[]) {
    if (MyTask == MyMaster) {
       if (IsMyMaster)
          std::cout << "DefaultEnv is master task test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "DefaultEnv is master task test: FAIL" << std::endl;
+      }
    } else {
-      if (IsMyMaster)
+      if (IsMyMaster) {
+         RetVal += 1;
          std::cout << "DefaultEnv is master task test: FAIL" << std::endl;
-      else
+      } else
          std::cout << "DefaultEnv is master task test: PASS" << std::endl;
    }
 
@@ -139,6 +147,7 @@ int main(int argc, char *argv[]) {
    if (MyMaster == 2)
       std::cout << "DefaultEnv set master task test: PASS" << std::endl;
    else {
+      RetVal += 1;
       std::cout << "DefaultEnv set master task test: FAIL "
                 << "MyMaster = " << MyMaster << std::endl;
    }
@@ -147,12 +156,15 @@ int main(int argc, char *argv[]) {
    if (MyTask == 2) {
       if (IsMyMaster)
          std::cout << "DefaultEnv isMaster after setMaster: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "DefaultEnv isMaster after setMaster: FAIL" << std::endl;
+      }
    } else {
-      if (IsMyMaster)
+      if (IsMyMaster) {
+         RetVal += 1;
          std::cout << "DefaultEnv isMaster after setMaster: FAIL" << std::endl;
-      else
+      } else
          std::cout << "DefaultEnv isMaster after setMaster: PASS" << std::endl;
    }
 
@@ -166,15 +178,17 @@ int main(int argc, char *argv[]) {
    if (MyTask < 4) {
       if (ContigEnv->isMember())
          std::cout << "contiguous member test: PASS" << std::endl;
-      else
-         std::cout << "contiguous member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-
+      else {
+         RetVal += 1;
+         std::cout << "contiguous member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      }
    } else {
-      if (ContigEnv->isMember())
-         std::cout << "contiguous member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-      else
+      if (ContigEnv->isMember()) {
+         RetVal += 1;
+         std::cout << "contiguous member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      } else
          std::cout << "contiguous member test: PASS" << std::endl;
    }
 
@@ -184,6 +198,7 @@ int main(int argc, char *argv[]) {
       if (ContigTask == WorldTask)
          std::cout << "contiguous task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous task test: FAIL "
                    << "ContigTask, WorldTask = " << ContigTask << " "
                    << WorldTask << std::endl;
@@ -193,6 +208,7 @@ int main(int argc, char *argv[]) {
       if (ContigSize == 4)
          std::cout << "contiguous NumTasks test: PASS " << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous NumTasks test: FAIL "
                    << "ContigSize (should be 4)  = " << ContigSize << std::endl;
       }
@@ -201,6 +217,7 @@ int main(int argc, char *argv[]) {
       if (ContigMaster == WorldMaster)
          std::cout << "contiguous master task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous master task test: FAIL "
                    << "MyMaster, WorldMaster = " << MyMaster << " "
                    << WorldMaster << std::endl;
@@ -210,12 +227,15 @@ int main(int argc, char *argv[]) {
       if (ContigTask == ContigMaster) {
          if (IsContigMaster)
             std::cout << "contiguous is master task test: PASS" << std::endl;
-         else
+         else {
+            RetVal += 1;
             std::cout << "contiguous is master task test: FAIL" << std::endl;
+         }
       } else {
-         if (IsContigMaster)
+         if (IsContigMaster) {
+            RetVal += 1;
             std::cout << "contiguous is master task test: FAIL" << std::endl;
-         else
+         } else
             std::cout << "contiguous is master task test: PASS" << std::endl;
       }
 
@@ -232,15 +252,17 @@ int main(int argc, char *argv[]) {
    if (MyTask < 4) {
       if (Contig2Env->isMember())
          std::cout << "contiguous2 member test: PASS" << std::endl;
-      else
-         std::cout << "contiguous2 member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-
+      else {
+         RetVal += 1;
+         std::cout << "contiguous2 member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      }
    } else {
-      if (Contig2Env->isMember())
-         std::cout << "contiguous2 member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-      else
+      if (Contig2Env->isMember()) {
+         RetVal += 1;
+         std::cout << "contiguous2 member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      } else
          std::cout << "contiguous2 member test: PASS" << std::endl;
    }
 
@@ -250,6 +272,7 @@ int main(int argc, char *argv[]) {
       if (Contig2Task == WorldTask)
          std::cout << "contiguous2 task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous2 task test: FAIL "
                    << "Contig2Task, WorldTask = " << Contig2Task << " "
                    << WorldTask << std::endl;
@@ -259,6 +282,7 @@ int main(int argc, char *argv[]) {
       if (Contig2Size == 4)
          std::cout << "contiguous2 NumTasks test: PASS " << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous2 NumTasks test: FAIL "
                    << "Contig2Size (should be 4)  = " << Contig2Size
                    << std::endl;
@@ -268,6 +292,7 @@ int main(int argc, char *argv[]) {
       if (Contig2Master == 2)
          std::cout << "contiguous2 master task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "contiguous2 master task test: FAIL "
                    << "MyMaster, WorldMaster = " << MyMaster << " "
                    << WorldMaster << std::endl;
@@ -277,12 +302,15 @@ int main(int argc, char *argv[]) {
       if (Contig2Task == Contig2Master) {
          if (IsContig2Master)
             std::cout << "contiguous2 is master task test: PASS" << std::endl;
-         else
+         else {
+            RetVal += 1;
             std::cout << "contiguous2 is master task test: FAIL" << std::endl;
+         }
       } else {
-         if (IsContig2Master)
+         if (IsContig2Master) {
+            RetVal += 1;
             std::cout << "contiguous2 is master task test: FAIL" << std::endl;
-         else
+         } else
             std::cout << "contiguous2 is master task test: PASS" << std::endl;
       }
 
@@ -298,15 +326,17 @@ int main(int argc, char *argv[]) {
    if (MyTask % 2 == 1) {
       if (StrideEnv->isMember())
          std::cout << "strided member test: PASS" << std::endl;
-      else
-         std::cout << "strided member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-
+      else {
+         RetVal += 1;
+         std::cout << "strided member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      }
    } else {
-      if (StrideEnv->isMember())
-         std::cout << "strided member test: FAIL "
-                   << "MyTask " << MyTask << std::endl;
-      else
+      if (StrideEnv->isMember()) {
+         RetVal += 1;
+         std::cout << "strided member test: FAIL " << "MyTask " << MyTask
+                   << std::endl;
+      } else
          std::cout << "strided member test: PASS" << std::endl;
    }
 
@@ -316,6 +346,7 @@ int main(int argc, char *argv[]) {
       if (StrideTask == WorldTask / 2)
          std::cout << "strided task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "strided task test: FAIL "
                    << "StrideTask, WorldTask = " << StrideTask << " "
                    << WorldTask << std::endl;
@@ -325,6 +356,7 @@ int main(int argc, char *argv[]) {
       if (StrideSize == 4)
          std::cout << "strided NumTasks test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "strided NumTasks test: FAIL "
                    << "StrideSize (should be 4)  = " << StrideSize << std::endl;
       }
@@ -333,6 +365,7 @@ int main(int argc, char *argv[]) {
       if (StrideMaster == 0)
          std::cout << "strided master task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "strided master task test: FAIL "
                    << "master = " << StrideMaster << std::endl;
       }
@@ -341,12 +374,15 @@ int main(int argc, char *argv[]) {
       if (StrideTask == StrideMaster) {
          if (IsStrideMaster)
             std::cout << "strided is master task test: PASS" << std::endl;
-         else
+         else {
+            RetVal += 1;
             std::cout << "strided is master task test: FAIL" << std::endl;
+         }
       } else {
-         if (IsStrideMaster)
+         if (IsStrideMaster) {
+            RetVal += 1;
             std::cout << "strided is master task test: FAIL" << std::endl;
-         else
+         } else
             std::cout << "strided is master task test: PASS" << std::endl;
       }
 
@@ -377,13 +413,15 @@ int main(int argc, char *argv[]) {
       if (SubsetEnv->isMember())
          std::cout << "subset member test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "subset member test: FAIL" << std::endl;
       }
 
    } else {
       if (SubsetEnv->isMember()) {
-         std::cout << "subset non-member test: FAIL"
-                   << " MyTask " << MyTask << " InclTasks ";
+         RetVal += 1;
+         std::cout << "subset non-member test: FAIL" << " MyTask " << MyTask
+                   << " InclTasks ";
          for (int i = 0; i < InclSize; ++i) {
             std::cout << InclTasks[i];
          }
@@ -399,6 +437,7 @@ int main(int argc, char *argv[]) {
       if (SubsetTask == NewTask)
          std::cout << "subset task test: PASS " << std::endl;
       else {
+         RetVal += 1;
          std::cout << "subset task test: FAIL "
                    << "SubsetTask, NewTask = " << SubsetTask << " " << NewTask
                    << std::endl;
@@ -408,6 +447,7 @@ int main(int argc, char *argv[]) {
       if (SubsetSize == InclSize)
          std::cout << "subset size test: PASS " << std::endl;
       else {
+         RetVal += 1;
          std::cout << "subset size test: FAIL "
                    << "SubsetSize, InclSize  = " << SubsetSize << " "
                    << InclSize << std::endl;
@@ -417,6 +457,7 @@ int main(int argc, char *argv[]) {
       if (SubsetMaster == 0)
          std::cout << "subset master task test: PASS" << std::endl;
       else {
+         RetVal += 1;
          std::cout << "subset master task test: FAIL" << std::endl;
          std::cout << "master = " << SubsetMaster << std::endl;
       }
@@ -425,12 +466,15 @@ int main(int argc, char *argv[]) {
       if (SubsetTask == SubsetMaster) {
          if (IsSubsetMaster)
             std::cout << "subset is master task test: PASS" << std::endl;
-         else
+         else {
+            RetVal += 1;
             std::cout << "subset is master task test: FAIL" << std::endl;
+         }
       } else {
-         if (IsSubsetMaster)
+         if (IsSubsetMaster) {
+            RetVal += 1;
             std::cout << "subset is master task test: FAIL" << std::endl;
-         else
+         } else
             std::cout << "subset is master task test: PASS" << std::endl;
       }
 
@@ -443,6 +487,7 @@ int main(int argc, char *argv[]) {
    if (OMEGA::VecLength == 16)
       std::cout << "MPI vector length test: PASS" << std::endl;
    else {
+      RetVal += 1;
       std::cout << "MPI vector length test: FAIL" << std::endl;
       std::cout << "Was test driver built with -D OMEGA_VECTOR_LENGTH=16 ?"
                 << std::endl;
@@ -456,5 +501,9 @@ int main(int argc, char *argv[]) {
    // MPI_Status status;
    MPI_Finalize();
 
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 } // end of main
 //===-----------------------------------------------------------------------===/

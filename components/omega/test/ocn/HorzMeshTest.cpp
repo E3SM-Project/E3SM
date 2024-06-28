@@ -129,6 +129,8 @@ OMEGA::R8 coriolis(OMEGA::R8 lat) {
 //
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -154,6 +156,7 @@ int main(int argc, char *argv[]) {
       if (DefDecomp) { // true if non-null ptr
          LOG_INFO("HorzMeshTest: Default decomp retrieval PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Default decomp retrieval FAIL");
       }
 
@@ -172,6 +175,7 @@ int main(int argc, char *argv[]) {
       if (SumCells == DefDecomp->NCellsGlobal) {
          LOG_INFO("HorzMeshTest: Sum cell ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Sum cell ID test FAIL {} {}", SumCells,
                   DefDecomp->NCellsGlobal);
       }
@@ -192,6 +196,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Cell sphere radius test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Cell sphere radius test PASS");
@@ -219,6 +224,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Cell lon/lat test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Cell lon/lat test PASS");
@@ -236,6 +242,7 @@ int main(int argc, char *argv[]) {
       if (SumEdges == DefDecomp->NEdgesGlobal) {
          LOG_INFO("HorzMeshTest: Sum edge ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Sum edge ID test FAIL {} {}", SumEdges,
                   DefDecomp->NEdgesGlobal);
       }
@@ -255,6 +262,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Edge sphere radius test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Edge sphere radius test PASS");
@@ -280,6 +288,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Edge lon/lat test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Edge lon/lat test PASS");
@@ -298,6 +307,7 @@ int main(int argc, char *argv[]) {
       if (SumVertices == DefDecomp->NVerticesGlobal) {
          LOG_INFO("HorzMeshTest: Sum vertex ID test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Sum vertex ID test FAIL {} {}", SumVertices,
                   DefDecomp->NVerticesGlobal);
       }
@@ -317,6 +327,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Vertex sphere radius test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Vertex sphere radius test PASS");
@@ -343,6 +354,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (count > 0) {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Vertex lon/lat test FAIL");
       } else {
          LOG_INFO("HorzMeshTest: Vertex lon/lat test PASS");
@@ -366,6 +378,7 @@ int main(int argc, char *argv[]) {
       if ((MinBathy > 0) && (MaxBathy < 11000.0)) {
          LOG_INFO("HorzMeshTest: Bathy min/max test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Bathy min/max test FAIL");
       }
 
@@ -385,6 +398,7 @@ int main(int argc, char *argv[]) {
       if (abs(SumCellArea - OceanArea) / OceanArea < 0.05) {
          LOG_INFO("HorzMeshTest: Cell area test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Cell area test FAIL");
       }
 
@@ -403,6 +417,7 @@ int main(int argc, char *argv[]) {
       if (abs(SumTriangleArea - OceanArea) / OceanArea < 0.05) {
          LOG_INFO("HorzMeshTest: Triangle area test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Triangle area test FAIL");
       }
 
@@ -423,6 +438,7 @@ int main(int argc, char *argv[]) {
       if (abs(SumKiteArea - OceanArea) / OceanArea < 0.05) {
          LOG_INFO("HorzMeshTest: Kite area test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: Kite area test FAIL");
       }
 
@@ -451,6 +467,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: dcEdge test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: dcEdge test FAIL");
       }
 
@@ -481,6 +498,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: dvEdge test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: dvEdge test FAIL");
       }
 
@@ -497,6 +515,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: angleEdge test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: angleEdge test FAIL");
       }
 
@@ -516,6 +535,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: fCell test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: fCell test FAIL");
       }
 
@@ -536,6 +556,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: fVertex test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: fVertex test FAIL");
       }
 
@@ -555,6 +576,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: fEdge test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: fEdge test FAIL");
       }
 
@@ -573,6 +595,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: weightsOnEdge test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: weightsOnEdge test FAIL");
       }
       // Test edgeSignOnCell
@@ -610,6 +633,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: edgeSignOnCell test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: edgeSignOnCell test FAIL");
       }
 
@@ -646,6 +670,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: edgeSignOnVertex test PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: edgeSignOnVertex test FAIL");
       }
 
@@ -674,6 +699,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: cell halo exhange PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: cell halo exhange FAIL");
       }
 
@@ -701,6 +727,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: edge halo exhange PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: edge halo exhange FAIL");
       }
 
@@ -729,6 +756,7 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("HorzMeshTest: vertex halo exhange PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("HorzMeshTest: vertex halo exhange FAIL");
       }
       // Finalize Omega objects
@@ -742,6 +770,11 @@ int main(int argc, char *argv[]) {
    }
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/

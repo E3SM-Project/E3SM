@@ -429,7 +429,7 @@ void finalizeOperatorsTest() {
    MachEnv::removeAll();
 }
 
-void operatorsTest(const std::string &MeshFile = DefaultMeshFile) {
+int operatorsTest(const std::string &MeshFile = DefaultMeshFile) {
    int Err = initOperatorsTest(MeshFile);
    if (Err != 0) {
       LOG_CRITICAL("OperatorsTest: Error initializing");
@@ -446,15 +446,26 @@ void operatorsTest(const std::string &MeshFile = DefaultMeshFile) {
       LOG_INFO("OperatorsTest: Successful completion");
    }
    finalizeOperatorsTest();
+
+   return Err;
 }
 
 int main(int argc, char *argv[]) {
+
+   int RetVal = 0;
+
    MPI_Init(&argc, &argv);
    Kokkos::initialize(argc, argv);
 
-   operatorsTest();
+   RetVal += operatorsTest();
 
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
+
 } // end of main
 //===-----------------------------------------------------------------------===/

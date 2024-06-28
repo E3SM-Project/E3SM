@@ -16,7 +16,7 @@
 #include <iostream>
 
 template <class MyType>
-void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
+void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName, int *RetVal) {
 
    const int MyTask     = Env->getMyTask();
    const int IsMyMaster = Env->isMasterTask();
@@ -49,9 +49,11 @@ void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
       if (MyVal == FromVal)
          std::cout << TypeName << " scalar broadcast from a default task: PASS"
                    << std::endl;
-      else
+      else {
          std::cout << TypeName << " scalar broadcast from a default task: FAIL"
                    << std::endl;
+         *RetVal += 1;
+      }
    }
 
    if (MyTask == RootTask)
@@ -67,10 +69,12 @@ void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
          std::cout << TypeName
                    << " scalar broadcast from a non-master task: PASS"
                    << std::endl;
-      else
+      else {
          std::cout << TypeName
                    << " scalar broadcast from a non-master task: FAIL"
                    << std::endl;
+         *RetVal += 1;
+      }
    }
 
    if (MyTask == RootTask)
@@ -86,10 +90,12 @@ void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
          std::cout << TypeName
                    << " scalar broadcast from the default env.: PASS"
                    << std::endl;
-      else
+      else {
          std::cout << TypeName
                    << " scalar broadcast from the default env.: FAIL"
                    << std::endl;
+         *RetVal += 1;
+      }
    }
 
    // length of vector<string> is not fixed
@@ -115,10 +121,12 @@ void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
             std::cout << TypeName
                       << " vector broadcast from the default env.: PASS"
                       << std::endl;
-         else
+         else {
             std::cout << TypeName
                       << " vector broadcast from the default env.: FAIL"
                       << std::endl;
+            *RetVal += 1;
+         }
       }
    }
 }
@@ -129,6 +137,8 @@ void TestBroadcast(OMEGA::MachEnv *Env, std::string TypeName) {
 // current values and get routines are tested.
 //
 int main(int argc, char *argv[]) {
+
+   int RetVal = 0;
 
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
@@ -154,25 +164,25 @@ int main(int argc, char *argv[]) {
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
 
    // I4 Broadcast tests
-   TestBroadcast<OMEGA::I4>(DefEnv, "I4");
+   TestBroadcast<OMEGA::I4>(DefEnv, "I4", &RetVal);
 
    // I8 Broadcast tests
-   TestBroadcast<OMEGA::I8>(DefEnv, "I8");
+   TestBroadcast<OMEGA::I8>(DefEnv, "I8", &RetVal);
 
    // R4 Broadcast tests
-   TestBroadcast<OMEGA::R4>(DefEnv, "R4");
+   TestBroadcast<OMEGA::R4>(DefEnv, "R4", &RetVal);
 
    // R8 Broadcast tests
-   TestBroadcast<OMEGA::R8>(DefEnv, "R8");
+   TestBroadcast<OMEGA::R8>(DefEnv, "R8", &RetVal);
 
    // Real Broadcast tests
-   TestBroadcast<OMEGA::Real>(DefEnv, "Real");
+   TestBroadcast<OMEGA::Real>(DefEnv, "Real", &RetVal);
 
    // boolean Broadcast tests
-   TestBroadcast<bool>(DefEnv, "bool");
+   TestBroadcast<bool>(DefEnv, "bool", &RetVal);
 
    // string Broadcast tests
-   TestBroadcast<std::string>(DefEnv, "string");
+   TestBroadcast<std::string>(DefEnv, "string", &RetVal);
 
    // Initialize general subset environment
    int InclSize     = 4;
@@ -198,28 +208,33 @@ int main(int argc, char *argv[]) {
 
    if (pos != std::end(InclTasks)) {
       if (MyVal == 1)
-         std::cout << "I4"
-                   << " sub-group broadcast at rank " << MyTask << " : PASS"
-                   << std::endl;
-      else
-         std::cout << "I4"
-                   << " sub-group broadcast at rank " << MyTask << " : FAIL"
-                   << std::endl;
+         std::cout << "I4" << " sub-group broadcast at rank " << MyTask
+                   << " : PASS" << std::endl;
+      else {
+         std::cout << "I4" << " sub-group broadcast at rank " << MyTask
+                   << " : FAIL" << std::endl;
+         RetVal += 1;
+      }
    } else {
       if (MyVal == -1)
-         std::cout << "I4"
-                   << " sub-group broadcast at rank " << MyTask << " : PASS"
-                   << std::endl;
-      else
-         std::cout << "I4"
-                   << " sub-group broadcast at rank " << MyTask << " : FAIL"
-                   << std::endl;
+         std::cout << "I4" << " sub-group broadcast at rank " << MyTask
+                   << " : PASS" << std::endl;
+      else {
+         std::cout << "I4" << " sub-group broadcast at rank " << MyTask
+                   << " : FAIL" << std::endl;
+         RetVal += 1;
+      }
    }
 
    OMEGA::MachEnv::removeEnv("Subset");
 
    // MPI_Status status;
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/
