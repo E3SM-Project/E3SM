@@ -207,7 +207,9 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
          
          waterPressure = max(0.0_RKIND, waterPressure)
-         waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+         where (li_mask_is_grounded_ice(cellMask))
+            waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+         end where
          
          ! set pressure and hydropotential correctly on ice-free land and in ocean
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -1660,7 +1662,9 @@ module li_subglacial_hydro
       end select
 
       waterPressure = max(0.0_RKIND, waterPressure)
-      waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+      where (li_mask_is_grounded_ice(cellMask))
+         waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+      end where
       
       do iCell = 1, nCells
         onMarineMargin = .false.
