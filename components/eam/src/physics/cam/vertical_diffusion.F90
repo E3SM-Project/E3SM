@@ -382,15 +382,15 @@ contains
     ! ------------------------------------------- !
             
 	!=========Jinbo Xie===========
-        call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
-        call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
-        call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
-        call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
+        !call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
+        !call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
+        !call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
+        !call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
         !=========Jinbo Xie=========== 
-        call add_default('DTAUX3_FD', 1,  ' ')
-        call add_default('DTAUY3_FD', 1,  ' ')
-        call add_default('DUSFC_FD',  1,  ' ')
-        call add_default('DVSFC_FD',  1,  ' ')
+        !call add_default('DTAUX3_FD', 1,  ' ')
+        !call add_default('DTAUY3_FD', 1,  ' ')
+        !call add_default('DUSFC_FD',  1,  ' ')
+        !call add_default('DVSFC_FD',  1,  ' ')
 
     if( do_tms ) then
        call init_tms( r8, tms_orocnst, tms_z0fac, karman, gravit, rair, errstring )

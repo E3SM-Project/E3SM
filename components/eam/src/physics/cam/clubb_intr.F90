@@ -1967,11 +1967,11 @@ end subroutine clubb_init_cnst
         !rlat
         call get_rlat_all_p(lchnk, ncol, rlat)
         !=========================================
-	utgw=0_r8
-        vtgw=0_r8
-        ttgw=0_r8
-        dusfc_fd=0_r8
-        dvsfc_fd=0_r8
+	utgw=0._r8
+        vtgw=0._r8
+        ttgw=0._r8
+        dusfc_fd=0._r8
+        dvsfc_fd=0._r8
         !
         call grid_size(state,dx,dy)
 	!
