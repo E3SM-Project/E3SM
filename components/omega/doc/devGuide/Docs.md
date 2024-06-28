@@ -14,7 +14,7 @@ code for the documentation:
 
 <https://github.com/E3SM-Project/Omega/tree/develop/components/omega/doc>
 
-Each time you add new features to OMEAG, the corresponding documentation must
+Each time you add new features to OMEGA, the corresponding documentation must
 be included with the pull request to add the code.  This includes documentation
 for both the User's Guide and the Developer's Guide. We will add some examples
 as the documentation gets fleshed out.

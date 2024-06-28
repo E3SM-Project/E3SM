@@ -35,6 +35,7 @@ userGuide/Halo
 userGuide/HorzMesh
 userGuide/HorzOperators
 userGuide/TimeMgr
+userGuide/Reductions
 ```
 
 ```{toctree}
@@ -60,6 +61,7 @@ devGuide/Halo
 devGuide/HorzMesh
 devGuide/HorzOperators
 devGuide/TimeMgr
+devGuide/Reductions
 ```
 
 ```{toctree}

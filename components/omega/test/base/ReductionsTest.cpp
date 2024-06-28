@@ -18,6 +18,8 @@ using namespace OMEGA;
 
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -44,6 +46,8 @@ int main(int argc, char *argv[]) {
       char *res = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum I4:    %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
 
       err      = globalSum(&MyInt8, Comm, &MyResI8);
@@ -51,6 +55,8 @@ int main(int argc, char *argv[]) {
       res      = "FAIL";
       if (err == 0 && MyResI8 == expI8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum I8:    %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
 
       err      = globalSum(&MyR4, Comm, &MyResR4);
@@ -58,6 +64,8 @@ int main(int argc, char *argv[]) {
       res      = "FAIL";
       if (err == 0 && MyResR4 == expR4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum R4:    %s (exp,act=%f,%f)\n", res, expR4, MyResR4);
 
       err      = globalSum(&MyR8, Comm, &MyResR8);
@@ -65,6 +73,8 @@ int main(int argc, char *argv[]) {
       res      = "FAIL";
       if (err == 0 && MyResR8 == expR8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum R8:    %s (exp,act=%.15lf,%.15lf)\n", res, expR8,
              MyResR8);
 
@@ -73,6 +83,8 @@ int main(int argc, char *argv[]) {
       res          = "FAIL";
       if (err == 0 && MyResReal == expReal)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum real:  %s (exp,act=%.15lf,%.15lf)\n", res, expReal,
              MyResReal);
 
@@ -96,6 +108,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A1DI4: %s (exp,act=%ld,%d)\n", res, expI4, MyResI4);
 
       err   = globalSum(HostArr2DI4, Comm, &MyResI4);
@@ -103,6 +117,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A2DI4: %s (exp,act=%ld,%d)\n", res, expI4, MyResI4);
 
       // test SUM of I8 arrays
@@ -123,6 +139,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI8 == expI8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A1DI8: %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
 
       err   = globalSum(HostArr2DI8, Comm, &MyResI8);
@@ -130,6 +148,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI8 == expI8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A2DI8: %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
 
       // test SUM of R4 arrays
@@ -150,6 +170,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResR4 == expR4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A1DR4: %s (exp,act=%.10f,%.10f)\n", res, expR4,
              MyResR4);
 
@@ -158,6 +180,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResR4 == expR4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A2DR4: %s (exp,act=%f,%f)\n", res, expR4, MyResR4);
 
       // test SUM of R8 arrays
@@ -201,6 +225,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResReal == expR8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
              MyResReal);
 
@@ -209,6 +235,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResReal == expR8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum A2DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
              MyResReal);
 
@@ -219,6 +247,8 @@ int main(int argc, char *argv[]) {
       res    = "FAIL";
       if (err == 0 && MyResI4 == 0)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global min I4:    %s (exp,act=0,%d)\n", res, MyResI4);
 
       MyInt8 = MyTask;
@@ -226,6 +256,8 @@ int main(int argc, char *argv[]) {
       res    = "FAIL";
       if (err == 0 && MyResI8 == MySize - 1)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global max I4:    %s (exp,act=%d,%ld)\n", res, MySize - 1,
              MyResI8);
 
@@ -234,6 +266,8 @@ int main(int argc, char *argv[]) {
       res        = "FAIL";
       if (err == 0 && MyResR8 == MyR8)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global min R8:    %s (exp,act=%.13lf,%.13lf)\n", res, MyR8,
              MyResR8);
 
@@ -241,6 +275,8 @@ int main(int argc, char *argv[]) {
       res = "FAIL";
       if (err == 0 && MyResR8 == (MySize - 1 + MyR8))
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global max R8:    %s (exp,act=%.13lf,%.13lf)\n", res,
              MySize - 1 + MyR8, MyResR8);
 
@@ -261,8 +297,10 @@ int main(int argc, char *argv[]) {
       err = globalMin(HostA1DI4Work, HostA1DI4Min, Comm);
       res = "PASS";
       for (i = 0; i < NumCells * MySize; i++) {
-         if (HostA1DI4Min(i) != i)
+         if (HostA1DI4Min(i) != i) {
             res = "FAIL";
+            RetVal += 1;
+         }
       }
       printf("Global min A1DI4: %s\n", res);
 
@@ -272,8 +310,10 @@ int main(int argc, char *argv[]) {
       for (i = 0; i < MySize; i++) {
          for (j = 0; j < NumCells; j++) {
             k = i * NumCells + j;
-            if (HostA1DI4Max(k) != (i + 1) * k)
+            if (HostA1DI4Max(k) != (i + 1) * k) {
                res = "FAIL";
+               RetVal += 1;
+            }
          }
       }
       printf("Global max A1DI4: %s\n", res);
@@ -293,6 +333,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum device A1DI4: %s (exp,act=%ld,%d)\n", res, expI4,
              MyResI4);
 
@@ -301,6 +343,8 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum device A2DI4: %s (exp,act=%ld,%d)\n", res, expI4,
              MyResI4);
 
@@ -315,10 +359,18 @@ int main(int argc, char *argv[]) {
       res   = "FAIL";
       if (err == 0 && MyResR4 == expR4)
          res = "PASS";
+      else
+         RetVal += 1;
       printf("Global sum device A1DR4: %s (exp,act=%.10f,%.10f)\n", res, expR4,
              MyResR4);
    }
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
+
 } // end of main
 //===-----------------------------------------------------------------------===/
