@@ -628,21 +628,21 @@
         <comment>anvil --compset WCYCL+ww3 --res ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2 </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
-          <ntasks_lnd>90</ntasks_lnd>
-          <ntasks_rof>90</ntasks_rof>
-          <ntasks_ice>2610</ntasks_ice>
-          <ntasks_ocn>504</ntasks_ocn>
+          <ntasks_lnd>140</ntasks_lnd>
+          <ntasks_rof>140</ntasks_rof>
+          <ntasks_ice>2560</ntasks_ice>
+          <ntasks_ocn>480</ntasks_ocn>
           <ntasks_cpl>2700</ntasks_cpl>
           <ntasks_wav>1080</ntasks_wav>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>2610</rootpe_lnd>
-          <rootpe_rof>2610</rootpe_rof>
+          <rootpe_lnd>2560</rootpe_lnd>
+          <rootpe_rof>2560</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>2700</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_wav>3204</rootpe_wav>
+          <rootpe_wav>3180</rootpe_wav>
         </rootpe>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
