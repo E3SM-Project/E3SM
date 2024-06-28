@@ -5,54 +5,27 @@ RM = rm
 .SUFFIXES:
 .SUFFIXES: .F90 .o
 
-# Set the compiler; note that on some platforms, FC may be defined as an
-# environment variable, and we should not need to do anything here. If this
-# is the case, skip setting FC, but if FC is null then set to a default.
-ifeq ($(FC),$(null))
-    FC = gfortran
-endif
-DEBUG = FALSE
+# Set the compiler
+FC := gfortran
 
-# Check for the NetCDF library and include directories 
-ifeq ($(LIB_NETCDF),$(null))
-    LIB_NETCDF := /usr/local/lib
-endif
-
-ifeq ($(INC_NETCDF),$(null))
-    INC_NETCDF := /usr/local/include
-endif
+# Set NetCDF library and include directories
+LIB_NETCDF := $(shell nf-config --prefix)/lib
+INC_NETCDF := $(shell nf-config --prefix)/include
 
 # Set default compile and link flags
-FFLAGS  = -L$(LIB_NETCDF) -I$(INC_NETCDF)
-#LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl -lhdf5 -lhdf5_hl -mcmodel=medium 
-LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl
+FFLAGS  += -L$(LIB_NETCDF) -I$(INC_NETCDF)
+LDFLAGS += -L$(LIB_NETCDF) -lnetcdf -lnetcdff
+
+ifeq ($(FC),gfortran)
+    FFLAGS += -fallow-argument-mismatch
+endif
 
 # Determine platform 
 UNAMES := $(shell uname -s)
 UNAMEM := $(findstring CRAY,$(shell uname -m))
 
 #------------------------------------------------------------------------
-# Special flags for LF95
 #------------------------------------------------------------------------
-#
-ifeq ($(FC),lf95)
-  #
-  # Tramhill
-  #
-  INC_NETCDF :=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/include
-  LIB_NETCDF :=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
-
-  LDFLAGS = -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lcurl -lhdf5 -lhdf5_hl
--mcmodel=medium 
-  FFLAGS   := -c --trace --trap --wide -CcdRR8 -I$(INC_NETCDF)
-  ifeq ($(DEBUG),TRUE)
-    #FFLAGS += --chk aesu  -Cpp --trace
-    FFLAGS += -g --chk a,e,s,u --pca
-  else
-    FFLAGS += -O
-  endif
-
-endif
 
 .F90.o:
 	$(FC) -c $(FFLAGS) $<
