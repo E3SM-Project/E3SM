@@ -1960,18 +1960,18 @@ end subroutine clubb_init_cnst
         !=======Jinbo Xie=========================
 	!=======Jinbo Xie=========================
         !get the layer index of pblh in layer
-        kpbl2d_in=0_r8
+        kpbl2d_in=0._r8
         do i=1,pcols
         kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
         end do
         !rlat
         call get_rlat_all_p(lchnk, ncol, rlat)
         !=========================================
-	utgw=0_r8
-        vtgw=0_r8
-        ttgw=0_r8
-        dusfc_fd=0_r8
-        dvsfc_fd=0_r8
+	utgw=0._r8
+        vtgw=0._r8
+        ttgw=0._r8
+        dusfc_fd=0._r8
+        dvsfc_fd=0._r8
         !
         call grid_size(state,dx,dy)
 	!
