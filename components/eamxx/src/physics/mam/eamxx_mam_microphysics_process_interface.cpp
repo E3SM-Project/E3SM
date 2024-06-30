@@ -168,11 +168,9 @@ set_computed_group_impl(const FieldGroup& group) {
     "Error! MAM4 expects bundled fields for tracers.\n");
 
   // how many aerosol/gas tracers do we expect?
-  int num_tracers = 2 * (mam_coupling::num_aero_modes() +
-                         mam_coupling::num_aero_tracers()) +
-                    mam_coupling::num_aero_gases();
+  int num_tracers = mam_coupling::num_aero_modes() + mam_coupling::num_aero_tracers() + mam_coupling::num_aero_gases();
   EKAT_REQUIRE_MSG(group.m_info->size() >= num_tracers,
-    "Error! MAM4 requires at least " << num_tracers << " aerosol tracers.");
+    "Error! MAM4 requires at least " << group.m_info->size()<<" "<<num_tracers << " "<<mam_coupling::num_aero_modes()<<" "<< mam_coupling::num_aero_tracers()<<" "<<mam_coupling::num_aero_gases()<<"aerosol tracers.");
 }
 
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const
@@ -192,7 +190,7 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
-  step_ = 0;
+  /*step_ = 0;
 
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
@@ -275,7 +273,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
 void MAMMicrophysics::run_impl(const double dt) {
 
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  /*const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
@@ -506,7 +504,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // postprocess output
   Kokkos::parallel_for("postprocess", policy, postprocess_);
-  Kokkos::fence();
+  Kokkos::fence();*/
 }
 
 void MAMMicrophysics::finalize_impl() {
