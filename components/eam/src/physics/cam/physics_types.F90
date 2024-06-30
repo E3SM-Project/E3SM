@@ -1696,8 +1696,8 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%ribulk(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ribulk')
   !!
-  state%var(:)=inf
-  state%var30(:)=inf
+  state%var(:)=0.0_r8!inf
+  state%var30(:)=0.0_r8!inf
   state%oc(:)=inf
   state%oadir(:,:)=inf
   state%ol(:,:)=inf

@@ -1985,7 +1985,7 @@ end subroutine clubb_init_cnst
         dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
         dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
         xland=cam_in%landfrac,br=state%ribulk,&
-        var2d=state%var30(:ncol),&
+        var2d=sgh30(:ncol),&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
         dx=dx,dy=dy,&
@@ -1994,6 +1994,9 @@ end subroutine clubb_init_cnst
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
         gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1 )
+
+!write(iulog,*) "Jinbo Xie dusfc_fd",dusfc_fd
+!write(iulog,*) "Jinbo Xie dvsfc_fd",dvsfc_fd
         !!=========Jinbo Xie=========
         call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
