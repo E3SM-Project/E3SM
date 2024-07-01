@@ -1,3 +1,19 @@
+//===-- Test driver for OMEGA tendency terms ---------------------*- C++ -*-===/
+//
+/// \file
+/// \brief Test driver for OMEGA tendency term functors
+///
+/// This driver tests the functors used to calculate the tendencies used to
+/// update OMEGA state variables. The tests are designed to be run with the
+/// planar and spherical meshes described in the OMEGA Quick Start. For each
+/// functor, input arrays are initialized based on arbitrary periodic functions
+/// defined in the structs for the planar and spherical configurations. The
+/// difference between analytical solutions and the output of each function
+/// are used to calculate L2 and L-Infinity error norms, which are compared to
+/// expected values for the given mesh.
+///
+//
+//===-----------------------------------------------------------------------===/
 #include "TendencyTerms.h"
 #include "DataTypes.h"
 #include "Decomp.h"
@@ -10,9 +26,6 @@
 #include "mpi.h"
 
 #include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <stdio.h>
 
 using namespace OMEGA;
 
@@ -316,6 +329,7 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
       LOG_INFO("TendencyTermsTest: PotVortHAdv PASS");
    }
 
+   return Err;
 } // end testPotVortHAdv
 
 int testKEGrad(int NVertLevels, Real RTol) {
@@ -390,8 +404,8 @@ int testSSHGrad(int NVertLevels, Real RTol) {
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = -Setup.gradX(X, Y);
-          VecField[1] = -Setup.gradY(X, Y);
+          VecField[0] = -9.80665_Real * Setup.gradX(X, Y);
+          VecField[1] = -9.80665_Real * Setup.gradY(X, Y);
        },
        ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
 
