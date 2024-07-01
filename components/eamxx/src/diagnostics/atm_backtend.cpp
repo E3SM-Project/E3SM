@@ -46,7 +46,6 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   using namespace ekat::units;
   // The units are the same except per second
   auto diag_units = fid.get_units() / s;
-  // TODO: set the units string correctly by appending "/s"
 
   // All good, create the diag output
   FieldIdentifier d_fid(name(), layout.clone(), diag_units, gn);
@@ -60,8 +59,8 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 }
 
 void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
-  m_start_t   = start_of_step;
-  auto f_curr = get_field_in(m_name);
+  m_start_t          = start_of_step;
+  const auto &f_curr = get_field_in(m_name);
   m_f_prev.deep_copy(f_curr);
 }
 
