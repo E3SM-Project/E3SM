@@ -484,7 +484,7 @@ void finalizeAuxVarsTest() {
    MachEnv::removeAll();
 }
 
-void auxVarsTest(const std::string &mesh = DefaultMeshFile) {
+int auxVarsTest(const std::string &mesh = DefaultMeshFile) {
    int Err = initAuxVarsTest(mesh);
    if (Err != 0) {
       LOG_CRITICAL("AuxVarsTest: Error initializing");
@@ -506,15 +506,26 @@ void auxVarsTest(const std::string &mesh = DefaultMeshFile) {
       LOG_INFO("AuxVarsTest: Successful completion");
    }
    finalizeAuxVarsTest();
+
+   return Err;
 }
 
 int main(int argc, char *argv[]) {
+
+   int RetVal = 0;
+
    MPI_Init(&argc, &argv);
    Kokkos::initialize(argc, argv);
 
-   auxVarsTest();
+   RetVal += auxVarsTest();
 
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
+
 } // end of main
 //===-----------------------------------------------------------------------===/
