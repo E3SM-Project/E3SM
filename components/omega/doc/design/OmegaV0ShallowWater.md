@@ -9,7 +9,7 @@
 
 ## 1 Overview
 
-This design document describes the first version of the Omega ocean model, Omega0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as Kokkos ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)).
+This design document describes the first version of the Omega ocean model, Omega-0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as Kokkos ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)).
 
 The planned versions of Omega are:
 
@@ -40,8 +40,6 @@ The horizontal discretization will be taken from
 We will continue to use the MPAS-format netcdf files for input and output, with the same mesh variable names and dimensions. This will facilitate ease of use and interoperability between MPAS-Ocean and Omega.
 
 Omega mesh information will be stored in a separate mesh file, and not be included with initial condition, restart, or output files. This way there is never redundant mesh data stored in these files.
-
-To do: In the design section below, add list of minimum number of variables that defines the mesh, and the additional variables that can be computed on start-up.
 
 ### 2.4  Omega-0 will interface with polaris for preprocessing and postprocessing
 
@@ -93,11 +91,11 @@ Like the previous requirement, tests will first be conducted with layered shallo
 #### 3.1.1 Continuous Equations
 
 The algorithms for Omega-0 are given here in full detail, with all variables defined in section 3.2 below.
-We begin with the standard shallow water equations, which are derived from conservation of momentum and mass in a single layer with uniform density in a rotating frame. The standard presentation may be found in standard textbooks on Geophysical Fluid Dynamics, such as those by Vallis (2017), Cushman‐Roisin and Beckers (2011), Pedlosky (1987), and Gill (2016). In continuous form, these are
+We begin with the standard shallow water equations, which are derived from conservation of momentum and mass in a single layer with uniform density in a rotating frame. The standard presentation may be found in standard textbooks on Geophysical Fluid Dynamics, such as those by Vallis (2017), Cushman‐Roisin and Beckers (2011), Pedlosky (1987), and Gill (2016). See references at bottom. In continuous form, these are
 
 $$
 \frac{\partial \boldsymbol{u}}{\partial t} + \left(\boldsymbol{u}\cdot\nabla\right)\boldsymbol{u}  + f \boldsymbol{k}\times\boldsymbol{u}
-= -g\nabla(h+b)
+= -g\nabla(h-b)
 \hspace{1cm}
 $$
 
@@ -115,7 +113,7 @@ $$
 
 The governing equations for Omega-0 in continuous form are then
 $$
-\frac{\partial \boldsymbol{u}}{\partial t} + q\left(h\boldsymbol{u}^{\perp}\right) = -g\nabla(h+b) - \nabla K + \nu_2 \nabla^2 \boldsymbol{u} - \nu_4 \nabla^4 \boldsymbol{u} + \mathcal{D} + \mathcal{F}
+\frac{\partial \boldsymbol{u}}{\partial t} + q\left(h\boldsymbol{u}^{\perp}\right) = -g\nabla(h-b) - \nabla K + \nu_2 \nabla^2 \boldsymbol{u} - \nu_4 \nabla^4 \boldsymbol{u} + \mathcal{D} + \mathcal{F}
 \hspace{1cm}   (1)
 $$
 
@@ -130,9 +128,7 @@ $$
 $$
 These are typically referred to as the momentum equation (or velocity equation), the thickness equation, and the tracer equation. 
 
-The thickness equation (2) is derived from conservation of mass for a fluid with constant density, which reduces to conservation of volume. The model domain uses fixed horizontal cells with horizontal areas that are constant in time, so the area drops out and only the layer thickness $h$ remains as the prognostic variable.
-
-The additional momentum terms are viscous dissipation (del2 and del4), and drag and forcing are as follows:
+The additional momentum terms in (1) are viscous dissipation (del2 and del4), and drag and forcing are as follows:
 $$
 \mathcal{D} = -Ra \, \boldsymbol{u}-C_D \frac{\boldsymbol{u}\left|\boldsymbol{u}\right|}{h}
 $$
@@ -149,19 +145,23 @@ q\left(h\boldsymbol{u}^{\perp}\right) = \frac{\zeta + f}{h}\left(h\boldsymbol{u}
 $$
 is composed of the rotational part of the advection $\zeta \boldsymbol{u}^{\perp}$ and the Coriolis term $f \boldsymbol{u}^{\perp}$. This term is discussed in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) sections 2.1 and 2.2.
 
+The thickness equation (2) is derived from conservation of mass for a fluid with constant density, which reduces to conservation of volume. The model domain uses fixed horizontal cells with horizontal areas that are constant in time, so the area drops out and only the layer thickness $h$ remains as the prognostic variable.
+
 The Tracer Equation (3) is the conservation equation for a passive tracer (scalar), with only advective and diffusive terms. It is not included in the textbook Shallow Water equations, but is useful for us to test tracer advection in preparation for a primitive equation model in Omega-1. For a tracer which is uniformly one ($\phi=1$), with no viscous terms, the tracer equation reduces to the thickness equation.
+The tracer equation is thickness weighted, because the conserved quantity is the tracer mass. Here $(h\phi A)$ typically has units of mass of the tracer in [kg] while $\phi$ has units of concentration [kg m$^{-3}$]. Because the horizontal area is fixed, $A$ has been divided out making (3) thickness weighted, rather than volume weighted. For chemical tracers $\phi$ has units of [mmol m$^{-3}$]; salinity has units of Practical Salnity Units (PSU) and potential temperature has units of [C]. A derivation of the thickness-weighted tracer equation appears in Appendix A-2 of [Ringler et al. 2013](https://www.sciencedirect.com/science/article/pii/S1463500313000760).
 
 The Omega-0 governing equations (1-3) do not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will be simply redundant.
 
 Further details of these derivations are given in [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqns. (2) and (7), and [Bishnu et al. 2024](https://doi.org/10.1029/2022MS003545), Section 2.1.
 Additional information on governing equations may be found in chapter 8 of the MPAS User's Guide ([Petersen et al. 2024](https://zenodo.org/records/11098080)).
+
 #### 3.1.2 Discrete Equations
 
 The discretized versions of the governing equations are
 
 $$
 \frac{\partial u_e}{\partial t} + \left[ \frac{{\boldsymbol k} \cdot \nabla \times u_e +f_v}{[h_i]_v}\right]_e\left([h_i]_e u_e^{\perp}\right)
-= -g\nabla(h_i+b_i) - \nabla K_i + \nu_2 \nabla^2 u_e - \nu_4 \nabla^4 u_e + \mathcal{D}_e + \mathcal{F}_e
+= -g\nabla(h_i-b_i) - \nabla K_i + \nu_2 \nabla^2 u_e - \nu_4 \nabla^4 u_e + \mathcal{D}_e + \mathcal{F}_e
 \hspace{1cm}   (4)
 $$
 
@@ -192,30 +192,31 @@ Table 1. Definition of variables
 
 | symbol  | name             | units    | location | name in code | notes  |
 |---------------------|-----------------------------|----------|-|---------|-------------------------------------------------------|
-| $b$                 | height of bottom (pos. up)  | m        | cell     |   |                                                              |
+| $b$                 | bottom depth (pos. down)  | m        | cell     | BottomDepth   | bathymetry; always positive.                                                             |
 | $C_D$               | bottom drag                 | 1/m      | constant |   |                                                              |
 | $C_W$               | wind stress coefficient     | 1/m      | constant |   |                                                              |
-| $\mathcal{D} $      | drag                        | m/s^2    | edge     |   |                                                              |
-| $f$                 | Coriolis parameter          | 1/s      | vertex   | fVertex  |                                                              |
-| $\mathcal{F} $      | forcing                     | m/s^2    | edge     |   |                                                              |
-| $g$                 | gravitational acceleration  | m/s^2    | constant |   |                                                              |
-| $h$                 | thickness of layer          | m        | cell     | layerThickness  |                                                              |
+| $\mathcal{D} $      | drag                        | m/s$^2$    | edge     |   |                                                              |
+| $f$                 | Coriolis parameter          | 1/s      | vertex   | FVertex  |                                                              |
+| $\mathcal{F} $      | forcing                     | m/s$^2$    | edge     |   |                                                              |
+| $g$                 | gravitational acceleration  | m/s$^2$    | constant |   |                                                              |
+| $h$                 | thickness of layer          | m        | cell     | LayerThickness  |                                                              |
 | ${\boldsymbol k}$   | vertical unit vector        | unitless | none     |   |                                                              |
-| $K$                 | kinetic energy              | m^2/s^2  | cell     | KineticEnergyCell  | $K = \left\| {\boldsymbol u} \right\|^2 / 2$                |
+| $K$                 | kinetic energy              | m$^2$/s$^2$  | cell     | KineticEnergyCell  | $K = \left\| {\boldsymbol u} \right\|^2 / 2$                |
 | $q$                 | potential vorticity         | 1/m/s    | vertex   |   | $q = \eta/h = \left(\zeta+f\right)/h$                                                 |
 | $Ra$                | Rayleigh drag coefficient   | 1/s      | constant |   |                                                              |
 | $t$                 | time                        | s        | none     |   |                                                              |
 | ${\boldsymbol u}$   | velocity, vector form       | m/s      | edge     |   |                                                              |k
-| $u_e$   | velocity, normal to edge      | m/s      | edge     | normalVelocity  |                                                              |k
-| $u^\perp_e$   | velocity, tangential to edge      | m/s      | edge     | tangentialVelocity  |                                                              |k
+| $u_e$   | velocity, normal to edge      | m/s      | edge     | NormalVelocity  |                                                              |k
+| $u^\perp_e$   | velocity, tangential to edge      | m/s      | edge     | TangentialVelocity  |                                                              |k
 | ${\boldsymbol u}_W$ | wind velocity               | m/s      | edge     |   |                                                              |
-| $\zeta$             | relative vorticity          | 1/s      | vertex   |   | $\zeta={\boldsymbol k} \cdot \left( \nabla \times {\boldsymbol u}\right)$ |
+| $\delta$             | divergence | 1/s      | cell | Divergence  | $\delta=\nabla\cdot\boldsymbol u$ |
+| $\zeta$             | relative vorticity          | 1/s      | vertex   |  RelativeVorticity | $\zeta={\boldsymbol k} \cdot \left( \nabla \times {\boldsymbol u}\right)$ |
 | $\eta$              | absolute vorticity          | 1/s      | vertex   |   | $\eta=\zeta + f$ |
-| $\kappa_2$          | tracer diffusion            | m^2/s    | cell     |   |                                                              |
-| $\kappa_4$          | biharmonic tracer diffusion | m^4/s    | cell     |   |                                                              |
-| $\nu_2$             | viscosity                   | m^2/s    | edge     |   |                                                              |
-| $\nu_4$             | biharmonic viscosity        | m^4/s    | edge     |   |                                                              |
-| $\phi$              | tracer                      | varies   | cell     |   |                                                              |
+| $\kappa_2$          | tracer diffusion            | m$^2$/s    | cell     |   |                                                              |
+| $\kappa_4$          | biharmonic tracer diffusion | m$^4$/s    | cell     |   |                                                              |
+| $\nu_2$             | viscosity                   | m$^2$/s    | edge     |   |                                                              |
+| $\nu_4$             | biharmonic viscosity        | m$^4$/s    | edge     |   |                                                              |
+| $\phi$              | tracer                      | varies | cell     |   | units may be kg/m$^3$ or similar | 
 
 Note: Table created with [markdown table generator](https://www.tablesgenerator.com/markdown_tables) and original [google sheet](https://docs.google.com/spreadsheets/d/1rz-QXDiwfemq5NpSR1XsvomI7aSKQ1myTNweCY4afcE/edit#gid=0).
 
@@ -263,11 +264,20 @@ $$
 $$
 
 where $A_i$ is the area of cell $i$. The indicator function $n_{e,i}=1$ when the normal vector ${\bf n}_e$ is an *outward* normal of cell $i$ and $n_{e,i}=-1$ when ${\bf n}_e$ is an *inward* normal of cell $i$.
+The notation $e\in EC(i)$ indicates all the edges surrounding cell $i$.
+In the TRiSK formulation we assume that the divergence always occurs at the cell center, so the subscript $i$ is dropped and we simply write  $\left( \nabla \cdot {\bf F}\right)_i$ as $\nabla \cdot F_e$.
+
+The divergence operator above is applied to a general vector field $\bf F$. 
 In the actual formulations below, we substitute the velocity at the edge $F_e = u_e$ for the divergence in the momentum equation, and the thickness-weighted tracer
 $F_e = u_e [h_i \phi_i]_e$
  in the tracer advection term.
-The notation $e\in EC(i)$ indicates all the edges surrounding cell $i$.
-In the TRiSK formulation we assume that the divergence always occurs at the cell center, so the subscript $i$ is dropped and we simply write  $\left( \nabla \cdot {\bf F}\right)_i$ as $\nabla \cdot F_e$.
+
+When we refer to the divergence variable, rather than the operator, this means
+$$
+\delta_i
+=  \frac{1}{A_i} \sum_{e\in EC(i)} n_{e,i} \, u_e \, l_e.
+$$
+
 
 #### 3.2.2. Gradient
 
@@ -394,7 +404,7 @@ The first computes the potential vorticity $q_v$ at the vertex and interpolates 
 The sea surface height (SSH) gradient uses the standard gradient formulation from cell center to edge,
 
 $$
--g\nabla(h_i+b_i) = -g\frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}(h_i+b_i).
+-g\nabla(h_i-b_i) = -g\frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}(h_i-b_i).
 $$
 
 #### 3.3.4. Del2 momentum dissipation
@@ -447,7 +457,7 @@ and the stencil for divergence makes this
 $$
 \nabla \cdot \left( u_e [h_i \phi_i]_e \right)  =  \frac{1}{A_i} \sum_{e\in EC(i)} n_{e,i}u_e [h_i \phi_i]_e l_e
 $$
-The question is how to interpolate to the edge to obtain $[h_i \phi_i]_e$. Centered advection simply uses the midpoint rule. Upwind takes the value from the upstream cell. Higher order schemes cast a wider stencil to compute the value at this edge.
+The question is how to interpolate to the edge to obtain $[h_i \phi_i]_e$. Centered advection simply uses the midpoint rule. Upwind takes the value from the upstream cell. Higher order schemes cast a wider stencil to compute the value at this edge. This includes Flux Corrected Transport, used in MPAS-Ocean, and described in [Skamarock and Gassmann 2011](https://journals.ametsoc.org/view/journals/mwre/139/9/mwr-d-10-05056.1.xml).
 
 Note that the thickness advection is identical to the tracer advection when $\phi$ is uniformly one. Thus the same algorithm may be used for both. In fact, this is required for global conservation of tracers, so that the volume flux and tracer flux across each edge are consistent.
 
