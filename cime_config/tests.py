@@ -137,8 +137,9 @@ _TESTS = {
 
     "e3sm_landice_developer" : {
         "tests"   : (
-            "SMS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmSMS",
-            "ERS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmERS",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
