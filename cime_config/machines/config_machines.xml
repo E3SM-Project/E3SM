@@ -1762,15 +1762,9 @@
         <command name="unload">parallel-netcdf</command>
       </modules>
 
-      <modules mpilib="mpich">
-        <command name="load">mpich</command>
-      </modules>
-
       <modules compiler="gnu">
         <command name="load">gcc</command>
-        <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
+        <command name="load">mpich</command>
         <command name="load">netcdf-c</command>
         <command name="load">netcdf-cxx</command>
         <command name="load">netcdf-fortran</command>
@@ -1778,20 +1772,24 @@
         <command name="load">hdf5</command>
         <command name="load">netlib-lapack</command>
         <command name="load">openblas</command>
+        <command name="load">cmake</command>
+        <command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command>
       </modules>
 
       <modules compiler="intel">
         <command name="load">intel-oneapi-compilers</command>
         <command name="load">intel-oneapi-mkl</command>
+        <command name="load">mpich</command>
         <command name="load">gcc</command>
-        <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
         <command name="load">netcdf-c</command>
         <command name="load">netcdf-cxx</command>
         <command name="load">netcdf-fortran</command>
         <command name="load">parallel-netcdf</command>
         <command name="load">hdf5</command>
+        <command name="load">cmake</command>
+        <command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command>
       </modules>
 
       <!--modules>
@@ -1874,12 +1872,12 @@
       <modules>
         <!--command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen</command>
         <command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen3</command-->
-        <command name="purge"/>        
+        <command name="purge"/>
       </modules>
 
       <modules compiler="gnu">
         <command name="load">gcc</command>
-        <command name="load">gcc-runtime</command>
+        <command name="load">gcc-runtime/7.5.0-gcc__7.5.0</command>
         <command name="load">mpich/4.2.1-gcc__12.3.0</command>
         <command name="load">netcdf-c/4.9.2-gcc__12.3.0</command>
         <command name="load">netcdf-cxx/4.2-gcc__12.3.0</command>
@@ -1902,7 +1900,7 @@
         <command name="load">parallel-netcdf/1.12.3-oneapi__2024.1.0</command>
         <command name="load">hdf5/1.14.3-oneapi__2024.1.0</command>
         <command name="load">gcc</command>
-        <command name="load">gcc-runtime</command>
+        <command name="load">gcc-runtime/7.5.0-gcc__7.5.0</command>
         <command name="load">cmake</command>
         <command name="load">perl</command>
         <command name="load">perl-xml-libxml</command>
@@ -1946,7 +1944,7 @@
     </environment_variables>
 
   </machine>
-  
+
 
   <machine MACH="podnomod">
     <DESC>podman-hpc</DESC>
