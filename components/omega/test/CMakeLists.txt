@@ -217,4 +217,3 @@ add_omega_test(
     infra/OmegaKokkosTest.cpp
     ""
 )
-
