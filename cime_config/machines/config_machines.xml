@@ -1833,6 +1833,118 @@
 
   </machine>
 
+  <machine MACH="podmixed"> <!-- uses diff modules names when we mixed compiler - intel/gnu -->
+    <DESC>podman-hpc</DESC>
+    <NODENAME_REGEX>pod</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu,intel</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>10</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>ndkeen</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -launcher fork -hosts localhost -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <!--module_system type="none"/-->
+    <module_system type="module" allow_error="true">
+      <init_path lang="python">$ENV{LMOD_ROOT}/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">$ENV{LMOD_ROOT}/lmod/init/sh</init_path>
+      <init_path lang="csh">$ENV{LMOD_ROOT}/lmod/init/csh</init_path>
+
+      <cmd_path lang="python">$ENV{LMOD_ROOT}/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+      <modules>
+        <!--command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen</command>
+        <command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen3</command-->
+        <command name="purge"/>        
+      </modules>
+
+      <modules compiler="gnu">
+        <command name="load">gcc</command>
+        <command name="load">mpich/4.2.1-gcc__12.3.0</command>
+        <command name="load">netcdf-c/4.9.2-gcc__12.3.0</command>
+        <command name="load">netcdf-cxx/4.2-gcc__12.3.0</command>
+        <command name="load">netcdf-fortran/4.6.1-gcc__12.3.0</command>
+        <command name="load">parallel-netcdf/1.12.3-gcc__12.3.0</command>
+        <command name="load">hdf5/1.12.2-gcc__12.3.0</command>
+        <command name="load">netlib-lapack</command>
+        <command name="load">openblas</command>
+        <command name="load">cmake</command>
+        <command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="load">intel-oneapi-compilers</command>
+        <command name="load">intel-oneapi-mkl</command>
+        <command name="load">netcdf-c/4.9.2-oneapi__2024.1.0</command>
+        <command name="load">netcdf-cxx/4.2-oneapi__2024.1.0</command>
+        <command name="load">netcdf-fortran/4.6.1-oneapi__2024.1.0</command>
+        <command name="load">parallel-netcdf/1.12.3-oneapi__2024.1.0</command>
+        <command name="load">hdf5/1.14.3-oneapi__2024.1.0</command>
+        <command name="load">gcc</command>
+        <command name="load">cmake</command>
+        <command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command>
+      </modules>
+
+      <!--modules>
+        <command name="list"></command>
+      </modules-->
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.2</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+    <environment_variables compiler="gnu">
+      <env name="E3SM_SRCROOT">$SRCROOT</env>
+      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
+      <env name="OPENBLAS_PATH">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/openblas-0.3.21-z66r7lyxwkhsshgreexm4cedffp73scp</env>
+      <env name="LAPACK_ROOT">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/netlib-lapack-3.10.1-lkhddpuidlw2z74g5ui6eq5iattsfjxp</env>
+      <!--env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env-->
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which h5diff))}/lib:$SHELL{dirname $(dirname $(which nc-config))}/lib:$SHELL{dirname $(dirname $(which nf-config))}/lib:$SHELL{dirname $(dirname $(which pnetcdf-config))}/lib</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="E3SM_SRCROOT">$SRCROOT</env>
+      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
+      <!--env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env-->
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which h5diff))}/lib:$SHELL{dirname $(dirname $(which nc-config))}/lib:$SHELL{dirname $(dirname $(which nf-config))}/lib:$SHELL{dirname $(dirname $(which pnetcdf-config))}/lib</env>
+    </environment_variables>
+
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+
+  </machine>
+  
 
   <machine MACH="podnomod">
     <DESC>podman-hpc</DESC>
