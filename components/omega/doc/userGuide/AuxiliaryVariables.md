@@ -7,8 +7,8 @@ in order to advance the model state. Some auxiliary variables can be computed in
 different ways, and the user can specify that in the input configuration file.
 For example, the value of thickness used in advective flux can be centered or upwind.
 ```yaml
-    advection:
-       fluxThicknessType: 'Center'
+    Advection:
+       FluxThicknessType: 'Center'
 ```
 Auxiliary variables are also available for output.
 
