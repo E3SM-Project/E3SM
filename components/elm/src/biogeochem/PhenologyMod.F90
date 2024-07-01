@@ -2562,8 +2562,11 @@ contains
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
          ! calculate the P:PET for each month
-         p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
-
+         if(abs(ETo(p,kmo))>0._r8)then
+           p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+         else
+           p2ETo(p,kmo) = 0._r8
+         endif
          if (nyrs_crop_active(p) == 0) then ! for the first year, use last years values
             prev_xt_bar(p,kmo) = xt(p,kmo)
             prev_xp_bar(p,kmo) = xp(p,kmo)
