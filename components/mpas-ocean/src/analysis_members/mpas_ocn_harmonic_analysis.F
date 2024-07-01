@@ -681,7 +681,7 @@ contains
       REAL(kind=RKIND),ALLOCATABLE :: hap(:),hax(:) 
       REAL(kind=RKIND),ALLOCATABLE :: ha(:,:)
 
-      convrd=180.0_RKIND/pii
+      convrd=180.0_RKIND/pi
 
       mm = 2*nfreq
       ALLOCATE ( PHASEE(nfreq),EMAG(nfreq) )

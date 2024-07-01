@@ -3833,7 +3833,7 @@ contains
 
     ! ensure range in 0, 2*pi
     if (lon < 0.0_RKIND) then
-      lon = 2*pii + lon
+      lon = 2*pi + lon
     end if
 
   end subroutine convert_latlon_from_xyz !}}}
