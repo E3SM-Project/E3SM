@@ -1879,6 +1879,7 @@
 
       <modules compiler="gnu">
         <command name="load">gcc</command>
+        <command name="load">gcc-runtime</command>
         <command name="load">mpich/4.2.1-gcc__12.3.0</command>
         <command name="load">netcdf-c/4.9.2-gcc__12.3.0</command>
         <command name="load">netcdf-cxx/4.2-gcc__12.3.0</command>
@@ -1901,6 +1902,7 @@
         <command name="load">parallel-netcdf/1.12.3-oneapi__2024.1.0</command>
         <command name="load">hdf5/1.14.3-oneapi__2024.1.0</command>
         <command name="load">gcc</command>
+        <command name="load">gcc-runtime</command>
         <command name="load">cmake</command>
         <command name="load">perl</command>
         <command name="load">perl-xml-libxml</command>
