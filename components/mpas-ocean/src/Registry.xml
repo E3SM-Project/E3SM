@@ -1018,10 +1018,6 @@
 					description="The constant heat transport velocity through the boundary layer under land ice used in the ISOMIP test cases."
 					possible_values="Any positive real number"
 		/>
-		<nml_option name="config_land_ice_flux_rms_tidal_velocity" type="real" default_value="5e-2" units="m s^-1"
-					description="Parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity"
-					possible_values="Any non-negative real number"
-		/>
 		<nml_option name="config_land_ice_flux_jenkins_heat_transfer_coefficient" type="real" default_value="0.011"
 					description="constant nondimensional heat transfer coefficient across the ice-ocean boundary layer"
 					possible_values="Any positive real number"
@@ -1029,6 +1025,18 @@
 		<nml_option name="config_land_ice_flux_jenkins_salt_transfer_coefficient" type="real" default_value="3.1e-4"
 					description="constant nondimensional salt transfer coefficient across the ice-ocean boundary layer"
 					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_alpha" type="real" default_value="1"
+					description="alpha from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, alpha = 0.777 when TMIX compset on"
+					possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_A0" type="real" default_value="0"
+					description="A0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, A0 = 0.656 when TMIX compset on"
+					possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_land_ice_flux_tidal_Jourdain_U0" type="real" default_value="5e-2" units="m s^-1"
+					description="U0 from parameterization of tidal velocity by Jourdain et al., 2019 - Equation 9, U0 = 0.003 m/s when TMIX compset on"
+					possible_values="Any non-negative real number"
 		/>
 	</nml_record>
 
@@ -2234,6 +2242,7 @@
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
+			<var name="velocityTidalRMS"/>
 			<var name="topDragMagnitude"/>
 			<var name="landIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
@@ -2925,8 +2934,8 @@
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^-2"
 			 description="pressure used in the momentum equation"
 		/>
-		<var name="modifyLandIcePressureMask" type="integer" dimensions="nCells Time"
-			description="A mask indicating where landIcePressure can be modified during iterative init.  The mask is 1 under (and perhaps near) ice shelves and 0 elsewhere."
+		<var name="sshAdjustmentMask" type="integer" dimensions="nCells Time"
+			description="A mask indicating where ssh or landIcePressure can be modified during iterative init.  The mask is 1 under (and perhaps near) ice shelves and 0 elsewhere."
 			packages="initMode"
 		/>
 		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
@@ -3369,6 +3378,10 @@
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
+			packages="landIceFluxesPKG"
+		/>
+		<var name="velocityTidalRMS" type="real" dimensions="nCells" units="m s^-1"
+			description="Root mean square tidal velocity from tidal model for drag and melt parametrizations"
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^-2"

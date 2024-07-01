@@ -2859,34 +2859,45 @@
         <command name="load">anaconda3/5.2.0</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.4-443hhug</command>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-        <command name="load">hdf5/1.10.5-3mk3uik</command>
-        <command name="load">netcdf/4.7.0-krelxcz</command>
-        <command name="load">netcdf-fortran/4.4.5-74lj75q</command>
+        <command name="load">gcc/7.4.0</command>
+        <command name="load">intel/20.0.4-lednsve</command>
+        <command name="load">intel-mkl/2020.4.304-voqlapk</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
-        <command name="load">parallel-netcdf/1.11.0-acswzws</command>
+        <command name="load">intel-mpi/2019.9.304-i42whlw</command>
+        <command name="load">hdf5/1.10.7-ugvomvt</command>
+        <command name="load">netcdf-c/4.4.1-blyisdg</command>
+        <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
+        <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
+        <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.3.1-verbs-omjz3ck</command>
-        <command name="load">parallel-netcdf/1.11.2-7fy6qz3</command>
+        <command name="load">mvapich2/2.3.6-verbs-x4iz7lq</command>
+        <command name="load">hdf5/1.10.7-igh6foh</command>
+        <command name="load">netcdf-c/4.4.1-gei7x7w</command>
+        <command name="load">netcdf-cxx/4.2-db2f5or</command>
+        <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
+        <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0-g7hppkz</command>
-        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
-        <command name="load">hdf5/1.8.16-mz7lmxh</command>
-        <command name="load">netcdf/4.4.1-xkjcghm</command>
-        <command name="load">netcdf-fortran/4.4.4-mpstomu</command>
+        <command name="load">gcc/8.2.0-xhxgy33</command>
+        <command name="load">intel-mkl/2020.4.304-d6zw4xa</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-ozfo327</command>
-        <command name="load">parallel-netcdf/1.11.0-filvnis</command>
+        <command name="load">intel-mpi/2019.9.304-rxpzd6p</command>
+        <command name="load">hdf5/1.10.7-oy6d2nm</command>
+        <command name="load">netcdf-c/4.4.1-fysjgfx</command>
+        <command name="load">netcdf-cxx/4.2-oaiw2v6</command>
+        <command name="load">netcdf-fortran/4.4.4-kxgkaop</command>
+        <command name="load">parallel-netcdf/1.11.0-fce7akl</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-        <command name="load">mvapich2/2.3-bebop-3xi4hiu</command>
-        <command name="load">parallel-netcdf/1.11.2-hfn33fd</command>
+        <command name="load">mvapich2/2.3-bebop-a66r4jf</command>
+        <command name="load">hdf5/1.10.5-ejeshwh</command>
+        <command name="load">netcdf/4.4.1-ve2zfkw</command>
+        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
+        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
+        <command name="load">parallel-netcdf/1.11.0-kozyofv</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -2901,7 +2912,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu">
+    <environment_variables>
       <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
