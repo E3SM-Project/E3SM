@@ -242,6 +242,17 @@ target_compile_definitions(
 
 
 ##################
+# State test
+##################
+
+add_omega_test(
+    STATE_TEST
+    testState.exe
+    ocn/StateTest.cpp
+    "-n;8"
+)
+
+##################
 # Time Manager test
 ##################
 
