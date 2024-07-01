@@ -345,8 +345,8 @@ contains
          ! specify geometry/location
          cvmix_variables % SeaSurfaceHeight = ssh(iCell)
          cvmix_variables % Coriolis = fCell(iCell)
-         cvmix_variables % lat = latCell(iCell) * 180.0_RKIND / 3.14_RKIND
-         cvmix_variables % lon = lonCell(iCell) * 180.0_RKIND / 3.14_RKIND
+         cvmix_variables % lat = latCell(iCell) * 180.0_RKIND / pi
+         cvmix_variables % lon = lonCell(iCell) * 180.0_RKIND / pi
 
          ! fill vertical position of column
          ! CVMix assume top of ocean is at z=0, so building all z-coordinate data based on layerThickness
