@@ -50,9 +50,6 @@ module iac_coupled_fields
   character(len=16), parameter, public :: iac_co2_name = 'iac_co2'
   integer           :: iac_co2_pbuf_ndx = -1
 
-  !Number of days in a year can be a real number
-  real(r8)          :: days_in_one_yr
-
   ! This is our internal data structure to hold the chunked airlo and airhi
   type(iac_vertical_emiss_t), pointer:: iac_vertical_emiss(:)
 
@@ -98,27 +95,10 @@ contains
     integer :: ierror   ! Error code
     character(len=cxx)  :: err_str
 
-    real(r8) :: first_year, second_year
-
     !------------------------------------------------------------------
     ! Return if no iac coupling
     !------------------------------------------------------------------
     if (.not. iac_present) return
-
-    !Find the number of days in a year by subtracting 
-    !number of days between year 1 and year 2.
-
-    !number of days in the second year
-    call set_time_float_from_date( second_year, & !out
-         2, 1, 1, 0 ) !in (year, month, day, time)
-   
-    !number of days in the first year 
-    call set_time_float_from_date( first_year,  & !out
-         1, 1, 1, 0 ) !in (year, month, day, time)
-
-    !number of days in a year
-    days_in_one_yr = second_year-first_year
-
 
     !get pbuf index to store the field in pbuf
     iac_co2_pbuf_ndx = pbuf_get_index(iac_co2_name,ierror)
@@ -272,58 +252,131 @@ contains
 
     integer  :: year, month ! Year and month of the current date
     integer  :: day, secs   ! Day and time of day (in seconds past 0Z) of the current date
-    real(r8) :: curr_model_time                    ! Current model time in days (can be fractional)
+    real(r8) :: num_days_in_current_year
+    real(r8) :: cyclic_curr_model_time, curr_model_time ! Current model time in days (can be fractional)
     real(r8) :: day_at_lower_bnd, day_at_upper_bnd ! Number of days at bounds
     real(r8) :: model_time                         ! Model time in days used for interpolation
 
+    !temp
+    real(r8) :: this_year, next_year, days_in_curr_yr
+    integer :: stream_num
+
     if (.not. iac_present) return
 
-    call get_curr_date(year, month, day, secs )
+    !Get the year, month, day and secs of this time step
+    !(all arguments of the call below are outputs)
+    call get_curr_date(year, month, day, secs ) !outputs
 
 
-    !Get current model time in "days".
-    !Output from the following call is "curr_mdl_time", which is in days, it can be fraction
-    !based on how far we are in a given day
+    !Get current model time in the number of "days" counted from the start of the simulation
+    !or RUN_START_DATE. Output from the following call is "curr_mdl_time", which is in days, 
+    !it can be fraction based on how far we are in a given day
     call set_time_float_from_date( curr_model_time, & !output
-         year , month, day, secs ) !input
+         year, month, day, secs ) !input
 
-    !Find the lower bound of an interval in mid_mon_num_days array based on curr_model_time
-    call findplb(mid_mon_num_days, tot_mon_in_a_year, curr_model_time, & !input
+    !Get the number of days in this year
+    num_days_in_current_year = get_num_days_in_year(year)
+
+    !Convert curr_model_time to cyclic_curr_model_time. cyclic_curr_model_time
+    !is the number of days into the simulation assuming the simulation started
+    !from the current year. This is done so that we can reuse "mid_mon_num_days"
+    !for every year to find the bounds for the interpolation
+    !(it might be an overkill to compute it every time step but we do it to protect 
+    !against calendars with leap years)
+    cyclic_curr_model_time = mod(curr_model_time, num_days_in_current_year)
+
+    !Find the lower bound for the interpolation
+    !Lower bound of an interval in mid_mon_num_days array based on cyclic_curr_model_time
+    call findplb(mid_mon_num_days, tot_mon_in_a_year, cyclic_curr_model_time, & !input
          lower_bound) !output
 
-    !Day of the year at the lower bound
-    day_at_lower_bnd = mid_mon_num_days(lower_bound) ! m is good
+    !Day of the year at the lower bound from the "mid_mon_num_days" array
+    day_at_lower_bnd = mid_mon_num_days(lower_bound)
 
     !The upper bound is next to the lower bound
     upper_bound = lower_bound + 1
 
-    model_time = curr_model_time ! store the model time in days (it can be fractional)
+    model_time = cyclic_curr_model_time ! store the model time in days (it can be fractional)
 
-    !if the lower bound is the last month (December), set lower bound to 1 (January)
-    ! and recompute "model_time".
+    !We have a special case for dates between Dec 16th to Jan 15th. In this case, the lower
+    !bound should be 12 (i.e., around december 15th) and the upper bound should be 1 (i.e., around Jan 15th).
+    !We identify this special case by "lower_bound == tot_mon_in_a_year" if condition (i.e., the lower bound is
+    !the last month - [December, i.e., 12] of the year)
+    !We set upper bound to 1 (January) and recompute "model_time" for this special case.
     if (lower_bound == tot_mon_in_a_year) then
+       if (masterproc) write(104,*) 'in lower_bound == tot_mon_in_a_year:', year, month, day
 
-       !We are in last half of December or first half Jan
+       !We are in last half of December (16th to 31st) or first half Jan (1st to 15th)
        upper_bound = 1 ! set upper bound to the month of Jan
 
-       !Let's assume we are in the Jan of the 2nd year
-       !Upper bound number of  days is now 15 + 365 = 380
-       day_at_upper_bnd = mid_mon_num_days(upper_bound) + days_in_one_yr
+       !The upper bound is now the January of the "next" year, so the number of days should be 
+       !more than "num_days_in_current_year". Upper bound number of  days is now 15 + 365 = 380
+       day_at_upper_bnd = mid_mon_num_days(upper_bound) + num_days_in_current_year
 
-       !if we are in the first half of Jan, we need to add days (in one year), so that
-       !it is Jan of 2nd year
-       if (curr_model_time < day_at_lower_bnd) then
-          model_time = curr_model_time + days_in_one_yr
+       ! If we are between Jan 1st and Jan 15th of the "next year", we need to recompute
+       ! model_time so that it is in the "next" year. Therefore, we add "num_days_in_current_year"
+       ! to the cyclic_curr_model_time
+       !NOTE: For december 16th to 31st, the model_time computed above should be used
+       if (cyclic_curr_model_time < day_at_lower_bnd) then 
+          !FIXME: we should use "cyclic_curr_model_time <= mid_mon_num_days(1)" instead
+          ! of "cyclic_curr_model_time < day_at_lower_bnd" to be clear
+          model_time = cyclic_curr_model_time + num_days_in_current_year 
        endif
     else
-       !if we are in Dec 16th to 31st range
+      if (masterproc) write(104,*) 'ELSE lower_bound == tot_mon_in_a_year:', year, month, day
+       !For all other cases, we can simply find days at upper bounds from mid_mon_num_days
        day_at_upper_bnd = mid_mon_num_days(upper_bound)
     endif
 
     !fraction of time into the current model time
     time_interp_frac = (model_time-day_at_lower_bnd)/(day_at_upper_bnd-day_at_lower_bnd)
 
+    if(time_interp_frac>1._r8 .or. time_interp_frac<0._r8) then
+      write(102,*)'not-well:','time_interp_frac:',time_interp_frac, 'model_time:',model_time, 'day_at_lower_bnd:',day_at_lower_bnd, 'day_at_upper_bnd:',day_at_upper_bnd,'upper_bound:',upper_bound, 'curr_model_time:',curr_model_time, 'lower_bound:',lower_bound, year , month, day, secs
+      call endrun('BALLI-tfrac')
+    elseif (masterproc) then
+        days_in_curr_yr = get_num_days_in_year(year)
+        if (days_in_curr_yr .ne. 365._r8) then
+          write(104,*)'days_in_curr_yr:',days_in_curr_yr, year
+          call endrun('days not 365!')
+        endif
+      stream_num = year+200
+      write(stream_num,'(3i8, F10.5)')month, day, secs, cyclic_curr_model_time
+      write(stream_num+100,*)month, day, secs, curr_model_time
+      write(103,*)'All-well:','time_interp_frac:',time_interp_frac, 'model_time:',model_time, 'day_at_lower_bnd:',day_at_lower_bnd, 'day_at_upper_bnd:',day_at_upper_bnd,'upper_bound:',upper_bound, 'curr_model_time:',curr_model_time, 'lower_bound:',lower_bound, year , month, day, secs,'days_in_curr_yr:',days_in_curr_yr
+    endif
+
 
   end subroutine iac_coupled_timeinterp
+
+  function get_num_days_in_year(year_in) result(days_in_curr_yr)
+  !--------------------------------------------------------------------------------
+  !Compute the total number of days in current year
+  !--------------------------------------------------------------------------------
+  !*Logic*: We compute the total number of days at 01/01 (MM/DD) for the next year
+  !and this year. The difference between the two is the total number of days
+  !in the current year
+  !--------------------------------------------------------------------------------
+    !input
+    integer, intent(in) :: year_in
+
+    !output (return value)
+    real(r8) :: days_in_curr_yr
+
+    !local
+    real(r8) :: num_days_next_year, num_days_this_year
+
+    !number of days on Jan 1st the next year
+    call set_time_float_from_date( num_days_next_year, & !out
+        year_in+1, 1, 1, 0 ) !in (year, month, day, time)
+   
+    !number of days on Jan 1st this year
+    call set_time_float_from_date( num_days_this_year,  & !out
+         year_in, 1, 1, 0 ) !in (year, month, day, time)
+
+    !number of days in the current year (return value)
+    days_in_curr_yr = num_days_next_year-num_days_this_year
+
+  end function get_num_days_in_year
 
 end module iac_coupled_fields
