@@ -27,7 +27,7 @@
 //
 int main(int argc, char *argv[]) {
 
-   int Err = 0;
+   int Err = 0, RetVal = 0;
 
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
@@ -113,100 +113,156 @@ int main(int argc, char *argv[]) {
    OMEGA::Config ConfigVmixRef("Vmix");
 
    Err = ConfigHmixDel2Ref.add("HmixDel2On", RefHmixDel2On);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding bool FAIL", MyTask);
+   }
    Err = ConfigHmixDel2Ref.add("HmixDel2I4", RefHmixDel2I4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I4 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2Ref.add("HmixDel2I8", RefHmixDel2I8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I8 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2Ref.add("HmixDel2R4", RefHmixDel2R4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R4 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2Ref.add("HmixDel2R8", RefHmixDel2R8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R8 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2Ref.add("HmixDel2Str", RefHmixDel2Str);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding string FAIL", MyTask);
+   }
 
    Err = ConfigHmixRef.add("HmixOn", RefHmixOn);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding bool FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add("HmixI4", RefHmixI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I4 FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add("HmixI8", RefHmixI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I8 FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add("HmixR4", RefHmixR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R4 FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add("HmixR8", RefHmixR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R8 FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add("HmixStr", RefHmixStr);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding string FAIL", MyTask);
+   }
    Err = ConfigHmixRef.add(ConfigHmixDel2Ref);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding sub-config FAIL", MyTask);
+   }
 
    Err = ConfigVmixRef.add("VmixOn", RefVmixOn);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding bool FAIL", MyTask);
+   }
    Err = ConfigVmixRef.add("VmixI4", RefVmixI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I4 FAIL", MyTask);
+   }
    Err = ConfigVmixRef.add("VmixI8", RefVmixI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I8 FAIL", MyTask);
+   }
    Err = ConfigVmixRef.add("VmixR4", RefVmixR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R4 FAIL", MyTask);
+   }
    Err = ConfigVmixRef.add("VmixR8", RefVmixR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R8 FAIL", MyTask);
+   }
    Err = ConfigVmixRef.add("VmixStr", RefVmixStr);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding string FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add(ConfigHmixRef);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding sub-config FAIL", MyTask);
+   }
    Err = ConfigOmegaRef.add(ConfigVmixRef);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding sub-config FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("VectorI4", RefVecI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I4 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("VectorI8", RefVecI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding I8 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("VectorR4", RefVecR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R4 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("VectorR8", RefVecR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding R8 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("VectorLog", RefVecLog);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding bool vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.add("StrList", RefList);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding string list FAIL", MyTask);
+   }
 
    // create the full root node
    Err = ConfigOmegaAll.add(ConfigOmegaRef);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: adding sub-config FAIL", MyTask);
+   }
 
    // Test retrievals by getting from the reference config and
    // checking against reference values.
@@ -223,6 +279,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0) {
       LOG_INFO("ConfigTest {}: Add/Get of subconfigs - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of subconfigs - FAIL", MyTask);
    }
 
@@ -239,6 +296,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of boolean vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of boolean vars - FAIL", MyTask);
    }
 
@@ -255,6 +313,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of I4 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of I4 vars - FAIL", MyTask);
    }
 
@@ -271,6 +330,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of I8 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of I8 vars - FAIL", MyTask);
    }
 
@@ -287,6 +347,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of R4 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of R4 vars - FAIL", MyTask);
    }
 
@@ -303,6 +364,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of R8 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of R8 vars - FAIL", MyTask);
    }
 
@@ -319,6 +381,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of string vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of string vars - FAIL", MyTask);
    }
 
@@ -332,6 +395,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of I4 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of I4 vector - FAIL", MyTask);
    }
 
@@ -344,6 +408,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of I8 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of I8 vector - FAIL", MyTask);
    }
 
@@ -356,6 +421,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of R4 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of R4 vector - FAIL", MyTask);
    }
 
@@ -368,6 +434,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of R8 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of R8 vector - FAIL", MyTask);
    }
 
@@ -380,6 +447,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of bool vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of bool vector - FAIL", MyTask);
    }
 
@@ -392,6 +460,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Add/Get of string list - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Add/Get of string list - FAIL", MyTask);
    }
 
@@ -416,61 +485,97 @@ int main(int argc, char *argv[]) {
    std::string NewVmixStr     = "VmixStringNew";
 
    Err = ConfigHmixDel2New.set("HmixDel2On", NewHmixDel2On);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set bool FAIL", MyTask);
+   }
    Err = ConfigHmixDel2New.set("HmixDel2I4", NewHmixDel2I4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I4 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2New.set("HmixDel2I8", NewHmixDel2I8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I8 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2New.set("HmixDel2R4", NewHmixDel2R4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R4 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2New.set("HmixDel2R8", NewHmixDel2R8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R8 FAIL", MyTask);
+   }
    Err = ConfigHmixDel2New.set("HmixDel2Str", NewHmixDel2Str);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set string FAIL", MyTask);
+   }
 
    Err = ConfigHmixNew.set("HmixOn", NewHmixOn);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set bool FAIL", MyTask);
+   }
    Err = ConfigHmixNew.set("HmixI4", NewHmixI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I4 FAIL", MyTask);
+   }
    Err = ConfigHmixNew.set("HmixI8", NewHmixI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I8 FAIL", MyTask);
+   }
    Err = ConfigHmixNew.set("HmixR4", NewHmixR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R4 FAIL", MyTask);
+   }
    Err = ConfigHmixNew.set("HmixR8", NewHmixR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R8 FAIL", MyTask);
+   }
    Err = ConfigHmixNew.set("HmixStr", NewHmixStr);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set string FAIL", MyTask);
+   }
 
    Err = ConfigVmixNew.set("VmixOn", NewVmixOn);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set bool FAIL", MyTask);
+   }
    Err = ConfigVmixNew.set("VmixI4", NewVmixI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I4 FAIL", MyTask);
+   }
    Err = ConfigVmixNew.set("VmixI8", NewVmixI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set I8 FAIL", MyTask);
+   }
    Err = ConfigVmixNew.set("VmixR4", NewVmixR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R4 FAIL", MyTask);
+   }
    Err = ConfigVmixNew.set("VmixR8", NewVmixR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set R8 FAIL", MyTask);
+   }
    Err = ConfigVmixNew.set("VmixStr", NewVmixStr);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: set string FAIL", MyTask);
+   }
 
    // Test logical retrievals
    Err1    = ConfigHmixNew.get("HmixOn", HmixOn);
@@ -482,6 +587,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of boolean vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of boolean vars - FAIL", MyTask);
    }
 
@@ -495,6 +601,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of I4 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of I4 vars - FAIL", MyTask);
    }
 
@@ -508,6 +615,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of I8 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of I8 vars - FAIL", MyTask);
    }
 
@@ -521,6 +629,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of R4 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of R4 vars - FAIL", MyTask);
    }
 
@@ -534,6 +643,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of R8 vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of R8 vars - FAIL", MyTask);
    }
 
@@ -547,6 +657,7 @@ int main(int argc, char *argv[]) {
    if (ErrAll == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of string vars - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of string vars - FAIL", MyTask);
    }
 
@@ -559,28 +670,39 @@ int main(int argc, char *argv[]) {
    RefList[2]   = "junk";
 
    Err = ConfigOmegaRef.set("VectorI4", RefVecI4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting I4 vector FAIL", MyTask);
-
+   }
    Err = ConfigOmegaRef.set("VectorI8", RefVecI8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting I8 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.set("VectorR4", RefVecR4);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting R4 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.set("VectorR8", RefVecR8);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting R8 vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.set("VectorLog", RefVecLog);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting bool vector FAIL", MyTask);
+   }
 
    Err = ConfigOmegaRef.set("StrList", RefList);
-   if (Err != 0)
+   if (Err != 0) {
+      RetVal += 1;
       LOG_INFO("Config test {}: setting string list FAIL", MyTask);
+   }
 
    // Test vector retrievals after set
    Err1    = ConfigOmegaRef.get("VectorI4", VecI4);
@@ -591,6 +713,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of I4 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of I4 vector - FAIL", MyTask);
    }
 
@@ -602,6 +725,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of I8 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of I8 vector - FAIL", MyTask);
    }
 
@@ -613,6 +737,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of R4 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of R4 vector - FAIL", MyTask);
    }
 
@@ -624,6 +749,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of R8 vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of R8 vector - FAIL", MyTask);
    }
 
@@ -635,6 +761,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of bool vector - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of bool vector - FAIL", MyTask);
    }
 
@@ -646,6 +773,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Set/Get of string list - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Set/Get of string list - FAIL", MyTask);
    }
 
@@ -680,6 +808,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: SubConfig add/get error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: SubConfig add/get error modes FAIL", MyTask);
    }
 
@@ -690,6 +819,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get bool error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get bool error modes FAIL", MyTask);
    }
 
@@ -700,6 +830,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get I4 error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get I4 error modes FAIL", MyTask);
    }
 
@@ -710,6 +841,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get I8 error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get I8 error modes FAIL", MyTask);
    }
 
@@ -720,6 +852,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get R4 error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get R4 error modes FAIL", MyTask);
    }
 
@@ -730,6 +863,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get R8 error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get R8 error modes FAIL", MyTask);
    }
 
@@ -740,6 +874,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: add/set/get string error modes PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: add/set/get string error modes FAIL", MyTask);
    }
 
@@ -748,6 +883,7 @@ int main(int argc, char *argv[]) {
    if (Err == 0) {
       LOG_INFO("ConfigTest {}: write successful PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: write successful FAIL", MyTask);
    }
 
@@ -756,6 +892,7 @@ int main(int argc, char *argv[]) {
    if (Err == 0) {
       LOG_INFO("ConfigTest {}: read successful PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: read successful FAIL", MyTask);
    }
 
@@ -776,6 +913,7 @@ int main(int argc, char *argv[]) {
       LOG_INFO("ConfigTest {}: retrieve subgroups from full config PASS",
                MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve subgroups from full config FAIL",
                MyTask);
    }
@@ -788,6 +926,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve bool from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve bool from full config FAIL", MyTask);
    }
 
@@ -799,6 +938,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve I4 from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve I4 from full config FAIL", MyTask);
    }
 
@@ -810,6 +950,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve I8 from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve I8 from full config FAIL", MyTask);
    }
 
@@ -821,6 +962,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve R4 from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve R4 from full config FAIL", MyTask);
    }
 
@@ -832,6 +974,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve R8 from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve R8 from full config FAIL", MyTask);
    }
 
@@ -843,6 +986,7 @@ int main(int argc, char *argv[]) {
    if (RefTest) {
       LOG_INFO("ConfigTest {}: retrieve string from full config PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: retrieve string from full config FAIL", MyTask);
    }
 
@@ -855,6 +999,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get I4 vector from full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get I4 vector from full config - FAIL", MyTask);
    }
 
@@ -866,6 +1011,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get I8 vector from full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get I8 vector from full config - FAIL", MyTask);
    }
 
@@ -877,6 +1023,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get R4 vector from full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get R4 vector from full config - FAIL", MyTask);
    }
 
@@ -888,6 +1035,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get R8 vector from full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get R8 vector from full config - FAIL", MyTask);
    }
 
@@ -899,6 +1047,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get bool vec from full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get bool vec from full config - FAIL", MyTask);
    }
 
@@ -910,6 +1059,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get string list full config - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get string list full config - FAIL", MyTask);
    }
 
@@ -945,6 +1095,7 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && RefTest) {
       LOG_INFO("ConfigTest {}: Get config list using iter - PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: Get config list using iter - FAIL", MyTask);
    }
 
@@ -965,6 +1116,7 @@ int main(int argc, char *argv[]) {
        Err6 == 0) {
       LOG_INFO("ConfigTest {}: removal call PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: removal call FAIL", MyTask);
    }
 
@@ -984,6 +1136,7 @@ int main(int argc, char *argv[]) {
        Err6 != 0 && Err == 0) {
       LOG_INFO("ConfigTest {}: variable removal test PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: variable removal test FAIL", MyTask);
    }
 
@@ -996,11 +1149,17 @@ int main(int argc, char *argv[]) {
    if (Err1 == 0 && Err2 == 0 && Err3 != 0) {
       LOG_INFO("ConfigTest {}: subconfig removal test PASS", MyTask);
    } else {
+      RetVal += 1;
       LOG_INFO("ConfigTest {}: subconfig removal test FAIL", MyTask);
    }
 
    // Finalize environments
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/

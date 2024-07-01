@@ -442,5 +442,10 @@ int main(int argc, char *argv[]) {
    Kokkos::finalize();
    MPI_Finalize();
 
+   if (TotErr >= 256)
+      TotErr = 255;
+
+   return TotErr;
+
 } // end of main
 //===-----------------------------------------------------------------------===/

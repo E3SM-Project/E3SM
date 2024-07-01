@@ -83,8 +83,10 @@ design/IOStreams
 design/Reductions
 design/ShallowWaterOmega0
 design/State
+design/AuxiliaryVariables
 design/TimeMgr
 design/Timers
+design/TimeStepping
 design/Tracers
 
 design/OmegaDesignTemplate

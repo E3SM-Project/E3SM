@@ -335,6 +335,9 @@ int main(int argc, char **argv) {
    Kokkos::finalize();
    MPI_Finalize();
 
+   if (Err >= 256)
+      Err = 255;
+
    // End of testing
    return Err;
 }
