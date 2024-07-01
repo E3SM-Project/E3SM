@@ -59,8 +59,7 @@ contains
     ! be present if atm_import is called during the runtime
     !------------------------------------------------------------------------
     if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
-       call iac_coupled_timeinterp (mon_spec, day_spec, tod_spec, & !in
-            bnd_beg, bnd_end, tfrac)                                !out
+       call iac_coupled_timeinterp (bnd_beg, bnd_end, tfrac)!out
     endif
 
 
