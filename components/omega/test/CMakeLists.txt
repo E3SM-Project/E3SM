@@ -197,6 +197,17 @@ add_omega_test(
 )
 
 ##################
+# Reductions test
+##################
+
+add_omega_test(
+    REDUCTIONS_TEST
+    testReductions.exe
+    base/ReductionsTest.cpp
+    "-n 2;--cpu-bind=cores"
+)
+
+##################
 # Kokkos test
 ##################
 
