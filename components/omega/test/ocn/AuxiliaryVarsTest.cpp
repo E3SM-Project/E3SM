@@ -11,6 +11,7 @@
 #include "OmegaKokkos.h"
 #include "auxiliaryVars/KineticAuxVars.h"
 #include "auxiliaryVars/LayerThicknessAuxVars.h"
+#include "auxiliaryVars/VelocityDel2AuxVars.h"
 #include "auxiliaryVars/VorticityAuxVars.h"
 #include "mpi.h"
 
@@ -47,6 +48,13 @@ struct TestSetupPlane {
    ErrorMeasures ExpectedNormPlanetVortEdgeErrors = {0.00223924332422219697,
                                                      0.0015382243254998785};
 
+   ErrorMeasures ExpectedDel2Errors        = {0.00113090174765806731,
+                                              0.00134324628763670241};
+   ErrorMeasures ExpectedDel2DivErrors     = {0.002495925826729385,
+                                              0.00249592582669975289};
+   ErrorMeasures ExpectedDel2RelVortErrors = {0.0104455692965114266,
+                                              0.0104135556263709097};
+
    KOKKOS_FUNCTION Real layerThickness(Real X, Real Y) const {
       return 2 + std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
    }
@@ -69,6 +77,23 @@ struct TestSetupPlane {
              std::sin(2 * Pi * Y / Ly);
    }
 
+   KOKKOS_FUNCTION Real velocityDel2X(Real X, Real Y) const {
+      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityX(X, Y);
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Y(Real X, Real Y) const {
+      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * velocityY(X, Y);
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Div(Real X, Real Y) const {
+      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) * divergence(X, Y);
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Curl(Real X, Real Y) const {
+      return -4 * Pi * Pi * (1 / (Lx * Lx) + 1 / (Ly * Ly)) *
+             relativeVorticity(X, Y);
+   }
+
    KOKKOS_FUNCTION Real planetaryVorticity(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
    }
@@ -89,6 +114,7 @@ struct TestSetupPlane {
 };
 
 struct TestSetupSphere {
+
    Real Radius = 6371220;
 
    ErrorMeasures ExpectedKineticEnergyErrors = {0.0143579382532765844,
@@ -113,6 +139,13 @@ struct TestSetupSphere {
    ErrorMeasures ExpectedNormPlanetVortEdgeErrors = {0.00495174534686814403,
                                                      0.000855432390947949515};
 
+   ErrorMeasures ExpectedDel2Errors        = {0.00360406641962622652,
+                                              0.00313406628499444213};
+   ErrorMeasures ExpectedDel2DivErrors     = {0.0177782108439020134,
+                                              0.00751922684420262138};
+   ErrorMeasures ExpectedDel2RelVortErrors = {0.0915578492503972413,
+                                              0.0246736311927726465};
+
    KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
    }
@@ -134,6 +167,43 @@ struct TestSetupSphere {
    KOKKOS_FUNCTION Real divergence(Real Lon, Real Lat) const {
       return std::sin(Lon) * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
              (20 * std::pow(std::sin(Lat), 2) - 6);
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2X(Real Lon, Real Lat) const {
+      return 1 / Radius *
+                 (std::pow(std::cos(Lon), 2) - std::pow(std::sin(Lon), 2)) *
+                 std::cos(Lat) * (20 * std::pow(std::sin(Lat), 2) - 6) +
+             4 / Radius * std::pow(cos(Lon), 2) *
+                 (std::pow(cos(Lat), 3) -
+                  2 * std::cos(Lat) * std::pow(sin(Lat), 2));
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Y(Real Lon, Real Lat) const {
+      return 1 / Radius * std::sin(Lon) * std::cos(Lon) * std::sin(Lat) *
+                 std::cos(Lat) * (80 * std::pow(std::cos(Lat), 2) - 28) +
+             8 / Radius * std::sin(Lon) * std::cos(Lon) * std::sin(Lat) *
+                 std::cos(Lat);
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Div(Real Lon, Real Lat) const {
+      return 1 / (Radius * Radius) *
+             (-2 * std::sin(Lon) * std::cos(Lon) *
+                  (28 * std::pow(sin(Lat), 2) - 8) +
+              std::sin(Lon) * std::cos(Lon) *
+                  ((std::pow(cos(Lat), 2) - 2 * std::pow(sin(Lat), 2)) *
+                       (80 * std::pow(cos(Lat), 2) - 20) -
+                   160 * std::pow(sin(Lat) * cos(Lat), 2)));
+   }
+
+   KOKKOS_FUNCTION Real velocityDel2Curl(Real Lon, Real Lat) const {
+      return 1 / (Radius * Radius) *
+             (-std::sin(Lat) * (std::pow(std::cos(Lat), 2) *
+                                    (56 * std::pow(cos(Lon), 2) - 40) -
+                                2 * (std::pow(cos(Lon), 2) *
+                                         (28 * std::pow(sin(Lat), 2) - 8) -
+                                     20 * std::pow(sin(Lat), 2) + 6)) +
+              std::sin(Lat) * (80 * std::pow(cos(Lat), 2) - 20) *
+                  (std::pow(cos(Lon), 2) - std::pow(sin(Lon), 2)));
    }
 
    KOKKOS_FUNCTION Real planetaryVorticity(Real Lon, Real Lat) const {
@@ -322,7 +392,6 @@ int testVorticityAuxVars(const Array2DReal &LayerThickCell,
 
    const auto Decomp = Decomp::getDefault();
    const auto Mesh   = HorzMesh::getDefault();
-
    VorticityAuxVars VorticityAux(Mesh, NVertLevels);
 
    // Compute exact results for vertex variables
@@ -433,6 +502,113 @@ int testVorticityAuxVars(const Array2DReal &LayerThickCell,
    return Err;
 }
 
+int testVelocityDel2AuxVars(Real RTol) {
+   TestSetup Setup;
+   int Err = 0;
+
+   const auto Decomp = Decomp::getDefault();
+   const auto Mesh   = HorzMesh::getDefault();
+   VelocityDel2AuxVars VelocityDel2Aux(Mesh, NVertLevels);
+
+   // Use analytical expressions to compute inputs
+
+   Array2DReal ExactVelocityDivCell("ExactVelocityDivCell", Mesh->NCellsSize,
+                                    NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.divergence(X, Y); },
+       ExactVelocityDivCell, Geom, Mesh, OnCell, NVertLevels);
+
+   Array2DReal ExactRelVortVertex("ExactRelVortVertex", Mesh->NVerticesSize,
+                                  NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.relativeVorticity(X, Y); },
+       ExactRelVortVertex, Geom, Mesh, OnVertex, NVertLevels);
+
+   // Compute exact Del2
+
+   Array2DReal ExactDel2Edge("ExactDel2Edge", Mesh->NEdgesOwned, NVertLevels);
+   Err += setVectorEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.velocityDel2X(X, Y);
+          VecField[1] = Setup.velocityDel2Y(X, Y);
+       },
+       ExactDel2Edge, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
+
+   // Compute numerical Del2
+
+   parallelFor(
+       {Decomp->NEdgesHaloH(1), NVertLevels},
+       KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          VelocityDel2Aux.computeVarsOnEdge(IEdge, KLevel, ExactVelocityDivCell,
+                                            ExactRelVortVertex);
+       });
+   const auto &NumDel2Edge = VelocityDel2Aux.Del2Edge;
+
+   // Compute error measures and check errors for Del2
+
+   ErrorMeasures Del2Errors;
+   Err += computeErrors(Del2Errors, NumDel2Edge, ExactDel2Edge, Mesh, OnEdge,
+                        NVertLevels);
+
+   Err += checkErrors("AuxVarsTest", "Del2", Del2Errors,
+                      Setup.ExpectedDel2Errors, RTol);
+
+   // Compute exact Del2Div
+
+   Array2DReal ExactDel2DivCell("ExactDel2DivCell", Mesh->NCellsOwned,
+                                NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.velocityDel2Div(X, Y); },
+       ExactDel2DivCell, Geom, Mesh, OnCell, NVertLevels, false);
+
+   // Compute numerical Del2Div
+
+   parallelFor(
+       {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
+          VelocityDel2Aux.computeVarsOnCell(ICell, KLevel);
+       });
+   const auto &NumDel2DivCell = VelocityDel2Aux.Del2DivCell;
+
+   // Compute error measures and check errors for Del2Div
+
+   ErrorMeasures Del2DivErrors;
+   Err += computeErrors(Del2DivErrors, NumDel2DivCell, ExactDel2DivCell, Mesh,
+                        OnCell, NVertLevels);
+   Err += checkErrors("AuxVarsTest", "Del2Div", Del2DivErrors,
+                      Setup.ExpectedDel2DivErrors, RTol);
+
+   // Compute exact Del2RelVort
+
+   Array2DReal ExactDel2RelVortVertex("ExactDel2RelVortVertex",
+                                      Mesh->NVerticesOwned, NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.velocityDel2Curl(X, Y); },
+       ExactDel2RelVortVertex, Geom, Mesh, OnVertex, NVertLevels, false);
+
+   // Compute numerical Del2RelVort
+
+   parallelFor(
+       {Mesh->NVerticesOwned, NVertLevels},
+       KOKKOS_LAMBDA(int IVertex, int KLevel) {
+          VelocityDel2Aux.computeVarsOnVertex(IVertex, KLevel);
+       });
+   const auto &NumDel2RelVortVertex = VelocityDel2Aux.Del2RelVortVertex;
+
+   // Compute error measures and check errors for Del2RelVort
+
+   ErrorMeasures Del2RelVortErrors;
+   Err += computeErrors(Del2RelVortErrors, NumDel2RelVortVertex,
+                        ExactDel2RelVortVertex, Mesh, OnVertex, NVertLevels);
+   Err += checkErrors("AuxVarsTest", "Del2RelVort", Del2RelVortErrors,
+                      Setup.ExpectedDel2RelVortErrors, RTol);
+
+   if (Err == 0) {
+      LOG_INFO("AuxVarsTest: VelocityDel2AuxVars PASS");
+   }
+
+   return Err;
+}
+
 //------------------------------------------------------------------------------
 // The initialization routine for aux vars testing
 int initAuxVarsTest(const std::string &mesh) {
@@ -499,8 +675,12 @@ int auxVarsTest(const std::string &mesh = DefaultMeshFile) {
    const Real RTol = sizeof(Real) == 4 ? 1e-2 : 1e-10;
 
    Err += testKineticAuxVars(LayerThickCell, NormalVelEdge, RTol);
+
    Err += testLayerThicknessAuxVars(LayerThickCell, NormalVelEdge, RTol);
+
    Err += testVorticityAuxVars(LayerThickCell, NormalVelEdge, RTol);
+
+   Err += testVelocityDel2AuxVars(RTol);
 
    if (Err == 0) {
       LOG_INFO("AuxVarsTest: Successful completion");

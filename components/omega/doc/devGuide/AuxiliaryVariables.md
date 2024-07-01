@@ -96,3 +96,6 @@ The following auxiliary variable groups are currently implemented:
 ||  NormPlanetVortVertex ||
 ||  NormRelVortEdge ||
 ||  NormPlanetVortEdge ||
+| VelocityDel2AuxVars |  Del2Edge ||
+||  Del2DivCell ||
+||  Del2RelVortVertex ||

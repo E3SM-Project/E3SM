@@ -24,3 +24,6 @@ The following auxiliary variables are currently available:
 | NormPlanetVortVertex | earth's rotational rate (Coriolis parameter, f) divided by layer thickness
 | NormRelVortEdge | curl of horizontal velocity divided by layer thickness, averaged from vertices to edges
 | NormPlanetVortEdge | earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges
+| VelDel2Edge | laplacian of horizontal velocity on edges
+| VelDel2DivCell | divergence of laplacian of horizontal velocity on cells
+| VelDel2RelVortVertex | curl of laplacian of horizontal velocity on cells
