@@ -106,7 +106,7 @@ OceanState::OceanState(
    // Register fields and metadata for IO
    defineIOFields();
 
-   // Copy host data to device
+   // Create device arrays and copy host data
    for (int I = 0; I < NTimeLevels; I++) {
       LayerThickness[I] = createDeviceMirrorCopy(LayerThicknessH[I]);
       NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);  

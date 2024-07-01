@@ -72,14 +72,14 @@ class OceanState {
 
    // Prognostic variables
 
-   Kokkos::Array<Array2DR8, MaxTimeLevels>
+   Kokkos::Array<Array2DReal, MaxTimeLevels>
        LayerThickness; ///< Device LayerThickness array
-   Kokkos::Array<HostArray2DR8, MaxTimeLevels>
+   Kokkos::Array<HostArray2DReal, MaxTimeLevels>
        LayerThicknessH; ///< Host LayerThickness array
 
-   Kokkos::Array<Array2DR8, MaxTimeLevels>
+   Kokkos::Array<Array2DReal, MaxTimeLevels>
        NormalVelocity; ///< Device NormalVelocity array
-   Kokkos::Array<HostArray2DR8, MaxTimeLevels>
+   Kokkos::Array<HostArray2DReal, MaxTimeLevels>
        NormalVelocityH; ///< Host NormalVelocity array
 
    // IOField names
