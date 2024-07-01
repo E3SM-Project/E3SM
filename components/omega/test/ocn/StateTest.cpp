@@ -72,6 +72,8 @@ int initStateTest() {
 //
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // Initialize the global MPI environment
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -107,6 +109,7 @@ int main(int argc, char *argv[]) {
       if (DefState) { // true if non-null ptr
          LOG_INFO("State: Default state retrieval PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: Default state retrieval FAIL");
       }
 
@@ -114,17 +117,9 @@ int main(int argc, char *argv[]) {
       if (TestState) { // true if non-null ptr
          LOG_INFO("State: Test state retrieval PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: Test state retrieval FAIL");
       }
-
-      // auto LayerThicknessH_0 = DefState->LayerThicknessH[0];
-      // auto LayerThicknessH_1 = DefState->LayerThicknessH[1];
-      // for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-      //    for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-      //       LOG_INFO(LayerThicknessH_0(Cell, Level));
-      //       LOG_INFO(LayerThicknessH_1(Cell, Level));
-      //    }
-      // }
 
       // Test that reasonable values have been read in for LayerThickness
       int count = 0;
@@ -144,7 +139,16 @@ int main(int argc, char *argv[]) {
       if (count == 0) {
          LOG_INFO("State: State read PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: State read FAIL");
+      }
+
+      // Initialize NormalVelocity values
+      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+         for (int Level = 0, Level < DefState->NVertLevels; Level++) {
+             DefState->NormalVelocityH[0](Cell, Level) = Edge;
+             TestState->NormalVelocityH[0](Cell, Level) = Edge;
+         }
       }
 
       // Test that initally the 0 time levels of the
@@ -161,9 +165,21 @@ int main(int argc, char *argv[]) {
          }
       }
 
+      auto NormalVelocityH_def  = DefState->NormalVelocityH[0];
+      auto NormalVelocityH_test = TestState->NormalVelocityH[0];
+      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+            if (NormalVelocityH_def(Edge, Level) !=
+                NormalVelocityH_test(Edge, Level)) {
+               count++;
+            }
+         }
+      }
+
       if (count == 0) {
          LOG_INFO("State: Default test state comparison PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: Default test state comparison FAIL");
       }
 
@@ -193,9 +209,32 @@ int main(int argc, char *argv[]) {
          }
       }
 
+      NormalVelocityH_def  = DefState->NormalVelocityH[1];
+      NormalVelocityH_test = TestState->NormalVelocityH[0];
+      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+            if (NormalVelocityH_def(Edge, Level) !=
+                NormalVelocityH_test(Edge, Level)) {
+               count++;
+            }
+         }
+      }
+
+      NormalVelocityH_def  = DefState->NormalVelocityH[0];
+      NormalVelocityH_test = TestState->NormalVelocityH[1];
+      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+            if (NormalVelocityH_def(Edge, Level) !=
+                NormalVelocityH_test(Edge, Level)) {
+               count++;
+            }
+         }
+      }
+
       if (count == 0) {
          LOG_INFO("State: time level update PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: time level update FAIL");
       }
 
@@ -226,9 +265,36 @@ int main(int argc, char *argv[]) {
           },
           count2);
 
-      if (count1 == 0 && count2 == 0) {
+      int count3;
+      auto NormalVelocity_def  = DefState->NormalVelocity[0];
+      auto NormalVelocity_test = TestState->NormalVelocity[1];
+      OMEGA::parallelReduce(
+          "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
+          KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
+             if (NormalVelocity_def(Edge, Level) !=
+                 NormalVelocity_test(Edge, Level)) {
+                Accum++;
+             }
+          },
+          count3);
+
+      int count4;
+      NormalVelocity_def  = DefState->NormalVelocity[1];
+      NormalVelocity_test = TestState->NormalVelocity[0];
+      OMEGA::parallelReduce(
+          "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
+          KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
+             if (NormalVelocity_def(Edge, Level) !=
+                 NormalVelocity_test(Edge, Level)) {
+                Accum++;
+             }
+          },
+          count4);
+
+      if (count1 == 0 && count2 == 0 && count3 == 0 && count4 == 0) {
          LOG_INFO("State: time level update (GPU) PASS");
       } else {
+         RetVal += 1;
          LOG_INFO("State: time level update (GPU) FAIL");
       }
 
@@ -245,6 +311,11 @@ int main(int argc, char *argv[]) {
    }
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/
