@@ -26,7 +26,7 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
   return gm;
 }
 
-TEST_CASE("atm_tend") {
+TEST_CASE("atm_backtend") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -37,8 +37,8 @@ TEST_CASE("atm_tend") {
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 25;
-  const int ngcols    = 25 * comm.size();
+  constexpr int nlevs = 7;
+  const int ngcols    = 2 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -62,8 +62,8 @@ TEST_CASE("atm_tend") {
   register_diagnostics();
 
   ekat::ParameterList params;
-  REQUIRE_THROWS(
-      diag_factory.create("AtmTendDiag", comm, params));  // No 'Field Name'
+  REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
+                                     params));  // No 'Tendency Name'
 
   Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
@@ -73,8 +73,8 @@ TEST_CASE("atm_tend") {
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
-  params.set<std::string>("Field Name", "qc");
-  auto diag = diag_factory.create("AtmTendDiag", comm, params);
+  params.set<std::string>("Tendency Name", "qc");
+  auto diag = diag_factory.create("AtmBackTendDiag", comm, params);
   diag->set_grids(gm);
   diag->set_required_field(qc);
   diag->initialize(t0, RunType::Initial);

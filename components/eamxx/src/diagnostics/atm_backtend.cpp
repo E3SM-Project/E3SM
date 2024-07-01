@@ -1,4 +1,4 @@
-#include "diagnostics/atm_tend.hpp"
+#include "diagnostics/atm_backtend.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
@@ -6,19 +6,19 @@
 
 namespace scream {
 
-AtmTendDiag::AtmTendDiag(const ekat::Comm &comm,
-                         const ekat::ParameterList &params)
+AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
+                                 const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("Field Name"),
-                   "Error! AtmTendDiag requires 'Field Name' in its "
+  EKAT_REQUIRE_MSG(params.isParameter("Tendency Name"),
+                   "Error! AtmBackTendDiag requires 'Tendency Name' in its "
                    "input parameters.\n");
 
-  m_name = m_params.get<std::string>("Field Name");
+  m_name = m_params.get<std::string>("Tendency Name");
 }
 
-std::string AtmTendDiag::name() const { return m_name + "_atm_tend"; }
+std::string AtmBackTendDiag::name() const { return m_name + "_atm_tend"; }
 
-void AtmTendDiag::set_grids(
+void AtmBackTendDiag::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
@@ -26,7 +26,7 @@ void AtmTendDiag::set_grids(
   add_field<Required>(m_name, gname);
 }
 
-void AtmTendDiag::initialize_impl(const RunType /*run_type*/) {
+void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &f   = get_field_in(m_name);
   const auto &fid = f.get_header().get_identifier();
   const auto &gn  = fid.get_grid_name();
@@ -34,13 +34,14 @@ void AtmTendDiag::initialize_impl(const RunType /*run_type*/) {
   // Sanity checks
   using namespace ShortFieldTagsNames;
   const auto &layout = fid.get_layout();
-  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType,
-                   "Error! AtmTendDiag only supports Real data type field.\n"
-                   " - field name: " +
-                       fid.name() +
-                       "\n"
-                       " - field data type: " +
-                       e2str(f.data_type()) + "\n");
+  EKAT_REQUIRE_MSG(
+      f.data_type() == DataType::RealType,
+      "Error! AtmBackTendDiag only supports Real data type field.\n"
+      " - field name: " +
+          fid.name() +
+          "\n"
+          " - field data type: " +
+          e2str(f.data_type()) + "\n");
 
   using namespace ekat::units;
   // The units are the same except per second
@@ -57,7 +58,14 @@ void AtmTendDiag::initialize_impl(const RunType /*run_type*/) {
   m_f_prev = Field(prev_fid);
   m_f_prev.allocate_view();
 }
-void AtmTendDiag::compute_diagnostic_impl() {
+
+void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
+  m_start_t   = start_of_step;
+  auto f_curr = get_field_in(m_name);
+  m_f_prev.deep_copy(f_curr);
+}
+
+void AtmBackTendDiag::compute_diagnostic_impl() {
   Real var_fill_value = constants::DefaultFillValue<Real>().value;
   std::int64_t dt;
 

@@ -20,7 +20,7 @@ set(DIAGNOSTIC_SRCS
   aodvis.cpp
   number_path.cpp
   aerocom_cld.cpp
-  atm_tend.cpp
+  atm_backtend.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

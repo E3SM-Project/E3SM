@@ -1377,13 +1377,13 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name) {
     diag_name = "VaporFlux";
     // split will return the list [X, ''], with X being whatever is before 'VapFlux'
     params.set<std::string>("Wind Component",ekat::split(diag_field_name,"VapFlux").front());
-  } else if (diag_field_name.find("_atm_tend")!=std::string::npos) {
-    diag_name = "AtmTendDiag";
+  } else if (diag_field_name.find("_atm_backtend")!=std::string::npos) {
+    diag_name = "AtmBackTendDiag";
     // TODO: not sure if this is needed? Can skip, but what to do inside diag?
     // Set the grid_name
     params.set("grid_name",get_field_manager("sim")->get_grid()->name());
     // split will return [X, ''], with X being whatever is before '_atm_tend'
-    params.set<std::string>("Tend Name",ekat::split(diag_field_name,"_atm_tend").front());
+    params.set<std::string>("Tendency Name",ekat::split(diag_field_name,"_atm_backtend").front());
   } else if (diag_field_name=="PotentialTemperature" or
              diag_field_name=="LiqPotentialTemperature") {
     diag_name = "PotentialTemperature";
