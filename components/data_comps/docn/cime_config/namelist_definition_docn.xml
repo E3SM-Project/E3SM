@@ -657,4 +657,17 @@
     </values>
   </entry>
 
+  <entry id="aqua_sst_global_pert" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      Value of globally uniform perturbation to be added to aquaplanet
+      SST (K) field for idealized Cess sensitivity experiments.
+    </desc>
+    <values>
+      <value>0.0</value>
+    </values>
+  </entry>
+
 </entry_id>

@@ -98,6 +98,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             value = ['null']
             nmlgen.set_value("streams",value)
 
+    # nmlgen.set_value("aqua_sst_global_pert",value)
+
     # globally uniform SST mode
     if docn_mode=='sst_aquap_constant':
         value = ['null']

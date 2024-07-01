@@ -101,7 +101,23 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L72_c190919.nc</ncdata>
 
+<!-- aqua grid sensitivity ensemble -->
 
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne30np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne45np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne60np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne90np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne90np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne120np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne180np4" nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne180np4_L72_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="72"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne240np4_L72_c20240607.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne30np4"  nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne30np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne45np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne60np4"  nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne60np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne90np4"  nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne90np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne120np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne180np4" nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne180np4_L80_c20240607.nc</ncdata>
+<ncdata dyn="se" hgrid="ne240np4" nlev="80"  aquaplanet="1" ic_ymd="101" >eam_i_aquaplanet_ne240np4_L80_c20240607.nc</ncdata>
 
 <!-- ******************************************* -->
 <!-- Regionally Refined Initial Conditions (RRM) -->

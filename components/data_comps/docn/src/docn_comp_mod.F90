@@ -29,6 +29,7 @@ module docn_comp_mod
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
   use docn_shr_mod   , only: sst_constant_value ! namelist input
+  use docn_shr_mod   , only: aqua_sst_global_pert ! namelist input
   use docn_shr_mod   , only: nullstr
 
 #ifdef HAVE_MOAB
@@ -1173,6 +1174,10 @@ CONTAINS
           end if
        end do
     end if
+
+    do i = 1, lsize
+       sst(i) = sst(i) + aqua_sst_global_pert
+    end do
 
   end subroutine prescribed_sst
 

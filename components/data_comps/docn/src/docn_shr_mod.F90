@@ -35,6 +35,7 @@ module docn_shr_mod
   character(CL) , public :: datamode              ! mode
   integer(IN)   , public :: aquap_option
   real(R8)      , public :: sst_constant_value
+  real(R8)      , public :: aqua_sst_global_pert
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -77,7 +78,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / &
-         decomp, restfilm, restfils, force_prognostic_true, sst_constant_value
+         decomp, restfilm, restfils, force_prognostic_true, sst_constant_value, aqua_sst_global_pert
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -110,12 +111,14 @@ CONTAINS
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
        write(logunit,*)  ' sst_constant_value    = ',sst_constant_value
+       write(logunit,*)  ' aqua_sst_global_pert  = ',aqua_sst_global_pert
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
     call shr_mpi_bcast(sst_constant_value   ,mpicom,'sst_constant_value')
+    call shr_mpi_bcast(aqua_sst_global_pert ,mpicom,'aqua_sst_global_pert')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
