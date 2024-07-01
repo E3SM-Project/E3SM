@@ -25,9 +25,7 @@ module ocn_init_ssh_and_landIcePressure
    use mpas_io_units
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
 
-   use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
 

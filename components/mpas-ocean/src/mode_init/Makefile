@@ -2,7 +2,9 @@
 
 OBJS = mpas_ocn_init_mode.o
 
-UTILS = mpas_ocn_init_spherical_utils.o \
+UTILS = shr_kind_mod.o \
+        shr_const_mod.o \
+        mpas_ocn_init_spherical_utils.o \
         mpas_ocn_init_vertical_grids.o \
         mpas_ocn_init_cell_markers.o \
         mpas_ocn_init_interpolation.o \
