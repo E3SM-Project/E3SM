@@ -1,10 +1,9 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_p3_rrtmgp_output
+iotype: default
 Averaging Type: Instant
-Max Snapshots Per File: 744 # One output every 31 days
-#remap_file: /g/g17/donahue5/Code/e3sm/scream-docs/regional_output_sites/20221123_ARM_sites_map.nc
-remap_file: /usr/gdata/e3sm/ccsm3data/inputdata/atm/scream/maps/map_ne30np4_to_ne4pg2_mono.20220714.nc
+Max Snapshots Per File: 1
 Fields:
   Physics GLL:
     Field Names:

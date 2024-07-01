@@ -21,6 +21,7 @@ using view_2d       = typename KT::template view_2d<Real>;
 using view_3d       = typename KT::template view_3d<Real>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
+using const_view_3d = typename KT::template view_3d<const Real>;
 
 using complex_view_3d = typename KT::template view_3d<Kokkos::complex<Real>>;
 using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
@@ -261,7 +262,6 @@ struct WetAtmosphere {
   const_view_2d nc;      // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi;      // wet cloud ice water mass mixing ratio [kg cloud ice water / kg moist air]
   const_view_2d ni;      // wet cloud ice water number mixing ratio [# / kg moist air]
-  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -279,11 +279,12 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
-  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
+  const_view_2d p_int;     // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
   const_view_1d phis;      // surface geopotential [m2/s2]
+  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
@@ -598,9 +599,12 @@ void compute_vertical_layer_heights(const Team& team,
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
-  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, dz);
+  // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
+  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
+            dz);//output
   team.team_barrier();
-  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
+  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
+   z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
 }
@@ -619,8 +623,9 @@ void compute_updraft_velocities(const Team& team,
   constexpr int nlev = mam4::nlev;
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
-    const auto rho = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
-    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
+    dry_atm.dz(i,k) = PF::calculate_dz(dry_atm.p_del(i,k), dry_atm.p_mid(i,k), dry_atm.T_mid(i,k), wet_atm.qv(i,k));
+    const auto rho  = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
+    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(dry_atm.omega(i,k), rho);
   });
 }
 
@@ -718,6 +723,23 @@ void compute_wet_mixing_ratios(const Team& team,
     }
   });
 }
+
+// Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
+// "packs". Following function copies a 2d view till model levels
+inline
+void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
+                         const_view_2d &inp_view,             //input view to copy
+                         const int dim,                       //dimension till view should be copied
+                         view_2d &out_view) {                 //output view
+
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [&](int kk) {
+          out_view(icol, kk) = inp_view(icol, kk);
+        });
+      });
+ }
 
 // Because CUDA C++ doesn't allow us to declare and use constants outside of
 // KOKKOS_INLINE_FUNCTIONS, we define this macro that allows us to (re)define
@@ -829,7 +851,6 @@ void convert_work_arrays_to_vmr(const Real q[gas_pcnst()],
       vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
       vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
     } else {
-      int m = static_cast<int>(mode_index);
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
         const Real mw = mam4::aero_species(a).molecular_weight;
@@ -862,7 +883,6 @@ void convert_work_arrays_to_mmr(const Real vmr[gas_pcnst()],
       q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
       qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
     } else {
-      int m = static_cast<int>(mode_index);
       if (aero_id != NoAero) { // constituent is an aerosol species
         int a = aerosol_index_for_mode(mode_index, aero_id);
         const Real mw = mam4::aero_species(a).molecular_weight;
