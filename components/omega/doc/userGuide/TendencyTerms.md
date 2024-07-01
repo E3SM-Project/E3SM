@@ -1,7 +1,7 @@
 (omega-user-tend-terms)=
 
 # Tendency Terms
- 
+
 Tendencies for updating state variables are computed using functors, which are
 class objects that can be called like functions. These functors are used within
 Kokkos parallel loops to compute the full tendency arrays. The following
