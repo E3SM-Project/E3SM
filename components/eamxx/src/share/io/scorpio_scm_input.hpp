@@ -34,6 +34,12 @@ public:
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
   }
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+  void create_closest_col_info (double target_lat, double target_lon);
 protected:
 
   struct ClosestColInfo {
@@ -44,7 +50,6 @@ protected:
   };
 
   void create_io_grid ();
-  void create_closest_col_info (double target_lat, double target_lon);
   void init_scorpio_structures ();
   void set_decompositions();
 
