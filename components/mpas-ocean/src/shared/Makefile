@@ -143,7 +143,7 @@ mpas_ocn_tracer_advection_std.o: mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_trac
 
 mpas_ocn_tracer_advection_vert.o: mpas_ocn_mesh.o mpas_ocn_config.o
 
-mpas_ocn_tracer_advection_shared.o: mpas_ocn_mesh.o mpas_ocn_config.o
+mpas_ocn_tracer_advection_shared.o: mpas_ocn_constants.o mpas_ocn_mesh.o mpas_ocn_config.o
 
 mpas_ocn_tracer_hmix_redi.o: mpas_ocn_constants.o mpas_ocn_config.o
 

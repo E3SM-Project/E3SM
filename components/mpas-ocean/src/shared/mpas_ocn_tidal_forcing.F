@@ -243,8 +243,8 @@ contains
         ! compute the tidalHeight
         if (trim(config_tidal_forcing_model) == 'monochromatic') then
           tidalHeight = config_tidal_forcing_monochromatic_amp * &
-            SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim - &
-            pii*config_tidal_forcing_monochromatic_phaseLag/180.0_RKIND) - &
+            SIN(2.0_RKIND*pi/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim - &
+            pi*config_tidal_forcing_monochromatic_phaseLag/180.0_RKIND) - &
             config_tidal_forcing_monochromatic_baseline
         elseif (trim(config_tidal_forcing_model) == 'linear') then
            tidalHeight = max(config_tidal_forcing_linear_min, &
