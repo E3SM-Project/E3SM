@@ -87,7 +87,7 @@ One might argue that the tracer equation could use $h^{n+1}$ in the right-hand-s
 
 ### 3.2 Other Schemes
 
-If time permits, other schemes will be added and tested. This includes the four-stage Runge-Kutta (RK4) for direct comparison to MPAS-Ocean. Another possibility is second-order Adams-Bashforth (AB2) which was implemented in MPAS-Ocean. Including multiple time-stepping schemes allows developers to test the modularity requirement above.
+If time permits, other schemes will be added and tested. This includes the four-stage Runge-Kutta (RK4) for direct comparison to MPAS-Ocean. Other possibilities are the second-order Adams-Bashforth (AB2) which was implemented in MPAS-Ocean and the Heun's method (RK2). Including multiple time-stepping schemes allows developers to test the modularity requirement above.
 
 ## 4 Design
 
