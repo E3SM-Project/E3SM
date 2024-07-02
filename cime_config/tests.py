@@ -583,20 +583,20 @@ _TESTS = {
         "share"    : True,
         "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P320.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P480.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P640.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P960.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P1280.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P320.T62_IcoswISC30E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P480.T62_IcoswISC30E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P640.T62_IcoswISC30E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P960.T62_IcoswISC30E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P1280.T62_IcoswISC30E3r5.GMPAS-IAF.bench-gmpas_noio",
                  )
     },
     "e3sm_bench_lores_f" : {
         "share"    : True,
         "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P1350.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P2700.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P5400.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P1350.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-bench-noio",
+                 "PFS_P2700.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-bench-noio",
+                 "PFS_P5400.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_lores" : {
@@ -604,9 +604,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
         "time"    : "03:00:00",
         "tests"   : (
-                 "PFS_PS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PM.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PL.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PM.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PL.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.bench-wcycl-lores",
                  )
     },
     "e3sm_bench_all" : {
