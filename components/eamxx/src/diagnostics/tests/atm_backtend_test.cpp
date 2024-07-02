@@ -43,7 +43,7 @@ TEST_CASE("atm_backtend") {
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
 
-  // Input (randomized) qc, nc
+  // Input (randomized) qc
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
   FieldIdentifier qc_fid("qc", scalar2d_layout, kg / kg, grid->name());
 
@@ -88,21 +88,27 @@ TEST_CASE("atm_backtend") {
   some_field.deep_copy(var_fill_value);
   REQUIRE(views_are_equal(diag_f, some_field));
 
-  some_field.deep_copy(qc);
+  const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
 
-  util::TimeStamp t1({2024, 1, 2}, {0, 0, 0});  // a day later
-  const Real a_day = 24.0 * 60.0 * 60.0;        // seconds
-  qc.get_header().get_tracking().update_time_stamp(t1);
-  randomize(qc, engine, pdf);
+  constexpr int ntests = 10;
 
-  // Run diag again
-  diag->compute_diagnostic();
-  some_field.update(qc, 1.0 / a_day, -1.0 / a_day);
-  REQUIRE(views_are_equal(diag_f, some_field));
+  for(int itest = 2; itest < ntests; itest++) {
+    // Run diag again
+    some_field.deep_copy(qc);
 
-  // This should fail (return false):
-  some_field.update(qc, 1.0 / a_day, -1.0 / a_day);
-  REQUIRE_FALSE(views_are_equal(diag_f, some_field));
+    diag->init_timestep(t0);
+
+    util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});  // a day later
+    qc.get_header().get_tracking().update_time_stamp(t1);
+    randomize(qc, engine, pdf);
+
+    diag->compute_diagnostic();
+    some_field.update(qc, 1.0 / a_day, -1.0 / a_day);
+    REQUIRE(views_are_equal(diag_f, some_field));
+
+    // reset t0 to t1 to keep iterating...
+    t0 = t1;
+  }
 }
 
 }  // namespace scream

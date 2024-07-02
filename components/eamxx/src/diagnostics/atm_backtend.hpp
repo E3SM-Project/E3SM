@@ -43,9 +43,6 @@ class AtmBackTendDiag : public AtmosphereDiagnostic {
   // Store the previous field
   Field m_f_prev;
 
-  // Store the timestamp of the start of the timestep
-  util::TimeStamp m_start_t;
-
 };  // class AtmBackTendDiag
 
 }  // namespace scream

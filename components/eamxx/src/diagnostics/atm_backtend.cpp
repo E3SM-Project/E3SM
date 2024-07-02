@@ -59,9 +59,9 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 }
 
 void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
-  m_start_t          = start_of_step;
   const auto &f_curr = get_field_in(m_name);
   m_f_prev.deep_copy(f_curr);
+  m_f_prev.get_header().get_tracking().update_time_stamp(start_of_step);
 }
 
 void AtmBackTendDiag::compute_diagnostic_impl() {
@@ -83,8 +83,6 @@ void AtmBackTendDiag::compute_diagnostic_impl() {
     // yet, so fill with an invalid value
     m_diagnostic_output.deep_copy(var_fill_value);
   }
-  m_f_prev.deep_copy(f);
-  m_f_prev.get_header().get_tracking().update_time_stamp(curr_ts);
 }
 
 }  // namespace scream
