@@ -1,4 +1,4 @@
-# Performance CMake Cache File for Weaver (IBM POWER 9 & NVIDIA TESLA V100s)
+# Bit-For-Bit Testing CMake Cache File for Weaver (IBM POWER 9 & NVIDIA TESLA V100s)
 # Skyler Ruiter -- 5/30/24
 #
 #  Module list that worked for this cache file (throw into a script load-weaver)
@@ -21,7 +21,7 @@ EXECUTE_PROCESS(COMMAND nf-config --prefix
   ERROR_VARIABLE  NFCONFIG_ERROR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "") # NEEDED
+SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
 
 EXECUTE_PROCESS(COMMAND nc-config --prefix
   RESULT_VARIABLE NCCONFIG_RESULT
@@ -33,6 +33,8 @@ SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "") # NEEDED
 
 # TPL settings
 #SET (PnetCDF_PATH /projects/ppc64le-pwr9-rhel8/tpls/parallel-netcdf/1.12.3/gcc/11.3.0/openmpi/4.1.4/pp6jcjk CACHE FILEPATH "")
+
+# disable CPRNC and compile locally (make -j1 cprnc) otherwise ctest fails (why??)
 #SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
 
 # Compilers
@@ -48,23 +50,23 @@ SET (CMAKE_CXX_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/extern
 ############################################
 
 # Flag settings
-SET (CMAKE_C_FLAGS "-w" CACHE STRING "") # disable warnings
-SET (ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
-SET (ADD_Fortran_FLAGS " -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
+SET (CMAKE_C_FLAGS " -w" CACHE STRING "") # disable warnings
+SET (ADD_CXX_FLAGS " --fmad=false -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
+SET (ADD_Fortran_FLAGS " -ffp-contract=off -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
 SET (CMAKE_EXE_LINKER_FLAGS "-ldl -lopenblas" CACHE STRING "")
-SET (OPT_FLAGS "-O3" CACHE STRING "")
+SET (OPT_FLAGS "-O0" CACHE STRING "")
 SET (DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
-SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")                 # Allow MPI on device
-#SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
-SET (BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "") 	# Buidling without Parallel IO Lib
+SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")			# Allow MPI on device
+SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
+SET (BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")	# Buidling without Parallel IO Lib
 SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
 SET (USE_QUEUING FALSE CACHE BOOL "")				# Use queing or not
 SET (USE_TRILINOS OFF CACHE BOOL "")				# Use trilinos or not
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")			# Use parallel netcdf
-SET (USE_NUM_PROCS 2 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
+SET (USE_NUM_PROCS 1 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
 SET (HAVE_EXTRAE TRUE CACHE BOOL "")				# 
 SET (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")			# Use column orientation for openmp
 SET (ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")			# Use horizontal orientation for openmp
@@ -72,7 +74,8 @@ SET (HOMMEXX_EXEC_SPACE "CUDA" CACHE STRING "")			# Define the execution space f
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")		# Cuda warps per team setting
 #SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")		# Build preqx with kokkos
 SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")		# Build theta with kokkos
-SET (HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")			# Enabling compose
+SET (HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")			# Enabling compose (SL tracers)
+SET(HOMME_TESTING_PROFILE "dev" CACHE STRING "")
 
 # Kokkos settings
 SET (ENABLE_OPENMP FALSE CACHE BOOL "")				# 
