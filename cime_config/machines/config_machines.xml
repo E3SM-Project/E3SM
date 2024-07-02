@@ -1766,8 +1766,8 @@
         <command name="load">netlib-lapack</command>
         <command name="load">openblas</command>
         <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
+        <!--command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command-->
       </modules>
 
       <modules compiler="intel">
@@ -1781,8 +1781,8 @@
         <command name="load">parallel-netcdf</command>
         <command name="load">hdf5</command>
         <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
+        <!--command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command-->
       </modules>
 
       <!--modules>
@@ -1880,8 +1880,8 @@
         <command name="load">netlib-lapack</command>
         <command name="load">openblas</command>
         <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
+        <!--command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command-->
       </modules>
 
       <modules compiler="intel">
@@ -1895,8 +1895,8 @@
         <command name="load">gcc</command>
         <command name="load">gcc-runtime/7.5.0-gcc__7.5.0</command>
         <command name="load">cmake</command>
-        <command name="load">perl</command>
-        <command name="load">perl-xml-libxml</command>
+        <!--command name="load">perl</command>
+        <command name="load">perl-xml-libxml</command-->
       </modules>
 
       <!--modules>
