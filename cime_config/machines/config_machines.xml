@@ -1750,16 +1750,9 @@
       <cmd_path lang="csh">module</cmd_path>
 
       <modules>
-        <command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen</command>
-        <command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen3</command>
-        <command name="unload">gcc</command>
-        <command name="unload">openmpi</command>
-        <command name="unload">binutils</command>
-        <command name="unload">netlib-lapack</command>
-        <command name="unload">openblas</command>
-        <command name="unload">hdf5</command>
-        <command name="unload">netcdf-c</command>
-        <command name="unload">parallel-netcdf</command>
+        <!--command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen</command>
+        <command name="use">/apps/spack/share/spack/modules/linux-opensuse15-zen3</command-->
+        <command name="purge"/>
       </modules>
 
       <modules compiler="gnu">
