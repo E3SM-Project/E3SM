@@ -1831,11 +1831,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{BASE}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{BASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{EBASE}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{EBASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{BASE}/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{BASE}/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{EBASE}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{EBASE}/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -1946,11 +1946,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{BASE}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{BASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{EBASE}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{EBASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{BASE}/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{BASE}/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{EBASE}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{EBASE}/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
