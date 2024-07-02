@@ -64,33 +64,71 @@ void MAMWetscav::set_grids(
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst = m_grid->get_2d_vector_layout(pcnst, "pcnst");
-  // -------------------------------------------------------------------------------------------------------------------------
+
+  // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
-  add_field<Required>("T_mid", scalar3d_mid, K,
-                      grid_name);  // temperature [K]
-  add_field<Required>("p_mid", scalar3d_mid, Pa,
-                      grid_name);  // pressure at mid points in [Pa
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa,
-                      grid_name);  // pseudo density in [Pa]
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name,
-                      "tracers");  // liquid cloud water [kg/kg] wet
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name,
-                      "tracers");  // ice cloud water [kg/kg] wet
-  add_field<Required>("p_int", scalar3d_int, Pa,
-                      grid_name);  // total pressure
+  // --------------------------------------------------------------------------
+
+  // ----------- Atmospheric quantities -------------
+  // Specific humidity [kg/kg]
+  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+
+  // cloud liquid mass mixing ratio [kg/kg]
+  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+
+  // cloud ice mass mixing ratio [kg/kg]
+  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
+
+  // cloud liquid number mixing ratio [1/kg]
+  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
+
+  // cloud ice number mixing ratio [1/kg]
+  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
+
+  // Temperature[K] at midpoints
+  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
+
+  // Vertical pressure velocity [Pa/s] at midpoints
+  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
+
+  // Total pressure [Pa] at midpoints
+  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
+
+  // Total pressure [Pa] at interfaces
+  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
+
+  // Layer thickness(pdel) [Pa] at midpoints
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
+
+  // planetary boundary layer height
+  add_field<Required>("pbl_height", scalar2d, m, grid_name);
+
+  //----------- Variables from microphysics scheme -------------
+
+  // Evaporation from stratiform rain [kg/kg/s] (FIXME: Get it from P3)
+  add_field<Required>("evapr", scalar3d_mid, kg / kg / s, grid_name);
+
+  // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
+  add_field<Updated>("prain", scalar3d_mid, kg / kg / s, grid_name);
 
   // For variables that are non dimensional (e.g., fractions etc.)
   static constexpr auto nondim = Units::nondimensional();
+
+  //----------- Variables from macrophysics scheme -------------
+
+  // Total cloud fraction [fraction]
+  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+
+  //----------- Variables from convective scheme -------------
+
+  // Following variables are from convective parameterization (not implemented
+  // yet in EAMxx), so should be zero for now
 
   // Deep convective cloud fraction [fraction]
   add_field<Required>("dp_frac", scalar3d_mid, nondim, grid_name);
 
   // Shallow convective cloud fraction [fraction] //NOT updated
   add_field<Required>("sh_frac", scalar3d_mid, nondim, grid_name);
-
-  // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   add_field<Required>("evapcsh", scalar3d_mid, kg / kg / s, grid_name);
@@ -110,26 +148,6 @@ void MAMWetscav::set_grids(
   // In cloud water mixing ratio, shallow convection [kg/kg]
   add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
 
-  // evaporation from stratiform rain [kg/kg/s]
-  // FIXME: Get it from P3
-  add_field<Required>("evapr", scalar3d_mid, kg / kg / s, grid_name);
-
-  // -------------------------------------------------------------------------------------------------------------------------
-  // These variables are "updated" or inputs/outputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
-
-  // -- Input variables that exists in PBUF in EAM (in wetdep.F90) in the
-  // "inputs" data structure
-
-  // FIXME: we do not need qme
-  // add_field<Required>(
-  //     "qme", scalar3d_mid, kg / kg / s,
-  //     grid_name);  // net condensation/evaporation of cloud water [kg/kg/s]
-  add_field<Updated>("prain", scalar3d_mid, kg / kg / s,
-                     grid_name);  // stratiform rain production rate [kg/kg/s]
-
-  // -- Input variables that exists in PBUF in EAM (in wetdep.F90)
-
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -137,48 +155,37 @@ void MAMWetscav::set_grids(
   // -- surface fluxes (input/outpts) for the coupler's cam_out data struture
   // for the land model
   static constexpr auto m2 = m * m;
-  add_field<Updated>(
-      "bcphiwet", scalar3d_mid, kg / m2 / s,
-      grid_name);  // wet deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>(
-      "bcphidry", scalar3d_mid, kg / m2 / s,
-      grid_name);  // dry deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>(
-      "ocphiwet", scalar3d_mid, kg / m2 / s,
-      grid_name);  // wet deposition of hydrophilic organic carbon [kg/m2/s]
-  add_field<Updated>(
-      "ocphidry", scalar3d_mid, kg / m2 / s,
-      grid_name);  // dry deposition of hydrophilic organic carbon [kg/m2/s]
 
-  add_field<Updated>("dstwet1", scalar3d_mid, kg / m2 / s,
-                     grid_name);  // wet deposition of dust (bin1) [kg/m2/s]
-  add_field<Updated>("dstwet2", scalar3d_mid, kg / m2 / s,
-                     grid_name);  // wet deposition of dust (bin2) [kg/m2/s]
-  add_field<Updated>("dstwet3", scalar3d_mid, kg / m2 / s,
-                     grid_name);  // wet deposition of dust (bin3) [kg/m2/s]
-  add_field<Updated>("dstwet4", scalar3d_mid, kg / m2 / s,
-                     grid_name);  // wet deposition of dust (bin4) [kg/m2/s]
+  // Wet deposition of hydrophilic black carbon [kg/m2/s]
+  add_field<Updated>("bcphiwet", scalar3d_mid, kg / m2 / s, grid_name);
 
-  // -- input/ouputs from PBUF for updating particle size and water uptake by
-  // particles
-  static constexpr auto m3 = m2 * m;
-  add_field<Updated>("dgncur_a", scalar3d_mid_nmodes, m,
-                     grid_name);  // aerosol dry particle diameter [m]
-  add_field<Updated>("wetdens", scalar3d_mid_nmodes, kg / m3,
-                     grid_name);  // wet aerosol density [kg/m3]
-  add_field<Updated>("qaerwat", scalar3d_mid_nmodes, kg / kg,
-                     grid_name);  // aerosol water [kg/kg]
-  //
-  add_field<Updated>("dgnumwet", scalar3d_mid_nmodes, m,
-                     grid_name);  // wet aerosol diameter [m]
-  add_field<Updated>("fracis", scalar3d_mid, nondim,
-                     grid_name);  // fraction of transported species that are
-                                  // insoluble [fraction]
+  // Dry deposition of hydrophilic black carbon [kg/m2/s]
+  add_field<Updated>("bcphidry", scalar3d_mid, kg / m2 / s, grid_name);
 
-  // -- interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // Wet deposition of hydrophilic organic carbon [kg/m2/s]
+  add_field<Updated>("ocphiwet", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Dry deposition of hydrophilic organic carbon [kg/m2/s]
+  add_field<Updated>("ocphidry", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Wet deposition of dust (bin1) [kg/m2/s]
+  add_field<Updated>("dstwet1", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Wet deposition of dust (bin2) [kg/m2/s]
+  add_field<Updated>("dstwet2", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Wet deposition of dust (bin3) [kg/m2/s]
+  add_field<Updated>("dstwet3", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Wet deposition of dust (bin4) [kg/m2/s]
+  add_field<Updated>("dstwet4", scalar3d_mid, kg / m2 / s, grid_name);
+
+  // Interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  // -- NOTE: Interstitial aerosols are updated in the interface using the
+
+  // NOTE: Interstitial aerosols are updated in the interface using the
   // "tendencies" from the wetscavenging process
+
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name =
@@ -228,6 +235,20 @@ void MAMWetscav::set_grids(
                        "tracers");
   }
 
+  static constexpr auto m3 = m2 * m;
+  add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m,
+                      grid_name);  // aerosol dry particle diameter [m]
+  add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3,
+                      grid_name);  // wet aerosol density [kg/m3]
+  add_field<Computed>("qaerwat", scalar3d_mid_nmodes, kg / kg,
+                      grid_name);  // aerosol water [kg/kg]
+  //
+  add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m,
+                      grid_name);  // wet aerosol diameter [m]
+  add_field<Computed>("fracis", scalar3d_mid, nondim,
+                      grid_name);  // fraction of transported species that are
+                                   // insoluble [fraction]
+
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     std::string ptend_gas_name =
@@ -261,14 +282,6 @@ void MAMWetscav::set_grids(
   static constexpr auto s2 = s * s;
   add_field<Required>("phis", scalar2d, m2 / s2,
                       grid_name);  // surface geopotential
-  add_field<Required>("qv", scalar3d_mid, q_unit,
-                      grid_name);  // specific humidity
-  add_field<Required>("nc", scalar3d_mid, n_unit,
-                      grid_name);  // cloud water number conc
-  add_field<Required>("ni", scalar3d_mid, n_unit,
-                      grid_name);  // cloud ice number conc
-  add_field<Required>("omega", scalar3d_mid, Pa / s,
-                      grid_name);  // vertical pressure velocity
 
   // FIXME: units
   add_field<Updated>("dlf", scalar3d_mid, kg / kg / s,
