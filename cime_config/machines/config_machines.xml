@@ -2594,16 +2594,16 @@
         <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/9.2.0-ugetvbp</command>
-        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
+        <command name="load">gcc/11.2.0-bgddrif</command>
+        <command name="load">intel-oneapi-mkl/2022.1.0-w4kgsn4</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.1.3-sxfyy4k</command>
-        <command name="load">hdf5/1.10.7-j3zxncu</command>
-        <command name="load">netcdf-c/4.4.1-7ohuiwq</command>
-        <command name="load">netcdf-cxx/4.2-tkg465k</command>
-        <command name="load">netcdf-fortran/4.4.4-k2zu3y5</command>
-        <command name="load">parallel-netcdf/1.11.0-mirrcz7</command>
+        <command name="load">openmpi/4.1.6-ggebj5o</command>
+        <command name="load">hdf5/1.10.7-ol6xuae</command>
+        <command name="load">netcdf-c/4.4.1-2njo6xx</command>
+        <command name="load">netcdf-cxx/4.2-7pdzqua</command>
+        <command name="load">netcdf-fortran/4.4.4-52c6oqi</command>
+        <command name="load">parallel-netcdf/1.11.0-d7h4ysd</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
