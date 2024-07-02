@@ -12,9 +12,7 @@
 # simply setting ${Package}_ROOT in their shell.
 
 # If using albany or trilinos, we should already have kokkos
-if (USE_ALBANY)
-  find_package(Albany REQUIRED)
-elseif(USE_TRILINOS)
+if(USE_TRILINOS)
   find_package(Trilinos REQUIRED)
 elseif(USE_KOKKOS)
   if (NOT DEFINED ENV{Kokkos_ROOT})
@@ -23,6 +21,13 @@ elseif(USE_KOKKOS)
   endif()
 
   find_package(Kokkos REQUIRED)
+endif()
+
+# When Albany becomes a nice cmake package, that finds its deps, you can
+# move this line above if (USE_TRILINOS), and turn that if in elseif.
+# Until then, we must find Albany *after* trilinos has been found
+if (USE_ALBANY)
+  find_package(Albany REQUIRED)
 endif()
 
 if (USE_MOAB)
