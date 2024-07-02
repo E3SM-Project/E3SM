@@ -71,4 +71,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test AEROCOM_CLD
   CreateDiagTest(aerocom_cld "aerocom_cld_test.cpp")
 
+  # Test atm_tend
+  CreateDiagTest(atm_backtend "atm_backtend_test.cpp")
+
 endif()
