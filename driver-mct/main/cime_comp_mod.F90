@@ -145,7 +145,8 @@ module cime_comp_mod
   ! diagnostic routines
   use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
   use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
-  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
+  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_glc_mct 
+  use seq_diag_mct, only : seq_diag_accum_mct, seq_diag_print_mct
   use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
   use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
   use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
@@ -4743,6 +4744,9 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
+       if (glc_present) then
+          call seq_diag_glc_mct(glc(ens1), fractions_ix(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+       endif
        if (do_bgc_budgets) then
           if (rof_present) then
              call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
@@ -4789,6 +4793,9 @@ contains
           if (ice_present) then
              call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true., do_x2i=.true.)
           endif
+          if (glc_present) then
+             call seq_diag_glc_mct(glc(ens1), fractions_ix(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+          endif          
           if (lnd_present) then
              call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
           endif

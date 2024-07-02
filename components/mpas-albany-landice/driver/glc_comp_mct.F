@@ -1482,7 +1482,7 @@ contains
             !call route_ice_runoff(0.0_RKIND, & !Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), and attach to ice calving flux once present...
             !                      rofi_to_ocn=Fogg_rofi, &
             !                      rofi_to_ice=Figg_rofi)
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0 !...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=9999.0 !...and remove these placeholders
             g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
 
