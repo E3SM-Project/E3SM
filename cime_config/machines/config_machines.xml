@@ -1718,11 +1718,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{EBASE}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{EBASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{EBASE}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{EBASE}/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -1831,11 +1831,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{BASE}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{BASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{BASE}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{BASE}/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -1946,11 +1946,11 @@
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch/pod00</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{BASE}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{BASE}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/e3sm/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>$ENV{BASE}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{BASE}/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -1979,9 +1979,6 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
-      <env name="OPENBLAS_PATH">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/openblas-0.3.21-z66r7lyxwkhsshgreexm4cedffp73scp</env>
-      <env name="LAPACK_ROOT">/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/netlib-lapack-3.10.1-lkhddpuidlw2z74g5ui6eq5iattsfjxp</env>
-      <!--env name="PERL5LIB">$ENV{PERL5LIB}:/opt/apps/spack/opt/spack/linux-centos7-zen2/gcc-12.2.0/perl-5.36.0-sly2pft2edg2p3iyijfyy6dzntusokno/lib/site_perl/5.36.0</env-->
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which nf-config))}/lib</env>
     </environment_variables>
