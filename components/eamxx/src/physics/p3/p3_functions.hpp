@@ -191,6 +191,10 @@ struct Functions
     view_2d<Spack> precip_liq_flux;
     // Grid-box average ice/snow flux [kg m^-2 s^-1] pverp
     view_2d<Spack> precip_ice_flux;
+    // Total precipitation (rain + snow) [kg/kg/s]
+    view_2d<Spack> precip_total_tend;
+    // Evaporation of total precipitation (rain + snow) [kg/kg/s]
+    view_2d<Spack> nevapr;
   };
 
   // This struct stores time stepping and grid-index-related information.
