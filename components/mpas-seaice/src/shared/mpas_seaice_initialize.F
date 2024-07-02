@@ -784,8 +784,6 @@ contains
                   initialSalinityProfile(:,iCell), &
                   initialMeltingTemperatureProfile(:,iCell), &
                   surfaceTemperature(1,1,iCell), &
-                  nIceLayers, &
-                  nSnowLayers, &
                   iceEnthalpy(:,1,iCell), &
                   snowEnthalpy(:,1,iCell))
              call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -990,8 +988,6 @@ contains
                      initialSalinityProfile(:,iCell), &
                      initialMeltingTemperatureProfile(:,iCell), &
                      surfaceTemperature(1,iCategory,iCell), &
-                     nIceLayers, &
-                     nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
                 call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -1148,7 +1144,6 @@ contains
 
        if (trim(config_column_physics_type) == "icepack") then
           call icepack_init_itd(&
-               nCategories, &
                categoryThicknessLimits)
           call seaice_icepack_write_warnings(icepack_warnings_aborted())
        else if (trim(config_column_physics_type) == "column_package") then
@@ -1341,8 +1336,6 @@ contains
                   initialSalinityProfile(:,iCell), &
                   initialMeltingTemperatureProfile(:,iCell), &
                   surfaceTemperature(1,iCategory,iCell), &
-                  nIceLayers, &
-                  nSnowLayers, &
                   iceEnthalpy(:,iCategory,iCell), &
                   snowEnthalpy(:,iCategory,iCell))
              call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -1562,8 +1555,6 @@ contains
                      initialSalinityProfile(:,iCell), &
                      initialMeltingTemperatureProfile(:,iCell), &
                      surfaceTemperature(1,iCategory,iCell), &
-                     nIceLayers, &
-                     nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
                 call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -2580,11 +2571,12 @@ contains
          maxAerosolType, &
          nZBGCTracers
 
-    logical, pointer :: &
+         logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
          config_use_column_physics, &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_zaerosols
 
     integer, pointer :: &
          nCells
@@ -2682,8 +2674,9 @@ contains
        endif
 
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
-       if (config_use_column_biogeochemistry) then
+       if (config_use_column_biogeochemistry .or. config_use_zaerosols) then
 
           call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 
@@ -2748,12 +2741,8 @@ contains
                      oceanNitrateConc(iCell), &
                      oceanSilicateConc(iCell),&
                      oceanZAerosolConc(:,iCell), &
-                     maxDICType, &
-                     maxDONType, &
-                     maxIronType, &
-                     maxAerosolType, &
-                     carbonToNitrogenRatioAlgae, &
-                     carbonToNitrogenRatioDON)
+                     carbonToNitrogenRatioAlgae(:), &
+                     carbonToNitrogenRatioDON(:))
 
              enddo ! iCell
           else if (trim(config_column_physics_type) == "column_package") then
@@ -2777,8 +2766,8 @@ contains
                      maxDONType, &
                      maxIronType, &
                      maxAerosolType, &
-                     carbonToNitrogenRatioAlgae, &
-                     carbonToNitrogenRatioDON)
+                     carbonToNitrogenRatioAlgae(:), &
+                     carbonToNitrogenRatioDON(:))
 
              enddo ! iCell
 
