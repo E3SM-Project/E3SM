@@ -605,6 +605,19 @@ add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
 
+####################################################
+# Namelist group: tracer_forcing_freshwaterTracers #
+####################################################
+
+add_default($nl, 'config_use_freshwaterTracers');
+add_default($nl, 'config_use_freshwaterTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_restoring');
+add_default($nl, 'config_use_freshwaterTracers_interior_restoring');
+add_default($nl, 'config_use_freshwaterTracers_exponential_decay');
+add_default($nl, 'config_use_freshwaterTracers_idealAge_forcing');
+add_default($nl, 'config_use_freshwaterTracers_ttd_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_value');
+
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
 #############################################
