@@ -237,7 +237,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-ACI -->
     <mam4_aci inherit="atm_proc_base">
       <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
-      <top_level_mam4xx type="integer" doc="Top level for MAM4xx">6</top_level_mam4xx>
+      <top_level_mam4xx type="integer" doc="Level corresponding to the top of troposphere clouds" nlev="72"  >6</top_level_mam4xx>
+      <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" nlev="128" >0</top_level_mam4xx>
     </mam4_aci>
 
     <!-- CLD fraction -->
