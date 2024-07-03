@@ -1980,7 +1980,7 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which nf-config))}/lib</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LD_LIBRARY_PATH}:$SHELL{dirname $(dirname $(which h5diff))}/lib:$SHELL{dirname $(dirname $(which nc-config))}/lib:$SHELL{dirname $(dirname $(which nf-config))}/lib:$SHELL{dirname $(dirname $(which pnetcdf-config))}/lib</env>
     </environment_variables>
 
     <environment_variables BUILD_THREADED="TRUE">
