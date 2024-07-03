@@ -100,8 +100,14 @@ void MAMWetscav::set_grids(
   // Layer thickness(pdel) [Pa] at midpoints
   add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
 
-  // planetary boundary layer height
+  // planetary boundary layer height [m]
   add_field<Required>("pbl_height", scalar2d, m, grid_name);
+
+  static constexpr auto m2 = m * m;
+  static constexpr auto s2 = s * s;
+
+  // Surface geopotential [m2/s2]
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   //----------- Variables from microphysics scheme -------------
 
@@ -148,13 +154,15 @@ void MAMWetscav::set_grids(
   // In cloud water mixing ratio, shallow convection [kg/kg]
   add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
 
+  // Detraining cld H20 from deep convection [kg/ks/s]
+  add_field<Required>("dlf", scalar3d_mid, kg / kg / s, grid_name);
+
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
   // FIXME: we have not added code to update the surface fluxes.
   // -- surface fluxes (input/outpts) for the coupler's cam_out data struture
   // for the land model
-  static constexpr auto m2 = m * m;
 
   // Wet deposition of hydrophilic black carbon [kg/m2/s]
   add_field<Updated>("bcphiwet", scalar3d_mid, kg / m2 / s, grid_name);
@@ -255,22 +263,10 @@ void MAMWetscav::set_grids(
   // fraction of transported species that are insoluble [fraction]
   add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
 
-  add_field<Required>("pbl_height", scalar2d, m,
-                      grid_name);  // PBL height
-
-  static constexpr auto s2 = s * s;
-  add_field<Required>("phis", scalar2d, m2 / s2,
-                      grid_name);  // surface geopotential
-
-  add_field<Required>("dlf", scalar3d_mid, kg / kg / s,
-                      grid_name);  //
-
-  // aerosol wet deposition (interstitial)
-  add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s,
-                      grid_name);  //
-  // aerosol wet deposition (cloud water)
-  add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s,
-                      grid_name);  //
+  // aerosol wet deposition (interstitial) [kg/m2/s]
+  add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s, grid_name);
+  // aerosol wet deposition (cloud water) [kg/m2/s]
+  add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s, grid_name);
 }
 
 // =========================================================================================
