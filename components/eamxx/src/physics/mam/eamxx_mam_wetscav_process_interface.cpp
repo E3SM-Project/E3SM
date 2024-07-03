@@ -297,7 +297,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
 
   // populate the wet atmosphere state with views from fields and
-  // the buffer (NOTE: wet atmosphere only has qv, qc, qi, nc, ni and omega)
+  // the buffer (NOTE: wet atmosphere only has qv, qc, qi, nc, ni)
   wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
 
@@ -307,8 +307,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
   wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
-
   // populate the dry atmosphere state with views from fields
   // (NOTE: dry atmosphere has everything that wet
   // atmosphere has along with z_surf, T_mid, p_mid, z_mid, z_iface,
@@ -317,6 +315,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
   // How "buffer_" works: We use buffer to allocate memory for the members of
   // dry_atm_ object. Here we are providing those memory locations to the
   // dry_atm_ members. These members are computed from the above wet_atm_ or
