@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
     
     
       
@@ -783,6 +783,8 @@
       
         
       
+        
+      
     
     
       
@@ -835,6 +837,27 @@
   
   <span class="md-ellipsis">
     High-Order Methods Modeling Environment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Atmosphere Grid Overview
   </span>
   
 
@@ -1887,6 +1910,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#code-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code development
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-new-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating new input
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1914,13 +1963,19 @@
 <h1 id="development-guide">Development Guide</h1>
 <p>Development of E3SM is carefully planned and tied to goals in the proposals that fund
 work on E3SM.</p>
-<p>Most development occurs within one component and developers should consult the
+<h2 id="code-development">Code development</h2>
+<p>Most code development occurs within one component and developers should consult the
 relevant component's development guide.</p>
-<p>More information</p>
+<p>More information on code development.</p>
 <ul>
 <li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/7997024/Development+Big+Picture">Development Big Picture</a></li>
 <li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide">Getting Started</a></li>
 <li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2523163/Development+Reference">Development Reference</a></li>
+</ul>
+<h2 id="creating-new-input">Creating new input</h2>
+<p>E3SM's public input data directory contains initial and boundary conditions for many cases.
+Creating new initial or boundary conditions typically starts with creating a new grid.</p>
+<ul>
 <li><a href="adding-grid-support/">Adding Support for New Grids</a></li>
 </ul>
 
@@ -1978,7 +2033,7 @@ relevant component's development guide.</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.ad660dcc.min.js"></script>
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
         <script src="../javascript/mathjax.js"></script>
       
