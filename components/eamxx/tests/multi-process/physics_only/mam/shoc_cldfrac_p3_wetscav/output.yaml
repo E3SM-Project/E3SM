@@ -1,9 +1,43 @@
 %YAML 1.1
 ---
-filename_prefix: p3_mam4_wetscav_output
+filename_prefix: shoc_cldfrac_p3_mam4_wetscav_output
 Averaging Type: Instant
 Field Names:
+  # SHOC
   - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  # CLD
+  - cldfrac_ice
+  - cldfrac_tot
+  # P3
+  - bm
+  - nc
+  - ni
+  - nr
+  - qi
+  - qm
+  - qr
+  - T_prev_micro_step
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - eff_radius_qr
+  - micro_liq_ice_exchange
+  - micro_vap_ice_exchange
+  - micro_vap_liq_exchange
+  - precip_ice_surf_mass
+  - precip_liq_surf_mass
+  - rainfrac
+  # SHOC + P3
+  - qc
+  - qv
+  # wetscav
+  - T_mid
   - bc_a1
   - bc_a3
   - bc_a4

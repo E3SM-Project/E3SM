@@ -12,14 +12,26 @@ atmosphere_processes:
   atm_procs_list: [mac_mic, mam4_wetscav]
   schedule_type: Sequential
   mac_mic:
-    atm_procs_list: [p3]
+    atm_procs_list: [shoc,CldFraction,p3]
     Type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     p3:
       max_total_ni: 740.0e3
       do_prescribed_ccn: false
-
+    shoc:
+      lambda_low: 0.001
+      lambda_high: 0.04
+      lambda_slope: 2.65
+      lambda_thresh: 0.02
+      thl2tune: 1.0
+      qw2tune: 1.0
+      qwthl2tune: 1.0
+      w2tune: 1.0
+      length_fac: 0.5
+      c_diag_3rd_mom: 7.0
+      Ckh: 0.1
+      Ckm: 0.1
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE
@@ -56,6 +68,10 @@ initial_conditions:
   dstwet2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
   dstwet3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
   dstwet4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
+  
+  #variable required for shoc
+  surf_sens_flux: 0.0
+  surf_evap: 0.0
 
   #variable required for p3
   precip_ice_surf_mass: 0.0
