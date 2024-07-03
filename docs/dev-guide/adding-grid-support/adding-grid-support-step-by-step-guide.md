@@ -11,8 +11,9 @@ If you wish to add a new ocean and sea-ice mesh you will need to use the compass
 
 ## Step-by-Step Guide
 
-1. [Generate a new uniform grid file                               ](adding-grid-support-step-by-step-guide/generate-new-grid-file.md)
-    1. [Generate a new RRM grid file                               ](adding-grid-support-step-by-step-guide/generate-RRM-grid-file.md)
+1. Generate a new grid
+    1. [Generate a uniform grid file                       ](adding-grid-support-step-by-step-guide/generate-new-grid-file.md)
+    1. [Generate a new RRM grid file                       ](adding-grid-support-step-by-step-guide/generate-RRM-grid-file.md)
 1. [Generate mapping files                                 ](adding-grid-support-step-by-step-guide/generate-mapping-files.md)
 1. [Generate domain files                                  ](../../generate_domain_files/index.md)
 1. [Generate a topography file                             ](adding-grid-support-step-by-step-guide/generate-topo-file.md)
