@@ -165,6 +165,7 @@ contains
     real (kind=RKIND) :: x(3), y(3)
     integer :: slice, nSlice
     real (kind=RKIND) :: deltaZ
+    logical, pointer :: on_a_sphere
 
 
 
@@ -182,13 +183,12 @@ contains
     call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
     call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
 
+    call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve) ;
     call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve) ; 
     call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve) ; 
     call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
     
-    call mpas_pool_get_array(meshPool, 'xCell', xCell)
-    call mpas_pool_get_array(meshPool, 'yCell', yCell)
     call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -198,10 +198,21 @@ contains
     call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
     call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
 
-    call mpas_pool_get_array(meshPool, 'xEdge', xEdge ) 
-    call mpas_pool_get_array(meshPool, 'yEdge', yEdge ) 
-    call mpas_pool_get_array(meshPool, 'xVertex', xVertex ) 
-    call mpas_pool_get_array(meshPool, 'yVertex', yVertex ) 
+    if (on_a_sphere) then
+      call mpas_pool_get_array(meshPool, 'lonCell', xCell)
+      call mpas_pool_get_array(meshPool, 'latCell', yCell)
+      call mpas_pool_get_array(meshPool, 'lonEdge', xEdge ) 
+      call mpas_pool_get_array(meshPool, 'latEdge', yEdge ) 
+      call mpas_pool_get_array(meshPool, 'lonVertex', xVertex ) 
+      call mpas_pool_get_array(meshPool, 'latVertex', yVertex ) 
+    else
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge ) 
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge ) 
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex ) 
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex ) 
+    endif
 
     call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
     call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors ) ; 
@@ -232,7 +243,7 @@ contains
     xSubgridCell = 0.0_RKIND  
     ySubgridCell = 0.0_RKIND 
 
-    do iCell = 1,nCellsSolve
+   do iCell = 1,nCellsSolve
       !
       ! Evaluate subgrid bathymetry at centers of sub-triangles for cell slices 
       ! (all subdivided triangles for each cell slice are gathered into 
@@ -270,6 +281,13 @@ contains
       bathymetryMin = maxval( subgridBathymetryValues(1:nSubgridCell) ) 
       bathymetryMax = minval( subgridBathymetryValues(1:nSubgridCell) )
 
+      if (bathymetryMax < -99998) then
+         cycle 
+      endif
+      if (bathymetryMin > 99998) then
+         cycle
+      endif
+
       if ( abs(bathymetryMin - bathymetryMax) > 100.0*eps ) then
           subgridSshCellTableRange(1,iCell) = -maxval(subgridBathymetryValues(1:nSubgridCell)) + subgrid_thin_layer
           subgridSshCellTableRange(2,iCell) = -minval(subgridBathymetryValues(1:nSubgridCell))
@@ -294,9 +312,14 @@ contains
       !---------------------------------------------------------------
         call ocn_init_grid_average(nSubgridCell, subgridBathymetryValues, subgridSshValues, subgridAreas, layerThickness(1,iCell))
 !        call ocn_init_wet_average_ssh(nSubgridCell, subgridBathymetryValues, subgridSshValues, subgridAreas, ssh(iCell))!{{{
-    enddo
 
-    do iCell = 1, nCellsSolve
+        call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
+                                    subgridWetVolumeCellTable(:,iCell),&
+                                    subgridSshCellTableRange(:,iCell),&
+                                    bottomDepth(iCell),&
+                                    subgridCellBathymetryMin(iCell),&
+                                    ssh(iCell))
+
         call ocn_subgrid_ssh_lookup( config_drying_min_cell_height, & 
                                      subgridWetVolumeCellTable(:,iCell), &
                                      subgridSshCellTableRange(:,iCell),&
@@ -354,6 +377,16 @@ contains
                                             xSubgridCell, ySubgridCell)
   
       enddo
+
+      bathymetryMin = maxval( subgridBathymetryValues(1:nSubgridEdge) ) 
+      bathymetryMax = minval( subgridBathymetryValues(1:nSubgridEdge) )
+
+      if (bathymetryMax < -99998) then
+         cycle 
+      endif
+      if (bathymetryMin > 99998) then
+         cycle
+      endif
 
       ! Evaluate velocity average
       !---------------------------------------------------------------
@@ -421,6 +454,7 @@ contains
                                      subgridSshEdgeTableRange(3,iEdge) )
     end do
 
+    return
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Vertex
@@ -467,6 +501,16 @@ vertex: do iVertex = 1,nVerticesSolve
                                             problem_bathymetry, problem_velocity, problem_ssh, &  
                                             subgridBathymetryValues, subgridAreas)
       enddo
+
+      bathymetryMin = maxval( subgridBathymetryValues(1:nSubgridVertex) ) 
+      bathymetryMax = minval( subgridBathymetryValues(1:nSubgridVertex) )
+
+      if (bathymetryMax < -99998) then
+         cycle 
+      endif
+      if (bathymetryMin > 99998) then
+         cycle
+      endif
 
       ! Evaluate bounds of look-up table range
       !---------------------------------------------------------------

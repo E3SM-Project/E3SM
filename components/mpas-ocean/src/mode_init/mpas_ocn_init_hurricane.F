@@ -30,6 +30,14 @@ module ocn_init_hurricane
    use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
+   use ocn_subgrid
+   use ocn_init_subgrid
+   use ocn_init_Buttermilk_bay
+
+   use mpas_io
+   use mpas_io_streams
+   use mpas_stream_manager
+
 
    implicit none
    private
@@ -55,6 +63,14 @@ module ocn_init_hurricane
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   !! For netcdf topobathy input variables
+   !integer :: nLatTopo, nLonTopo
+
+   !type (field1DReal) :: topoLat, topoLon
+   !type (field2DReal) :: topoIC
+
+   !real(kind=RKIND), parameter:: eps = 1.0e-10_RKIND ;
 
 !***********************************************************************
 
@@ -112,6 +128,7 @@ contains
          lonCell
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+    real (kind=RKIND), dimension(:), allocatable :: uVelocityAverage, vVelocityAverage
 
     iErr = 0
 
@@ -121,6 +138,9 @@ contains
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
     call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
+    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+    call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+    call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! you may restrict your case geometry as follows:
@@ -171,7 +191,52 @@ contains
     maxBottomDepth = -1.0_RKIND*maxBottomDepth
 
     call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMinBottomDepth)
-    !write(*,*) globalMaxBottomDepth, globalMinBottomDepth
+    !write(*,*) globalMaxBottomDepth, globzalMinBottomDepth
+
+    if (config_use_subgrid_wetting_drying) then
+
+       call ocn_subgrid_init(domain,iErr)
+       if (MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init')) then
+
+          allocate(uVelocityAverage(nEdgesSolve))
+          allocate(vVelocityAverage(nEdgesSolve))
+
+          if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+                   config_Buttermilk_bay_topography_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid topography data from file.')
+             call ocn_init_setup_Buttermilk_bay_read_topo(domain, iErr)
+          endif
+
+
+          call ocn_init_subgrid_calculations(domain, &
+                                             ocn_init_Buttermilk_bay_bathymetry, &
+                                             ocn_init_Buttermilk_bay_velocity, &
+                                             ocn_init_Buttermilk_bay_ssh, &
+                                             config_Buttermilk_bay_subgrid_refinement_level, &
+                                             config_Buttermilk_bay_subgrid_edge_bathymetry_max_pixel, &
+                                             config_Buttermilk_bay_subgrid_use_thin_layer, &
+                                             uVelocityAverage, &
+                                             vVelocityAverage, &
+                                             iErr)
+       else
+
+
+         call mpas_log_write( 'Setting default subgrid table values')
+         do iCell = 1, nCellsSolve
+            subgridWetVolumeCellTable(nSubgridTableLevels,iCell) = -1e10
+            subgridSshCellTableRange(2,iCell) = -1e10
+         end do
+         do iEdge = 1, nEdgesSolve
+            subgridWetVolumeEdgeTable(nSubgridTableLevels,iEdge) = -1e10
+            subgridSshEdgeTableRange(2,iEdge) = -1e10
+         end do
+         do iVertex = 1, nVerticesSolve
+            subgridWetVolumeVertexTable(nSubgridTableLevels,iVertex) = -1e10
+            subgridSshVertexTableRange(2,iVertex) = -1e10
+         end do
+
+       end if
+    end if
 
     !--------------------------------------------------------------------
     ! Use this section to set initial values
@@ -233,9 +298,9 @@ contains
              (2.0_RKIND*dw**2.0_RKIND))
          end do
        else
-         do iCell = 1, nCellsSolve
-           ssh(iCell) = 0.0_RKIND
-         end do
+         !do iCell = 1, nCellsSolve
+         !  ssh(iCell) = 0.0_RKIND
+         !end do
        end if
 
 
@@ -256,41 +321,56 @@ contains
           do iCell = 1, nCellsSolve
             ! Set up vertical grid
             maxLevelCell(iCell) = nVertLevels
-            ! ensures only 3 layers can be obtained on mesh
-            if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
-              maxLevelCell(iCell) = 3
-            else
-              ! snap to zstar coordinate
-              do k = 1, nVertLevels
-                if (bottomDepth(iCell) < refBottomDepth(k)) then
-                  maxLevelCell(iCell) = k-1
-                  bottomDepth(iCell) = refBottomDepth(k-1)
-                  exit
-                end if
-              end do
-            end if
+            !! ensures only 3 layers can be obtained on mesh
+            !if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
+            !  maxLevelCell(iCell) = 3
+            !else
+            !  ! snap to zstar coordinate
+            !  do k = 1, nVertLevels
+            !    if (bottomDepth(iCell) < refBottomDepth(k)) then
+            !      maxLevelCell(iCell) = k-1
+            !      bottomDepth(iCell) = refBottomDepth(k-1)
+            !      exit
+            !    end if
+            !  end do
+            !end if
           end do
 
           do iCell = 1, nCellsSolve
 
-            ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
-            ssh(iCell) = - bottomDepth(iCell) + &
-              max(ssh(iCell) + bottomDepth(iCell), &
-              maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
+            if (config_use_subgrid_wetting_drying .and. MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init')) then
+              ! Initial contion for a subgrid run
+              !call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
+              !                            subgridWetVolumeCellTable(:,iCell),&
+              !                            subgridSshCellTableRange(:,iCell),&
+              !                            bottomDepth(iCell),&
+              !                            subgridCellBathymetryMin(iCell),&
+              !                            ssh(iCell))
+              ! if ( ssh(iCell) < subgridSshCellTableRange(3,iCell) ) then
+              !    ssh(iCell) = subgridSshCellTableRange(3,iCell) ;   
+              ! end if 
 
-            do k = 1, maxLevelCell(iCell)
-              layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
-                (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
-              if (layerThickness(k,iCell) < config_drying_min_cell_height) then
-                call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
-                  intArgs=(/k,iCell/), &
-                  realArgs=(/layerThickness(k,iCell)/))
-              end if
-            end do
+            else
+              ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
+              ssh(iCell) = - bottomDepth(iCell) + &
+                max(ssh(iCell) + bottomDepth(iCell), &
+                maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
+
+              do k = 1, maxLevelCell(iCell)
+                layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
+                  (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
+                if (layerThickness(k,iCell) < config_drying_min_cell_height) then
+                  call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
+                    intArgs=(/k,iCell/), &
+                    realArgs=(/layerThickness(k,iCell)/))
+                end if
+              end do
+            endif
 
             do k = 1, maxLevelCell(iCell)
               restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
             end do
+
           end do
         else
           ! case without wetting and drying
@@ -322,7 +402,6 @@ contains
             end do
           end do
         end if
-
 
         do iCell = 1, nCellsSolve
           ! Set temperature
@@ -394,18 +473,28 @@ contains
 
    !--------------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: configPool, packagePool
-      type (mpas_io_context_type), intent(inout) :: iocontext
+      type (mpas_io_context_type), intent(inout), target :: iocontext
 
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_hurricane_vert_levels
+      integer, pointer :: config_subgrid_table_levels, config_Buttermilk_bay_subgrid_table_levels
+
+      type (mpas_io_context_type), pointer :: iocontext_ptr
+      type (MPAS_IO_Handle_type) :: inputFile
+      character (len=StrKIND), pointer :: config_Buttermilk_bay_topography_source, &
+                                          config_Buttermilk_bay_topography_file, &
+                                          config_Buttermilk_bay_topography_nlat_dimname, &
+                                          config_Buttermilk_bay_topography_nlon_dimname
 
       iErr = 0
 
       call mpas_pool_get_config(configPool, 'config_init_configuration', config_init_configuration)
 
       if(config_init_configuration .ne. trim('hurricane')) return
+
+      iocontext_ptr => iocontext
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_hurricane_vert_levels', config_hurricane_vert_levels)
@@ -416,6 +505,76 @@ contains
          call mpas_log_write( 'Validation failed for hurricane case. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
+
+      call mpas_pool_get_config(configPool, 'config_subgrid_table_levels', config_subgrid_table_levels)
+      call mpas_pool_get_config(configPool, &
+                                'config_Buttermilk_bay_subgrid_table_levels', &
+                                config_Buttermilk_bay_subgrid_table_levels)
+      if (config_subgrid_table_levels <=0 .and. config_Buttermilk_bay_subgrid_table_levels >0) then
+         config_subgrid_table_levels = config_Buttermilk_bay_subgrid_table_levels
+      else if (config_subgrid_table_levels <=0) then
+         call mpas_log_write( 'Validation failed for Buttermilk bay.'// &
+           'Not given a usable value for subgrid table levels.', MPAS_LOG_CRIT)
+         iErr = 1 
+      end if
+
+      !---------- adapted from ocn_init_validate_global_ocean
+      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_source', &
+                                config_Buttermilk_bay_topography_source)
+      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_file', &
+                                config_Buttermilk_bay_topography_file)
+      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlat_dimname', &
+                                config_Buttermilk_bay_topography_nlat_dimname)
+      call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlon_dimname', &
+                                config_Buttermilk_bay_topography_nlon_dimname)
+
+
+      call mpas_log_write( config_Buttermilk_bay_topography_source  )
+      call mpas_log_write( config_Buttermilk_bay_topography_file )
+      call mpas_log_write( config_Buttermilk_bay_topography_nlat_dimname )
+      call mpas_log_write( config_Buttermilk_bay_topography_nlon_dimname )
+
+      if (config_Buttermilk_bay_topography_source /= 'latlon_file' .and. &
+          config_Buttermilk_bay_topography_source /= 'xy_file') then
+         call mpas_log_write( 'Unexpected value for &
+                   config_Buttermilk_bay_topography_source: ' &
+             // trim(config_Buttermilk_bay_topography_source), MPAS_LOG_CRIT)
+         iErr = 1 
+         return
+      end if
+
+      if (config_Buttermilk_bay_topography_file == 'none' .and. &
+          (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+          config_Buttermilk_bay_topography_source == 'xy_file') ) then
+         call mpas_log_write( 'Validation failed for Buttermilk bay test case. ' &
+           // 'Invalid filename for config_Buttermilk_bay_topography_file ' &
+           // config_Buttermilk_bay_topography_file // '  ' &
+           // config_Buttermilk_bay_topography_source , MPAS_LOG_CRIT)
+         iErr = 1 
+         return
+      end if
+
+      call mpas_log_write( ' in ocn_init_validate_buttermilk_bay '//config_Buttermilk_bay_topography_source )
+
+      if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+           config_Buttermilk_bay_topography_source == 'xy_file'  ) then
+
+         inputFile = MPAS_io_open(trim(config_Buttermilk_bay_topography_file), &
+                        MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+         if (iErr /= 0) then
+            call mpas_log_write( 'could not open file '// &
+                   trim(config_Buttermilk_bay_topography_file), MPAS_LOG_CRIT)
+            return
+         end if
+
+         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlat_dimname, nLatTopo, iErr)
+         call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlon_dimname, nLonTopo, iErr)
+
+         call MPAS_io_close(inputFile, iErr)
+
+      end if
+      !----------
+
 
    !--------------------------------------------------------------------
 

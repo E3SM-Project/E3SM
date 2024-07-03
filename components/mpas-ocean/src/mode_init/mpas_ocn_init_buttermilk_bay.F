@@ -57,7 +57,11 @@ module ocn_init_Buttermilk_bay
    !--------------------------------------------------------------------
 
    public :: ocn_init_setup_Buttermilk_bay, &
-             ocn_init_validate_Buttermilk_bay
+             ocn_init_validate_Buttermilk_bay, &
+             ocn_init_Buttermilk_bay_bathymetry, &
+             ocn_init_Buttermilk_bay_ssh, &
+             ocn_init_Buttermilk_bay_velocity, &
+             ocn_init_setup_Buttermilk_bay_read_topo
 
    !--------------------------------------------------------------------
    !
@@ -66,10 +70,10 @@ module ocn_init_Buttermilk_bay
    !--------------------------------------------------------------------
 
    ! For netcdf topobathy input variables
-   integer :: nLatTopo, nLonTopo
+   integer, public :: nLatTopo, nLonTopo
 
-   type (field1DReal) :: topoLat, topoLon
-   type (field2DReal) :: topoIC
+   type (field1DReal), public :: topoLat, topoLon
+   type (field2DReal), public :: topoIC
 
    real(kind=RKIND), parameter:: eps = 1.0e-10_RKIND ;
 !***********************************************************************
@@ -542,14 +546,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_Buttermilk_bay_bathymetry(x, y, depth)!{{{
+   subroutine ocn_init_Buttermilk_bay_bathymetry(xin, yin, depth)!{{{
 
       implicit none
 
-      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(in) :: xin, yin
       real (kind=RKIND), intent(out) :: depth
 
       integer:: ix(2)
+      real (kind=RKIND) :: x, y
       real (kind=RKIND) :: xc(2)
       real (kind=RKIND) :: dx(2), x0(2), xN(2), bath(4), f(4), den
       real (kind=RKIND) :: xv(2), yv(2)
@@ -557,6 +562,20 @@ contains
       !--------------------------------------------------------------------
       !
       ! DEM must be on a uniform grid
+
+      y = yin 
+      x = xin
+
+      if (config_Buttermilk_bay_topography_latlon_degrees .and. &
+          config_Buttermilk_bay_topography_source == 'latlon_file' ) then
+
+          if (x > pii) then
+              x = x - 2.0_RKIND*pii
+          end if
+
+      end if
+     
+
       x0 = (/ topoLon%array(1), topoLat%array(1) /) ;
       xN = (/ topoLon%array(nLonTopo), topoLat%array(nLatTopo) /) ;
       dx = (/ topoLon%array(2) - topoLon%array(1), &
@@ -589,14 +608,23 @@ contains
         f(4) = ( xc(1) - xv(2) )*( xc(2) - yv(1) )/(-den) ;
 
         depth = sum( bath*f ) ;
-      else
-        ! nearest extrapolation !
-        ix(1) = merge( 1, ix(1), ix(1) < 1 ) ;
-        ix(1) = merge( nLonTopo, ix(1), ix(1) >= nLonTopo ) ;
-        ix(2) = merge( 1, ix(2), ix(2) < 1 )  ;
-        ix(2) = merge( nLatTopo, ix(2), ix(2) >= nLatTopo ) ;
+        !depth = -1.0_RKIND*depth
 
-        depth = TopoIC%array(ix(1),ix(2)) ;
+        if (minval(bath) < -99998) then
+          depth = -1d10
+        end if
+        if (maxval(bath) > 99998) then
+          depth = -1d10
+        end if
+      else
+        !! nearest extrapolation !
+        !ix(1) = merge( 1, ix(1), ix(1) < 1 ) ;
+        !ix(1) = merge( nLonTopo, ix(1), ix(1) >= nLonTopo ) ;
+        !ix(2) = merge( 1, ix(2), ix(2) < 1 )  ;
+        !ix(2) = merge( nLatTopo, ix(2), ix(2) >= nLatTopo ) ;
+
+        !depth = TopoIC%array(ix(1),ix(2)) ;
+        depth = -1e10
       endif
 
       return ;
@@ -677,6 +705,7 @@ contains
     subroutine ocn_init_setup_Buttermilk_bay_read_topo(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
+       integer :: i
 
        type (MPAS_Stream_type) :: topographyStream
 
@@ -739,6 +768,12 @@ contains
 
        if ( config_Buttermilk_bay_topography_latlon_degrees .and. &
               config_Buttermilk_bay_topography_source == 'latlon_file' ) then
+          !do i = 1,nLonTopo
+          !   if (topoLon % array(i) < 0.0) then
+          !      topoLon % array(i) = topoLon % array(i) + 360.0_RKIND
+          !   end if
+          !end do
+
           topoLat % array(:) = topoLat % array(:) * pii / 180.0_RKIND
           topoLon % array(:) = topoLon % array(:) * pii / 180.0_RKIND
        end if
