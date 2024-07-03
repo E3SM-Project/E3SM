@@ -1,0 +1,67 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mac_mic, mam4_wetscav]
+  schedule_type: Sequential
+  mac_mic:
+    atm_procs_list: [p3]
+    Type: Group
+    schedule_type: Sequential
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    p3:
+      max_total_ni: 740.0e3
+      do_prescribed_ccn: false
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    aliases: [Physics]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:   72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  pbl_height: 25.0
+  phis : 0.1
+  #variables needed by mam4_wetscav
+  #variables from convection scheme (they should all be zero)
+  rprdsh: 0.
+  rprddp: 0.
+  evapcsh: 0.
+  evapcdp: 0.
+  icwmrdp: 0.
+  icwmrsh: 0.
+  sh_frac: 0.
+  dp_frac: 0.
+  dlf : 0.
+  #surface fluxes
+  bcphiwet: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
+  bcphidry: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
+  ocphiwet: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
+  ocphidry: 1e-5 # dry deposition of hydrophilic organic carbon [kg/m2/s]
+  dstwet1: 1e-5 # wet deposition of dust (bin1) [kg/m2/s]
+  dstwet2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
+  dstwet3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
+  dstwet4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
+
+  #variable required for p3
+  precip_ice_surf_mass: 0.0
+  precip_liq_surf_mass: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...
