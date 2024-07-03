@@ -78,7 +78,7 @@ contains
        mosaic_vars_aa,                                                           &
        mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
        dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
-       uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn, Hconc_sav) ! to save aerosol pH (dsj+zlu)
+       uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn)
 
 
     use module_data_mosaic_aero, only:                                             &
@@ -88,7 +88,7 @@ contains
          jsalt_index, jsulf_poor, jsulf_rich, rtol_mesa, dens_aer_mac,             &
          mw_aer_mac, zc, MW_c, za, MW_a, mw_comp_a, dens_comp_a, b_zsr,aw_min,     &
          mw_electrolyte, partial_molar_vol, a_zsr, d_mdrh, b_mtem, ref_index_a,    &
-         Nmax_mesa, nmax_ASTEM, mosaic_vars_aa_type,jc_h ! pH dsj+zlu
+         Nmax_mesa, nmax_ASTEM, mosaic_vars_aa_type
          
     implicit none
 
@@ -136,8 +136,6 @@ contains
     real(r8), intent(out), dimension(nbin_a_max) :: gam_ratio
     real(r8), intent(out)                        :: uptkrate_h2so4  ! rate of h2so4 uptake by aerosols (1/s)
 
-  ! to save aerosol pH (dsj+zlu)
-    real(r8), intent(inout) :: Hconc_sav(nbin_a_max)
 
     !Local Variables
     integer :: iprint_input, irepeat_mosaic
@@ -230,9 +228,6 @@ contains
           tot_so4_in, tot_no3_in, tot_cl_in, tot_nh4_in, tot_na_in, tot_ca_in, tot_lim2_in, mosaic_vars_aa )
 
     enddo ! irepeat
-
-! to save aerosol pH (dsj+zlu)
-    Hconc_sav(:) = mc(jc_h,:)
 
     return
   end subroutine mosaic_box_aerchemistry
