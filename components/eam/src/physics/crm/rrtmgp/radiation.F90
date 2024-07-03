@@ -768,6 +768,18 @@ contains
             call addfld('FLNTC'//diag(icall),   horiz_only, 'A', 'W/m2', &
                         'Clearsky net longwave flux at top of model',    &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLUTOA'//diag(icall), horiz_only,  'A', 'W/m2', &
+                        'Upwelling longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLNTOA'//diag(icall), horiz_only,  'A',  'W/m2', &
+                        'Net longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLUTOAC'//diag(icall), horiz_only, 'A',  'W/m2', &
+                        'Clearsky upwelling longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLNTOAC'//diag(icall), horiz_only, 'A',  'W/m2', &
+                        'Clearsky net longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('LWCF'//diag(icall),    horiz_only, 'A', 'W/m2', &
                         'Longwave cloud forcing',                        &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
@@ -2494,6 +2506,7 @@ contains
       ! Working arrays
       real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
       integer :: ncol
+      integer :: ktop_rad = 1
 
       ncol = state%ncol
 
@@ -2530,6 +2543,12 @@ contains
       call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
       call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
       call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
+
+      ! TOA fluxes (above model top, use index to rad top)
+      call outfld('FLUTOA'//diag(icall), flux_all%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLNTOA'//diag(icall), flux_all%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
       ! Calculate and output the cloud radiative effect (LWCF in history)
       cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop) - flux_clr%flux_net(1:ncol,ktop)
