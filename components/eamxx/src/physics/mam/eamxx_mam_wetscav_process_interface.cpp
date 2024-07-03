@@ -148,9 +148,9 @@ void MAMWetscav::set_grids(
   // In cloud water mixing ratio, shallow convection [kg/kg]
   add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
 
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------
   // FIXME: we have not added code to update the surface fluxes.
   // -- surface fluxes (input/outpts) for the coupler's cam_out data struture
   // for the land model
@@ -235,47 +235,26 @@ void MAMWetscav::set_grids(
                        "tracers");
   }
 
+  // -------------------------------------------------------------
+  // These variables are "Computed" or outputs for the process
+  // -------------------------------------------------------------
   static constexpr auto m3 = m2 * m;
-  add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m,
-                      grid_name);  // aerosol dry particle diameter [m]
-  add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3,
-                      grid_name);  // wet aerosol density [kg/m3]
-  add_field<Computed>("qaerwat", scalar3d_mid_nmodes, kg / kg,
-                      grid_name);  // aerosol water [kg/kg]
-  //
-  add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m,
-                      grid_name);  // wet aerosol diameter [m]
-  add_field<Computed>("fracis", scalar3d_mid, nondim,
-                      grid_name);  // fraction of transported species that are
-                                   // insoluble [fraction]
 
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    std::string ptend_gas_name =
-        "ptend_" + std::string(mam_coupling::gas_mmr_field_name(g));
-    add_field<Computed>(ptend_gas_name, scalar3d_mid, dqdt_unit, grid_name);
-  }
+  // Aerosol dry particle diameter [m]
+  add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
 
-  // tendencies for interstitial aerosols
-  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    std::string ptend_num =
-        "ptend_" + std::string(mam_coupling::int_aero_nmr_field_name(imode));
-    add_field<Computed>(ptend_num, scalar3d_mid, n_unit, grid_name);
-    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(imode, ispec);
-      if(strlen(int_mmr_field_name) > 0) {
-        std::string ptend_int_mmr_field_name =
-            "ptend_" + std::string(int_mmr_field_name);
-        add_field<Computed>(ptend_int_mmr_field_name, scalar3d_mid, dqdt_unit,
-                            grid_name);
-      }
-    }
-  }
+  // wet aerosol density [kg/m3]
+  add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
 
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim,
-                      grid_name);  // Cloud fraction
+  // aerosol water [kg/kg]
+  add_field<Computed>("qaerwat", scalar3d_mid_nmodes, kg / kg, grid_name);
+
+  // wet aerosol diameter [m]
+  add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
+
+  // fraction of transported species that are insoluble [fraction]
+  add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
+
   add_field<Required>("pbl_height", scalar2d, m,
                       grid_name);  // PBL height
 
@@ -283,13 +262,9 @@ void MAMWetscav::set_grids(
   add_field<Required>("phis", scalar2d, m2 / s2,
                       grid_name);  // surface geopotential
 
-  // FIXME: units
-  add_field<Updated>("dlf", scalar3d_mid, kg / kg / s,
-                     grid_name);  //
-  // add_field<Updated>("dp_ccf", scalar3d_mid, n_unit,
-  //                     grid_name);  //
-  // add_field<Updated>("sh_ccf", scalar3d_mid, n_unit,
-  //                     grid_name);  //
+  add_field<Required>("dlf", scalar3d_mid, kg / kg / s,
+                      grid_name);  //
+
   // aerosol wet deposition (interstitial)
   add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s,
                       grid_name);  //
@@ -366,7 +341,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   // The following dry_atm_ members  *may* not be used by the process but they
   // are needed for creating MAM4xx class objects like Atmosphere
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.phis    = get_field_in("phis").get_view<const Real *>();
   dry_atm_.z_surf  = 0.0;
@@ -412,30 +387,17 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
-  // ---- set aerosol-related gas tendencies  data
+  // Alllocate aerosol-related gas tendencies
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    std::string ptend_mmr_field_name =
-        "ptend_" + std::string(mam_coupling::gas_mmr_field_name(g));
-    dry_aero_tends_.gas_mmr[g] =
-        get_field_out(ptend_mmr_field_name).get_view<Real **>();
+    Kokkos::resize(dry_aero_tends_.gas_mmr[g], ncol_, nlev_);
   }
 
-  // set  aerosol state tendencies data (interstitial aerosols only)
+  // Allocate aerosol state tendencies (interstitial aerosols only)
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    std::string ptend_int_nmr_field_name =
-        "ptend_" + std::string(mam_coupling::int_aero_nmr_field_name(imode));
-    dry_aero_tends_.int_aero_nmr[imode] =
-        get_field_out(ptend_int_nmr_field_name).get_view<Real **>();
+    Kokkos::resize(dry_aero_tends_.int_aero_nmr[imode], ncol_, nlev_);
 
     for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(imode, ispec);
-      if(strlen(int_mmr_field_name) > 0) {
-        std::string ptend_int_aero_mmr_field_name =
-            "ptend_" + std::string(int_mmr_field_name);
-        dry_aero_tends_.int_aero_mmr[imode][ispec] =
-            get_field_out(ptend_int_aero_mmr_field_name).get_view<Real **>();
-      }
+      Kokkos::resize(dry_aero_tends_.int_aero_mmr[imode][ispec], ncol_, nlev_);
     }
   }
 
@@ -504,7 +466,7 @@ void MAMWetscav::run_impl(const double dt) {
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "Updated" or pure inputs/outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-  auto dlf = get_field_out("dlf").get_view<Real **>();
+  auto dlf = get_field_in("dlf").get_view<const Real **>();
 
   auto prain = get_field_out("prain")
                    .get_view<Real **>();  // stratiform rain production rate
