@@ -28,8 +28,8 @@ initial_conditions:
   pbl_height: 25.0
   phis : 0.1
   #variables from P3
-  prain: 1e-5
-  evapr: 1e-5
+  precip_total_tend: 1e-5
+  nevapr: 1e-5
   #variables from convection scheme (they should all be zero)
   rprdsh: 0.
   rprddp: 0.

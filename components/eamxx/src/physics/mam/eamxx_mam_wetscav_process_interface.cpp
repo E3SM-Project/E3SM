@@ -10,9 +10,10 @@
 //>>>>>>>
 
 /*
-Future work:
-Wirte comments
-write in/outs for all variables clearly
+-----------------------------------------------------------------
+NOTES:
+1. We should connect surface fluxes and add code to update the fluxes
+2. Identify diagnostic variables and remove them from FM
 */
 
 namespace scream {
@@ -112,10 +113,11 @@ void MAMWetscav::set_grids(
   //----------- Variables from microphysics scheme -------------
 
   // Evaporation from stratiform rain [kg/kg/s] (FIXME: Get it from P3)
-  add_field<Required>("evapr", scalar3d_mid, kg / kg / s, grid_name);
+  add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
 
   // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
-  add_field<Required>("prain", scalar3d_mid, kg / kg / s, grid_name);
+  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
+                      grid_name);
 
   // For variables that are non dimensional (e.g., fractions etc.)
   static constexpr auto nondim = Units::nondimensional();
@@ -425,9 +427,9 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------
 
   //----------- Variables from convective scheme -------------
 
@@ -467,10 +469,10 @@ void MAMWetscav::run_impl(const double dt) {
   //----------- Variables from microphysics scheme -------------
 
   // Evaporation from stratiform rain [kg/kg/s]
-  auto evapr = get_field_in("evapr").get_view<const Real **>();
+  auto nevapr = get_field_in("nevapr").get_view<const Real **>();
 
   // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
-  auto prain = get_field_in("prain").get_view<const Real **>();
+  auto prain = get_field_in("precip_total_tend").get_view<const Real **>();
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "Computed" or pure outputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
@@ -523,7 +525,7 @@ void MAMWetscav::run_impl(const double dt) {
 
         auto icwmrdp_col  = ekat::subview(icwmrdp, icol);
         auto icwmrsh_icol = ekat::subview(icwmrsh, icol);
-        auto evapr_icol   = ekat::subview(evapr, icol);
+        auto nevapr_icol  = ekat::subview(nevapr, icol);
         auto cldt_icol    = ekat::subview(cldt, icol);
 
         auto dlf_icol         = ekat::subview(dlf, icol);
@@ -542,7 +544,7 @@ void MAMWetscav::run_impl(const double dt) {
             team, atm, progs, tends, dt,
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
-            dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, evapr_icol,
+            dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,

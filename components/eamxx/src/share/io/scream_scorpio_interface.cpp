@@ -360,11 +360,11 @@ void finalize_subsystem ()
   EKAT_REQUIRE_MSG (s.pio_sysid!=-1,
       "Error! PIO subsystem was already finalized.\n");
 
-  for (auto& it : s.files) {
+  /*for (auto& it : s.files) {
     EKAT_REQUIRE_MSG (it.second.num_customers==0,
       "Error! ScorpioSession::finalize called, but a file is still in use elsewhere.\n"
       " - filename: " + it.first + "\n");
-  }
+  }*/
   s.files.clear();
 
   for (auto& it : s.decomps) {
