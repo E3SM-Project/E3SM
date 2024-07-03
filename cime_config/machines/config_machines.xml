@@ -257,6 +257,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -276,7 +277,6 @@
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc-cmake-fix; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
-      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Kokkos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
@@ -424,6 +424,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -571,6 +572,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -740,6 +742,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -878,6 +881,7 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
@@ -1439,7 +1443,7 @@
         <command name="reset"></command>
         <command name="load">PrgEnv-cray</command>
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
+        <command name="load">rocm/5.4.0</command>
         <command name="load">libunwind/1.6.2</command>
       </modules>
       <modules>
@@ -1477,6 +1481,10 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2070,7 +2078,7 @@
 
   <machine MACH="anlgce-ub22">
     <DESC>ANL CELS General Computing Environment (Linux) workstation (Ubuntu 22.04)</DESC>
-    <NODENAME_REGEX>compute-386-01|compute-386-02</NODENAME_REGEX>
+    <NODENAME_REGEX>compute-386-(01|02|03|05|07|08)|compute-240-(15)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich,openmpi</MPILIBS>
@@ -2586,16 +2594,16 @@
         <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/9.2.0-ugetvbp</command>
-        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
+        <command name="load">gcc/11.2.0-bgddrif</command>
+        <command name="load">intel-oneapi-mkl/2022.1.0-w4kgsn4</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.1.3-sxfyy4k</command>
-        <command name="load">hdf5/1.10.7-j3zxncu</command>
-        <command name="load">netcdf-c/4.4.1-7ohuiwq</command>
-        <command name="load">netcdf-cxx/4.2-tkg465k</command>
-        <command name="load">netcdf-fortran/4.4.4-k2zu3y5</command>
-        <command name="load">parallel-netcdf/1.11.0-mirrcz7</command>
+        <command name="load">openmpi/4.1.6-ggebj5o</command>
+        <command name="load">hdf5/1.10.7-ol6xuae</command>
+        <command name="load">netcdf-c/4.4.1-2njo6xx</command>
+        <command name="load">netcdf-cxx/4.2-7pdzqua</command>
+        <command name="load">netcdf-fortran/4.4.4-52c6oqi</command>
+        <command name="load">parallel-netcdf/1.11.0-d7h4ysd</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
@@ -2651,7 +2659,6 @@
     <environment_variables compiler="gnu">
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/AlbanyBuilds/build-gcc-sfad12-e3sm/install; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Trilinos_ROOT"; fi}</env>
-      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Kokkos_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2854,34 +2861,45 @@
         <command name="load">anaconda3/5.2.0</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.4-443hhug</command>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-        <command name="load">hdf5/1.10.5-3mk3uik</command>
-        <command name="load">netcdf/4.7.0-krelxcz</command>
-        <command name="load">netcdf-fortran/4.4.5-74lj75q</command>
+        <command name="load">gcc/7.4.0</command>
+        <command name="load">intel/20.0.4-lednsve</command>
+        <command name="load">intel-mkl/2020.4.304-voqlapk</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
-        <command name="load">parallel-netcdf/1.11.0-acswzws</command>
+        <command name="load">intel-mpi/2019.9.304-i42whlw</command>
+        <command name="load">hdf5/1.10.7-ugvomvt</command>
+        <command name="load">netcdf-c/4.4.1-blyisdg</command>
+        <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
+        <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
+        <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.3.1-verbs-omjz3ck</command>
-        <command name="load">parallel-netcdf/1.11.2-7fy6qz3</command>
+        <command name="load">mvapich2/2.3.6-verbs-x4iz7lq</command>
+        <command name="load">hdf5/1.10.7-igh6foh</command>
+        <command name="load">netcdf-c/4.4.1-gei7x7w</command>
+        <command name="load">netcdf-cxx/4.2-db2f5or</command>
+        <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
+        <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0-g7hppkz</command>
-        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
-        <command name="load">hdf5/1.8.16-mz7lmxh</command>
-        <command name="load">netcdf/4.4.1-xkjcghm</command>
-        <command name="load">netcdf-fortran/4.4.4-mpstomu</command>
+        <command name="load">gcc/8.2.0-xhxgy33</command>
+        <command name="load">intel-mkl/2020.4.304-d6zw4xa</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-ozfo327</command>
-        <command name="load">parallel-netcdf/1.11.0-filvnis</command>
+        <command name="load">intel-mpi/2019.9.304-rxpzd6p</command>
+        <command name="load">hdf5/1.10.7-oy6d2nm</command>
+        <command name="load">netcdf-c/4.4.1-fysjgfx</command>
+        <command name="load">netcdf-cxx/4.2-oaiw2v6</command>
+        <command name="load">netcdf-fortran/4.4.4-kxgkaop</command>
+        <command name="load">parallel-netcdf/1.11.0-fce7akl</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-        <command name="load">mvapich2/2.3-bebop-3xi4hiu</command>
-        <command name="load">parallel-netcdf/1.11.2-hfn33fd</command>
+        <command name="load">mvapich2/2.3-bebop-a66r4jf</command>
+        <command name="load">hdf5/1.10.5-ejeshwh</command>
+        <command name="load">netcdf/4.4.1-ve2zfkw</command>
+        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
+        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
+        <command name="load">parallel-netcdf/1.11.0-kozyofv</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -2896,7 +2914,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu">
+    <environment_variables>
       <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -3080,106 +3098,6 @@
     <environment_variables compiler="intel">
       <env name="NETCDF_PATH">/usr/gdata/e3sm/install/quartz/netcdf-fortran/</env>
       <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="theta">
-    <DESC>ALCF Cray XC40 KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
-    <NODENAME_REGEX>theta.*</NODENAME_REGEX>
-    <OS>CNL</OS>
-    <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt</MPILIBS>
-    <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/ccsm/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/$PROJECT/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>16</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
-    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>aprun</executable>
-      <arguments>
-        <arg name="num_tasks">-n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node">-N $SHELL{if [ `./xmlquery --value MAX_MPITASKS_PER_NODE` -gt `./xmlquery --value TOTAL_TASKS` ];then echo `./xmlquery --value TOTAL_TASKS`;else echo `./xmlquery --value MAX_MPITASKS_PER_NODE`;fi;}</arg>
-        <arg name="hyperthreading">--cc depth -d $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc} -j $SHELL{if [ 64 -ge `./xmlquery --value MAX_TASKS_PER_NODE` ];then echo 1;else echo `./xmlquery --value MAX_TASKS_PER_NODE`/64|bc;fi;}</arg>
-        <arg name="env_vars">$ENV{SMP_VARS} $ENV{labeling}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
-      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
-      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
-      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-        <command name="rm">cray-mpich</command>
-        <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-hdf5-parallel</command>
-        <command name="rm">cray-hdf5</command>
-        <command name="rm">cray-netcdf</command>
-        <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">craype/2.6.5</command>
-        <command name="load">cmake/3.18.0</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="load">PrgEnv-intel/6.0.7</command>
-        <command name="swap">intel/19.1.0.166</command>
-      </modules>
-      <modules compiler="gnu">
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="load">PrgEnv-gnu/6.0.7</command>
-        <command name="swap">gcc/9.3.0</command>
-      </modules>
-      <modules compiler="cray">
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="load">gcc/9.3.0</command>
-        <command name="load">PrgEnv-cray/6.0.9</command>
-        <command name="swap">cce/10.0.3</command>
-        <command name="rm">darshan</command>
-      </modules>
-      <modules compiler="!intel">
-        <command name="swap">cray-libsci/20.09.1</command>
-      </modules>
-      <modules>
-        <command name="load">cray-mpich/7.7.14</command>
-        <command name="load">cray-hdf5-parallel/1.10.6.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.0.1</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
-    <environment_variables>
-      <env name="PATH">/projects/ccsm/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
-      <env name="MPAS_TOOL_DIR">/projects/ccsm/e3sm/tools/mpas</env>
-      <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
-      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
-      <env name="SMP_VARS"> </env>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="intel">
-      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e KMP_AFFINITY=granularity=thread,scatter</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE" compiler="!intel">
-      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
     </environment_variables>
   </machine>
 

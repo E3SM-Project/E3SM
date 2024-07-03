@@ -42,8 +42,8 @@ TEST_CASE("utils") {
     Field f2(fid);
     f2.allocate_view();
 
-    auto v1 = f1.get_view<P8**>();
-    auto v2 = f2.get_view<Real**>();
+    auto v1 = f1.get_strided_view<P8**>();
+    auto v2 = f2.get_strided_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     auto am_i_root = comm.am_i_root();
@@ -80,7 +80,7 @@ TEST_CASE("utils") {
 
   SECTION ("sum") {
 
-    auto v1 = f1.get_view<Real**>();
+    auto v1 = f1.get_strided_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     auto lsize = fid.get_layout().size();
@@ -103,7 +103,7 @@ TEST_CASE("utils") {
 
   SECTION ("frobenius") {
 
-    auto v1 = f1.get_view<Real**>();
+    auto v1 = f1.get_strided_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     auto lsize = fid.get_layout().size();
@@ -130,7 +130,7 @@ TEST_CASE("utils") {
 
   SECTION ("max") {
 
-    auto v1 = f1.get_view<Real**>();
+    auto v1 = f1.get_strided_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     auto lsize = fid.get_layout().size();
@@ -153,7 +153,7 @@ TEST_CASE("utils") {
 
   SECTION ("min") {
 
-    auto v1 = f1.get_view<Real**>();
+    auto v1 = f1.get_strided_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     auto lsize = fid.get_layout().size();
@@ -221,10 +221,10 @@ TEST_CASE("utils") {
 
     // Sync to host for checks
     f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(), f3.sync_to_host();
-    const auto v1  = f1.get_view <Real*,   Host>();
-    const auto v2a = f2a.get_view<Real**,  Host>();
-    const auto v2b = f2b.get_view<Real**,  Host>();
-    const auto v3  = f3.get_view <Real***, Host>();
+    const auto v1  = f1.get_strided_view <Real*,   Host>();
+    const auto v2a = f2a.get_strided_view<Real**,  Host>();
+    const auto v2b = f2b.get_strided_view<Real**,  Host>();
+    const auto v3  = f3.get_strided_view <Real***, Host>();
 
     // Check that all field values are 1 for all but last 3 levels and between [2,3] otherwise.
     auto check_level = [&] (const int ilev, const Real val) {
@@ -248,8 +248,8 @@ TEST_CASE("utils") {
     perturb(f3_alt, engine, pdf, base_seed_alt, mask_lambda, gids);
     f1_alt.sync_to_host(), f3_alt.sync_to_host();
 
-    const auto v1_alt = f1_alt.get_view<Real*,   Host>();
-    const auto v3_alt = f3_alt.get_view<Real***, Host>();
+    const auto v1_alt = f1_alt.get_strided_view<Real*,   Host>();
+    const auto v3_alt = f3_alt.get_strided_view<Real***, Host>();
 
     auto check_diff = [&] (const int ilev, const Real val1, const Real val2) {
       if (ilev < nlevs-3) REQUIRE(val1==val2);
@@ -318,7 +318,7 @@ TEST_CASE ("print_field_hyperslab") {
   f.allocate_view();
   randomize (f,engine,pdf);
 
-  auto v = f.get_view<const Real*****,Host>();
+  auto v = f.get_strided_view<const Real*****,Host>();
 
   SECTION ("slice_0") {
     std::vector<FieldTag> loc_tags = {EL,CMP};
@@ -327,7 +327,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       for (int gp1=0; gp1<ngp; ++gp1) {
         for (int gp2=0; gp2<ngp; ++gp2) {
           expected <<  "  f(" << iel << "," << icmp << "," << gp1 << "," << gp2 << ",:)";
@@ -350,7 +350,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       expected <<  "  f(" << iel << ",:," << igp << "," << jgp << "," << ilev << ")";
       for (int cmp=0; cmp<ncmp; ++cmp) {
         if (cmp % max_per_line == 0) {
@@ -369,7 +369,7 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+    expected << "     f" << fid.get_layout().to_string() << "\n\n";
       expected <<  "  f(" << ekat::join(loc_idxs,",") << ")\n";
       expected << "    " << v(iel,icmp,igp,jgp,ilev) << ", \n";
 

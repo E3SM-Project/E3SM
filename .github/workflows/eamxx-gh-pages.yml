@@ -53,14 +53,14 @@ jobs:
         run: |
           echo "= The job was automatically triggered by a ${{github.event_name}} event."
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5.1.0
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install Python deps
         run: |
-          pip install mkdocs pymdown-extensions mkdocs-material mdutils
+          pip install mkdocs pymdown-extensions mkdocs-material mdutils mkdocs-bibtex
   
       - name: Generate EAMxx params docs
         working-directory: components/eamxx/scripts

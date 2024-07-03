@@ -163,8 +163,8 @@ public:
 
   virtual bool compatible_layouts (const layout_type& src,
                                    const layout_type& tgt) const {
-    // By default, the only compatible layouts are identical
-    return src==tgt;
+    // By default, the only compatible layouts are congruent
+    return src.congruent(tgt);
   }
 
   virtual bool is_valid_src_layout (const layout_type& layout) const {

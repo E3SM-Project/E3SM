@@ -17,7 +17,7 @@ Field Names:
   - sfc_flux_lw_dn
   - sfc_flux_sw_net
   - rad_heating_pdel
-  # AeroCOM in RRTMGP
+  # AeroCom in RRTMGP
   - cdnc_at_cldtop
   - cldfrac_tot_at_cldtop
   - cldfrac_liq_at_cldtop

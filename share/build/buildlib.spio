@@ -62,6 +62,7 @@ def buildlib(bldroot, installpath, case):
     mpilib      = case.get_value("MPILIB")
     gmake       = case.get_value("GMAKE")
     gmake_j     = case.get_value("GMAKE_J")
+    case_config_opts = case.get_value("PIO_CONFIG_OPTS")
 
     scorpio_src_root_dir = os.path.join(srcroot, "externals")
     # Scorpio classic is derived from PIO1
@@ -106,6 +107,9 @@ def buildlib(bldroot, installpath, case):
 
     if "ADIOS2_ROOT" in os.environ:
         cmake_opts += "-DWITH_ADIOS2:BOOL=ON "
+        if "FROM_CREATE_TEST" in os.environ and os.environ["FROM_CREATE_TEST"] == "True":
+            cmake_opts += "-DADIOS_BP2NC_TEST:BOOL=ON "
+
     if debug:
         cmake_opts += "-DPIO_ENABLE_LOGGING=ON "
     # Case changes for NetCDF/NETCDF forces us to do this. For other packages
@@ -121,6 +125,9 @@ def buildlib(bldroot, installpath, case):
         cmake_opts += f"-DPnetCDF_PATH:PATH={os.environ['PNETCDF_PATH']} "
     else:
         cmake_opts += "-DWITH_PNETCDF:LOGICAL=FALSE -DPIO_USE_MPIIO:LOGICAL=FALSE "
+
+    if case_config_opts:
+        cmake_opts += case_config_opts + " "
 
     # scorpio needs a little help finding hdf5. The FindHDF5 in scopio uses the
     # env var "HDF5" instead of "HDF5_ROOT". If HDF5_ROOT is not set, but we have

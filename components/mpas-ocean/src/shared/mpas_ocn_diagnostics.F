@@ -886,9 +886,15 @@ contains
          ! Use centered (mean) thickness as flux value
 
          if ( config_use_subgrid_wetting_drying ) then
+#ifdef MPAS_OPENACC
+         !$acc update host(ssh)
+#endif
 
             call ocn_subgrid_layerThickEdgeFlux_center(ssh, layerThickEdgeFlux)
 
+#ifdef MPAS_OPENACC
+         !$acc update device(layerThickEdgeFlux)
+#endif
          else
 
 #ifdef MPAS_OPENACC
@@ -915,8 +921,15 @@ contains
          ! Use upwind thickness as the edge flux value
 
          if (config_use_subgrid_wetting_drying) then
+#ifdef MPAS_OPENACC
+         !$acc update host(ssh, normalVelocity, layerThickness)
+#endif
 
             call ocn_subgrid_layerThickEdgeFlux_upwind(ssh, normalVelocity, layerThickness, layerThickEdgeFlux)
+
+#ifdef MPAS_OPENACC
+         !$acc update device(layerThickEdgeFlux)
+#endif
 
          else
 #ifdef MPAS_OPENACC
@@ -2621,27 +2634,34 @@ contains
               + layerThickness(k  ,iCell)
          end do
 
-         if (config_use_subgrid_wetting_drying) then
-            call ocn_subgrid_ssh_lookup(layerThickness(1,iCell), &
-                                        subgridWetVolumeCellTable(:,iCell), &
-                                        subgridSshCellTableRange(:,iCell), &
-                                        bottomDepth(iCell), &
-                                        subgridCellBathymetryMin(iCell), & 
-                                        ssh(iCell))
-
-
-            zTop(1,iCell) = ssh(iCell)
-            zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
-         else
-            ! copy zTop(1,iCell) into sea-surface height array
-            ssh(iCell) = zTop(minLevelCell(iCell),iCell)
-         end if
+         ! copy zTop(1,iCell) into sea-surface height array
+         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
 
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
+
+      if (config_use_subgrid_wetting_drying) then
+#ifdef MPAS_OPENACC
+      !$acc update host(layerThickness)
+#endif
+         do iCell = 1, nCells
+               call ocn_subgrid_ssh_lookup(layerThickness(1,iCell), &
+                                           subgridWetVolumeCellTable(:,iCell), &
+                                           subgridSshCellTableRange(:,iCell), &
+                                           bottomDepth(iCell), &
+                                           subgridCellBathymetryMin(iCell), & 
+                                           ssh(iCell))
+
+               zTop(1,iCell) = ssh(iCell)
+               zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
+         end do
+#ifdef MPAS_OPENACC
+      !$acc update device(zTop, zMid, ssh)
+#endif
+      end if
 
    end subroutine ocn_diagnostic_solve_z_coordinates!}}}
 
@@ -3646,9 +3666,12 @@ contains
       do iCell = 1, nCellsAll
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
+
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
-                                   + config_land_ice_flux_rms_tidal_velocity**2))
+                                   + config_land_ice_flux_tidal_Jourdain_alpha**2 * &
+                                   (config_land_ice_flux_tidal_Jourdain_A0 * velocityTidalRMS(iCell) + &
+                                   config_land_ice_flux_tidal_Jourdain_U0)**2))
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
