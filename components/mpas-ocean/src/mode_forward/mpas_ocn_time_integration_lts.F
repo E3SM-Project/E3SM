@@ -40,6 +40,7 @@ module ocn_time_integration_lts
    use ocn_equation_of_state
    use ocn_time_average_coupled
    use ocn_time_varying_forcing
+   use ocn_wetting_drying
 
    implicit none
    private
@@ -153,7 +154,7 @@ module ocn_time_integration_lts
        layerThicknessFirstStage, & ! layer thickness at first stage of LTS
        layerThicknessSecondStage ! layer thickness at second stage of LTS
 
-    ! LTS objects
+    ! LTS Objects
     real (kind=RKIND) :: &
        dtFine, & ! fine dt, defined as dt / M
        alpha, alphaHat, beta, betaHat, gam, gamHat  ! interpolation coefficients for the predictor step of LTS
@@ -253,20 +254,18 @@ module ocn_time_integration_lts
     call mpas_pool_get_array(LTSPool, 'nEdgesInLTSRegion', &
                                        nEdgesInLTSRegion)
 
-    !--- Create additional pools for LTS
-    call mpas_pool_create_pool(tendSum1stPool)
-    call mpas_pool_clone_pool(tendPool, tendSum1stPool, 1)
-    call mpas_pool_create_pool(tendSum2ndPool)
-    call mpas_pool_clone_pool(tendPool, tendSum2ndPool, 1)
-    call mpas_pool_create_pool(tendSum3rdPool)
-    call mpas_pool_clone_pool(tendPool, tendSum3rdPool, 1)
-    call mpas_pool_create_pool(tendSlowPool)
-    call mpas_pool_clone_pool(tendPool, tendSlowPool, 1)
+    !--- Update additional pools for LTS
+    call mpas_pool_get_subpool(block % structs, 'tend_sum_1st', tendSum1stPool)
+    call mpas_pool_get_subpool(block % structs, 'tend_sum_2nd', tendSum2ndPool)
+    call mpas_pool_get_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
+    call mpas_pool_get_subpool(block % structs, 'tend_slow', tendSlowPool)
 
-    call mpas_pool_add_subpool(block % structs, 'tend_sum_1st', tendSum1stPool)
-    call mpas_pool_add_subpool(block % structs, 'tend_sum_2nd', tendSum2ndPool)
-    call mpas_pool_add_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
-    call mpas_pool_add_subpool(block % structs, 'tend_slow', tendSlowPool)
+
+    call mpas_pool_copy_pool(tendPool, tendSum1stPool, 1)
+    call mpas_pool_copy_pool(tendPool, tendSum2ndPool, 1)
+    call mpas_pool_copy_pool(tendPool, tendSum3rdPool, 1)
+    call mpas_pool_copy_pool(tendPool, tendSlowPool, 1)
+
 
     call mpas_pool_get_array(tendSlowPool, 'normalVelocity', normalVelocityTendSlow)
 
@@ -306,79 +305,6 @@ module ocn_time_integration_lts
     normalVelocityTendSum3rd(:,:) = 0.0_RKIND
     layerThicknessTendSum3rd(:,:) = 0.0_RKIND
 
-    if (associated(block % prev)) then
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_1st', tendSum1stPool)
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_2nd', tendSum2ndPool)
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)
-    else
-       nullify(prevTendSum1stPool)
-       nullify(prevTendSum2ndPool)
-       nullify(prevTendSum3rdPool)
-       nullify(prevTendSlowPool)
-    end if
-
-    if (associated(block % next)) then
-         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_1st', nextTendSum1stPool)
-         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_2nd', nextTendSum2ndPool)
-         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_3rd', nextTendSum3rdPool)
-         call mpas_pool_get_subpool(block % next % structs, 'tend_slow', nextTendSlowPool)
-    else
-       nullify(nextTendSum1stPool)
-       nullify(nextTendSum2ndPool)
-       nullify(nextTendSum3rdPool)
-       nullify(nextTendSlowPool)
-    end if
-
-    call mpas_pool_get_subpool(block % structs, 'tend_sum_1st', tendSum1stPool)
-    call mpas_pool_get_subpool(block % structs, 'tend_sum_2nd', tendSum2ndPool)
-    call mpas_pool_get_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
-    call mpas_pool_get_subpool(block % structs, 'tend_slow', tendSlowPool)
-
-    if (associated(prevTendSum1stPool) .and. associated(nextTendSum1stPool)) then
-       call mpas_pool_link_pools(tendSum1stPool, prevTendSum1stPool, nextTendSum1stPool)
-    else if (associated(prevTendSum1stPool)) then
-       call mpas_pool_link_pools(tendSum1stPool, prevTendSum1stPool)
-    else if (associated(nextTendSum1stPool)) then
-       call mpas_pool_link_pools(tendSum1stPool,nextPool=nextTendSum1stPool)
-    else
-       call mpas_pool_link_pools(tendSum1stPool)
-    end if
-
-    if (associated(prevTendSum2ndPool) .and. associated(nextTendSum2ndPool)) then
-       call mpas_pool_link_pools(tendSum2ndPool, prevTendSum2ndPool, nextTendSum2ndPool)
-    else if (associated(prevTendSum2ndPool)) then
-       call mpas_pool_link_pools(tendSum2ndPool, prevTendSum2ndPool)
-    else if (associated(nextTendSum2ndPool)) then
-       call mpas_pool_link_pools(tendSum2ndPool,nextPool=nextTendSum2ndPool)
-    else
-       call mpas_pool_link_pools(tendSum2ndPool)
-    end if
-
-    if (associated(prevTendSum3rdPool) .and. associated(nextTendSum3rdPool)) then
-       call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool, nextTendSum3rdPool)
-    else if (associated(prevTendSum3rdPool)) then
-       call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool)
-    else if (associated(nextTendSum3rdPool)) then
-       call mpas_pool_link_pools(tendSum3rdPool,nextPool=nextTendSum3rdPool)
-    else
-       call mpas_pool_link_pools(tendSum3rdPool)
-    end if
-
-    if (associated(prevTendSlowPool) .and. associated(nextTendSlowPool)) then
-       call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool, nextTendSlowPool)
-    else if (associated(prevTendSlowPool)) then
-       call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool)
-    else if (associated(nextTendSlowPool)) then
-       call mpas_pool_link_pools(tendSlowPool,nextPool=nextTendSlowPool)
-    else
-       call mpas_pool_link_pools(tendSlowPool)
-    end if
-
-    call mpas_pool_link_parinfo(block, tendSum1stPool)
-    call mpas_pool_link_parinfo(block, tendSum2ndPool)
-    call mpas_pool_link_parinfo(block, tendSum3rdPool)
-    call mpas_pool_link_parinfo(block, tendSlowPool)
 
     call mpas_timer_stop("lts time-step prep")
 
@@ -387,6 +313,10 @@ module ocn_time_integration_lts
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! BEGIN LTS SCHEME
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    if (config_use_wetting_drying) then
+       wettingVelocityFactor(:, :) = 0.0_RKIND
+    end if    
 
     ! -------------------------------- COMPUTE SLOW TEND FOR ALL LTS REGIONS  -------------------------------
 
@@ -400,19 +330,10 @@ module ocn_time_integration_lts
     ! --------------------------------------  STEP  ------------------------------------------
     ! --- compute the first stage of LTS for interface layer 1, interface layer 2 and coarse
 
-    ! --- update halos for diagnostic variables.
-    call mpas_timer_start("lts diagnostic halo update")
-    call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-    if (config_mom_del4 > 0.0_RKIND) then
-       call mpas_dmpar_field_halo_exch(domain, 'divergence')
-       call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-    end if
-    call mpas_timer_stop("lts diagnostic halo update")
-
     ! --- compute tendencies for thickness and fast tendencies only for velocity
     call mpas_timer_start("lts compute tendencies")
 
-    call ocn_lts_tends(statePool, LTSPool, tendPool, 1, 0, 1, 1, 1)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, dt, 1, 0, 1, 1, 1)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -428,18 +349,21 @@ module ocn_time_integration_lts
     do iRegion =1,nRegions
        do ie = 1, nEdgesInLTSRegion(iRegion,2)
           iEdge = edgesInLTSRegion(iRegion,2,ie)
-          normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge)
+          normalVelocityFirstStage(:,iEdge) =  ( normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge) ) &
+                                               * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
     end do
     ! --- coarse
     do ie = 1, nEdgesInLTSRegion(2,1)
        iEdge = edgesInLTSRegion(2,1,ie)
-       normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge)
+       normalVelocityFirstStage(:,iEdge) =  ( normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge) ) &
+                                            * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
     end do
     ! --- fine layers close to interface layers
     do ie = 1, nEdgesInLTSRegion(1,3)
        iEdge = edgesInLTSRegion(1,3,ie)
-       normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge)
+       normalVelocityFirstStage(:,iEdge) = ( normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge) ) &
+                                           * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
     end do
 
 
@@ -478,19 +402,11 @@ module ocn_time_integration_lts
 
     ! --------------------------------------  STEP  ------------------------------------------
     ! --- compute the second stage of LTS for interface layer 1, interface layer 2 and coarse
-    ! --- update halos for diagnostic variables.
-    call mpas_timer_start("lts diagnostic halo update")
-    call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-    if (config_mom_del4 > 0.0_RKIND) then
-       call mpas_dmpar_field_halo_exch(domain, 'divergence')
-       call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-    end if
-    call mpas_timer_stop("lts diagnostic halo update")
 
     call mpas_timer_start("lts compute tendencies")
 
     ! TENDENCIES COMPUTATION ---
-    call ocn_lts_tends(statePool, LTSPool, tendPool, 3, 0, 0, 1, 1)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, dt, 3, 0, 0, 1, 1)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -505,18 +421,20 @@ module ocn_time_integration_lts
     ! --- coarse
     do ie = 1, nEdgesInLTSRegion(2,1)
        iEdge = edgesInLTSRegion(2,1,ie)
-       normalVelocitySecondStage(:,iEdge) = weightOld * normalVelocityCur(:,iEdge) &
-                                            + weightNew * normalVelocityFirstStage(:,iEdge) &
-                                            + weightTend * dt * normalVelocityTend(:,iEdge)
+       normalVelocitySecondStage(:,iEdge) = ( weightOld * normalVelocityCur(:,iEdge) &
+                                             + weightNew * normalVelocityFirstStage(:,iEdge) &
+                                             + weightTend * dt * normalVelocityTend(:,iEdge) ) &
+                                            * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
     end do
 
     ! --- interface layers
     do iRegion = 1, nRegions
        do ie = 1, nEdgesInLTSRegion(iRegion,2)
           iEdge = edgesInLTSRegion(iRegion,2,ie)
-          normalVelocitySecondStage(:,iEdge) = weightOld * normalVelocityCur(:,iEdge) &
-                                               + weightNew * normalVelocityFirstStage(:,iEdge) &
-                                               + weightTend * dt * normalVelocityTend(:,iEdge)
+          normalVelocitySecondStage(:,iEdge) = ( weightOld * normalVelocityCur(:,iEdge) &
+                                                + weightNew * normalVelocityFirstStage(:,iEdge) &
+                                                + weightTend * dt * normalVelocityTend(:,iEdge) ) &
+                                               * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
     end do
 
@@ -590,20 +508,10 @@ module ocn_time_integration_lts
 
        call mpas_timer_stop("lts prognostic halo update")
 
-       ! --- update halos for diagnostic variables
-       call mpas_timer_start("lts diagnostic halo update")
-       call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-       if (config_mom_del4 > 0.0_RKIND) then
-          call mpas_dmpar_field_halo_exch(domain, 'divergence')
-          call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-       end if
-       call mpas_timer_stop("lts diagnostic halo update")
-
-
        call mpas_timer_start("lts compute tendencies")
 
        ! --- compute tendencies for thickness and fast tendencies only for velocity
-       call ocn_lts_tends(statePool, LTSPool, tendPool, 1, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, dtFine, 1, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -620,22 +528,28 @@ module ocn_time_integration_lts
        do ie = 1, nEdgesInLTSRegion(1,2)
           iEdge = edgesInLTSRegion(1,2,ie)
           normalVelocityCur(:,iEdge) = normalVelocityNew(:,iEdge)
-          normalVelocityTendSum2nd(:,iEdge) = normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum2nd(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum2nd) * normalVelocityCur(:,iEdge) &
+                                                + normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        ! --- interface layer 2 (correction)
        do ie = 1, nEdgesInLTSRegion(2,2)
           iEdge = edgesInLTSRegion(2,2,ie)
-          normalVelocityTendSum2nd(:,iEdge) = normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum2nd(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum2nd) * normalVelocityCur(:,iEdge) &
+                                                + normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
-          normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocityFirstStage(:,iEdge) = ( normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) ) & !soln update for the fine
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        do ie = 1, nEdgesInLTSRegion(1,3)
           iEdge = edgesInLTSRegion(1,3,ie)
-          normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocityFirstStage(:,iEdge) = ( normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) ) &!soln update for the fine
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- LAYER THICKNESS
@@ -702,21 +616,10 @@ module ocn_time_integration_lts
        call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=3)
        call mpas_timer_stop("lts prognostic halo update")
 
-
-       ! --- update halos for diagnostic variables
-       call mpas_timer_start("lts diagnostic halo update")
-       call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-       if (config_mom_del4 > 0.0_RKIND) then
-          call mpas_dmpar_field_halo_exch(domain, 'divergence')
-          call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-       end if
-       call mpas_timer_stop("lts diagnostic halo update")
-
-
        call mpas_timer_start("lts compute tendencies")
 
        ! TENDENCIES COMPUTATION ---
-       call ocn_lts_tends(statePool, LTSPool, tendPool, 3, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, dtFine, 3, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -733,24 +636,30 @@ module ocn_time_integration_lts
        do ie = 1, nEdgesInLTSRegion(1,2)
           iEdge = edgesInLTSRegion(1,2,ie)
           normalVelocityFirstStage(:,iEdge) = normalVelocityNew(:,iEdge)
-          normalVelocityTendSum1st(:,iEdge) = normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum1st(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum1st) * normalVelocityCur(:,iEdge) & 
+                                                + normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        ! --- interface layer 2 (correction)
        do ie = 1, nEdgesInLTSRegion(2,2)
           iEdge = edgesInLTSRegion(2,2,ie)
-          normalVelocityTendSum1st(:,iEdge) = normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum1st(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum1st) * normalVelocityCur(:,iEdge) & 
+                                                + normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
-          normalVelocitySecondStage(:,iEdge) =  weightOld * normalVelocityCur(:,iEdge) + weightNew * normalVelocityFirstStage(:,iEdge) &
-                                               + weightTend *  dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocitySecondStage(:,iEdge) = ( weightOld * normalVelocityCur(:,iEdge) + weightNew * normalVelocityFirstStage(:,iEdge) &
+                                                + weightTend *  dtFine * normalVelocityTend(:,iEdge) ) & !soln update for the fine
+                                               * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        do ie = 1, nEdgesInLTSRegion(1,3)
           iEdge = edgesInLTSRegion(1,3,ie)
-          normalVelocitySecondStage(:,iEdge) =  weightOld * normalVelocityCur(:,iEdge) + weightNew * normalVelocityFirstStage(:,iEdge) &
-                                                + weightTend *  dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocitySecondStage(:,iEdge) = ( weightOld * normalVelocityCur(:,iEdge) + weightNew * normalVelocityFirstStage(:,iEdge) &
+                                                + weightTend *  dtFine * normalVelocityTend(:,iEdge) ) & !soln update for the fine
+                                               * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- LAYER THICKNESS
@@ -820,20 +729,9 @@ module ocn_time_integration_lts
 
        call mpas_timer_stop("lts prognostic halo update")
 
-
-       ! --- update halos for diagnostic variables
-       call mpas_timer_start("lts diagnostic halo update")
-       call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-       if (config_mom_del4 > 0.0_RKIND) then
-          call mpas_dmpar_field_halo_exch(domain, 'divergence')
-          call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-       end if
-       call mpas_timer_stop("lts diagnostic halo update")
-
-
        call mpas_timer_start("lts compute tendencies")
 
-       call ocn_lts_tends(statePool, LTSPool, tendPool, 4, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, dtFine, 4, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -850,24 +748,30 @@ module ocn_time_integration_lts
        do ie = 1, nEdgesInLTSRegion(1,2)
           iEdge = edgesInLTSRegion(1,2,ie)
           normalVelocitySecondStage(:,iEdge) = normalVelocityNew(:,iEdge)
-          normalVelocityTendSum3rd(:,iEdge) = normalVelocityTendSum3rd(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum3rd(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum3rd) * normalVelocityCur(:,iEdge) &
+                                                + normalVelocityTendSum3rd(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        ! --- interface layer 2 (correction)
        do ie = 1, nEdgesInLTSRegion(2,2)
           iEdge = edgesInLTSRegion(2,2,ie)
-          normalVelocityTendSum3rd(:,iEdge) = normalVelocityTendSum3rd(:,iEdge) + normalVelocityTend(:,iEdge)
+          normalVelocityTendSum3rd(:,iEdge) = ( 1.0_RKIND / (3.0_RKIND * dt * weightTendSum3rd) * normalVelocityCur(:,iEdge) &
+                                                + normalVelocityTendSum3rd(:,iEdge) + normalVelocityTend(:,iEdge) ) &
+                                              * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
-          normalVelocityCur(:,iEdge) =  (1.0_RKIND / 3.0_RKIND) * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
-                                         + (2.0_RKIND / 3.0_RKIND) *  dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocityCur(:,iEdge) =  ( (1.0_RKIND / 3.0_RKIND) * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
+                                         + (2.0_RKIND / 3.0_RKIND) *  dtFine * normalVelocityTend(:,iEdge) ) & !soln update for the fine
+                                        * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
        do ie = 1, nEdgesInLTSRegion(1,3)
           iEdge = edgesInLTSRegion(1,3,ie)
-          normalVelocityCur(:,iEdge) =  (1.0_RKIND / 3.0_RKIND) * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
-                                         + (2.0_RKIND / 3.0_RKIND) *  dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
+          normalVelocityCur(:,iEdge) =  ( (1.0_RKIND / 3.0_RKIND) * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
+                                         + (2.0_RKIND / 3.0_RKIND) *  dtFine * normalVelocityTend(:,iEdge) ) & !soln update for the fine
+                                        * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
        end do
 
        ! --- LAYER THICKNESS
@@ -943,18 +847,9 @@ module ocn_time_integration_lts
     ! --- compute the third stage of LTS for coarse
     !
 
-    ! --- update halos for diagnostic variables
-    call mpas_timer_start("lts diagnostic halo update")
-    call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-    if (config_mom_del4 > 0.0_RKIND) then
-       call mpas_dmpar_field_halo_exch(domain, 'divergence')
-       call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
-    end if
-    call mpas_timer_stop("lts diagnostic halo update")
-
     call mpas_timer_start("lts compute tendencies")
 
-    call ocn_lts_tends(statePool, LTSPool, tendPool, 4, 0, 0, 1, 0)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, dt, 4, 0, 0, 1, 0)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -968,8 +863,9 @@ module ocn_time_integration_lts
     ! --- coarse
     do ie = 1, nEdgesInLTSRegion(2,1)
        iEdge = edgesInLTSRegion(2,1,ie)
-       normalVelocityNew(:,iEdge) = (1.0_RKIND / 3.0_RKIND)  * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
-                                     + (2.0_RKIND / 3.0_RKIND) * dt * normalVelocityTend(:,iEdge)
+       normalVelocityNew(:,iEdge) = ( (1.0_RKIND / 3.0_RKIND)  * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
+                                     + (2.0_RKIND / 3.0_RKIND) * dt * normalVelocityTend(:,iEdge) ) &
+                                    * (1.0_RKIND - wettingVelocityFactor(:, iEdge))
     end do
 
     ! --- LAYER THICKNESS
@@ -999,8 +895,12 @@ module ocn_time_integration_lts
 
        do ie = 1, nEdgesInLTSRegion(iRegion,2)
           iEdge = edgesInLTSRegion(iRegion,2,ie)
-          normalVelocityNew(:,iEdge) =  normalVelocityCur(:,iEdge) + weightTendSum2nd * dtFine * normalVelocityTendSum2nd(:,iEdge) &
-                                        + weightTendSum1st * dtFine * normalVelocityTendSum1st(:,iEdge) + weightTendSum3rd * dtFine * normalVelocityTendSum3rd(:,iEdge)
+          ! The corrections are computed like this (taking normalVelocityTendSum2nd as an example):
+          ! normalVelocityTendSum2nd(:,iEdge) = ( 1 / (3*dt*weightTendSum2nd) * normalVelocityCur(:,iEdge) &
+          ! + normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge) )
+          normalVelocityNew(:,iEdge) =   weightTendSum2nd * dtFine * normalVelocityTendSum2nd(:,iEdge) &
+                                         + weightTendSum1st * dtFine * normalVelocityTendSum1st(:,iEdge) &
+                                         + weightTendSum3rd * dtFine * normalVelocityTendSum3rd(:,iEdge) 
        end do
 
        ! --- LAYER THICKNESS
@@ -1044,6 +944,23 @@ module ocn_time_integration_lts
     !
 
     call mpas_timer_start("lts cleanup phase")
+
+    ! verify that cells are not dry at conclusion of time step
+    if (config_use_wetting_drying) then
+       call mpas_timer_start("lts check wet cells")
+
+       ! ensure existing layerThickness is valid
+       if (config_verify_not_dry) then
+          call ocn_wetting_drying_verify(block, config_drying_min_cell_height, err)
+       end if
+
+       call mpas_timer_stop("lts check wet cells")
+    end if
+
+    ! direct application of tidal boundary condition
+    if (config_use_tidal_forcing .and. trim(config_tidal_forcing_type) == 'direct') then
+       call  ocn_lts_apply_direct_tidal_bc(statePool, forcingPool, verticalMeshPool, 2)
+    end if
 
     if (config_prescribe_velocity) then
        do iEdge = 1, nEdgesAll
@@ -1089,19 +1006,8 @@ module ocn_time_integration_lts
        SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
     end do
 
-
     ! DIAGNOSTICS UPDATE ---
     call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
-
-    call mpas_pool_destroy_pool(tendSum1stPool)
-    call mpas_pool_destroy_pool(tendSum2ndPool)
-    call mpas_pool_destroy_pool(tendSum3rdPool)
-    call mpas_pool_destroy_pool(tendSlowPool)
-
-    call mpas_pool_remove_subpool(block % structs, 'tend_sum_1st')
-    call mpas_pool_remove_subpool(block % structs, 'tend_sum_2nd')
-    call mpas_pool_remove_subpool(block % structs, 'tend_sum_3rd')
-    call mpas_pool_remove_subpool(block % structs, 'tend_slow')
 
     call mpas_timer_stop("lts cleanup phase")
 
@@ -1131,7 +1037,17 @@ module ocn_time_integration_lts
     type (domain_type), intent(inout) :: domain
 
     type (block_type), pointer :: block
-    type (mpas_pool_type), pointer :: LTSPool, meshPool
+    type (mpas_pool_type), pointer :: LTSPool
+    type (mpas_pool_type), pointer :: tendPool
+    type (mpas_pool_type), pointer :: &
+       tendSlowPool, &
+       tendSum1stPool, &
+       tendSum2ndPool, &
+       tendSum3rdPool, &
+       prevTendSlowPool, nextTendSlowPool, &
+       prevTendSum1stPool, nextTendSum1stPool, &
+       prevTendSum2ndPool, nextTendSum2ndPool, &
+       prevTendSum3rdPool, nextTendSum3rdPool
     integer, dimension(:), allocatable :: isLTSRegionEdgeAssigned
     integer :: i, iCell, iEdge, iRegion, coarseRegions, fineRegions, fineRegionsM1
     integer, dimension(:), pointer :: LTSRegion
@@ -1143,8 +1059,94 @@ module ocn_time_integration_lts
     minMaxLTSRegion(2) = 2
 
     block => domain % blocklist
+
+    ! Create additional pools 
+    call mpas_pool_get_subpool(block%structs, 'tend', tendPool)
+
+    call mpas_pool_create_pool(tendSum1stPool)
+    call mpas_pool_clone_pool(tendPool, tendSum1stPool, 1)
+    call mpas_pool_create_pool(tendSum2ndPool)
+    call mpas_pool_clone_pool(tendPool, tendSum2ndPool, 1)
+    call mpas_pool_create_pool(tendSum3rdPool)
+    call mpas_pool_clone_pool(tendPool, tendSum3rdPool, 1)
+    call mpas_pool_create_pool(tendSlowPool)
+    call mpas_pool_clone_pool(tendPool, tendSlowPool, 1)
+
+    call mpas_pool_add_subpool(block % structs, 'tend_sum_1st', tendSum1stPool)
+    call mpas_pool_add_subpool(block % structs, 'tend_sum_2nd', tendSum2ndPool)
+    call mpas_pool_add_subpool(block % structs, 'tend_sum_3rd', tendSum3rdPool)
+    call mpas_pool_add_subpool(block % structs, 'tend_slow', tendSlowPool)
+
+    if (associated(block % prev)) then
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_1st', tendSum1stPool)
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_2nd', tendSum2ndPool)
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)
+    else
+       nullify(prevTendSum1stPool)
+       nullify(prevTendSum2ndPool)
+       nullify(prevTendSum3rdPool)
+       nullify(prevTendSlowPool)
+    end if
+
+    if (associated(block % next)) then
+         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_1st', nextTendSum1stPool)
+         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_2nd', nextTendSum2ndPool)
+         call mpas_pool_get_subpool(block % next % structs, 'tend_sum_3rd', nextTendSum3rdPool)
+         call mpas_pool_get_subpool(block % next % structs, 'tend_slow', nextTendSlowPool)
+    else
+       nullify(nextTendSum1stPool)
+       nullify(nextTendSum2ndPool)
+       nullify(nextTendSum3rdPool)
+       nullify(nextTendSlowPool)
+    end if
+
+    if (associated(prevTendSum1stPool) .and. associated(nextTendSum1stPool)) then
+       call mpas_pool_link_pools(tendSum1stPool, prevTendSum1stPool, nextTendSum1stPool)
+    else if (associated(prevTendSum1stPool)) then
+       call mpas_pool_link_pools(tendSum1stPool, prevTendSum1stPool)
+    else if (associated(nextTendSum1stPool)) then
+       call mpas_pool_link_pools(tendSum1stPool,nextPool=nextTendSum1stPool)
+    else
+       call mpas_pool_link_pools(tendSum1stPool)
+    end if
+
+    if (associated(prevTendSum2ndPool) .and. associated(nextTendSum2ndPool)) then
+       call mpas_pool_link_pools(tendSum2ndPool, prevTendSum2ndPool, nextTendSum2ndPool)
+    else if (associated(prevTendSum2ndPool)) then
+       call mpas_pool_link_pools(tendSum2ndPool, prevTendSum2ndPool)
+    else if (associated(nextTendSum2ndPool)) then
+       call mpas_pool_link_pools(tendSum2ndPool,nextPool=nextTendSum2ndPool)
+    else
+       call mpas_pool_link_pools(tendSum2ndPool)
+    end if
+
+    if (associated(prevTendSum3rdPool) .and. associated(nextTendSum3rdPool)) then
+       call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool, nextTendSum3rdPool)
+    else if (associated(prevTendSum3rdPool)) then
+       call mpas_pool_link_pools(tendSum3rdPool, prevTendSum3rdPool)
+    else if (associated(nextTendSum3rdPool)) then
+       call mpas_pool_link_pools(tendSum3rdPool,nextPool=nextTendSum3rdPool)
+    else
+       call mpas_pool_link_pools(tendSum3rdPool)
+    end if
+
+    if (associated(prevTendSlowPool) .and. associated(nextTendSlowPool)) then
+       call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool, nextTendSlowPool)
+    else if (associated(prevTendSlowPool)) then
+       call mpas_pool_link_pools(tendSlowPool, prevTendSlowPool)
+    else if (associated(nextTendSlowPool)) then
+       call mpas_pool_link_pools(tendSlowPool,nextPool=nextTendSlowPool)
+    else
+       call mpas_pool_link_pools(tendSlowPool)
+    end if
+
+    call mpas_pool_link_parinfo(block, tendSum1stPool)
+    call mpas_pool_link_parinfo(block, tendSum2ndPool)
+    call mpas_pool_link_parinfo(block, tendSum3rdPool)
+    call mpas_pool_link_parinfo(block, tendSlowPool)
+
     call mpas_pool_get_subpool(block % structs, 'LTS', LTSPool)
-    call mpas_pool_get_subpool(block % structs, ',mesh', meshPool)
 
     call mpas_pool_get_array(LTSPool, 'LTSRegion', LTSRegion)
     call mpas_pool_get_array(LTSPool, 'cellsInLTSRegion', cellsInLTSRegion)
@@ -1191,7 +1193,7 @@ module ocn_time_integration_lts
     ! by the cell in the LTS region closest to the fine region,
     ! see Figure 3 in "Conservative explicit local time-stepping schemes for
     ! the shallow water equations" by Hoang et al. (halo edges however
-    ! are owned by whatever processor they are initially assigned to)
+    ! are owned by whatever process they are initially assigned to)
 
     allocate(isLTSRegionEdgeAssigned(nEdgesOwned))
     isLTSRegionEdgeAssigned(:) = 0
@@ -1248,7 +1250,7 @@ module ocn_time_integration_lts
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine ocn_lts_tends(statePool, LTSPool, tendPool, timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface)!{{{
+   subroutine ocn_lts_tends(statePool, LTSPool, tendPool, dt, timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface)!{{{
 
    integer, intent(in) :: timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface
 
@@ -1258,6 +1260,8 @@ module ocn_time_integration_lts
    type (mpas_pool_type), intent(in) :: &
       LTSPool          !< Input: LTS data
 
+    real (kind=RKIND), intent(in) :: dt
+
    type (mpas_pool_type), intent(inout) :: &
       tendPool          !< Input: tendency variables
 
@@ -1266,8 +1270,8 @@ module ocn_time_integration_lts
    real (kind=RKIND), dimension(:), pointer :: ssh
    real (kind=RKIND), dimension(:,:), pointer :: normalVelocityTend, layerThicknessTend, normalVelocity, layerThickness
 
-   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, i, iCell, kmin, kmax
-   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, ssh_sal_on
+   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, i, iCell, nCells, kmin, kmax
+   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, ssh_sal_on, tidal_pot_for_on
 
    betaSelfAttrLoad = config_self_attraction_and_loading_beta
    nRegions = 2
@@ -1289,27 +1293,64 @@ module ocn_time_integration_lts
    else
       ssh_sal_on = 0.0_RKIND
    endif
+   if (config_use_tidal_potential_forcing) then
+       tidal_pot_for_on = 1.0_RKIND
+   else
+       tidal_pot_for_on = 0.0_RKIND
+   end if    
 
    ! inline computation of the diagnostics
 
    ! layerThickEdgeFlux
-   do iEdge = 1, nEdgesAll
-      kmin = minLevelEdgeBot(iEdge)
-      kmax = maxLevelEdgeTop(iEdge)
-      cell1 = cellsOnEdge(1,iEdge)
-      cell2 = cellsOnEdge(2,iEdge)
-      do k = 1,nVertLevels
-         ! initialize layerThicknessEdgeMean to avoid divide by
-         ! zero and NaN problems.
-         layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+   if(config_thickness_flux_type == 'centered') then
+
+      do iEdge = 1, nEdgesAll
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k = 1,nVertLevels
+            ! initialize layerThicknessEdgeMean to avoid divide by
+            ! zero and NaN problems.
+            layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+         end do
+         do k = kmin,kmax
+            ! central differenced
+            layerThickEdgeFlux(k,iEdge) = 0.5_RKIND * &
+                                         (layerThickness(k,cell1) + &
+                                          layerThickness(k,cell2))
+         end do
       end do
-      do k = kmin,kmax
-         ! central differenced
-         layerThickEdgeFlux(k,iEdge) = 0.5_RKIND * &
-                                      (layerThickness(k,cell1) + &
-                                       layerThickness(k,cell2))
+
+   else if(config_thickness_flux_type == 'upwind') then
+
+      do iEdge = 1, nEdgesAll
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k=1,nVertLevels
+            ! initialize layerThicknessEdgeFlux to avoid divide by
+            ! zero and NaN problems.
+            layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+         end do
+         do k = kmin,kmax
+            if (normalVelocity(k,iEdge) > 0.0_RKIND) then
+               layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
+            elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
+               layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
+            else
+               layerThickEdgeFlux(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
+            end if
+         end do
       end do
-   end do
+
+   else
+
+      call mpas_log_write('ERROR: config_thickness_flux_type selected not implemented for LTS', messageType=MPAS_LOG_CRIT)
+      call abort
+
+   end if
 
    ! ssh
    do iCell = 1, nCellsAll
@@ -1322,10 +1363,13 @@ module ocn_time_integration_lts
       ssh(iCell) = zTop(minLevelCell(iCell),iCell)
    end do
 
-   ! inline computation of the tendencies
+   if (config_use_wetting_drying) then
+      call ocn_lts_wd(statePool, dt, timeLevelIn)
+   end if
 
+   ! inline computation of the tendencies
    normalVelocityTend(:,:) = 0.0_RKIND
-   layerThicknessTend(:, :) = 0.0_RKIND
+   layerThicknessTend(:,:) = 0.0_RKIND
 
    ! interface
    if (computeOnInterface == 1) then
@@ -1339,9 +1383,9 @@ module ocn_time_integration_lts
             kMin = minLevelEdgeBot(iEdge)
             kMax = maxLevelEdgeTop(iEdge)
             do k=kMin,kMax
-               normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
-                                             - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1)) &
-                                             - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+               normalVelocityTend(k,iEdge) =  normalVelocityTend(k,iEdge) &
+                                              - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1)) &
+                                                - tidal_pot_for_on * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
             end do
          end do
          ! thickness tendency
@@ -1350,7 +1394,7 @@ module ocn_time_integration_lts
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-                  flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
+                  flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
                   layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
                end do
             end do
@@ -1370,7 +1414,7 @@ module ocn_time_integration_lts
          do k=kMin,kMax
             normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
                                           - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
-                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                            - tidal_pot_for_on * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1379,7 +1423,7 @@ module ocn_time_integration_lts
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
@@ -1398,7 +1442,7 @@ module ocn_time_integration_lts
          do k=kMin,kMax
             normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
                                           - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
-                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                            - tidal_pot_for_on * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1407,7 +1451,7 @@ module ocn_time_integration_lts
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
@@ -1424,9 +1468,9 @@ module ocn_time_integration_lts
          kMin = minLevelEdgeBot(iEdge)
          kMax = maxLevelEdgeTop(iEdge)
          do k=kMin,kMax
-            normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
-                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+            normalVelocityTend(k,iEdge) =  normalVelocityTend(k,iEdge) &
+                                           - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
+                                             - tidal_pot_for_on * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1435,7 +1479,7 @@ module ocn_time_integration_lts
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
@@ -1443,6 +1487,90 @@ module ocn_time_integration_lts
    end if
 
    end subroutine ocn_lts_tends!}}}
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   subroutine ocn_lts_wd(statePool, dt, timeLevelIn)
+
+   type (mpas_pool_type), intent(in) :: &
+      statePool          !< Input: state variables
+
+   real (kind=RKIND), intent(in) :: dt
+
+   integer, intent(in) :: timeLevelIn
+
+   real (kind=RKIND), dimension(:, :), pointer :: layerThickness
+   real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
+   real (kind=RKIND) :: divOutFlux, layerThicknessTmp
+
+   integer :: iEdge, k, iCell, i
+
+   call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevelIn)
+   call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevelIn)
+
+   do iCell = 1, nCellsAll
+      do k = minLevelCell(iCell), maxLevelCell(iCell)
+         divOutFlux = 0.0_RKIND
+         layerThicknessTmp = layerThickness(k, iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge)) then
+               ! only consider divergence flux leaving the cell
+               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
+                  divOutFlux = divOutFlux + &
+                               normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) * &
+                               layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge) * &
+                               invAreaCell(iCell)
+                end if
+             end if
+          end do
+          layerThicknessTmp = layerThicknessTmp + dt * divOutFlux
+
+          call ocn_wetting_velocity_factor_on_cell_edges(wettingVelocityFactor, layerThicknessTmp, normalVelocity, iCell, k)
+
+      end do
+   end do
+
+   call mpas_dmpar_exch_halo_field(wettingVelocityField)
+
+   end subroutine ocn_lts_wd!}}}   
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   subroutine ocn_lts_apply_direct_tidal_bc(statePool, forcingPool, verticalMeshPool, timeLevelIn)!{{{
+
+   type (mpas_pool_type), intent(inout) :: statePool
+
+   type (mpas_pool_type), intent(in) :: forcingPool, verticalMeshPool
+
+   integer, intent(in) :: timeLevelIn
+
+   integer :: iCell, k
+
+   real (kind=RKIND) :: totalDepth
+   real (kind=RKIND), dimension(:,:), pointer :: layerThicknessNew, restingThickness
+   real (kind=RKIND), dimension(:), pointer :: tidalInputMask, tidalBCValue
+
+   call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, timeLevelIn)
+   call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+   call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
+   call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+   do iCell=1, nCellsOwned
+      if (tidalInputMask(iCell) == 1.0_RKIND) then
+         ! compute total depth for relative thickness contribution
+         totalDepth = 0.0_RKIND
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
+            totalDepth = totalDepth + restingThickness(k,iCell)
+         end do
+         ! only modify layer thicknesses on tidal boundary
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
+            layerThicknessNew(k, iCell) = tidalInputMask(iCell)*(tidalBCValue(iCell) + bottomDepth(iCell))*(restingThickness(k,iCell)/totalDepth)
+         end do
+      end if
+   end do
+
+   end subroutine ocn_lts_apply_direct_tidal_bc!}}}    
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

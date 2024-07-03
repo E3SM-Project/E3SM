@@ -38,6 +38,7 @@ module ocn_diagnostics
    use ocn_mesh
    use ocn_surface_land_ice_fluxes
    use ocn_vertical_advection
+   use ocn_subgrid
 
    implicit none
    private
@@ -181,7 +182,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-         if (landIceFloatingMask(1) == -1) then
+         if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
             call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
                                 MPAS_LOG_CRIT)
          endif
@@ -239,10 +240,19 @@ contains
 !     endif
 #endif
 
+      !
+      ! Z-coordinates
+      ! This section must be placed in the code before computing the density.
+      !
+      ! inputs : layerThickness
+      ! outputs : zMid, zTop, ssh)
+      call ocn_diagnostic_solve_z_coordinates(layerThickness, zMid, zTop, ssh)
+
       ! inputs: layerThickness, normalVelocity
       ! output: layerThickEdgeMean, layerThickEdgeDrag, layerThickEdgeFlux
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
-                                                   layerThickness, restingThickness)
+                                                   layerThickness, restingThickness, &
+                                                   ssh)
 
       ! inputs: normalVelocity
       ! outputs: relativeVorticity, circulation
@@ -337,13 +347,6 @@ contains
       call ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
                 seaIcePressure, surfacePressure)
 
-      !
-      ! Z-coordinates
-      ! This section must be placed in the code before computing the density.
-      !
-      ! inputs : layerThickness
-      ! outputs : zMid, zTop, ssh)
-      call ocn_diagnostic_solve_z_coordinates(layerThickness, zMid, zTop, ssh)
 
       !
       ! equation of state
@@ -681,20 +684,19 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, sshCell, &
-                         bottomDepthEdge, wctEdge)!{{{
+   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, deltaSSH, &
+                         baroclinicThickness, wctEdge)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         btrVelocity,   &!< barotropic velocity
-         sshCell,       &!< ssh at cells, used for centered water column
-                         !< thickness
-         bottomDepthEdge !< bottom depth centered at edges, used for
-                         !< centered water column thickness
-      ! bottomDepth is already present
+         btrVelocity,       &!< barotropic velocity
+         deltaSSH,          &!< ssh change from baroclinic step to barotropic
+                             !< substep
+         baroclinicThickness !< water column thickness on edges at the last
+                             !< baroclinic step (centered or upwinded)
 
       !-----------------------------------------------------------------
       ! output variables
@@ -725,9 +727,9 @@ contains
 
          ! Compute mean layer thickness at edge
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
+         !$acc enter data copyin(baroclinicThickness, deltaSSH, wctEdge)
          !$acc parallel loop &
-         !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
+         !$acc    present(baroclinicThickness, deltaSSH, wctEdge, cellsOnEdge) &
          !$acc    private(iEdge, cell1, cell2)
 #else
          !$omp parallel
@@ -737,8 +739,8 @@ contains
             if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
-                             + bottomDepthEdge(iEdge)
+            wctEdge(iEdge) = 0.5_RKIND*(deltaSSH(cell1) + deltaSSH(cell2)) &
+                             + baroclinicThickness(iEdge)
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -746,16 +748,16 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
+         !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH)
 #endif
 
       case (thickEdgeFluxUpwind)
 
          ! Use upwind thickness as the edge flux value
 #ifdef MPAS_OPENACC
-         !$acc enter data copyin(bottomDepthEdge, sshCell, btrVelocity, wctEdge)
+         !$acc enter data copyin(baroclinicThickness, deltaSSH, btrVelocity, wctEdge)
          !$acc parallel loop &
-         !$acc    present(bottomDepthEdge, btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
+         !$acc    present(baroclinicThickness, btrVelocity, deltaSSH, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
          !$acc    private(cell1, cell2, iEdge)
 #else
          !$omp parallel
@@ -766,12 +768,12 @@ contains
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (btrVelocity(iEdge) > 0.0_RKIND) then
-               wctEdge(iEdge) = sshCell(cell1) + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = deltaSSH(cell1) + baroclinicThickness(iEdge)
             elseif (btrVelocity(iEdge) < 0.0_RKIND) then
-               wctEdge(iEdge) = sshCell(cell2) + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = deltaSSH(cell2) + baroclinicThickness(iEdge)
             else
-               wctEdge(iEdge) = max(sshCell(cell1), sshCell(cell2)) &
-                                + bottomDepthEdge(iEdge)
+               wctEdge(iEdge) = max(deltaSSH(cell1), deltaSSH(cell2)) &
+                                + baroclinicThickness(iEdge)
             end if
          end do
 #ifndef MPAS_OPENACC
@@ -780,7 +782,7 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell, btrVelocity)
+         !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH, btrVelocity)
 #endif
 
       case default
@@ -808,7 +810,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
-                                                      layerThickness, restingThickness)!{{{
+                                                      layerThickness, restingThickness, &
+                                                      ssh)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -818,6 +821,8 @@ contains
          normalVelocity,  &!< [in] transport
          layerThickness,  &!< [in] layer thickness at cell center
          restingThickness  !< [in] initial layer thickness at cell center
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         ssh               !< [in] sea surface height at cell center
 
       !-----------------------------------------------------------------
       ! output variables
@@ -880,63 +885,78 @@ contains
       case (thickEdgeFluxCenter)
          ! Use centered (mean) thickness as flux value
 
+         if ( config_use_subgrid_wetting_drying ) then
+
+            call ocn_subgrid_layerThickEdgeFlux_center(ssh, layerThickEdgeFlux)
+
+         else
+
 #ifdef MPAS_OPENACC
-         !$acc parallel loop collapse(2) &
-         !$acc    present(layerThickEdgeFlux, layerThickEdgeMean)
+            !$acc parallel loop collapse(2) &
+            !$acc    present(layerThickEdgeFlux, layerThickEdgeMean)
 #else
-         !$omp parallel
-         !$omp do schedule(runtime) private(k)
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
 #endif
-         do iEdge = 1, nEdgesAll
-         do k = 1,nVertLevels
-            layerThickEdgeFlux(k,iEdge) = &
-            layerThickEdgeMean(k,iEdge)
-         end do
-         end do
+            do iEdge = 1, nEdgesAll
+            do k = 1,nVertLevels
+               layerThickEdgeFlux(k,iEdge) = &
+               layerThickEdgeMean(k,iEdge)
+            end do
+            end do
 #ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
+            !$omp end do
+            !$omp end parallel
 #endif
+
+         end if  
 
       case (thickEdgeFluxUpwind)
          ! Use upwind thickness as the edge flux value
 
+         if (config_use_subgrid_wetting_drying) then
+
+            call ocn_subgrid_layerThickEdgeFlux_upwind(ssh, normalVelocity, layerThickness, layerThickEdgeFlux)
+
+         else
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(normalVelocity, layerThickness, &
-         !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
-         !$acc            layerThickEdgeFlux, cellsOnEdge) &
-         !$acc    private(k, kmin, kmax, cell1, cell2)
+            !$acc parallel loop &
+            !$acc    present(normalVelocity, layerThickness, &
+            !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
+            !$acc            layerThickEdgeFlux, cellsOnEdge) &
+            !$acc    private(k, kmin, kmax, cell1, cell2)
 #else
-         !$omp parallel
-         !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
 #endif
-         do iEdge = 1, nEdgesAll
-            kmin = minLevelEdgeBot(iEdge)
-            kmax = maxLevelEdgeTop(iEdge)
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            do k=1,nVertLevels
-               ! initialize layerThicknessEdgeFlux to avoid divide by
-               ! zero and NaN problems.
-               layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+            do iEdge = 1, nEdgesAll
+               kmin = minLevelEdgeBot(iEdge)
+               kmax = maxLevelEdgeTop(iEdge)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k=1,nVertLevels
+                  ! initialize layerThicknessEdgeFlux to avoid divide by
+                  ! zero and NaN problems.
+                  layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+               end do
+               do k = kmin,kmax
+                  if (normalVelocity(k,iEdge) > 0.0_RKIND) then
+                     layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
+                  elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
+                     layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
+                  else
+                     layerThickEdgeFlux(k,iEdge) = &
+                                         max(layerThickness(k,cell1), &
+                                             layerThickness(k,cell2))
+                  end if
+               end do
             end do
-            do k = kmin,kmax
-               if (normalVelocity(k,iEdge) > 0.0_RKIND) then
-                  layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
-               elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
-                  layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
-               else
-                  layerThickEdgeFlux(k,iEdge) = &
-                                      max(layerThickness(k,cell1), &
-                                          layerThickness(k,cell2))
-               end if
-            end do
-         end do
 #ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
+            !$omp end do
+            !$omp end parallel
 #endif
+
+        end if
 
       case (thickEdgeFluxConstant)
          ! Use linearized version H*u where H is constant in time
@@ -1107,18 +1127,19 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(kineticEnergyVertex, normalVelocity, &
-      !$acc            areaTriangle, dcEdge, dvEdge, edgesOnVertex)
+      !$acc            areaTriangle, dcEdge, dvEdge, edgesOnVertex) &
+      !$acc    private(iEdge,rTmp,k,i)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(i, k, iEdge, rTmp)
 #endif
       do iVertex = 1, nVerticesAll
          kineticEnergyVertex(:, iVertex) = 0.0_RKIND
+         !$acc loop seq
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             rTmp  = dcEdge(iEdge)*dvEdge(iEdge)*0.25_RKIND/ &
                     areaTriangle(iVertex)
-            !$acc loop seq
             do k = 1, nVertLevels
                kineticEnergyVertex(k,iVertex) = &
                kineticEnergyVertex(k,iVertex) + rTmp* &
@@ -1134,7 +1155,8 @@ contains
       !$acc parallel loop &
       !$acc    present(kineticEnergyVertexOnCells, kineticEnergyVertex,&
       !$acc            kiteIndexOnCell, kiteAreasOnVertex, invAreaCell,&
-      !$acc            verticesOnCell, nEdgesOnCell)
+      !$acc            verticesOnCell, nEdgesOnCell) &
+      !$acc    private(i,j,k,iVertex,invAreaCell1)
 #else
       !$omp do schedule(runtime) &
       !$omp    private(i, j, k, iVertex, invAreaCell1)
@@ -2599,8 +2621,21 @@ contains
               + layerThickness(k  ,iCell)
          end do
 
-         ! copy zTop(1,iCell) into sea-surface height array
-         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         if (config_use_subgrid_wetting_drying) then
+            call ocn_subgrid_ssh_lookup(layerThickness(1,iCell), &
+                                        subgridWetVolumeCellTable(:,iCell), &
+                                        subgridSshCellTableRange(:,iCell), &
+                                        bottomDepth(iCell), &
+                                        subgridCellBathymetryMin(iCell), & 
+                                        ssh(iCell))
+
+
+            zTop(1,iCell) = ssh(iCell)
+            zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
+         else
+            ! copy zTop(1,iCell) into sea-surface height array
+            ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         end if
 
       end do
 #ifndef MPAS_OPENACC
@@ -3611,9 +3646,12 @@ contains
       do iCell = 1, nCellsAll
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
+
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
-                                   + config_land_ice_flux_rms_tidal_velocity**2))
+                                   + config_land_ice_flux_tidal_Jourdain_alpha**2 * &
+                                   (config_land_ice_flux_tidal_Jourdain_A0 * velocityTidalRMS(iCell) + &
+                                   config_land_ice_flux_tidal_Jourdain_U0)**2))
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -4484,8 +4522,10 @@ contains
          ke_cell_flag = 1
       endif
 
-      if ((trim(config_time_integrator) == 'RK4') .or.(trim(config_time_integrator) == 'LTS') ) then
-         ! For RK4 or LTS, PV includes f: PV = (eta+f)/h.
+      if ( (trim(config_time_integrator) == 'RK4') &
+           .or. (trim(config_time_integrator) == 'LTS') &
+           .or. (trim(config_time_integrator) == 'FB_LTS') ) then
+         ! For RK4, LTS, or FB_LTS, PV includes f: PV = (eta+f)/h.
          fCoef = 1
       elseif (trim(config_time_integrator) == 'split_explicit' &
         .or.trim(config_time_integrator) == 'unsplit_explicit' &

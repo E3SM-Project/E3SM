@@ -133,13 +133,13 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + src.name() + "\n"
-          "  - field layout: " + to_string(f_lt) + "\n"
-          "  - mask layout: " + to_string(m_lt) + "\n");
+          "  - field layout: " + f_lt.to_string() + "\n"
+          "  - mask layout: " + m_lt.to_string() + "\n");
       EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + src.name() + "\n"
-          "  - field layout: " + to_string(f_lt) + "\n"
-          "  - mask layout: " + to_string(m_lt) + "\n");
+          "  - field layout: " + f_lt.to_string() + "\n"
+          "  - mask layout: " + m_lt.to_string() + "\n");
     }
   }
   HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);
@@ -177,7 +177,7 @@ void CoarseningRemapper::do_remap_fwd ()
       const auto& mask = m_src_fields[mask_idx];
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
-      if (can_pack_field(f_src) and can_pack_field(f_ov)) {
+      if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
         local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov,mask);
       } else {
         local_mat_vec<1>(f_src,f_ov,mask);
@@ -214,7 +214,7 @@ void CoarseningRemapper::do_remap_fwd ()
       if (mask_idx>0) {
         // Then this field did use a mask
         const auto& mask = m_tgt_fields[mask_idx];
-        if (can_pack_field(f_tgt)) {
+        if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
           rescale_masked_fields<1>(f_tgt,mask);
@@ -927,7 +927,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    field_col_size[i] = fl.strip_dim(COL).size();
+    field_col_size[i] = fl.clone().strip_dim(COL).size();
     sum_fields_col_sizes += field_col_size[i];
   }
 

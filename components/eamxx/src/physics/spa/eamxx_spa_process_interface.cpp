@@ -26,10 +26,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
   m_grid = grids_manager->get_grid("Physics");
@@ -39,35 +35,44 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Define the different field layouts that will be used for this process
 
-  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  FieldLayout scalar2d_layout     { {COL},     {m_num_cols} };
-  FieldLayout scalar1d_layout_mid { {LEV},     {m_num_levs} };
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
+  FieldLayout scalar1d_mid = m_grid->get_vertical_layout(true);
   // Use VAR field tag for gases for now; consider adding a tag?
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {m_num_cols, m_nswbands, m_num_levs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {m_num_cols, m_nlwbands, m_num_levs} }; 
+  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(true,m_nswbands,"swband");
+  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(true,m_nlwbands,"lwband");
 
   // Set of fields used strictly as input
   constexpr int ps = Spack::n;
-  add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
+  add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
 
   // Set of fields used strictly as output
-  add_field<Computed>("nccn",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
-  add_field<Computed>("aero_g_sw",      scalar3d_swband_layout, nondim, grid_name,ps);
-  add_field<Computed>("aero_ssa_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
-  add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
-  add_field<Computed>("aero_tau_lw",    scalar3d_lwband_layout, nondim, grid_name,ps);
+  add_field<Computed>("nccn",        scalar3d_mid,    1/kg,   grid_name, ps);
+  add_field<Computed>("aero_g_sw",   scalar3d_swband, nondim, grid_name, ps);
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband, nondim, grid_name, ps);
+  add_field<Computed>("aero_tau_sw", scalar3d_swband, nondim, grid_name, ps);
+  add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name, ps);
 
   // We can already create some of the spa structures
 
   // 1. Create SPAHorizInterp remapper
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
   auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
-  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file);
+
+  // IOP cases cannot have a remap file. IOP file reader is itself a remaper,
+  // where a single column of data corresponding to the closest lat/lon pair to
+  // the IOP lat/lon parameters is read from file, and that column data is mapped
+  // to all columns of the IdentityRemapper source fields.
+  EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "None" or not m_iop,
+    "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
+    "The IOP class defines it's own remap from file data -> model data.\n");
+
+  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file, m_iop!=nullptr);
 
   // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
-  auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim(SWBND);
-  auto nlwbands_data = SPAHorizInterp->get_src_field(5).get_header().get_identifier().get_layout().dim(LWBND);
+  auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim("swband");
+  auto nlwbands_data = SPAHorizInterp->get_src_field(5).get_header().get_identifier().get_layout().dim("lwband");
   EKAT_REQUIRE_MSG (nswbands_data==m_nswbands,
       "Error! Spa data file has a different number of sw bands than the model.\n"
       " - spa data swbands: " + std::to_string(nswbands_data) + "\n"
@@ -119,8 +124,15 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     Kokkos::deep_copy(spa_hybm,spa_hybm_h);
   }
 
-  // 4. Create reader for spa data
-  SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
+  // 4. Create reader for spa data. The reader is either an
+  //    AtmosphereInput object (for reading into standard
+  //    grids) or a SpaFunctions::IOPReader (for reading into
+  //    an IOP grid).
+  if (m_iop) {
+    SPAIOPDataReader = SPAFunc::create_spa_data_reader(m_iop,SPAHorizInterp,spa_data_file);
+  } else {
+    SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
+  }
 }
 
 // =========================================================================================
@@ -212,7 +224,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  SPAFunc::update_spa_data_from_file(*SPADataReader,curr_month,*SPAHorizInterp,SPAData_end);
+  SPAFunc::update_spa_data_from_file(SPADataReader,SPAIOPDataReader,timestamp(),curr_month,*SPAHorizInterp,SPAData_end);
 
   // 6. Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
@@ -234,7 +246,7 @@ void SPA::run_impl (const double dt)
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
   SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-  SPAFunc::update_spa_timestate(*SPADataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+    SPAFunc::update_spa_timestate(SPADataReader,SPAIOPDataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();

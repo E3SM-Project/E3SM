@@ -879,6 +879,12 @@ if ($sim_year =~ /(\d+)-(\d+)/) {
 
 # Topography
 add_default($nl, 'bnd_topo', 'nofail'=>1);
+if (defined($defaults->get_value('pgrad_correction'))) {
+   add_default($nl, 'pgrad_correction', 'val' =>$nl->get_value('pgrad_correction'));
+}
+if (defined($defaults->get_value('hv_ref_profiles'))) {
+   add_default($nl, 'hv_ref_profiles', 'val' =>$nl->get_value('hv_ref_profiles'));
+}
 
 # Tropopause climatology
 add_default($nl, 'tropopause_climo_file');

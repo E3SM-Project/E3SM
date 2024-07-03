@@ -426,18 +426,21 @@ contains
                                thermExpCoeff, salineContractCoeff, &
                                tendVel, err)
 
-      ! Compute ssh additions due to self-attraction and loading
+      ! Compute pgf additions due to self-attraction and loading
       if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then 
 #ifdef MPAS_DEBUG
           call mpas_log_write('       Computing SAL')
 #endif
-          call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
+          call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, &
+                                                   ssh, surfacePressure, err)
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
-      if ((config_time_integrator == 'RK4') .or. (config_time_integrator =='LTS')) then
+      if ( (config_time_integrator == 'RK4') &
+           .or. (config_time_integrator =='LTS') &
+           .or. (config_time_integrator == 'FB_LTS') ) then
         ! for split explicit, tidal forcing is added in barotropic subcycles
         call ocn_vel_tidal_potential_tend(ssh,surfacePressure, tendVel, err)
       endif

@@ -101,9 +101,9 @@
     <desc>Stream domain file path(s).</desc>
     <values>
       <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual-AISx00.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual-AISx45.20190226.nc</value>
+      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual-AISx55.20190226.nc</value>
       <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
@@ -205,10 +205,10 @@
       <value stream="rof.ryf9091_jra"          >RAF_9091.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.ryf0304_jra"          >RAF_0304.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.iaf_jra_1p5_ais0rof">
-           JRA.v1.5.runoff.%y.no_rofi_no_rofl.210505.nc
+           JRA.v1.5.runoff.%y.no_rofi_no_rofl.240411.nc
       </value>
       <value stream="rof.iaf_jra_1p5">
-           JRA.v1.5.runoff.%y.210505.nc
+           JRA.v1.5.runoff.%y.240411.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018_ais0ice">
            JRA.v1.4.runoff.%y.no_rofi.190214.nc

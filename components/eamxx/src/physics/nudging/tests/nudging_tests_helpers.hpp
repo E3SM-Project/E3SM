@@ -49,7 +49,7 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   const std::string& gn = grid->name();
 
   auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,CMP,2);
+  auto vector3d = grid->get_3d_vector_layout(true,2);
 
   FieldIdentifier fid1("p_mid",scalar3d,Pa,gn);
   FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);
@@ -150,6 +150,7 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("Averaging Type","INSTANT");
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
+  params.set("MPI Ranks in Filename", false);
   params.set("Field Names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 

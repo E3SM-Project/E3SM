@@ -1069,13 +1069,6 @@ contains
                             von_karman_sq / &
                             (log(1.0_RKIND + &
                                  (zMidEdge/bottom_roughness)))**2))
-           ! For some reason we can use k-1 even when N=Nsurf
-           kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
-                                                 kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
-           vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
-                                            sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
-                                            von_karman * (zMidEdge + bottom_roughness) &
-                                           )
          enddo
 
          ! one active layer
@@ -1084,7 +1077,14 @@ contains
                 / (1.0_RKIND + dt*CdTemp(N) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
-
+           do k = Nsurf+1, N
+              kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
+                                                    kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
+              vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
+                                               sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
+                                               von_karman * (zMidEdge + bottom_roughness) &
+                                              )
+           enddo
            ! tridiagonal matrix algorithm
            C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
                       / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
@@ -1583,9 +1583,44 @@ contains
                !$acc enter data copyin(tracerGroupSurfaceFlux)
 #endif
 
-               call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+               if (trim(groupItr % memberName) /= 'activeTracers' .and. &
+                   config_cvmix_background_diffusion_passive_enable) then
+
+
+#ifdef MPAS_OPENACC
+                  !$acc parallel loop gang vector collapse(3) present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
+#else
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k, iTracer)
+#endif
+                  do iCell = 1, nCellsOwned
+                  do k = 2, maxLevelCell(iCell)
+                      vertDiffPassiveTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) - &
+                         config_cvmix_background_diffusion + config_cvmix_background_diffusion_passive
+                  end do
+                  end do
+#ifndef MPAS_OPENACC
+                  !$omp end do
+                  !$omp end parallel
+#endif
+
+
+
+
+
+
+#ifdef MPAS_OPENACC
+                      !$acc update host (vertDiffPassiveTopOfCell)
+#endif
+
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffPassiveTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               else
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+                        vertNonLocalFlux, tracerGroupSurfaceFlux,  &
+                        config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               end if
 #ifdef MPAS_OPENACC
                !$acc exit data delete(tracerGroupSurfaceFlux)
 #endif

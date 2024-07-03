@@ -1603,7 +1603,7 @@
 	<nml_record name="snow" in_defaults="true">
 		<nml_option name="config_snow_redistribution_scheme" type="character" default_value="none" units="none"
 			description="Use a snow redistribution scheme"
-			possible_values="'30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'"
+			possible_values="'bulk', 'ITDrdg', 'none'"
 			icepack_name="snwredist"
 		/>
 		<nml_option name="config_fallen_snow_radius" type="real" default_value="54.4" units="um"
@@ -1699,7 +1699,7 @@
 	<nml_record name="thermodynamics" in_defaults="true">
 		<nml_option name="config_thermodynamics_type" type="character" default_value="mushy" units="unitless"
 			description="Vertical themodynamics type."
-			possible_values="'zero layer', 'BL99', or 'mushy'"
+			possible_values="'BL99', or 'mushy'"
 			icepack_name="ktherm"
 		/>
 		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units="unitless"
@@ -1756,7 +1756,7 @@
 			icepack_name="kcatbound"
 		/>
 	</nml_record>
-	
+
 	<nml_record name="floesize" in_defaults="true">
 		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
 			description="Floe shape constant (noncircularity)."
@@ -1859,10 +1859,6 @@
 		<nml_option name="config_ocean_surface_type" type="character" default_value="free" units="unitless"
 			description="Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')"
 			possible_values="'free' or 'non-free'"
-		/>
-		<nml_option name="config_couple_biogeochemistry_fields" type="logical" default_value="false" units="unitless"
-			description=""
-			possible_values="true or false"
 		/>
 		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
 			description="Use data iceberg meltwater forcing"
@@ -2567,13 +2563,13 @@
 		     type="real"
 		     dimensions="nEdges"
 		     units="m"
-		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge"
 		     type="real"
 		     dimensions="nEdges"
 		     units="m"
-		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="areaCell"
 		     type="real"

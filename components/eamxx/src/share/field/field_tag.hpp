@@ -4,6 +4,7 @@
 #include "ekat/ekat_assert.hpp"
 
 #include <string>
+#include <vector>
 
 namespace scream
 {
@@ -126,6 +127,15 @@ inline std::string e2str (const FieldTag ft) {
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
   }
   return name;
+}
+
+inline std::vector<std::string> tags2str (const std::vector<FieldTag>& tags) {
+  std::vector<std::string> names;
+  names.reserve(tags.size());
+  for (auto t : tags) {
+    names.push_back(e2str(t));
+  }
+  return names;
 }
 
 // Allow to stream FieldTag values as strings.

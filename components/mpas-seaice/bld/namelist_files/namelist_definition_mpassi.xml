@@ -333,7 +333,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_initial_ice_area" type="real"
 	category="initialize" group="initialize">
-Sea ice concentration at initialization.
+Sea ice fraction at initialization.
 
 Valid values: A real number between 0.0 and 1.0 inclusive.
 Default: Defined in namelist_defaults.xml
@@ -2253,7 +2253,7 @@ Default: Defined in namelist_defaults.xml
 	category="snow" group="snow">
 Use a snow redistribution scheme
 
-Valid values: '30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'
+Valid values: 'bulk', 'ITDrdg', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2403,7 +2403,7 @@ Default: Defined in namelist_defaults.xml
 	category="thermodynamics" group="thermodynamics">
 Vertical themodynamics type.
 
-Valid values: 'zero layer', 'BL99', or 'mushy'
+Valid values: 'BL99', or 'mushy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2651,14 +2651,6 @@ Default: Defined in namelist_defaults.xml
 Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')
 
 Valid values: 'free' or 'non-free'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_couple_biogeochemistry_fields" type="logical"
-	category="ocean" group="ocean">
-
-
-Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 

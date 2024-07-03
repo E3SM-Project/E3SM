@@ -1,6 +1,6 @@
-# The AeroCOM algorithm
+# The AeroCom algorithm
 
-The goal of the AeroCOM algorithm is to calculate properties at cloud top based on the AeroCOM recommendation. There are two main parts of the algorithm: probabilistically determining "cloud top" and then "calculating properties" at said cloud top.
+The goal of the AeroCom algorithm is to calculate properties at cloud top based on the AeroCom recommendation. There are two main parts of the algorithm: probabilistically determining "cloud top" and then "calculating properties" at said cloud top.
 
 We treat model columns independently, so we loop over all columns in parallel. We then loop over all layers in serial (due to needing an accumulative product), starting at 2 (second highest) layer because the highest is assumed to have no clouds. Let's take a photonic approach from above the model top. Let's say that $p_{k}$ is the probability of a photon passing through the layer $k$. We follow the maximum-random overlap assumption. In all cases, we assume the cloudiness (or cloudy fraction) is completely opaque.
 
@@ -24,4 +24,4 @@ $$c\Phi_{i,k} = \frac{cQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}$$
 
 The thermodynamic phase is used only for cloud properties (e.g., cloud-top cloud droplet number concentration) or cloud content (e.g., cloud liquid content). Further, $X_{i,k}$ is the three-dimensional cloud property of interest which is needed if we are converting a property from three-dimensional ($X$) to its two-dimensional counterpart ($x$). "Other" properties here include temperature and pressure which are not dependent on the thermodynamic phase.
 
-A helpful references: Räisänen, P., Barker, H. W., Khairoutdinov, M. F., Li, J., & Randall, D. A. (2004). Stochastic generation of subgrid‐scale cloudy columns for large‐scale models. Quarterly Journal of the Royal Meteorological Society: A journal of the atmospheric sciences, applied meteorology and physical oceanography, 130(601), 2047-2067.
+Most studies in this topic refer a technical report by Tiedtke et al. (1979)[@tiedtke_ecmwf_1979]. Another more recent general reference that may be of interest is that of Räisänen et al. (2004)[@raisanen2004stochastic].

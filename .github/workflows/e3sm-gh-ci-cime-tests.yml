@@ -1,0 +1,67 @@
+name: gh
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      # first, yes to these
+      - 'cime_config/**'
+      - 'components/eam/**'
+      - 'components/elm/**'
+      - 'driver-moab/**'
+      - 'driver-mct/**'
+      # second, no to these
+      - '!components/eam/docs/**'
+      - '!components/eam/mkdocs.yml'
+      - '!components/elm/docs/**'
+      - '!components/elm/mkdocs.yml'
+
+  workflow_dispatch:
+
+jobs:
+
+  ci:
+    if: ${{ github.event.repository.name == 'e3sm' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: 
+          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - REP_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu.eam-wcprod_F2010
+          - ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - PET_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu
+    container: 
+      image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
+
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+          submodules: recursive
+      - 
+        name: CIME
+        working-directory: cime/scripts
+        run: |
+          mkdir -p $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
+          wget https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
+          mv p3_lookup_table_1.dat-v4.1.2 $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
+          export USER=test
+          ./create_test ${{ matrix.test }} --wait --debug
+      - 
+        name: Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ${{ matrix.test }}
+          path: |
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
+            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.cprnc.out

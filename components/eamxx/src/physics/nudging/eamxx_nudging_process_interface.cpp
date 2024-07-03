@@ -3,6 +3,7 @@
 #include "share/util/scream_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/util/ekat_math_utils.hpp>
@@ -15,11 +16,12 @@ namespace scream
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
+  m_datafiles  = filename_glob(m_params.get<std::vector<std::string>>("nudging_filenames_patterns"));
   m_timescale = m_params.get<int>("nudging_timescale",0);
 
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
   m_use_weights   = m_params.get<bool>("use_nudging_weights",false);
+  m_skip_vert_interpolation   = m_params.get<bool>("skip_vert_interpolation",false);
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
   m_refine_remap_file = m_params.get<std::string>(
       "nudging_refine_remap_mapfile", "no-file-given");
@@ -32,8 +34,16 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
     // Check for a designated source pressure file, default to first nudging data source if not given.
     m_static_vertical_pressure_file = m_params.get<std::string>("source_pressure_file",m_datafiles[0]);
+    EKAT_REQUIRE_MSG(m_skip_vert_interpolation == false,
+                   "Error! It makes no sense to not interpolate if src press is uniform and constant ");
   } else {
     EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
+  }
+  int first_file_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
+  for (const auto& file : m_datafiles) {
+      int current_file_levs = scorpio::get_dimlen(file,"lev");
+      EKAT_REQUIRE_MSG(current_file_levs == first_file_levs,
+                       "Error! Inconsistent 'lev' dimension found in nudging data files.");
   }
   // use nudging weights
   if (m_use_weights) 
@@ -48,19 +58,16 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(true,2);
 
   constexpr int ps = 1;
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
 
   /* ----------------------- WARNING --------------------------------*/
@@ -76,7 +83,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
   if (ekat::contains(m_fields_nudge,"qv")) {
-    add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
+    add_field<Updated>("qv",    scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
   }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
@@ -89,6 +96,11 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
   } else {
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
+  }
+  if (m_skip_vert_interpolation) {
+    EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs,
+                   "Error! skip_vert_interpolation requires the vertical level to be "
+                   << " the same as model vertical level ");
   }
 
   /* Check for consistency between nudging files, map file, and remapper */
@@ -218,6 +230,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // Initialize the time interpolator and horiz remapper
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
+  m_time_interp.set_logger(m_atm_logger,"[EAMxx::Nudging] Reading nudging data");
 
   // NOTE: we are ASSUMING all fields are 3d and scalar!
   const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
@@ -263,7 +276,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout layout_padded ({COL,LEV},{m_num_cols,m_num_src_levs+2});
   create_helper_field("padded_field",layout_padded,"");
 
-  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE && !m_skip_vert_interpolation) {
     // If the pressure profile is 3d and time-dep, we need to interpolate (in time/horiz)
     auto pmid_ext = create_helper_field("p_mid_ext", layout_ext, grid_ext->name());
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
@@ -340,7 +353,7 @@ void Nudging::run_impl (const double dt)
     Real var_fill_value = constants::DefaultFillValue<Real>().value;
     // Query the helper field for the fill value, if not present use default
     if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<float>("mask_value");
+      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
     }
 
     const int ncols = fl.dim(0);
@@ -380,6 +393,19 @@ void Nudging::run_impl (const double dt)
 
   // Perform horizontal remap (if needed)
   m_horiz_remapper->remap(true);
+
+  // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
+  if (m_skip_vert_interpolation) {
+    for (const auto& name : m_fields_nudge) {
+      auto tmp_state_field = get_helper_field(name+"_tmp");
+
+      if (m_timescale > 0) {
+        auto atm_state_field = get_field_out_wrap(name);
+        apply_tendency(atm_state_field,tmp_state_field,dt);
+      }
+    }
+    return;
+  }
 
   // Copy remapper tgt fields into padded views, to allow extrapolation at top/bot,
   // then call remapping routines

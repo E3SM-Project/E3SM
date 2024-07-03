@@ -404,6 +404,8 @@ contains
        call veg_ps%Restart(bounds, ncid, flag='write')
        call veg_pf%Restart(bounds, ncid, flag='write')
        call crop_vars%Restart(bounds, ncid, flag='write')
+
+       call grc_cs%Restart(bounds, ncid, flag='write')
     end if
 
 
@@ -627,6 +629,8 @@ contains
        call veg_ps%Restart(bounds, ncid, flag='read')
        call veg_pf%Restart(bounds, ncid, flag='read')
        call crop_vars%Restart(bounds, ncid, flag='read')
+
+       call grc_cs%Restart(bounds, ncid, flag='read')
     end if
 
     if (use_fates) then

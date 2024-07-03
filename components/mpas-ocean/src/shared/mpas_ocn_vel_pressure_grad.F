@@ -39,6 +39,19 @@ module ocn_vel_pressure_grad
    !
    !--------------------------------------------------------------------
 
+   integer, public :: &
+      pGradType   ! id for pressure gradient method selected
+
+   integer, parameter, public :: &! ids for supported methods
+      pGradTypeNone        = 0, &! none selected
+      pGradTypeSSHgrad     = 1, &! ssh gradient
+      pGradTypePZmid       = 2, &! pressure and zMid
+      pGradTypeMontPot     = 3, &! Montgomery potential
+      pGradTypeMontPotDens = 4, &! Montgomery potential and density
+      pGradTypeJacobDens   = 5, &! Jacobian from density
+      pGradTypeJacobTS     = 6, &! Jacobian from T,S
+      pGradTypeConstForced = 7   ! constant forced
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -57,19 +70,6 @@ module ocn_vel_pressure_grad
    logical :: &
       pGradOff,         &! flag for turning pressure gradient on/off
       timeIntegratorLTS  ! flag for Local Time Stepping
-
-   integer :: &
-      pGradType   ! id for pressure gradient method selected
-
-   integer, parameter ::        &! ids for supported methods
-      pGradTypeNone        = 0, &! none selected
-      pGradTypeSSHgrad     = 1, &! ssh gradient
-      pGradTypePZmid       = 2, &! pressure and zMid
-      pGradTypeMontPot     = 3, &! Montgomery potential
-      pGradTypeMontPotDens = 4, &! Montgomery potential and density
-      pGradTypeJacobDens   = 5, &! Jacobian from density
-      pGradTypeJacobTS     = 6, &! Jacobian from T,S
-      pGradTypeConstForced = 7   ! constant forced
 
    real (kind=RKIND) :: &! precomputed constants for efficiency
       density0Inv,      &! 1/density0
@@ -709,7 +709,8 @@ contains
 
       end select
 
-      if (config_time_integrator == 'LTS') then
+      if ( (config_time_integrator == 'LTS') &
+           .or. (config_time_integrator == 'FB_LTS') ) then
          timeIntegratorLTS = .true.
       else
          timeIntegratorLTS = .false.

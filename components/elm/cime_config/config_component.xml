@@ -22,10 +22,10 @@
       <value compset="1950(?:SOI)?_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC">-phys elm -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC">-phys elm -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
     </values>
-    <group>build_component_clm</group>
+    <group>build_component_elm</group>
     <file>env_build.xml</file>
     <desc>Provides option(s) for the ELM configure utility.
-      CLM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
+      ELM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
       and in general should not be modified for supported compsets.
       It is recommended that if you want to modify this value for your experiment,
       you should use your own user-defined component sets via using create_newcase
@@ -83,6 +83,7 @@
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP585_transient</value>
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
       <value compset="SSP370(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP370_transient</value>
+      <value compset="SSP245(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP245_transient</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
       <!-- Use cases for SCREAM compsets -->
@@ -93,9 +94,17 @@
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
       <value compset="1850(?:SOI)?_EAM%AR5sf_ELM">1850_CMIP6_control</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
-
+      <!-- BGCv2 compsets (use V2 land new features configuration)-->
+      <value compset="1850.*_*CNPRDCTCBCPHS" >1850_PHS_control</value>
+      <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
+      <value compset="1850.*_*CNPRDCTCBCTGU" >1850_TGU_control</value>
+      <value compset="1850.*_*CNPRDCTCBCPHSTGUWFM" >1850_PHSTGUWFM_control</value>
+      <value compset="20TR.*_*CNPRDCTCBCPHS" >20thC_PHS_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCPHSTGUWFM" >20thC_PHSTGUWFM_transient</value>
     </values>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>ELM namelist use_case.
       Determines the use-case that will be sent to the ELM build-namelist utility.
@@ -103,7 +112,7 @@
       used by expert users.</desc>
   </entry>
 
-  <!-- CLM_BLDNML_OPTS is not additive, we must list all possible combinations -->
+  <!-- ELM_BLDNML_OPTS is not additive, we must list all possible combinations -->
   <!-- ERROR: the node below is never matched, see bug 2025 -->
   <entry id="ELM_BLDNML_OPTS">
     <type>char</type>
@@ -126,8 +135,16 @@
       <value compset="_ELM%[^_]*CRDCTCBC"   >-bgc bgc -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNRDCTCBC"  >-bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCPHS" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCTGU" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -topounit</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCWFM" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -irrig .true. -tw_irr_on </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCPHSTGUWFM" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress -topounit -irrig .true. -tw_irr_on</value>
+      <value compset="_ELM%[^_]*CNPRDCTCBC-CROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -crop </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCWFM-CROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -crop -irrig .true. -tw_irr_on </value>
       <value compset="_ELM%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCTOP">-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>
+
 
       <value compset="_ELM%[^_]*CNECACNTBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp century -methane </value>
       <value compset="_ELM%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane </value>
@@ -137,7 +154,7 @@
       <value compset="_ELM50%[^_]*SP"        >-bgc sp</value>
       <value compset="_ELM50%[^_]*BGC"       >-bgc bgc</value>
     </values>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>ELM build-namelist options</desc>
   </entry>
@@ -159,12 +176,12 @@
       <value compset="_ELM.*_BGC%BDRC">diagnostic</value>
       <value compset="20TR.*_DATM.*_BGC%BC"    >constant</value>
     </values>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>Determines how ELM will determine where CO2 is set.
       If value is constant, it will be set to CCSM_CO2_PPMV,
       if value is either diagnostic or prognostic, the atmosphere model
-      MUST send it to ELM. CLM_CO2_TYPE is normally set by the specific
+      MUST send it to ELM. ELM_CO2_TYPE is normally set by the specific
       compset, since it HAS to be coordinated with settings for the
       atmospheric model. Do not modify this variable. If you want to modify for
       your experiment, use your own user-defined component set
@@ -174,10 +191,10 @@
   <entry id="ELM_NAMELIST_OPTS">
     <type>char</type>
     <default_value></default_value>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>ELM-specific namelist settings for -namelist option in the ELM
-      build-namelist. CLM_NAMELIST_OPTS is normally set as a compset variable
+      build-namelist. ELM_NAMELIST_OPTS is normally set as a compset variable
       and in general should not be modified for supported compsets.
       It is recommended that if you want to modify this value for your experiment,
       you should use your own user-defined component sets via using create_newcase
@@ -189,7 +206,7 @@
     <type>char</type>
     <valid_values>on,off</valid_values>
     <default_value>off</default_value>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>Turn on any settings for accellerating the model spinup.
     </desc>
@@ -198,10 +215,10 @@
   <entry id="ELM_USRDAT_NAME">
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>Dataset name for user-created datasets. This is used as the argument
-      in Buildconf/clm.buildnml to build-namelist -clm_usr_name. An example of
+      in Buildconf/elm.buildnml to build-namelist -elm_usr_name. An example of
       such a dataset would be 1x1pt_boulderCO_c090722. The default value is UNSET.
       This is an advanced flag and should only be used by expert users.</desc>
   </entry>
@@ -215,34 +232,34 @@
       <value compset="4804.*_ELM.*_CISM1">off</value>
       <value compset="_ELM.+MALI"        >on</value>
     </values>
-    <group>run_component_clm</group>
+    <group>run_component_elm</group>
     <file>env_run.xml</file>
     <desc>Flag to the ELM build-namelist command to force ELM to do a
       cold start (finidat will be set to blanks).
       A value of on forces the model to spin up from a cold-start
       (arbitrary initial conditions). Setting this value in the xml file will take
-      precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</desc>
+      precedence over any settings for finidat in the $CASEROOT/user_elm file.</desc>
   </entry>
 
   <description>
-    <desc compset="_ELM"               >clm4.5 physics:</desc>
-    <desc compset="_ELM%[^_]*SP"       >clm4.5 Satellite phenology:</desc>
-    <desc compset="_ELM%[^_]*SPBC"     >clm4.5 Satellite phenology with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CN"       >clm4.5 cn:</desc>
-    <desc compset="_ELM%[^_]*CNDV"     >clm4.5 cn with dynamic vegetation:</desc>
-    <desc compset="_ELM%[^_]*BGC"      >clm4.5 bgc (cn and methane):</desc>
-    <desc compset="_ELM%[^_]*CROP"     >clm4.5 prognostic crop:</desc>
-    <desc compset="_ELM%[^_]*VIC"      >clm4.5 vic hydrology:</desc>
-    <desc compset="_ELM%[^_]*FATES"    >clm4.5 FATES (Functionally Assembled Terr. Ecosystem Simulator): (experimental)</desc>
-    <desc compset="_ELM%[^_]*BGCDV"    >clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg</desc>
-    <desc compset="_ELM%[^_]*CRDCTCBC"   >alm1.0 C only, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNRDCTCBC"  >alm1.0 C-N, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNPRDCTCBC" >alm1.0 C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNECACTCBC" >alm1.0 C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM%[^_]*CNPECACTCBC">alm1.0 C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_ELM50"               >clm5.0 physics:</desc>
-    <desc compset="_ELM50%[^_]*SP"       >clm5.0 Satellite phenology:</desc>
-    <desc compset="_ELM50%[^_]*BGC"      >clm5.0 bgc (cn and methane):</desc>
+    <desc compset="_ELM"               >ELM with :</desc>
+    <desc compset="_ELM%SP"            >Satellite phenology :</desc>
+    <desc compset="_ELM%[^_]*SPBC"     >Satellite phenology with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CN"       >CN :</desc>
+    <desc compset="_ELM%[^_]*CNDV"     >CN with dynamic vegetation :</desc>
+    <desc compset="_ELM%[^_]*BGC"      >BGC (CN and methane) :</desc>
+    <desc compset="_ELM%[^_]*CROP"     >prognostic crop :</desc>
+    <desc compset="_ELM%[^_]*VIC"      >VIC hydrology :</desc>
+    <desc compset="_ELM%[^_]*FATES"    >FATES (Functionally Assembled Terr. Ecosystem Simulator) (experimental) :</desc>
+    <desc compset="_ELM%[^_]*BGCDV"    >BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg :</desc>
+    <desc compset="_ELM%[^_]*CRDCTCBC"   >C only, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNRDCTCBC"  >C-N, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBC" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACTCBC" >C-N, nutrient competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNECACNTBC" >C-N, nutrient competition via equilibrium chemistry approximation, cnt soil cascade black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACTCBC">C-N-P, nutrient competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPECACNTBC">C-N-P, nutrient competition via equilibrium chemistry approximation, cnt soil cascade with black carbon deposition :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBCTOP" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition and subgrid solar radiation parameterization :</desc>
   </description>
 
   <help>

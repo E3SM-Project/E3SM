@@ -90,9 +90,9 @@
     <type>integer</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <valid_values>-99,1,2</valid_values>
+    <valid_values>-99,1,2,3</valid_values>
     <desc>
-      Rearranger method for pio 1=box, 2=subset.
+      Rearranger method for pio 1=box, 2=subset, 3=any.
     </desc>
     <values>
     <value component="cpl">$CPL_PIO_REARRANGER</value>
@@ -172,6 +172,7 @@
     <value component="glc">$GLC_PIO_NETCDF_FORMAT</value>
     <value component="wav">$WAV_PIO_NETCDF_FORMAT</value>
     <value component="iac">$IAC_PIO_NETCDF_FORMAT</value>
+    <value component="esp">$ESP_PIO_NETCDF_FORMAT</value>
     </values>
   </entry>
 

@@ -78,8 +78,9 @@ def _record_git_provenance(srcroot, exeroot, lid):
 
     # Git config
     config_src = os.path.join(gitroot, "config")
-    config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
-    utils.safe_copy(config_src, config_prov, preserve_meta=False)
+    if os.path.exists(config_src):
+        config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
+        utils.safe_copy(config_src, config_prov, preserve_meta=False)
 
 
 def _find_git_root(srcroot):
@@ -419,11 +420,7 @@ def _record_timing(case, lid):
 
 
 def _record_queue_info(mach, job_id, lid, full_timing_dir):
-    if mach == "theta":
-        _record_anl_theta_queue(job_id, lid, full_timing_dir)
-    elif mach in ["cori-haswell", "cori-knl"]:
-        _record_nersc_queue(job_id, lid, full_timing_dir)
-    elif mach in ["anvil", "chrysalis", "compy"]:
+    if mach in ["anvil", "chrysalis", "compy"]:
         _record_anl_queue(job_id, lid, full_timing_dir)
 #TODO: Add Perlmutter
     elif mach in ["frontier", "crusher"]:
@@ -474,21 +471,6 @@ def _record_anl_queue(job_id, lid, full_timing_dir):
             "squeuef",
         ),
         ("squeue -t R -o '%.10i %R'", "squeues"),
-    ]:
-        filename = "%s.%s" % (filename, lid)
-        utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
-        utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
-
-
-def _record_anl_theta_queue(job_id, lid, full_timing_dir):
-    for cmd, filename in [
-        (
-            "qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry",
-            "qstatf",
-        ),
-        ("qstat -lf %s" % job_id, "qstatf_jobid"),
-        ("xtnodestat", "xtnodestat"),
-        ("xtprocadmin", "xtprocadmin"),
     ]:
         filename = "%s.%s" % (filename, lid)
         utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
@@ -746,12 +728,8 @@ def _copy_performance_archive_files(
 ):
     globs_to_copy = []
     if job_id is not None:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl"]:
+        if mach in ["anvil", "chrysalis", "compy"]:
             globs_to_copy.append("run*%s*%s" % (case.get_value("CASE"), job_id))
-        elif mach == "theta":
-            globs_to_copy.append("%s*error" % job_id)
-            globs_to_copy.append("%s*output" % job_id)
-            globs_to_copy.append("%s*cobaltlog" % job_id)
         elif mach == "summit":
             globs_to_copy.append("e3sm.stderr.%s" % job_id)
             globs_to_copy.append("e3sm.stdout.%s" % job_id)
@@ -786,11 +764,9 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez","frontier","crusher"]:
+        if mach in ["anvil", "chrysalis", "compy", "pm-cpu", "pm-gpu", "muller-cpu", "muller-gpu", "alvarez","frontier","frontier-scream-gpu","crusher"]:
             # Note: Besides, SLURM_JOB_ID, equivalent SLURM_JOBID is also present on some systems (Frontier).
             return os.environ["SLURM_JOB_ID"]
-        elif mach in ["theta"]:
-            return os.environ["COBALT_JOBID"]
         elif mach in ["summit"]:
             return os.environ["LSB_JOBID"]
     except KeyError:

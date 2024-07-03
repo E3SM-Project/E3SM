@@ -2,7 +2,7 @@
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
 #include "control/surface_coupling_utils.hpp"
-#include "control/intensive_observation_period.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
@@ -72,7 +72,7 @@ public:
   void init_scorpio (const int atm_id = 0);
 
   // Setup IntensiveObservationPeriod
-  void setup_intensive_observation_period ();
+  void setup_iop ();
 
   // Create atm processes, without initializing them
   void create_atm_processes ();

@@ -48,7 +48,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -234,23 +234,47 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
     </shoc>
 
+    <!-- MAM4xx-ACI -->
+    <mam4_aci inherit="atm_proc_base">
+      <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
+      <top_level_mam4xx type="integer" doc="Top level for MAM4xx">6</top_level_mam4xx>
+    </mam4_aci>
+
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- MAM4xx namelist options -->
+    <!-- MAM4xx-Optics -->
+    <mam4_optics inherit="atm_proc_base">
+      <mam4_mode1_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 1, accumulation mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc</mam4_mode1_physical_properties_file>
+      <mam4_mode2_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 2, Aitken mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc</mam4_mode2_physical_properties_file>
+      <mam4_mode3_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 3, coarse mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc</mam4_mode3_physical_properties_file>
+      <mam4_mode4_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 4, p-carbon mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc</mam4_mode4_physical_properties_file>
+      <mam4_water_refindex_file type="file" doc="File containing optical properties for aerosol water">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc</mam4_water_refindex_file>
+      <mam4_soa_physical_properties_file type="file" doc="File containing optical properties for secondary organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ocphi_rrtmg_c20240206.nc</mam4_soa_physical_properties_file>
+      <mam4_dust_physical_properties_file type="file" doc="File containing optical properties for dust">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc</mam4_dust_physical_properties_file>
+      <mam4_nacl_physical_properties_file type="file" doc="File containing optical properties for sea salt">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ssam_rrtmg_c20240206.nc</mam4_nacl_physical_properties_file>
+      <mam4_so4_physical_properties_file type="file" doc="File containing optical properties for sulfate">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/sulfate_rrtmg_c20240206.nc</mam4_so4_physical_properties_file>
+      <mam4_pom_physical_properties_file type="file" doc="File containing optical properties for primary organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc</mam4_pom_physical_properties_file>
+      <mam4_bc_physical_properties_file type="file" doc="File containing optical properties for black carbon">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc</mam4_bc_physical_properties_file>
+      <mam4_mom_physical_properties_file type="file" doc="File containing optical properties for marine organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/poly_rrtmg_c20240206.nc</mam4_mom_physical_properties_file>
+    </mam4_optics>
+
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
-      <nudging_filename type="array(string)"/>
+      <nudging_filenames_patterns type="array(string)"/>
       <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
       <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
       <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
       <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
-      <source_pressure_type type="string" 
+      <skip_vert_interpolation type="logical" doc="Flag for skipping vertical interpolation">false</skip_vert_interpolation>
+      <source_pressure_type type="string"
 	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
 			    doc="Flag for how source pressure levels are handled in the nudging dataset.
     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
-      <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.  
-    Default is to look for p_levs in the first nudging_filename file"/>
+      <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.
+    Default is to look for p_levs in the first nudging_filenames_patterns file"/>
       <nudging_refine_remap_mapfile
         type="string"
         doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"
@@ -291,6 +315,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
+      <spa_remap_file COMPSET=".*DP-EAMxx"/>
 
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one"/>
       <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
@@ -337,6 +362,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
+      <rad_frequency COMPSET=".*DYCOMSrf01">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
@@ -353,6 +379,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       >
         false
       </extra_clnsky_diag>
+      <do_subcol_sampling type="logical" doc="Flag to turn on/off subcolumn sampling of optical properties; if false treat cells as either completely clear or cloudy">
+          true
+      </do_subcol_sampling>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
@@ -366,11 +395,15 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
+      <number_of_subcycles COMPSET=".*DP-EAMxx">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
-      <cosp_subcolumns>10</cosp_subcolumns>
+      <cosp_subcolumns doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
+      <cosp_subcolumns hgrid="ne1024np4">1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
+      <cosp_subcolumns hgrid="ne512np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
+      <cosp_subcolumns hgrid="ne256np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
       <cosp_frequency>1</cosp_frequency>
       <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
@@ -454,6 +487,33 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
+    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+    <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum>
+        <bc_c1 type="real">0.0</bc_c1>
+    <bc_c3 type="real">0.0</bc_c3>
+    <bc_c4 type="real">0.0</bc_c4>
+    <dst_c1 type="real">0.0</dst_c1>
+    <dst_c3 type="real">0.0</dst_c3>
+    <so4_c1 type="real">0.0</so4_c1>
+    <so4_c2 type="real">0.0</so4_c2>
+    <so4_c3 type="real">0.0</so4_c3>
+    <pom_c1 type="real">0.0</pom_c1>
+    <pom_c3 type="real">0.0</pom_c3>
+    <pom_c4 type="real">0.0</pom_c4>
+    <soa_c1 type="real">0.0</soa_c1>
+    <soa_c2 type="real">0.0</soa_c2>
+    <soa_c3 type="real">0.0</soa_c3>
+    <nacl_c1 type="real">0.0</nacl_c1>
+    <nacl_c2 type="real">0.0</nacl_c2>
+    <nacl_c3 type="real">0.0</nacl_c3>
+    <mom_c1 type="real">0.0</mom_c1>
+    <mom_c2 type="real">0.0</mom_c2>
+    <mom_c3 type="real">0.0</mom_c3>
+    <mom_c4 type="real">0.0</mom_c4>
+    <num_c1 type="real">0.0</num_c1>
+    <num_c2 type="real">0.0</num_c2>
+    <num_c3 type="real">0.0</num_c3>
+    <num_c4 type="real">0.0</num_c4>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
@@ -461,13 +521,22 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc hgrid="ne256np4|ne1024np4">0.0</nc>
     <ni hgrid="ne256np4|ne1024np4">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+
+    <!-- Information about perturbed fields-->
+    <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
+    <perturbed_fields type="array(string)" COMPSET=".*DP-EAMxx">T_mid</perturbed_fields>
+    <generate_perturbation_random_seed type="logical" doc="Whether or not to generate a random seed for perturbation.">false</generate_perturbation_random_seed>
+    <perturbation_random_seed type="integer" doc="Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.">0</perturbation_random_seed>
+    <perturbation_limit type="real" doc="Defines a range [1-x, 1+x] which perturbation will be taken from.">0.001</perturbation_limit>
+    <perturbation_minimum_pressure type="real" doc="Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.">900.0</perturbation_minimum_pressure>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
-    <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
+    <output_yaml_files type="array(string)"/>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
+      <iotype>default</iotype>
       <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
@@ -483,12 +552,19 @@ be lost if SCREAM_HACK_XML is not enabled.
                    doc="Verbosity level for the atm logger">
       info
     </atm_log_level>
+    <atm_flush_level type="string"
+                   valid_values="trace,debug,info,warn,error"
+                   doc="Verbosity level that triggers automatic flush of the atm logger">
+      warn
+    </atm_flush_level>
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
+    <enable_iop type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_iop>
+    <enable_iop COMPSET=".*DP-EAMxx">true</enable_iop>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->
@@ -496,11 +572,34 @@ be lost if SCREAM_HACK_XML is not enabled.
     <e3sm_casename>${CASE}</e3sm_casename>
   </e3sm_parameters>
 
+  <!-- Settings for IOP -->
+  <iop_options>
+    <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
+    <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
+    <iop_file COMPSET=".*DYCOMSrf01">${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc</iop_file>
+    <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
+    <target_latitude COMPSET=".*DYCOMSrf01">31.5</target_latitude>
+    <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
+    <target_longitude COMPSET=".*DYCOMSrf01">238.5</target_longitude>
+    <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>
+    <iop_dosubsidence COMPSET=".*DYCOMSrf01">true</iop_dosubsidence>
+    <iop_srf_prop type="logical" doc="Use IOP file specified surface values in surface coupling importer.">false</iop_srf_prop>
+    <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
+    <iop_nudge_uv type="logical" doc="Nudge winds to those in the IOP file.">false</iop_nudge_uv>
+    <iop_nudge_tq type="logical" doc="Nudge thermodynamics to those in the IOP file.">false</iop_nudge_tq>
+    <iop_nudge_tq_low type="real" doc="Lowest layer to apply nudging for t and q (pressure in hPa).">1100</iop_nudge_tq_low>
+    <iop_nudge_tq_high type="real" doc="Highest layer to apply nudging for t and q (pressure in hPa).">0</iop_nudge_tq_high>
+    <iop_nudge_tscale type="real" doc="Time scale to nudge thermodynamics or winds to.">10800</iop_nudge_tscale>
+    <iop_coriolis type="logical" doc="Apply coriolis forcing to winds based on large scale winds in IOP file.">false</iop_coriolis>
+  </iop_options>
+
   <!-- Homme control namelist -->
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
+    <cubed_sphere_map COMPSET=".*DYCOMSrf01">2</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_remap_factor COMPSET=".*DYCOMSrf01" constraints="ge 1">1</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
@@ -514,6 +613,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
+    <nu COMPSET=".*DYCOMSrf01">0.216784</nu>
     <nu_top>UNSET</nu_top>
     <nu_top hgrid="ne4np4">250000.0</nu_top>
     <nu_top hgrid="ne30np4">250000.0</nu_top>
@@ -521,6 +621,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne256np4">4.0e4</nu_top>
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <pgrad_correction hgrid="ne4np4">0</pgrad_correction> <!-- Value for smooth topography/aquaplanet -->
@@ -530,6 +631,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
+    <se_geometry COMPSET=".*DP-EAMxx">plane</se_geometry>
     <se_limiter_option>9</se_limiter_option>
     <se_ne>UNSET</se_ne>
     <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
@@ -538,19 +640,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
     <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
     <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
+    <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
+    <se_ne_x COMPSET=".*DYCOMSrf01">5</se_ne_x>
     <se_ne_y>0</se_ne_y>
+    <se_ne_y COMPSET=".*DYCOMSrf01">5</se_ne_y>
+    <se_lx>0</se_lx>
+    <se_lx COMPSET=".*DYCOMSrf01">50000</se_lx>
+    <se_ly>0</se_ly>
+    <se_ly COMPSET=".*DYCOMSrf01">50000</se_ly>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
-    <se_tstep>UNSET</se_tstep>
+    <se_topology COMPSET=".*DP-EAMxx">plane</se_topology>
+    <se_tstep type="real">UNSET</se_tstep>
     <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
     <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
     <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
     <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
     <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
     <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
+    <se_tstep COMPSET=".*DP-EAMxx" constraints="gt 0">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>

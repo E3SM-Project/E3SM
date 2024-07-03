@@ -1,0 +1,30 @@
+%YAML 1.1
+---
+filename_prefix: mam_optics_rrtmgp_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+   # MAM_OPTICS 
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_lw
+  - aero_tau_sw
+  # RRTMGP
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - LW_flux_dn
+  - LW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - SW_flux_up
+  - rad_heating_pdel
+  - sfc_flux_lw_dn
+  - sfc_flux_sw_net
+
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+  MPI Ranks in Filename: true
+...

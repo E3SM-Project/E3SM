@@ -26,17 +26,17 @@ TEST_CASE("field_layout", "") {
 
   FieldLayout fl1 ({COL},{1});
   FieldLayout fl2 ({COL,CMP},{1,1});
-  FieldLayout fl3 ({COL,SWBND,LWBND},{1,1,1});
+  FieldLayout fl3 ({COL,CMP,CMP},{1,3,4});
   FieldLayout fl4 ({COL,LEV},{1,1});
   FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
-  FieldLayout fl6 ({COL,ISCCPTAU,ISCCPPRS,ILEV},{1,1,1,1});
+  FieldLayout fl6 ({COL,CMP,CMP,ILEV},{1,5,6,1});
 
-  REQUIRE (get_layout_type(fl1.tags())==LayoutType::Scalar2D);
-  REQUIRE (get_layout_type(fl2.tags())==LayoutType::Vector2D);
-  REQUIRE (get_layout_type(fl3.tags())==LayoutType::Tensor2D);
-  REQUIRE (get_layout_type(fl4.tags())==LayoutType::Scalar3D);
-  REQUIRE (get_layout_type(fl5.tags())==LayoutType::Vector3D);
-  REQUIRE (get_layout_type(fl6.tags())==LayoutType::Tensor3D);
+  REQUIRE (fl1.type()==LayoutType::Scalar2D);
+  REQUIRE (fl2.type()==LayoutType::Vector2D);
+  REQUIRE (fl3.type()==LayoutType::Tensor2D);
+  REQUIRE (fl4.type()==LayoutType::Scalar3D);
+  REQUIRE (fl5.type()==LayoutType::Vector3D);
+  REQUIRE (fl6.type()==LayoutType::Tensor3D);
 
   REQUIRE (not fl1.is_vector_layout());
   REQUIRE (    fl2.is_vector_layout());
@@ -54,13 +54,15 @@ TEST_CASE("field_layout", "") {
 
   REQUIRE (fl2.get_vector_tag()==CMP);
   REQUIRE (fl5.get_vector_tag()==CMP);
+  REQUIRE (fl2.get_vector_component_idx()==1);
+  REQUIRE (fl5.get_vector_component_idx()==1);
   REQUIRE (fl2.get_vector_dim()==1);
   REQUIRE (fl5.get_vector_dim()==1);
 
-  REQUIRE (fl3.get_tensor_tags()==TVec{SWBND,LWBND});
-  REQUIRE (fl6.get_tensor_tags()==TVec{ISCCPTAU,ISCCPPRS});
-  REQUIRE (fl3.get_tensor_dims()==IVec{1,2});
-  REQUIRE (fl6.get_tensor_dims()==IVec{1,2});
+  REQUIRE (fl3.get_tensor_tags()==TVec{CMP,CMP});
+  REQUIRE (fl6.get_tensor_components_ids()==IVec{1,2});
+  REQUIRE (fl3.get_tensor_dims()==IVec{3,4});
+  REQUIRE (fl6.get_tensor_dims()==IVec{5,6});
 }
 
 TEST_CASE("field_identifier", "") {
@@ -164,6 +166,9 @@ TEST_CASE("field", "") {
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
     REQUIRE_THROWS (f1.get_view<P16***>());
+
+    // Can't get non-const data type view from a read-only field
+    REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
   SECTION ("equivalent") {
@@ -268,109 +273,6 @@ TEST_CASE("field", "") {
     auto v = reinterpret_cast<Real*>(f1.get_internal_view_data<Real,Host>());
     for (int i=0; i<fid1.get_layout().size(); ++i) {
       REQUIRE (v[i]==1.0);
-    }
-  }
-
-  // Subfields
-  SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,10,2,24};
-
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
-
-    Field f1(fid1);
-    f1.allocate_view();
-    randomize(f1,engine,pdf);
-
-    const int idim = 1;
-    const int ivar = 2;
-
-    auto f2 = f1.subfield(idim,ivar);
-
-    // Wrong rank for the subfield f2
-    REQUIRE_THROWS(f2.get_view<Real****>());
-
-    auto v4d_h = f1.get_view<Real****,Host>();
-    auto v3d_h = f2.get_view<Real***,Host>();
-    for (int i=0; i<d1[0]; ++i)
-      for (int j=0; j<d1[2]; ++j)
-        for (int k=0; k<d1[3]; ++k) {
-          REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
-        }
-  }
-
-  // Dynamic Subfields
-  SECTION ("dynamic_subfield") {
-    const int vec_dim = 10;
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,vec_dim,2,24};
-
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
-
-    Field f1(fid1);
-    f1.allocate_view();
-    randomize(f1,engine,pdf);
-
-    const int idim = 1;
-    const int ivar = 0;
-
-    auto f2 = f1.subfield(idim,ivar,/* dynamic = */ true);
-
-    // Cannot reset subview idx of non-subfield fields
-    REQUIRE_THROWS(f1.get_header().get_alloc_properties().reset_subview_idx(0));
-
-    // subview idx out of bounds
-    auto& f2_ap = f2.get_header().get_alloc_properties();
-    REQUIRE_THROWS(f2_ap.reset_subview_idx(-1));
-    REQUIRE_THROWS(f2_ap.reset_subview_idx(vec_dim));
-
-    // Fill f1 with random numbers, and verify corresponding subviews get same values
-    randomize(f1,engine,pdf);
-
-    for (int ivar_dyn=0; ivar_dyn<vec_dim; ++ivar_dyn) {
-      // Reset slice idx
-      f2_ap.reset_subview_idx(ivar_dyn);
-      REQUIRE(f2_ap.get_subview_info().slice_idx==ivar_dyn);
-
-      auto v4d_h = f1.get_view<Real****,Host>();
-      auto v3d_h = f2.get_view<Real***,Host>();
-      for (int i=0; i<d1[0]; ++i)
-        for (int j=0; j<d1[2]; ++j)
-          for (int k=0; k<d1[3]; ++k) {
-            REQUIRE (v4d_h(i,ivar_dyn,j,k)==v3d_h(i,j,k));
-          }
-    }
-  }
-
-  SECTION ("vector_component") {
-    std::vector<FieldTag> tags_2 = {COL,CMP,LEV};
-    std::vector<int> dims_2 = {3,2,24};
-
-    FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");
-
-    Field f_vec(fid_2);
-    f_vec.allocate_view();
-
-    auto f0 = f_vec.get_component(0);
-    auto f1 = f_vec.get_component(1);
-
-    // No 3rd component
-    REQUIRE_THROWS(f_vec.get_component(2));
-
-    // f0 is scalar, no vector dimension
-    REQUIRE_THROWS(f0.get_component(0));
-
-    f0.deep_copy(1.0);
-    f1.deep_copy(2.0);
-
-    f_vec.sync_to_host();
-
-    auto v = f_vec.get_view<Real***,Host>();
-    for (int col=0; col<3; ++col) {
-      for (int lev=0; lev<24; ++lev) {
-        REQUIRE (v(col,0,lev)==1.0);
-        REQUIRE (v(col,1,lev)==2.0);
-      }
     }
   }
 

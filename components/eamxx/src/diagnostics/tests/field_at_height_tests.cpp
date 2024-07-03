@@ -46,8 +46,8 @@ TEST_CASE("field_at_height")
   FieldIdentifier z_surf_fid ("z_surf",          FieldLayout({COL         },{ncols              }),m,grid->name());
   FieldIdentifier z_mid_fid   ("z_mid",           FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
   FieldIdentifier z_int_fid   ("z_int",           FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
-  FieldIdentifier geo_mid_fid ("geopotential_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
-  FieldIdentifier geo_int_fid ("geopotential_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
+  FieldIdentifier h_mid_fid ("height_mid",FieldLayout({COL,     LEV},{ncols,      nlevs  }),m,grid->name());
+  FieldIdentifier h_int_fid ("height_int",FieldLayout({COL,    ILEV},{ncols,      nlevs+1}),m,grid->name());
   // Keep track of reference fields for comparison
   FieldIdentifier s_tgt_fid ("scalar_target",FieldLayout({COL    },{ncols      }),m,grid->name());
   FieldIdentifier v_tgt_fid ("vector_target",FieldLayout({COL,CMP},{ncols,ndims}),m,grid->name());
@@ -59,8 +59,8 @@ TEST_CASE("field_at_height")
   Field z_surf  (z_surf_fid);
   Field z_mid   (z_mid_fid);
   Field z_int   (z_int_fid);
-  Field geo_mid (geo_mid_fid);
-  Field geo_int (geo_int_fid);
+  Field h_mid (h_mid_fid);
+  Field h_int (h_int_fid);
   Field s_tgt   (s_tgt_fid);
   Field v_tgt   (v_tgt_fid);
 
@@ -71,8 +71,8 @@ TEST_CASE("field_at_height")
   z_surf.allocate_view();
   z_mid.allocate_view();
   z_int.allocate_view();
-  geo_mid.allocate_view();
-  geo_int.allocate_view();
+  h_mid.allocate_view();
+  h_int.allocate_view();
   s_tgt.allocate_view();
   v_tgt.allocate_view();
 
@@ -83,8 +83,8 @@ TEST_CASE("field_at_height")
   z_surf.get_header().get_tracking().update_time_stamp(t0);
   z_mid.get_header().get_tracking().update_time_stamp(t0);
   z_int.get_header().get_tracking().update_time_stamp(t0);
-  geo_mid.get_header().get_tracking().update_time_stamp(t0);
-  geo_int.get_header().get_tracking().update_time_stamp(t0);
+  h_mid.get_header().get_tracking().update_time_stamp(t0);
+  h_int.get_header().get_tracking().update_time_stamp(t0);
   s_tgt.get_header().get_tracking().update_time_stamp(t0);
   v_tgt.get_header().get_tracking().update_time_stamp(t0);
 
@@ -124,9 +124,9 @@ TEST_CASE("field_at_height")
 
   // Set up vertical structure for the tests.  Note,
   //   z_mid/int represents the height in m above sealevel
-  //   geo_mid/int represente the hegith in m above the surface
+  //   h_mid/int represente the hegith in m above the surface
   // So we first construct z_mid/int using z_surf as reference, and
-  // then can build geo_mid/int from z_mid/int
+  // then can build h_mid/int from z_mid/int
   // Furthermore, z_mid is just the midpoint between two adjacent z_int
   // points, so we back z_mid out of z_int.
   //
@@ -137,8 +137,8 @@ TEST_CASE("field_at_height")
   const auto& zint_v   = z_int.get_view<Real**,Host>();
   const auto& zmid_v   = z_mid.get_view<Real**,Host>();
   const auto& zsurf_v  = z_surf.get_view<Real*,Host>();
-  const auto& geoint_v = geo_int.get_view<Real**,Host>();
-  const auto& geomid_v = geo_mid.get_view<Real**,Host>();
+  const auto& geoint_v = h_int.get_view<Real**,Host>();
+  const auto& geomid_v = h_mid.get_view<Real**,Host>();
   int         min_col_thickness = z_top;
   int         max_surf = 0;
   for (int ii=0; ii<ncols; ++ii) {
@@ -159,31 +159,31 @@ TEST_CASE("field_at_height")
   z_mid.sync_to_dev();
   z_int.sync_to_dev();
   z_surf.sync_to_dev();
-  geo_int.sync_to_dev();
-  geo_mid.sync_to_dev();
+  h_int.sync_to_dev();
+  h_mid.sync_to_dev();
   // Set the PDF for target height in the test to always be within the shortest column.
   // This ensures that we don't havea target z that extrapolates everywhere.
   // We test this case individually.
   IPDF pdf_levs (max_surf,min_col_thickness);
   // Sanity check that the geo and z vertical structures are in fact different,
   // so we know we are testing above_surface and above_sealevel as different cases.
-  REQUIRE(! views_are_equal(z_int,geo_int));
-  REQUIRE(! views_are_equal(z_mid,geo_mid));
+  REQUIRE(! views_are_equal(z_int,h_int));
+  REQUIRE(! views_are_equal(z_mid,h_mid));
 
   // Make sure that an unsupported reference height throws an error.
   print(" -> Testing throws error with unsupported reference height...\n");
   {
-    REQUIRE_THROWS(run_diag (s_mid,geo_mid,"1m","foobar"));
+    REQUIRE_THROWS(run_diag (s_mid,h_mid,"1m","foobar"));
   }
   print(" -> Testing throws error with unsupported reference height... OK\n");
 
   // Run many times
-  int z_tgt,lev_tgt;
+  int z_tgt;
   std::string loc;
   for (std::string surf_ref : {"sealevel","surface"}) {
     printf(" -> Testing for a reference height above %s...\n",surf_ref.c_str());
-    const auto mid_src = surf_ref == "sealevel" ? z_mid : geo_mid;
-    const auto int_src = surf_ref == "sealevel" ? z_int : geo_int;
+    const auto mid_src = surf_ref == "sealevel" ? z_mid : h_mid;
+    const auto int_src = surf_ref == "sealevel" ? z_int : h_int;
     const int  max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
     for (int irun=0; irun<nruns; ++irun) {
 
@@ -238,23 +238,23 @@ TEST_CASE("field_at_height")
       }
     }
     {
-      print("    -> Forced extrapolation ...............\n");
+      print("    -> Forced extrapolation at top...............\n");
       auto slope = pdf_m(engine); 
       auto inter = pdf_y0(engine);
       f_z_src(inter, slope, int_src, s_int);
-      print("    ->                      at top...............\n");
       z_tgt = 2*z_top;
       std::string loc = std::to_string(z_tgt) + "m";
       auto dtop = run_diag(s_int,int_src,loc,surf_ref);
       f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
       REQUIRE (views_are_approx_equal(dtop,s_tgt,tol));
-      print("    ->                      at bot...............\n");
+      print("    -> Forced extrapolation at top............... OK!\n");
+      print("    -> Forced extrapolation at bot...............\n");
       z_tgt = 0;
       loc = std::to_string(z_tgt) + "m";
       auto dbot = run_diag(s_int,int_src,loc,surf_ref);
       f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
       REQUIRE (views_are_approx_equal(dbot,s_tgt,tol));
-      print("    -> Forced extrapolation............... OK!\n");
+      print("    -> Forced extrapolation at bot............... OK!\n");
     }
     printf(" -> Testing for a reference height above %s... OK!\n",surf_ref.c_str());
   }

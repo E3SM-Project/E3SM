@@ -121,7 +121,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       if (( (trim(config_thermal_solver) == 'temperature') .or. &
             (trim(config_thermal_solver) == 'enthalpy') ) .and. &
-            (trim(config_tracer_advection) /= 'fo') )then
+            ( (trim(config_tracer_advection) /= 'fo') .and. (trim(config_tracer_advection) /= 'fct') ) )then
          call mpas_log_write("Setting config_tracer_advection='fo' because a thermal solver has been selected. " // &
             "(config_tracer_advection was set to: " // trim(config_tracer_advection) // ")", MPAS_LOG_WARN)
          config_tracer_advection = 'fo'

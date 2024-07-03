@@ -82,6 +82,11 @@ endif()
 
 project(E3SM C CXX Fortran)
 
+if (COMP_INTERFACE STREQUAL "moab")
+  set(USE_MOAB True)
+  set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+endif()
+
 if (USE_CUDA)
   set(CMAKE_CUDA_COMPILER_FORCED True)
   enable_language(CUDA)

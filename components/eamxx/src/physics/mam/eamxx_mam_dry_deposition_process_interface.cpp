@@ -47,10 +47,8 @@ void MAMDryDep::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto q_unit = kg / kg;
-  q_unit.set_string("kg/kg");
 
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-  n_unit.set_string("#/kg");
 
   auto m3 = m * m * m;  // meter cubed
 
@@ -208,7 +206,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
   dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
@@ -306,7 +303,6 @@ void compute_tendencies(
 
   const mam4::AeroConfig aero_config;
   mam4::Atmosphere atm =  atmosphere_for_column(dry_atm, icol);
-  atm.interface_pressure = atm.pressure;
   mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
   mam4::Surface surf; 
   mam4::Diagnostics diags;

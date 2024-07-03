@@ -56,7 +56,7 @@ subroutine iop_setinitial(elem)
   integer i, j, k, cix, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
-  if (.not. use_replay .and. get_nstep() .eq. 0 .and. par%dynproc) then
+  if (get_nstep() .eq. 0 .and. par%dynproc) then
     call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
     call cnst_get_ind('NUMICE', inumice, abrtf=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
@@ -215,8 +215,7 @@ subroutine iop_setfield(elem,iop_update_phase1)
   integer i, j, k, ie
 
   do ie=1,nelemd
-    if (have_ps .and. use_replay .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs
-    if (have_ps .and. .not. use_replay) elem(ie)%state%ps_v(:,:,:) = psobs
+    if (have_ps) elem(ie)%state%ps_v(:,:,:) = psobs
     do i=1, PLEV
       ! If DP CRM mode do NOT write over dycore vertical velocity
       if ((have_omega .and. iop_update_phase1) .and. .not. dp_crm) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
@@ -423,10 +422,6 @@ subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete
       call outfld('QDIFF',qdiff_dyn,plon,begchunk)
     endif
 
-    if (iop_coriolis) then
-      call iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
-    endif
-
     call outfld('TOBS',tobs,plon,begchunk)
     call outfld('QOBS',qobs,plon,begchunk)
     call outfld('DIVQ',divq,plon,begchunk)
@@ -441,6 +436,10 @@ subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete
     call outfld('QRELAX',relaxq,plon,begchunk)
 
   enddo
+
+  if (iop_coriolis) then
+    call iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
+  endif
 
   if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
     ! If running in a doubly periodic CRM mode, then nudge the domain

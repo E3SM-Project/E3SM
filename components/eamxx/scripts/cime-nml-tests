@@ -222,9 +222,10 @@ class TestBuildnml(unittest.TestCase):
         # Append to an existing entry
         name = 'output_yaml_files'
         out = run_cmd_no_fail(f"./atmchange {name}+=a.yaml", from_dir=case)
+        out = run_cmd_no_fail(f"./atmchange {name}+=b.yaml", from_dir=case)
 
         # Get the yaml files
-        expected =f'{EAMXX_DIR / "data/scream_default_output.yaml"}, a.yaml'
+        expected =f'a.yaml, b.yaml'
         self._get_values(case, name, value=expected, expect_equal=True)
 
     ###########################################################################

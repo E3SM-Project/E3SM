@@ -7,4 +7,4 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
 #Compy SLURM specific settings
-set(EKAT_MPI_NP_FLAG "-p short -n" CACHE STRING "" FORCE)
+set(EKAT_MPI_NP_FLAG "-p short --mpi=pmi2 -n" CACHE STRING "" FORCE)

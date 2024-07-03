@@ -191,7 +191,7 @@ If TRUE, irrigation will be active.
 </entry>
 
 <entry id="tw_irr" type="logical" category="elm_physics"
-       group="elm_inparm"  >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, irrigation will be two-way coupled with MOSART.
 irrigation supply will be constrained by surface water availability from MOSART
 </entry>
@@ -215,12 +215,11 @@ Normally this is ONLY used when running CESM with the active glacier model.
 </entry>
 
 <entry id="glc_grid" type="char*10" category="elm_physics"
-        group="elm_inparm" valid_values="gland20,gland10,gland5,gland5UM" >
+        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2" >
 Glacier model grid
-    gland20  = Greenland at 20km resolution
-    gland10  = Greenland at 10km resolution
-    gland5   = Greenland at  5km resolution
-    gland5UM = Greenland at  5km resolution, using new UMontana ice sheet data for present day Greenland
+    mpas.gis20km  = Greenland at 20km resolution
+    mpas.gis1to10km = Greenland at 1-to-10km variable resolution (v1, kept for backwards compatibility)
+    mpas.gis1to10kmR2 = Greenland at 1-to-10km variable resolution (v2, improved init. cond., fewer total grid cells)
 </entry>
 
 <entry id="glc_smb" type="logical" category="elm_physics"
@@ -379,6 +378,21 @@ Toggle to turn on inventory initialization(only relevant if FATES is being used)
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname to the inventory initialization control file.
+</entry>
+
+<!-- This may eventually migrate to the dynamic_subgrid group-->
+<entry id="use_fates_luh" type="logical" category="physics"
+       group="elm_inparm" valid_values="" >
+If TRUE, enable use of land use state and transition data from luh_timeseries file.
+(Only valid for fates land use change runs, where there is a luh_timeseries file.)
+(Also, only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
+<!-- This could eventually be included in the "dynamic_subgrid" -->
+<entry id="fluh_timeseries" type="char*256" category="datasets"
+       input_pathname="abs" group="elm_inparm" valid_values="" >
+Full pathname of unified land use harmonization data file. This causes the land-use
+types to vary over time.
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
@@ -735,7 +749,7 @@ Default configuration has no connection to soil or atmosphere.
 Optional flag to turn on the fan mode coupling atm/soil.
     fan_offline = use only fan for calculating emissions (no coupling)
     fan_soil    = fan coupled to soil bgc
-    fan_atm     = fan coupled to atmosphere 
+    fan_atm     = fan coupled to atmosphere
     fan_full    = fan coupled to both soil bgc and atmosphere
 </entry>
 
@@ -772,7 +786,7 @@ in its attributes. (Only used if scripgriddata_src_type = UGRID.)
 <!--                                                   -->
 <entry id="mksrf_filename" type="char*256" category="mksurfdata"
        group="default_settings"
-       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero" >
+       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero,mksrf_ffert" >
 Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
 
@@ -928,6 +942,11 @@ Slope percentile dataset
 <entry id="mksrf_fero" type="char*256" category="mksurfdata"
        input_pathname="abs" group="elmexp" valid_values="" >
 ELM-Erosion parameters dataset
+</entry>
+
+<entry id="mksrf_ffert" type="char*256" category="mksurfdata"
+       input_pathname="abs" group="elmexp" valid_values="" >
+ELM-Fertilizer dataset
 </entry>
 
 <entry id="outnc_double" type="logical" category="mksurfdata"
@@ -1211,7 +1230,7 @@ Fraction of manure N produced in crop columns but spread on native vegetation co
        group="fan_nml" valid_values="">
 Adsorption coefficient for ammonium in FAN. Must be >= 0, 0 means no adsorption.
 </entry>
- 
+
 <!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
 <!-- ========================================================================================  -->
@@ -1390,7 +1409,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne120np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne120np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry>
@@ -1404,7 +1423,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,ECwISC30to60E3r2,IcoswISC30E3r5">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7">
 Land mask description
 </entry>
 
@@ -2095,7 +2114,7 @@ Toggle to turn on the soil erosion and OM pools feedback.
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to use modifed infiltration scheme in h2osfc     .
 </entry>
-    
+
 <!-- ========================================================================================  -->
 <!-- Namelist options for land river coulping                                                  -->
 <!-- ========================================================================================  -->

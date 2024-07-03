@@ -625,8 +625,15 @@ struct Functions
   KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r,
+    Spack& lamr,
     const physics::P3_Constants<ScalarT> & p3constants,
+    const Smask& context = Smask(true) );
+
+  // Computes and returns additional rain size distribution parameters
+  KOKKOS_FUNCTION
+  static void get_cdistr_logn0r (
+    const Spack& qr, const Spack& nr, const Spack& mu_r,
+    const Spack& lamr, Spack& cdistr, Spack& logn0r,
     const Smask& context = Smask(true) );
 
   // Calculates rime density

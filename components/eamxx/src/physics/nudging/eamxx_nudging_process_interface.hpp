@@ -73,6 +73,7 @@ protected:
   int m_num_src_levs;
   int m_timescale;
   bool m_use_weights;
+  bool m_skip_vert_interpolation;
   std::vector<std::string> m_datafiles;
   std::string              m_static_vertical_pressure_file;
   // add nudging weights for regional nudging update

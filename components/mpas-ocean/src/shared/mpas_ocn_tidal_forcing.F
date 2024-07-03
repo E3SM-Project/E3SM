@@ -29,6 +29,7 @@ module ocn_tidal_forcing
    use ocn_config
    use ocn_mesh
    use ocn_diagnostics_variables
+   use ocn_subgrid
 
    implicit none
    private
@@ -109,7 +110,7 @@ contains
 
       err = 0
 
-      if ( .not. tidalfluxOn ) return
+      if ( .not. tidalFluxOn ) return
 
       call mpas_timer_start("tidal thickness tendency")
 
@@ -219,7 +220,7 @@ contains
 
       character (len=StrKIND), pointer :: xtime
 
-      if ( .not. tidalfluxOn ) return
+      if ( .not. tidalFluxOn ) return
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -245,6 +246,10 @@ contains
             SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim - &
             pii*config_tidal_forcing_monochromatic_phaseLag/180.0_RKIND) - &
             config_tidal_forcing_monochromatic_baseline
+        elseif (trim(config_tidal_forcing_model) == 'linear') then
+           tidalHeight = max(config_tidal_forcing_linear_min, &
+                             config_tidal_forcing_linear_baseline + &
+                             config_tidal_forcing_linear_rate * daysSinceStartOfSim)
         !else if (trim(config_tidal_forcing_type) == 'data') then
         !  ! data option
         !  ! pass
@@ -256,7 +261,11 @@ contains
         if (config_use_wetting_drying .and. tidalInputMask(iCell) == 1.0_RKIND) then
           ! ensure that tidal height can't force below total minimum thickness
           ! condition wrong to ensure that there isn't any drying according to criteria
-          tidalHeight = max(-bottomDepth(iCell) + (float(maxLevelCell(iCell))+1.0_RKIND)*config_drying_min_cell_height, tidalHeight)
+          if ( config_use_subgrid_wetting_drying ) then
+            tidalHeight = max(tidalHeight, subgridSShCellTableRange(3,iCell) ) ;      
+          else
+           tidalHeight = max(-bottomDepth(iCell) + (float(maxLevelCell(iCell))+1.0_RKIND)*config_drying_min_cell_height, tidalHeight)
+          end if
         end if
 
         ! compute total depth for relative thickness contribution

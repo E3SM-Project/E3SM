@@ -18,8 +18,13 @@ using KT            = ekat::KokkosTypes<ekat::DefaultDevice>;
 // views for single- and multi-column data
 using view_1d       = typename KT::template view_1d<Real>;
 using view_2d       = typename KT::template view_2d<Real>;
+using view_3d       = typename KT::template view_3d<Real>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
+using const_view_3d = typename KT::template view_3d<const Real>;
+
+using complex_view_3d = typename KT::template view_3d<Kokkos::complex<Real>>;
+using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
 
 // Kokkos thread team (league member)
 using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
@@ -29,6 +34,8 @@ using uview_1d = typename ekat::template Unmanaged<typename KT::template view_1d
 using uview_2d = typename ekat::template Unmanaged<typename KT::template view_2d<Real>>;
 
 using PF = scream::PhysicsFunctions<DefaultDevice>;
+
+using view_int_1d       = typename KT::template view_1d<int>;
 
 // number of constituents in gas chemistry "work arrays"
 KOKKOS_INLINE_FUNCTION
@@ -241,7 +248,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 };
 
 // Given a MAM aerosol-related gas identifier, returns the name of its mass
-// mixing ratio field in EAMxx ("aero_gas_mmr_<gas>")
+// mixing ratio field in EAMxx
 KOKKOS_INLINE_FUNCTION
 const char* gas_mmr_field_name(const int gas) {
   if (!gas_mmr_names(gas)[0]) {
@@ -258,7 +265,6 @@ struct WetAtmosphere {
   const_view_2d nc;      // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi;      // wet cloud ice water mass mixing ratio [kg cloud ice water / kg moist air]
   const_view_2d ni;      // wet cloud ice water number mixing ratio [# / kg moist air]
-  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -267,7 +273,6 @@ struct DryAtmosphere {
   Real          z_surf;    // height of bottom of atmosphere [m]
   const_view_2d T_mid;     // temperature at grid midpoints [K]
   const_view_2d p_mid;     // total pressure at grid midpoints [Pa]
-  const_view_2d p_int;    // total pressure at layer interfaces [Pa]
   view_2d       qv;        // dry water vapor mixing ratio [kg vapor / kg dry air]
   view_2d       qc;        // dry cloud liquid water mass mixing ratio [kg cloud water/kg dry air]
   view_2d       nc;        // dry cloud liquid water number mixing ratio [# / kg dry air]
@@ -277,10 +282,12 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
+  const_view_2d p_int;     // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
   const_view_1d phis;      // surface geopotential [m2/s2]
+  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
@@ -511,6 +518,8 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
     "z_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
     "p_del not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.p_int.data() != nullptr,
+    "p_int not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.cldfrac.data() != nullptr,
     "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
@@ -591,9 +600,18 @@ void compute_vertical_layer_heights(const Team& team,
     "Given column index does not correspond to given team!");
 
   const auto dz = ekat::subview(dry_atm.dz, column_index);
-  auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
-  auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
-  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
+  const auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
+  const auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
+  const auto qv = ekat::subview(dry_atm.qv, column_index);
+  const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
+  const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
+  const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+  // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
+  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
+            dz);//output
+  team.team_barrier();
+  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
+   z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
 }
@@ -612,8 +630,9 @@ void compute_updraft_velocities(const Team& team,
   constexpr int nlev = mam4::nlev;
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
-    const auto rho = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
-    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
+    dry_atm.dz(i,k) = PF::calculate_dz(dry_atm.p_del(i,k), dry_atm.p_mid(i,k), dry_atm.T_mid(i,k), wet_atm.qv(i,k));
+    const auto rho  = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
+    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(dry_atm.omega(i,k), rho);
   });
 }
 
@@ -711,6 +730,23 @@ void compute_wet_mixing_ratios(const Team& team,
     }
   });
 }
+
+// Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
+// "packs". Following function copies a 2d view till model levels
+inline
+void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
+                         const_view_2d &inp_view,             //input view to copy
+                         const int dim,                       //dimension till view should be copied
+                         view_2d &out_view) {                 //output view
+
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [&](int kk) {
+          out_view(icol, kk) = inp_view(icol, kk);
+        });
+      });
+ }
 
 // Because CUDA C++ doesn't allow us to declare and use constants outside of
 // KOKKOS_INLINE_FUNCTIONS, we define this macro that allows us to (re)define

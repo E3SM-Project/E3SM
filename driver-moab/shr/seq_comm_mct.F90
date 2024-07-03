@@ -27,6 +27,7 @@ module seq_comm_mct
 #endif
   use esmf           , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
   use esmf           , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+  use iMOAB, only: iMOAB_Initialize
 
   implicit none
 
@@ -55,6 +56,8 @@ module seq_comm_mct
   public seq_comm_getnthreads
   public seq_comm_printcomms
   public seq_comm_get_ncomps
+
+  public seq_comm_compare_mb_mct
 
   !--------------------------------------------------------------------------
   ! Public data
@@ -161,7 +164,10 @@ module seq_comm_mct
 
   ! taskmap output level specifications for components
   ! (0:no output, 1:compact, 2:verbose)
-  integer, public :: info_taskmap_comp
+  integer, public :: info_taskmap_model, info_taskmap_comp
+  integer, public :: driver_nnodes
+  integer, public, allocatable :: driver_task_node_map(:)
+  integer, public :: info_mprof, info_mprof_dt
 
   ! suffix for log and timing files if multi coupler driver
   character(len=seq_comm_namelen), public  :: cpl_inst_tag
@@ -187,6 +193,7 @@ module seq_comm_mct
      integer :: cmppe           ! a common task in mpicom from the component group for join mpicoms
      ! cmppe is used to broadcast information from the component to the coupler
      logical :: set             ! has this datatype been set
+     integer :: excl_group      ! mpi group of tasks owned exclusively by this component
 
   end type seq_comm_type
 
@@ -209,6 +216,37 @@ module seq_comm_mct
        ocn_layout, wav_layout, esp_layout, iac_layout
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
+
+  integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
+  integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
+  logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
+  integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
+  integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
+  integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
+  integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
+  integer, public :: mbintxoa ! iMOAB id for intx mesh between atmosphere and ocean
+  integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
+!!#ifdef MOABDEBUG
+  integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
+  integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes
+!!#endif
+  integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
+  integer, public :: mbintxal ! iMOAB id for intx mesh between atmosphere and land
+  integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
+  integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
+  integer, public :: mbintxia ! iMOAB id for intx mesh between ice and atmosphere
+  integer, public :: mrofid   ! iMOAB id of moab rof app
+  integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes
+  integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
+                              ! similar to intx id, oa, la; 
+  integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
+  integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
+  integer, public :: mbintxlr ! iMOAB id for intx mesh between land and river
+  integer, public :: mbintxrl ! iMOAB id for intx mesh between river and land
+  logical, public :: mb_land_mesh = .false.  ! whether the land uses full FV mesh or not ; made true if domain mesh is read on comp land
+
+  integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
   !=======================================================================
 contains
@@ -234,6 +272,7 @@ contains
     character(*), parameter :: subName =   '(seq_comm_init) '
     integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
     integer :: pelist(3,1)       ! start, stop, stride for group
+    integer :: exlist(3), mpigrp_world, exgrp
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
@@ -241,33 +280,33 @@ contains
     integer :: drv_inst
     character(len=8) :: c_drv_inst      ! driver instance number
     character(len=8) :: c_driver_numpes ! number of pes in driver
+    character(len=16):: c_comm_name     ! comm. name
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
-         atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, &
-         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, &
-         ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, &
-         glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, &
-         wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, &
-         rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
-         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
-         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
-         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
-         info_taskmap_model
+         atm_ntasks, atm_rootpe, atm_pestride, atm_excl_stride, atm_nthreads, &
+         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_excl_stride, lnd_nthreads, &
+         ice_ntasks, ice_rootpe, ice_pestride, ice_excl_stride, ice_nthreads, &
+         glc_ntasks, glc_rootpe, glc_pestride, glc_excl_stride, glc_nthreads, &
+         wav_ntasks, wav_rootpe, wav_pestride, wav_excl_stride, wav_nthreads, &
+         rof_ntasks, rof_rootpe, rof_pestride, rof_excl_stride, rof_nthreads, &
+         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_excl_stride, ocn_nthreads, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_excl_stride, esp_nthreads, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_excl_stride, iac_nthreads, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_excl_stride, cpl_nthreads
 
     namelist /cime_pes/  &
-         atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
-         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
-         ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout, &
-         glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, glc_layout, &
-         wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, wav_layout, &
-         rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
-         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
-         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
-         info_taskmap_model, info_taskmap_comp
+         atm_ntasks, atm_rootpe, atm_pestride, atm_excl_stride, atm_nthreads, atm_layout, &
+         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_excl_stride, lnd_nthreads, lnd_layout, &
+         ice_ntasks, ice_rootpe, ice_pestride, ice_excl_stride, ice_nthreads, ice_layout, &
+         glc_ntasks, glc_rootpe, glc_pestride, glc_excl_stride, glc_nthreads, glc_layout, &
+         wav_ntasks, wav_rootpe, wav_pestride, wav_excl_stride, wav_nthreads, wav_layout, &
+         rof_ntasks, rof_rootpe, rof_pestride, rof_excl_stride, rof_nthreads, rof_layout, &
+         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_excl_stride, ocn_nthreads, ocn_layout, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_excl_stride, esp_nthreads, esp_layout, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_excl_stride, iac_nthreads, iac_layout, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_excl_stride, cpl_nthreads,             &
+         info_taskmap_model, info_taskmap_comp, info_mprof, info_mprof_dt
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -296,6 +335,7 @@ contains
        seq_comms(n)%pethreads = -1
        seq_comms(n)%cplpe = -1
        seq_comms(n)%cmppe = -1
+       seq_comms(n)%excl_group = -1
     enddo
 
 
@@ -338,6 +378,8 @@ contains
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
        info_taskmap_model = 0
        info_taskmap_comp  = 0
+       info_mprof         = 0
+       info_mprof_dt      = 86400
 
        ! Read namelist if it exists
 
@@ -377,6 +419,8 @@ contains
 
     call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
     call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+    call shr_mpi_bcast(info_mprof,   DRIVER_COMM,'info_mprof')
+    call shr_mpi_bcast(info_mprof_dt,DRIVER_COMM,'info_mprof_dt')
 
 #ifdef TIMING
     if (info_taskmap_model > 0) then
@@ -408,14 +452,26 @@ contains
           call shr_sys_flush(logunit)
        endif
 
+       if (info_mprof > 2) then
+          allocate( driver_task_node_map(0:global_numpes-1), stat=ierr)
+          if (ierr /= 0) call shr_sys_abort(trim(subname)//' allocate driver_task_node_map failed ')
+       endif
+
        call t_startf("shr_taskmap_write")
        if (drv_inst == 0) then
+          c_comm_name = 'GLOBAL'
+       else
+          c_comm_name = 'DRIVER #'//trim(adjustl(c_drv_inst))
+       endif
+       if (info_mprof > 2) then
           call shr_taskmap_write(logunit, DRIVER_COMM, &
-                                 'GLOBAL', &
-                                 verbose=verbose_taskmap_output)
+                                 c_comm_name, &
+                                 verbose=verbose_taskmap_output, &
+                                 save_nnodes=driver_nnodes, &
+                                 save_task_node_map=driver_task_node_map)
        else
           call shr_taskmap_write(logunit, DRIVER_COMM, &
-                                 'DRIVER #'//trim(adjustl(c_drv_inst)), &
+                                 c_comm_name, &
                                  verbose=verbose_taskmap_output)
        endif
        call t_stopf("shr_taskmap_write")
@@ -479,28 +535,48 @@ contains
        pelist(1,1) = cpl_rootpe
        pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
        pelist(3,1) = cpl_pestride
+       exlist(1) = pelist(1,1)
+       exlist(2) = pelist(2,1)
+       exlist(3) = cpl_excl_stride
     end if
 
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+    call mpi_bcast(exlist, size(exlist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+    if (exlist(3) > 0) then
+       call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
+       call mpi_group_range_incl(mpigrp_world, 1, exlist, exgrp, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl CPLID')
+       seq_comms(CPLID)%excl_group = exgrp
+    endif
     call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
-    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
+    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, &
+         atm_ntasks, atm_pestride, atm_excl_stride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
-    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
+    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, &
+         lnd_ntasks, lnd_pestride, lnd_excl_stride, num_inst_lnd, &
          CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id)
-    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
+    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, &
+         ice_ntasks, ice_pestride, ice_excl_stride, num_inst_ice, &
          CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id)
-    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
+    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, &
+         ocn_ntasks, ocn_pestride, ocn_excl_stride, num_inst_ocn, &
          CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id)
-    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
+    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, &
+         rof_ntasks, rof_pestride, rof_excl_stride, num_inst_rof, &
          CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id)
-    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
+    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, &
+         glc_ntasks, glc_pestride, glc_excl_stride, num_inst_glc, &
          CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id)
-    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
+    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, &
+         wav_ntasks, wav_pestride, wav_excl_stride, num_inst_wav, &
          CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
-    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
+    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, &
+         esp_ntasks, esp_pestride, esp_excl_stride, num_inst_esp, &
          CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
-    call comp_comm_init(driver_comm, iac_rootpe, iac_nthreads, iac_layout, iac_ntasks, iac_pestride, num_inst_iac, &
+    call comp_comm_init(driver_comm, iac_rootpe, iac_nthreads, iac_layout, &
+         iac_ntasks, iac_pestride, iac_excl_stride, num_inst_iac, &
          CPLID, IACID, CPLIACID, ALLIACID, CPLALLIACID, 'IAC', count, drv_comm_id)
 
     if (count /= ncomps) then
@@ -568,6 +644,46 @@ contains
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
 
+    ierr = iMOAB_Initialize()
+    if (ierr /= 0) then
+       write(logunit,*) trim(subname),' ERROR initialize MOAB '
+    endif
+#ifdef MOABDDD
+!   write the global_mype , for easier debugging with ddd
+!   will never use ddd for more than 10 processes
+    if (global_mype .le. 10) then
+       write(logunit,*) trim(subname), ' global_mype=', global_mype
+    endif
+#endif
+    mhid = -1     ! iMOAB id for atm comp, coarse mesh
+    mhfid = -1    ! iMOAB id for atm, fine mesh
+    mpoid = -1    ! iMOAB id for ocn comp
+    mlnid = -1    ! iMOAB id for land comp
+    mphaid = -1   ! iMOAB id for phys grid on atm pes
+    mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
+    mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations
+    mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
+    mbintxoa = -1 ! iMOAB id for  mpas ocean  intx with atm
+    mblxid = -1   ! iMOAB id for land on coupler pes
+!!#ifdef MOABDEBUG
+    mbox2id = -1  ! iMOAB id for ocn from mct on coupler pes
+    mblx2id = -1
+!!#endif
+    mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
+    mbintxal = -1 ! iMOAB id for atm intx with lnd on coupler pes
+    mpsiid = -1   ! iMOAB for sea-ice
+    mbixid = -1   ! iMOAB for sea-ice migrated to coupler
+    mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
+    mrofid = -1   ! iMOAB id of moab rof app
+    mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
+    mbrmapro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file 
+    mbrxoid = -1  ! iMOAB id of moab instance rof to coupler in ocean context
+    mbintxar = -1 ! iMOAB id for intx mesh between atm and river
+    mbintxlr = -1 ! iMOAB id for intx mesh between land and river
+    mbintxrl = -1 ! iMOAB id for intx mesh between river and land
+    num_moab_exports = 0 ! mostly used in debugging
+
     deallocate(comps,comms)
 
 
@@ -576,7 +692,7 @@ contains
   end subroutine seq_comm_init
 
   subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
-       comp_ntasks, comp_pestride, num_inst_comp, &
+       comp_ntasks, comp_pestride, comp_exstride, num_inst_comp, &
        CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id)
     integer, intent(in) :: driver_comm
     integer, intent(in) :: comp_rootpe
@@ -584,6 +700,7 @@ contains
     character(len=*), intent(in) :: comp_layout
     integer, intent(in) :: comp_ntasks
     integer, intent(in) :: comp_pestride
+    integer, intent(in) :: comp_exstride
     integer, intent(in) :: num_inst_comp
     integer, intent(in) :: CPLID
     integer, intent(out) :: COMPID(num_inst_comp)
@@ -594,13 +711,13 @@ contains
     integer, intent(in), optional :: drv_comm_id
     character(len=*), intent(in) :: name
 
-    character(len=*), parameter :: subname = "comp_comm_init"
+    character(len=*), parameter :: subname = "(comp_comm_init) "
     integer :: comp_inst_tasks
     integer :: droot
     integer :: current_task_rootpe
     integer :: cmin(num_inst_comp), cmax(num_inst_comp), cstr(num_inst_comp)
     integer :: n
-    integer :: pelist (3,1)
+    integer :: pelist(3,1), exlist(3), mpigrp_world, exgrp
     integer :: ierr
     integer :: mype
 
@@ -648,13 +765,25 @@ contains
           current_task_rootpe = current_task_rootpe + droot
        end do
     endif
+
     do n = 1, num_inst_comp
        if (mype==0) then
           pelist(1,1) = cmin(n)
           pelist(2,1) = cmax(n)
           pelist(3,1) = cstr(n)
+          exlist(1)   = cmin(n)
+          exlist(2)   = cmax(n)
+          exlist(3)   = comp_exstride
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+       call mpi_bcast(exlist, size(exlist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+       if (exlist(3) > 0) then
+          call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
+          call mpi_group_range_incl(mpigrp_world, 1, exlist, exgrp, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl COMPID')
+          seq_comms(COMPID(n))%excl_group = exgrp
+       endif
        if (present(drv_comm_id)) then
           call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=drv_comm_id)
        else
@@ -690,6 +819,8 @@ contains
     ! Also calls mct_world_clean, to be symmetric with the mct_world_init call from
     ! seq_comm_init.
 
+    integer :: id
+
     character(*), parameter :: subName =   '(seq_comm_clean) '
     !----------------------------------------------------------
 
@@ -715,10 +846,10 @@ contains
     integer,intent(IN),optional :: tinst ! total number of instances for this component
 
     integer :: mpigrp_world
-    integer :: mpigrp
+    integer :: mpigrp, newgrp
     integer :: mpicom
     integer :: ntasks
-    integer :: ierr
+    integer :: ierr, n
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
     character(*),parameter :: subName =   '(seq_comm_setcomm) '
@@ -732,8 +863,18 @@ contains
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     call mpi_group_range_incl(mpigrp_world, 1, pelist, mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
-    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
 
+    ! exclude tasks dedicated to other components
+    do n = 3, ID
+       if (seq_comms(n)%excl_group >= 0) then
+          if (n == ID) cycle ! don't exclude self
+          call mpi_group_difference(mpigrp, seq_comms(n)%excl_group, newgrp, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_group_difference excl_group')
+          mpigrp = newgrp
+       endif
+    enddo
+
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     ntasks = ((pelist(2,1) - pelist(1,1)) / pelist(3,1)) + 1
@@ -1401,4 +1542,75 @@ contains
 
   end subroutine seq_comm_mkname
   !---------------------------------------------------------
+
+  subroutine seq_comm_compare_mb_mct( modelstr, mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
+
+    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use shr_kind_mod     , only : r8 => shr_kind_r8
+    use mct_mod
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
+    
+    use iso_c_binding 
+    character(*), intent (in) :: modelstr
+    integer, intent(in) :: mpicom
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in)      :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
+    integer   :: mbSize, nloc, index_avfield, rank2
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     logical   :: iamroot
+
+
+     character(*),parameter :: subName = '(seq_comm_compare_mb_mct) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(mct_values(nloc))
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+
+     ! now get moab tag values; first get info
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     differenceg = 0. ! initialize to 0 the total sum
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     call shr_mpi_commrank( mpicom, rank2 )
+     if ( rank2 .eq. 0 ) then
+        print * , trim(modelStr), subname, ' , difference on tag ', trim(tagname), ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(values)
+     deallocate(mct_values)
+
+  end subroutine seq_comm_compare_mb_mct
+
+
 end module seq_comm_mct

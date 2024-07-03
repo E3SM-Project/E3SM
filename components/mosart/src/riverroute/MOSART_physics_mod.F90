@@ -64,7 +64,8 @@ MODULE MOSART_physics_mod
     integer :: iunit, idam, m, k, unitUp, cnt, ier, dd, nSubStep   !local index
     real(r8) :: temp_erout, localDeltaT, temp_haout, temp_Tt, temp_Tr, temp_T, temp_ha
     real(r8) :: mud_erout, san_erout, temp_ehexch, temp_etexch, temp_erexch
-    real(r8) :: negchan, numSubSteps
+    real(r8) :: negchan 
+    integer  :: numSubSteps
     integer  :: yr,mon,day,tod
     real(r8) :: myTINYVALUE
     character(len=*),parameter :: subname = '(Euler)'
@@ -681,8 +682,8 @@ MODULE MOSART_physics_mod
 
 ! check for negative channel storage
     if (negchan < -1.e-10) then
-       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
-!       call shr_sys_abort('mosart: negative channel storage')
+       write(iulog,*) 'Error: Negative channel storage found! ',negchan
+       call shr_sys_abort('mosart: negative channel storage')
     endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
     TRunoff%erowm_regi(:,nt_nmud:nt_nsan) = TRunoff%erowm_regi(:,nt_nmud:nt_nsan) / Tctl%DLevelH2R

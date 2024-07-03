@@ -25,7 +25,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
 {
   // Set up the mpi communicator and init the pio subsystem
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   std::string spa_data_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
 
@@ -37,7 +37,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   auto grid_model = create_point_grid("model_grid",ncols_model,nlevs,comm);
 
   // Create horiz remapper
-  auto remapper = SPAFunc::create_horiz_remapper(grid_model,spa_data_file,"SHOULD_NOT_BE_NEEDE");
+  auto remapper = SPAFunc::create_horiz_remapper(grid_model,spa_data_file,"SHOULD_NOT_BE_NEEDED");
   const int ncols_data = remapper->get_src_grid()->get_num_global_dofs();
 
   // This test should be tailored to have same number of columns as the spa data
@@ -46,6 +46,9 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   // Create spa data reader
   auto reader = SPAFunc::create_spa_data_reader(remapper,spa_data_file);
+  // TODO: We can add lat/lon to spa_data_file and test the impl for IOP
+  util::TimeStamp dummy_ts;
+  std::shared_ptr<SPAFunc::IOPReader> dummy_iop_reader;
 
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(grid_model->get_num_local_dofs(), nlevs+2, nswbands, nlwbands);
@@ -77,7 +80,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   const int max_time = 3;
   for (int time_index = 0;time_index<max_time; time_index++) {
-    SPAFunc::update_spa_data_from_file(*reader, time_index, *remapper, spa_data);
+    SPAFunc::update_spa_data_from_file(reader, dummy_iop_reader, dummy_ts, time_index, *remapper, spa_data);
     Kokkos::deep_copy(ps_h,ps_d);
     Kokkos::deep_copy(ccn3_h,ccn3_d);
     Kokkos::deep_copy(aer_g_sw_h,aer_g_sw_d);
@@ -104,7 +107,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   // All Done
   reader = nullptr;
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 } // run_property
 
 // Some helper functions for the require statements:

@@ -35,6 +35,12 @@ module mpas_subdriver
    use test_core_interface
 #endif
 
+#ifdef HAVE_MOAB
+   use mpas_moabmesh
+#endif
+   type (core_type), pointer :: corelist => null()
+   type (dm_info), pointer :: dminfo
+   type (domain_type), pointer :: domain_ptr
 
    contains
 
@@ -47,6 +53,9 @@ module mpas_subdriver
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
       use mpas_log
+#ifdef HAVE_MOAB
+      use iMOAB, only: iMOAB_Initialize
+#endif
  
       implicit none
 
@@ -83,7 +92,6 @@ module mpas_subdriver
       logical :: streamsExists
       integer :: mesh_iotype
       integer, save :: domainID = 0
-
       interface
          subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
             use iso_c_binding, only : c_char, c_ptr, c_int
@@ -294,6 +302,14 @@ module mpas_subdriver
           call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
           call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, blockID, mesh_filename, ierr)
       end if
+#ifdef HAVE_MOAB
+      ierr = iMOAB_Initialize()
+      if ( ierr /= 0 ) then
+         call mpas_log_write('cannot initialize MOAB', messageType=MPAS_LOG_CRIT)
+      else
+         call mpas_log_write(' initialized MOAB', messageType=MPAS_LOG_WARN)
+      end if
+#endif
       call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
       call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename, mesh_iotype)
 

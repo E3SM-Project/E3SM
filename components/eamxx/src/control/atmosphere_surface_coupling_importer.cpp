@@ -28,12 +28,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Qunit = kg/kg;
-  Qunit.set_string("kg/kg");
   auto nondim = Units::nondimensional();
-  auto Wm2 = W / m / m;
-  Wm2.set_string("W/m2)");
-  const auto m2 = m*m;
+  Units m2 (m*m,"m2");
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -51,7 +47,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("surf_mom_flux",    vector2d_layout, N/m2,    grid_name);
   add_field<Computed>("surf_radiative_T", scalar2d_layout, K,       grid_name);
   add_field<Computed>("T_2m",             scalar2d_layout, K,       grid_name);
-  add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
+  add_field<Computed>("qv_2m",            scalar2d_layout, kg/kg,   grid_name);
   add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
   add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
   add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
@@ -170,9 +166,11 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
     }
   });
 
-  // If IOP is defined, potentially overwrite imports with data from IOP file
   if (m_iop) {
-    overwrite_iop_imports(called_during_initialization);
+    if (m_iop->get_params().get<bool>("iop_srf_prop")) {
+      // Overwrite imports with data from IOP file
+      overwrite_iop_imports(called_during_initialization);
+    }
   }
 }
 // =========================================================================================
