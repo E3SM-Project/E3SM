@@ -4,6 +4,7 @@ Development of E3SM is carefully planned and tied to goals in the proposals that
 work on E3SM.
 
 ## Code development
+
 Most code development occurs within one component and developers should consult the
 relevant component's development guide.
 

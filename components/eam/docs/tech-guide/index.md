@@ -4,7 +4,6 @@ This Technical Guide describes the physics of version 3 of the E3SM Atmospheric 
 
 ## Dynamics and Physics
 
-
 - [HOMME](homme.md): Dynamical core.
 
 - [Atmospheric-Grid](atmosphere-grid-overview.md): Grid used with dynamical core
