@@ -560,13 +560,13 @@ _TESTS = {
         "share"    : True,
         "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P7200.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P8640.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P10800.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P14400.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P21600.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P43200.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
-                 "PFS_P86400.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P7200.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P8640.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P10800.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P14400.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P21600.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P43200.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                 "PFS_P86400.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_hires" : {
@@ -574,10 +574,18 @@ _TESTS = {
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "03:00:00",
         "tests"   : (
-                 "PFS_PS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PM.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PL.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PS.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.bench-wcycl-hires",
+                 "PFS_PM.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.bench-wcycl-hires",
+                 "PFS_PL.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.bench-wcycl-hires",
                  )
+    },
+    "e3sm_bench_hires_tiny" : {
+        "time"  : "03:00:00",
+        "tests" : (
+                "PFS_P16384.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                "PFS_P16384.ne120pg2_r025_RRSwISC6to18E3r5.F2010.eam-bench-noio",
+                "PFS.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.bench-wcycl-hires",
+                )
     },
     "e3sm_bench_lores_g" : {
         "share"    : True,
