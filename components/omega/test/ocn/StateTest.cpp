@@ -100,15 +100,17 @@ int main(int argc, char *argv[]) {
       OMEGA::MetaDim::create("NEdges", DefHorzMesh->NEdgesSize);
       OMEGA::MetaDim::create("NVertLevels", NVertLevels);
 
-      for (int NTimeLevels = 2; NTimeLevels < 4; NTimeLevels++) { 
+      for (int NTimeLevels = 2; NTimeLevels < 4; NTimeLevels++) {
 
          int CurLevel = NTimeLevels - 2;
          int NewLevel = CurLevel - 1;
-         if (NewLevel < 0) NewLevel = NTimeLevels - 1;
+         if (NewLevel < 0) {
+            NewLevel = NTimeLevels - 1;
+         }
 
          // Create "default" state
-         OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp, DefHalo,
-                                         NVertLevels, NTimeLevels);
+         OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp,
+                                         DefHalo, NVertLevels, NTimeLevels);
 
          // Test retrieval of the default state
          OMEGA::OceanState *DefState = OMEGA::OceanState::get("Default");
@@ -120,8 +122,8 @@ int main(int argc, char *argv[]) {
          }
 
          // Create "test" state
-         OMEGA::OceanState TestOceanState("Test", DefHorzMesh, DefDecomp, DefHalo,
-                                          NVertLevels, NTimeLevels);
+         OMEGA::OceanState TestOceanState("Test", DefHorzMesh, DefDecomp,
+                                          DefHalo, NVertLevels, NTimeLevels);
 
          OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
          if (TestState) { // true if non-null ptr
@@ -156,8 +158,8 @@ int main(int argc, char *argv[]) {
          // Initialize NormalVelocity values
          for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-                DefState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
-                TestState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
+               DefState->NormalVelocityH[CurLevel](Edge, Level)  = Edge;
+               TestState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
             }
          }
 

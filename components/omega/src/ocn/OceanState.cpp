@@ -73,14 +73,13 @@ OceanState::OceanState(
 
    NVertLevels = NVertLevels_;
    NTimeLevels = NTimeLevels_;
-   CurLevel = NTimeLevels - 2;
-   NewLevel = NTimeLevels - 1;
-
+   CurLevel    = NTimeLevels - 2;
+   NewLevel    = NTimeLevels - 1;
 
    MeshHalo = MeshHalo_;
 
    StateFileName = Mesh->MeshFileName;
-   Name = Name_;
+   Name          = Name_;
 
    // Allocate state host arrays
    for (int I = 0; I < NTimeLevels; I++) {
@@ -89,7 +88,6 @@ OceanState::OceanState(
       NormalVelocityH[I] = HostArray2DR8("NormalVelocity" + std::to_string(I),
                                          NEdgesSize, NVertLevels);
    }
-
 
    // Open the state file for reading (assume IO has already been initialized)
    I4 Err;
@@ -112,7 +110,7 @@ OceanState::OceanState(
    // Create device arrays and copy host data
    for (int I = 0; I < NTimeLevels; I++) {
       LayerThickness[I] = createDeviceMirrorCopy(LayerThicknessH[I]);
-      NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);  
+      NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);
    }
 
    // Associate this instance with a name
@@ -205,7 +203,7 @@ void OceanState::defineIOFields() {
       LayerThicknessIOName.append(Name);
       NormalVelocityIOName.append(Name);
    }
- 
+
    // Create metadata dimensions
    auto CellDim = OMEGA::MetaDim::get("NCells");
    auto EdgeDim = OMEGA::MetaDim::get("NEdges");
@@ -239,7 +237,6 @@ void OceanState::defineIOFields() {
        2,                /// number of dimensions
        LayerThicknessDim /// dim pointers
    );
-
 
    // Define IOFields for state variables
    Err = OMEGA::IOField::define(NormalVelocityIOName);
@@ -288,15 +285,17 @@ void OceanState::read() {
 
    // Read LayerThickness
    int LayerThicknessID;
-   Err = IO::readArray(LayerThicknessH[CurLevel].data(), NCellsAll, "layerThickness",
-                       StateFileID, CellDecompR8, LayerThicknessID);
+   Err = IO::readArray(LayerThicknessH[CurLevel].data(), NCellsAll,
+                       "layerThickness", StateFileID, CellDecompR8,
+                       LayerThicknessID);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error reading layerThickness");
 
    // Read NormalVelocity
    int NormalVelocityID;
-   Err = IO::readArray(NormalVelocityH[CurLevel].data(), NEdgesAll, "normalVelocity",
-                       StateFileID, EdgeDecompR8, NormalVelocityID);
+   Err = IO::readArray(NormalVelocityH[CurLevel].data(), NEdgesAll,
+                       "normalVelocity", StateFileID, EdgeDecompR8,
+                       NormalVelocityID);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error reading normalVelocity");
 
@@ -350,7 +349,7 @@ void OceanState::updateTimeLevels() {
    }
 
    // Update IOField data associations
-   int Err      = 0;
+   int Err = 0;
 
    Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>(NormalVelocityIOName,
                                                       NormalVelocity[CurLevel]);
