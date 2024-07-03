@@ -115,7 +115,7 @@ void MAMWetscav::set_grids(
   add_field<Required>("evapr", scalar3d_mid, kg / kg / s, grid_name);
 
   // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
-  add_field<Updated>("prain", scalar3d_mid, kg / kg / s, grid_name);
+  add_field<Required>("prain", scalar3d_mid, kg / kg / s, grid_name);
 
   // For variables that are non dimensional (e.g., fractions etc.)
   static constexpr auto nondim = Units::nondimensional();
@@ -154,7 +154,7 @@ void MAMWetscav::set_grids(
   // In cloud water mixing ratio, shallow convection [kg/kg]
   add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
 
-  // Detraining cld H20 from deep convection [kg/ks/s]
+  // Detraining cld H20 from deep convection [kg/kg/s]
   add_field<Required>("dlf", scalar3d_mid, kg / kg / s, grid_name);
 
   // ---------------------------------------------------------------------
@@ -293,37 +293,38 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
 
 // =========================================================================================
 void MAMWetscav::initialize_impl(const RunType run_type) {
-  // Gather runtime options
-  //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
+  // ---------------------------------------------------------------
+  // Input fields read in from IC file, namelist or other processes
+  // ---------------------------------------------------------------
 
-  // populate the wet atmosphere state with views from fields and
-  // the buffer (NOTE: wet atmosphere only has qv, qc, qi, nc, ni)
+  // store fields only to be converted to dry mmrs in wet_atm_
   wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
 
-  // -- Following wet atm variables are NOT used by the process but we still
-  // need them to
-  // -- create atmosphere object
-  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  // populate the dry atmosphere state with views from fields
+  // Following wet atm variables are NOT used by the process but we still
+  // need them to create atmosphere object
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
+
+  // Populate the dry atmosphere state with views from fields
   // (NOTE: dry atmosphere has everything that wet
   // atmosphere has along with z_surf, T_mid, p_mid, z_mid, z_iface,
-  // dz, p_del, cldfrac, w_updraft, pblh, phis)
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
-  // How "buffer_" works: We use buffer to allocate memory for the members of
-  // dry_atm_ object. Here we are providing those memory locations to the
-  // dry_atm_ members. These members are computed from the above wet_atm_ or
-  // dry_atm_ members that are explicitly getting their values either from the
-  // input file or from other processes. These members are null at this point,
-  // they are assigned in "Kokkos::parallel_for("preprocess", scan_policy,
-  // preprocess_);" call in the run_impl
+  // dz, p_del, cldfrac, w_updraft, pblh, phis and omega)
+  dry_atm_.z_surf  = 0;
+  dry_atm_.T_mid   = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid   = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int   = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
 
+  // The following dry_atm_ members  *may* not be used by the process but they
+  // are needed for creating MAM4xx class objects like Atmosphere
+  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
+  dry_atm_.pblh  = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
+
+  // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.qv        = buffer_.qv_dry;
   dry_atm_.qc        = buffer_.qc_dry;
   dry_atm_.nc        = buffer_.nc_dry;
@@ -334,12 +335,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dry_atm_.z_iface   = buffer_.z_iface;
   dry_atm_.w_updraft = buffer_.w_updraft;
 
-  // The following dry_atm_ members  *may* not be used by the process but they
-  // are needed for creating MAM4xx class objects like Atmosphere
-  dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
-  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.phis    = get_field_in("phis").get_view<const Real *>();
-  dry_atm_.z_surf  = 0.0;
   // ---- set wet/dry aerosol-related gas state data
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *mmr_field_name = mam_coupling::gas_mmr_field_name(g);
@@ -382,6 +377,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
+  //---------------------------------------------------------------------------------
+  // Allocate memory
+  // (Kokkos::resize only works on host to allocates memory)
+  //---------------------------------------------------------------------------------
   // Alllocate aerosol-related gas tendencies
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     Kokkos::resize(dry_aero_tends_.gas_mmr[g], ncol_, nlev_);
@@ -396,29 +395,31 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
-  // set up our preprocess/postprocess functors
-  // Here we initialize (not compute) objects in preprocess struct using the
-  // objects in the argument list
+  // Allocate work array
+  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
+  work_              = view_2d("work", ncol_, work_len);
+
+  //---------------------------------------------------------------------------------
+  // Setup preprocessing and post processing
+  //---------------------------------------------------------------------------------
+  // set up our preprocess  and postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
 
   postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                           dry_aero_);
-
-  // wetdep
-
-  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
-  work_              = view_2d("work", ncol_, work_len);
 }
 
 // =========================================================================================
 void MAMWetscav::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
+
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
@@ -427,14 +428,16 @@ void MAMWetscav::run_impl(const double dt) {
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-  // Shallow convective cloud fraction [fraction]
+
+  //----------- Variables from convective scheme -------------
+
+  // Following variables are from convective parameterization (not implemented
+  // yet in EAMxx), so should be zero for now
+
   auto sh_frac = get_field_in("sh_frac").get_view<const Real **>();
 
   // Deep convective cloud fraction [fraction]
   auto dp_frac = get_field_in("dp_frac").get_view<const Real **>();
-
-  // Total cloud fraction
-  auto cldt = get_field_in("cldfrac_liq").get_view<const Real **>();
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   auto evapcsh = get_field_in("evapcsh").get_view<const Real **>();
@@ -454,18 +457,24 @@ void MAMWetscav::run_impl(const double dt) {
   // In cloud water mixing ratio, shallow convection
   auto icwmrsh = get_field_in("icwmrsh").get_view<const Real **>();
 
-  // evaporation from stratiform rain [kg/kg/s]
-  // FIXME: Get it from P3
-  auto evapr = get_field_in("evapr").get_view<const Real **>();
-
-  // -------------------------------------------------------------------------------------------------------------------------
-  // These variables are "Updated" or pure inputs/outputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
+  // Detraining cld H20 from deep convection [kg/kg/s]
   auto dlf = get_field_in("dlf").get_view<const Real **>();
 
-  auto prain = get_field_out("prain")
-                   .get_view<Real **>();  // stratiform rain production rate
-  // outputs
+  //----------- Variables from macrophysics scheme -------------
+  // Total cloud fraction
+  auto cldt = get_field_in("cldfrac_liq").get_view<const Real **>();
+
+  //----------- Variables from microphysics scheme -------------
+
+  // Evaporation from stratiform rain [kg/kg/s]
+  auto evapr = get_field_in("evapr").get_view<const Real **>();
+
+  // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
+  auto prain = get_field_in("prain").get_view<const Real **>();
+  // -------------------------------------------------------------------------------------------------------------------------
+  // These variables are "Computed" or pure outputs for the process
+  // -------------------------------------------------------------------------------------------------------------------------
+
   const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
 
@@ -483,7 +492,7 @@ void MAMWetscav::run_impl(const double dt) {
   // inside a parallel_for.
   const int nlev = nlev_;
 
-  // loop over atmosphere columns and compute aerosol particle size
+  // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index*/
@@ -535,9 +544,8 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, evapr_icol,
             dlf_icol, prain_icol,
-            // in/out
+            // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            // output
             aerdepwetis_icol, aerdepwetcw_icol, work_icol);
         team.team_barrier();
         // update interstitial aerosol state
