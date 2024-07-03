@@ -58,11 +58,6 @@ int initStateTest() {
    if (Err != 0)
       LOG_ERROR("State: error initializing default mesh");
 
-   // Initialize the default state
-   Err = OMEGA::OceanState::init();
-   if (Err != 0)
-      LOG_ERROR("State: error initializing default State");
-
    return Err;
 }
 
@@ -100,213 +95,230 @@ int main(int argc, char *argv[]) {
       int NVertLevels = 60;
       int NTimeLevels = 2;
 
-      // Create "test" state
-      OMEGA::OceanState DefOceanState("Test", DefHorzMesh, DefDecomp, DefHalo,
-                                      NVertLevels, NTimeLevels);
+      // Create meta data dimensions
+      OMEGA::MetaDim::create("NCells", DefHorzMesh->NCellsSize);
+      OMEGA::MetaDim::create("NEdges", DefHorzMesh->NEdgesSize);
+      OMEGA::MetaDim::create("NVertLevels", NVertLevels);
 
-      // Test retrieval of the default state
-      OMEGA::OceanState *DefState = OMEGA::OceanState::getDefault();
-      if (DefState) { // true if non-null ptr
-         LOG_INFO("State: Default state retrieval PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: Default state retrieval FAIL");
-      }
+      for (int NTimeLevels = 2; NTimeLevels < 4; NTimeLevels++) { 
 
-      OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
-      if (TestState) { // true if non-null ptr
-         LOG_INFO("State: Test state retrieval PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: Test state retrieval FAIL");
-      }
+         int CurLevel = NTimeLevels - 2;
+         int NewLevel = CurLevel - 1;
+         if (NewLevel < 0) NewLevel = NTimeLevels - 1;
 
-      // Test that reasonable values have been read in for LayerThickness
-      int count = 0;
-      for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         int colCount = 0;
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            OMEGA::R8 val = DefState->LayerThicknessH[0](Cell, Level);
-            if (val > 0.0 && val < 300.0) {
-               colCount++;
+         // Create "default" state
+         OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp, DefHalo,
+                                         NVertLevels, NTimeLevels);
+
+         // Test retrieval of the default state
+         OMEGA::OceanState *DefState = OMEGA::OceanState::get("Default");
+         if (DefState) { // true if non-null ptr
+            LOG_INFO("State: Default state retrieval PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: Default state retrieval FAIL");
+         }
+
+         // Create "test" state
+         OMEGA::OceanState TestOceanState("Test", DefHorzMesh, DefDecomp, DefHalo,
+                                          NVertLevels, NTimeLevels);
+
+         OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
+         if (TestState) { // true if non-null ptr
+            LOG_INFO("State: Test state retrieval PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: Test state retrieval FAIL");
+         }
+
+         // Test that reasonable values have been read in for LayerThickness
+         int count = 0;
+         for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
+            int colCount = 0;
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               OMEGA::R8 val = DefState->LayerThicknessH[CurLevel](Cell, Level);
+               if (val > 0.0 && val < 300.0) {
+                  colCount++;
+               }
             }
-         }
-         if (colCount < 2) {
-            count++;
-         }
-      }
-
-      if (count == 0) {
-         LOG_INFO("State: State read PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: State read FAIL");
-      }
-
-      // Initialize NormalVelocity values
-      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
-         for (int Level = 0, Level < DefState->NVertLevels; Level++) {
-             DefState->NormalVelocityH[0](Cell, Level) = Edge;
-             TestState->NormalVelocityH[0](Cell, Level) = Edge;
-         }
-      }
-
-      // Test that initally the 0 time levels of the
-      // Def and Test state arrays match
-      count                     = 0;
-      auto LayerThicknessH_def  = DefState->LayerThicknessH[0];
-      auto LayerThicknessH_test = TestState->LayerThicknessH[0];
-      for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (LayerThicknessH_def(Cell, Level) !=
-                LayerThicknessH_test(Cell, Level)) {
+            if (colCount < 2) {
                count++;
             }
          }
-      }
 
-      auto NormalVelocityH_def  = DefState->NormalVelocityH[0];
-      auto NormalVelocityH_test = TestState->NormalVelocityH[0];
-      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (NormalVelocityH_def(Edge, Level) !=
-                NormalVelocityH_test(Edge, Level)) {
-               count++;
+         if (count == 0) {
+            LOG_INFO("State: State read PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: State read FAIL");
+         }
+
+         // Initialize NormalVelocity values
+         for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+                DefState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
+                TestState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
             }
          }
-      }
 
-      if (count == 0) {
-         LOG_INFO("State: Default test state comparison PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: Default test state comparison FAIL");
-      }
-
-      // Test that the time level update is correct.
-      DefState->updateTimeLevels();
-
-      count                = 0;
-      LayerThicknessH_def  = DefState->LayerThicknessH[1];
-      LayerThicknessH_test = TestState->LayerThicknessH[0];
-      for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (LayerThicknessH_def(Cell, Level) !=
-                LayerThicknessH_test(Cell, Level)) {
-               count++;
+         // Test that initally the 0 time levels of the
+         // Def and Test state arrays match
+         count                     = 0;
+         auto LayerThicknessH_def  = DefState->LayerThicknessH[CurLevel];
+         auto LayerThicknessH_test = TestState->LayerThicknessH[CurLevel];
+         for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (LayerThicknessH_def(Cell, Level) !=
+                   LayerThicknessH_test(Cell, Level)) {
+                  count++;
+               }
             }
          }
-      }
 
-      LayerThicknessH_def  = DefState->LayerThicknessH[0];
-      LayerThicknessH_test = TestState->LayerThicknessH[1];
-      for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (LayerThicknessH_def(Cell, Level) !=
-                LayerThicknessH_test(Cell, Level)) {
-               count++;
+         auto NormalVelocityH_def  = DefState->NormalVelocityH[CurLevel];
+         auto NormalVelocityH_test = TestState->NormalVelocityH[CurLevel];
+         for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (NormalVelocityH_def(Edge, Level) !=
+                   NormalVelocityH_test(Edge, Level)) {
+                  count++;
+               }
             }
          }
-      }
 
-      NormalVelocityH_def  = DefState->NormalVelocityH[1];
-      NormalVelocityH_test = TestState->NormalVelocityH[0];
-      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (NormalVelocityH_def(Edge, Level) !=
-                NormalVelocityH_test(Edge, Level)) {
-               count++;
+         if (count == 0) {
+            LOG_INFO("State: Default test state comparison PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: Default test state comparison FAIL");
+         }
+
+         // Perform time level update.
+         DefState->updateTimeLevels();
+
+         // Test that the time level update is correct.
+         count                = 0;
+         LayerThicknessH_def  = DefState->LayerThicknessH[NewLevel];
+         LayerThicknessH_test = TestState->LayerThicknessH[CurLevel];
+         for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (LayerThicknessH_def(Cell, Level) !=
+                   LayerThicknessH_test(Cell, Level)) {
+                  count++;
+               }
             }
          }
-      }
 
-      NormalVelocityH_def  = DefState->NormalVelocityH[0];
-      NormalVelocityH_test = TestState->NormalVelocityH[1];
-      for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
-         for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-            if (NormalVelocityH_def(Edge, Level) !=
-                NormalVelocityH_test(Edge, Level)) {
-               count++;
+         LayerThicknessH_def  = DefState->LayerThicknessH[CurLevel];
+         LayerThicknessH_test = TestState->LayerThicknessH[NewLevel];
+         for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (LayerThicknessH_def(Cell, Level) !=
+                   LayerThicknessH_test(Cell, Level)) {
+                  count++;
+               }
             }
          }
-      }
 
-      if (count == 0) {
-         LOG_INFO("State: time level update PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: time level update FAIL");
-      }
+         NormalVelocityH_def  = DefState->NormalVelocityH[NewLevel];
+         NormalVelocityH_test = TestState->NormalVelocityH[CurLevel];
+         for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (NormalVelocityH_def(Edge, Level) !=
+                   NormalVelocityH_test(Edge, Level)) {
+                  count++;
+               }
+            }
+         }
 
-      // Test time level update on device
-      int count1;
-      auto LayerThickness_def  = DefState->LayerThickness[1];
-      auto LayerThickness_test = TestState->LayerThickness[0];
-      OMEGA::parallelReduce(
-          "reduce", {DefState->NCellsAll, DefState->NVertLevels},
-          KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
-             if (LayerThickness_def(Cell, Level) !=
-                 LayerThickness_test(Cell, Level)) {
-                Accum++;
-             }
-          },
-          count1);
+         NormalVelocityH_def  = DefState->NormalVelocityH[CurLevel];
+         NormalVelocityH_test = TestState->NormalVelocityH[NewLevel];
+         for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
+            for (int Level = 0; Level < DefState->NVertLevels; Level++) {
+               if (NormalVelocityH_def(Edge, Level) !=
+                   NormalVelocityH_test(Edge, Level)) {
+                  count++;
+               }
+            }
+         }
 
-      int count2;
-      LayerThickness_def  = DefState->LayerThickness[0];
-      LayerThickness_test = TestState->LayerThickness[1];
-      OMEGA::parallelReduce(
-          "reduce", {DefState->NCellsAll, DefState->NVertLevels},
-          KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
-             if (LayerThickness_def(Cell, Level) !=
-                 LayerThickness_test(Cell, Level)) {
-                Accum++;
-             }
-          },
-          count2);
+         if (count == 0) {
+            LOG_INFO("State: time level update PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: time level update FAIL");
+         }
 
-      int count3;
-      auto NormalVelocity_def  = DefState->NormalVelocity[0];
-      auto NormalVelocity_test = TestState->NormalVelocity[1];
-      OMEGA::parallelReduce(
-          "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
-          KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
-             if (NormalVelocity_def(Edge, Level) !=
-                 NormalVelocity_test(Edge, Level)) {
-                Accum++;
-             }
-          },
-          count3);
+         // Test time level update on device
+         int count1;
+         auto LayerThickness_def  = DefState->LayerThickness[NewLevel];
+         auto LayerThickness_test = TestState->LayerThickness[CurLevel];
+         OMEGA::parallelReduce(
+             "reduce", {DefState->NCellsAll, DefState->NVertLevels},
+             KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
+                if (LayerThickness_def(Cell, Level) !=
+                    LayerThickness_test(Cell, Level)) {
+                   Accum++;
+                }
+             },
+             count1);
 
-      int count4;
-      NormalVelocity_def  = DefState->NormalVelocity[1];
-      NormalVelocity_test = TestState->NormalVelocity[0];
-      OMEGA::parallelReduce(
-          "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
-          KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
-             if (NormalVelocity_def(Edge, Level) !=
-                 NormalVelocity_test(Edge, Level)) {
-                Accum++;
-             }
-          },
-          count4);
+         int count2;
+         LayerThickness_def  = DefState->LayerThickness[CurLevel];
+         LayerThickness_test = TestState->LayerThickness[NewLevel];
+         OMEGA::parallelReduce(
+             "reduce", {DefState->NCellsAll, DefState->NVertLevels},
+             KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
+                if (LayerThickness_def(Cell, Level) !=
+                    LayerThickness_test(Cell, Level)) {
+                   Accum++;
+                }
+             },
+             count2);
 
-      if (count1 == 0 && count2 == 0 && count3 == 0 && count4 == 0) {
-         LOG_INFO("State: time level update (GPU) PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("State: time level update (GPU) FAIL");
+         int count3;
+         auto NormalVelocity_def  = DefState->NormalVelocity[CurLevel];
+         auto NormalVelocity_test = TestState->NormalVelocity[NewLevel];
+         OMEGA::parallelReduce(
+             "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
+             KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
+                if (NormalVelocity_def(Edge, Level) !=
+                    NormalVelocity_test(Edge, Level)) {
+                   Accum++;
+                }
+             },
+             count3);
+
+         int count4;
+         NormalVelocity_def  = DefState->NormalVelocity[NewLevel];
+         NormalVelocity_test = TestState->NormalVelocity[CurLevel];
+         OMEGA::parallelReduce(
+             "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
+             KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
+                if (NormalVelocity_def(Edge, Level) !=
+                    NormalVelocity_test(Edge, Level)) {
+                   Accum++;
+                }
+             },
+             count4);
+
+         if (count1 == 0 && count2 == 0 && count3 == 0 && count4 == 0) {
+            LOG_INFO("State: time level update (GPU) PASS");
+         } else {
+            RetVal += 1;
+            LOG_INFO("State: time level update (GPU) FAIL");
+         }
+
+         OMEGA::OceanState::clear();
       }
 
       // Finalize Omega objects
       OMEGA::HorzMesh::clear();
       OMEGA::Decomp::clear();
       OMEGA::MachEnv::removeAll();
-      OMEGA::OceanState::clear();
       OMEGA::IOField::clear();
 
-      // MPI_Status status;
-      if (Err == 0)
+      if (RetVal == 0)
          LOG_INFO("State: Successful completion");
    }
    Kokkos::finalize();

@@ -70,6 +70,9 @@ class OceanState {
    I4 NTimeLevels; ///< Number of time levels in state variable arrays
    I4 NVertLevels; ///< Number of vertical levels in state variable arrays
 
+   I4 CurLevel; ///< Time dimension index for current level
+   I4 NewLevel; ///< Time dimension index for new level
+
    // Prognostic variables
 
    Kokkos::Array<Array2DReal, MaxTimeLevels>
@@ -86,6 +89,7 @@ class OceanState {
    // These are appended with the State name for non-Default state instances
    std::string LayerThicknessIOName; ///< IOField name for LayerThickness
    std::string NormalVelocityIOName; ///< IOField name for NormalVelocity
+   std::string StateGroupName;
 
    // Methods
 
