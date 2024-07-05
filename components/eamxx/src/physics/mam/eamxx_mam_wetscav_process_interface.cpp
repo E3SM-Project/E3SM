@@ -211,21 +211,22 @@ void MAMWetscav::set_grids(
   // Aerosol dry particle diameter [m]
   add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
 
-  // wet aerosol density [kg/m3]
+  // Wet aerosol density [kg/m3]
   add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
 
-  // aerosol water [kg/kg]
+  // Aerosol water [kg/kg]
   add_field<Computed>("qaerwat", scalar3d_mid_nmodes, kg / kg, grid_name);
 
-  // wet aerosol diameter [m]
+  // Wet aerosol diameter [m]
   add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
 
-  // fraction of transported species that are insoluble [fraction]
+  // Fraction of transported species that are insoluble [fraction]
   add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
 
-  // aerosol wet deposition (interstitial) [kg/m2/s]
+  // Aerosol wet deposition (interstitial) [kg/m2/s]
   add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s, grid_name);
-  // aerosol wet deposition (cloud water) [kg/m2/s]
+
+  // Aerosol wet deposition (cloud water) [kg/m2/s]
   add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s, grid_name);
 }
 
