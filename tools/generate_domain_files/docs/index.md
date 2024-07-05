@@ -45,3 +45,5 @@ NE=30
 MAP_FILE=${MAP_FILE_ROOT}/map_oEC60to30v3_to_ne${NE}pg2_traave.20240313.nc
 python generate_domain_files_E3SM.py -m ${MAP_FILE} -o oEC60to30v3 -l ne${NE}pg2 --date-stamp=9999 --output-root=${OUTPUT_ROOT}
 ```
+
+Back to step-by-step guide for [Adding Support for New Grids](../dev-guide/adding-grid-support/adding-grid-support-step-by-step-guide.md)
