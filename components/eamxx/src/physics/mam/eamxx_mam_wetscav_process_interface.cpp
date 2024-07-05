@@ -439,11 +439,11 @@ void MAMWetscav::run_impl(const double dt) {
   // Evaporation from stratiform rain [kg/kg/s]
   auto nevapr = get_field_in("nevapr").get_view<const Real **>();
 
-  // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
+  // Stratiform rain production rate [kg/kg/s]
   auto prain = get_field_in("precip_total_tend").get_view<const Real **>();
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------
   // These variables are "Computed" or pure outputs for the process
-  // -------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------
 
   const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
@@ -465,9 +465,9 @@ void MAMWetscav::run_impl(const double dt) {
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
-        const int icol = team.league_rank();  // column index*/
+        const int icol = team.league_rank();  // column index
 
-        auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
         // set surface state data
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =
@@ -478,25 +478,24 @@ void MAMWetscav::run_impl(const double dt) {
             mam_coupling::interstitial_aerosols_tendencies_for_column(
                 dry_aero_tends, icol);
         /// shallow_convective_precipitation_production
-        auto rprdsh_icol = ekat::subview(rprdsh, icol);
+        const auto rprdsh_icol = ekat::subview(rprdsh, icol);
         // deep_convective_precipitation_production
-        auto rprddp_icol = ekat::subview(rprddp, icol);
+        const auto rprddp_icol = ekat::subview(rprddp, icol);
         // deep_convective_precipitation_evaporation
-        auto evapcdp_icol = ekat::subview(evapcdp, icol);
+        const auto evapcdp_icol = ekat::subview(evapcdp, icol);
         // shallow_convective_precipitation_evaporation =
-        auto evapcsh_icol = ekat::subview(evapcsh, icol);
+        const auto evapcsh_icol = ekat::subview(evapcsh, icol);
         // deep_convective_cloud_fraction
-        auto dp_frac_icol = ekat::subview(dp_frac, icol);
+        const auto dp_frac_icol = ekat::subview(dp_frac, icol);
         // shallow_convective_cloud_fraction    =
-        auto sh_frac_icol = ekat::subview(sh_frac, icol);
-        // FIXME: what is this?
+        const auto sh_frac_icol = ekat::subview(sh_frac, icol);
 
-        auto icwmrdp_col  = ekat::subview(icwmrdp, icol);
-        auto icwmrsh_icol = ekat::subview(icwmrsh, icol);
-        auto nevapr_icol  = ekat::subview(nevapr, icol);
-        auto cldt_icol    = ekat::subview(cldt, icol);
+        const auto icwmrdp_col  = ekat::subview(icwmrdp, icol);
+        const auto icwmrsh_icol = ekat::subview(icwmrsh, icol);
+        const auto nevapr_icol  = ekat::subview(nevapr, icol);
+        const auto cldt_icol    = ekat::subview(cldt, icol);
 
-        auto dlf_icol         = ekat::subview(dlf, icol);
+        const auto dlf_icol   = ekat::subview(dlf, icol);
         auto aerdepwetis_icol = ekat::subview(aerdepwetis, icol);
         auto aerdepwetcw_icol = ekat::subview(aerdepwetcw, icol);
         auto work_icol        = ekat::subview(work, icol);
@@ -504,9 +503,9 @@ void MAMWetscav::run_impl(const double dt) {
             ekat::subview(wet_geometric_mean_diameter_i, icol);
         auto dry_diameter_icol =
             ekat::subview(dry_geometric_mean_diameter_i, icol);
-        auto qaerwat_icol = ekat::subview(qaerwat, icol);
-        auto wetdens_icol = ekat::subview(wetdens, icol);
-        auto prain_icol   = ekat::subview(prain, icol);
+        auto qaerwat_icol     = ekat::subview(qaerwat, icol);
+        auto wetdens_icol     = ekat::subview(wetdens, icol);
+        const auto prain_icol = ekat::subview(prain, icol);
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
