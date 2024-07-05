@@ -101,6 +101,13 @@ integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
 integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+#if ( defined MOSAIC_SPECIES )
+integer :: coarse_nh4_idx = -1
+integer :: coarse_no3_idx = -1
+integer :: coarse_ca_idx  = -1
+integer :: coarse_co3_idx = -1
+integer :: coarse_cl_idx  = -1
+#endif
 ! for so4 only aitken mode so4 to get so4_num for nucleation
 ! if defined MAM7S add stratosphere aitken to troposphere aitken
 integer :: mode_strat_sulfate1_idx = -1
@@ -313,6 +320,25 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
       ! species indices for specified types
       ! find indices for the dust and seasalt species in the coarse mode
       call rad_cnst_get_info(0, mode_coarse_dst_idx, nspec=nspec)
+#if ( MOSAIC_SPECIES )
+      do n = 1, nspec
+         call rad_cnst_get_info(0, mode_coarse_dst_idx, n, spec_type=str32)
+         select case (trim(str32))
+         case ('dust')
+            coarse_dust_idx = n
+         case ('ammonium')
+            coarse_nh4_idx  = n
+         case ('nitrate')
+            coarse_no3_idx  = n
+         case ('calcium')
+            coarse_ca_idx   = n
+         case ('carbonate')
+            coarse_co3_idx  = n
+         case ('chloride')
+            coarse_cl_idx   = n
+         end select
+      end do
+#else
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_dst_idx, n, spec_type=str32)
          select case (trim(str32))
@@ -320,6 +346,7 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             coarse_dust_idx = n
          end select
       end do
+#endif
 
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_info(0, mode_fine_dst_idx, nspec=nspec)
@@ -351,11 +378,21 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end if
       end if
 
+#if ( defined MOSAIC )
+      if ( coarse_dust_idx == -1 .or. coarse_nacl_idx == -1 .or. coarse_nh4_idx == -1 .or. &
+           coarse_no3_idx == -1 .or. coarse_ca_idx == -1 .or. coarse_co3_idx == -1 .or. coarse_cl_idx == -1 ) then
+         write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+            coarse_dust_idx, coarse_nacl_idx, coarse_nh4_idx, &
+            coarse_no3_idx, coarse_ca_idx, coarse_co3_idx, coarse_cl_idx
+         call endrun(routine//': ERROR required mode-species type not found')
+      end if
+#else
       if ( coarse_dust_idx == -1 .or. coarse_nacl_idx == -1) then
          write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
             coarse_dust_idx, coarse_nacl_idx
          call endrun(routine//': ERROR required mode-species type not found')
       end if
+#endif
       if (mode_strat_coarse_idx>0) then
          call rad_cnst_get_info(0, mode_strat_coarse_idx, nspec=nspec)
          do n = 1, nspec
@@ -539,6 +576,14 @@ subroutine nucleate_ice_cam_calc( &
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
 
+#if ( defined MOSAIC_SPECIES )
+   real(r8), pointer :: coarse_nh4(:,:)
+   real(r8), pointer :: coarse_no3(:,:)
+   real(r8), pointer :: coarse_ca(:,:)
+   real(r8), pointer :: coarse_co3(:,:)
+   real(r8), pointer :: coarse_cl(:,:)
+#endif
+
 #if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
@@ -579,6 +624,8 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: bcmc
    real(r8) :: pommc
    real(r8) :: soamc
+   real(r8) :: nh4mc
+   real(r8) :: no3mc
 
    ! For pre-existing ice
    real(r8) :: fhom(pcols,pver)    ! how much fraction of cloud can reach Shom
@@ -633,6 +680,14 @@ subroutine nucleate_ice_cam_calc( &
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
       end if
+
+#if ( defined MOSAIC_SPECIES )
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_nh4_idx, 'a', state, pbuf, coarse_nh4)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_no3_idx, 'a', state, pbuf, coarse_no3)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_ca_idx,  'a', state, pbuf, coarse_ca)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_co3_idx, 'a', state, pbuf, coarse_co3)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_cl_idx,  'a', state, pbuf, coarse_cl)
+#endif     
 
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
@@ -752,8 +807,15 @@ subroutine nucleate_ice_cam_calc( &
                ! dust = coarse mode
                ! since modal has internal mixtures.
                soot_num = num_accum(i,k)*rho(i,k)*1.0e-6_r8
+#if ( defined MOSAIC_SPECIES )
+               dmc   = (coarse_dust(i,k) + coarse_ca(i,k) + coarse_co3(i,k))*rho(i,k)
+               ssmc  = (coarse_nacl(i,k) + coarse_cl(i,k))*rho(i,k)
+               nh4mc = coarse_nh4(i,k)*rho(i,k)
+               no3mc = coarse_no3(i,k)*rho(i,k)
+#else
                dmc  = coarse_dust(i,k)*rho(i,k)
                ssmc = coarse_nacl(i,k)*rho(i,k)
+#endif
 
                if (mode_coarse_idx > 0) then
                   so4mc  = coarse_so4(i,k)*rho(i,k)
@@ -777,9 +839,9 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO)
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+                     wght = dmc/(ssmc + dmc + so4mc + no3mc + nh4mc + bcmc + pommc + soamc + mommc)
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
