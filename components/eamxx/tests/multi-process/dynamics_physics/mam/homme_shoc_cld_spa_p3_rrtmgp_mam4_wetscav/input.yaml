@@ -11,45 +11,18 @@ time_stepping:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  surf_evap: 0.0
-  surf_sens_flux: 0.0
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
-  cldn: 0.5
-  rprdsh: 1e-5
-  rprddp: 1e-5
-  evapcsh: 1e-5
-  evapcdp: 1e-5
-  cldt: 1e-5
-  prain: 1e-5
-  evapr: 1e-5
-  icwmrdp: 1e-5
-  icwmrsh: 1e-5
-  rprddp: 1e-5
-  rprdsh: 1e-5
-  sh_frac: 1e-5
-  dp_frac: 1e-5
-  evapcsh: 1e-5
-  evapcdp: 1e-5
-  bcphiwet: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
-  bcphidry: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
-  ocphiwet: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
-  ocphidry: 1e-5 # dry deposition of hydrophilic organic carbon [kg/m2/s]
-  dstwet1: 1e-5 # wet deposition of dust (bin1) [kg/m2/s]
-  dstwet2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
-  dstwet3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
-  dstwet4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
-  dgncur_a: 1e-5 # aerosol particle diameter [m]
-  wetdens: 1e-5 # wet aerosol density [kg/m3]
-  qaerwat: 1e-5 # aerosol water [kg/kg]
-  dgnumwet: 1e-5 # wet aerosol diameter [m]
-  fracis: 1e-5 # fraction of transported species that are insoluble [fraction]
-  cldfrac_tot: 0.5
   pbl_height: 25.0
   phis : 0.1
-  dlf : 0.0
-  dp_ccf : 0.0
-  sh_ccf : 0.0
+  #variables needed by mam4_wetscav
+  #--surface fluxes
+  wetdep_hydrophilic_bc: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
+  drydep_hydrophilic_bc: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
+  wetdep_hydrophilic_oc: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
+  drydep_hydrophilic_oc: 1e-5 # dry deposition of hydrophilic organic carbon [kg/m2/s]
+  wetdep_dust_bin1: 1e-5 # wet deposition of dust (bin1) [kg/m2/s]
+  wetdep_dust_bin2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
+  wetdep_dust_bin3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
+  wetdep_dust_bin4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]

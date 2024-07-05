@@ -50,7 +50,11 @@ class MAMWetscav : public scream::AtmosphereProcess {
       const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
-  size_t requested_buffer_size_in_bytes() const override;
+  // ON HOST, returns the number of bytes of device memory needed by the above
+  // Buffer type given the number of columns and vertical levels
+  size_t requested_buffer_size_in_bytes() const {
+    return mam_coupling::buffer_size(ncol_, nlev_);
+  }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
   // Initialize variables

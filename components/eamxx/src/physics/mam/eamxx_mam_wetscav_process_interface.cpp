@@ -53,7 +53,8 @@ void MAMWetscav::set_grids(
       m_grid->get_3d_vector_layout(true, nmodes, "nmodes");
 
   // layout for 2D (ncol, pcnst)
-  FieldLayout scalar2d_pconst = m_grid->get_2d_vector_layout(pcnst, "pcnst");
+  FieldLayout scalar2d_pconst =
+      m_grid->get_2d_vector_layout(pcnst, "num_phys_constants");
 
   // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -101,10 +102,10 @@ void MAMWetscav::set_grids(
 
   //----------- Variables from microphysics scheme -------------
 
-  // Evaporation from stratiform rain [kg/kg/s] (FIXME: Get it from P3)
+  // Evaporation from stratiform rain [kg/kg/s]
   add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
 
-  // Stratiform rain production rate [kg/kg/s] (FIXME: Get it from P3)
+  // Stratiform rain production rate [kg/kg/s]
   add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
                       grid_name);
 
@@ -116,38 +117,6 @@ void MAMWetscav::set_grids(
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
 
-  //----------- Variables from convective scheme -------------
-
-  // Following variables are from convective parameterization (not implemented
-  // yet in EAMxx), so should be zero for now
-
-  // Deep convective cloud fraction [fraction]
-  add_field<Required>("dp_frac", scalar3d_mid, nondim, grid_name);
-
-  // Shallow convective cloud fraction [fraction] //NOT updated
-  add_field<Required>("sh_frac", scalar3d_mid, nondim, grid_name);
-
-  // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
-  add_field<Required>("evapcsh", scalar3d_mid, kg / kg / s, grid_name);
-
-  // Evaporation rate of deep precipitation >=0. [kg/kg/s]
-  add_field<Required>("evapcdp", scalar3d_mid, kg / kg / s, grid_name);
-
-  // Rain production, shallow convection [kg/kg/s]
-  add_field<Required>("rprdsh", scalar3d_mid, kg / kg / s, grid_name);
-
-  // Rain production, deep convection [kg/kg/s]
-  add_field<Required>("rprddp", scalar3d_mid, kg / kg / s, grid_name);
-
-  // In cloud water mixing ratio, deep convection [kg/kg]
-  add_field<Required>("icwmrdp", scalar3d_mid, kg / kg, grid_name);
-
-  // In cloud water mixing ratio, shallow convection [kg/kg]
-  add_field<Required>("icwmrsh", scalar3d_mid, kg / kg, grid_name);
-
-  // Detraining cld H20 from deep convection [kg/kg/s]
-  add_field<Required>("dlf", scalar3d_mid, kg / kg / s, grid_name);
-
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
@@ -156,28 +125,32 @@ void MAMWetscav::set_grids(
   // for the land model
 
   // Wet deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>("bcphiwet", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_hydrophilic_bc", scalar3d_mid, kg / m2 / s,
+                     grid_name);
 
   // Dry deposition of hydrophilic black carbon [kg/m2/s]
-  add_field<Updated>("bcphidry", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("drydep_hydrophilic_bc", scalar3d_mid, kg / m2 / s,
+                     grid_name);
 
   // Wet deposition of hydrophilic organic carbon [kg/m2/s]
-  add_field<Updated>("ocphiwet", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_hydrophilic_oc", scalar3d_mid, kg / m2 / s,
+                     grid_name);
 
   // Dry deposition of hydrophilic organic carbon [kg/m2/s]
-  add_field<Updated>("ocphidry", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("drydep_hydrophilic_oc", scalar3d_mid, kg / m2 / s,
+                     grid_name);
 
   // Wet deposition of dust (bin1) [kg/m2/s]
-  add_field<Updated>("dstwet1", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_dust_bin1", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Wet deposition of dust (bin2) [kg/m2/s]
-  add_field<Updated>("dstwet2", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_dust_bin2", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Wet deposition of dust (bin3) [kg/m2/s]
-  add_field<Updated>("dstwet3", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_dust_bin3", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Wet deposition of dust (bin4) [kg/m2/s]
-  add_field<Updated>("dstwet4", scalar3d_mid, kg / m2 / s, grid_name);
+  add_field<Updated>("wetdep_dust_bin4", scalar3d_mid, kg / m2 / s, grid_name);
 
   // Interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -193,11 +166,11 @@ void MAMWetscav::set_grids(
                        "tracers");
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    // Note: Do *not* add cld borne aerosols to the "tracer" group as these are
+    // not advected
     const char *cld_nmr_field_name =
         mam_coupling::cld_aero_nmr_field_name(imode);
 
-    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-    // NOT advected
     add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
 
     for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
@@ -210,6 +183,8 @@ void MAMWetscav::set_grids(
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      // Note: Do *not* add cld borne aerosols to the "tracer" group as these
+      // are not advected
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(imode, ispec);
       if(strlen(cld_mmr_field_name) > 0) {
@@ -219,10 +194,6 @@ void MAMWetscav::set_grids(
       }
     }
   }
-
-  // Tracers group -- do we need this in addition to the tracers above? In any
-  // case, this call should be idempotent, so it can't hurt.
-  add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 
   // The following fields are not needed by this process but we define them so
   //  that we can create MAM4xx class objects like atmosphere, prognostics etc.
@@ -260,14 +231,9 @@ void MAMWetscav::set_grids(
   add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s, grid_name);
 }
 
-// =========================================================================================
-// ON HOST, returns the number of bytes of device memory needed by the above
-// Buffer type given the number of columns and vertical levels
-size_t MAMWetscav::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
-}
-
-// =========================================================================================
+// ================================================================
+//  INIT_BUFFERS
+// ================================================================
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
@@ -282,7 +248,9 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for MAMWetscav.");
 }
 
-// =========================================================================================
+// ================================================================
+//  INITIALIZE_IMPL
+// ================================================================
 void MAMWetscav::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
@@ -401,7 +369,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
                           dry_aero_);
 }
 
-// =========================================================================================
+// ================================================================
+//  RUN_IMPL
+// ================================================================
 void MAMWetscav::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
@@ -425,31 +395,40 @@ void MAMWetscav::run_impl(const double dt) {
   // Following variables are from convective parameterization (not implemented
   // yet in EAMxx), so should be zero for now
 
-  auto sh_frac = get_field_in("sh_frac").get_view<const Real **>();
+  auto sh_frac = view_2d("sh_frac", ncol_, nlev_);
+  Kokkos::deep_copy(sh_frac, 0);
 
   // Deep convective cloud fraction [fraction]
-  auto dp_frac = get_field_in("dp_frac").get_view<const Real **>();
+  auto dp_frac = view_2d("dp_frac", ncol_, nlev_);
+  Kokkos::deep_copy(dp_frac, 0);
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
-  auto evapcsh = get_field_in("evapcsh").get_view<const Real **>();
+  auto evapcsh = view_2d("evapcsh", ncol_, nlev_);
+  Kokkos::deep_copy(evapcsh, 0);
 
   // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  auto evapcdp = get_field_in("evapcdp").get_view<const Real **>();
+  auto evapcdp = view_2d("evapcdp", ncol_, nlev_);
+  Kokkos::deep_copy(evapcdp, 0);
 
   // Rain production, shallow convection [kg/kg/s]
-  auto rprdsh = get_field_in("rprdsh").get_view<const Real **>();
+  auto rprdsh = view_2d("rprdsh", ncol_, nlev_);
+  Kokkos::deep_copy(rprdsh, 0);
 
   // Rain production, deep convection [kg/kg/s]
-  auto rprddp = get_field_in("rprddp").get_view<const Real **>();
+  auto rprddp = view_2d("rprddp", ncol_, nlev_);
+  Kokkos::deep_copy(rprddp, 0);
 
   // In cloud water mixing ratio, deep convection
-  auto icwmrdp = get_field_in("icwmrdp").get_view<const Real **>();
+  auto icwmrdp = view_2d("icwmrdp", ncol_, nlev_);
+  Kokkos::deep_copy(icwmrdp, 0);
 
   // In cloud water mixing ratio, shallow convection
-  auto icwmrsh = get_field_in("icwmrsh").get_view<const Real **>();
+  auto icwmrsh = view_2d("icwmrsh", ncol_, nlev_);
+  Kokkos::deep_copy(icwmrsh, 0);
 
   // Detraining cld H20 from deep convection [kg/kg/s]
-  auto dlf = get_field_in("dlf").get_view<const Real **>();
+  auto dlf = view_2d("dlf", ncol_, nlev_);
+  Kokkos::deep_copy(dlf, 0);
 
   //----------- Variables from macrophysics scheme -------------
   // Total cloud fraction

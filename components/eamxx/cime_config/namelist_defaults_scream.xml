@@ -561,35 +561,14 @@ be lost if SCREAM_HACK_XML is not enabled.
     <num_c2 type="real">0.0</num_c2>
     <num_c3 type="real">0.0</num_c3>
     <num_c4 type="real">0.0</num_c4>
-    <cldn type="real">0.5</cldn>
-    <rprdsh type="real">1e-5</rprdsh>
-    <rprddp type="real">1e-5</rprddp>
-    <evapcsh type="real">1e-5</evapcsh>
-    <evapcdp type="real">1e-5</evapcdp>
-    <cldt type="real">1e-5</cldt>
-    <prain type="real">1e-5</prain>
-    <evapr type="real">1e-5</evapr>
-    <icwmrdp type="real">1e-5</icwmrdp>
-    <icwmrsh type="real">1e-5</icwmrsh>
-    <sh_frac type="real">1e-5</sh_frac>
-    <dp_frac type="real">1e-5</dp_frac>
-    <bcphiwet type="real">1e-5</bcphiwet>
-    <bcphidry type="real">1e-5</bcphidry>
-    <ocphiwet type="real">1e-5</ocphiwet>
-    <ocphidry type="real">1e-5</ocphidry>
-    <dstwet1 type="real">1e-5</dstwet1>
-    <dstwet2 type="real">1e-5</dstwet2>
-    <dstwet3 type="real">1e-5</dstwet3>
-    <dstwet4 type="real">1e-5</dstwet4>
-    <dgncur_a type="real">1e-5</dgncur_a>
-    <wetdens type="real">1e-5</wetdens>
-    <qaerwat type="real">1e-5</qaerwat>
-    <dgnumwet type="real">1e-5</dgnumwet>
-    <fracis type="real">1e-5</fracis>
-    <cldfrac_tot type="real">0.5</cldfrac_tot>
-    <dlf type="real">0.0</dlf>
-    <dp_ccf type="real">0.0</dp_ccf>
-    <sh_ccf type="real">0.0</sh_ccf>
+    <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
+    <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
+    <wetdep_hydrophilic_oc type="real">1e-5</wetdep_hydrophilic_oc>
+    <drydep_hydrophilic_oc type="real">1e-5</drydep_hydrophilic_oc>
+    <wetdep_dust_bin1 type="real">1e-5</wetdep_dust_bin1>
+    <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
+    <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
+    <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->

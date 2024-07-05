@@ -37,25 +37,15 @@ initial_conditions:
   pbl_height: 25.0
   phis : 0.1
   #variables needed by mam4_wetscav
-  #--variables from convection scheme (they should all be zero)
-  rprdsh: 0.
-  rprddp: 0.
-  evapcsh: 0.
-  evapcdp: 0.
-  icwmrdp: 0.
-  icwmrsh: 0.
-  sh_frac: 0.
-  dp_frac: 0.
-  dlf : 0.
   #--surface fluxes
-  bcphiwet: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
-  bcphidry: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
-  ocphiwet: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
-  ocphidry: 1e-5 # dry deposition of hydrophilic organic carbon [kg/m2/s]
-  dstwet1: 1e-5 # wet deposition of dust (bin1) [kg/m2/s]
-  dstwet2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
-  dstwet3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
-  dstwet4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
+  wetdep_hydrophilic_bc: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]
+  drydep_hydrophilic_bc: 1e-5 # dry deposition of hydrophilic black carbon [kg/m2/s]
+  wetdep_hydrophilic_oc: 1e-5 # wet deposition of hydrophilic organic carbon [kg/m2/s]
+  drydep_hydrophilic_oc: 1e-5 # dry deposition of hydrophilic organic carbon [kg/m2/s]
+  wetdep_dust_bin1: 1e-5 # wet deposition of dust (bin1) [kg/m2/s]
+  wetdep_dust_bin2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
+  wetdep_dust_bin3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
+  wetdep_dust_bin4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
 
   #variable required for p3
   precip_ice_surf_mass: 0.0
