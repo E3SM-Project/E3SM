@@ -391,7 +391,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   //----------- Variables from convective scheme -------------
 
-  // Following variables are from convective parameterization (not implemented
+  // TODO: Following variables are from convective parameterization (not implemented
   // yet in EAMxx), so should be zero for now
 
   auto sh_frac = view_2d("sh_frac", ncol_, nlev_);
