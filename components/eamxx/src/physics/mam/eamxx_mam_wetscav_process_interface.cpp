@@ -340,15 +340,16 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // Alllocate aerosol-related gas tendencies
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    dry_aero_tends_.gas_mmr[g] = view_2d("gas_mmr",ncol_, nlev_);
+    dry_aero_tends_.gas_mmr[g] = view_2d("gas_mmr", ncol_, nlev_);
   }
 
   // Allocate aerosol state tendencies (interstitial aerosols only)
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    dry_aero_tends_.int_aero_nmr[imode] = view_2d("int_aero_nmr",ncol_, nlev_);
+    dry_aero_tends_.int_aero_nmr[imode] = view_2d("int_aero_nmr", ncol_, nlev_);
 
     for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      dry_aero_tends_.int_aero_mmr[imode][ispec] = view_2d("int_aero_mmr",ncol_, nlev_);
+      dry_aero_tends_.int_aero_mmr[imode][ispec] =
+          view_2d("int_aero_mmr", ncol_, nlev_);
     }
   }
 

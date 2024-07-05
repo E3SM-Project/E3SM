@@ -13,6 +13,10 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height: 25.0
   phis : 0.1
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
   #variables needed by mam4_wetscav
   #--surface fluxes
   wetdep_hydrophilic_bc: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]

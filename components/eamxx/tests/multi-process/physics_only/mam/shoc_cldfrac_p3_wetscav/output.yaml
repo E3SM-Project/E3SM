@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_cldfrac_p3_mam4_wetscav_output
+filename_prefix: shoc_cldfrac_p3_wetscav_output
 Averaging Type: Instant
 Field Names:
   # SHOC
