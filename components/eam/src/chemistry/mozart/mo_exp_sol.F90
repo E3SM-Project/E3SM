@@ -198,7 +198,8 @@ contains
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
               chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
            end do
-       endif
+       end do
+      end if
     end do
 
   end subroutine exp_sol
