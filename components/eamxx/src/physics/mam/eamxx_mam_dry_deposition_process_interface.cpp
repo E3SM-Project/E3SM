@@ -96,7 +96,6 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
-  add_field<Required>("pbl_height", scalar2d_layout, m, grid_name); // planetary boundary layer height
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
                       grid_name);  // temperature [K]
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
@@ -115,22 +114,23 @@ void MAMDryDep::set_grids(
                      "tracers");  // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // ice number mixing ratio
-  add_field<Required>(
-      "omega", scalar3d_layout_mid, Pa / s,
-      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
-								    //
   add_field<Updated>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
   add_field<Updated>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
-  add_field<Required>("obklen", scalar2d_layout, m, grid_name);
-  add_field<Required>("surfric", scalar2d_layout, m / s, grid_name);
 
-  add_field<Required>("landfrac", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("icefrac", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("ocnfrac", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("fv", scalar2d_layout, m / s, grid_name);
-  add_field<Required>("ram1", scalar2d_layout, s / m, grid_name);
+  // TODO: The following are not used by drydep but to create a dry atmosphere object. 
+  add_field<Required>("pbl_height", scalar2d_layout, m, grid_name); // planetary boundary layer height
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
+									      //
+  // TODO: Currently the following are scalar parameters that are fixed
+  // for the whole grid. Do these need to be column specific?
+  // add_field<Required>("obklen", scalar2d_layout, m, grid_name);
+  // add_field<Required>("surfric", scalar2d_layout, m / s, grid_name);
+  // add_field<Required>("landfrac", scalar2d_layout, nondim, grid_name);
+  // add_field<Required>("icefrac", scalar2d_layout, nondim, grid_name);
+  // add_field<Required>("ocnfrac", scalar2d_layout, nondim, grid_name);
+  // add_field<Required>("fv", scalar2d_layout, m / s, grid_name);
+  // add_field<Required>("ram1", scalar2d_layout, s / m, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -407,10 +407,7 @@ void fill_tracer_views(
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-
   using DryDep = mam4::DryDeposition;  
-
-  using MemberType = KT::MemberType;
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
