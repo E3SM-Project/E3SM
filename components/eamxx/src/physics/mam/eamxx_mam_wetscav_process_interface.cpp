@@ -1,19 +1,11 @@
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 
-#include <ekat/ekat_assert.hpp>
-
-#include "scream_config.h"  // for SCREAM_CIME_BUILD
-
-// Remove the following<<<<
-#include <type_traits>
-#include <typeinfo>
-//>>>>>>>
-
 /*
 -----------------------------------------------------------------
 NOTES:
 1. We should connect surface fluxes and add code to update the fluxes
 2. Identify diagnostic variables and remove them from FM
+3. Add assert statements to check output ranges
 */
 
 namespace scream {
@@ -27,12 +19,9 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm,
    */
 }
 
-AtmosphereProcessType MAMWetscav::type() const {
-  return AtmosphereProcessType::Physics;
-}
-
-std::string MAMWetscav::name() const { return "mam4_wetscav"; }
-// =========================================================================================
+// ================================================================
+//  SET_GRIDS
+// ================================================================
 void MAMWetscav::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
