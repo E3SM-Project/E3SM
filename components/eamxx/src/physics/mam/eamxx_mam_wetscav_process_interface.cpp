@@ -188,8 +188,6 @@ void MAMWetscav::set_grids(
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(imode, ispec);
       if(strlen(cld_mmr_field_name) > 0) {
-        // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these
-        // are NOT advected
         add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
       }
     }
