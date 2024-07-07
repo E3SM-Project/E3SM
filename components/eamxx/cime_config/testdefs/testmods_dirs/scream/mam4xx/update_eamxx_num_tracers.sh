@@ -1,5 +1,7 @@
+#!/bin/sh
+
 #------------------------------------------------------
-# MAM4xx adds additionaltracers to the simulation
+# MAM4xx adds additional tracers to the simulation
 # Increase number of tracers for MAM4xx simulations
 #------------------------------------------------------
 
@@ -19,4 +21,4 @@ new_tracer_num=$((orig_tracer_num + ADDITIONAL_MAM4xx_TRACERS))
 new_cmake_opt=$(echo $orig_cmake_opt | sed "s/SCREAM_NUM_TRACERS $orig_tracer_num/SCREAM_NUM_TRACERS $new_tracer_num/")
 
 # Update cmake options string
-./xmlchange  SCREAM_CMAKE_OPTIONS="$new_cmake_opt"
+`./xmlchange  SCREAM_CMAKE_OPTIONS="$new_cmake_opt"`
