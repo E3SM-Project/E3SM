@@ -18,7 +18,7 @@ class VorticityAuxVars {
    Array2DReal NormRelVortEdge;
    Array2DReal NormPlanetVortEdge;
 
-   VorticityAuxVars(const HorzMesh *mesh, int NVertLevels);
+   VorticityAuxVars(const HorzMesh *Mesh, int NVertLevels);
 
    void addMetaData() const;
    void defineIOFields() const;

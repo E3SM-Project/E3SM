@@ -19,7 +19,7 @@ class LayerThicknessAuxVars {
    // TODO(mwarusz): get this from config
    FluxThickEdgeOption FluxThickEdgeChoice = Upwind;
 
-   LayerThicknessAuxVars(const HorzMesh *mesh, int NVertLevels);
+   LayerThicknessAuxVars(const HorzMesh *Mesh, int NVertLevels);
 
    void addMetaData() const;
    void defineIOFields() const;

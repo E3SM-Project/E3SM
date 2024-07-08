@@ -15,7 +15,7 @@ class VelocityDel2AuxVars {
    Array2DReal Del2DivCell;
    Array2DReal Del2RelVortVertex;
 
-   VelocityDel2AuxVars(const HorzMesh *mesh, int NVertLevels);
+   VelocityDel2AuxVars(const HorzMesh *Mesh, int NVertLevels);
 
    void addMetaData() const;
    void defineIOFields() const;

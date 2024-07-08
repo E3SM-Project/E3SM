@@ -11,18 +11,18 @@ const std::string VelocityDel2AuxVars::Del2DivCellName = "VelDel2DivCell";
 const std::string VelocityDel2AuxVars::Del2RelVortVertexName =
     "VelDel2RelVortVertex";
 
-VelocityDel2AuxVars::VelocityDel2AuxVars(const HorzMesh *mesh, int NVertLevels)
-    : Del2Edge("VelDel2Edge", mesh->NEdgesSize, NVertLevels),
-      Del2DivCell("VelDel2DivCell", mesh->NCellsSize, NVertLevels),
-      Del2RelVortVertex("VelDel2RelVortVertex", mesh->NVerticesSize,
+VelocityDel2AuxVars::VelocityDel2AuxVars(const HorzMesh *Mesh, int NVertLevels)
+    : Del2Edge("VelDel2Edge", Mesh->NEdgesSize, NVertLevels),
+      Del2DivCell("VelDel2DivCell", Mesh->NCellsSize, NVertLevels),
+      Del2RelVortVertex("VelDel2RelVortVertex", Mesh->NVerticesSize,
                         NVertLevels),
-      NEdgesOnCell(mesh->NEdgesOnCell), EdgesOnCell(mesh->EdgesOnCell),
-      EdgeSignOnCell(mesh->EdgeSignOnCell), DcEdge(mesh->DcEdge),
-      DvEdge(mesh->DvEdge), AreaCell(mesh->AreaCell),
-      EdgesOnVertex(mesh->EdgesOnVertex), CellsOnEdge(mesh->CellsOnEdge),
-      VerticesOnEdge(mesh->VerticesOnEdge),
-      EdgeSignOnVertex(mesh->EdgeSignOnVertex),
-      AreaTriangle(mesh->AreaTriangle), VertexDegree(mesh->VertexDegree) {
+      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell), DcEdge(Mesh->DcEdge),
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
+      EdgesOnVertex(Mesh->EdgesOnVertex), CellsOnEdge(Mesh->CellsOnEdge),
+      VerticesOnEdge(Mesh->VerticesOnEdge),
+      EdgeSignOnVertex(Mesh->EdgeSignOnVertex),
+      AreaTriangle(Mesh->AreaTriangle), VertexDegree(Mesh->VertexDegree) {
    addMetaData();
    defineIOFields();
 }

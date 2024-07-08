@@ -11,11 +11,11 @@ const std::string LayerThicknessAuxVars::FluxLayerThickEdgeName =
 const std::string LayerThicknessAuxVars::MeanLayerThickEdgeName =
     "MeanLayerThickEdge";
 
-LayerThicknessAuxVars::LayerThicknessAuxVars(const HorzMesh *mesh,
+LayerThicknessAuxVars::LayerThicknessAuxVars(const HorzMesh *Mesh,
                                              int NVertLevels)
-    : FluxLayerThickEdge("FluxLayerThickEdge", mesh->NEdgesSize, NVertLevels),
-      MeanLayerThickEdge("MeanLayerThickEdge", mesh->NEdgesSize, NVertLevels),
-      CellsOnEdge(mesh->CellsOnEdge) {
+    : FluxLayerThickEdge("FluxLayerThickEdge", Mesh->NEdgesSize, NVertLevels),
+      MeanLayerThickEdge("MeanLayerThickEdge", Mesh->NEdgesSize, NVertLevels),
+      CellsOnEdge(Mesh->CellsOnEdge) {
    addMetaData();
    defineIOFields();
 }

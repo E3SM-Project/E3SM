@@ -14,19 +14,19 @@ const std::string VorticityAuxVars::NormRelVortEdgeName = "NormRelVortEdge";
 const std::string VorticityAuxVars::NormPlanetVortEdgeName =
     "NormPlanetVortEdge";
 
-VorticityAuxVars::VorticityAuxVars(const HorzMesh *mesh, int NVertLevels)
-    : RelVortVertex("RelVortVertex", mesh->NVerticesSize, NVertLevels),
-      NormRelVortVertex("NormRelVortVertex", mesh->NVerticesSize, NVertLevels),
-      NormPlanetVortVertex("NormPlanetVortVertex", mesh->NVerticesSize,
+VorticityAuxVars::VorticityAuxVars(const HorzMesh *Mesh, int NVertLevels)
+    : RelVortVertex("RelVortVertex", Mesh->NVerticesSize, NVertLevels),
+      NormRelVortVertex("NormRelVortVertex", Mesh->NVerticesSize, NVertLevels),
+      NormPlanetVortVertex("NormPlanetVortVertex", Mesh->NVerticesSize,
                            NVertLevels),
-      NormRelVortEdge("NormRelVortEdge", mesh->NEdgesSize, NVertLevels),
-      NormPlanetVortEdge("NormPlanetVortEdge", mesh->NEdgesSize, NVertLevels),
-      VertexDegree(mesh->VertexDegree), CellsOnVertex(mesh->CellsOnVertex),
-      EdgesOnVertex(mesh->EdgesOnVertex),
-      EdgeSignOnVertex(mesh->EdgeSignOnVertex), DcEdge(mesh->DcEdge),
-      KiteAreasOnVertex(mesh->KiteAreasOnVertex),
-      AreaTriangle(mesh->AreaTriangle), FVertex(mesh->FVertex),
-      VerticesOnEdge(mesh->VerticesOnEdge) {
+      NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize, NVertLevels),
+      NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize, NVertLevels),
+      VertexDegree(Mesh->VertexDegree), CellsOnVertex(Mesh->CellsOnVertex),
+      EdgesOnVertex(Mesh->EdgesOnVertex),
+      EdgeSignOnVertex(Mesh->EdgeSignOnVertex), DcEdge(Mesh->DcEdge),
+      KiteAreasOnVertex(Mesh->KiteAreasOnVertex),
+      AreaTriangle(Mesh->AreaTriangle), FVertex(Mesh->FVertex),
+      VerticesOnEdge(Mesh->VerticesOnEdge) {
 
    addMetaData();
    defineIOFields();

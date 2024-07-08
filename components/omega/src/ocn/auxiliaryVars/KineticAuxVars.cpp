@@ -9,12 +9,12 @@ namespace OMEGA {
 const std::string KineticAuxVars::KineticEnergyCellName = "KineticEnergyCell";
 const std::string KineticAuxVars::VelocityDivCellName   = "VelocityDivCell";
 
-KineticAuxVars::KineticAuxVars(const HorzMesh *mesh, int NVertLevels)
-    : KineticEnergyCell("KineticEnergyCell", mesh->NCellsSize, NVertLevels),
-      VelocityDivCell("VelocityDivCell", mesh->NCellsSize, NVertLevels),
-      NEdgesOnCell(mesh->NEdgesOnCell), EdgesOnCell(mesh->EdgesOnCell),
-      EdgeSignOnCell(mesh->EdgeSignOnCell), DcEdge(mesh->DcEdge),
-      DvEdge(mesh->DvEdge), AreaCell(mesh->AreaCell) {
+KineticAuxVars::KineticAuxVars(const HorzMesh *Mesh, int NVertLevels)
+    : KineticEnergyCell("KineticEnergyCell", Mesh->NCellsSize, NVertLevels),
+      VelocityDivCell("VelocityDivCell", Mesh->NCellsSize, NVertLevels),
+      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell), DcEdge(Mesh->DcEdge),
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {
    addMetaData();
    defineIOFields();
 }
