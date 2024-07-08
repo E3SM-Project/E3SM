@@ -186,11 +186,15 @@ contains
       do iCell = 1, nCellsAll
          surfaceThicknessFlux(iCell) = 0.0_RKIND
          surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
-         surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
          do k=1,nVertLevels
             tendThick(k, iCell) = 0.0_RKIND
          end do
       end do
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+         do iCell = 1, nCellsAll
+            surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
+         end do
+      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
@@ -841,9 +845,13 @@ contains
          do n=1,nTracersGroup
             tracerGroupSurfaceFlux       (n,iCell) = 0.0_RKIND
             tracerGroupSurfaceFluxRunoff (n,iCell) = 0.0_RKIND
-            tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
             tracerGroupSurfaceFluxRemoved(n,iCell) = 0.0_RKIND
          end do
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+             do n=1,nTracersGroup
+                tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
+             end do
+         end if
          end do
          !$omp end do
          !$omp end parallel

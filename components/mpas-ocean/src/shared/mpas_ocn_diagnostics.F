@@ -1904,9 +1904,13 @@ contains
                       config_flux_attenuation_coefficient
          surfaceFluxAttenuationCoefficientRunoff(iCell) = &
                       config_flux_attenuation_coefficient_runoff
-         surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell) = &
-                      config_flux_attenuation_coefficient_subglacial_runoff
       end do
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+         do iCell = 1, nCells
+            surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell) = &
+                      config_flux_attenuation_coefficient_subglacial_runoff
+         end do
+      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
@@ -3489,34 +3493,36 @@ contains
                       - exp( max(-100.0_RKIND, &
                                  -layerThickness(kmin, iCell)/ &
                            config_flux_attenuation_coefficient_runoff))
-         if (config_use_sgr_opt_kpp == 1) then
-            if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
-                fracAbsorbedSubglacialRunoff = 1.0_RKIND &
-                      - exp( max(-100.0_RKIND, &
-                                 -layerThickness(kmin, iCell)/ &
-                           config_flux_attenuation_coefficient_subglacial_runoff))
-            else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
-               ! calculate total thickness into variable zTop
-               zTop = 0.0_RKIND
-               do k = minLevelCell(iCell), maxLevelCell(iCell)
-                  zTop = zTop + layerThickness(k,iCell)
-               end do
-               ! distribute flux evenly throughout water column
-               fracAbsorbedSubglacialRunoff = layerThickness(kmin, iCell) / zTop
-            else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
-               zTop = 0.0_RKIND
-               do k = maxLevelCell(iCell), minLevelCell(iCell), -1
-                  zBot = zTop - layerThickness(k,iCell)
-                  if (k == minLevelCell(iCell)) then
-                    transmissionCoeffTop = exp( max(zTop / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
-                    transmissionCoeffBot = exp( max(zBot / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
-                    fracAbsorbedSubglacialRunoff = transmissionCoeffTop - transmissionCoeffBot
-                  end if
-                  zTop = zBot
-               end do
-            end if
-         else
-               fracAbsorbedSubglacialRunoff = 0.0_RKIND
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+             if (config_use_sgr_opt_kpp == 1) then
+                if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
+                    fracAbsorbedSubglacialRunoff = 1.0_RKIND &
+                          - exp( max(-100.0_RKIND, &
+                                     -layerThickness(kmin, iCell)/ &
+                               config_flux_attenuation_coefficient_subglacial_runoff))
+                else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
+                   ! calculate total thickness into variable zTop
+                   zTop = 0.0_RKIND
+                   do k = minLevelCell(iCell), maxLevelCell(iCell)
+                      zTop = zTop + layerThickness(k,iCell)
+                   end do
+                   ! distribute flux evenly throughout water column
+                   fracAbsorbedSubglacialRunoff = layerThickness(kmin, iCell) / zTop
+                else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
+                   zTop = 0.0_RKIND
+                   do k = maxLevelCell(iCell), minLevelCell(iCell), -1
+                      zBot = zTop - layerThickness(k,iCell)
+                      if (k == minLevelCell(iCell)) then
+                        transmissionCoeffTop = exp( max(zTop / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
+                        transmissionCoeffBot = exp( max(zBot / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
+                        fracAbsorbedSubglacialRunoff = transmissionCoeffTop - transmissionCoeffBot
+                      end if
+                      zTop = zBot
+                   end do
+                end if
+             else
+                   fracAbsorbedSubglacialRunoff = 0.0_RKIND
+             end if
          end if
 
          ! Store the total tracer flux below in
@@ -3532,18 +3538,24 @@ contains
                                   seaIceTemperatureFlux(iCell) + &
                                   icebergTemperatureFlux(iCell)) &
                  - fracAbsorbedRunoff* &
-                   activeTracersSurfaceFluxRunoff(indexTempFlux,iCell) &
+                   activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+            nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = nonLocalSurfaceTracerFlux(indexTempFlux, iCell) &
                  - fracAbsorbedSubglacialRunoff* &
                    activeTracersSurfaceFluxSubglacialRunoff(indexTempFlux,iCell)
+         end if
 
          nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = &
                    activeTracersSurfaceFlux(indexSaltFlux,iCell) &
                  - fracAbsorbed*surfaceThicknessFlux(iCell)* &
                    activeTracers(indexSaltFlux,kmin,iCell) &
                  - fracAbsorbedRunoff*surfaceThicknessFluxRunoff(iCell)* &
-                   activeTracers(indexSaltFlux,kmin,iCell) &
+                   activeTracers(indexSaltFlux,kmin,iCell)
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+            nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) &
                  - fracAbsorbedSubglacialRunoff*surfaceThicknessFluxSubglacialRunoff(iCell)* &
                    activeTracers(indexSaltFlux,kmin,iCell)
+         end if
 
          surfaceBuoyancyForcing(iCell) = &
                   thermalExpansionCoeff(kmin,iCell)* &
@@ -4485,17 +4497,19 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
-            ! Test subglacialRunoffFlux
-            fieldName = 'subglacialRunoffFlux'
-            minValue = HUGE(minValue)
-            maxValue = -HUGE(maxValue)
-            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
-            if ( associated(real1DArr) ) then
-               do iCell = 1, nCellsSolve
-                  minValue = min( minValue, real1DArr(iCell) )
-                  maxValue = max( maxValue, real1DArr(iCell) )
-               end do
-               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            if (trim(config_subglacial_runoff_mode) == 'data') then
+                ! Test subglacialRunoffFlux
+                fieldName = 'subglacialRunoffFlux'
+                minValue = HUGE(minValue)
+                maxValue = -HUGE(maxValue)
+                call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+                if ( associated(real1DArr) ) then
+                   do iCell = 1, nCellsSolve
+                      minValue = min( minValue, real1DArr(iCell) )
+                      maxValue = max( maxValue, real1DArr(iCell) )
+                   end do
+                   call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+                end if
             end if
 
             ! Test seaIceSalinityFlux

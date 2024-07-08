@@ -351,8 +351,12 @@ contains
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
-        surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
       end do
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+          do iCell = 1, nCells
+            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
+          end do
+      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
@@ -578,28 +582,30 @@ contains
            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
-           if ( trim(config_use_sgr_opt_temp) == 'prescribed' ) then
-               !sgr with fixed prescribed temperature (for debugging only)
-               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                   config_sgr_temperature / areaCell(iCell)
-           else if ( trim(config_use_sgr_opt_temp) == 'sgr' ) then
-               !sgr with temperature equal to the local freezing point of freshwater
-               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                   ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
-                                             inLandIceCavity=.true.) / areaCell(iCell)
-           end if
+           if (trim(config_subglacial_runoff_mode) == 'data') then
+               if ( trim(config_use_sgr_opt_temp) == 'prescribed' ) then
+                   !sgr with fixed prescribed temperature (for debugging only)
+                   tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                       config_sgr_temperature / areaCell(iCell)
+               else if ( trim(config_use_sgr_opt_temp) == 'sgr' ) then
+                   !sgr with temperature equal to the local freezing point of freshwater
+                   tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                       ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
+                                                 inLandIceCavity=.true.) / areaCell(iCell)
+               end if
 
-           if ( trim(config_use_sgr_opt_salt) == 'prescribed' ) then
-               !sgr with fixed prescribed temperature (for debugging only)
-               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                   config_sgr_salinity / areaCell(iCell)
-           else if ( trim(config_use_sgr_opt_salt) == 'sgr' ) then
-               !sgr with temperature equal to the local freezing point of freshwater
-               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
+               if ( trim(config_use_sgr_opt_salt) == 'prescribed' ) then
+                   !sgr with fixed prescribed temperature (for debugging only)
+                   tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                       config_sgr_salinity / areaCell(iCell)
+               else if ( trim(config_use_sgr_opt_salt) == 'sgr' ) then
+                   !sgr with temperature equal to the local freezing point of freshwater
+                   tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
+               end if
            end if
 
            ! Accumulate fluxes that use the freezing point
-! mrp performance note: should call ocn_freezing_temperature just once here 
+! mrp performance note: should call ocn_freezing_temperature just once here
            seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
@@ -613,10 +619,15 @@ contains
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
               + surfaceTemperatureFluxWithoutRunoff
 
-           ! add river and subglacial runoff contribution for sending through coupler
+           ! add river runoff contribution for sending through coupler
            totalFreshWaterTemperatureFlux(iCell) = surfaceTemperatureFluxWithoutRunoff &
-              + tracersSurfaceFluxRunoff(index_temperature_flux,iCell) &
+              + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
+
+           ! add subglacial runoff contribution for sending through coupler
+           if (trim(config_subglacial_runoff_mode) == 'data') then
+                totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
               + tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell)
+           end if
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux

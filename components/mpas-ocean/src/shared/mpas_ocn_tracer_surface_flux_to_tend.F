@@ -206,7 +206,7 @@ contains
 
       ! now do subglacial runoff component
 
-      if (associated(surfaceTracerFluxSubglacialRunoff)) then
+      if (trim(config_subglacial_runoff_mode) == 'data') then
         call mpas_timer_start("surface_tracer_subglacial_runoff_flux")
 
         !$omp parallel

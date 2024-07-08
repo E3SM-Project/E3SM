@@ -141,15 +141,18 @@ contains
       do iCell = 1, nCellsOwned
         remainingFlux = 1.0_RKIND
         remainingFluxRunoff = 1.0_RKIND
-        remainingFluxSubglacialRunoff = 1.0_RKIND
+        if (trim(config_subglacial_runoff_mode) == 'data') then
+            remainingFluxSubglacialRunoff = 1.0_RKIND
+        end if
         do k = minLevelCell(iCell), maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
           remainingFluxRunoff = remainingFluxRunoff - transmissionCoefficientsRunoff(k, iCell)
-          remainingFluxSubglacialRunoff = remainingFluxSubglacialRunoff - transmissionCoefficientsSubglacialRunoff(k, iCell)
-
           tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)  &
-                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)  &
-                                          + surfaceThicknessFluxSubglacialRunoff(iCell) * transmissionCoefficientsSubglacialRunoff(k, iCell)
+                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)
+          if (trim(config_subglacial_runoff_mode) == 'data') then
+            remainingFluxSubglacialRunoff = remainingFluxSubglacialRunoff - transmissionCoefficientsSubglacialRunoff(k, iCell)
+            tend(k, iCell) = tend(k, iCell) + surfaceThicknessFluxSubglacialRunoff(iCell) * transmissionCoefficientsSubglacialRunoff(k, iCell)
+          end if
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
@@ -161,9 +164,11 @@ contains
              + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
         end if
 
-        if(maxLevelCell(iCell) > 0 .and. remainingFluxSubglacialRunoff > 0.0_RKIND) then
-          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
-             + remainingFluxSubglacialRunoff * surfaceThicknessFluxSubglacialRunoff(iCell)
+        if (trim(config_subglacial_runoff_mode) == 'data') then
+            if(maxLevelCell(iCell) > 0 .and. remainingFluxSubglacialRunoff > 0.0_RKIND) then
+              tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
+                 + remainingFluxSubglacialRunoff * surfaceThicknessFluxSubglacialRunoff(iCell)
+            end if
         end if
       end do
 #ifndef MPAS_OPENACC
