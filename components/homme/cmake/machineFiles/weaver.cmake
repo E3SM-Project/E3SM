@@ -48,16 +48,14 @@ SET (CMAKE_CXX_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/extern
 ############################################
 
 # Flag settings
-SET (CMAKE_C_FLAGS "-w" CACHE STRING "") # disable warnings
-SET (ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
-SET (ADD_Fortran_FLAGS " -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include" CACHE STRING "")
+SET (CMAKE_C_FLAGS "-w -O3 -DNDEBUG" CACHE STRING "") # disable warnings
+SET (ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include -O3" CACHE STRING "")
+SET (ADD_Fortran_FLAGS " -I/projects/ppc64le-pwr9-rhel8/tpls/openmpi/4.1.4/gcc/11.3.0/base/vu2aei6/include -O3 -DNDEBUG" CACHE STRING "")
 SET (CMAKE_EXE_LINKER_FLAGS "-ldl -lopenblas" CACHE STRING "")
-SET (OPT_FLAGS "-O3" CACHE STRING "")
-SET (DEBUG_FLAGS "-ffp-contract=off -g" CACHE STRING "")
 
 # Homme settings
 SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")                 # Allow MPI on device
-#SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")			# Bit-For-Bit Testing
+SET (HOMMEXX_BFB_TESTING FALSE CACHE BOOL "")			# Bit-For-Bit Testing
 SET (BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "") 	# Buidling without Parallel IO Lib
 SET (HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")			# Vector size
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
