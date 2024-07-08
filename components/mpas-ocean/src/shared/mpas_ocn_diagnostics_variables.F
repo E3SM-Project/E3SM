@@ -87,6 +87,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
 
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
+   real (kind=RKIND), dimension(:), pointer :: velocityTidalRMS
+
    real (kind=RKIND), dimension(:), pointer :: topDrag
    real (kind=RKIND), dimension(:), pointer :: topDragMag
    real (kind=RKIND), dimension(:), pointer :: topo_rinv
@@ -125,7 +127,7 @@ module ocn_diagnostics_variables
    integer, dimension(:), pointer :: smoothingMask
    real (kind=RKIND), dimension(:,:), pointer :: verticalStretch
 
-   integer, dimension(:), pointer :: modifyLandIcePressureMask
+   integer, dimension(:), pointer :: sshAdjustmentMask
 
    real (kind=RKIND), dimension(:,:), pointer :: velocityMeridional
    real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
@@ -373,6 +375,8 @@ contains
                     landIceTracerTransferVelocities)
          call mpas_pool_get_array(diagnosticsPool, &
                    'landIceFrictionVelocity', landIceFrictionVelocity)
+         call mpas_pool_get_array(diagnosticsPool, &
+                   'velocityTidalRMS', velocityTidalRMS)
       end if
 
       if ( trim(config_ocean_run_mode) == 'init' ) then
@@ -693,8 +697,8 @@ contains
       call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', &
                 verticalStretchField, 1)
       call mpas_pool_get_array(diagnosticsPool, &
-               'modifyLandIcePressureMask', &
-                modifyLandIcePressureMask)
+               'sshAdjustmentMask', &
+                sshAdjustmentMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
@@ -742,7 +746,8 @@ contains
          !$acc                   topDragMag,                      &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
-         !$acc                   landIceFrictionVelocity)
+         !$acc                   landIceFrictionVelocity,         &
+         !$acc                   velocityTidalRMS)
       end if
       if (config_use_topographic_wave_drag) then
          !$acc enter data create(topo_rinv)
@@ -1000,10 +1005,17 @@ contains
          !$acc                   topDragMag,                      &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
-         !$acc                   landIceFrictionVelocity)
+         !$acc                   landIceFrictionVelocity,         &
+         !$acc                   velocityTidalRMS)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc exit data delete(topographic_wave_drag)
+         !$acc exit data delete(topo_rinv)
+         !$acc exit data delete(topo_buoyancy_N1V)
+         !$acc exit data delete(topo_buoyancy_N1B)
+         !$acc exit data delete(bathy_stddev)
+         !$acc exit data delete(bed_slope_edges)
+         !$acc exit data delete(lonGradEdge)
+         !$acc exit data delete(latGradEdge)
          !$acc exit data delete(temp_twd)
          !$acc exit data delete(normalCoeffTWD)
          !$acc exit data delete(tangentialCoeffTWD)
@@ -1220,7 +1232,8 @@ contains
                  topDragMag,                      &
                  landIceBoundaryLayerTracers,     &
                  landIceTracerTransferVelocities, &
-                 landIceFrictionVelocity)
+                 landIceFrictionVelocity,         &
+                 velocityTidalRMS)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          nullify(rx1Edge,                  &

@@ -277,7 +277,6 @@
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc-cmake-fix; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
-      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Kokkos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
@@ -1444,7 +1443,7 @@
         <command name="reset"></command>
         <command name="load">PrgEnv-cray</command>
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
+        <command name="load">rocm/5.4.0</command>
         <command name="load">libunwind/1.6.2</command>
       </modules>
       <modules>
@@ -1482,6 +1481,10 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2591,16 +2594,16 @@
         <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/9.2.0-ugetvbp</command>
-        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
+        <command name="load">gcc/11.2.0-bgddrif</command>
+        <command name="load">intel-oneapi-mkl/2022.1.0-w4kgsn4</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.1.3-sxfyy4k</command>
-        <command name="load">hdf5/1.10.7-j3zxncu</command>
-        <command name="load">netcdf-c/4.4.1-7ohuiwq</command>
-        <command name="load">netcdf-cxx/4.2-tkg465k</command>
-        <command name="load">netcdf-fortran/4.4.4-k2zu3y5</command>
-        <command name="load">parallel-netcdf/1.11.0-mirrcz7</command>
+        <command name="load">openmpi/4.1.6-ggebj5o</command>
+        <command name="load">hdf5/1.10.7-ol6xuae</command>
+        <command name="load">netcdf-c/4.4.1-2njo6xx</command>
+        <command name="load">netcdf-cxx/4.2-7pdzqua</command>
+        <command name="load">netcdf-fortran/4.4.4-52c6oqi</command>
+        <command name="load">parallel-netcdf/1.11.0-d7h4ysd</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
@@ -2656,7 +2659,6 @@
     <environment_variables compiler="gnu">
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/AlbanyBuilds/build-gcc-sfad12-e3sm/install; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Trilinos_ROOT"; fi}</env>
-      <env name="Kokkos_ROOT">$SHELL{if [ -z "$Kokkos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Kokkos_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2859,34 +2861,45 @@
         <command name="load">anaconda3/5.2.0</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.4-443hhug</command>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-        <command name="load">hdf5/1.10.5-3mk3uik</command>
-        <command name="load">netcdf/4.7.0-krelxcz</command>
-        <command name="load">netcdf-fortran/4.4.5-74lj75q</command>
+        <command name="load">gcc/7.4.0</command>
+        <command name="load">intel/20.0.4-lednsve</command>
+        <command name="load">intel-mkl/2020.4.304-voqlapk</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-4hmwfl6</command>
-        <command name="load">parallel-netcdf/1.11.0-acswzws</command>
+        <command name="load">intel-mpi/2019.9.304-i42whlw</command>
+        <command name="load">hdf5/1.10.7-ugvomvt</command>
+        <command name="load">netcdf-c/4.4.1-blyisdg</command>
+        <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
+        <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
+        <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.3.1-verbs-omjz3ck</command>
-        <command name="load">parallel-netcdf/1.11.2-7fy6qz3</command>
+        <command name="load">mvapich2/2.3.6-verbs-x4iz7lq</command>
+        <command name="load">hdf5/1.10.7-igh6foh</command>
+        <command name="load">netcdf-c/4.4.1-gei7x7w</command>
+        <command name="load">netcdf-cxx/4.2-db2f5or</command>
+        <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
+        <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0-g7hppkz</command>
-        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
-        <command name="load">hdf5/1.8.16-mz7lmxh</command>
-        <command name="load">netcdf/4.4.1-xkjcghm</command>
-        <command name="load">netcdf-fortran/4.4.4-mpstomu</command>
+        <command name="load">gcc/8.2.0-xhxgy33</command>
+        <command name="load">intel-mkl/2020.4.304-d6zw4xa</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
-        <command name="load">intel-mpi/2018.4.274-ozfo327</command>
-        <command name="load">parallel-netcdf/1.11.0-filvnis</command>
+        <command name="load">intel-mpi/2019.9.304-rxpzd6p</command>
+        <command name="load">hdf5/1.10.7-oy6d2nm</command>
+        <command name="load">netcdf-c/4.4.1-fysjgfx</command>
+        <command name="load">netcdf-cxx/4.2-oaiw2v6</command>
+        <command name="load">netcdf-fortran/4.4.4-kxgkaop</command>
+        <command name="load">parallel-netcdf/1.11.0-fce7akl</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-        <command name="load">mvapich2/2.3-bebop-3xi4hiu</command>
-        <command name="load">parallel-netcdf/1.11.2-hfn33fd</command>
+        <command name="load">mvapich2/2.3-bebop-a66r4jf</command>
+        <command name="load">hdf5/1.10.5-ejeshwh</command>
+        <command name="load">netcdf/4.4.1-ve2zfkw</command>
+        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
+        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
+        <command name="load">parallel-netcdf/1.11.0-kozyofv</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -2901,7 +2914,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu">
+    <environment_variables>
       <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">

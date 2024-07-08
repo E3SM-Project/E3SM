@@ -37,14 +37,11 @@ TEST_CASE("dyn_grid_io")
 {
   using namespace scream;
   using namespace ShortFieldTagsNames;
-  constexpr int np  = HOMMEXX_NP;
-  constexpr int nlev = HOMMEXX_NUM_PHYSICAL_LEV;
 
   ekat::Comm comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -68,28 +65,26 @@ TEST_CASE("dyn_grid_io")
   auto phys_grid = gm->get_grid("Physics GLL");
 
   // Local counters
-  const int nelems = get_num_local_elems_f90();
-  const int ncols  = phys_grid->get_num_local_dofs();
-  EKAT_REQUIRE_MSG(ncols>0, "Internal test error! Fix dyn_grid_io, please.\n");
-  EKAT_REQUIRE_MSG(nelems>0, "Internal test error! Fix dyn_grid_io, please.\n");
+  EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
+  EKAT_REQUIRE_MSG(get_num_local_elems_f90()>0, "Internal test error! Fix dyn_grid_io, please.\n");
 
   // Create physics and dynamics Fields
-  FieldLayout layout_dyn_1({EL,GP,GP,LEV},{nelems,np,np,nlev});
-  FieldLayout layout_dyn_2({EL,CMP,GP,GP,LEV},{nelems,2,np,np,nlev});
-  FieldLayout layout_dyn_3({EL,GP,GP},{nelems,np,np});
+  auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(true);
+  auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(true,2);
+  auto dyn_scalar2d     = dyn_grid->get_2d_scalar_layout();
 
-  FieldLayout layout_phys_1({COL,LEV},{ncols,nlev});
-  FieldLayout layout_phys_2({COL,CMP,LEV},{ncols,2,nlev});
-  FieldLayout layout_phys_3({COL},{ncols});
+  auto phys_scalar3d_mid = phys_grid->get_3d_scalar_layout(true);
+  auto phys_vector3d_mid = phys_grid->get_3d_vector_layout(true,2);
+  auto phys_scalar2d     = phys_grid->get_2d_scalar_layout();
 
   auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid_dyn_1 ("field_1",layout_dyn_1,nondim,dyn_grid->name());
-  FieldIdentifier fid_dyn_2 ("field_2",layout_dyn_2,nondim,dyn_grid->name());
-  FieldIdentifier fid_dyn_3 ("field_3",layout_dyn_3,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_1 ("field_1",dyn_scalar3d_mid,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_2 ("field_2",dyn_vector3d_mid,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_3 ("field_3",dyn_scalar2d    ,nondim,dyn_grid->name());
 
-  FieldIdentifier fid_phys_1 ("field_1",layout_phys_1,nondim,phys_grid->name());
-  FieldIdentifier fid_phys_2 ("field_2",layout_phys_2,nondim,phys_grid->name());
-  FieldIdentifier fid_phys_3 ("field_3",layout_phys_3,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_1 ("field_1",phys_scalar3d_mid,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_2 ("field_2",phys_vector3d_mid,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_3 ("field_3",phys_scalar2d    ,nondim,phys_grid->name());
 
   // The starting FM
   auto fm_dyn = std::make_shared<FieldManager> (dyn_grid);
@@ -183,7 +178,7 @@ TEST_CASE("dyn_grid_io")
   }
 
   // Cleanup everything
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
   Homme::Context::finalize_singleton();
   cleanup_test_f90();
 }
