@@ -20,8 +20,9 @@ SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& p
 void SurfaceUpwardLatentHeatFlux::
 set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
-  const auto m2 = ekat::units::m * ekat::units::m;
-  const auto W = ekat::units::W;
+  using namespace ekat::units;
+  Units m2(m*m,"m2");
+
   const auto surf_evap_units = ekat::units::kg / m2 / ekat::units::s;
 
   auto grid  = grids_manager->get_grid("Physics");

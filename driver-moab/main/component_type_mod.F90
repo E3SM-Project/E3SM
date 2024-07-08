@@ -482,7 +482,7 @@ contains
 
      deallocate(values)
      ! now start comparing tags after set
-     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC )
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to get mesh info')
      if (ent_type .eq. 0) then
@@ -508,7 +508,7 @@ contains
      difference = sqrt(differenceg)
      iamroot = seq_comm_iamroot(CPLID)
      if ( iamroot ) then
-        print * , subname, trim(comp%ntype), ' comp, difference on tag ', trim(tagname), ' = ', difference
+        print * , subname, trim(comp%ntype), ' on cpl, difference on tag ', trim(tagname), ' = ', difference
         !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
      deallocate(GlobalIds)

@@ -22,6 +22,7 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
   using P3F          = p3::Functions<Real, DefaultDevice>;
+  using CP3          = physics::P3_Constants<Real>;
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
   using Pack         = ekat::Pack<Real,Spack::n>;
@@ -52,6 +53,8 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  CP3 m_p3constants;
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from

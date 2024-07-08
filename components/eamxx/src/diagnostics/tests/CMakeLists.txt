@@ -6,7 +6,7 @@ function (createDiagTest test_name test_srcs)
     LABELS diagnostics)
 endfunction ()
 
-if (NOT SCREAM_BASELINES_ONLY)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
   # Test extracting a single level of a field
@@ -58,5 +58,17 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # Test surface latent heat flux
   CreateDiagTest(surface_upward_latent_heat_flux "surf_upward_latent_heat_flux_tests.cpp")
+
+  # Test wind speed diagnostic
+  CreateDiagTest(wind_speed "wind_speed_tests.cpp")
+
+  # Test AODVIS
+  CreateDiagTest(aodvis "aodvis_test.cpp")
+
+  # Test "number" paths
+  CreateDiagTest(number_paths "number_paths_tests.cpp")
+
+  # Test AEROCOM_CLD
+  CreateDiagTest(aerocom_cld "aerocom_cld_test.cpp")
 
 endif()

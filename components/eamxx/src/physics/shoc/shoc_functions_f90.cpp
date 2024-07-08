@@ -2743,8 +2743,6 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                 Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec,
                 Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2)
 {
-  // tkh is a local variable in C++ impl
-  (void)tkh;
 
   using SHF  = Functions<Real, DefaultDevice>;
 
@@ -2758,7 +2756,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
 
   // Initialize Kokkos views, sync to device
   static constexpr Int num_1d_arrays = 7;
-  static constexpr Int num_2d_arrays = 34;
+  static constexpr Int num_2d_arrays = 35;
   static constexpr Int num_3d_arrays = 1;
 
   std::vector<view_1d> temp_1d_d(num_1d_arrays);
@@ -2768,27 +2766,27 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   std::vector<int> dim1_2d_sizes = {shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
-                                    shcol, shcol, shcol, shcol,
+                                    shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol};
   std::vector<int> dim2_2d_sizes = {nlev,  nlevi, nlev,         nlevi, nlev,
                                     nlev,  nlev,  num_qtracers, nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
-                                    nlev,  nlev,  nlev,  nlev,
+                                    nlev,  nlev,  nlev,         nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlevi, nlevi,
                                     nlevi, nlevi, nlevi,        nlevi, nlevi,
                                     nlevi, nlevi, nlev,         nlev,  nlev};
 
   std::vector<const Real*> ptr_array_1d = {host_dx, host_dy, wthl_sfc, wqw_sfc,
                                            uw_sfc,  vw_sfc,  phis};
-  std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,        presi,        pdel,
-                                           thv,       w_field,  wtracer_sfc, inv_exner,        host_dse,
-                                           tke,       thetal,   qw,          u_wind,       v_wind,
-                                           wthv_sec,  tk,       shoc_cldfrac, shoc_ql,
-                                           shoc_ql2,  shoc_mix, w_sec,       thl_sec,      qw_sec,
-                                           qwthl_sec, wthl_sec, wqw_sec,     wtke_sec,     uw_sec,
-                                           vw_sec,    w3,       wqls_sec,    brunt,        isotropy};
+  std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,          presi,        pdel,
+                                           thv,       w_field,  wtracer_sfc,   inv_exner,    host_dse,
+                                           tke,       thetal,   qw,            u_wind,       v_wind,
+                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,  
+                                           tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
+                                           qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
+                                           vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
 
   ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array_2d, dim1_2d_sizes, dim2_2d_sizes, temp_2d_d, true);
@@ -2827,6 +2825,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     shoc_cldfrac_d(temp_2d_d[index_counter++]),
     shoc_ql_d     (temp_2d_d[index_counter++]),
     shoc_ql2_d    (temp_2d_d[index_counter++]),
+    tkh_d         (temp_2d_d[index_counter++]),
     shoc_mix_d    (temp_2d_d[index_counter++]),
     w_sec_d       (temp_2d_d[index_counter++]),
     thl_sec_d     (temp_2d_d[index_counter++]),
@@ -2879,7 +2878,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d};
-  SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d};
+  SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d, tkh_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
@@ -2909,12 +2908,11 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     shoc_qv ("shoc_qv", shcol, nlevi_packs),
     tabs    ("shoc_tabs", shcol, nlev_packs),
     dz_zt   ("dz_zt",   shcol, nlevi_packs),
-    dz_zi   ("dz_zi",   shcol, nlevi_packs),
-    tkhv    ("tkh",     shcol, nlevi_packs);
+    dz_zi   ("dz_zi",   shcol, nlevi_packs);
 
   SHF::SHOCTemporaries shoc_temporaries{
     se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
-    rho_zt, shoc_qv, tabs, dz_zt, dz_zi, tkhv};
+    rho_zt, shoc_qv, tabs, dz_zt, dz_zi};
 #endif
 
   // Create local workspace

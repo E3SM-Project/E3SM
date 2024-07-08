@@ -191,7 +191,7 @@ If TRUE, irrigation will be active.
 </entry>
 
 <entry id="tw_irr" type="logical" category="elm_physics"
-       group="elm_inparm"  >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, irrigation will be two-way coupled with MOSART.
 irrigation supply will be constrained by surface water availability from MOSART
 </entry>
@@ -215,12 +215,11 @@ Normally this is ONLY used when running CESM with the active glacier model.
 </entry>
 
 <entry id="glc_grid" type="char*10" category="elm_physics"
-        group="elm_inparm" valid_values="gland20,gland10,gland5,gland5UM" >
+        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2" >
 Glacier model grid
-    gland20  = Greenland at 20km resolution
-    gland10  = Greenland at 10km resolution
-    gland5   = Greenland at  5km resolution
-    gland5UM = Greenland at  5km resolution, using new UMontana ice sheet data for present day Greenland
+    mpas.gis20km  = Greenland at 20km resolution
+    mpas.gis1to10km = Greenland at 1-to-10km variable resolution (v1, kept for backwards compatibility)
+    mpas.gis1to10kmR2 = Greenland at 1-to-10km variable resolution (v2, improved init. cond., fewer total grid cells)
 </entry>
 
 <entry id="glc_smb" type="logical" category="elm_physics"
@@ -394,6 +393,19 @@ If TRUE, enable use of land use state and transition data from luh_timeseries fi
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname of unified land use harmonization data file. This causes the land-use
 types to vary over time.
+</entry>
+
+<entry id="fates_history_dimlevel" type="integer(2)" category="physics"
+       group="elm_inparm" valid_values="0,1,2" >
+Setting for what types of FATES history to be allocate and
+calculated at the dynamics timestep (1st integer) and the
+model timestep (2nd integer). This must be consistent with
+hist_fincl*, ie output variables must not be listed if the
+output level is not enabled.
+0 = no fates history variables are calculated or allocated
+1 = only time x space (3d) fates history variables allowed
+2 = multiplexed dimensioned fates history is also allowed
+(Only relevant if FATES is on)
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
@@ -708,6 +720,14 @@ with config_use_snicar_ad in mpas-seaice namelist
 Toggle to use 16 snow layers instead of 5.  This option enables more realistic
 snowpack conditions on glaciers and ice sheets, including a semi-empirical
 firn densification model.
+</entry>
+
+<entry id="use_firn_percolation_and_compaction" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+This option enables more realistic
+snowpack conditions on glaciers and ice sheets, including a semi-empirical
+firn densification model. uses the same physics as use_extrasnowlayers but
+uses the original 5 snow layer scheme
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
@@ -1424,7 +1444,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5">
 Land mask description
 </entry>
 

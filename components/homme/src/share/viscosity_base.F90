@@ -582,6 +582,8 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: phis4(np)
   integer :: nt,ie,ic,i,j
+  integer :: minmax_halo = 0   ! -1 = disabled.  
+                               ! 0  = recompute each time
 
   if (p2filt>=1 .and. np/=4) then
      call abortmp('ERROR: topo smoothing p2 filter option only supported with np==4')
@@ -593,34 +595,42 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
 
   ! compute local element neighbor min/max
   do ie=nets,nete
-     pstens(:,:,ie)=minval(phis(:,:,ie))
-     call edgeVpack(edgebuf,pstens(:,:,ie),1,0,ie)
+     pmin(ie)=minval(phis(:,:,ie))
+     pmax(ie)=maxval(phis(:,:,ie))
   enddo
 
-  call t_startf('smooth_phis_bexchV1')
+  do ic=1,minmax_halo    ! take the min/max over three element halo
+  do ie=nets,nete
+     pstens(:,:,ie)=pmin(ie)
+     call edgeVpack(edgebuf,pstens(:,:,ie),1,0,ie)
+  enddo
   call bndry_exchangeV(hybrid,edgebuf)
-  call t_stopf('smooth_phis_bexchV1')
-
   do ie=nets,nete
      call edgeVunpackMin(edgebuf, pstens(:,:,ie), 1, 0, ie)
      pmin(ie)=minval(pstens(:,:,ie))
   enddo
+
   do ie=nets,nete
-     pstens(:,:,ie)=maxval(phis(:,:,ie))
+     pstens(:,:,ie)=pmax(ie)
      call edgeVpack(edgebuf,pstens(:,:,ie),1,0,ie)
   enddo
-
-  call t_startf('smooth_phis_bexchV2')
   call bndry_exchangeV(hybrid,edgebuf)
-  call t_stopf('smooth_phis_bexchV2')
-
   do ie=nets,nete
      call edgeVunpackMax(edgebuf, pstens(:,:,ie), 1, 0, ie)
      pmax(ie)=maxval(pstens(:,:,ie))
   enddo
+  enddo
+
 
   do ic=1,numcycle
 
+     ! recompute halo each step?
+     !if (minmax_halo==0) then
+     !   do ie=nets,nete
+     !      pmin(ie)=minval(phis(:,:,ie))
+     !      pmax(ie)=maxval(phis(:,:,ie))
+     !   enddo
+     !endif
      if (p2filt>=1) then
         ! apply p2 filter before laplace
         do ie=nets,nete
@@ -652,16 +662,16 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
            smooth_phis_nudt*pstens(:,:,ie)/elem(ie)%spheremp(:,:)
 
 
-#if 0
+        if (minmax_halo>=0) then
         ! remove new extrema.  could use conservative reconstruction from advection
         ! but no reason to conserve mean PHI.
         do i=1,np
         do j=1,np
-           if (phis(i,j,ie)>mx) phis(i,j,ie)=pmax(ie)
-           if (phis(i,j,ie)<mn) phis(i,j,ie)=pmin(ie)
+           if (phis(i,j,ie)>pmax(ie)) phis(i,j,ie)=pmax(ie)
+           if (phis(i,j,ie)<pmin(ie)) phis(i,j,ie)=pmin(ie)
         enddo
         enddo
-#endif
+        endif
 
         ! user specified minimum
         do i=1,np
@@ -675,9 +685,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
 
      enddo
 
-     call t_startf('smooth_phis_bexchV4')
      call bndry_exchangeV(hybrid,edgebuf)
-     call t_stopf('smooth_phis_bexchV4')
 
      do ie=nets,nete
         call edgeVunpack(edgebuf, phis(:,:,ie), 1, 0, ie)

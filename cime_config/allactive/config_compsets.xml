@@ -70,6 +70,12 @@
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- Same as WCYCL1850NS but for 2010 (to avoid needing transient files). Mainly for testing. -->
+<compset>
+  <alias>WCYCL2010NS</alias>
+  <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <compset>
   <alias>WCYCL1950</alias>
   <lname>1950SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
@@ -113,12 +119,17 @@
 
 <compset>
   <alias>WCYCLSSP585</alias>
-  <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP585SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCLSSP370</alias>
-  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCLSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM v1 science compsets -->
@@ -393,7 +404,7 @@
 
 <compset>
   <alias>BGWCYCL1850</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
 </compset>
 
 <!-- EAMXX fully coupled compset -->
@@ -406,8 +417,8 @@
 
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
-  <alias>MPAS_LISIO_TEST</alias>
-  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
+  <alias>MPAS_LISIO_JRA1p5</alias>
+  <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_MALI%SIA_SWAV</lname>
 </compset>
 
 <!-- Slab ocean cases -->
@@ -443,6 +454,7 @@
       <value  compset="20TR_EAM">1850-01-01</value>
       <value  compset="SSP585.*_EAM">2015-01-01</value>
       <value  compset="SSP370.*_EAM">2015-01-01</value>
+      <value  compset="SSP245.*_EAM">2015-01-01</value>
     </values>
   </entry>
 

@@ -140,11 +140,10 @@ init_scorpio(const int atm_id)
   // Init scorpio right away, in case some class (atm procs, grids,...)
   // needs to source some data from NC files during construction,
   // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+  EKAT_REQUIRE_MSG (!scorpio::is_subsystem_inited(),
       "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
       "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+  scorpio::init_subsystem(m_atm_comm,atm_id);
 
   // In CIME runs, gptl is already inited. In standalone runs, it might
   // not be, depending on what scorpio does.
@@ -167,44 +166,41 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 
 
 void AtmosphereDriver::
-setup_intensive_observation_period ()
+setup_iop ()
 {
-  // At this point, must have comm, params, initialized timestamps, and grids created.
-  check_ad_status(s_comm_set | s_params_set | s_ts_inited | s_grids_created);
+  // At this point, must have comm, params, initialized timestamps created.
+  check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_intensive_observation_period, "Error! setup_intensive_observation_period() is "
-                                                       "called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_iop() is called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_intensive_observation_period() is called, but "
-                               "enable_intensive_observation_period=false "
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
+  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
 
-  // Params must include intensive_observation_period_options sublist.
-  const auto iop_sublist_exists = m_atm_params.isSublist("intensive_observation_period_options");
+  // Params must include iop_options sublist.
+  const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");
   EKAT_REQUIRE_MSG(iop_sublist_exists,
-                   "Error! setup_intensive_observation_period() is called, but no intensive_observation_period_options "
+                   "Error! setup_iop() is called, but no iop_options "
                    "defined in parameters.\n");
 
-  const auto iop_params = m_atm_params.sublist("intensive_observation_period_options");
+  const auto iop_params = m_atm_params.sublist("iop_options");
   const auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto nlevs = phys_grid->get_num_vertical_levels();
   const auto hyam = phys_grid->get_geometry_data("hyam");
   const auto hybm = phys_grid->get_geometry_data("hybm");
 
-  m_intensive_observation_period =
-    std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
-                                                 iop_params,
-                                                 m_run_t0,
-                                                 nlevs,
-                                                 hyam,
-                                                 hybm);
+  m_iop = std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
+                                                       iop_params,
+                                                       m_run_t0,
+                                                       nlevs,
+                                                       hyam,
+                                                       hybm);
 
-  auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_intensive_observation_period->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
+  // Set IOP object in atm processes
+  m_atm_process_group->set_iop(m_iop);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -279,6 +275,14 @@ void AtmosphereDriver::create_grids()
     setup_shoc_tms_links();
   }
 
+  // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
+  // implementation of some processes, so setup here.
+  const bool enable_iop =
+    m_atm_params.sublist("driver_options").get("enable_iop", false);
+  if (enable_iop) {
+    setup_iop ();
+  }
+
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
@@ -338,10 +342,6 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 
       std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
       importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
-
-      if (m_intensive_observation_period) {
-        importer->set_intensive_observation_period(m_intensive_observation_period);
-      }
     }
     if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
       exporter_found = true;
@@ -691,9 +691,9 @@ void AtmosphereDriver::initialize_output_managers () {
   checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
-    m_output_managers.emplace_back();
+    restart_pl.set<std::string>("Averaging Type","Instant");
     restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
-    auto& om = m_output_managers.back();
+    auto& om = m_output_managers.emplace_back();
     if (fvphyshack) {
       // Don't save CGLL fields from ICs to the restart file.
       std::map<std::string,field_mgr_ptr> fms;
@@ -709,7 +709,7 @@ void AtmosphereDriver::initialize_output_managers () {
     }
     om.set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,*it.second);
+      om.add_global(it.first,it.second);
     }
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
@@ -724,6 +724,7 @@ void AtmosphereDriver::initialize_output_managers () {
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    params.rename(ekat::split(fname,"/").back());
     auto& checkpoint_pl = params.sublist("Checkpoint Control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
@@ -839,7 +840,7 @@ initialize_fields ()
       auto hw = fm->get_field("horiz_winds");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto U = hw.subfield("U",units,vec_dim,0);
       auto V = hw.subfield("V",units,vec_dim,1);
@@ -855,7 +856,7 @@ initialize_fields ()
       auto hw = fm->get_field("surf_mom_flux");
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_dim();
+      const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
       auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
@@ -905,7 +906,7 @@ void AtmosphereDriver::restart_model ()
   }
 
   // Restart the num steps counter in the atm time stamp
-  int nsteps = scorpio::get_attribute<int>(filename,"nsteps");
+  int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
   m_current_ts.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
@@ -913,18 +914,22 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
-
-    auto data = scorpio::get_any_attribute(filename,name);
-    EKAT_REQUIRE_MSG (any->content().type()==data.content().type(),
-        "Error! Type mismatch for restart global attribute.\n"
-        " - file name: " + filename + "\n"
-        " - att  name: " + name + "\n"
-        " - expected type: " + any->content().type().name() + "\n"
-        " - actual type: " + data.content().type().name() + "\n"
-        "NOTE: the above names use type_info::name(), which returns an implementation defined string,\n"
-        "      with no guarantees. In particular, the string can be identical for several types,\n"
-        "      and/or change between invocations of the same program.\n");
-    *any = data;
+    if (any.isType<int>()) {
+      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
+    } else if (any.isType<std::int64_t>()) {
+      ekat::any_cast<std::int64_t>(any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
+    } else if (any.isType<float>()) {
+      ekat::any_cast<float>(any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
+    } else if (any.isType<double>()) {
+      ekat::any_cast<double>(any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
+    } else if (any.isType<std::string>()) {
+      ekat::any_cast<std::string>(any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
+    } else {
+      EKAT_ERROR_MSG (
+          "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
+          " - extra data name  : " + name + "\n"
+          " - extra data typeid: " + any.content().type().name() + "\n");
+    }
   }
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
@@ -937,29 +942,34 @@ void AtmosphereDriver::create_logger () {
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
 
   ci_string log_fname = driver_options_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string log_level = driver_options_pl.get<std::string>("atm_log_level","info");
+  ci_string flush_level = driver_options_pl.get<std::string>("atm_flush_level","warn");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
-  LogLevel log_level;
-  if (log_level_str=="trace") {
-    log_level = LogLevel::trace;
-  } else if (log_level_str=="debug") {
-    log_level = LogLevel::debug;
-  } else if (log_level_str=="info") {
-    log_level = LogLevel::info;
-  } else if (log_level_str=="warn") {
-    log_level = LogLevel::warn;
-  } else if (log_level_str=="err") {
-    log_level = LogLevel::err;
-  } else if (log_level_str=="off") {
-    log_level = LogLevel::off;
-  } else {
-    EKAT_ERROR_MSG ("Invalid choice for 'atm_log_level': " + log_level_str + "\n");
-  }
+  auto str2lev = [](const std::string& s, const std::string& name) {
+    LogLevel lev;
+    if (s=="trace") {
+      lev = LogLevel::trace;
+    } else if (s=="debug") {
+      lev = LogLevel::debug;
+    } else if (s=="info") {
+      lev = LogLevel::info;
+    } else if (s=="warn") {
+      lev = LogLevel::warn;
+    } else if (s=="err") {
+      lev = LogLevel::err;
+    } else if (s=="off") {
+      lev = LogLevel::off;
+    } else {
+      EKAT_ERROR_MSG ("Invalid choice for '" + name + "': " + s + "\n");
+    }
+    return lev;
+  };
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
-  m_atm_logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  m_atm_logger = std::make_shared<logger_t>(log_fname,str2lev(log_level,"atm_log_level"),m_atm_comm,"");
+  m_atm_logger->flush_on(str2lev(flush_level,"atm_flush_level"));
   m_atm_logger->set_no_format();
 
   // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
@@ -1022,19 +1032,19 @@ void AtmosphereDriver::set_initial_conditions ()
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
       if (fname == "phis") {
-        // The eamxx field "phis" corresponds to the name
-        // "PHIS_d" on the GLL and Point grids and "PHIS"
-        // on the PG2 grid in the topography file.
+        // For GLL points, phis corresponds to "PHIS_d" in the
+        // topography file. On PG2 grid, dynamics will take care
+        // of computing phis, so do not add to initialized fields.
         if (grid_name == "Physics PG2") {
-          this_grid_topo_file_fnames.push_back("PHIS");
+          // Skip
         } else if (grid_name == "Physics GLL" ||
                    grid_name == "Point Grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
+          this_grid_topo_eamxx_fnames.push_back(fname);
+          fields_inited[grid_name].push_back(fname);
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back(fname);
-	fields_inited[grid_name].push_back(fname);
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
@@ -1129,18 +1139,23 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  if (m_intensive_observation_period) {
+  if (m_iop) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
+    // We use a single topo file for both GLL and PG2 runs. All
+    // lat/lon data in topo file is defined in terms of PG2 grid,
+    // so if we have a topo field on GLL grid, we need to setup
+    // io info using the IC file (which is always GLL).
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (ic_fields_names[grid_name].size() > 0) {
+      if (ic_fields_names[grid_name].size() > 0 or
+	  topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
                                 ic_pl.get<std::string>("Filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
-        m_intensive_observation_period->setup_io_info(file_name, it.second->get_grid());
+        m_iop->setup_io_info(file_name, it.second->get_grid());
       }
     }
   }
@@ -1152,15 +1167,15 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_intensive_observation_period) {
+      if (not m_iop) {
         read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_intensive_observation_period->read_fields_from_file_for_iop(file_name,
-                                                                      ic_fields_names[grid_name],
-                                                                      m_current_ts,
-                                                                      it.second);
+        m_iop->read_fields_from_file_for_iop(file_name,
+                                             ic_fields_names[grid_name],
+                                             m_current_ts,
+                                             it.second);
       }
     }
   }
@@ -1227,7 +1242,7 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_intensive_observation_period) {
+      if (not m_iop) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = it.second->get_grid();
@@ -1243,11 +1258,11 @@ void AtmosphereDriver::set_initial_conditions ()
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_intensive_observation_period->read_fields_from_file_for_iop(file_name,
-                                                                      topography_file_fields_names[grid_name],
-                                                                      topography_eamxx_fields_names[grid_name],
-                                                                      m_current_ts,
-                                                                      it.second);
+        m_iop->read_fields_from_file_for_iop(file_name,
+                                             topography_file_fields_names[grid_name],
+                                             topography_eamxx_fields_names[grid_name],
+                                             m_current_ts,
+                                             it.second);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1268,16 +1283,16 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
   }
 
-  if (m_intensive_observation_period) {
+  if (m_iop) {
     // Load IOP data file data for initial time stamp
-    m_intensive_observation_period->read_iop_file_data(m_current_ts);
+    m_iop->read_iop_file_data(m_current_ts);
 
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
     if (m_field_mgrs.count("Physics GLL") > 0) {
       const auto& fm = m_field_mgrs.at("Physics GLL");
-      m_intensive_observation_period->set_fields_from_iop_data(fm);
+      m_iop->set_fields_from_iop_data(fm);
     }
   }
 
@@ -1441,12 +1456,15 @@ initialize_constant_field(const FieldIdentifier& fid,
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
-  // For vector fields, we expect something like "fname: [val0,...,valN],
-  // where the field dim is N+1. For scalars, "fname: val". So check the
-  // field layout first, so we know what to get from the parameter list.
-  if (layout.is_vector_layout()) {
-    const auto idim = layout.get_vector_dim();
-    const auto vec_dim = layout.dim(idim);
+  // For vector fields, we allow either single value init or vector value init.
+  // That is, both these are ok
+  //   fname: val
+  //   fname: [val1,...,valN]
+  // In the first case, all entries of the field are inited to val, while in the latter,
+  // each component is inited to the corresponding entry of the array.
+  if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
+    const auto idim = layout.get_vector_component_idx();
+    const auto vec_dim = layout.get_vector_dim();
     const auto& values = ic_pl.get<std::vector<double>>(name);
     EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
         "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
@@ -1554,12 +1572,6 @@ initialize (const ekat::Comm& atm_comm,
 
   create_grids ();
 
-  const bool enable_iop =
-    m_atm_params.sublist("driver_options").get("enable_intensive_observation_period", false);
-  if (enable_iop) {
-    setup_intensive_observation_period ();
-  }
-
   create_fields ();
 
   initialize_fields ();
@@ -1590,6 +1602,16 @@ void AtmosphereDriver::run (const int dt) {
   //       very expensive operation, so it's not worth the effort of the
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
+
+  // Tell the output managers that we're starting a timestep. This is usually
+  // a no-op, but some diags *may* require to do something. E.g., a diag that
+  // computes tendency of an arbitrary quantity may want to store a copy of
+  // that quantity at the beginning of the timestep. Or they may need to store
+  // the timestamp at the beginning of the timestep, so that we can compute
+  // dt at the end.
+  for (auto& it : m_output_managers) {
+    it.init_timestep(m_current_ts,dt);
+  }
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
@@ -1654,6 +1676,9 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     m_atm_process_group = nullptr;
   }
 
+  // Destroy iop
+  m_iop = nullptr;
+
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
 
@@ -1675,9 +1700,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     finalize_gptl();
   }
 
-  // Finalize scorpio
-  if (scorpio::is_eam_pio_subsystem_inited()) {
-    scorpio::eam_pio_finalize();
+  // Finalize scorpio. Check, just in case we're calling finalize after
+  // an exception, thrown before the AD (and scorpio) was inited
+  if (scorpio::is_subsystem_inited()) {
+    scorpio::finalize_subsystem();
   }
 
   m_atm_logger->info("[EAMxx] Finalize ... done!");

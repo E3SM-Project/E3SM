@@ -137,6 +137,9 @@ macro(build_model COMP_CLASS COMP_NAME)
     # Add rrtmgp++ source code if asked for
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
+      # For now, hardcode YAKL mode in rrtmgp
+      set(RRTMGP_ENABLE_YAKL On)
+      add_definitions("-DRRTMGP_ENABLE_YAKL")
       # Build the static rrtmgpxx library
       set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp ${RRTMGPXX_BIN})

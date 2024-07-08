@@ -28,7 +28,8 @@ void Functions<Real,DefaultDevice>
   const view_ice_table& ice_table_vals,
   const uview_1d<Scalar>& precip_ice_surf,
   const uview_1d<bool>& nucleationPossible,
-  const uview_1d<bool>& hydrometeorsPresent)
+  const uview_1d<bool>& hydrometeorsPresent,
+  const physics::P3_Constants<Real> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -49,7 +50,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(inv_dz, i), team, workspace, nk, ktop, kbot, kdir, dt, inv_dt, 
       ekat::subview(qi, i), ekat::subview(qi_incld, i), ekat::subview(ni, i), ekat::subview(ni_incld, i),
       ekat::subview(qm, i), ekat::subview(qm_incld, i), ekat::subview(bm, i), ekat::subview(bm_incld, i), ekat::subview(qi_tend, i), ekat::subview(ni_tend, i),
-      ice_table_vals, precip_ice_surf(i));
+      ice_table_vals, precip_ice_surf(i), p3constants);
 
  });
 }

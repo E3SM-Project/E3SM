@@ -5,6 +5,7 @@
 #include "share/scream_types.hpp"
 
 #include <ekat/std_meta/ekat_std_utils.hpp>
+#include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/ekat_assert.hpp>
 
 #include <string>
@@ -13,11 +14,12 @@
 namespace scream
 {
 
-// The type of the layout, that is, the kind of field it represent.
+// The type of the layout, that is, the kind of field it represents.
 enum class LayoutType {
   Invalid,
   Scalar0D,
   Vector0D,
+  Tensor0D,
   Scalar1D,
   Vector1D,
   Scalar2D,
@@ -61,10 +63,13 @@ public:
   using extents_type = typename KokkosTypes<DefaultDevice>::view_1d<int>;
 
   // Constructor(s)
-  FieldLayout () = delete;
+  FieldLayout ();
   FieldLayout (const FieldLayout&) = default;
   FieldLayout (const std::vector<FieldTag>& tags,
                const std::vector<int>& dims);
+  FieldLayout (const std::vector<FieldTag>& tags,
+               const std::vector<int>& dims,
+               const std::vector<std::string>& names);
 
   // Assignment (defaulted)
   FieldLayout& operator= (const FieldLayout&) = default;
@@ -74,15 +79,20 @@ public:
 
   // ----- Getters ----- //
 
+  LayoutType type () const { return m_type; }
+
   // Name and layout informations
+  const std::vector<std::string>& names () const { return m_names; }
   const std::vector<FieldTag>& tags () const { return m_tags; }
   FieldTag tag  (const int idim) const;
+  const std::string& name (const int idim) const;
   bool has_tag (const FieldTag t) const { return ekat::contains(m_tags,t); }
   bool has_tags (const std::vector<FieldTag>& tags) const;
 
   // The rank is the number of tags associated to this field.
-  int     rank () const  { return m_rank; }
+  int rank () const  { return m_rank; }
 
+  int dim (const std::string& name) const;
   int dim (const FieldTag tag) const;
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
@@ -92,35 +102,69 @@ public:
 
   bool are_dimensions_set () const;
 
-  // Check if this layout is that of a vector field
+  // Check if this layout is that of a vector/tensor field
   bool is_vector_layout () const;
+  bool is_tensor_layout () const;
 
-  // If this is the layout of a vector field, get the idx of the vector dimension
+  // If this is the layout of a vector field, get the idx of the
+  // vector (CMP, Component) dimension
   // Note: throws if is_vector_layout()==false.
+  int get_vector_component_idx () const;
+  // get the dimension (extent) of the vector (CMP, Component) dimension
+  // calls get_vector_component_idx()
   int get_vector_dim () const;
   FieldTag get_vector_tag () const;
 
-  FieldLayout strip_dim (const FieldTag tag) const;
-  FieldLayout strip_dim (const int idim) const;
+  // If this is the layout of a tensor field, get the idx of the tensor dimensions
+  // Note: throws if is_tensor_layout()==false.
+  std::vector<int> get_tensor_components_ids () const;
+  // Get the dimension (extent) of the tensor components. Calls get_tensor_components_ids
+  std::vector<int> get_tensor_dims () const;
+  std::vector<FieldTag> get_tensor_tags () const;
 
-  // ----- Setters ----- //
+  // Change this layout by adding/removing a dimension or changing its extent/name
+  // NOTE: the strip_dim/rename_dim/reset_dim overloads with FieldTag will alter *all*
+  //       dimension matching the input tag
+  FieldLayout& strip_dim (const FieldTag tag, const bool throw_if_not_found = true);
+  FieldLayout& strip_dim (const int idim);
+  FieldLayout& append_dim (const FieldTag t, const int extent);
+  FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
+  FieldLayout& rename_dim (const int idim, const std::string& n);
+  FieldLayout& rename_dim (const FieldTag tag, const std::string& n, const bool throw_if_not_found = true);
+  FieldLayout& reset_dim (const int idim, const int extent);
+  FieldLayout& reset_dim (const FieldTag t, const int extent, const bool throw_if_not_found = true);
 
-  void set_dimension  (const int idim, const int dimension);
+  // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have them
+  FieldLayout& strip_dims (const std::vector<FieldTag>& tags); // Does not throw if not found
+  FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
+
+  FieldLayout clone() const;
+
+  // NOTE: congruent does not check the tags names. It only checks
+  //       rank, m_tags, and m_dims. Use operator== if names are important
+  bool congruent (const FieldLayout& rhs) const;
+
+  // For printing purposes
+  std::string to_string () const;
 
 protected:
+  void compute_type ();
+  void set_extents ();
 
-  int                   m_rank;
-  std::vector<FieldTag> m_tags;
-  std::vector<int>      m_dims;
-  extents_type          m_extents;
+  int                       m_rank;
+  std::vector<FieldTag>     m_tags;
+  std::vector<std::string>  m_names;
+  std::vector<int>          m_dims;
+  extents_type              m_extents;
+
+  LayoutType                m_type;
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
-LayoutType get_layout_type (const std::vector<FieldTag>& field_tags);
-std::string to_string (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //
 
+// returns extent
 inline int FieldLayout::dim (const FieldTag t) const {
   auto it = ekat::find(m_tags,t);
 
@@ -129,14 +173,30 @@ inline int FieldLayout::dim (const FieldTag t) const {
 
   // Check only one tag (no ambiguity)
   EKAT_REQUIRE_MSG(ekat::count(m_tags,t)==1,
-                     "Error! Tag '" + e2str(t) + "' appears multiple times.\n"
-                     "       You must inspect tags() and dims() manually.\n");
+      "Error! Tag '" + e2str(t) + "' appears multiple times.\n"
+      "       You must inspect tags() and dims() manually.\n");
 
   return m_dims[std::distance(m_tags.begin(),it)];
 }
 
+inline int FieldLayout::dim (const std::string& name) const {
+  auto it = ekat::find(m_names,name);
+
+  // Check if found
+  EKAT_REQUIRE_MSG(it!=m_names.end(),
+      "Error! Dim name '" + name + "' not found in this layout.\n"
+      "  - layout dims: " + ekat::join(m_names,",") + "\n");
+
+  // Check only one tag (no ambiguity)
+  EKAT_REQUIRE_MSG(ekat::count(m_names,name)==1,
+      "Error! Dimension name '" + name + "' appears multiple times.\n"
+      "  - layout dims: " + ekat::join(m_names,",") + "\n");
+
+  return m_dims[std::distance(m_names.begin(),it)];
+}
+
 inline int FieldLayout::dim (const int idim) const {
-  ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
+  EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   return m_dims[idim];
 }
 
@@ -151,9 +211,15 @@ inline long long FieldLayout::size () const {
 }
 
 inline FieldTag FieldLayout::tag (const int idim) const { 
-  ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
+  EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   return m_tags[idim];
-} 
+}
+
+inline const std::string& FieldLayout::name (const int idim) const
+{
+  EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
+  return m_names[idim];
+}
 
 inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
   bool b = true;
@@ -172,13 +238,16 @@ inline bool FieldLayout::are_dimensions_set () const {
   return true;
 }
 
+inline bool FieldLayout::congruent (const FieldLayout& rhs) const {
+  return rank()==rhs.rank() &&
+         tags()==rhs.tags() &&
+         dims()==rhs.dims();
+}
+
 inline bool operator== (const FieldLayout& fl1, const FieldLayout& fl2) {
-  return fl1.rank()==fl2.rank() &&
-         fl1.tags()==fl2.tags() &&
-         fl1.dims()==fl2.dims();
+  return fl1.congruent(fl2) and fl1.names()==fl2.names();
 }
 
 } // namespace scream
 
 #endif // SCREAM_FIELD_LAYOUT_HPP
-

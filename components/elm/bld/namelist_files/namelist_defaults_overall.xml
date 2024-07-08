@@ -90,7 +90,7 @@ determine default values for namelists.
 <!-- Default glacier model grid/resolution -->
 
 <glc_grid glc_nec="0">none</glc_grid>
-<glc_grid            >gland5UM</glc_grid>
+<glc_grid            >mpas.gis20km</glc_grid>
 <glc_dyntopo         >.false.</glc_dyntopo>
 <glc_smb             >.true.</glc_smb>
 <glc_nec glc_nec="0" >0</glc_nec>

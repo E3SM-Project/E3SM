@@ -16,6 +16,10 @@ set(DIAGNOSTIC_SRCS
   vertical_layer.cpp
   virtual_temperature.cpp
   water_path.cpp
+  wind_speed.cpp
+  aodvis.cpp
+  number_path.cpp
+  aerocom_cld.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

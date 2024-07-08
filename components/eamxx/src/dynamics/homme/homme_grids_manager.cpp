@@ -140,6 +140,7 @@ void HommeGridsManager::build_dynamics_grid () {
   }
 
   using gid_type = AbstractGrid::gid_type;
+  using namespace ekat::units;
 
   // Get dimensions and create "empty" grid
   const int nlelem = get_num_local_elems_f90();
@@ -149,27 +150,30 @@ void HommeGridsManager::build_dynamics_grid () {
   dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
-  const auto rad = ekat::units::Units::nondimensional();
+  const Units rad (Units::nondimensional(),"rad");
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
   auto dg_dofs = dyn_grid->get_dofs_gids();
   auto cg_dofs = dyn_grid->get_cg_dofs_gids();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
+  auto elgids  = dyn_grid->get_partitioned_dim_gids ();
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
   auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
   auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
   auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
   auto elgpgp_h  = elgpgp.get_view<int**,Host>();
+  auto elgids_h  = elgids.get_view<int*,Host>();
   auto lat_h     = lat.get_view<Real***,Host>();
   auto lon_h     = lon.get_view<Real***,Host>();
 
   // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(), lat_h.data(), lon_h.data());
+  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(),elgids_h.data(), lat_h.data(), lon_h.data());
 
   dg_dofs.sync_to_dev();
   cg_dofs.sync_to_dev();
   elgpgp.sync_to_dev();
+  elgids.sync_to_dev();
   lat.sync_to_dev();
   lon.sync_to_dev();
 
@@ -215,8 +219,9 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
   // Create the gids, coords, area views
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
-  const auto rad = ekat::units::Units::nondimensional();
+  const Units rad (Units::nondimensional(),"rad");
 
   auto dofs = phys_grid->get_dofs_gids();
   auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
@@ -257,17 +262,32 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   if (get_grid("Dynamics")->has_geometry_data("hyam")) {
     auto layout_mid = phys_grid->get_vertical_layout(true);
     auto layout_int = phys_grid->get_vertical_layout(false);
-    const auto nondim = ekat::units::Units::nondimensional();
+    using namespace ekat::units;
+    Units nondim = Units::nondimensional();
+    Units mbar(bar/1000,"mb");
 
     auto hyai = phys_grid->create_geometry_data("hyai",layout_int,nondim);
     auto hybi = phys_grid->create_geometry_data("hybi",layout_int,nondim);
     auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,nondim);
     auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,nondim);
+    auto lev  = phys_grid->create_geometry_data("lev", layout_mid,mbar);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
+      f.sync_to_host();
     }
+  
+    // Build lev from hyam and hybm
+    const Real ps0        = 100000.0;
+  
+    auto hya_v = hyam.get_view<const Real*,Host>();
+    auto hyb_v = hybm.get_view<const Real*,Host>();
+    auto lev_v = lev.get_view<Real*,Host>();
+    for (int ii=0;ii<phys_grid->get_num_vertical_levels();ii++) {
+      lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
+    }
+    lev.sync_to_dev();
   }
 
   if (is_planar_geometry_f90()) {
@@ -284,7 +304,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
 void HommeGridsManager::
 initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
-  using view_1d_host = AtmosphereInput::view_1d_host; 
+  using view_1d_host = AtmosphereInput::view_1d_host;
   using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
 
@@ -337,7 +357,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   hybi.sync_to_dev();
   hyam.sync_to_dev();
   hybm.sync_to_dev();
-  
+
   // Pass host views data to hvcoord init function
   const auto ps0 = Homme::PhysicalConstants::p0;
 

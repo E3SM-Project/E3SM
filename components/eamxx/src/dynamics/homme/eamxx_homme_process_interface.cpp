@@ -52,7 +52,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  auto homme_nsteps = std::make_shared<ekat::any>(-1);
+  ekat::any homme_nsteps;
+  homme_nsteps.reset<int>(-1);
   m_restart_extra_data["homme_nsteps"] = homme_nsteps;
 
   if (!is_parallel_inited_f90()) {
@@ -108,18 +109,12 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using FL  = FieldLayout;
 
   constexpr int NGP = HOMMEXX_NP;
   constexpr int NTL = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int QTL = HOMMEXX_Q_NUM_TIME_LEVELS;
   constexpr int N   = HOMMEXX_PACK_SIZE;
 
-  // Some units
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
-  const int ncols = m_phys_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int nlev_mid = m_dyn_grid->get_num_vertical_levels();
   const int nlev_int = nlev_mid+1;
@@ -162,24 +157,28 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       into the n0 time-slice of Homme's vtheta_dp, and then do the conversion
   //       T_mid->VTheta_dp in place.
 
-  const auto m2 = m*m;
-  const auto s2 = s*s;
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   // Note: qv is needed to transform T<->Theta
 
   const auto& pgn = m_phys_grid->name();
-  add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   pgn,N);
-  add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     pgn,N);
-  add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("pseudo_density_dry",FL({COL, LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    pgn);
-  add_field<Updated >("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     pgn,"tracers",N);
-  add_field<Updated >("phis",          FL({COL         },{ncols           }),m2/s2, pgn);
-  add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_int",     FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    pgn,N);
-  add_field<Computed>("p_dry_mid",     FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    pgn,N);
-  add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  pgn,N);
+  auto pg_scalar2d     = m_phys_grid->get_2d_scalar_layout();
+  auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(true);
+  auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(false);
+  auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(true,2);
+  add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
+  add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
+  add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("pseudo_density_dry", pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Updated> ("ps",                 pg_scalar2d    , Pa,    pgn);
+  add_field<Updated >("qv",                 pg_scalar3d_mid, kg/kg, pgn,"tracers",N);
+  add_field<Updated >("phis",               pg_scalar2d    , m2/s2, pgn);
+  add_field<Computed>("p_int",              pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_mid",              pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
+  add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
+  add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
@@ -188,15 +187,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // doing so may conflict with additional IC mechanisms in the AD, e.g.,
     // init'ing a field to a constant.
     const auto& rgn = m_cgll_grid->name();
-    const auto nc = m_cgll_grid->get_num_local_dofs();
-    add_field<Required>("horiz_winds",   FL({COL,CMP, LEV},{nc,2,nlev_mid}),m/s,   rgn,N);
-    add_field<Required>("T_mid",         FL({COL,     LEV},{nc,  nlev_mid}),K,     rgn,N);
-    add_field<Required>("ps",            FL({COL         },{nc           }),Pa,    rgn);
-    add_field<Required>("phis",          FL({COL         },{nc           }),m2/s2, rgn);
+    auto rg_scalar2d     = m_cgll_grid->get_2d_scalar_layout();
+    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(true);
+    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(true,2);
+
+    add_field<Required>("horiz_winds",   rg_vector3d_mid,m/s,   rgn,N);
+    add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
+    add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
+    add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, Bundling::Required, DerivationType::Import, "tracers", pgn);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
-    add_field<Computed>("pseudo_density",FL({COL,     LEV},{nc,  nlev_mid}),Pa,    rgn,N);
+    add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
 
   // Dynamics grid states
@@ -423,6 +425,11 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
+    if (m_iop) {
+      // We need to reload IOP data after restarting
+      m_iop->read_iop_file_data(timestamp());
+    }
+
     restart_homme_state ();
   }
 
@@ -506,7 +513,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]);
     nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
@@ -547,16 +554,13 @@ void HommeDynamics::homme_pre_process (const double dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
 
-  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
-  using Pack = RPack<N>;
-
   using namespace Homme;
   const auto& c = Context::singleton();
   const auto& params = c.get<SimulationParams>();
 
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int nlevs = m_phys_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
+  const int npacks = ekat::npack<Pack>(nlevs);
 
   const auto& pgn = m_phys_grid->name();
 
@@ -664,6 +668,10 @@ void HommeDynamics::homme_post_process (const double dt) {
     get_internal_field("w_int_dyn").get_header().get_alloc_properties().reset_subview_idx(tl.n0);
   }
 
+  if (m_iop) {
+    apply_iop_forcing(dt);
+  }
+
   if (fv_phys_active()) {
     fv_phys_post_process();
     // Apply Rayleigh friction to update temperature and horiz_winds
@@ -675,8 +683,6 @@ void HommeDynamics::homme_post_process (const double dt) {
   // Remap outputs to ref grid
   m_d2p_remapper->remap(true);
 
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = RPack<N>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -697,7 +703,7 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
@@ -765,7 +771,7 @@ create_helper_field (const std::string& name,
   using namespace ekat::units;
   FieldIdentifier id(name,FieldLayout{tags,dims},Units::nondimensional(),grid);
 
-  const auto lt = get_layout_type(id.get_layout().tags());
+  const auto lt = id.get_layout().type();
 
   // Only request packed field for 3d quantities
   int pack_size = 1;
@@ -797,14 +803,13 @@ void HommeDynamics::init_homme_views () {
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
-  constexpr int N    = HOMMEXX_PACK_SIZE;
 
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = tracers.num_tracers();
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
@@ -931,8 +936,6 @@ void HommeDynamics::restart_homme_state () {
         "  - field name: " + f.get_header().get_identifier().name() + "\n");
   }
 
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = RPack<N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -949,7 +952,7 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_ptr_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+  const auto& nstep = ekat::any_ptr_cast<int>(m_restart_extra_data["homme_nsteps"]);
   tl.nstep = *nstep;
   set_homme_param("num_steps",*nstep);
 
@@ -957,7 +960,7 @@ void HommeDynamics::restart_homme_state () {
   const int nlevs = m_phys_grid->get_num_vertical_levels();
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
+  const int npacks = ekat::npack<Pack>(nlevs);
   const int qsize = params.qsize;
 
   // NOTE: when restarting stuff like T_prev, and other "previous steps" quantities that HommeDynamics
@@ -1060,12 +1063,10 @@ void HommeDynamics::restart_homme_state () {
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using EOS = Homme::EquationOfState;
-  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
 
   const auto& rgn = m_cgll_grid->name();
 
@@ -1080,8 +1081,8 @@ void HommeDynamics::initialize_homme_state () {
   constexpr int NGP = HOMMEXX_NP;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = params.qsize;
-  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
+  const int npacks_mid = ekat::npack<Pack>(nlevs);
+  const int npacks_int = ekat::npack<Pack>(nlevs+1);
 
   // Bootstrap dp on phys grid, and let the ic remapper transfer dp on dyn grid
   // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
@@ -1131,14 +1132,14 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
+  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
   const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
-  WS wsm(npacks_int,2,policy);
+  WorkspaceMgr wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
@@ -1149,8 +1150,8 @@ void HommeDynamics::initialize_homme_state () {
 
     // Compute p_mid
     auto ws = wsm.get_workspace(team);
-    ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
-    ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
+    ekat::Unmanaged<WorkspaceMgr::view_1d<Pack> > p_int, p_mid;
+    ws.take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
 
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0*hyai0);
     team.team_barrier();
@@ -1281,12 +1282,11 @@ copy_dyn_states_to_all_timelevels () {
 //       TODO item to consolidate how we update the pressure during initialization and run, but
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
-  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
 
   const auto ncols = grid->get_num_local_dofs();
   const auto nlevs = grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  const auto npacks= ekat::npack<Pack>(nlevs);
 
   const auto& c = Homme::Context::singleton();
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
