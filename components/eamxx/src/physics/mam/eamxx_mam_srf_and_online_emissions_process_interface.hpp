@@ -1,14 +1,17 @@
 #ifndef EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
+#include <ekat/ekat_parameter_list.hpp>
+#include <ekat/ekat_workspace.hpp>
+#include <mam4xx/mam4.hpp>
+#include <physics/mam/mam_emissions_utils.hpp>
+// For MAM4 aerosol configuration
+#include <physics/mam/mam_coupling.hpp>
+#include <share/atm_process/ATMBufferManager.hpp>
 // For declaring surface and online emission class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
-
-// For MAM4 aerosol configuration
-#include <physics/mam/mam_coupling.hpp>
-
-// For component name
+// #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
 
 namespace scream {

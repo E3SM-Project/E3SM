@@ -269,6 +269,30 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mam4_wetscav inherit="atm_proc_base">
     </mam4_wetscav>
 
+    <mam4_emissions inherit="atm_proc_base">
+      <!-- MAM4xx-Online-Emissions -->
+      <online_emis_specifier_for_SO2 type="file" doc="File containing online emissions data for DMS">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_SO2>
+      <online_emis_specifier_for_SOAG type="file" doc="File containing online emissions data for SO2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_SOAG>
+      <online_emis_specifier_for_bc_a4 type="file" doc="File containing online emissions data for bc_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_bc_a4>
+      <online_emis_specifier_for_num_a1 type="file" doc="File containing online emissions data for num_a1">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_num_a1>
+      <online_emis_specifier_for_num_a2 type="file" doc="File containing online emissions data for num_a2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_num_a2>
+      <online_emis_specifier_for_num_a4 type="file" doc="File containing online emissions data for num_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_num_a4>
+      <online_emis_specifier_for_pom_a4 type="file" doc="File containing online emissions data for pom_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_pom_a4>
+      <online_emis_specifier_for_so4_a1 type="file" doc="File containing online emissions data for so4_a1">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_so4_a1>
+      <online_emis_specifier_for_so4_a2 type="file" doc="File containing online emissions data for so4_a2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1x1_2010_clim_c20190821.nc</online_emis_specifier_for_so4_a2>
+      <!-- MAM4xx-Surface-Emissions -->
+      <srf_emis_specifier_for_DMS type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc</srf_emis_specifier_for_DMS>
+      <srf_emis_specifier_for_SO2 type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_SO2>
+      <srf_emis_specifier_for_bc_a4 type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_bc_a4>
+      <srf_emis_specifier_for_num_a1 type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_num_a1>
+      <srf_emis_specifier_for_num_a2 type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_num_a2>
+      <srf_emis_specifier_for_num_a4 type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_num_a4>
+      <srf_emis_specifier_for_pom_a4 type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_pom_a4>
+      <srf_emis_specifier_for_so4_a1 type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_so4_a1>
+      <srf_emis_specifier_for_so4_a2 type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1x1_2010_clim_c20190821.nc</srf_emis_specifier_for_so4_a2>
+    </mam4_emissions>
+
+
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
       <nudging_filenames_patterns type="array(string)"/>

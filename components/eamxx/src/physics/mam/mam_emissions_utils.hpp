@@ -1,0 +1,59 @@
+#ifndef MAM_EMISSIONS_READ_TABLES_HPP
+#define MAM_EMISSIONS_READ_TABLES_HPP
+
+#include "ekat/ekat_parameter_list.hpp"
+#include "mam_coupling.hpp"
+#include "share/field/field_manager.hpp"
+#include "share/grid/abstract_grid.hpp"
+#include "share/grid/grids_manager.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
+
+// later to mam_coupling.hpp
+namespace scream::mam_coupling {
+
+using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+using view_1d_int_host = typename KT::view_1d<int>::HostMirror;
+using view_2d_host = typename KT::view_2d<Real>::HostMirror;
+// using view_5d_host    = typename KT::view_ND<Real,5>::HostMirror;
+// using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
+
+// constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
+// constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+
+struct AerosolSurfaceEmissionsHostData {
+  // these have dim = n_species
+  view_1d_host emis_species_index;
+  view_1d_host emis_species_units;
+  view_1d_host emis_species_name;
+  // molecular weight
+  view_1d_host emis_species_mw;
+  // number of sectors in each field
+  view_1d_int_host emis_species_nsectors;
+  // FIXME: not quite sure what this does--maybe just a placeholder for fields(:, i_sector)?
+  view_1d_host emis_species_sector;
+  // note fields have dim = n_species x nsectors
+  // TODO: fields have units??? maybe the same as the upper spec units
+  view_2d_host emis_species_fields;
+};
+
+using AerosolSurfaceEmissionsDeviceData =
+    mam4::mo_srf_emissions::AerosolSurfaceEmissionsDeviceData;
+
+inline void set_emissions_params(
+    AerosolSurfaceEmissionsHostData &aerosol_emissions_host_data,
+    ekat::ParameterList &params_emissions,
+    std::map<std::string, FieldLayout> &layouts,
+    std::map<std::string, view_1d_host> &host_views) {
+  // Set up input structure to read data from file.
+  using strvec_t = std::vector<std::string>;
+  using namespace ShortFieldTagsNames;
+
+  // using SrfEmisDims = mam4::mo_srf_emissions::AerosolSurfaceEmissionsDimensions;
+  // SrfEmisDims srf_emimssions_dims;
+
+}
+
+} // namespace scream::mam_coupling
+
+#endif
