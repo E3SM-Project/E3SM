@@ -1245,7 +1245,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_subglacial_runoff_mode" type="char*1024"
-	category="land_ice_fluxes" group="land_ice_fluxes">
+	category="forcing" group="forcing">
 Selects the mode in which subglacial runoff fluxes are computed.
 
 Valid values: 'off', 'data'
