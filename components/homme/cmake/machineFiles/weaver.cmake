@@ -33,7 +33,7 @@ SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "") # NEEDED
 
 # TPL settings
 #SET (PnetCDF_PATH /projects/ppc64le-pwr9-rhel8/tpls/parallel-netcdf/1.12.3/gcc/11.3.0/openmpi/4.1.4/pp6jcjk CACHE FILEPATH "")
-#SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
+SET (CPRNC_DIR /projects/e3sm/cprnc CACHE FILEPATH "")
 
 # Compilers
 SET (CMAKE_C_COMPILER mpicc CACHE STRING "")

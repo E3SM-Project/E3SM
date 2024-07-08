@@ -66,7 +66,7 @@ SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")			# Have homme BLAS
 SET (USE_QUEUING FALSE CACHE BOOL "")				# Use queing or not
 SET (USE_TRILINOS OFF CACHE BOOL "")				# Use trilinos or not
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")			# Use parallel netcdf
-SET (USE_NUM_PROCS 1 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
+SET (USE_NUM_PROCS 2 CACHE STRING "Num mpiprocs to use")	# Num MPI processes to use
 SET (HAVE_EXTRAE TRUE CACHE BOOL "")				# 
 SET (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")			# Use column orientation for openmp
 SET (ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")			# Use horizontal orientation for openmp
