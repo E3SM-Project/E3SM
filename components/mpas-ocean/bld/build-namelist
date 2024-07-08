@@ -715,6 +715,11 @@ add_default($nl, 'config_use_sgr_opt_temp');
 add_default($nl, 'config_use_sgr_opt_salt');
 add_default($nl, 'config_sgr_temperature');
 add_default($nl, 'config_sgr_salinity');
+if ($OCN_SGR eq 'data') {
+	add_default($nl, 'config_subglacial_runoff_mode', 'val'=>"data");
+} else {
+	add_default($nl, 'config_subglacial_runoff_mode');
+}
 
 ############################
 # Namelist group: coupling #

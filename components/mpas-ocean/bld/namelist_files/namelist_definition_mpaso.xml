@@ -1244,6 +1244,14 @@ Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_subglacial_runoff_mode" type="char*1024"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+Selects the mode in which subglacial runoff fluxes are computed.
+
+Valid values: 'off', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <!-- coupling -->
 
 <entry id="config_remove_AIS_coupler_runoff" type="logical"
