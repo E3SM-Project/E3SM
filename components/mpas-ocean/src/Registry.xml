@@ -702,6 +702,10 @@
 					description="The length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_subglacial_runoff_mode" type="character" default_value="off"
+					description="Selects the mode in which subglacial runoff fluxes are implemented."
+					possible_values="'off', 'data'"
+		/>
 		<nml_option name="config_flux_attenuation_coefficient_subglacial_runoff" type="real" default_value="0.001" units="m"
 					description="The length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
@@ -1690,6 +1694,7 @@
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
+		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
