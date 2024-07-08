@@ -1,0 +1,2737 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
+    
+    
+      
+        <title>Generate a Topography File - E3SM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6543a935.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+  
+  
+    
+    
+  
+  
+  <style>:root{--md-admonition-icon--note:url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');}</style>
+
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#generate-a-topography-file" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            E3SM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Generate a Topography File
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    E3SM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/E3SM-Project/E3SM" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    E3SM-Project/E3SM
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../.." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    E3SM Basics
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            E3SM Basics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding Support for New Grids
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Components
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../EAM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    EAM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            EAM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../EAM/user-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2" id="__nav_3_1_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Namelist Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Aerosol Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Emission Oxidants
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../EAM/tech-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_4" id="__nav_3_1_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/homme/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    High-Order Methods Modeling Environment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Atmosphere Grid Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/p3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Predicted Particle Properties
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/clubb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cloud Layers Unified By Binormals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/zm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Zhang and McFarlane deep convection scheme
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    RRTMG
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/mam/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Modal Aerosol Module
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/vbs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Volatility Basis Set (VBS) approach for SOA
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/dust/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dust aerosol
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OCEANFILMS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    chemUCI and Linoz
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/cosp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    COSP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/armdiags/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ARM diagnostics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../ELM/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    ELM
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            ELM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../ELM/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../ELM/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../ELM/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../MOSART/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MOSART
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            MOSART
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MOSART/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MOSART/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MOSART/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../MPAS-Ocean/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MPAS-Ocean
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            MPAS-Ocean
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-Ocean/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Users's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developers's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../MPAS-seaice/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    MPAS-seaice
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            MPAS-seaice
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-seaice/user-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-seaice/tech-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Technical Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-seaice/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer's Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../MPAS-seaice/references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tools
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../generate_domain_files/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    generate_domain_files
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            generate_domain_files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    More Information
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            More Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://docs.e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    E3SM-Project
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="http://e3sm.org" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    e3sm.org
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-processing-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Processing Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topography-smoothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Topography Smoothing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Topography Smoothing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-homme_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building homme_tool
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sub-grid-topography-variations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-Grid Topography Variations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-Grid Topography Variations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-cube_to_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building cube_to_target
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-topography-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step-by-Step Topography Generation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-Step Topography Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activate-the-e3sm-unified-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      Activate the E3SM Unified Env
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-source-and-target-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify Source and Target Resolution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-file-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify File Paths
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-grid-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create Grid Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-map-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create Map Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remap-topograpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Remap Topograpy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apply-smoothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Apply Smoothing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compute-sgh" class="md-nav__link">
+    <span class="md-ellipsis">
+      Compute SGH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-up-temporary-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Clean up Temporary Files
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-script-to-streamline-all-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch script to streamline all steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+    
+      
+    
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/dev-guide/adding-grid-support/adding-grid-support-step-by-step-guide/generate-topo-file.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
+    </a>
+  
+
+
+<h1 id="generate-a-topography-file">Generate a Topography File</h1>
+<!-- disable certain linter checks here for more readable nested markdown  -->
+<!-- markdownlint-disable  MD007 -->
+<!-- markdownlint-disable  MD033 -->
+<p>Topography needs to be interpolated from a high resolution dataset, and then doctored a bit to allow the model to run stably with the new topography. More information can be found in the following paper:  </p>
+<p><a href="https://www.geosci-model-dev.net/8/3975/2015/">P.H. Lauritzen, J.T. Bacmeister, P.F. Callaghan, M. Taylor,  NCAR_Topo (v1.0): NCAR global model topography generation software for unstructured grids, Geosci. Model Dev., 8, 3975-3986, 2015.</a></p>
+<p>Typically, input topography data generation for E3SM starts with a high resolution source dataset (<code>USGS-topo-cube3000.nc</code>). This is a high-resolution topography dataset on a 3km cubed sphere grid derived from 1 km resolution source data.  This file is located in the <a href="https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/atm/cam/hrtopo/">CESM inputdata server here</a>.</p>
+<p>For target resolutions of 3 km or finer it is recommended to use an even higher resolution source dataset (<code>USGS-topo-cube12000.nc</code>), which was created by Jishi Zhang in 2024. This file has a resolution of 750m created from a  500m/250m USGS GMTED2010 source DEM dataset (see <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/4189520033/800m+cubed+topo+generation+from+GMTED2010+15s+DEM">here</a> for more information).</p>
+<p>For testing the topography workflow the mapping between the ne3000 data is too burdensome, so a ne90pg1 (i.e. 1-degree) version of this data was created to allow efficient testing. This file can be found on various supported machines at <code>${DIN_LOC_ROOT}/atm/cam/hrtopo/USGS-topo-cube90.nc</code>.</p>
+<h2 id="data-processing-requirements">Data Processing Requirements</h2>
+<p>The workflow to generate topography data for the atmosphere model must address the following requirements:</p>
+<ul>
+<li>The dycore needs surface geopotential (<code>phi_s</code>) at GLL nodes (np4)</li>
+<li>The physics needs various things at FV cell centers (pg2)<ul>
+<li>surface geopotential (<code>phi_s</code>)</li>
+<li>sub-grid variance of topography (<code>SGH</code> and <code>SGH30</code>)</li>
+<li>Land area fraction (<code>LANDFRAC</code>)</li>
+</ul>
+</li>
+<li>The np4 to pg2 map of <code>phi_s</code> data must be equal to the FV <code>phi_s</code> data</li>
+<li>HOMME's smoothing operator must be used on <code>phi_s</code> for stability</li>
+</ul>
+<h2 id="topography-smoothing">Topography Smoothing</h2>
+<p>Smoothing of the input surface geopotential (<code>phi_s</code>) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use <code>homme_tool</code>, which is a standalone build of the HOMME dycor.</p>
+<h3 id="building-homme_tool">Building homme_tool</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>homme_tool is not routinely tested on all supported machines, and the build can be broken without anyone noticing. If you encounter problems building homme_tool please reach out on the e3sm_help slack channel and include a detailed description of the error and the commands you used to produce the error.</p>
+</div>
+<p>Building <code>homme_tool</code> is a critical preliminary step to the topography generation workflow described below. The build process requires the user to select the appropriate cmake file that contains machine-specific settings (see <code>mach_file</code> below).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Set the machine specific environment</span>
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+
+<span class="c1"># Specify machine configuration file</span>
+<span class="nv">mach_file</span><span class="o">=</span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/cmake/machineFiles/perlmutter-gnu.cmake
+<span class="c1"># mach_file=${e3sm_root}/components/homme/cmake/machineFiles/chrysalis.cmake</span>
+
+cmake<span class="w"> </span>-C<span class="w"> </span><span class="si">${</span><span class="nv">mach_file</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_THETA_KOKKOS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_PREQX_KOKKOS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DHOMME_ENABLE_COMPOSE<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DHOMME_BUILD_EXECS<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_TOOL<span class="o">=</span>TRUE<span class="w"> </span><span class="se">\</span>
+-DBUILD_HOMME_WITHOUT_PIOLIBRARY<span class="o">=</span>FALSE<span class="w"> </span><span class="se">\</span>
+-DPREQX_PLEV<span class="o">=</span><span class="m">26</span><span class="w"> </span><span class="se">\</span>
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+
+make<span class="w"> </span>-j4<span class="w"> </span>homme_tool
+</code></pre></div>
+<h2 id="sub-grid-topography-variations">Sub-Grid Topography Variations</h2>
+<p>Certain physics calculations in the atmosphere require a characterization of the unresolved topography. This is provided in the input data as <code>SGH</code> and <code>SGH30</code>. These quantities need to be calculated by the <code>cube_to_target</code> tool that is included in the E3SM source  code. Similar to <code>homme_tool</code>, this tool can often be broken when the user goes to use it. Luckily, this tool is much simpler with fewer dependencies. Nevertheless, it is good to make sure the tools builds successfully before creating a new topography file.</p>
+<h3 id="building-cube_to_target">Building cube_to_target</h3>
+<p>The following commands were working on both Perlmutter/NERSC and Chrysalis/LCRC machines as of 2024.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target
+
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+
+make
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can safely ignore compiler warnings that look like <code>Warning: Rank mismatch...</code>. These are a result of how we interface with the netcdf fortran routines, but fixing the warnings by switching from <code>#include &lt;netcdf.inc&gt;</code> to <code>use netcdf</code> can lead to other problems on certain machines.</p>
+</div>
+<h2 id="step-by-step-topography-generation">Step-by-Step Topography Generation</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Copying and pasting the relevant steps below is an easy way to step through the blocks of commands. Alternatively, a batch script is provided below that can be used to execute all steps at once in a batch job.</p>
+</div>
+<ol>
+<li>
+<h3 id="activate-the-e3sm-unified-env"><strong>Activate the E3SM Unified Env</strong></h3>
+<p>Perlmutter (NERSC):</p>
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
+</code></pre></div>
+<p>Chrysalis (LCRC):</p>
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+</code></pre></div>
+<p>For unsupported machines you may need to build the unified environment:</p>
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>-c<span class="w"> </span>e3sm<span class="w"> </span>e3sm-unified
+</code></pre></div>
+</li>
+<li>
+<h3 id="specify-source-and-target-resolution"><strong>Specify Source and Target Resolution</strong></h3>
+<p>We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from <code>ne3000pg1</code> to a chosen target resolution, in this case <code>ne30</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span>
+<span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
+</code></pre></div>
+<p>For testing use a special <code>ne90pg1</code> dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">NE_SRC</span><span class="o">=</span><span class="m">90</span>
+<span class="nv">NE_DST</span><span class="o">=</span><span class="m">4</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For grids with regional refinement (RRM) there is no corresponding "ne" value - so a slightly modified workflow is needed. This entails modifying the grid file generation step, and then modifying topo and map file paths to accomodate the new RRM grid name.</p>
+</div>
+</li>
+<li>
+<h3 id="specify-file-paths"><strong>Specify File Paths</strong></h3>
+<p>First we need to set some enviroment variables that point to various "root" directories where we will be writing and/or reading files. It</p>
+<div class="highlight"><pre><span></span><code><span class="nv">e3sm_root</span><span class="o">=</span>?<span class="w">    </span><span class="c1"># path to E3SM source</span>
+<span class="nv">grid_root</span><span class="o">=</span>?<span class="w">    </span><span class="c1"># path to write grid files</span>
+<span class="nv">map_root</span><span class="o">=</span>?<span class="w">     </span><span class="c1"># path to write map files</span>
+<span class="nv">topo_root</span><span class="o">=</span>?<span class="w">    </span><span class="c1"># path to write new topo files</span>
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>?<span class="w"> </span><span class="c1"># path to E3SM inputdata</span>
+</code></pre></div>
+<p>Example path settings:</p>
+<ul>
+<li>
+<p>Perlmutter (NERSC):</p>
+<div class="highlight"><pre><span></span><code><span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src<span class="w"> </span><span class="c1"># make sure this contains an up-to-date clone of E3SM</span>
+<span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_grid
+<span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_map
+<span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/e3sm_scratch/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
+</code></pre></div>
+</li>
+<li>
+<p>Chrysalis (ANL/LCRC):</p>
+<div class="highlight"><pre><span></span><code><span class="nv">SCRATCH</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys
+<span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src<span class="w"> </span><span class="c1"># make sure this contains an up-to-date clone of E3SM</span>
+<span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_grid
+<span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_map
+<span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
+</code></pre></div>
+</li>
+</ul>
+<p>Make sure the root directories exist:</p>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>
+ls<span class="w"> </span>-ld<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>
+</code></pre></div>
+<p>Now specify all the files that we will need for, including map files and temporary topo data.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">timestamp</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>
+<span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.nc
+<span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4.nc
+<span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t.nc
+<span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t_<span class="si">${</span><span class="nv">timestamp</span><span class="si">}</span>.nc
+
+<span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1_to_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_fv2se_flx.nc
+</code></pre></div>
+</li>
+<li>
+<h3 id="create-grid-files"><strong>Create Grid Files</strong></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Grid for source high res topo</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span><span class="w">  </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc
+
+<span class="c1"># Grid for target EAM grid</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc
+</code></pre></div>
+</li>
+<li>
+<h3 id="create-map-files"><strong>Create Map Files</strong></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This step can potentially take a very long time - several hours for each map file in some cases!
+The use of <code>--mpi_nbr=32</code> will leverage parallelization via <code>mbtemptest</code> to dramatically reduce the time to generate mapping files, but this may not work on all machines. Feel free to experiment with a different number of tasks to optimize for the machine you are using. You can also drop this argument entirely if it is causing problems, but be sure to plan for hours of execution time.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you see an error from these <code>ncremap</code> commands that looks like: <code>srun: error: Job request does not match any supported policy.</code> and you are on a login node then you will need to either launch an interactive compute node or use a batch job script.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Create map from source to target np4 </span>
+ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_ARGS</span><span class="si">}</span><span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span><span class="se">\</span>
+--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc<span class="w">  </span><span class="se">\</span>
+--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span><span class="se">\</span>
+--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+--tmp_dir<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>
+</code></pre></div>
+</li>
+<li>
+<h3 id="remap-topograpy"><strong>Remap Topograpy</strong></h3>
+<p>The first command here will essentially create a copy of the source data, which is needed later on when calculating SGH.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Map high-res topo to target np4 grid</span>
+ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+
+<span class="c1"># Compute phi_s on the target np4 grid</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+
+<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+</code></pre></div>
+</li>
+<li>
+<h3 id="apply-smoothing"><strong>Apply Smoothing</strong></h3>
+<p>Make sure <code>homme_tool</code> has been built following the <a href="#building-homme_tool">instructions above</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
+<span class="s">&amp;ctl_nl</span>
+<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">smooth_phis_p2filt = 0</span>
+<span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
+<span class="s">smooth_phis_nudt = 4e-16</span>
+<span class="s">hypervis_scaling = 2</span>
+<span class="s">se_ftype = 2 ! actually output NPHYS; overloaded use of ftype</span>
+<span class="s">/</span>
+<span class="s">&amp;vert_nl</span>
+<span class="s">/</span>
+<span class="s">&amp;analysis_nl</span>
+<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
+<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">/</span>
+<span class="s">EOF</span>
+
+mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+
+<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
+</code></pre></div>
+</li>
+<li>
+<h3 id="compute-sgh"><strong>Compute SGH</strong></h3>
+<div class="highlight"><pre><span></span><code><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target/cube_to_target<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--target-grid<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--smoothed-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+
+<span class="c1"># Append the GLL phi_s data to the output of step 4.</span>
+ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+</code></pre></div>
+</li>
+<li>
+<h3 id="clean-up-temporary-files"><strong>Clean up Temporary Files</strong></h3>
+<div class="highlight"><pre><span></span><code>rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>*
+</code></pre></div>
+</li>
+</ol>
+<h2 id="batch-script-to-streamline-all-steps">Batch script to streamline all steps</h2>
+<p>Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise.</p>
+<p>Here is a check list of things to do before submitting this script:</p>
+<ul>
+<li>Build <code>homme_tool</code></li>
+<li>Build <code>cube_to_target</code></li>
+<li>Update batch allocation code (i.e. <code>--account</code>)</li>
+<li>Update batch job wallclock time (i.e. <code>--time</code>)</li>
+<li>Update paths at the top of the batch script</li>
+<li>Comment out any sections that were completed in advance (i.e. grid and map file creation)</li>
+</ul>
+<p>To submit the slurm batch job use <code>sbatch &lt;script&gt;</code></p>
+<!-- ul-indent --><!-- no-inline-html --><details>
+    <summary>batch_topo_slurm_lcrc.sh</summary>
+    <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --account=e3sm</span>
+<span class="c1">#SBATCH --job-name=generate_topo</span>
+<span class="c1">#SBATCH --output=slurm-%x-%j.out</span>
+<span class="c1">#SBATCH --time=24:00:00</span>
+<span class="c1">#SBATCH --nodes=1</span>
+<span class="c1">#SBATCH --mail-type=END,FAIL</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Make sure all these lines are correct for the machine</span>
+<span class="nb">source</span><span class="w"> </span>/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+<span class="c1"># Specify source and target resolutions</span>
+<span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
+<span class="c1"># NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing</span>
+<span class="c1"># Specify time stamp for creation date</span>
+<span class="nv">timestamp</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>
+<span class="c1"># Specify E3SM source code path - preferably a fresh clone</span>
+<span class="nv">SCRATCH</span><span class="o">=</span>/lcrc/group/e3sm/<span class="si">${</span><span class="nv">USER</span><span class="si">}</span>/scratch/chrys
+<span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src
+<span class="c1"># Specify root paths</span>
+<span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_grid
+<span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_map
+<span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
+<span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
+<span class="nv">MAP_ARGS</span><span class="o">=</span>
+<span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Stop script execution on error</span>
+<span class="nb">set</span><span class="w"> </span>-e
+<span class="c1"># ANSI color codes for highlighting terminal output</span>
+<span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
+<span class="c1"># start timer for entire script</span>
+<span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Specify topo file names - including temporary files that will be deleted</span>
+<span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.nc
+<span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4.nc
+<span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t.nc
+<span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t_<span class="si">${</span><span class="nv">timestamp</span><span class="si">}</span>.nc
+<span class="c1"># Specify map file name</span>
+<span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1_to_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_fv2se_flx.nc
+<span class="c1">#---------------------------------------------------------------------------  </span>
+<span class="c1"># print some useful things</span>
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">NE_SRC</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$NE_SRC</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">NE_DST</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$NE_DST</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">e3sm_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$e3sm_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">grid_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$grid_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">map_root</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="nv">$map_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">DIN_LOC_ROOT</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="nv">$DIN_LOC_ROOT</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_0</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_0</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_1</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_1</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_2</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_2</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_3</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_3</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">map_file_src_to_np4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$map_file_src_to_np4</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Make sure paths exist</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">     </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># set to echo commands</span>
+<span class="nb">set</span><span class="w"> </span>-x
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Create grid for source high res topo</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc
+<span class="c1"># Create grid for target EAM grid</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Create map from source to target np4</span>
+<span class="nb">time</span><span class="w"> </span>ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_ARGS</span><span class="si">}</span><span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tmp_dir<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Remap high-res topo to target np4 grid</span>
+ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># Compute phi_s on the target np4 grid</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Apply Smoothing</span>
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+<span class="c1"># Create namelist file for HOMME</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
+<span class="s">&amp;ctl_nl</span>
+<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">smooth_phis_p2filt = 0</span>
+<span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
+<span class="s">smooth_phis_nudt = 4e-16</span>
+<span class="s">hypervis_scaling = 2</span>
+<span class="s">se_ftype = 2 ! actually output NPHYS; overloaded use of ftype</span>
+<span class="s">/</span>
+<span class="s">&amp;vert_nl</span>
+<span class="s">/</span>
+<span class="s">&amp;analysis_nl</span>
+<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
+<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">/</span>
+<span class="s">EOF</span>
+<span class="c1"># run homme_tool for topography smoothing</span>
+srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Compute SGH with cube_to_target</span>
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target/cube_to_target<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--target-grid<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--smoothed-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+<span class="c1"># Append the GLL phi_s data to the output</span>
+ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Clean up Temporary Files</span>
+rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>*
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># stop echoing commands</span>
+<span class="nb">set</span><span class="w"> </span>+x
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Check that final topo output file was created</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span><span class="w"> </span>Failed<span class="w"> </span>to<span class="w"> </span>create<span class="w"> </span>topography<span class="w"> </span>file<span class="w"> </span>-<span class="w"> </span>Errors<span class="w"> </span>ocurred<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="k">else</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">GRN</span><span class="si">}</span><span class="w"> </span>Sucessfully<span class="w"> </span>created<span class="w"> </span>new<span class="w"> </span>topography<span class="w"> </span>file<span class="w">  </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$topo_file_3</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="k">fi</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Indicate overall run time for this script</span>
+<span class="nv">end</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
+<span class="nv">runtime_sc</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">start</span><span class="w"> </span><span class="k">))</span>
+<span class="nv">runtime_mn</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_sc</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
+<span class="nv">runtime_hr</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_mn</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
+<span class="nb">echo</span><span class="w"> </span>-e<span class="w">    </span><span class="si">${</span><span class="nv">CYN</span><span class="si">}</span><span class="w"> </span>overall<span class="w"> </span>runtime:<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">runtime_sc</span><span class="si">}</span><span class="w"> </span>seconds<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_mn</span><span class="si">}</span><span class="w"> </span>minutes<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_hr</span><span class="si">}</span><span class="w"> </span>hours
+<span class="nb">echo</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+</code></pre></div>
+</details>
+
+<details>
+    <summary>batch_topo_slurm_nersc.sh</summary>
+    <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --account=e3sm</span>
+<span class="c1">#SBATCH --constraint=cpu</span>
+<span class="c1">#SBATCH --qos=regular</span>
+<span class="c1">#SBATCH --job-name=generate_topo</span>
+<span class="c1">#SBATCH --output=slurm-%x-%j.out</span>
+<span class="c1">#SBATCH --time=24:00:00</span>
+<span class="c1">#SBATCH --nodes=1</span>
+<span class="c1">#SBATCH --mail-type=END,FAIL</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Make sure all these lines are correct for the machine</span>
+<span class="nb">source</span><span class="w"> </span>/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
+<span class="c1"># Specify source and target resolutions</span>
+<span class="nv">NE_SRC</span><span class="o">=</span><span class="m">3000</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NE_DST</span><span class="o">=</span><span class="m">30</span>
+<span class="c1"># NE_SRC=90 ; NE_DST=30 # low-res grid combination for testing</span>
+<span class="c1"># Specify time stamp for creation date</span>
+<span class="nv">timestamp</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>
+<span class="c1"># Specify E3SM source code path - preferably a fresh clone</span>
+<span class="nv">e3sm_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/tmp_e3sm_src
+<span class="c1"># Specify root paths</span>
+<span class="nv">grid_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_grid
+<span class="nv">map_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_map
+<span class="nv">topo_root</span><span class="o">=</span><span class="si">${</span><span class="nv">SCRATCH</span><span class="si">}</span>/files_topo
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
+<span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
+<span class="nv">MAP_ARGS</span><span class="o">=</span>
+<span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Stop script execution on error</span>
+<span class="nb">set</span><span class="w"> </span>-e
+<span class="c1"># ANSI color codes for highlighting terminal output</span>
+<span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
+<span class="c1"># start timer for entire script</span>
+<span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Specify topo file names - including temporary files that will be deleted</span>
+<span class="nv">topo_file_0</span><span class="o">=</span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span>/atm/cam/hrtopo/USGS-topo-cube<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.nc
+<span class="nv">topo_file_1</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4.nc
+<span class="nv">topo_file_2</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t.nc
+<span class="nv">topo_file_3</span><span class="o">=</span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_smoothedx6t_<span class="si">${</span><span class="nv">timestamp</span><span class="si">}</span>.nc
+<span class="c1"># Specify map file name</span>
+<span class="nv">map_file_src_to_np4</span><span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>/map_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1_to_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>np4_fv2se_flx.nc
+<span class="c1">#---------------------------------------------------------------------------  </span>
+<span class="c1"># print some useful things</span>
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">NE_SRC</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$NE_SRC</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">NE_DST</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$NE_DST</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">e3sm_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$e3sm_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">grid_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$grid_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">map_root</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="nv">$map_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_root</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_root</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">DIN_LOC_ROOT</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="nv">$DIN_LOC_ROOT</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_0</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_0</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_1</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_1</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_2</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_2</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">topo_file_3</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$topo_file_3</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w">   </span><span class="nv">map_file_src_to_np4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$map_file_src_to_np4</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="nb">echo</span><span class="w"> </span>--------------------------------------------------------------------------------
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Make sure paths exist</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">DIN_LOC_ROOT</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w">     </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w">    </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span>ERROR<span class="w"> </span>directory<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>exist:<span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># set to echo commands</span>
+<span class="nb">set</span><span class="w"> </span>-x
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Create grid for source high res topo</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>.g<span class="w">  </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc
+<span class="c1"># Create grid for target EAM grid</span>
+GenerateCSMesh<span class="w"> </span>--alt<span class="w"> </span>--res<span class="w"> </span><span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span><span class="w"> </span>--file<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g
+GenerateVolumetricMesh<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--np<span class="w"> </span><span class="m">2</span><span class="w"> </span>--uniform
+ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.g<span class="w"> </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Create map from source to target np4</span>
+<span class="nb">time</span><span class="w"> </span>ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_ARGS</span><span class="si">}</span><span class="w"> </span>-a<span class="w"> </span>fv2se_flx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--src_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_SRC</span><span class="si">}</span>pg1.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dst_grd<span class="o">=</span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/exodus_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>.g<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--map_file<span class="o">=</span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tmp_dir<span class="o">=</span><span class="si">${</span><span class="nv">map_root</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Remap high-res topo to target np4 grid</span>
+ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># Compute phi_s on the target np4 grid</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Apply Smoothing</span>
+<span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/cime/CIME/scripts/configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env_mach_specific.sh
+<span class="c1"># Create namelist file for HOMME</span>
+cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
+<span class="s">&amp;ctl_nl</span>
+<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">smooth_phis_p2filt = 0</span>
+<span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
+<span class="s">smooth_phis_nudt = 4e-16</span>
+<span class="s">hypervis_scaling = 2</span>
+<span class="s">se_ftype = 2 ! actually output NPHYS; overloaded use of ftype</span>
+<span class="s">/</span>
+<span class="s">&amp;vert_nl</span>
+<span class="s">/</span>
+<span class="s">&amp;analysis_nl</span>
+<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
+<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">/</span>
+<span class="s">EOF</span>
+<span class="c1"># run homme_tool for topography smoothing</span>
+srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
+<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Compute SGH with cube_to_target</span>
+<span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/eam/tools/topo_tool/cube_to_target/cube_to_target<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--target-grid<span class="w"> </span><span class="si">${</span><span class="nv">grid_root</span><span class="si">}</span>/scrip_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>pg2.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--smoothed-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-topography<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+<span class="c1"># Append the GLL phi_s data to the output</span>
+ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Clean up Temporary Files</span>
+rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</span><span class="si">}</span>/tmp_USGS-topo_ne<span class="si">${</span><span class="nv">NE_DST</span><span class="si">}</span>*
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># stop echoing commands</span>
+<span class="nb">set</span><span class="w"> </span>+x
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Check that final topo output file was created</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>!<span class="w"> </span>-f<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_3</span><span class="si">}</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">RED</span><span class="si">}</span><span class="w"> </span>Failed<span class="w"> </span>to<span class="w"> </span>create<span class="w"> </span>topography<span class="w"> </span>file<span class="w"> </span>-<span class="w"> </span>Errors<span class="w"> </span>ocurred<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="k">else</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span>-e<span class="w"> </span><span class="si">${</span><span class="nv">GRN</span><span class="si">}</span><span class="w"> </span>Sucessfully<span class="w"> </span>created<span class="w"> </span>new<span class="w"> </span>topography<span class="w"> </span>file<span class="w">  </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$topo_file_3</span>
+<span class="w">  </span><span class="nb">echo</span>
+<span class="k">fi</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+<span class="c1"># Indicate overall run time for this script</span>
+<span class="nv">end</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
+<span class="nv">runtime_sc</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">end</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">start</span><span class="w"> </span><span class="k">))</span>
+<span class="nv">runtime_mn</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_sc</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
+<span class="nv">runtime_hr</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="nv">runtime_mn</span><span class="o">/</span><span class="m">60</span><span class="w"> </span><span class="k">))</span>
+<span class="nb">echo</span><span class="w"> </span>-e<span class="w">    </span><span class="si">${</span><span class="nv">CYN</span><span class="si">}</span><span class="w"> </span>overall<span class="w"> </span>runtime:<span class="w"> </span><span class="si">${</span><span class="nv">NC</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">runtime_sc</span><span class="si">}</span><span class="w"> </span>seconds<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_mn</span><span class="si">}</span><span class="w"> </span>minutes<span class="w"> </span>/<span class="w"> </span><span class="si">${</span><span class="nv">runtime_hr</span><span class="si">}</span><span class="w"> </span>hours
+<span class="nb">echo</span>
+<span class="c1">#---------------------------------------------------------------------------</span>
+</code></pre></div>
+</details>
+
+<p>Back to step-by-step guide for <a href="../">Adding Support for New Grids</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../../../../javascript/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
