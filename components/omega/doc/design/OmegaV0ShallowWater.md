@@ -24,7 +24,7 @@ We will produce separate design documents for the time-stepping scheme and the t
 
 ### 2.1  Omega-0 will solve the nonlinear shallow water equations, plus inactive tracers
 
-The governing equations for Omega-0 are the shallow water equations, as described in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqns 2-7, plus the tracer advection-diffusion equation. These equations are derived from conservation of momentum, volume, and tracers in a single layer. The code will solve a multi-layer formulation with independant, redundant layers in order to test performance with a vertical array dimension. The exact formulation is specified section 3.1 below, with variable definitions in section 3.2.
+The governing equations for Omega-0 are the shallow water equations, as described in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqns 2-7, plus the tracer advection-diffusion equation. These equations are derived from conservation of momentum, volume, and tracers in a single layer. The code will solve a multi-layer formulation with independent, redundant layers in order to test performance with a vertical array dimension. The exact formulation is specified section 3.1 below, with variable definitions in section 3.2.
 
 
 
@@ -108,7 +108,7 @@ Next we replace the non-linear advection term with the right-hand side of the ve
 $$
 \boldsymbol{u} \cdot \nabla \boldsymbol{u} &= (\nabla \times \boldsymbol{u}) \times \boldsymbol{u} + \nabla \frac{|\boldsymbol{u}|^2}{2} \\
 &= \{\boldsymbol{k} \cdot (\nabla \times \boldsymbol{u})\} \boldsymbol{k} \times \boldsymbol{u} + \nabla \frac{|\boldsymbol{u}|^2}{2} \\
-&= \zeta \boldsymbol{u}^{\perp} + \nabla K.
+&= \omega \boldsymbol{u}^{\perp} + \nabla K.
 $$
 
 The governing equations for Omega-0 in continuous form are then
@@ -140,20 +140,21 @@ The drag consists of simple Rayleigh drag for spin-up as well as quadratic botto
 
 Here $q$ is the potential vorticity, so that the term
 $$
-q\left(h\boldsymbol{u}^{\perp}\right) = \frac{\zeta + f}{h}\left(h\boldsymbol{u}^{\perp}\right)
- = \zeta \boldsymbol{u}^{\perp} + f \boldsymbol{u}^{\perp}
+q\left(h\boldsymbol{u}^{\perp}\right) = \frac{\omega + f}{h}\left(h\boldsymbol{u}^{\perp}\right)
+ = \omega \boldsymbol{u}^{\perp} + f \boldsymbol{u}^{\perp}
 $$
-is composed of the rotational part of the advection $\zeta \boldsymbol{u}^{\perp}$ and the Coriolis term $f \boldsymbol{u}^{\perp}$. This term is discussed in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) sections 2.1 and 2.2.
+is composed of the rotational part of the advection $\omega \boldsymbol{u}^{\perp}$ and the Coriolis term $f \boldsymbol{u}^{\perp}$. This term is discussed in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) sections 2.1 and 2.2.
 
 The thickness equation (2) is derived from conservation of mass for a fluid with constant density, which reduces to conservation of volume. The model domain uses fixed horizontal cells with horizontal areas that are constant in time, so the area drops out and only the layer thickness $h$ remains as the prognostic variable.
 
 The Tracer Equation (3) is the conservation equation for a passive tracer (scalar), with only advective and diffusive terms. It is not included in the textbook Shallow Water equations, but is useful for us to test tracer advection in preparation for a primitive equation model in Omega-1. For a tracer which is uniformly one ($\phi=1$), with no viscous terms, the tracer equation reduces to the thickness equation.
-The tracer equation is thickness weighted, because the conserved quantity is the tracer mass. Here $(h\phi A)$ typically has units of mass of the tracer in [kg] while $\phi$ has units of concentration [kg m$^{-3}$]. Because the horizontal area is fixed, $A$ has been divided out making (3) thickness weighted, rather than volume weighted. For chemical tracers $\phi$ has units of [mmol m$^{-3}$]; salinity has units of Practical Salnity Units (PSU) and potential temperature has units of [C]. A derivation of the thickness-weighted tracer equation appears in Appendix A-2 of [Ringler et al. 2013](https://www.sciencedirect.com/science/article/pii/S1463500313000760).
+The tracer equation is thickness weighted, because the conserved quantity is the tracer mass. Here $(h\phi A)$ typically has units of mass of the tracer in [kg] while $\phi$ has units of concentration [kg m$^{-3}$]. Because the horizontal area is fixed, $A$ has been divided out making (3) thickness weighted, rather than volume weighted. For chemical tracers $\phi$ has units of [mmol m$^{-3}$]; salinity has units of Practical Salinity Units (PSU) and potential temperature has units of [C]. A derivation of the thickness-weighted tracer equation appears in Appendix A-2 of [Ringler et al. 2013](https://www.sciencedirect.com/science/article/pii/S1463500313000760).
 
 The Omega-0 governing equations (1-3) do not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will be simply redundant.
 
 Further details of these derivations are given in [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqns. (2) and (7), and [Bishnu et al. 2024](https://doi.org/10.1029/2022MS003545), Section 2.1.
 Additional information on governing equations may be found in chapter 8 of the MPAS User's Guide ([Petersen et al. 2024](https://zenodo.org/records/11098080)).
+Publications that evaluate TRiSK against alternative formulations include [Weller et al. 2012](http://journals.ametsoc.org/doi/10.1175/MWR-D-11-00193.1), [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and [Lapolli et al. 2024](https://www.sciencedirect.com/science/article/pii/S1463500324000222). 
 
 #### 3.1.2 Discrete Equations
 
@@ -192,31 +193,36 @@ Table 1. Definition of variables
 
 | symbol  | name             | units    | location | name in code | notes  |
 |---------------------|-----------------------------|----------|-|---------|-------------------------------------------------------|
+| $A_i $      | cell area | m$^2$    | cell | AreaCell |                                                              |
 | $b$                 | bottom depth (pos. down)  | m        | cell     | BottomDepth   | bathymetry; always positive.                                                             |
-| $C_D$               | bottom drag                 | 1/m      | constant |   |                                                              |
-| $C_W$               | wind stress coefficient     | 1/m      | constant |   |                                                              |
-| $\mathcal{D} $      | drag                        | m/s$^2$    | edge     |   |                                                              |
-| $f$                 | Coriolis parameter          | 1/s      | vertex   | FVertex  |                                                              |
-| $\mathcal{F} $      | forcing                     | m/s$^2$    | edge     |   |                                                              |
-| $g$                 | gravitational acceleration  | m/s$^2$    | constant |   |                                                              |
-| $h$                 | thickness of layer          | m        | cell     | LayerThickness  |                                                              |
+| $C_D$               | bottom drag                 | 1/m      | constant |   |                         |
+| $C_W$               | wind stress coefficient     | 1/m      | constant |   |                         |
+| $d_e $      | cell separation distance across edge| m    | edge     | DcEdge  |                       |
+| $D$             | divergence | 1/s      | cell | Divergence  | $D=\nabla\cdot\boldsymbol u$ |
+| $\mathcal{D} $      | drag                        | m/s$^2$    | edge     |   |                       |
+| $f$                 | Coriolis parameter          | 1/s      | vertex   | FVertex  |                  |
+| $\mathcal{F} $      | forcing                     | m/s$^2$    | edge     |   |                       |
+| $g$                 | gravitational acceleration  | m/s$^2$    | constant |   |                       |
+| $h$                 | thickness of layer          | m        | cell     | LayerThickness  |           |
 | ${\boldsymbol k}$   | vertical unit vector        | unitless | none     |   |                                                              |
-| $K$                 | kinetic energy              | m$^2$/s$^2$  | cell     | KineticEnergyCell  | $K = \left\| {\boldsymbol u} \right\|^2 / 2$                |
-| $q$                 | potential vorticity         | 1/m/s    | vertex   |   | $q = \eta/h = \left(\zeta+f\right)/h$                                                 |
+| $K$                 | kinetic energy              | m$^2$/s$^2$  | cell     | KineticEnergyCell  | $K = \left\| {\boldsymbol u} \right\|^2 / 2$ |
+| $l_e $      | edge length (vertex span) | m    | edge     | DvEdge  |                                                              |
+| $n_{e,i}$ | edge normal sign | unitless | edge | EdgeSignOnCell| also by index ordering of CellsOnEdge |
+| $q$                 | potential vorticity         | 1/m/s    | vertex   |   | $q = \eta/h = \left(\omega+f\right)/h$                                                 |
 | $Ra$                | Rayleigh drag coefficient   | 1/s      | constant |   |                                                              |
 | $t$                 | time                        | s        | none     |   |                                                              |
+| $t_{e,v}$ | edge tangential sign | unitless | edge | EdgeSignOnVertex | also by index ordering of VerticesOnEdge |
 | ${\boldsymbol u}$   | velocity, vector form       | m/s      | edge     |   |                                                              |k
 | $u_e$   | velocity, normal to edge      | m/s      | edge     | NormalVelocity  |                                                              |k
 | $u^\perp_e$   | velocity, tangential to edge      | m/s      | edge     | TangentialVelocity  |                                                              |k
 | ${\boldsymbol u}_W$ | wind velocity               | m/s      | edge     |   |                                                              |
-| $\delta$             | divergence | 1/s      | cell | Divergence  | $\delta=\nabla\cdot\boldsymbol u$ |
-| $\zeta$             | relative vorticity          | 1/s      | vertex   |  RelativeVorticity | $\zeta={\boldsymbol k} \cdot \left( \nabla \times {\boldsymbol u}\right)$ |
-| $\eta$              | absolute vorticity          | 1/s      | vertex   |   | $\eta=\zeta + f$ |
+| $\eta$              | absolute vorticity          | 1/s      | vertex   |   | $\eta=\omega + f$ |
 | $\kappa_2$          | tracer diffusion            | m$^2$/s    | cell     |   |                                                              |
 | $\kappa_4$          | biharmonic tracer diffusion | m$^4$/s    | cell     |   |                                                              |
 | $\nu_2$             | viscosity                   | m$^2$/s    | edge     |   |                                                              |
 | $\nu_4$             | biharmonic viscosity        | m$^4$/s    | edge     |   |                                                              |
 | $\phi$              | tracer                      | varies | cell     |   | units may be kg/m$^3$ or similar | 
+| $\omega$             | relative vorticity          | 1/s      | vertex   |  RelativeVorticity | $\omega={\boldsymbol k} \cdot \left( \nabla \times {\boldsymbol u}\right)$ |
 
 Note: Table created with [markdown table generator](https://www.tablesgenerator.com/markdown_tables) and original [google sheet](https://docs.google.com/spreadsheets/d/1rz-QXDiwfemq5NpSR1XsvomI7aSKQ1myTNweCY4afcE/edit#gid=0).
 
@@ -241,18 +247,18 @@ Table 3. Definition of element groups used to build the discrete system.
 
 | Syntax              | Definition                  | MPAS mesh name | 
 |---------------------|-----------------------------|---|
-| $e\in EC(i)$ |  Set of edges that define the boundary of $P_i$ | edgesOnCell |
-| $e\in EV(v)$ |  Set of edges that define the boundary of $D_v$ | edgesOnVertex |
-| $i\in CE(e)$ |  Two primal mesh cells that share edge $e$ | cellsOnEdge |
-| $i\in CV(v)$ |  Set of primal mesh cells that form the vertices of dual mesh cell $D_v$ | cellsOnVertex |
-| $v\in VE(e)$ |  The two dual-mesh cells that share edge $e$ | verticesOnEdge |
-| $v\in VI(i)$ |  The set of dual-mesh cells that form the vertices of primal mesh cell $P_i$ | verticesOnCell |
-| $e\in ECP(e)$ |  Edges of cell pair meeting at edge $e$ | edgesOnEdge |
+| $e\in EC(i)$ |  Set of edges that define the boundary of $P_i$ | EdgesOnCell |
+| $e\in EV(v)$ |  Set of edges that define the boundary of $D_v$ | EdgesOnVertex |
+| $i\in CE(e)$ |  Two primal mesh cells that share edge $e$ | CellsOnEdge |
+| $i\in CV(v)$ |  Set of primal mesh cells that form the vertices of dual mesh cell $D_v$ | CellsOnVertex |
+| $v\in VE(e)$ |  The two dual-mesh cells that share edge $e$ | VerticesOnEdge |
+| $v\in VI(i)$ |  The set of dual-mesh cells that form the vertices of primal mesh cell $P_i$ | VerticesOnCell |
+| $e\in ECP(e)$ |  Edges of cell pair meeting at edge $e$ | EdgesOnEdge |
 | $e\in EVC(v,i)$ | Edge pair associated with vertex v and mesh cell $i$ | |
 
 ### 3.2 Operator Formulation
 
-The TRiSK formulation of the discrete operators are as follows. See [Bishnu et al. 2023](https://gmd.copernicus.org/articles/16/5539/2023) section 4.1 and Figure 1 for a discription and documentation of convergence rates, as well as [Bishnu et al. 2021](https://doi.org/10.5281/zenodo.7439539). All TRiSK spatial operators show second-order convergence on a uniform hexagon grid, except for the curl on vertices, which is first order. The curl interpolated from vertices to cell centers regains second order converence. The rates of convergence are typically less than second order on nonuniform meshes, including spherical meshes.
+The TRiSK formulation of the discrete operators are as follows. See [Bishnu et al. 2023](https://gmd.copernicus.org/articles/16/5539/2023) section 4.1 and Figure 1 for a description and documentation of convergence rates, as well as [Bishnu et al. 2021](https://doi.org/10.5281/zenodo.7439539). All TRiSK spatial operators show second-order convergence on a uniform hexagon grid, except for the curl on vertices, which is first order. The curl interpolated from vertices to cell centers regains second order convergence. The rates of convergence are typically less than second order on nonuniform meshes, including spherical meshes.
 
 #### 3.2.1. Divergence
 The divergence operator maps a vector field's edge normal component $F_e$ to a cell center ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 21) is
@@ -268,13 +274,12 @@ The notation $e\in EC(i)$ indicates all the edges surrounding cell $i$.
 In the TRiSK formulation we assume that the divergence always occurs at the cell center, so the subscript $i$ is dropped and we simply write  $\left( \nabla \cdot {\bf F}\right)_i$ as $\nabla \cdot F_e$.
 
 The divergence operator above is applied to a general vector field $\bf F$. 
-In the actual formulations below, we substitute the velocity at the edge $F_e = u_e$ for the divergence in the momentum equation, and the thickness-weighted tracer
+In the actual formulations below, we substitute the velocity at the edge $F_e = u_e$ for the divergence variable in the momentum equation, and the thickness-weighted tracer
 $F_e = u_e [h_i \phi_i]_e$
- in the tracer advection term.
-
-When we refer to the divergence variable, rather than the operator, this means
+ in the tracer advection term. To be clear, when we refer to the divergence variable, rather than the operator, this means
 $$
-\delta_i
+\left( \nabla \cdot {\bf u}\right)_i =
+D_i
 =  \frac{1}{A_i} \sum_{e\in EC(i)} n_{e,i} \, u_e \, l_e.
 $$
 
@@ -291,6 +296,14 @@ $$
 $$
 where $i\in CE(e)$ identifies the two cells that neighbor an edge. The edge subscript is dropped, so $\nabla h_i$ is understood to occur at an edge.
 
+For practical purposes the sign indicator variable $n_{e,i}$ is not used in the code, and we opt for the simpler formulation
+$$
+\left( \nabla h \right)_e
+\equiv
+\nabla h_i = \frac{h_{i2} - h_{i1} }{d_e},
+$$
+where $\left\{i_1, i_2\right\}$ are the cells neighboring edge $e$.  The indices $\left\{i_1, i_2\right\}$ are ordered such that the normal vector ${\bf n}$ points from cell $i_1$ to cell $i_2$. In the code ${\bf n}$ points from CellsOnEdge(0,iEdge) to CellsOnEdge(1,iEdge).
+
 #### 3.2.3. Curl
 The curl operator maps a vector's edge normal component $u_e$ to a scalar field at vertex
 ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 23) and is
@@ -302,30 +315,44 @@ $$
 = \frac{1}{A_v} \sum_{e\in EV(v)} t_{e,v} \, F_e \, d_e
 $$
 
-where $A_v$ is the area of the dual mesh cell $v$, ie the triangle surrounding vertex $v$. Similar to $n_{e,i}$, the indicator function $t_{e,v}$ tracks whether a positive $F_e$ makes a positive or negative contribution to the curl function at vertex $v$. If the vector ${\bf k} \times {\bf n}_e$ is directed toward
+where $A_v$ is the area of the dual mesh cell $v$, i.e. the triangle surrounding vertex $v$. Similar to $n_{e,i}$, the indicator function $t_{e,v}$ tracks whether a positive $F_e$ makes a positive or negative contribution to the curl function at vertex $v$. If the vector ${\bf k} \times {\bf n}_e$ is directed toward
 ${\bf x}_v$, then $t_{e,v}=1$. The summation is over $e\in EV(v)$, which are the edges that terminate at vertex $v$. There are *always* three edges that terminate at each vertex for Voronoi Tessellations, and four edges on each vertex for quadrilateral meshes, unless neighboring cells are missing for land boundaries. Again, the subscript $v$ is dropped and a vertex is assumed for the location of the curl.
 
 
 #### 3.2.4. Perpendicular vector component
 
-The native component for the prognostic velocity field is normal edge velocity $u_e$. The perpendicular component at the edge is computed diagnostically as
+The perpendicular vector component a vector field is defined as
+$$
+ \nabla^\perp {\bf F} \equiv
+ {\bf k} \times \nabla {\bf F}
+$$
+so that it points 90$^o$ to the left of ${\bf F}$ in a right-handed coordinate system. 
+
+In TRiSK, the native component for the prognostic velocity field is normal edge velocity $u_e$. The perpendicular component at the edge is computed diagnostically as
 ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 24)
 
 $$
-F_e^\perp = \frac{1}{d_e} \sum_{e'\in ECP(e)} w_{e,e'} \, l_e \, F_{e'}.
+u_e^\perp = \frac{1}{d_e} \sum_{e'\in ECP(e)} w_{e,e'} \, l_e \, u_{e'}.
 $$
 
-The perpendicular vector is computed from the edge-normal components of all the edges of the two neighboring cells of edge $e$, denoted as $e'\in ECP(e)$. For example, on a mesh with hexagons, there are a total of 10 edges $e'$ on the two cells neighboring edge $e$ (the original edge $e$ is not included).  The perpendicular velocity $u_e^\perp$ is used in the Coriolis force, which appears in the potential vorticity advection term.  The weighting coefficients $w_{e,e'}$ are carefully chosed to conserve potential vorticity, as described in
+The perpendicular vector is computed from the edge-normal components of all the edges of the two neighboring cells of edge $e$, denoted as $e'\in ECP(e)$. For example, on a mesh with hexagons, there are a total of 10 edges $e'$ on the two cells neighboring edge $e$ (the original edge $e$ is not included).  The perpendicular velocity $u_e^\perp$ is used in the Coriolis force, which appears in the potential vorticity advection term.  The weighting coefficients $w_{e,e'}$ are carefully chosen to conserve potential vorticity, as described in
 [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)
 and
 [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780).
 
 #### 3.2.5. Perpendicular Gradient
-This maps a vertex scalar to an edge-tangential vector component (check $t_{e,v}$)
+The gradient of a scalar at the middle of an edge, pointing tangentially along the edge (from one vertex to the other), is sometimes used. For example, the del2 formulation requires the perpendicular gradient of vorticity. This is called the perpendicular gradient because the standard gradient is normal to the edge.
 
+The perpendicular gradient maps a scalar at vertices to an edge-tangential vector component,
 $$
-[\nabla \omega_v]_e^\perp = \frac{1}{l_e} \sum_{v\in VE(e)} -t_{e,v}\omega_v
+\left(\nabla \omega_v\right)_e^\perp = \frac{1}{l_e} \sum_{v\in VE(e)} -t_{e,v}\omega_v.
 $$
+Like the standard gradient, in practice we drop the sign indicator $t_{e,v}$ and rewrite it using the index ordering,
+$$
+\left(\nabla \omega_v\right)_e^\perp = \frac{\omega_{v2} - \omega_{v1}}{l_e},
+$$
+where the positive vector ${\bf n}^\perp$ is 90$^o$ to the left of ${\bf n}$. The indices are ordered such that ${\bf n}^\perp$ points from $v_1$ to $v_2$, which corresponds to VerticesOnEdge(0,iEdge) and VerticesOnEdge(1,iEdge) in the code.
+
 
 #### 3.2.6. Cell to Edge Interpolation
 This is simply a mid-point averaging from cell centers to the adjoining edge.
@@ -383,7 +410,7 @@ $$
 \frac{5}{8} K_i + \frac{3}{8} [K_v]_i
 $$
 
-for the final kinetic energy at the cell center. Note that addition of $[K_v]_i$ enlargens the stencil. One could also use $u_e^{\perp}$ and compute the kinetic energy at the edge itself in order to enlarge the stencil, but that method is not used here.
+for the final kinetic energy at the cell center. Note that addition of $[K_v]_i$ enlarges the stencil. One could also use $u_e^{\perp}$ and compute the kinetic energy at the edge itself in order to enlarge the stencil, but that method is not used here.
 See [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) section 2.3 for more information.
 
 #### 3.3.2. Potential vorticity term
@@ -404,28 +431,44 @@ The first computes the potential vorticity $q_v$ at the vertex and interpolates 
 The sea surface height (SSH) gradient uses the standard gradient formulation from cell center to edge,
 
 $$
--g\nabla(h_i-b_i) = -g\frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}(h_i-b_i).
+-g\nabla(h_i-b_i) &= -g\frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}(h_i-b_i)\\
+&= -g\frac{(h_{i2}-b_{i2}) - (h_{i1}-b_{i1}) }{d_e}.
 $$
 
 #### 3.3.4. Del2 momentum dissipation
-The Del2, or Laplacian operator, viscous momentum dissipation maps edge-normal velocity back to the edge-normal component of the Laplacian. In TRiSK this is done with the "grad-div plus vorticity curl" formulation. (check grad omega term).
+The Del2, or Laplacian operator, viscous momentum dissipation maps edge-normal velocity back to the edge-normal component of the Laplacian. In TRiSK this is done with the vorticity-divergence formulation, which may be written as
 
 $$
-\nu_2 \nabla^2 u_e = \nu_2 \left( \nabla \delta_i + {\bf k} \times \nabla \omega_v\right) = \frac{\nu_2}{d_e} \sum_{i\in CE(e)} -n_{e,i}\delta_i + \frac{\nu_2}{l_e} \sum_{v\in VE(e)} -n_{e,v}\omega_v
+\nabla^2 {\bf u} &=  \nabla \left( \nabla\cdot{\bf u}\right) - \nabla \times \left( \nabla \times {\bf u} \right) \\
+ &=  \nabla {\bf D} - \nabla \times \omega \\
+ &=  \nabla {\bf D} - {\bf k} \times \nabla \omega \\
+ &=  \nabla {\bf D} - \nabla^\perp \omega.
 $$
+This formulation is also mentioned in [Gassmann 2011](https://linkinghub.elsevier.com/retrieve/pii/S0021999111000325) (equation 17), [Gassman 2018](https://onlinelibrary.wiley.com/doi/10.1002/qj.3294) (equation 44) and [Lapolli et al. 2024](https://www.sciencedirect.com/science/article/pii/S1463500324000222) (section 4.5.2).
+
+For our discretization, the full Del2 term is written as
+$$
+\nu_2 \nabla^2 u_e &= \nu_2 \left( \nabla D_i - \nabla^\perp \omega_v\right) \\
+&= \nu_2 \left( \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}D_i - \frac{1}{l_e} \sum_{v\in VE(e)} -t_{e,v}\omega_v\right) \\
+&= \nu_2 \left( \frac{D_{i2} - D_{i1}}{d_e} - \frac{\omega_{v2} - \omega_{v1}}{l_e} \right),
+$$
+where the ordering of indices $\{i_i, i_2\}$ and $\{v_1, v_2\}$ are explained in the gradient operator sections above.
+
+An alternative formulation for the Del2 dissipation on an unstructured mesh is presented in section 4.2 and Appendix B of 
+[Gassman 2018](https://onlinelibrary.wiley.com/doi/10.1002/qj.3294).
 
 #### 3.3.5. Del4 momentum dissipation
 The Del4, or biharmonic, momentum dissipation also maps edge-normal velocity back to the edge-normal component of the Laplacian. This is done with two applications of the Del2 operator above.
 
 $$
-- \nu_4 \nabla^4 u_e
+- \nu_4 \nabla^4 u_e = - \nu_4 \nabla^2 \left( \nabla^2 u_e \right)
 $$
 
 #### 3.3.6. Rayleigh Drag
-Rayleigh drag is simply linear drag, applied to all levels. It is typically only used during the spin-up process to damp large velocities during the initial adjustement. The Rayleigh coefficient $Ra$ is simply a scalar constant.
+Rayleigh drag is simply linear drag, applied to all levels. It is typically only used during the spin-up process to damp large velocities during the initial adjustment. The Rayleigh coefficient $Ra$ is simply a scalar constant,
 
 $$
-- Ra \: u_e
+- Ra \: u_e.
 $$
 
 #### 3.3.7. Bottom drag
@@ -436,17 +479,17 @@ $$
 $$
 
 #### 3.3.8. Wind forcing
-Wind forcing has the same form as the bottom drag, but the forcing is the difference between the current velocity and the wind $u_W$, interpolated and projected to the edge normal direction.
+Wind forcing has the same form as the bottom drag, but the forcing is the difference between the current velocity and the wind $u_W$, interpolated and projected to the edge normal direction,
 
 $$
-- C_W \frac{(u_W - u_e)\left|u_W - u_e\right|}{[h_i]_e}
+- C_W \frac{(u_W - u_e)\left|u_W - u_e\right|}{[h_i]_e}.
 $$
 
 ### 3.4 Thickness and Tracer Terms
 
 #### 3.4.1. Tracer advection
 
-There are many schemes available for tracer advection. Simple schemes include centered advection and upstream. MPAS-Ocean uses Flux Corrected Transport, which is fourth order under normal conditions, and reduces to third order to preserve monotinicity. 
+There are many schemes available for tracer advection. Simple schemes include centered advection and upstream. MPAS-Ocean uses Flux Corrected Transport, which is fourth order under normal conditions, and reduces to third order to preserve monotonicity. 
 
 The tracer advection term is
 $$
@@ -455,7 +498,7 @@ $$
 
 and the stencil for divergence makes this
 $$
-\nabla \cdot \left( u_e [h_i \phi_i]_e \right)  =  \frac{1}{A_i} \sum_{e\in EC(i)} n_{e,i}u_e [h_i \phi_i]_e l_e
+\nabla \cdot \left( u_e [h_i \phi_i]_e \right)  =  \frac{1}{A_i} \sum_{e\in EC(i)} n_{e,i}u_e [h_i \phi_i]_e l_e.
 $$
 The question is how to interpolate to the edge to obtain $[h_i \phi_i]_e$. Centered advection simply uses the midpoint rule. Upwind takes the value from the upstream cell. Higher order schemes cast a wider stencil to compute the value at this edge. This includes Flux Corrected Transport, used in MPAS-Ocean, and described in [Skamarock and Gassmann 2011](https://journals.ametsoc.org/view/journals/mwre/139/9/mwr-d-10-05056.1.xml).
 
@@ -553,7 +596,7 @@ This test should be conducted as soon as momentum and thickness equations and ti
 
 ### 5.3 Manufactured Solution: full nonlinear shallow water, no tracers
 
-The manufactured solution test provides an exact solution in time for the full nonlinear shallow water equations (momentum and thickness). It tests the time stepping scheme along with the the full advection terms and the SSH gradient.  It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. Error should converge at 2nd order, as shown in [Bishnu et al. 2024](https://doi.org/10.1029/2022MS003545), Section 2.10 and Figures 13 and 19. Also see the manufactured solution test case in Polaris.
+The manufactured solution test provides an exact solution in time for the full nonlinear shallow water equations (momentum and thickness). It tests the time stepping scheme along with the full advection terms and the SSH gradient.  It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. Error should converge at 2nd order, as shown in [Bishnu et al. 2024](https://doi.org/10.1029/2022MS003545), Section 2.10 and Figures 13 and 19. Also see the manufactured solution test case in Polaris.
 
 Requirements for tests are:
 
