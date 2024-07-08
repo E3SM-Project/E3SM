@@ -9,25 +9,21 @@
       
       
       
-        <link rel="prev" href="../user-guide/">
       
       
-        <link rel="next" href="../EAM/">
-      
-      
-      <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.26">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
     
     
       
-        <title>Development - E3SM</title>
+        <title>Generate Land Initial Condition (finidat) - E3SM</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6543a935.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
   
@@ -54,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#development-guide" class="md-skip">
+        <a href="#generate-land-initial-condition-finidat" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +92,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -116,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Development
+              Generate Land Initial Condition (finidat)
             
           </span>
         </div>
@@ -236,7 +232,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -266,7 +262,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -283,8 +279,6 @@
       
   
   
-    
-  
   
   
     
@@ -310,16 +304,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href=".." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -336,7 +330,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             E3SM Basics
@@ -352,7 +346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+      <a href="../../../../installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -373,7 +367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/" class="md-nav__link">
+      <a href="../../../../user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -391,27 +385,82 @@
                 
   
   
+  
+  
     
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+    
       
         
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+          
         
+      
+        
+          
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Development
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding Support for New Grids
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -512,7 +561,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../EAM/" class="md-nav__link ">
+            <a href="../../../../EAM/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -571,7 +620,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../EAM/user-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/user-guide/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -604,7 +653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -646,7 +695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -675,7 +724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/dev-guide/" class="md-nav__link">
+      <a href="../../../../EAM/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -726,6 +775,8 @@
       
         
       
+        
+      
     
     
       
@@ -740,7 +791,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../EAM/tech-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/tech-guide/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -773,7 +824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/homme/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/homme/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -794,7 +845,28 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/p3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Atmosphere Grid Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../EAM/tech-guide/p3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -815,7 +887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/clubb/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/clubb/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -836,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/zm/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/zm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -857,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/rrtmg/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -878,7 +950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/mam/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/mam/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -899,7 +971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/vbs/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/vbs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -920,7 +992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/dust/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/dust/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -941,7 +1013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -962,7 +1034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -983,7 +1055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/cosp/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/cosp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1004,7 +1076,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../EAM/tech-guide/armdiags/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/armdiags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1073,7 +1145,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../ELM/" class="md-nav__link ">
+            <a href="../../../../ELM/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1106,7 +1178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ELM/user-guide/" class="md-nav__link">
+      <a href="../../../../ELM/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1127,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ELM/dev-guide/" class="md-nav__link">
+      <a href="../../../../ELM/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1148,7 +1220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ELM/tech-guide/" class="md-nav__link">
+      <a href="../../../../ELM/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1209,7 +1281,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../MOSART/" class="md-nav__link ">
+            <a href="../../../../MOSART/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1242,7 +1314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MOSART/user-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1263,7 +1335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MOSART/dev-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1284,7 +1356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MOSART/tech-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1345,7 +1417,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../MPAS-Ocean/" class="md-nav__link ">
+            <a href="../../../../MPAS-Ocean/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1378,7 +1450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-Ocean/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1399,7 +1471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-Ocean/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1420,7 +1492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-Ocean/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1483,7 +1555,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../MPAS-seaice/" class="md-nav__link ">
+            <a href="../../../../MPAS-seaice/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1516,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-seaice/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/user-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1537,7 +1609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-seaice/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/tech-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1558,7 +1630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-seaice/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1579,7 +1651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../MPAS-seaice/references/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/references/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1679,7 +1751,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../generate_domain_files/" class="md-nav__link ">
+            <a href="../../../../generate_domain_files/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1847,24 +1919,19 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/development.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/dev-guide/adding-grid-support/adding-grid-support-step-by-step-guide/generate-lnd-initial-condition.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
   
 
 
-<h1 id="development-guide">Development Guide</h1>
-<p>Development of E3SM is carefully planned and tied to goals in the proposals that fund
-work on E3SM.</p>
-<p>Most development occurs within one component and developers should consult the
-relevant component's development guide.</p>
-<p>More information</p>
-<ul>
-<li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/7997024/Development+Big+Picture">Development Big Picture</a></li>
-<li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1868455/Development+Getting+Started+Guide">Getting Started</a></li>
-<li><a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/2523163/Development+Reference">Development Reference</a></li>
-</ul>
+<h1 id="generate-land-initial-condition-finidat">Generate Land Initial Condition (<em>finidat</em>)</h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This page is still under construction</p>
+</div>
+<p>Back to step-by-step guide for <a href="../">Adding Support for New Grids</a></p>
 
 
 
@@ -1917,12 +1984,12 @@ relevant component's development guide.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.ad660dcc.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
-        <script src="../javascript/mathjax.js"></script>
+        <script src="../../../../javascript/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
