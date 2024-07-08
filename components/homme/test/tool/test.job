@@ -11,8 +11,8 @@
 #
 # 
 set TOOLDIR = `pwd`
-set WDIR = ~/scratch1/regtest/homme
-set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
+set WDIR = ~/scratch1/hommetool
+set MACH = $TOOLDIR/../../cmake/machineFiles/anvil.cmake
 set exe = $WDIR/src/tool/homme_tool
 
 
@@ -21,7 +21,20 @@ if (!  -x $exe ) then
   # configure                                                                                                                                         
   set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
   eval $output
-  cmake -C $MACH -DPREQX_PLEV=26 $TOOLDIR/../..
+  cmake -C $MACH -DPREQX_PLEV=26 \
+      $TOOLDIR/../..
+
+#     -DHOMME_ENABLE_COMPOSE=FALSE \
+#     -DHOMME_BUILD_EXECS=FALSE \
+#     -DBUILD_HOMME_TOOL=TRUE \
+
+
+
+#     -DBUILD_HOMME_THETA_KOKKOS=FALSE \
+#     -DBUILD_HOMME_PREQX_KOKKOS=FALSE \
+#-DBUILD_HOMME_WITHOUT_PIOLIBRARY=OFF \
+#-DHOMME_BUILD_EXECS=FALSE \
+
   # compile the tool                                                                                                                                  
   make -j4 homme_tool
   if ( $status ) then
