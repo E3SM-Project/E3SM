@@ -139,6 +139,7 @@ _TESTS = {
         "tests"   : (
             "SMS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmSMS",
             "ERS.ne30pg2_r05_EC30to60E2r2_gis20.IGELM_MLI.elm-gis20kmERS",
+            "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
 
@@ -227,7 +228,7 @@ _TESTS = {
     #atmopheric tests for hi-res
     "e3sm_atm_hi_res" : {
         "time" : "01:30:00",
-        "tests" : "SMS.ne120pg2_r0125_oRRS18to6v3.F2010"
+        "tests" : "SMS.ne120pg2_r025_RRSwISC6to18E3r5.F2010"
         },
 
     #atmopheric tests to mimic low res production runs
@@ -271,7 +272,7 @@ _TESTS = {
         "tests" : (
             "ERS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "PEM_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
-            "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
             )
         },
 
@@ -350,7 +351,7 @@ _TESTS = {
     "e3sm_hi_res" : {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
-            "SMS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.eam-cosplite",
+            "SMS_Ld3.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850.eam-cosplite",
             "SMS.T62_SOwISC12to60E2r4.GMPAS-IAF",
             )
         },
@@ -416,7 +417,6 @@ _TESTS = {
     "fates_elm_developer" : {
         "inherit" : ("fates_elm_debug"),
         "tests" : (
-            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_sizeagemort",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
@@ -438,6 +438,7 @@ _TESTS = {
     "fates" : {
         "inherit" : ("fates_long_tests", "fates_elm_developer"),
         "tests" : (
+            "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
             "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
@@ -521,38 +522,38 @@ _TESTS = {
         "share"    : True,
         "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P2560.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P2792.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P3072.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P3200.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P4096.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P4800.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P5120.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P5200.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P5584.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P6400.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P7200.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P8192.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P9600.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P11168.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P12000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P12800.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P16000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P16384.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P19200.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P21600.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P22400.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P24000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P25600.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P26000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P28000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P28800.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P30000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P32000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P36000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P48000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P64000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P96000.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P2560.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P2792.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P3072.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P3200.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P4096.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P4800.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P5120.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P5200.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P5584.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P6400.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P7200.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P8192.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P9600.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P11168.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P12000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P12800.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P16000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P16384.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P19200.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P21600.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P22400.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P24000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P25600.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P26000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P28000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P28800.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P30000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P32000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P36000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P48000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P64000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P96000.T62_RRSwISC6to18E3r5.GMPAS-IAF.bench-gmpas_noio",
                  )
     },
     "e3sm_bench_hires_f" : {
@@ -573,9 +574,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "03:00:00",
         "tests"   : (
-                 "PFS_PS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PM.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PL.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PS.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PM.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PL.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1950.bench-wcycl-hires",
                  )
     },
     "e3sm_bench_lores_g" : {
@@ -722,6 +723,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-aci",
         )
     },
 

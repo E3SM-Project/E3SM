@@ -7736,9 +7736,11 @@ contains
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_cpools_sourcesink(i,j,k) = value_column
+             this%decomp_cpools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
+  
     ! pflotran
     if(nstep_mod == 0 .or. is_first_restart_step()) then 
       do k = 1, ndecomp_pools
@@ -7776,8 +7778,8 @@ contains
        this%er(i)                        = value_column
        this%som_c_leached(i)             = value_column
        this%somc_yield(i)                = value_column
-       this%somhr(i)                     = value_column ! REVISIT
-       this%lithr(i)                     = value_column ! REVISIT
+       this%somhr(i)                     = value_column 
+       this%lithr(i)                     = value_column 
        this%hr(i)                        = value_column
        this%cinputs(i)                   = value_column
        this%coutputs(i)                  = value_column
@@ -7785,6 +7787,8 @@ contains
        this%litterc_loss(i)              = value_column
        
        this%nee(i)                       = value_column
+       this%er(i)                        = value_column  
+       this%som_c_leached(i)             = value_column  
 
        ! Zero p2c column fluxes
        this%rr(i)                    = value_column
@@ -7804,36 +7808,26 @@ contains
          this%somc_fire(i)                 = value_column
          this%product_closs(i)             = value_column
          this%sr(i)                        = value_column
-         this%er(i)                        = value_column
          this%litfire(i)                   = value_column
          this%somfire(i)                   = value_column
          this%totfire(i)                   = value_column
          this%nep(i)                       = value_column
          this%nbp(i)                       = value_column
-         this%fire_closs(i)                = value_column
          this%cwdc_loss(i)                 = value_column
-         this%som_c_leached(i)             = value_column
          this%somc_erode(i)                = value_column
          this%somc_deposit(i)              = value_column
          this%somc_yield(i)                = value_column
       enddo 
     end if 
-      do k = 1, ndecomp_pools
-         do fi = 1,num_column
-            i = filter_column(fi)
-            this%decomp_cpools_leached(i,k) = value_column
-            this%decomp_cpools_erode(i,k) = value_column
-            this%decomp_cpools_deposit(i,k) = value_column
-          end do 
+    
+    do k = 1, ndecomp_pools
+      do fi = 1,num_column
+        i = filter_column(fi)
+        this%decomp_cpools_leached(i,k) = value_column
+        this%decomp_cpools_erode(i,k) = value_column
+        this%decomp_cpools_deposit(i,k) = value_column
       end do 
-      do k = 1, ndecomp_pools
-         do j = 1, nlevdecomp_full
-            do fi = 1,num_column
-               i = filter_column(fi)
-               this%decomp_cpools_transport_tendency(i,j,k) = value_column
-            end do
-         end do
-      end do
+    end do 
 
   end subroutine col_cf_setvalues
 

@@ -1,123 +1,240 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "share/field/field_tag.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "scream_scorpio_types.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat/ekat_assert.hpp>
 
+#include <string>
 #include <vector>
 
-/* C++/F90 bridge to F90 SCORPIO routines */
+/*
+ * This file contains interfaces to scorpio C library routines
+ * 
+ * There are two reasons for these interfaces:
+ * 
+ * - allow better context when exceptions/errors occour: throwing exceptions
+ *   can even allow host code to use try-catch blocks to figure out what works.
+ *   Moreover, the user does not need to continuously check return codes, since
+ *   we throw any time scorpio returns something different from PIO_NOERR.
+ * - allow using simpler interfaces: by using string/vector and templates,
+ *   the host code can have more compact interfaces.
+ *
+ * Most of the "get" interfaces can open a file in read mode on the fly.
+ * This allows easier usage from the user point of view, but has some drawbacks:
+ *  - the file is open/closed every time you query it
+ *  - the file is open with default IOType
+ * If you need to do several queries, you should consider registering the file manually
+ * before doing any query, and release it once you are done.
+ */
 
 namespace scream {
 namespace scorpio {
 
-  using offset_t = std::int64_t;
+inline std::string default_time_name () { return "time"; }
 
-  // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
-  // in the scream_scorpio_interface F90 module
-  enum FileMode {
-    Read = 1,
-    Append = 2,
-    Write = 4
-  };
-  /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
-  void eam_init_pio_subsystem(const ekat::Comm& comm);
-  void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
-  /* Cleanup scorpio with pio_finalize */
-  void eam_pio_finalize();
-  /* Close a file currently open in scorpio */
-  void eam_pio_closefile(const std::string& filename);
-  void eam_flush_file(const std::string& filename);
-  /* Register a new file to be used for input/output with the scorpio module */
-  void register_file(const std::string& filename, const FileMode mode);
-  /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
-  int get_dimlen(const std::string& filename, const std::string& dimname);
-  bool has_dim(const std::string& filename, const std::string& dimname);
-  bool has_variable (const std::string& filename, const std::string& varname);
-  bool has_attribute (const std::string& filename, const std::string& attname);
-  bool has_attribute (const std::string& filename, const std::string& varname, const std::string& attname);
-  void set_decomp(const std::string& filename);
-  /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
-  void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
-  /* Register a dimension coordinate with a file. Called during the file setup. */
-  void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length, const bool partitioned);
-  /* Register a variable with a file.  Called during the file setup, for an output stream. */
-  void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
-                         const std::string& units, const std::vector<std::string>& var_dimensions,
-                         const std::string& dtype, const std::string& nc_dtype, const std::string& pio_decomp_tag);
-  void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
-                         const std::vector<std::string>& var_dimensions,
-                         const std::string& dtype, const std::string& pio_decomp_tag);
-  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
-  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const float meta_val);
-  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const double meta_val);
-  void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, float& meta_val);
-  void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, double& meta_val);
-  void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, std::string& meta_val);
-  /* Register a variable with a file.  Called during the file setup, for an input stream. */
-  ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
-  ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name);
-  void set_any_attribute (const std::string& filename, const std::string& att_name, const ekat::any& att);
-  /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
-   * Mandatory before writing or reading can happend on file. */
-  void eam_pio_enddef(const std::string &filename);
-  void eam_pio_redef(const std::string &filename);
-  /* Called each timestep to update the timesnap for the last written output. */
-  void pio_update_time(const std::string &filename, const double time);
+// Handles aliases for same type:
+//  single -> float
+//  float  -> float
+//  double -> double
+//  real   -> float or double (depending on SCREAM_DOUBLE_PRECISION)
+std::string refine_dtype (const std::string& dtype);
 
-  // Read data for a specific variable from a specific file. To read data that
-  // isn't associated with a time index, or to read data at the most recent
-  // time, set time_index to -1. Otherwise use the proper zero-based time index.
-  template<typename T>
-  void grid_read_data_array (const std::string &filename, const std::string &varname,
-                             const int time_index, T* hbuf, const int buf_size);
-  /* Write data for a specific variable to a specific file. */
-  template<typename T>
-  void grid_write_data_array(const std::string &filename, const std::string &varname,
-                             const T* hbuf, const int buf_size);
-
-  template<typename T>
-  T get_attribute (const std::string& filename, const std::string& att_name)
-  {
-    auto att = get_any_attribute(filename,att_name);
-    return ekat::any_cast<T>(att);
+template<typename T>
+std::string get_dtype () {
+  using raw_t = typename std::remove_cv<T>::type;
+  std::string s;
+  if constexpr (std::is_same<raw_t,int>::value) {
+    s = "int";
+  } else if constexpr (std::is_same<raw_t,float>::value) {
+    s = "float";
+  } else if constexpr (std::is_same<raw_t,double>::value) {
+    s = "double";
+  } else if constexpr (std::is_integral<raw_t>::value &&
+              std::is_signed<raw_t>::value &&
+              sizeof(raw_t)==sizeof(long long)) {
+    s = "int64";
+  } else if constexpr (std::is_same<raw_t,char>::value) {
+    s = "char";
+  } else {
+    EKAT_ERROR_MSG ("Error! Invalid/unsupported data type.\n");
   }
+  return s;
+}
 
-  template<typename T>
-  void set_attribute (const std::string& filename, const std::string& att_name, const T& att)
-  {
-    ekat::any a(att);
-    set_any_attribute(filename,att_name,a);
-  }
+// =================== Global operations ================= //
 
-  // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
-  void write_timestamp (const std::string& filename, const std::string& ts_name,
-                        const util::TimeStamp& ts, const bool write_nsteps = false);
-  util::TimeStamp read_timestamp (const std::string& filename,
-                                  const std::string& ts_name,
-                                  const bool read_nsteps = false);
+void init_subsystem(const ekat::Comm& comm, const int atm_id = 0);
+bool is_subsystem_inited ();
+void finalize_subsystem ();
 
-extern "C" {
-  /* Query whether the pio subsystem is inited or not */
-  bool is_eam_pio_subsystem_inited();
-  /* Checks if a file is already open, with the given mode */
-  int get_file_ncid_c2f(const char*&& filename);
-  // If mode<0, then simply checks if file is open, regardless of mode
-  bool is_file_open_c2f(const char*&& filename, const int& mode);
-  /* Query a netCDF file for the time variable */
-  bool is_enddef_c2f(const char*&& filename);
-  double read_time_at_index_c2f(const char*&& filename, const int& time_index);
-  double read_curr_time_c2f(const char*&& filename);
-  /* Query a netCDF file for the metadata associated w/ a variable */
-  float get_variable_metadata_float_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
-  double get_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
-} // extern "C"
+// =================== File operations ================= //
+
+// Opens a file, returns const handle to it (useful for Read mode, to get dims/vars)
+void register_file(const std::string& filename, const FileMode mode, const IOType iotype = IOType::DefaultIOType);
+
+// Release a file (if in Write mode, sync and close the file);
+void release_file  (const std::string& filename);
+
+// Check if file is open. If mode!=Unset, also checks that it's open with given mode
+bool is_file_open (const std::string& filename, const FileMode mode = Unset);
+
+// Force a flush to file (for Write mode only)
+void flush_file (const std::string &filename);
+
+// Reopen/ends the definition phase
+void redef (const std::string &filename);
+void enddef (const std::string &filename);
+
+// =================== Dimensions operations ======================= //
+
+// Define dim on output file (cannot call on Read/Append files)
+void define_dim (const std::string& filename, const std::string& dimname, const int length);
+
+// Check that the given dimension is in the file. If length>0, also check that the length is as expected.
+bool has_dim (const std::string& filename,
+              const std::string& dimname,
+              const int length = -1);
+
+int get_dimlen (const std::string& filename, const std::string& dimname);
+int get_dimlen_local (const std::string& filename, const std::string& dimname);
+
+// Checks if the dimension is unlimited
+bool is_dim_unlimited (const std::string& filename,
+                       const std::string& dimname);
+
+// Get len/name of the time dimension (i.e., the unlimited one)
+// NOTE: these throw if time dim is not present. Use has_dim to check first.
+int get_time_len (const std::string& filename);
+std::string get_time_name (const std::string& filename);
+
+// =================== Decompositions operations ==================== //
+
+// Create a decomposition along a particular dimension
+// Notes:
+// - we declare a decomposition along a single dimension.
+// - set_dim_decomp requires *offsets* in the global array, not global indices
+//   (for 0-based indices, they're the same, but for 1-based indices they're not)
+// - the second version is a shortcut for contiguous decompositions. Notice that NO
+//   check is performed to ensure that the decomposition covers the entire dimension,
+//   or that there are no overlaps (in fact, one *may* need overlap, in certain reads).
+// - the third version is a shortcut of the second, where we compute start/count based
+//   on a linear decomposition of the dimension along all ranks in the IO comm stored
+//   in the ScorpioInstance. The return value is the local length of the dimension
+// - if allow_reset=true, we simply reset the decomposition (if present).
+// - if allow_reset=false, if a decomposition for this dim is already set, we error out
+
+void set_dim_decomp (const std::string& filename,
+                     const std::string& dimname,
+                     const std::vector<offset_t>& my_offsets,
+                     const bool allow_reset = false);
+
+void set_dim_decomp (const std::string& filename,
+                     const std::string& dimname,
+                     const offset_t start, const offset_t count,
+                     const bool allow_reset = false);
+
+void set_dim_decomp (const std::string& filename,
+                     const std::string& dimname,
+                     const bool allow_reset = false);
+
+// ================== Variable operations ================== //
+
+// Define var on output file (cannot call on Read/Append files)
+void define_var (const std::string& filename, const std::string& varname,
+                 const std::string& units, const std::vector<std::string>& dimensions,
+                 const std::string& dtype, const std::string& nc_dtype,
+                 const bool time_dependent = false);
+
+// Shortcut when units are not used, and dtype==nc_dtype
+void define_var (const std::string& filename, const std::string& varname,
+                 const std::vector<std::string>& dimensions,
+                 const std::string& dtype,
+                 const bool time_dependent = false);
+
+// This is useful when reading data sets. E.g., if the pio file is storing
+// a var as float, but we need to read it as double, we need to call this.
+// NOTE: read_var/write_var automatically change the dtype if the input
+//       pointer type does not match the var dtype. However, changing dtype
+//       forces a rebuild of the var decomp (if any). Hence, if you know
+//       the var WILL be read/written as decomposed, you should call this method
+//       BEFORE calling set_dim_decomp, so that the decomp is built directly
+//       with the correct data type (PIO decomps depend on var dtype).
+void change_var_dtype (const std::string& filename,
+                       const std::string& varname,
+                       const std::string& dtype);
+
+// Check that the given variable is in the file.
+bool has_var (const std::string& filename, const std::string& varname);
+
+// Allows to easily query var metadata, such as dims, units, data type,...
+const PIOVar& get_var (const std::string& filename,
+                       const std::string& varname);
+
+// Defines both a time dimension and a time variable
+void define_time (const std::string& filename, const std::string& units,
+                  const std::string& time_name = default_time_name());
+
+// When we read a file, and there is a "time" dimension that is FIXED rather than UNLIMITED,
+// we may have some issues with our read/write logics. Hence, we can use mark a dimension
+// as if it was the UNLIMITED time dim.
+void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname);
+
+// Update value of time variable, increasing time dim length
+void update_time(const std::string &filename, const double time);
+
+// Retrieves the time variable value(s)
+double get_time (const std::string& filename, const int time_index = -1);
+std::vector<double> get_all_times (const std::string& filename);
+
+// Read variable into user provided buffer.
+// If time dim is present, read given time slice (time_index=-1 means "read last record).
+// If time dim is not present and time_index>=0, it is interpreted as the index of the
+// first dimension (which is not unlimited).
+// NOTE: ETI in the cpp file for int, float, double.
+template<typename T>
+void read_var (const std::string &filename, const std::string &varname, T* buf, const int time_index = -1);
+
+// Write data from user provided buffer into the requested variable
+// NOTE: ETI in the cpp file for int, float, double.
+template<typename T>
+void write_var (const std::string &filename, const std::string &varname, const T* buf, const T* fillValue = nullptr);
+
+// =============== Attributes operations ================== //
+
+// To specify GLOBAL attributes, pass "GLOBAL" as varname
+// NOTE: set/get_attribute are implemented in the cpp file,
+//       with Explicit Instantiation only for:
+//         int, std::int64_t, float, double, std::string
+
+bool has_attribute (const std::string& filename,
+                    const std::string& varname,
+                    const std::string& attname);
+
+template<typename T>
+T get_attribute (const std::string& filename,
+                 const std::string& varname,
+                 const std::string& attname);
+
+template<typename T>
+void set_attribute (const std::string& filename,
+                    const std::string& varname,
+                    const std::string& attname,
+                    const T& att);
+
+// Shortcut, to allow calling set_attribute with compile-time strings, like so
+//   set_attribute(my_file,my_var,my_att_name,"my_value");
+template<int N>
+inline void set_attribute (const std::string& filename,
+                    const std::string& varname,
+                    const std::string& attname,
+                    const char (&att)[N])
+{
+  set_attribute<std::string>(filename,varname,attname,att);
+}
 
 } // namespace scorpio
 } // namespace scream
 
-#endif // define SCREAM_SCORPIO_INTERFACE_HPP
+#endif // define SCREAM_SCORPIO_INTERFACE_HPP 

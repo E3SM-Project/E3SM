@@ -110,26 +110,25 @@ constexpr int tens_dim2 = 4;
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
 {
   const auto u = ekat::units::Units::nondimensional();
-  const auto CMP = ShortFieldTagsNames::CMP;
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,vec_dim),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
     case LayoutType::Tensor2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({CMP,CMP},{tens_dim1,tens_dim2}),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,CMP,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{CMP,CMP},{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -162,7 +161,7 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;
@@ -237,22 +236,15 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"n_a", "n_a", ngdofs_src, true);
-  scorpio::register_dimension(filename,"n_b", "n_b", ngdofs_tgt, true);
-  scorpio::register_dimension(filename,"n_s", "n_s", nnz, true);
+  scorpio::define_dim(filename,"n_a", ngdofs_src);
+  scorpio::define_dim(filename,"n_b", ngdofs_tgt);
+  scorpio::define_dim(filename,"n_s", nnz);
 
-  scorpio::register_variable(filename,"col","col","none",{"n_s"},"int","int","int-nnz");
-  scorpio::register_variable(filename,"row","row","none",{"n_s"},"int","int","int-nnz");
-  scorpio::register_variable(filename,"S","S","none",{"n_s"},"double","double","Real-nnz");
+  scorpio::define_var(filename,"col",{"n_s"},"int");
+  scorpio::define_var(filename,"row",{"n_s"},"int");
+  scorpio::define_var(filename,"S"  ,{"n_s"},"double");
 
-  std::vector<scorpio::offset_t> dofs(nnz);
-  std::iota(dofs.begin(),dofs.end(),0);
-
-  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
-  
-  scorpio::eam_pio_enddef(filename);
+  scorpio::enddef(filename);
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz,0.5);
@@ -263,11 +255,11 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
     col[2*i+1] = i+1;
   }
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),nnz);
-  scorpio::grid_write_data_array(filename,"col",col.data(),nnz);
-  scorpio::grid_write_data_array(filename,"S",    S.data(),nnz);
+  scorpio::write_var(filename,"row",row.data());
+  scorpio::write_var(filename,"col",col.data());
+  scorpio::write_var(filename,"S",    S.data());
 
-  scorpio::eam_pio_closefile(filename);
+  scorpio::release_file(filename);
 }
 
 TEST_CASE("coarsening_remap")
@@ -289,8 +281,7 @@ TEST_CASE("coarsening_remap")
   root_print (" |   Testing coarsening remapper   |\n",comm);
   root_print (" +---------------------------------+\n\n",comm);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
   auto engine = setup_random_test (&comm);
 
   // -------------------------------------- //
@@ -377,12 +368,12 @@ TEST_CASE("coarsening_remap")
       auto gtgt = all_gather_field(tgt_f[ifield],comm);
 
       const auto& l = gsrc.get_header().get_identifier().get_layout();
-      const auto ls = to_string(l);
+      const auto ls = l.to_string();
       std::string dots (30-ls.size(),'.');
-      auto msg = "   -> Checking field with layout " + to_string(l) + " " + dots;
+      auto msg = "   -> Checking field with layout " + ls + " " + dots;
       root_print (msg + "\n",comm);
       bool ok = true;
-      switch (get_layout_type(l.tags())) {
+      switch (l.type()) {
         case LayoutType::Scalar2D:
         {
           const auto v_src = gsrc.get_view<const Real*,Host>();
@@ -508,7 +499,7 @@ TEST_CASE("coarsening_remap")
   }
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream
