@@ -20,8 +20,8 @@ SET(HOMME_USE_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
-set(KOKKOS_HOME "/home/onguba/kokkos-build/apr03-2024-aot/install" CACHE STRING "")
-#set(KOKKOS_HOME "/home/onguba/kokkos-build/bld-june14-layout/install" CACHE STRING "")
+#set(KOKKOS_HOME "/home/onguba/kokkos-build/apr03-2024-aot/install" CACHE STRING "")
+set(KOKKOS_HOME "/home/onguba/kokkos-build/june22-2024-aot/install" CACHE STRING "")
 set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
@@ -40,7 +40,7 @@ SET(SYCL_LINK_FLAGS "-fsycl-max-parallel-link-jobs=32 -fsycl-link-huge-device-co
 
 #-fpscomp does not actually solve the issue with bools in here,another suggestion was -fp-model=precise, not working either
 SET(ADD_Fortran_FLAGS " -fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
-SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")
+SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "") 
 
 SET(ADD_CXX_FLAGS " -std=c++17 -O3 -DNDEBUG ${SYCL_COMPILE_FLAGS}" CACHE STRING "")
 SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "")
