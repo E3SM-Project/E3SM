@@ -706,7 +706,7 @@
 					description="The length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_sgr_flux_vertical_location" type="character" default_value="uniform"
+		<nml_option name="config_sgr_flux_vertical_location" type="character" default_value="bottom"
 					description="Selects the vertical location where subglacial runoff is fluxed."
 					possible_values="'top','uniform', 'bottom'"
 		/>
