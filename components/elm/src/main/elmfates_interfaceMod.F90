@@ -798,8 +798,9 @@ contains
       end if
 
       ! Retrieve the landuse x pft static data if the optional switch has been set
-      if (use_fates_fixed_biogeog .and. use_fates_luh) call GetLandusePFTData(bounds_proc, flandusepftdat, &
-                                                            landuse_pft_map, landuse_bareground)
+      if (use_fates_fixed_biogeog .and. use_fates_luh) then
+         call GetLandusePFTData(bounds_proc, flandusepftdat, landuse_pft_map, landuse_bareground)
+      end if
 
       nclumps = get_proc_clumps()
 
