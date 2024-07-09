@@ -16,27 +16,6 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  std::string nname = "Obukhov_length";
-  if(params.isParameter(nname))
-     parameters_.Obukhov_length_ = params.get<Real>(nname);
-  nname = "surface_friction_velocty";
-  if(params.isParameter(nname))
-     parameters_.surface_friction_velocty_ = params.get<Real>(nname);
-  nname = "land_fraction";
-  if(params.isParameter(nname))
-     parameters_.land_fraction_ = params.get<Real>(nname);
-  nname = "ice_fraction";
-  if(params.isParameter(nname))
-     parameters_.ice_fraction_ = params.get<Real>(nname);
-  nname = "ocean_fraction";
-  if(params.isParameter(nname))
-     parameters_.ocean_fraction_ = params.get<Real>(nname);
-  nname = "friction_velocity";
-  if(params.isParameter(nname))
-     parameters_.friction_velocity_ = params.get<Real>(nname);
-  nname = "aerodynamical_resistance";
-  if(params.isParameter(nname))
-     parameters_.aerodynamical_resistance_ = params.get<Real>(nname);
 }
 
 // =========================================================================================
@@ -79,14 +58,16 @@ void MAMDryDep::set_grids(
   // Layout for tracers.
   const int pcnst = mam4::aero_model::pcnst;
   FieldLayout scalar4d_layout_q{
-      {COL, LEV, NMODES}, {ncol_, nlev_, pcnst}};  
+      {COL, LEV, CMP}, {ncol_, nlev_, pcnst}};  
   FieldLayout scalar4d_layout_qqcw_tends{
-      {COL, NMODES, LEV}, {ncol_, pcnst, nlev_}};  
+      {COL, CMP, LEV}, {ncol_, pcnst, nlev_}};  
 
-  // Memory to format teh wet_aero.int_aero_nmr and wet_aero.int_aero_mmr
+  // Tempary memory to format the wet_aero.int_aero_nmr and wet_aero.int_aero_mmr
   // views into the order expected by mam4xx.
   add_field<Computed>("qtracers", scalar4d_layout_q, kg / kg, grid_name);
   add_field<Computed>("d_qtracers_dt", scalar4d_layout_q, kg / kg / s, grid_name);
+
+
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_layout_mid,  1/(m*m)/s, grid_name); 
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
@@ -114,23 +95,21 @@ void MAMDryDep::set_grids(
                      "tracers");  // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // ice number mixing ratio
-
-  add_field<Updated>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
+				   //
   add_field<Updated>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
+  add_field<Updated>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
 
   // TODO: The following are not used by drydep but to create a dry atmosphere object. 
   add_field<Required>("pbl_height", scalar2d_layout, m, grid_name); // planetary boundary layer height
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
-									      //
-  // TODO: Currently the following are scalar parameters that are fixed
-  // for the whole grid. Do these need to be column specific?
-  // add_field<Required>("obklen", scalar2d_layout, m, grid_name);
-  // add_field<Required>("surfric", scalar2d_layout, m / s, grid_name);
-  // add_field<Required>("landfrac", scalar2d_layout, nondim, grid_name);
-  // add_field<Required>("icefrac", scalar2d_layout, nondim, grid_name);
-  // add_field<Required>("ocnfrac", scalar2d_layout, nondim, grid_name);
-  // add_field<Required>("fv", scalar2d_layout, m / s, grid_name);
-  // add_field<Required>("ram1", scalar2d_layout, s / m, grid_name);
+									   
+  add_field<Required>("Obukhov_length", scalar2d_layout, m, grid_name);
+  add_field<Required>("surface_friction_velocty", scalar2d_layout, m / s, grid_name);
+  add_field<Required>("land_fraction", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("ice_fraction", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("ocean_fraction", scalar2d_layout, nondim, grid_name);
+  add_field<Required>("friction_velocity", scalar2d_layout, m / s, grid_name);
+  add_field<Required>("aerodynamical_resistance", scalar2d_layout, s / m, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -212,6 +191,15 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+
+  obklen_   = get_field_in("Obukhov_length").get_view<const Real*>();
+  surfric_  = get_field_in("surface_friction_velocty").get_view<const Real*>();
+  landfrac_ = get_field_in("land_fraction").get_view<const Real*>();
+  icefrac_  = get_field_in("ice_fraction").get_view<const Real*>();
+  ocnfrac_  = get_field_in("ocean_fraction").get_view<const Real*>();
+  friction_velocity_       = get_field_in("friction_velocity").get_view<const Real*>();
+  aerodynamical_resistance_     = get_field_in("aerodynamical_resistance").get_view<const Real*>();
+
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.z_mid = buffer_.z_mid;
   dry_atm_.z_iface = buffer_.z_iface;
@@ -227,8 +215,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
   wet_dens_ = get_field_out("wetdens").get_view<Real ***>();
 
-  qtracers_  = get_field_out("qtracers").get_view<Real***>();
-  d_qtracers_dt_  = get_field_out("d_qtracers_dt").get_view<Real***>();
+  qtracers_      = get_field_out("qtracers").get_view<Real***>();
+  d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real***>();
+
   aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols").get_view<Real**>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols").get_view<Real**>();
   tendencies_ = get_field_out("Tendencies").get_view<Real***>();
@@ -282,11 +271,17 @@ namespace {
 KOKKOS_INLINE_FUNCTION
 void compute_tendencies(
     const MAMDryDep::KT::MemberType &team, 
-    const MAMDryDep::Parameters &parameters,
     const mam4::DryDeposition &dry_deposition,
     const double dt,
-    MAMDryDep::view_3d qtracers,
-    MAMDryDep::view_3d d_qtracers_dt,
+    const MAMDryDep::const_view_1d obklen,
+    const MAMDryDep::const_view_1d surfric,
+    const MAMDryDep::const_view_1d landfrac,
+    const MAMDryDep::const_view_1d icefrac,
+    const MAMDryDep::const_view_1d ocnfrac,
+    const MAMDryDep::const_view_1d friction_velocity,
+    const MAMDryDep::const_view_1d aerodynamical_resistance,
+    const MAMDryDep::view_3d qtracers,
+    const MAMDryDep::view_3d d_qtracers_dt,
     const MAMDryDep::view_2d dgncur_awet[mam_coupling::num_aero_modes()],
     const MAMDryDep::view_2d wet_dens[mam_coupling::num_aero_modes()],
     const mam_coupling::DryAtmosphere &dry_atm,
@@ -317,13 +312,14 @@ void compute_tendencies(
   for (int i=0; i<num_aero_modes; ++i)
     diags.wet_density[i] = ekat::subview(wet_dens[i], icol);
 
-  diags.Obukhov_length              =  parameters.Obukhov_length_;
-  diags.surface_friction_velocty    =  parameters.surface_friction_velocty_;
-  diags.land_fraction               =  parameters.land_fraction_;
-  diags.ice_fraction                =  parameters.ice_fraction_;
-  diags.ocean_fraction              =  parameters.ocean_fraction_;
-  diags.friction_velocity           =  parameters.friction_velocity_;
-  diags.aerodynamical_resistance    =  parameters.aerodynamical_resistance_;
+  diags.Obukhov_length              =  obklen[icol];
+  diags.surface_friction_velocty    =  surfric[icol];
+  diags.land_fraction               =  landfrac[icol];
+  diags.ice_fraction                =  icefrac[icol];
+  diags.ocean_fraction              =  ocnfrac[icol];
+  diags.friction_velocity           =  friction_velocity[icol];
+  diags.aerodynamical_resistance    =  aerodynamical_resistance[icol];
+
   diags.deposition_flux_of_cloud_borne_aerosols   = ekat::subview(aerdepdrycw, icol);
   diags.deposition_flux_of_interstitial_aerosols  = ekat::subview(aerdepdryis, icol);
 
@@ -343,9 +339,15 @@ void compute_tendencies(
 void compute_tendencies(
     const int ncol, 
     const int nlev,
-    const MAMDryDep::Parameters parameters,
     const mam4::DryDeposition dry_deposition,
     const double dt,
+    const MAMDryDep::const_view_1d obklen,
+    const MAMDryDep::const_view_1d surfric,
+    const MAMDryDep::const_view_1d landfrac,
+    const MAMDryDep::const_view_1d icefrac,
+    const MAMDryDep::const_view_1d ocnfrac,
+    const MAMDryDep::const_view_1d friction_velocity,
+    const MAMDryDep::const_view_1d aerodynamical_resistance,
     MAMDryDep::view_3d qtracers,
     MAMDryDep::view_3d d_qtracers_dt,
     const MAMDryDep::view_3d dgncur_awet_,
@@ -369,7 +371,9 @@ void compute_tendencies(
     for (int i=0; i<num_aero_modes; ++i)
       wet_dens[i] = ekat::subview(wet_dens_, i);
 
-    compute_tendencies(team, parameters, dry_deposition, dt, qtracers, d_qtracers_dt, 
+    compute_tendencies(team, dry_deposition, dt, 
+      obklen, surfric, landfrac, icefrac, ocnfrac, friction_velocity, aerodynamical_resistance,
+      qtracers, d_qtracers_dt, 
       dgncur_awet, wet_dens, dry_atm, dry_aero, wet_aero, aerdepdrycw, aerdepdryis, tendencies);
   });
 }
@@ -438,7 +442,9 @@ void MAMDryDep::run_impl(const double dt) {
   fill_tracer_views(ncol_, nlev_, dry_atm_, dry_aero_, wet_aero_, qtracers_);
   Kokkos::fence();
 
-  compute_tendencies(ncol_, nlev_, parameters_, dry_deposition, dt, qtracers_, d_qtracers_dt_, 
+  compute_tendencies(ncol_, nlev_, dry_deposition, dt, 
+    obklen_, surfric_, landfrac_, icefrac_, ocnfrac_, friction_velocity_, aerodynamical_resistance_,
+    qtracers_, d_qtracers_dt_, 
     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_, aerdepdrycw_, aerdepdryis_, tendencies_);
   Kokkos::fence();
 }
