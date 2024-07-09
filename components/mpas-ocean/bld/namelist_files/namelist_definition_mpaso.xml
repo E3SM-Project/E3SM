@@ -1188,6 +1188,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_flux_attenuation_coefficient_subglacial_runoff" type="real"
+	category="forcing" group="forcing">
+The length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- coupling -->
 

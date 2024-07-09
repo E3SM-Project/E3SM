@@ -224,6 +224,7 @@ add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
+add_default($nl, 'config_flux_attenuation_coefficient_subglacial_runoff');
 
 ############################
 # Namelist group: coupling #

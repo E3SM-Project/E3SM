@@ -88,6 +88,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-JRA1p5-DIB-PISMF-DSGR</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDDSGR_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p5-DIB-DISMF</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBDISMFDATMFORCED_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
   </compset>
@@ -95,6 +100,11 @@
   <compset>
     <alias>GMPAS-JRA1p5-DIB-PISMF-TMIX</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDTMIX_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p5-DIB-DISMF-DSGR</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBDISMFDATMFORCEDDSGR_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
