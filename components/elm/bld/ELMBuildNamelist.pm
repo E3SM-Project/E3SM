@@ -808,12 +808,14 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "fates_spitfire_mode",
+      my @list  = (  "flandusepftdat",
+                     "fluh_timeseries",
                      "fates_harvest_mode",
                      "fates_history_dimlevel",
                      "fates_inventory_ctrl_filename",
+		     "fates_parteh_mode",
                      "fates_seeddisp_cadence",
-                     "use_century_decomp",
+                     "fates_spitfire_mode",
                      "use_fates_cohort_age_tracking",
                      "use_fates_ed_st3",
                      "use_fates_ed_prescribed_phys",
@@ -822,14 +824,13 @@ sub setup_cmdl_fates_mode {
                      "use_fates_luh",
                      "use_fates_lupft",
                      "use_fates_nocomp",
-                     "use_fates_parteh_mode",
                      "use_fates_planthydro",
                      "use_fates_potentialveg",
                      "use_fates_sp",
                      "use_fates_tree_damage",
+                     "use_century_decomp",
                      "use_snicar_ad",
-                     "use_vertsoilc",
-                     "fluh_timeseries");
+                     "use_vertsoilc");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -3403,24 +3404,30 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flandusepftdat',  'phys'=>$nl_flags->{'phys'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_harvest_mode',           'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_history_dimlevel',       'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_inventory_ctrl_filename','use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_parteh_mode',            'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_seeddisp_cadence',       'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_cohort_age_tracking','use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_st3',             'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_prescribed_phys', 'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_inventory_init',     'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_planthydro',         'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh',                'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_lupft',              'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_potentialveg',       'use_fates'=>$nl_flags->{'use_fates'});
+
+    my @list  = (  "fates_harvest_mode",
+                   "fates_history_dimlevel",
+                   "fates_inventory_ctrl_filename",
+		   "fates_parteh_mode",
+                   "fates_seeddisp_cadence",
+                   "fates_spitfire_mode",
+                   "use_fates_cohort_age_tracking",
+                   "use_fates_ed_st3",
+                   "use_fates_ed_prescribed_phys",
+                   "use_fates_fixed_biogeog",
+                   "use_fates_inventory_init",
+                   "use_fates_luh",
+                   "use_fates_lupft",
+                   "use_fates_nocomp",
+                   "use_fates_planthydro",
+                   "use_fates_potentialveg",
+                   "use_fates_sp",
+                   "use_fates_tree_damage");
+
+    foreach my $var (@list) {
+       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                              'use_fates_sp'=>$nl_flags->{'use_fates_sp'} );
+    }
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
