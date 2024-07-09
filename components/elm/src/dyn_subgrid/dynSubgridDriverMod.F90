@@ -77,7 +77,7 @@ contains
     use dynHarvestMod            , only : dynHarvest_init
     use dynpftFileMod            , only : dynpft_interp
     use elm_varctl               , only : fates_harvest_mode
-    use dynFATESLandUseChangeMod , only : fates_harvest_clmlanduse
+    use dynFATESLandUseChangeMod , only : fates_harvest_hlmlanduse
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -105,7 +105,7 @@ contains
     end if
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
-    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_clmlanduse) then
+    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
        call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
     end if
 
@@ -167,7 +167,7 @@ contains
     use dynHarvestMod        , only : dynHarvest_interp_harvest_types
 
     use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
-    use dynFATESLandUseChangeMod , only : fates_harvest_clmlanduse
+    use dynFATESLandUseChangeMod , only : fates_harvest_hlmlanduse
 
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
@@ -248,7 +248,7 @@ contains
        call dyncrop_interp(bounds_proc,crop_vars)
     end if
 
-    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_clmlanduse) then
+    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
        call dynHarvest_interp_harvest_types(bounds_proc)
     end if
 

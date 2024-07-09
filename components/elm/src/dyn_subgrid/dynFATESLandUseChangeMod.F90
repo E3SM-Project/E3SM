@@ -32,7 +32,7 @@ module dynFATESLandUseChangeMod
   ! Define the fates landuse namelist mode switch values
   character(len=18), public, parameter    :: fates_harvest_no_logging   = 'no_harvest'
   character(len=18), public, parameter    :: fates_harvest_logging_only = 'event_code'
-  character(len=18), public, parameter    :: fates_harvest_clmlanduse   = 'landuse_timeseries'
+  character(len=18), public, parameter    :: fates_harvest_hlmlanduse   = 'landuse_timeseries'
   character(len=18), public, parameter    :: fates_harvest_luh_area     = 'luhdata_area'
   character(len=18), public, parameter    :: fates_harvest_luh_mass     = 'luhdata_mass'
 

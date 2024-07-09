@@ -189,7 +189,7 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : landuse_harvest_varnames
    use dynFATESLandUseChangeMod, only : landuse_harvest_units
    use dynFATESLandUseChangeMod, only : fates_harvest_no_logging
-   use dynFATESLandUseChangeMod, only : fates_harvest_clmlanduse
+   use dynFATESLandUseChangeMod, only : fates_harvest_hlmlanduse
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_area
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_mass
 
@@ -530,7 +530,7 @@ contains
         if (trim(fates_harvest_mode) /= fates_harvest_no_logging) then
            pass_logging = 1 ! Time driven logging, without landuse harvest
            ! CLM landuse timeseries driven harvest rates
-           if (trim(fates_harvest_mode) == fates_harvest_clmlanduse) then
+           if (trim(fates_harvest_mode) == fates_harvest_hlmlanduse) then
               pass_num_lu_harvest_cats = num_harvest_vars
               pass_lu_harvest = 1
 
@@ -1203,7 +1203,7 @@ contains
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
-         if (trim(fates_harvest_mode) == fates_harvest_clmlanduse) then
+         if (trim(fates_harvest_mode) == fates_harvest_hlmlanduse) then
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
