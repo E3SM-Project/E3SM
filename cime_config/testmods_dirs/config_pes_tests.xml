@@ -117,7 +117,7 @@
   <!-- allactive -->
   <grid name="a%ne30np4.pg.+_oi%IcoswISC30E3r5">
     <mach name="chrysalis">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+_SESP$" pesize="any">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+_SESP$" pesize="any">
         <comment>tests+chrysalis: -compset WCYCL* -res ne30pg*IcoswISC30E3r5 on 6 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
@@ -158,7 +158,7 @@
           <ntasks_cpl>-8</ntasks_cpl>
         </ntasks>
       </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+_SESP$" pesize="any">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="any">
         <comment>tests+anvil: --compset WCYCL* --res ne30pg2_IcoswISC30E3r5 on 16 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>396</ntasks_atm>
