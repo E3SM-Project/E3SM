@@ -393,22 +393,25 @@ Full pathname to the inventory initialization control file.
 <entry id="use_fates_luh" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 If TRUE, enable use of land use state and transition data from luh_timeseries file.
-This is enabled by default if fates_harvest_mode is set to use the raw LUH2 harvest
-data (fates_harvest_mode >= 3) or if use_fates_lupft is true.
-(Only valid for fates land use change runs, where there is a luh_timeseries file.)
+This is enabled by default if fates_harvest_mode is set to use the raw LUH2 harvest data
 (Also, only valid for use_fates = true and is incompatible with transient runs currently.)
 </entry>
 
 <entry id="use_fates_lupft" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
-If TRUE, enable use of fates land use x pft mapping data file.
+If TRUE, enable use of fates land use x pft mapping data file.  This mode
+requires the use of the land use x pft association static data map file.  See the
+flandusepftdat definition entry in this file for more information.
 (Only valid for use_fates = true and is incompatible with transient runs currently.)
 </entry>
 
 <entry id="use_fates_potentialveg" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 If TRUE, ignore the land-use state vector and transitions, and assert that all lands
-are primary, and that there is no harvest.
+are primary, and that there is no harvest.  This mode is only relevant for FATES
+spin-up workflows that are intending to use the spin-up restart output to start a
+FATES land use transient case using the use_fates_lupft namelist option.  The option
+should be set to true for the spin-up case and false for the transient case.
 </entry>
 
 <!-- This could eventually be included in the "dynamic_subgrid" -->
@@ -434,6 +437,13 @@ output level is not enabled.
 <entry id="flandusepftdat" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname of fates landuse x pft data map.
+The file associates land use types with pfts across a static global map.
+This file is necessary for running FATES with use_fates_luh,
+use_fates_nocomp, and use_fates_fixedbiogeo engaged (note that use_fates_lupft
+is provided as a namelist option to engage all necessary options).  The file is output
+by the FATES land use data tool (https://github.com/NGEET/tools-fates-landusedata)
+which processes the raw land use data from the THEMIS tool data sets
+(https://doi.org/10.5065/29s7-7b41)
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
