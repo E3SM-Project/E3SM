@@ -279,7 +279,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
+   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, surfaceThicknessFluxSubglacialRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -290,6 +290,8 @@ contains
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceThicknessFlux !< Input/Output: Array for surface thickness flux
       real (kind=RKIND), dimension(:), intent(inout) ::  &
          surfaceThicknessFluxRunoff !< Input/Output: Array for surface thickness flux due to river runoff
+      real (kind=RKIND), dimension(:), intent(inout) ::  &
+         surfaceThicknessFluxSubglacialRunoff !< Input/Output: Array for surface thickness flux due to subglacial runoff
 
       !-----------------------------------------------------------------
       !
@@ -309,6 +311,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
 
       err = 0
@@ -322,6 +325,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
@@ -330,11 +334,13 @@ contains
       ! Build surface fluxes at cell centers
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     riverRunoffFlux, subglacialRunoffFlux, iceRunoffFlux, rainFlux)
 
       !$acc parallel loop &
-      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, evaporationFlux, snowFlux, &
-      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     surfaceThicknessFluxSubglacialRunoff, evaporationFlux, snowFlux, &
+      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, &
+      !$acc     subglacialRunoffFlux, iceRunoffFlux, rainFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -343,6 +349,7 @@ contains
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
+        surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / rho_sw
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -351,7 +358,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     riverRunoffFlux, subglacialRunoffFlux, iceRunoffFlux, rainFlux)
 #endif
 
       call mpas_timer_stop("bulk_thick")
@@ -503,6 +510,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)

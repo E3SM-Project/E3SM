@@ -128,7 +128,8 @@ contains
       ! pointers for the actual output variables within the pools above
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
          surfaceThicknessFlux,     &! surface thickness flux
-         surfaceThicknessFluxRunoff ! surface thickness flux from runoff
+         surfaceThicknessFluxRunoff, &! surface thickness flux from runoff
+         surfaceThicknessFluxSubglacialRunoff ! surface thickness flux from runoff
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          tendThick,        &! accumulated layer thickness tendency
@@ -154,6 +155,8 @@ contains
                                              surfaceThicknessFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', &
                                              surfaceThicknessFluxRunoff)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxSubglacialRunoff', &
+                                             surfaceThicknessFluxSubglacialRunoff)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', &
                                              fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', &
@@ -164,10 +167,12 @@ contains
       !    initialize to zero and start accumulating tendency terms
       !
 #ifdef MPAS_OPENACC
-      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
+      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     surfaceThicknessFluxSubglacialRunoff)
 
       !$acc parallel loop &
-      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff) &
+      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     surfaceThicknessFluxSubglacialRunoff) &
       !$acc     private(k)
 #else
       !$omp parallel
@@ -176,6 +181,7 @@ contains
       do iCell = 1, nCellsAll
          surfaceThicknessFlux(iCell) = 0.0_RKIND
          surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
+         surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
          do k=1,nVertLevels
             tendThick(k, iCell) = 0.0_RKIND
          end do
@@ -193,7 +199,8 @@ contains
       ! Compute surface mass flux array from bulk forcing
       call ocn_surface_bulk_forcing_thick(forcingPool, &
                                           surfaceThicknessFlux, &
-                                          surfaceThicknessFluxRunoff, err)
+                                          surfaceThicknessFluxRunoff, &
+                                          surfaceThicknessFluxSubglacialRunoff, err)
 
       ! Compute surface thickness flux from land ice
       call ocn_surface_land_ice_fluxes_thick(forcingPool, &
@@ -214,8 +221,10 @@ contains
       ! Compute surface flux tendency
       call ocn_thick_surface_flux_tend(fractionAbsorbed, &
                                        fractionAbsorbedRunoff, &
+                                       fractionAbsorbedSubglacialRunoff, &
                                        surfaceThicknessFlux, &
                                        surfaceThicknessFluxRunoff, &
+                                       surfaceThicknessFluxSubglacialRunoff, &
                                        tendThick, err)
 
       ! Compute contribution from frazil ice formation
@@ -230,7 +239,8 @@ contains
       call ocn_manufactured_solution_tend_thick(tendThick, err)
 
 #ifdef MPAS_OPENACC
-      !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
+      !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc      surfaceThicknessFluxSubglacialRunoff)
 #endif
 
       call mpas_timer_stop("ocn_tend_thick")

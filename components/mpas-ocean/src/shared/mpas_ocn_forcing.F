@@ -122,7 +122,7 @@ contains
 
         real (kind=RKIND) :: zTop, zBot, transmissionCoeffTop, transmissionCoeffBot
 
-        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff
+        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff, fractionAbsorbedSubglacialRunoff
 
         integer :: iCell, k, timeLevel, nCells
 
@@ -147,6 +147,7 @@ contains
 
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
+        call mpas_pool_get_array(forcingPool, 'fractionAbsorbedSubglacialRunoff', fractionAbsorbedSubglacialRunoff)
 
         nCells = nCellsArray( 2 )
 
@@ -174,6 +175,22 @@ contains
               transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficientRunoff(iCell))
 
               fractionAbsorbedRunoff(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
+
+              zTop = zBot
+              transmissionCoeffTop = transmissionCoeffBot
+           end do
+        end do
+
+!  now do subglacial runoff separately
+
+        do iCell = 1, nCells
+           zTop = 0.0_RKIND
+           transmissionCoeffTop = ocn_forcing_transmission(zTop, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+           do k = minLevelCell(iCell), maxLevelCell(iCell)
+              zBot = zTop - layerThickness(k,iCell)
+              transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+
+              fractionAbsorbedSubglacialRunoff(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
 
               zTop = zBot
               transmissionCoeffTop = transmissionCoeffBot

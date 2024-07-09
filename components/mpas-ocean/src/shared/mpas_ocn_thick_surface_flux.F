@@ -69,12 +69,13 @@ contains
 !> \date    15 September 2011
 !> \details
 !>  This routine computes the horizontal advection tendency for
-!>  thicknes based on current state and user choices of forcings.
+!>  thickness based on current state and user choices of forcings.
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_thick_surface_flux_tend(transmissionCoefficients, transmissionCoefficientsRunoff, &
-      surfaceThicknessFlux, surfaceThicknessFluxRunoff, tend, err)!{{{
+      transmissionCoefficientsSubglacialRunoff, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      surfaceThicknessFluxSubglacialRunoff, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -83,11 +84,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          transmissionCoefficients,     &!< Input: Coefficients for the transmission of surface fluxes
-         transmissionCoefficientsRunoff !< Input: Coefficients for the transmission of surface fluxes due to river runoff
+         transmissionCoefficientsRunoff, &!< Input: Coefficients for the transmission of surface fluxes due to river runoff
+         transmissionCoefficientsSubglacialRunoff !< Input: Coefficients for the transmission of surface fluxes due to river runoff
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfaceThicknessFlux,       &!< Input: surface flux of thickness
-         surfaceThicknessFluxRunoff   !< Input: surface flux of thickness due to river runoff
+         surfaceThicknessFluxRunoff, &!< Input: surface flux of thickness due to river runoff
+         surfaceThicknessFluxSubglacialRunoff   !< Input: surface flux of thickness due to subglacial runoff
 
 
       !-----------------------------------------------------------------
@@ -124,10 +127,11 @@ contains
       call mpas_timer_start("thick surface flux")
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(transmissionCoefficients, transmissionCoefficientsRunoff)
+      !$acc enter data copyin(transmissionCoefficients, transmissionCoefficientsRunoff, transmissionCoefficientsSubglacialRunoff)
 
       !$acc parallel loop &
       !$acc     present(tend, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     surfaceThicknessFluxSubglacialRunoff, transmissionCoefficientsSubglacialRunoff, &
       !$acc     transmissionCoefficients, transmissionCoefficientsRunoff, minLevelCell, maxLevelCell) &
       !$acc     private(k, remainingFlux, remainingFluxRunoff)
 #else
@@ -137,12 +141,15 @@ contains
       do iCell = 1, nCellsOwned
         remainingFlux = 1.0_RKIND
         remainingFluxRunoff = 1.0_RKIND
+        remainingFluxSubglacialRunoff = 1.0_RKIND
         do k = minLevelCell(iCell), maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
           remainingFluxRunoff = remainingFluxRunoff - transmissionCoefficientsRunoff(k, iCell)
+          remainingFluxSubglacialRunoff = remainingFluxSubglacialRunoff - transmissionCoefficientsSubglacialRunoff(k, iCell)
 
           tend(k, iCell) = tend(k, iCell) + surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)  &
-                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)
+                                          + surfaceThicknessFluxRunoff(iCell) * transmissionCoefficientsRunoff(k, iCell)  &
+                                          + surfaceThicknessFluxSubglacialRunoff(iCell) * transmissionCoefficientsSubglacialRunoff(k, iCell)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
@@ -153,6 +160,11 @@ contains
           tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
              + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
         end if
+
+        if(maxLevelCell(iCell) > 0 .and. remainingFluxSubglacialRunoff > 0.0_RKIND) then
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) &
+             + remainingFluxSubglacialRunoff * surfaceThicknessFluxSubglacialRunoff(iCell)
+        end if
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -160,7 +172,7 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-      !$acc exit data delete(transmissionCoefficients, transmissionCoefficientsRunoff)
+      !$acc exit data delete(transmissionCoefficients, transmissionCoefficientsRunoff, transmissionCoefficientsSubglacialRunoff)
 #endif
 
       call mpas_timer_stop("thick surface flux")
