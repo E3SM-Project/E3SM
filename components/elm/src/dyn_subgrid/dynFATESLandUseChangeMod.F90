@@ -30,11 +30,11 @@ module dynFATESLandUseChangeMod
   integer, public, parameter    :: num_landuse_harvest_vars = 5
 
   ! Define the fates landuse namelist mode switch values
-  character(len=13), public, parameter    :: fates_harvest_no_logging   = 'no_harvest'
-  character(len=13), public, parameter    :: fates_harvest_logging_only = 'event_code'
-  character(len=13), public, parameter    :: fates_harvest_clmlanduse   = 'surfdata_file'
-  character(len=13), public, parameter    :: fates_harvest_luh_area     = 'luhdata_area'
-  character(len=13), public, parameter    :: fates_harvest_luh_mass     = 'luhdata_mass'
+  character(len=18), public, parameter    :: fates_harvest_no_logging   = 'no_harvest'
+  character(len=18), public, parameter    :: fates_harvest_logging_only = 'event_code'
+  character(len=18), public, parameter    :: fates_harvest_clmlanduse   = 'landuse_timeseries'
+  character(len=18), public, parameter    :: fates_harvest_luh_area     = 'luhdata_area'
+  character(len=18), public, parameter    :: fates_harvest_luh_mass     = 'luhdata_mass'
 
   ! Define landuse harvest unit integer representation
   integer, public, parameter    :: landuse_harvest_area_units = 1

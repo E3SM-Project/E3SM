@@ -308,16 +308,18 @@ Allowed values are:
  5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
-<entry id="fates_harvest_mode" type="char*13" category="physics"
+<entry id="fates_harvest_mode" type="char*18" category="physics"
         group="elm_inparm"
-        valid_values="no_harvest,event_code,surfdata_file,luhdata_area,luhdata_mass" >
+        valid_values="no_harvest,event_code,landuse_timeseries,luhdata_area,luhdata_mass" >
 Set FATES harvesting mode by setting fates_harvest_mode
 Allowed values are:
  no_harvest   : no fates harvesting of any kind
  event_code   : fates logging via fates logging event codes only (via fates parameter file)
- surfdata_file: fates harvest driven by HLM landuse timeseries data (dynHarvestMod)
+ landuse_timeseries: fates harvest driven by HLM landuse timeseries data (dynHarvestMod)
  luhdata_area : fates harvest driven by LUH2 raw harvest data, area-based (dynFATESLandUseChangeMod)
  luhdata_mass : fates harvest driven by LUH2 raw harvest data, mass-based (dynFATESLandUseChangeMod)
+Note that the landuse_timeseries option is not the same as the FATES fluh_timeseries data file.
+This option is older than the luhdata options and may be depricated at some point in the future.
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
