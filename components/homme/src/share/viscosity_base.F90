@@ -582,7 +582,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: phis4(np)
   integer :: nt,ie,ic,i,j
-  integer :: minmax_halo = 0   ! -1 = disabled.  
+  integer :: minmax_halo =-1   ! -1 = disabled.  
                                ! 0  = recompute each time
 
   if (p2filt>=1 .and. np/=4) then
