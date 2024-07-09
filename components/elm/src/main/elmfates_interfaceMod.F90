@@ -3776,8 +3776,6 @@ end subroutine wrap_update_hifrq_hist
    deallocate(arraylocal_bareground)
    call ncd_pio_closefile(ncid)
 
-   ! Check that sums equal to unity
-
  end subroutine GetLandusePFTData
 
 end module ELMFatesInterfaceMod
