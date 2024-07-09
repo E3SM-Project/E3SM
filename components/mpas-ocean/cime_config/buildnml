@@ -379,6 +379,8 @@ def buildnml(case, caseroot, compname):
             data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
+        if ocn_sgr == 'data':
+            data_sgr_file = 'IcoswISC30E3r5_DSGR.nc'
 
     elif ocn_grid == 'IcosXISC30E3r7':
         decomp_date = '20240314'
@@ -403,7 +405,6 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.RRSwISC6to18E3r5.20240327.nc'
-
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
