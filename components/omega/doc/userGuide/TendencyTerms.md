@@ -11,7 +11,7 @@ tendency terms are currently implemented:
 | ThicknessFluxDivOnCell | divergence of layer thickness flux, defined at cell center
 | PotentialVortHAdvOnEdge | horizontal advection of potential vorticity, defined on edges
 | KEGradOnEdge | gradient of kinetic energy, defined on edges
-| SSHGradONEdge | gradient of sea-surface height, multipled of gravitational acceleration, defined on edges
+| SSHGradOnEdge | gradient of sea-surface height, multiplied by gravitational acceleration, defined on edges
 | VelocityDiffusionOnEdge | Laplacian horizontal mixing, defined on edges
 | VelocityHyperDiffOnEdge | biharmonic horizontal mixing, defined on edges
 

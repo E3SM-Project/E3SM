@@ -573,12 +573,12 @@ void HorzMesh::setMasks(int NVertLevels) {
 
    EdgeMask = Array2DR8("EdgeMask", NEdgesSize, NVertLevels);
 
-   OMEGA_SCOPE(o_EdgeMask, EdgeMask);
+   OMEGA_SCOPE(O_EdgeMask, EdgeMask);
 
    parallelFor(
        {NEdgesAll}, KOKKOS_LAMBDA(int Edge) {
           for (int K = 0; K < NVertLevels; ++K) {
-             o_EdgeMask(Edge, K) = 1.0;
+             O_EdgeMask(Edge, K) = 1.0;
           }
        });
 

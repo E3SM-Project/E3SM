@@ -630,7 +630,7 @@ void finalizeTendTest() {
 
 } // end finalizeTendTest
 
-void tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
+int tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
 
    int Err = initTendTest(mesh);
    if (Err != 0) {
@@ -660,17 +660,23 @@ void tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
 
    finalizeTendTest();
 
+   return Err;
+
 } // end tendencyTermsTest
 
 int main(int argc, char *argv[]) {
 
+   int RetErr = 0;
+
    MPI_Init(&argc, &argv);
    Kokkos::initialize(argc, argv);
 
-   tendencyTermsTest();
+   RetErr = tendencyTermsTest();
 
    Kokkos::finalize();
    MPI_Finalize();
+
+   return RetErr;
 
 } // end of main
 //===-----------------------------------------------------------------------===/
