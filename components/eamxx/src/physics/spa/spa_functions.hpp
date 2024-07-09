@@ -2,14 +2,13 @@
 #define SPA_FUNCTIONS_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/remap/horizontal_remap_utility.hpp"
-#include "share/scream_types.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/scream_types.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_workspace.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat/ekat_pack_utils.hpp>
 
 namespace scream {
 namespace spa {
@@ -17,7 +16,6 @@ namespace spa {
 template <typename ScalarType, typename DeviceType>
 struct SPAFunctions
 {
-
   //
   // ------- Types --------
   //
@@ -25,21 +23,14 @@ struct SPAFunctions
   using Scalar = ScalarType;
   using Device = DeviceType;
 
-  template <typename S>
-  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
+  using Spack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
-  using Workspace        = typename WorkspaceManager::Workspace;
-
   using gid_type = AbstractGrid::gid_type;
+
+  using iop_ptr_type = std::shared_ptr<control::IntensiveObservationPeriod>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -63,7 +54,6 @@ struct SPAFunctions
   struct SPATimeState {
     SPATimeState() = default;
     // Whether the timestate has been initialized.
-    bool inited = false;
     // The current month
     int current_month = -1;
     // Julian Date for the beginning of the month, as defined in
@@ -137,31 +127,58 @@ struct SPAFunctions
     SPAData         data;         // All spa fields
   }; // SPAInput
 
+  struct IOPReader {
+    IOPReader (iop_ptr_type& iop_,
+               const std::string file_name_,
+               const std::vector<Field>& io_fields_,
+               const std::shared_ptr<const AbstractGrid>& io_grid_)
+      : iop(iop_), file_name(file_name_)
+    {
+      field_mgr = std::make_shared<FieldManager>(io_grid_);
+      for (auto& f : io_fields_) {
+        field_mgr->add_field(f);
+        field_names.push_back(f.name());
+      }
+
+      // Set IO info for this grid and file in IOP object
+      iop->setup_io_info(file_name, io_grid_);
+    }
+
+    void read_variables(const int time_index, const util::TimeStamp& ts) {
+      iop->read_fields_from_file_for_iop(file_name, field_names, ts, field_mgr, time_index);
+    }
+
+    iop_ptr_type iop;
+    std::string file_name;
+    std::vector<std::string> field_names;
+    std::shared_ptr<FieldManager> field_mgr;
+  };
+
   // The output is really just SPAData, but for clarity it might
   // help to see a SPAOutput along a SPAInput in functions signatures
   using SPAOutput = SPAData;
 
-  struct SPAHorizInterp {
-    // This structure stores the information need by SPA to conduct horizontal
-    // interpolation from a set of source data to horizontal locations in the
-    // simulation grid.
-    // The source_grid_loc stores the column index in the source data,
-    // The target_grid_loc stores the column index in the target data that will be mapped to
-    // The weights stores the remapping weight to be applied to the source grid data for this location
-    //   in the target data.
-    SPAHorizInterp() = default;
-    explicit SPAHorizInterp(const ekat::Comm& comm)
-    {
-      m_comm = comm;
-    }
-    // Horizontal Remap
-    HorizontalMap horiz_map;
-    // Comm group used for SPA
-    ekat::Comm m_comm;
-
-  }; // SPAHorizInterp
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
+
+  static std::shared_ptr<AbstractRemapper>
+  create_horiz_remapper (
+      const std::shared_ptr<const AbstractGrid>& model_grid,
+      const std::string& spa_data_file,
+      const std::string& map_file,
+      const bool use_iop = false);
+
+  static std::shared_ptr<AtmosphereInput>
+  create_spa_data_reader (
+      const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+      const std::string& spa_data_file);
+
+  static std::shared_ptr<IOPReader>
+  create_spa_data_reader (
+      iop_ptr_type& iop,
+      const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+      const std::string& spa_data_file);
+
   static void spa_main(
     const SPATimeState& time_state,
     const view_2d<const Spack>& p_tgt,
@@ -171,34 +188,22 @@ struct SPAFunctions
     const SPAInput&   data_tmp,         // Temporary
     const SPAOutput&  data_out);
 
-  static void get_remap_weights_from_file(
-    const std::string&             remap_file_name,
-    const gid_type                 min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp);
-
-  static void set_remap_weights_one_to_one(
-    gid_type                       min_dof,
-    const view_1d<const gid_type>& dofs_gids,
-          SPAHorizInterp&          spa_horiz_interp);
-
   static void update_spa_data_from_file(
-    const std::string&    spa_data_file_name,
-    const int             time_index,
-    const int             nswbands,
-    const int             nlwbands,
-          SPAHorizInterp& spa_horiz_interp,
-          SPAInput&       spa_data);
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    const int                         time_index, // zero-based
+    AbstractRemapper&                 spa_horiz_interp,
+    SPAInput&                         spa_input);
 
   static void update_spa_timestate(
-    const std::string&     spa_data_file_name,
-    const int              nswbands,
-    const int              nlwbands,
-    const util::TimeStamp& ts,
-          SPAHorizInterp&  spa_horiz_interp,
-          SPATimeState&    time_state,
-          SPAInput&        spa_beg,
-          SPAInput&        spa_end);
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    std::shared_ptr<IOPReader>&       iop_reader,
+    const util::TimeStamp&            ts,
+    AbstractRemapper&                 spa_horiz_interp,
+    SPATimeState&                     time_state,
+    SPAInput&                         spa_beg,
+    SPAInput&                         spa_end);
 
   // The following three are called during spa_main
   static void perform_time_interpolation (

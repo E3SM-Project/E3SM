@@ -137,6 +137,9 @@ macro(build_model COMP_CLASS COMP_NAME)
     # Add rrtmgp++ source code if asked for
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
+      # For now, hardcode YAKL mode in rrtmgp
+      set(RRTMGP_ENABLE_YAKL On)
+      add_definitions("-DRRTMGP_ENABLE_YAKL")
       # Build the static rrtmgpxx library
       set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp ${RRTMGPXX_BIN})
@@ -248,6 +251,11 @@ macro(build_model COMP_CLASS COMP_NAME)
     foreach(ITEM IN LISTS ALL_LIBS_LIST)
       target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
+
+    if (USE_MOAB)
+      target_link_libraries(${TARGET_NAME} ${MOAB_LIBRARIES})
+      target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
+    endif()
 
     # Make sure we link blas/lapack
     if (NOT DEFINED ENV{SKIP_BLAS})

@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange --id ELM_BLDNML_OPTS --val "-bgc sp -topounit"

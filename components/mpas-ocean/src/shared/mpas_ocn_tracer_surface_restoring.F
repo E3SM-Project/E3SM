@@ -344,7 +344,8 @@ contains
 
           if (config_salinity_restoring_under_sea_ice) then
 
-            ! Simulation has landIceMask AND config_salinity_restoring_under_sea_ice=.true.
+            ! Simulation has landIceMask AND
+            ! config_salinity_restoring_under_sea_ice=.true. (default)
             do iCell = 1, nCells
               if (landIceMask(iCell)==1) then
                 ! Turn off salinity restoring in this cell
@@ -362,7 +363,7 @@ contains
 
           else ! config_salinity_restoring_under_sea_ice = .false.
 
-            ! Simulation has landIceMask AND config_salinity_restoring_under_sea_ice=.false. (default)
+            ! Simulation has landIceMask AND config_salinity_restoring_under_sea_ice=.false.
             do iCell = 1, nCells
               if (landIceMask(iCell)==1) then
                 ! Turn off salinity restoring in this cell
@@ -386,7 +387,8 @@ contains
 
           if (config_salinity_restoring_under_sea_ice) then
 
-            ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.true.
+            ! Simulation has NO landIceMask AND
+            ! config_salinity_restoring_under_sea_ice=.true. (default)
             do iCell = 1, nCells
               deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
               if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference
@@ -398,7 +400,7 @@ contains
 
           else ! config_salinity_restoring_under_sea_ice = .false.
 
-            ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.false. (default)
+            ! Simulation has NO landIceMask AND config_salinity_restoring_under_sea_ice=.false.
             do iCell = 1, nCells
               deltaS = surfaceSalinityMonthlyClimatologyValue(iCell) - activeTracers(indexSalinity,1,iCell)
               if (deltaS >  config_salinity_restoring_max_difference) deltaS =  config_salinity_restoring_max_difference

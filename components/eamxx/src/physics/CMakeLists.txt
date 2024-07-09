@@ -1,3 +1,5 @@
+add_library(eamxx_physics INTERFACE)
+
 # Build shared physics functions first, so other parametrizations can use them
 add_subdirectory(share)
 
@@ -10,9 +12,6 @@ else()
   message(STATUS "WARNING: RRTMGP and COSP only supported for double precision builds; skipping")
 endif()
 add_subdirectory(shoc)
-if (SCREAM_TEST_LEVEL GREATER_EQUAL SCREAM_TEST_LEVEL_EXPERIMENTAL)
-  add_subdirectory(zm)
-endif()
 add_subdirectory(cld_fraction)
 if (SCREAM_ENABLE_ML_CORRECTION)
   add_subdirectory(ml_correction)

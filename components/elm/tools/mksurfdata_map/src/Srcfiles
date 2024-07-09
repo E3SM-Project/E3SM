@@ -27,6 +27,7 @@ mktopostatsMod.F90
 mkVICparamsMod.F90
 mkCH4inversionMod.F90
 mkSedMod.F90
+mkFertMod.F90
 nanMod.F90
 shr_file_mod.F90
 shr_sys_mod.F90

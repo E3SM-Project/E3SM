@@ -1,7 +1,2 @@
 ./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_SMALL_KERNELS On'
 $CIMEROOT/../components/eamxx/scripts/atmchange --all internal_diagnostics_level=1 atmosphere_processes::internal_diagnostics_level=0 -b
-
-f=$(./xmlquery --value MACH)
-if [ $f == chrysalis ]; then
-  ./xmlchange BATCH_COMMAND_FLAGS="--time 00:30:00 -p debug --account e3sm --exclude=chr-0512"
-fi

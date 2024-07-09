@@ -53,8 +53,7 @@
       <value compset="_EAM"                    >-phys default</value>
       <value compset="_EAM%CMIP6-1pctCO2"      >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_EAM%CMIP6-4xCO2"        >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="^((?!SSP).)*_EAM%CMIP6_" >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="SSP.*_EAM%CMIP6_"        >&eamv3_phys_defaults; &eamv2_chem_defaults;</value>
+      <value compset="_EAM%CMIP6_"             >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
 
@@ -129,6 +128,7 @@
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6"        >SSP245_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf"          >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>
@@ -136,7 +136,7 @@
       <value compset="20TR(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >20TR_eam_chemUCI-Linoz-mam5</value>
       <value compset="ARM95_EAM"                        >scam_arm95</value>
       <value compset="ARM97_EAM"                        >scm_arm97_chemUCI-Linoz-mam5-vbs</value>
-      <value compset="SCM_EAM"                          >scm_generic_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SCM_EAM"                          >scam_generic</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>

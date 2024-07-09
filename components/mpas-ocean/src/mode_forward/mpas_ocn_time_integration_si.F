@@ -155,7 +155,7 @@ module ocn_time_integration_si
       SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
                          ! field pointer for halo update
 
-   integer :: ssh_sal_on
+   real(kind=RKIND) :: pgf_sal_on
 
 #ifdef USE_GPU_AWARE_MPI
    ! SI - halo exch related variables ----------------------------------
@@ -715,7 +715,7 @@ module ocn_time_integration_si
       endif
 
       if (config_use_tidal_potential_forcing) then
-         !$acc enter data copyin(ssh_sal)
+         !$acc enter data copyin(pgf_sal)
          !$acc enter data create(sshSubcycleCurWithTides,tidalPotentialEta)
       endif
 #endif
@@ -1160,7 +1160,7 @@ module ocn_time_integration_si
  
                !$acc parallel loop gang  &
                !$acc    present(sshSubcycleCurWithTides,sshSubcycleCur, &
-               !$acc       tidalPotentialEta,ssh_sal,sshSubcycleCur)
+               !$acc       tidalPotentialEta,pgf_sal,sshSubcycleCur)
 #else
                !$omp parallel
                !$omp do schedule(runtime)
@@ -1169,8 +1169,8 @@ module ocn_time_integration_si
                   sshSubcycleCurWithTides(iCell) = &
                            sshSubcycleCur(iCell) - &
                         tidalPotentialEta(iCell) - &
-                     ssh_sal_on * ssh_sal(iCell) - &
-                     (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                     pgf_sal_on * pgf_sal(iCell) - &
+                     (1.0_RKIND - pgf_sal_on) * self_attraction_and_loading_beta* &
                            sshSubcycleCur(iCell)
                end do
 #ifndef MPAS_OPENACC
@@ -2801,7 +2801,7 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
       if (config_use_tidal_potential_forcing) then
-         !$acc exit data delete(ssh_sal,tidalPotentialEta)
+         !$acc exit data delete(pgf_sal,tidalPotentialEta)
          !$acc exit data copyout(sshSubcycleCurWithTides)
       endif
 #endif
@@ -3501,10 +3501,10 @@ module ocn_time_integration_si
       !--------------------------------------------------------------------
 
       if (config_use_self_attraction_loading) then
-         ! set ssh_sal_on to 1
-         ssh_sal_on = 1
+         ! set pgf_sal_on to 1
+         pgf_sal_on = 1.0_RKIND
       else
-         ssh_sal_on = 0
+         pgf_sal_on = 0.0_RKIND
       endif
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta

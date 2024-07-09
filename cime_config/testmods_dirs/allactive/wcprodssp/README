@@ -1,5 +1,5 @@
 Modifications (in shell_commands) to enable a hybrid run for SSP compsets
-(e.g., SSp370 or SSP585), starting from v3 long spinup. 
+(e.g., SSP370 or SSP585), starting from end of v3 historical run
 
 Other modifications (same as for wcprod) should result in a case that has the 
 same namelist settings as the water cycle production sims

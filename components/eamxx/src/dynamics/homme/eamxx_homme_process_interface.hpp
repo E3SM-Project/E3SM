@@ -6,12 +6,12 @@
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_workspace.hpp"
 
 #include <string>
 
 namespace scream
 {
-
 /*
  *  The class responsible to handle the atmosphere dynamics
  *
@@ -23,6 +23,26 @@ namespace scream
  */
 class HommeDynamics : public AtmosphereProcess
 {
+  // Define some types needed by class
+  using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
+  using IntPack = ekat::Pack<int, SCREAM_PACK_SIZE>;
+  using Mask = ekat::Mask<SCREAM_PACK_SIZE>;
+
+  using KT = KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+  template<typename ScalarT>
+  using view_2d = typename KT::template view_2d<ScalarT>;
+  template<typename ScalarT, int N>
+  using view_Nd = typename KT::template view_ND<ScalarT, N>;
+  template<typename ST>
+  using uview_1d = ekat::Unmanaged<view_1d<ST>>;
+  template<typename ST>
+  using uview_2d = ekat::Unmanaged<view_2d<ST>>;
+
+  using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
+  using Workspace = WorkspaceMgr::Workspace;
+
 public:
 
   // Constructor(s) and Destructor
@@ -89,6 +109,44 @@ protected:
   void rayleigh_friction_init ();
   void rayleigh_friction_apply (const Real dt) const;
 
+  // IOP functions
+  void apply_iop_forcing(const Real dt);
+
+  KOKKOS_FUNCTION
+  static void advance_iop_subsidence(const KT::MemberType& team,
+                                     const int nlevs,
+                                     const Real dt,
+                                     const Real ps,
+                                     const view_1d<const Pack>& pmid,
+                                     const view_1d<const Pack>& pint,
+                                     const view_1d<const Pack>& pdel,
+                                     const view_1d<const Pack>& omega,
+                                     const Workspace& workspace,
+                                     const view_1d<Pack>& u,
+                                     const view_1d<Pack>& v,
+                                     const view_1d<Pack>& T,
+                                     const view_2d<Pack>& Q);
+
+  KOKKOS_FUNCTION
+  static void advance_iop_forcing(const KT::MemberType& team,
+                                  const int nlevs,
+                                  const Real dt,
+                                  const view_1d<const Pack>& divT,
+                                  const view_1d<const Pack>& divq,
+                                  const view_1d<Pack>& T,
+                                  const view_1d<Pack>& qv);
+
+
+  KOKKOS_FUNCTION
+  static void iop_apply_coriolis(const KT::MemberType& team,
+                                 const int nlevs,
+                                 const Real dt,
+                                 const Real lat,
+                                 const view_1d<const Pack>& u_ls,
+                                 const view_1d<const Pack>& v_ls,
+                                 const view_1d<Pack>& u,
+                                 const view_1d<Pack>& v);
+
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;
@@ -134,15 +192,8 @@ protected:
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
 
-  template<int N>
-  using RPack = ekat::Pack<Real,N>;
-
-  using KT = KokkosTypes<DefaultDevice>;
-  template<typename ScalarT>
-  using view_1d = typename KT::template view_1d<ScalarT>;
-
   // Rayleigh friction decay rate profile
-  view_1d<RPack<SCREAM_PACK_SIZE>> m_otau;
+  view_1d<Pack> m_otau;
 
   // Rayleigh friction paramaters
   int m_rayk0;      // Vertical level at which rayleigh friction term is centered.

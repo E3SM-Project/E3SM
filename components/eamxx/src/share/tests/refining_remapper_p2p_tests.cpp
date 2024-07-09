@@ -21,7 +21,6 @@ public:
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
   const auto u = ekat::units::Units::nondimensional();
-  const auto CMP = ShortFieldTagsNames::CMP;
   const auto& gn = grid.name();
   const auto  ndims = 2;
   Field f;
@@ -29,12 +28,12 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
     case LayoutType::Scalar3D:
       f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,CMP,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims),u,gn));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
@@ -65,7 +64,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
-  int col_size = fl.strip_dim(COL).size();
+  int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
   int my_cols = dims[0];;
@@ -124,21 +123,15 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename, "n_a", "n_a", ngdofs_src, false);
-  scorpio::register_dimension(filename, "n_b", "n_b", ngdofs_tgt, false);
-  scorpio::register_dimension(filename, "n_s", "n_s", nnz,        false);
+  scorpio::define_dim(filename, "n_a", ngdofs_src);
+  scorpio::define_dim(filename, "n_b", ngdofs_tgt);
+  scorpio::define_dim(filename, "n_s", nnz);
 
-  scorpio::register_variable(filename, "col", "col", "1", {"n_s"}, "int",    "int",    "");
-  scorpio::register_variable(filename, "row", "row", "1", {"n_s"}, "int",    "int",    "");
-  scorpio::register_variable(filename, "S",   "S",   "1", {"n_s"}, "double", "double", "");
+  scorpio::define_var(filename, "col", {"n_s"}, "int");
+  scorpio::define_var(filename, "row", {"n_s"}, "int");
+  scorpio::define_var(filename, "S",   {"n_s"}, "double");
 
-  std::vector<scorpio::offset_t> dofs(nnz);
-  std::iota(dofs.begin(),dofs.end(),0);
-  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
-  
-  scorpio::eam_pio_enddef(filename);
+  scorpio::enddef(filename);
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
@@ -157,11 +150,11 @@ void write_map_file (const std::string& filename, const int ngdofs_src) {
       S[ngdofs_src+2*i+1] = 0.5;
   }
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),nnz);
-  scorpio::grid_write_data_array(filename,"col",col.data(),nnz);
-  scorpio::grid_write_data_array(filename,"S",  S.data(),  nnz);
+  scorpio::write_var(filename,"row",row.data());
+  scorpio::write_var(filename,"col",col.data());
+  scorpio::write_var(filename,"S",  S.data());
 
-  scorpio::eam_pio_closefile(filename);
+  scorpio::release_file(filename);
 }
 
 TEST_CASE ("refining_remapper") {
@@ -173,8 +166,7 @@ TEST_CASE ("refining_remapper") {
 
   auto engine = setup_random_test (&comm);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // Create a map file
   const int ngdofs_src = 4*comm.size();
@@ -418,7 +410,7 @@ TEST_CASE ("refining_remapper") {
 
   // Clean up
   r = nullptr;
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

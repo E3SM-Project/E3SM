@@ -41,16 +41,10 @@ def gen_filenames(base_dir, test_dir):
     files and generates a list of filenames for each.
     '''
     # The path to output files for simulation 'a' (the '-bc' simulation)
-    if base_dir.endswith(('run', 'run/')):
-        path_a = base_dir
-    else:
-        path_a = base_dir + '/run/'
+    path_a = base_dir
 
     # The path to output files for simulation 'b' (the test simulation)
-    if test_dir.endswith(('run', 'run/')):
-        path_b = test_dir
-    else:
-        path_b = test_dir + '/run/'
+    path_b = test_dir
 
     # Find the number of output files to be read in
     files_a = fnmatch.filter(os.listdir(path_a+'/'), '*mpassi.hist.000*')

@@ -1085,8 +1085,8 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,null</valid_values>
-    <default_value>gland5UM</default_value>
+    <valid_values>mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,gis1to10kmR2,null</valid_values>
+    <default_value>mpas.gis20km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
@@ -2684,10 +2684,10 @@
 
   <entry id="PIO_REARRANGER">
     <type>integer</type>
-    <valid_values>1,2</valid_values>
+    <valid_values>1,2,3</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
+    <desc>pio rearranger choice box=1, subset=2, any=3 </desc>
     <values>
       <value compclass="ATM">$PIO_VERSION</value>
       <value compclass="CPL">$PIO_VERSION</value>
