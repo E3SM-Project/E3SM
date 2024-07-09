@@ -1225,8 +1225,8 @@ contains
        write(iulog, *) '    fates_spitfire_mode = ', fates_spitfire_mode
        write(iulog, *) '    fates_harvest_mode = ', fates_harvest_mode
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
-       write(iulog, *) '    fluh_timeseries = ', fluh_timeseries
-       write(iulog, *) '    flandusepftdat = ', flandusepftdat
+       write(iulog, *) '    fluh_timeseries = ', trim(fluh_timeseries)
+       write(iulog, *) '    flandusepftdat = ', trim(flandusepftdat)
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
        write(iulog, *) '    use_fates_tree_damage = ', use_fates_tree_damage
        write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking
