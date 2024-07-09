@@ -205,6 +205,9 @@
 		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Salinity flux from frazil to sea ice, given to coupler. Land ice does not contribute because its frazil salinity is assumed 0. Positive into the ocean."
 		/>
+	    <var name="accumulatedSubglacialRunoffSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+			 description="Salinity flux from subglacial runoff. Positive into the ocean."
+		/>
 	</var_struct>
             <var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
                 <var name="initialCarbon" type="real" dimensions="Time" units="kg"
@@ -316,6 +319,7 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
+			<var name="accumulatedSubglacialRunoffSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="finalCarbon"/>
             <var name="carbonChange"/>
@@ -375,6 +379,7 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
+			<var name="accumulatedSubglacialRunoffSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="accumulatedAbsoluteCarbonError"/>
             <var name="accumulatedRelativeCarbonError"/>
