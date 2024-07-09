@@ -9,7 +9,6 @@ nav:
     - Development:
       - Introduction: 'dev-guide/index.md'
       - Adding Support for New Grids: 'dev-guide/adding-grid-support/index.md'
-      - mkatmsrffile: 'dev-guide/some-tools/mkatmsrffile.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
   - More Information:
@@ -58,7 +57,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.superfences
-  - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
