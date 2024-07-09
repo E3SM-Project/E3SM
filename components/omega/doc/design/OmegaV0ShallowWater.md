@@ -33,7 +33,7 @@ Boundary conditions will include both no-slip and free-slip. The original MPAS-O
 ### 2.2  Numerical method will be the TRiSK formulation
 
 The horizontal discretization will be taken from
-[Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), as described in the algorithmic formulation in Section 3 below. This is the same base formulation as in MPAS-Ocean. In addition, we will consider small alterations from the original MPAS-Ocean horizontal discretization and include them as options if they are of minimal additional effort. This includes the recent AUST formulation in [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and simple vorticity averaging considered by the Omega team this past year.
+[Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), as described in the algorithmic formulation in Section 3 below. This is the same base formulation as in MPAS-Ocean. In addition, we will consider small alterations from the original MPAS-Ocean horizontal discretization and include them as options if they are of minimal additional effort and improve the simulated climate. This includes the recent AUST formulation in [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and simple vorticity averaging considered by the Omega team this past year.
 
 ### 2.3  Omega-0 will use MPAS format unstructured-mesh domains
 
@@ -150,11 +150,14 @@ The thickness equation (2) is derived from conservation of mass for a fluid with
 The Tracer Equation (3) is the conservation equation for a passive tracer (scalar), with only advective and diffusive terms. It is not included in the textbook Shallow Water equations, but is useful for us to test tracer advection in preparation for a primitive equation model in Omega-1. For a tracer which is uniformly one ($\phi=1$), with no viscous terms, the tracer equation reduces to the thickness equation.
 The tracer equation is thickness weighted, because the conserved quantity is the tracer mass. Here $(h\phi A)$ typically has units of mass of the tracer in [kg] while $\phi$ has units of concentration [kg m$^{-3}$]. Because the horizontal area is fixed, $A$ has been divided out making (3) thickness weighted, rather than volume weighted. For chemical tracers $\phi$ has units of [mmol m$^{-3}$]; salinity has units of Practical Salinity Units (PSU) and potential temperature has units of [C]. A derivation of the thickness-weighted tracer equation appears in Appendix A-2 of [Ringler et al. 2013](https://www.sciencedirect.com/science/article/pii/S1463500313000760).
 
-The Omega-0 governing equations (1-3) do not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will be simply redundant.
+The Omega-0 governing equations (1-3) do not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will simply be redundant.
 
 Further details of these derivations are given in [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqns. (2) and (7), and [Bishnu et al. 2024](https://doi.org/10.1029/2022MS003545), Section 2.1.
 Additional information on governing equations may be found in chapter 8 of the MPAS User's Guide ([Petersen et al. 2024](https://zenodo.org/records/11098080)).
-Publications that evaluate TRiSK against alternative formulations include [Weller et al. 2012](http://journals.ametsoc.org/doi/10.1175/MWR-D-11-00193.1), [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and [Lapolli et al. 2024](https://www.sciencedirect.com/science/article/pii/S1463500324000222). 
+Publications that evaluate TRiSK against alternative formulations include [Weller et al. 2012](http://journals.ametsoc.org/doi/10.1175/MWR-D-11-00193.1), 
+[Thuburn and Cotter 2012](https://epubs.siam.org/doi/10.1137/110850293), 
+[Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and 
+[Lapolli et al. 2024](https://www.sciencedirect.com/science/article/pii/S1463500324000222). 
 
 #### 3.1.2 Discrete Equations
 
@@ -193,7 +196,10 @@ Table 1. Definition of variables
 
 | symbol  | name             | units    | location | name in code | notes  |
 |---------------------|-----------------------------|----------|-|---------|-------------------------------------------------------|
-| $A_i $      | cell area | m$^2$    | cell | AreaCell |                                                              |
+| $A_i $      | cell area | m$^2$    | cell | AreaCell | area of polygon $P_i$                                        |
+|${\bar A}_{e}$  | edge area | m$^2$    | edge | none |rectangle area about edge $e$: ${\bar A}_{e} = l_e d_e$ |
+|${\hat A}_{v}$  | vertex area | m$^2$    | vertex | none |triangle area (dual cell $D_v$) about vertex $v$ |
+|${\tilde A}_{v,i}$  | kite area | m$^2$    | vertex | none |kite area between $x_v$ and $x_c$ |
 | $b$                 | bottom depth (pos. down)  | m        | cell     | BottomDepth   | bathymetry; always positive.                                                             |
 | $C_D$               | bottom drag                 | 1/m      | constant |   |                         |
 | $C_W$               | wind stress coefficient     | 1/m      | constant |   |                         |
@@ -216,6 +222,8 @@ Table 1. Definition of variables
 | $u_e$   | velocity, normal to edge      | m/s      | edge     | NormalVelocity  |                                                              |k
 | $u^\perp_e$   | velocity, tangential to edge      | m/s      | edge     | TangentialVelocity  |                                                              |k
 | ${\boldsymbol u}_W$ | wind velocity               | m/s      | edge     |   |                                                              |
+| $w_{e,e'}$ | tangential edge weights| unitless | edge     |   | weights defined in [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 24 |
+|${\tilde w}_{e,e'}$ | normalized tangential edge weights| unitless | edge     | WeightsOnEdge   | normalized weights, ${\tilde w}_{e,e'} = \tfrac{l_{e'}}{d_e} w_{e,e'}$ |
 | $\eta$              | absolute vorticity          | 1/s      | vertex   |   | $\eta=\omega + f$ |
 | $\kappa_2$          | tracer diffusion            | m$^2$/s    | cell     |   |                                                              |
 | $\kappa_4$          | biharmonic tracer diffusion | m$^4$/s    | cell     |   |                                                              |
@@ -224,24 +232,28 @@ Table 1. Definition of variables
 | $\phi$              | tracer                      | varies | cell     |   | units may be kg/m$^3$ or similar | 
 | $\omega$             | relative vorticity          | 1/s      | vertex   |  RelativeVorticity | $\omega={\boldsymbol k} \cdot \left( \nabla \times {\boldsymbol u}\right)$ |
 
-Note: Table created with [markdown table generator](https://www.tablesgenerator.com/markdown_tables) and original [google sheet](https://docs.google.com/spreadsheets/d/1rz-QXDiwfemq5NpSR1XsvomI7aSKQ1myTNweCY4afcE/edit#gid=0).
+<!--- Note: Table created with [markdown table generator](https://www.tablesgenerator.com/markdown_tables) and original [google sheet](https://docs.google.com/spreadsheets/d/1rz-QXDiwfemq5NpSR1XsvomI7aSKQ1myTNweCY4afcE/edit#gid=0). --->
 
 
 
 Table 2. Definition of geometric elements used to build the discrete system.
 | Element | Type | Definition | MPAS mesh name | spherical  |
 |---------------------|-----------------------------|----------|----------|--------------------------------------------------------------|
-| $x_i$ | point | Location of center of primal mesh cells (cell center) | (xCell, yCell, zCell) | (lonCell, latCell) |
-| $x_e$ | point | Location of edge points where velocity is defined | (xEdge, yEdge, zEdge) | (lonEdge, latEdge) |
-| $x_v$ | point | Location of center of dual-mesh cells (Vertex)| (xVertex, yVertex, zVertex) | (lonVertex, latVertex) |
-| $d_e$ | line | segment distance between neighboring $x_i$ locations | dcEdge | |
-| $l_e$ | line | segment distance between neighboring $x_v$ locations | dvEdge | |
-| $P_i$ | cell | A cell on the primal mesh | | |
-| $D_v$ | cell | A cell on the dual-mesh | | |
+| $x_i$ | point | Location of center of primal mesh cells (cell center) | (XCell, YCell, ZCell) | (LonCell, LatCell) |
+| $x_e$ | point | Location of edge points where velocity is defined | (XEdge, YEdge, ZEdge) | (LonEdge, LatEdge) |
+| $x_v$ | point | Location of center of dual-mesh cells (Vertex)| (XVertex, YVertex, ZVertex) | (LonVertex, LatVertex) |
+| $d_e$ | line | segment distance between neighboring $x_i$ locations | DcEdge | |
+| $l_e$ | line | segment distance between neighboring $x_v$ locations | DvEdge | |
+| $P_i$ | cell | A cell on the primal mesh | AreaCell | |
+| $D_v$ | cell | A cell on the dual-mesh | AreaTriangle | |
 
 ![Variable positions for MPAS mesh specification.](../_static/variablePosition.png "Variable positions")
 
 Figure 1. Variable positions for MPAS mesh specification.
+
+![Areas for MPAS mesh specification.](../_static/areaPositionsMPAS.png "area specifications")
+
+Figure 2. Areas for MPAS mesh specification.
 
 Table 3. Definition of element groups used to build the discrete system.
 
@@ -252,16 +264,21 @@ Table 3. Definition of element groups used to build the discrete system.
 | $i\in CE(e)$ |  Two primal mesh cells that share edge $e$ | CellsOnEdge |
 | $i\in CV(v)$ |  Set of primal mesh cells that form the vertices of dual mesh cell $D_v$ | CellsOnVertex |
 | $v\in VE(e)$ |  The two dual-mesh cells that share edge $e$ | VerticesOnEdge |
-| $v\in VI(i)$ |  The set of dual-mesh cells that form the vertices of primal mesh cell $P_i$ | VerticesOnCell |
+| $v\in VC(i)$ |  The set of dual-mesh cells that form the vertices of primal mesh cell $P_i$ | VerticesOnCell |
 | $e\in ECP(e)$ |  Edges of cell pair meeting at edge $e$ | EdgesOnEdge |
 | $e\in EVC(v,i)$ | Edge pair associated with vertex v and mesh cell $i$ | |
+
+The definitions of geometric variables may be found in 
+[Thuburn et al. 2009](http://www.sciencedirect.com/science/article/pii/S0021999109004434), 
+[Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), and 
+[Thuburn and Cotter 2012](https://epubs.siam.org/doi/10.1137/110850293).
 
 ### 3.2 Operator Formulation
 
 The TRiSK formulation of the discrete operators are as follows. See [Bishnu et al. 2023](https://gmd.copernicus.org/articles/16/5539/2023) section 4.1 and Figure 1 for a description and documentation of convergence rates, as well as [Bishnu et al. 2021](https://doi.org/10.5281/zenodo.7439539). All TRiSK spatial operators show second-order convergence on a uniform hexagon grid, except for the curl on vertices, which is first order. The curl interpolated from vertices to cell centers regains second order convergence. The rates of convergence are typically less than second order on nonuniform meshes, including spherical meshes.
 
 #### 3.2.1. Divergence
-The divergence operator maps a vector field's edge normal component $F_e$ to a cell center ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 21) is
+The divergence operator maps a vector field's edge normal component $F_e$ to a cell center ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 21),
 
 $$
 \left( \nabla \cdot {\bf F}\right)_i
@@ -287,7 +304,7 @@ $$
 #### 3.2.2. Gradient
 
 The gradient operator maps a cell-centered scalar to an edge-normal vector component
-([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 22) is
+([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 22), 
 
 $$
 \left( \nabla h \right)_e
@@ -302,43 +319,55 @@ $$
 \equiv
 \nabla h_i = \frac{h_{i2} - h_{i1} }{d_e},
 $$
-where $\left\{i_1, i_2\right\}$ are the cells neighboring edge $e$.  The indices $\left\{i_1, i_2\right\}$ are ordered such that the normal vector ${\bf n}$ points from cell $i_1$ to cell $i_2$. In the code ${\bf n}$ points from CellsOnEdge(0,iEdge) to CellsOnEdge(1,iEdge).
+where $\left\{i_1, i_2\right\}$ are the cells neighboring edge $e$.  The indices $\left\{i_1, i_2\right\}$ are ordered such that the normal vector ${\bf n}$ points from cell $i_1$ to cell $i_2$. In the code ${\bf n}$ points from `CellsOnEdge(IEdge, 0)` to `CellsOnEdge(IEdge, 1)`.
 
 #### 3.2.3. Curl
 The curl operator maps a vector's edge normal component $u_e$ to a scalar field at vertex
-([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 23) and is
+([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 23),
 
 $$
 \left( {\bf k} \cdot \left( \nabla \times {\bf F} \right)\right)_v
 \equiv
 {\bf k} \cdot \left( \nabla \times F_e \right)
-= \frac{1}{A_v} \sum_{e\in EV(v)} t_{e,v} \, F_e \, d_e
+= \frac{1}{{\hat A}_v} \sum_{e\in EV(v)} t_{e,v} \, F_e \, d_e,
 $$
 
-where $A_v$ is the area of the dual mesh cell $v$, i.e. the triangle surrounding vertex $v$. Similar to $n_{e,i}$, the indicator function $t_{e,v}$ tracks whether a positive $F_e$ makes a positive or negative contribution to the curl function at vertex $v$. If the vector ${\bf k} \times {\bf n}_e$ is directed toward
+where ${\hat A}_v$ is the area of the dual mesh cell $v$, i.e. the triangle surrounding vertex $v$. Similar to $n_{e,i}$, the indicator function $t_{e,v}$ tracks whether a positive $F_e$ makes a positive or negative contribution to the curl function at vertex $v$. If the vector ${\bf k} \times {\bf n}_e$ is directed toward
 ${\bf x}_v$, then $t_{e,v}=1$. The summation is over $e\in EV(v)$, which are the edges that terminate at vertex $v$. There are *always* three edges that terminate at each vertex for Voronoi Tessellations, and four edges on each vertex for quadrilateral meshes, unless neighboring cells are missing for land boundaries. Again, the subscript $v$ is dropped and a vertex is assumed for the location of the curl.
 
 
 #### 3.2.4. Perpendicular vector component
 
-The perpendicular vector component a vector field is defined as
+The perpendicular component a vector field is defined as
 $$
- \nabla^\perp {\bf F} \equiv
- {\bf k} \times \nabla {\bf F}
+ {\bf F}^\perp \equiv
+ {\bf k} \times {\bf F}
 $$
 so that it points 90$^o$ to the left of ${\bf F}$ in a right-handed coordinate system. 
 
-In TRiSK, the native component for the prognostic velocity field is normal edge velocity $u_e$. The perpendicular component at the edge is computed diagnostically as
+In TRiSK, the native component for the prognostic velocity field is the edge-normal velocity $u_e$. The perpendicular component is also positioned at the middle of the edge, but points 90$^o$ to the left, tangential to the edge, from one vertex to another. The perpendicular velocity component is also called the tangential velocity, with the variable name `TangentialVelocity`. It is computed diagnostically as
 ([Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) eqn 24)
 
 $$
-u_e^\perp = \frac{1}{d_e} \sum_{e'\in ECP(e)} w_{e,e'} \, l_e \, u_{e'}.
+u_e^\perp = \frac{1}{d_e} \sum_{e'\in ECP(e)} w_{e,e'} \, l_{e'} \, u_{e'}.
 $$
 
-The perpendicular vector is computed from the edge-normal components of all the edges of the two neighboring cells of edge $e$, denoted as $e'\in ECP(e)$. For example, on a mesh with hexagons, there are a total of 10 edges $e'$ on the two cells neighboring edge $e$ (the original edge $e$ is not included).  The perpendicular velocity $u_e^\perp$ is used in the Coriolis force, which appears in the potential vorticity advection term.  The weighting coefficients $w_{e,e'}$ are carefully chosen to conserve potential vorticity, as described in
+The perpendicular vector is computed from the edge-normal components of all the edges of the two neighboring cells of edge $e$, denoted as $e'\in ECP(e)$. For example, on a mesh with hexagons, there are a total of 10 edges $e'$ on the two cells neighboring edge $e$ (the original edge $e$ is not included).  The tangential velocity $u_e^\perp$ is used in the Coriolis force, which appears in the potential vorticity advection term.  The weighting coefficients $w_{e,e'}$ are carefully chosen to conserve potential vorticity, as described in
 [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)
 and
 [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780).
+
+In the code, the cell indices are ordered such that the edge-normal vector (like $u_e$) points positively from the lower to higher cell index value. Likewise, the vertex indices are ordered such that the edge-tangent vector (like $u_e^\perp$) points from the lower to higher vertex index value.
+
+In order to reduce redundant operations, the weights in the standard MPAS mesh files are pre-multiplied by the edge length ratio $l_{e'}/d_e$. Thus the MPAS variable `WeightsOnEdge` is 
+$$
+{\tilde w}_{e,e'} = \frac{l_{e'}}{d_e} w_{e,e'}
+$$
+and the revised calculation of the tangential velocity is
+$$
+u_e^\perp = \sum_{e'\in ECP(e)} {\tilde w}_{e,e'} \, u_{e'}.
+$$
+This simple operation can be seen in MPAS-Ocean in the subroutine `ocn_diagnostic_solve_vortVel` in the file `mpas_ocn_diagnostics.F`.
 
 #### 3.2.5. Perpendicular Gradient
 The gradient of a scalar at the middle of an edge, pointing tangentially along the edge (from one vertex to the other), is sometimes used. For example, the del2 formulation requires the perpendicular gradient of vorticity. This is called the perpendicular gradient because the standard gradient is normal to the edge.
@@ -351,31 +380,40 @@ Like the standard gradient, in practice we drop the sign indicator $t_{e,v}$ and
 $$
 \left(\nabla \omega_v\right)_e^\perp = \frac{\omega_{v2} - \omega_{v1}}{l_e},
 $$
-where the positive vector ${\bf n}^\perp$ is 90$^o$ to the left of ${\bf n}$. The indices are ordered such that ${\bf n}^\perp$ points from $v_1$ to $v_2$, which corresponds to VerticesOnEdge(0,iEdge) and VerticesOnEdge(1,iEdge) in the code.
-
+where the positive vector ${\bf n}^\perp$ is 90$^o$ to the left of ${\bf n}$. The indices are ordered such that ${\bf n}^\perp$ points from $v_1$ to $v_2$, which corresponds to `VerticesOnEdge(IEdge, 0)` and `VerticesOnEdge(IEdge, 1)` in the code.
 
 #### 3.2.6. Cell to Edge Interpolation
-This is simply a mid-point averaging from cell centers to the adjoining edge.
-
+The mid-point average of a scalar from cell centers to the adjoining edge is
 $$
-[h_i]_e = \frac{1}{2} \sum_{i\in CE(e)} h_i
+[h_i]_e = \frac{1}{2} \sum_{i\in CE(e)} h_i.
 $$
+In a Voronoi tessellation the edge is defined to be at the mid-point between the two cell centers, so this formula is identical to an area-weighted average using the triangles between edge $e$ and the neighboring cell centers.
 
 #### 3.2.7. Vertex to Edge Interpolation
-This is a mid-point averaging from vertices to the middle of the connecting edge.
-
+The mid-point average of a scalar from vertices to the middle of the connecting edge is
 $$
-[\omega_v]_e = \frac{1}{2} \sum_{v\in VE(e)} \omega_v
+[\omega_v]_e = \frac{1}{2} \sum_{v\in VE(e)} \omega_v.
 $$
+The is a distance-weighted average, since the edge quantity lives at the mid-point between the vertices. One could alternatively compute an area-weighted average using the dual-mesh cell area ${\hat A}_v$ surrounding each vertex, but that is not done and would result in very small differences.
 
 #### 3.2.8. Cell to Vertex Interpolation
-This is an area-weighted average at a vertex from the three surrounding cells. Here ${\tilde A}_v$ is the dual triangle area centered on the vertex, and ${\hat A}_{i,v}$ is the kite area of cell $i$ with the kite point at vertex $v$.
-
+The area-weighted average of a scalar at a vertex from the three surrounding cells is
 $$
-[h_i]_v = \frac{1}{{\hat A}_{i,v}} \sum_{i\in CV(v)} h_i {\tilde A}_v
+[h_i]_v = \frac{1}{{\hat A}_v} \sum_{i\in CV(v)} h_i {\tilde A}_{v,i}.
+$$
+Here ${\hat A}_v$ is the dual triangle area centered on the vertex, and ${\tilde A}_{v,i}$ is the area of the kite that extends from $x_i$ to the vertex $x_v$.
+The three kites sum to the triangle area,
+$$
+{\hat A}_v = \sum_{i\in CV(v)} {\tilde A}_{v,i}.
 $$
 
-#### 3.2.9. Vector from Edge to Cell
+#### 3.2.9. Vertex to Cell Interpolation
+The area-weighted average of a scalar at a cell from the surrounding vertices is
+$$
+[h_v]_i = \frac{1}{A_i} \sum_{v\in VC(i)} h_v {\tilde A}_{v,i}
+$$
+
+#### 3.2.10. Vector from Edge to Cell
 
 The prognostic velocity variable on the edge is the edge normal velocity, $u_e$. The tangential velocity $u_e^\perp$ is computed diagnostically from $u_e$. In addition, the full vector may be computed at the cell center from the edge normal velocities $u_e$ of the edges on that cell. That is done in MPAS with radial basis functions, and is explained in this [previous design document](https://github.com/MPAS-Dev/MPAS-Documents/blob/master/shared/rbf_design/rbf.pdf).
 
@@ -395,16 +433,29 @@ There are several methods to compute the cell-centered kinetic energy. The first
 [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) equation 63,
 
 $$
-K_i = \frac{1}{A_i} \sum_{e\in EC(c)} \frac{{\bar A}_{e}}{4}u_e^2
+K_i = \frac{1}{A_i} \sum_{e\in EC(i)} \frac{{\bar A}_{e}}{4}u_e^2.
 $$
 
-Another is to compute the kinetic energy at a vertex from the three connected edges,
-
+Here ${\bar A}_{e}$ is the rectangle about the edge defined by ${\bar A}_{e} = l_e d_e$ so that
 $$
-K_v = \frac{1}{A_v} \sum_{e\in EV(v)} \frac{{\bar A}_{e}}{4}u_e^2
+A_i = \sum_{e\in EC(i)} \frac{{\bar A}_{e}}{4}
 $$
+as stated in 
+[Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780) equations 48, 64, and footnote 4.
 
-This can be found in the MPAS-Ocean code with the kineticEnergyVertexOnCells variable. The final kinetic energy at the cell center may be chosen to be either $K_i$ in the first equation above, or a linear combination of the two. In MPAS-Ocean, the flag config_include_KE_vertex uses the value
+One might expect an additional factor of one-half in the $K_i$ formula, as in the standard formula for kinetic energy, $K = \tfrac{1}{2} m v^2$. However, the one-half is missing because $u_e$ is only one component of the velocity vector on the edge. One could replace $u_e^2$ with $\tfrac{1}{2}(u_e^2 + {u_e^{\perp}}^2)$, but $u^\perp_e$ is already computed from the surrounding values of $u_e$, so we don't do that because it would just add redundant information. As a side note, the mass $m$ is missing because the mass is already divided out of the momentum equation (1).
+
+The kinetic energy may also be computed at the vertex.  This uses the velocity on the three connected edges,
+$$
+K_v = \frac{1}{{\hat A}_{v}} \sum_{e\in EV(v)} \frac{{\bar A}_{e}}{4}u_e^2.
+$$
+Note that this normalization works because
+$$
+{\hat A}_{v} = \sum_{e\in EV(v)} \frac{{\bar A}_{e}}{4},
+$$
+since ${\bar A}_{e}/4$ is exactly the portion of the triangle contributed to ${\hat A}_{v}$ by each edge.
+
+The computation of $K_v$ can be found in the MPAS-Ocean code with the `kineticEnergyVertex` variable. The final kinetic energy at the cell center may be chosen to be either $K_i$ in the first equation above, or a linear combination of $K_i$ and $K_v$ interpolated to cell centers. In MPAS-Ocean, the flag `config_include_KE_vertex` uses the value
 
 $$
 \frac{5}{8} K_i + \frac{3}{8} [K_v]_i
@@ -535,7 +586,7 @@ The del2 operator using the divergence of the gradient in the last section is us
 
 ## 4 Design
 
-Add design details in a following PR.
+The design details may be found in other design documents, such as those for the state, auxiliary variables, and tendency terms.
 <!-- To do in later PR: Add all design details.
 
 1. Index ordering will be: (time, tracer, horizontal index, vertical index) Note this is c-style indexing, with last index being fastest, i.e. contiguous in memory.
