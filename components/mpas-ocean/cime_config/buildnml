@@ -1195,7 +1195,6 @@ def buildnml(case, caseroot, compname):
             lines.append('<var name="accumulatedEvapTemperatureFlux"/>')
             lines.append('<var name="accumulatedSeaIceTemperatureFlux"/>')
             lines.append('<var name="accumulatedRiverRunoffTemperatureFlux"/>')
-            lines.append('<var name="accumulatedSubglacialRunoffTemperatureFlux"/>')
             lines.append('<var name="accumulatedIcebergTemperatureFlux"/>')
             lines.append('<var name="accumulatedRainFlux"/>')
             lines.append('<var name="accumulatedSnowFlux"/>')
