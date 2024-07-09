@@ -143,6 +143,7 @@ OPTIONS
      -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.
+     -mosaic            Activate mosaic processes in the modal aerosol model.
      -vbs               Activate vbs soa processes in the modal aerosol model.
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
@@ -395,6 +396,7 @@ GetOptions(
     "mach=s"                    => \$opts{'mach'},
     "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
     "vbs"                       => \$opts{'vbs'},
+    "mosaic"                    => \$opts{'mosaic'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
     "mpi_lib=s"                 => \$opts{'mpi_lib'},
@@ -853,6 +855,12 @@ if ($print>=2) { print "Maximum radiatively active tracers: $max_n_rad_cnst$eol"
 # The chemistry package is determined before the configuration object is initialized.
 # So add it to the config object now.
 $cfg_ref->set('chem', $chem_pkg);
+
+# mosaic option in mam
+if (defined $opts{'mosaic'}) {
+   $cfg_ref->set('mosaic', $opts{'mosaic'});
+}
+my $mosaic = $cfg_ref->get('mosaic');
 
 # vbs option in mam
 if (defined $opts{'vbs'}) {
@@ -1921,6 +1929,9 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
+
+# mosaic option in mam
+if ($mosaic) { $cfg_cppdefs .= ' -DMOSAIC_SPECIES'; }
 
 #vbs option in mam
 if ($vbs) { $cfg_cppdefs .= ' -DVBS_SOA'; }
