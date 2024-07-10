@@ -380,7 +380,7 @@ def buildnml(case, caseroot, compname):
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
         if ocn_sgr == 'data':
-            data_sgr_file = 'DSGR.MALI.out2055.IcoswISC30E3r5.20240328.nc.nc'
+            data_sgr_file = 'DSGR.MALI.out2055.IcoswISC30E3r5.20240328.nc'
 
     elif ocn_grid == 'IcosXISC30E3r7':
         decomp_date = '20240314'
