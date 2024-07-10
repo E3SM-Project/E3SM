@@ -68,8 +68,7 @@ TEST_CASE("output_restart","io")
   const auto& out_fields = fm0->get_groups_info().at("output")->m_fields_names;
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // Timestamp of the simulation initial time
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
@@ -79,14 +78,13 @@ TEST_CASE("output_restart","io")
   output_params.set<std::string>("Floating Point Precision","real");
   output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
-  output_params.sublist("output_control").set<bool>("MPI Ranks in Filename","true");
+  output_params.set<bool>("MPI Ranks in Filename","true");
+  output_params.set<int>("flush_frequency",1);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("Frequency",10);
-  output_params.sublist("Checkpoint Control").set<bool>("MPI Ranks in Filename","true");
   output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
   // This skips a test that only matters for AD runs
   output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
-  output_params.sublist("Restart").set<bool>("MPI Ranks in Filename","true");
 
   // Creates and runs an OM from output_params and given inputs
   auto run = [&](std::shared_ptr<FieldManager> fm,
@@ -101,6 +99,7 @@ TEST_CASE("output_restart","io")
     // The output restart data is written every 5 time steps, while the output freq is 10.
     auto time = run_t0;
     for (int i=0; i<nsteps; ++i) {
+      output_manager.init_timestep(time,dt);
       time_advance(*fm,out_fields,dt);
       time += dt;
       output_manager.run(time);
@@ -118,7 +117,7 @@ TEST_CASE("output_restart","io")
     }
   };
   // Run test for different avg type choices
-  for (const std::string& avg_type : {"INSTANT","AVERAGE"}) {
+  for (const std::string avg_type : {"INSTANT","AVERAGE"}) {
     {
       // In normal runs, the OM for the model restart takes care of nuking rpointer.atm,
       // and re-creating a new one. Here, we don't have that, so we must nuke it manually
@@ -151,7 +150,7 @@ TEST_CASE("output_restart","io")
     print(" DONE\n");
   }
   // Finalize everything
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 } 
 
 /*=============================================================================================*/
@@ -161,36 +160,25 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  using FL = FieldLayout;
   using FR = FieldRequest;
   using SL = std::list<std::string>;
 
   // Create a fm
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const int num_lcols = grid->get_num_local_dofs();
-  const int num_levs = grid->get_num_vertical_levels();
-
-  // Create some fields for this fm
-  std::vector<FieldTag> tag_h  = {COL};
-  std::vector<FieldTag> tag_v  = {LEV};
-  std::vector<FieldTag> tag_2d = {COL,LEV};
-  std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
-  std::vector<FieldTag> tag_bnd = {COL,SWBND,LEV};
-
-  std::vector<Int>     dims_h  = {num_lcols};
-  std::vector<Int>     dims_v  = {num_levs};
-  std::vector<Int>     dims_2d = {num_lcols,num_levs};
-  std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
-  std::vector<Int>     dims_bnd = {num_lcols,3,num_levs};
+  auto scalar_1d = grid->get_vertical_layout(true);
+  auto scalar_2d = grid->get_2d_scalar_layout();
+  auto scalar_3d = grid->get_3d_scalar_layout(true);
+  auto vector_3d = grid->get_3d_vector_layout(true,2);
+  auto rad_vector_3d = grid->get_3d_vector_layout(true,3,"SWBND");
 
   const std::string& gn = grid->name();
 
-  FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
-  FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
-  FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
-  FieldIdentifier fid4("field_4",FL{tag_3d,dims_3d},kg/m,gn);
-  FieldIdentifier fid5("field_5",FL{tag_bnd,dims_bnd},m*m,gn);
+  FieldIdentifier fid1("field_1",scalar_2d,    m,   gn);
+  FieldIdentifier fid2("field_2",scalar_1d,    kg,  gn);
+  FieldIdentifier fid3("field_3",scalar_3d,    kg/m,gn);
+  FieldIdentifier fid4("field_4",vector_3d,    kg/m,gn);
+  FieldIdentifier fid5("field_5",rad_vector_3d,m*m, gn);
 
   // Register fields with fm
   fm->registration_begins();
@@ -285,14 +273,14 @@ void time_advance (const FieldManager& fm,
           for (int i=0; i<fl.dim(0); ++i) {
             for (int j=0; j<fl.dim(1); ++j) {
               for (int k=0; k<fl.dim(2); ++k) {
-		if (fname == "field_5") {
-		  // field_5 is used to test restarts w/ filled values, so
-		  // we cycle between filled and unfilled states.
-		  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
-			  ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
-		} else {
-                  v(i,j,k) += dt;
-		}
+                if (fname == "field_5") {
+                  // field_5 is used to test restarts w/ filled values, so
+                  // we cycle between filled and unfilled states.
+                  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
+                    ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
+                } else {
+                              v(i,j,k) += dt;
+                }
               }
             }
           }

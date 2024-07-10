@@ -57,7 +57,8 @@ void Functions<S,D>
   const uview_1d<Spack>& rho_qi,
   const uview_1d<Spack>& diag_equiv_reflectivity,
   const uview_1d<Spack>& diag_eff_radius_qc,
-  const uview_1d<Spack>& diag_eff_radius_qr)
+  const uview_1d<Spack>& diag_eff_radius_qr,
+  const physics::P3_Constants<S> & p3constants)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
@@ -107,7 +108,7 @@ void Functions<S,D>
       auto nr_incld = nr(k)/cld_frac_r(k); //nr_incld is updated in get_rain_dsd2 but isn't used again
 
       get_rain_dsd2(
-        qr_incld, nr_incld, mu_r(k), lamr(k), ignore1, ignore2, qr_gt_small);
+        qr_incld, nr_incld, mu_r(k), lamr(k), p3constants, qr_gt_small);
 
       //Note that integrating over the drop-size PDF as done here should only be done to in-cloud
       //quantities but radar reflectivity is likely meant to be a cell ave. Thus nr in the next line
@@ -142,7 +143,7 @@ void Functions<S,D>
       auto qm_incld = qm(k)/cld_frac_i(k);
       auto bm_incld = bm(k)/cld_frac_i(k);
 
-      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, qi_gt_small);
+      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, p3constants, qi_gt_small);
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 

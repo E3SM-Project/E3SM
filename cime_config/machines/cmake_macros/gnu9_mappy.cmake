@@ -1,8 +1,0 @@
-if (COMP_NAME STREQUAL gptl)
-  string(APPEND CPPDEFS " -DHAVE_SLASHPROC")
-endif()
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
-if (MPILIB STREQUAL mpi-serial AND NOT compile_threaded)
-  set(PFUNIT_PATH "$ENV{SEMS_PFUNIT_ROOT}")
-endif()

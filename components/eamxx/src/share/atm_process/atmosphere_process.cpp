@@ -45,6 +45,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
     auto log_level = m_params.get<std::string>("log_level","trace");
     m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
+    m_atm_logger->set_no_format();
   }
 
   if (m_params.isParameter("number_of_subcycles")) {

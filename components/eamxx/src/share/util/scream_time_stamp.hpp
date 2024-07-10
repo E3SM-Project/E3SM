@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <limits>
 
 namespace scream {
 namespace util {
@@ -46,9 +47,8 @@ public:
 
   // === Update method(s) === //
 
-  // Set the counter for the number of steps. Must be called while m_num_steps==0,
-  // for safety reasons (do not alter num steps while the count started).
-  void set_num_steps (const int num_steps);
+  // Set the counter for the number of steps.
+  void set_num_steps (const int num_steps) { m_num_steps  = num_steps; }
 
   TimeStamp& operator= (const TimeStamp&) = default;
 
@@ -63,7 +63,7 @@ protected:
   std::vector<int> m_date;  // [year, month, day]
   std::vector<int> m_time;  // [hour, min, sec]
 
-  int m_num_steps = 0; // Number of steps since simulation started
+  int m_num_steps = std::numeric_limits<int>::lowest(); // Number of steps since simulation started
 };
 
 // Overload operators for TimeStamp

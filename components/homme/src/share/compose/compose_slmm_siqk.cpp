@@ -75,7 +75,7 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  void join (volatile value_type& dst, volatile value_type const& src) const {
+  void join (value_type& dst, value_type const& src) const {
     dst.max_nits = max(dst.max_nits, src.max_nits);
     dst.sum_nits += src.sum_nits;
     dst.nfails += src.nfails;

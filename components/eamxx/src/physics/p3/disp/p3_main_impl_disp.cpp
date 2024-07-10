@@ -35,6 +35,7 @@ void Functions<Real,DefaultDevice>
 {       
   using ExeSpace = typename KT::ExeSpace;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {
         
@@ -108,7 +109,8 @@ Int Functions<Real,DefaultDevice>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const physics::P3_Constants<Real> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -231,7 +233,7 @@ Int Functions<Real,DefaultDevice>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
@@ -247,7 +249,7 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      pratot, prctot, nucleationPossible, hydrometeorsPresent);
+      pratot, prctot, nucleationPossible, hydrometeorsPresent, p3constants);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -273,14 +275,14 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
       nr, nr_incld, mu_r, lamr, precip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
+      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // Ice sedimentation:  (adaptive substepping)
   ice_sedimentation_disp(
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
       qm, qm_incld, bm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent);
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, p3constants);
 
   // homogeneous freezing f cloud and rain
   homogeneous_freezing_disp(
@@ -296,7 +298,8 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
       qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
-      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent);
+      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
+      p3constants);
 
   //
   // merge ice categories with similar properties

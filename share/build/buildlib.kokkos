@@ -99,7 +99,7 @@ def buildlib(bldroot, installpath, case):
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
-    gen_makefile_cmd = f"cmake {kokkos_options} {cxx} -DCMAKE_INSTALL_PREFIX={installpath} {kokkos_dir}"
+    gen_makefile_cmd = f"cmake {kokkos_options} {cxx} -DCMAKE_CXX_STANDARD=17 -DCMAKE_INSTALL_PREFIX={installpath} {kokkos_dir}"
 
     # When later we use find_package to get kokkos in CMake, the folder
     # install_sharedpath/kokkos (which is bldroot here) gets picked over

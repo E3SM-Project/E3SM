@@ -1,0 +1,15 @@
+# Note RRMTMGP only works with double-precision, so only compile tests for DP
+if (SCREAM_DOUBLE_PRECISION)
+  add_subdirectory(shoc_cld_p3_rrtmgp)
+  add_subdirectory(shoc_cld_spa_p3_rrtmgp)
+    if (SCREAM_ENABLE_MAM)
+      add_subdirectory(mam/optics_rrtmgp)
+      add_subdirectory(mam/shoc_mam4_aci)
+      add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3)
+      add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3_rrtmgp)
+      add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3_mam4_optics_rrtmgp)
+    endif()
+endif()
+
+add_subdirectory (atm_proc_subcycling)
+add_subdirectory (shoc_p3_nudging)

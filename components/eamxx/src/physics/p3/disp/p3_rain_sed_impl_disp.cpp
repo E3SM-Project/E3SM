@@ -27,7 +27,8 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& nr_tend,
   const uview_1d<Scalar>& precip_liq_surf,
   const uview_1d<bool>& nucleationPossible,
-  const uview_1d<bool>& hydrometeorsPresent)
+  const uview_1d<bool>& hydrometeorsPresent,
+  const physics::P3_Constants<Real> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -49,7 +50,7 @@ void Functions<Real,DefaultDevice>
       team, workspace, vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, dt, inv_dt, 
       ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(nr_incld, i), ekat::subview(mu_r, i), 
       ekat::subview(lamr, i), ekat::subview(precip_liq_flux, i), 
-      ekat::subview(qr_tend, i), ekat::subview(nr_tend, i), precip_liq_surf(i));
+      ekat::subview(qr_tend, i), ekat::subview(nr_tend, i), precip_liq_surf(i), p3constants);
   });
 
 }

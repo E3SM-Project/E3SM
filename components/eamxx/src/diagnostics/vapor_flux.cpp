@@ -36,12 +36,6 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
-  auto vel = m/s;
-  vel.set_string("m/s");
-
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
@@ -49,12 +43,12 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,CMP,2);
+  auto vector3d = grid->get_3d_vector_layout(true,2);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("pseudo_density", scalar3d, Pa,  grid_name);
-  add_field<Required>("qv",             scalar3d, Q,   grid_name);
-  add_field<Required>("horiz_winds",    vector3d, m/s, grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa,    grid_name);
+  add_field<Required>("qv",             scalar3d, kg/kg, grid_name);
+  add_field<Required>("horiz_winds",    vector3d, m/s,   grid_name);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar2d, kg/m/s, grid_name);

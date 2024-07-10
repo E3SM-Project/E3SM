@@ -56,6 +56,9 @@ public:
     register_field(create_src_fid(tgt),tgt);
   }
 
+  virtual void register_field_from_src (const field_type& src);
+  virtual void register_field_from_tgt (const field_type& tgt);
+
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 
@@ -160,8 +163,8 @@ public:
 
   virtual bool compatible_layouts (const layout_type& src,
                                    const layout_type& tgt) const {
-    // By default, the only compatible layouts are identical
-    return src==tgt;
+    // By default, the only compatible layouts are congruent
+    return src.congruent(tgt);
   }
 
   virtual bool is_valid_src_layout (const layout_type& layout) const {
