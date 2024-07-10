@@ -3,9 +3,50 @@
 #include "mam4xx/drydep.hpp"
 
 /*
-Future work:
-Wirte comments
-write in/outs for all variables clearly
+Inputs:
+
+Atmosphere:
+  temperature        "T_mid"
+  pressure           "p_mid"
+  interface_pressure "p_int"
+  hydrostatic_dp     "pseudo_density"
+
+Diagnostics:
+  tracer_mixing_ratio              "qtracers"
+  wet_geometric_mean_diameter_i    "dgncur_awet"
+  wet_density                      "wetdens"
+
+Diagnostic Scalar Parameters, one per column:
+  "Obukhov_length"
+  "surface_friction_velocty"
+  "land_fraction"
+  "ice_fraction"
+  "ocean_fraction"
+  "friction_velocity"
+  "aerodynamical_resistance"
+
+Prognostics:
+  n_mode_c    "mam_coupling::cld_aero_nmr_field_name(m)"
+  q_aero_c    "mam_coupling::int_aero_nmr_field_name(m)"
+
+
+
+Outputs:
+
+Diagnostics:
+  d_tracer_mixing_ratio_dt                 "d_qtracers_dt"
+  deposition_flux_of_cloud_borne_aerosols  "deposition_flux_of_cloud_borne_aerosols"
+  deposition_flux_of_interstitial_aerosols "deposition_flux_of_interstitial_aerosols"
+
+Computed internally, could be exposed if needed by another process
+  vlc_grv(nlev) : dep velocity of gravitational settling [m/s]
+  vlc_trb(nlev) : dep velocity of turbulent dry deposition [m/s]
+  vlc_dry(nlev) : dep velocity, sum of vlc_grv and vlc_trb [m/s]
+
+Tendencies:
+  n_mode_c   "Tendencies"
+  q_aero_c   "Tendencies"
+
 */
 
 namespace scream {
@@ -31,6 +72,8 @@ void MAMDryDep::set_grids(
 
   auto m3 = m * m * m;  // meter cubed
 
+  auto nondim = ekat::units::Units::nondimensional();
+
   grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
@@ -39,8 +82,6 @@ void MAMDryDep::set_grids(
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
-
-  auto nondim = ekat::units::Units::nondimensional();
 
   // Layout for 2D (2d horiz) variable 
   const FieldLayout scalar2d_layout{{COL}, {ncol_}};
@@ -51,9 +92,10 @@ void MAMDryDep::set_grids(
   const FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
+  // at mid points
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_layout_mid{
-      {NMODES, COL, LEV}, {num_aero_modes, ncol_, nlev_}};  // mid points
+      {NMODES, COL, LEV}, {num_aero_modes, ncol_, nlev_}};  
 
   // Layout for tracers.
   const int pcnst = mam4::aero_model::pcnst;
@@ -95,7 +137,7 @@ void MAMDryDep::set_grids(
                      "tracers");  // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers");  // ice number mixing ratio
-				   //
+				     
   add_field<Updated>("wetdens", scalar4d_layout_mid, kg / m3, grid_name);
   add_field<Updated>("dgncur_awet", scalar4d_layout_mid, m, grid_name);
 
@@ -192,13 +234,13 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
   dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
 
-  obklen_   = get_field_in("Obukhov_length").get_view<const Real*>();
-  surfric_  = get_field_in("surface_friction_velocty").get_view<const Real*>();
-  landfrac_ = get_field_in("land_fraction").get_view<const Real*>();
-  icefrac_  = get_field_in("ice_fraction").get_view<const Real*>();
-  ocnfrac_  = get_field_in("ocean_fraction").get_view<const Real*>();
-  friction_velocity_       = get_field_in("friction_velocity").get_view<const Real*>();
-  aerodynamical_resistance_     = get_field_in("aerodynamical_resistance").get_view<const Real*>();
+  obukhov_length_           = get_field_in("Obukhov_length").get_view<const Real*>();
+  surface_friction_velocty_ = get_field_in("surface_friction_velocty").get_view<const Real*>();
+  land_fraction_            = get_field_in("land_fraction").get_view<const Real*>();
+  ice_fraction_             = get_field_in("ice_fraction").get_view<const Real*>();
+  ocean_fraction_           = get_field_in("ocean_fraction").get_view<const Real*>();
+  friction_velocity_        = get_field_in("friction_velocity").get_view<const Real*>();
+  aerodynamical_resistance_ = get_field_in("aerodynamical_resistance").get_view<const Real*>();
 
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.z_mid = buffer_.z_mid;
@@ -268,74 +310,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
                          dry_atm_, dry_aero_);
 }
 namespace {
-KOKKOS_INLINE_FUNCTION
-void compute_tendencies(
-    const MAMDryDep::KT::MemberType &team, 
-    const mam4::DryDeposition &dry_deposition,
-    const double dt,
-    const MAMDryDep::const_view_1d obklen,
-    const MAMDryDep::const_view_1d surfric,
-    const MAMDryDep::const_view_1d landfrac,
-    const MAMDryDep::const_view_1d icefrac,
-    const MAMDryDep::const_view_1d ocnfrac,
-    const MAMDryDep::const_view_1d friction_velocity,
-    const MAMDryDep::const_view_1d aerodynamical_resistance,
-    const MAMDryDep::view_3d qtracers,
-    const MAMDryDep::view_3d d_qtracers_dt,
-    const MAMDryDep::view_2d dgncur_awet[mam_coupling::num_aero_modes()],
-    const MAMDryDep::view_2d wet_dens[mam_coupling::num_aero_modes()],
-    const mam_coupling::DryAtmosphere &dry_atm,
-    const mam_coupling::AerosolState &dry_aero,
-    const mam_coupling::AerosolState &wet_aero,
-    MAMDryDep::view_2d aerdepdrycw, 
-    MAMDryDep::view_2d aerdepdryis,
-    MAMDryDep::view_3d tendencies)
-{
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  const int num_aero_species = mam_coupling::num_aero_species();
-  const Real t = 0;
-  const int icol = team.league_rank();
-
-  const mam4::AeroConfig aero_config;
-  mam4::Atmosphere atm =  atmosphere_for_column(dry_atm, icol);
-  mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
-  mam4::Surface surf; 
-  mam4::Diagnostics diags;
-  mam4::Tendencies tends; 
-
-  diags.tracer_mixing_ratio = ekat::subview(qtracers, icol);
-  diags.d_tracer_mixing_ratio_dt = ekat::subview(d_qtracers_dt, icol);
-
-  for (int i=0; i<num_aero_modes; ++i) 
-    diags.wet_geometric_mean_diameter_i[i] = ekat::subview(dgncur_awet[i], icol);
-
-  for (int i=0; i<num_aero_modes; ++i)
-    diags.wet_density[i] = ekat::subview(wet_dens[i], icol);
-
-  diags.Obukhov_length              =  obklen[icol];
-  diags.surface_friction_velocty    =  surfric[icol];
-  diags.land_fraction               =  landfrac[icol];
-  diags.ice_fraction                =  icefrac[icol];
-  diags.ocean_fraction              =  ocnfrac[icol];
-  diags.friction_velocity           =  friction_velocity[icol];
-  diags.aerodynamical_resistance    =  aerodynamical_resistance[icol];
-
-  diags.deposition_flux_of_cloud_borne_aerosols   = ekat::subview(aerdepdrycw, icol);
-  diags.deposition_flux_of_interstitial_aerosols  = ekat::subview(aerdepdryis, icol);
-
-  // Fill Tendency views
-  for (int m=0; m<num_aero_modes; ++m) {
-    int iconv = mam4::ConvProc::numptrcw_amode(m);
-    tends.n_mode_c[m] = ekat::subview(tendencies, icol, iconv);
-    for (int a=0; a<num_aero_species; ++a) {
-      iconv = mam4::ConvProc::lmassptrcw_amode(a,m);
-      if (-1 < iconv)
-        tends.q_aero_c[m][a] =  ekat::subview(tendencies, icol, iconv);
-    }
-  }
-
-  dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf, progs, diags, tends);
-}
 void compute_tendencies(
     const int ncol, 
     const int nlev,
@@ -362,49 +336,62 @@ void compute_tendencies(
   const auto policy = ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType& team) {
     const int num_aero_modes = mam_coupling::num_aero_modes();
-    MAMDryDep::view_2d dgncur_awet[num_aero_modes];
-    MAMDryDep::view_2d wet_dens[num_aero_modes];
+    const int num_aero_species = mam_coupling::num_aero_species();
+    const int icol = team.league_rank();
+    const Real t = 0;
 
-    for (int i=0; i<num_aero_modes; ++i)
-      dgncur_awet[i] = ekat::subview(dgncur_awet_, i);
-
-    for (int i=0; i<num_aero_modes; ++i)
-      wet_dens[i] = ekat::subview(wet_dens_, i);
-
-    compute_tendencies(team, dry_deposition, dt, 
-      obklen, surfric, landfrac, icefrac, ocnfrac, friction_velocity, aerodynamical_resistance,
-      qtracers, d_qtracers_dt, 
-      dgncur_awet, wet_dens, dry_atm, dry_aero, wet_aero, aerdepdrycw, aerdepdryis, tendencies);
-  });
-}
-
-void fill_tracer_views(
-    const int ncol, 
-    const int nlev, 
-    mam_coupling::DryAtmosphere dry_atm, 
-    mam_coupling::AerosolState dry_aero, 
-    mam_coupling::AerosolState wet_aero, 
-    MAMDryDep::view_3d qtracers) 
-{ 
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  const int num_aero_species = mam_coupling::num_aero_species();
-  const auto policy = ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType& team) {
-    const int column = team.league_rank(); 
-    compute_wet_mixing_ratios(team, dry_atm, dry_aero, wet_aero, column);
-
+    compute_wet_mixing_ratios(team, dry_atm, dry_aero, wet_aero, icol);
+    team.team_barrier();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int lev) {
       for (int mode = 0; mode < num_aero_modes; ++mode) {
         int icnst = mam4::ConvProc::numptrcw_amode(mode);
-        qtracers(column, lev, icnst) = wet_aero.int_aero_nmr[mode](column,lev);
+        qtracers(icol, lev, icnst) = wet_aero.int_aero_nmr[mode](icol,lev);
         for (int species = 0; species < num_aero_species; ++species) { 
           icnst = mam4::ConvProc::lmassptrcw_amode(species, mode);
 	  if (-1 < icnst) {
-            qtracers(column, lev, icnst) = wet_aero.int_aero_mmr[mode][species](column,lev);
+            qtracers(icol, lev, icnst) = wet_aero.int_aero_mmr[mode][species](icol,lev);
 	  }
 	}
       }
     });
+    team.team_barrier();
+
+    mam4::Atmosphere atm =  atmosphere_for_column(dry_atm, icol);
+    mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
+    mam4::Surface surf; 
+    mam4::Diagnostics diags;
+    mam4::Tendencies tends; 
+
+    for (int i=0; i<num_aero_modes; ++i) {
+      diags.wet_geometric_mean_diameter_i[i] = ekat::subview(dgncur_awet_, i, icol);
+      diags.wet_density[i]                   = ekat::subview(wet_dens_, i, icol);
+    }
+    diags.tracer_mixing_ratio                      = ekat::subview(qtracers, icol);
+    diags.d_tracer_mixing_ratio_dt                 = ekat::subview(d_qtracers_dt, icol);
+    diags.deposition_flux_of_cloud_borne_aerosols  = ekat::subview(aerdepdrycw, icol);
+    diags.deposition_flux_of_interstitial_aerosols = ekat::subview(aerdepdryis, icol);
+
+    diags.Obukhov_length           = obklen[icol];
+    diags.surface_friction_velocty = surfric[icol];
+    diags.land_fraction            = landfrac[icol];
+    diags.ice_fraction             = icefrac[icol];
+    diags.ocean_fraction           = ocnfrac[icol];
+    diags.friction_velocity        = friction_velocity[icol];
+    diags.aerodynamical_resistance = aerodynamical_resistance[icol];
+
+    // Fill Tendency views
+    for (int m=0; m<num_aero_modes; ++m) {
+      int iconv = mam4::ConvProc::numptrcw_amode(m);
+      tends.n_mode_c[m] = ekat::subview(tendencies, icol, iconv);
+      for (int a=0; a<num_aero_species; ++a) {
+        iconv = mam4::ConvProc::lmassptrcw_amode(a,m);
+        if (-1 < iconv)
+          tends.q_aero_c[m][a] =  ekat::subview(tendencies, icol, iconv);
+      }
+    }
+
+    const mam4::AeroConfig aero_config;
+    dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf, progs, diags, tends);
   });
 }
 }
@@ -439,15 +426,16 @@ void MAMDryDep::run_impl(const double dt) {
   // }
   // Kokkos::fence();
 
-  fill_tracer_views(ncol_, nlev_, dry_atm_, dry_aero_, wet_aero_, qtracers_);
-  Kokkos::fence();
-
   compute_tendencies(ncol_, nlev_, dry_deposition, dt, 
-    obklen_, surfric_, landfrac_, icefrac_, ocnfrac_, friction_velocity_, aerodynamical_resistance_,
-    qtracers_, d_qtracers_dt_, 
-    dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_, aerdepdrycw_, aerdepdryis_, tendencies_);
+    obukhov_length_, surface_friction_velocty_, 
+    land_fraction_, ice_fraction_, ocean_fraction_, 
+    friction_velocity_, aerodynamical_resistance_,
+    qtracers_, d_qtracers_dt_, // d_qtracers_dt_ is an output 
+    dgncur_awet_, wet_dens_, 
+    dry_atm_, dry_aero_, wet_aero_, 
+    // Outputs:
+    aerdepdrycw_, aerdepdryis_, tendencies_);
   Kokkos::fence();
 }
-
 // =========================================================================================
 }  // namespace scream

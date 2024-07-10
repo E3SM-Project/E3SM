@@ -254,7 +254,7 @@ const char* gas_mmr_field_name(const int gas) {
   if (!gas_mmr_names(gas)[0]) {
     concat_2_strings("", gas_species_name(gas), gas_mmr_names(gas));
   }
-  return const_cast<const char*>(gas_mmr_names(gas));
+  return gas_mmr_names(gas);
 }
 
 // This type stores multi-column views related specifically to the wet

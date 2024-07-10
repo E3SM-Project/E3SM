@@ -48,11 +48,11 @@ private:
   view_2d aerdepdrycw_;
   view_2d aerdepdryis_;
 
-  const_view_1d obklen_;
-  const_view_1d surfric_;
-  const_view_1d landfrac_;
-  const_view_1d icefrac_;
-  const_view_1d ocnfrac_;
+  const_view_1d obukhov_length_;
+  const_view_1d surface_friction_velocty_;
+  const_view_1d land_fraction_;
+  const_view_1d ice_fraction_;
+  const_view_1d ocean_fraction_;
   const_view_1d friction_velocity_;
   const_view_1d aerodynamical_resistance_;
 
@@ -117,7 +117,6 @@ public:
       compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
                                 dry_aero_pre_, i);
       team.team_barrier();
-
     }  // operator()
 
     // local variables for preprocess struct
