@@ -3401,12 +3401,12 @@ sub setup_logic_fates {
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp','use_fates'=>$nl_flags->{'use_fates'});
 
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flandusepftdat',  'phys'=>$nl_flags->{'phys'});
 
+    # add other fates modes whose defaults don't depend on other modes
     my @list  = (  "fates_harvest_mode",
                    "fates_history_dimlevel",
                    "fates_inventory_ctrl_filename",
@@ -3416,19 +3416,28 @@ sub setup_logic_fates {
                    "use_fates_cohort_age_tracking",
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
-                   "use_fates_fixed_biogeog",
                    "use_fates_inventory_init",
-                   "use_fates_luh",
-                   "use_fates_lupft",
-                   "use_fates_nocomp",
+		   "use_fates_lupft",
                    "use_fates_planthydro",
-                   "use_fates_potentialveg",
+		   "use_fates_potentialveg",
+		   "use_fates_sp",
                    "use_fates_tree_damage");
 
     foreach my $var (@list) {
-       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
-	                                                                                 'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
     }
+
+    # Add defaults for fates modes that depend on previously set fates modes.  See namelist defaults file for list.
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                      'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+                                                                                      'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                      'fates_harvest_mode'=>$nl->get_value('fates_harvest_mode') );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
+	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                      'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
