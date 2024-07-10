@@ -628,7 +628,12 @@ add_default($nl, 'config_recover_tracer_means_check');
 ##################################
 # Namelist group: column_package #
 ##################################
-add_default($nl, 'config_column_physics_type');
+
+if ($ice_bgc eq 'ice_bgc') {
+        add_default($nl, 'config_column_physics_type', 'val'=>"column_package");
+} else {
+        add_default($nl, 'config_column_physics_type');
+}
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 if ($ice_bgc eq 'ice_bgc') {
