@@ -3519,7 +3519,7 @@ sub setup_logic_fates {
     }
 
     # check that fates landuse is on and harvest mode is off when potential veg switch is true
-    my $var = "use_potentialveg";
+    my $var = "use_fates_potentialveg";
     if ( defined($nl->get_value($var))  ) {
        if ( &value_is_true($nl->get_value($var)) ) {
           if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
@@ -3527,7 +3527,7 @@ sub setup_logic_fates {
           }
           my $var = remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode'));
           if ( $var ne 'no_harvest') {
-             fatal_error("fates_harvest_mode set to $var.  It must set to no_harvest when use_potential_veg is true." );
+             fatal_error("fates_harvest_mode set to $var.  It must set to no_harvest when use_fates_potential_veg is true." );
           }
           my $var = "fluh_timeseries";
           if ( defined($nl->get_value($var))  ) {
