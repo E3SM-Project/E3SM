@@ -137,7 +137,7 @@ end subroutine shr_flux_adjust_constants
 !
 !     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
 !     2019-May-16 - Jack Reeves Eyre (UA) and Kai Zhang (PNNL) - Added COARE/Fairall surface flux scheme option (ocn_surface_flux_scheme .eq. 1) based on code from Thomas Toniazzo (Bjerknes Centre, Bergen) ”
-!
+!     2024-Jul-10 - E. Thomas ethomas@lanl.gov - implementing Coare3.0 w/ Wave coupling (uses charnock paramter from WW3)
 ! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
