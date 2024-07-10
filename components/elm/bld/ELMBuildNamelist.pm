@@ -3497,7 +3497,7 @@ sub setup_logic_fates {
                 if ( ! defined($nl->get_value($var))  ) {
                    fatal_error("$var is required when use_fates_luh is set" );
                 } elsif ( ! -f "$fname" ) {
-                   fatal_error("$fname does NOT point to a valid filename" );
+                   fatal_error("$var does NOT point to a valid filename" );
                 }
 	     }
           } 
