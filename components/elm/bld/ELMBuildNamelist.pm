@@ -3401,6 +3401,8 @@ sub setup_logic_fates {
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp','use_fates'=>$nl_flags->{'use_fates'});
+
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flandusepftdat',  'phys'=>$nl_flags->{'phys'});
@@ -3421,12 +3423,11 @@ sub setup_logic_fates {
                    "use_fates_nocomp",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
-                   "use_fates_sp",
                    "use_fates_tree_damage");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
-                                                                                              'use_fates_sp'=>$nl_flags->{'use_fates_sp'} );
+	                                                                                 'use_fates_sp'=>$nl->get_value('use_fates_sp') );
     }
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
