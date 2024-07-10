@@ -3491,8 +3491,8 @@ sub setup_logic_fates {
              if ( ! &value_is_true($nl->get_value($var)) ) {
                 $var = "fluh_timeseries";
                 add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
-                            'phys'=>$nl_flags->{'phys'}, 'hgrid'=>$nl_flags->{'res'},
-                            'sim_year_range'=>$nl_flags->{'sim_year_range'}, nofail=>1 );
+                            'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>$nl_flags->{'res'},
+                            'sim_year_range'=>$nl_flags->{'sim_year_range'} );
                 my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
                 if ( ! defined($nl->get_value($var))  ) {
                    fatal_error("$var is required when use_fates_luh is set" );
