@@ -70,13 +70,13 @@ inline int pam_driver_set_subcycle_timestep( pam::PamCoupler &coupler, real crm_
     real crm_dz = input_zint(k_gcm,n) - input_zint(k_gcm+1,n);
     real cfl_u = uvel_max(k,n)*crm_dt_fixed/crm_dx;
     real cfl_w = wvel_max(k,n)*crm_dt_fixed/crm_dz;
-    cfl_max(k,n) = max(cfl_u,cfl_w);
+    cfl_max(k,n) = std::max(cfl_u,cfl_w);
   });
   // calculate final CFL across ensemble
   real cfl_loc = yakl::intrinsics::maxval(cfl_max);
-  cfl = max(cfl,cfl_loc);
+  cfl = std::max(cfl,cfl_loc);
   // update number of subcycles and time step
-  num_subcycle = max(num_subcycle,max(1,static_cast<int>(ceil(cfl/0.7))));
+  num_subcycle = std::max(num_subcycle,std::max(1,static_cast<int>(ceil(cfl/0.7))));
   real crm_dt_subcycle = crm_dt_fixed / num_subcycle;
   coupler.set_option<real>("crm_dt",crm_dt_subcycle);
   // check for excessive subcylcing - don't exit, just print
