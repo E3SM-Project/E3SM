@@ -610,6 +610,7 @@ void compute_vertical_layer_heights(const Team& team,
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
             dz);//output
   team.team_barrier();
+  //FIXME : add an assert statement to check id z_surf is zero or not
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
    z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date

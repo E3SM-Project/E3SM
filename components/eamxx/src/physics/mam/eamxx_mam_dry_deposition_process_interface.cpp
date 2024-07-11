@@ -229,9 +229,14 @@ void MAMDryDep::set_grids(
                        "tracers");
   }
 
-  // Tempary memory to format the wet_aero.int_aero_nmr and
-  // wet_aero.int_aero_mmr views into the order expected by mam4xx.
+  // -------------------------------------------------------------
+  // These variables are "Computed" or outputs for the process
+  // -------------------------------------------------------------
+
   add_field<Computed>("qtracers", scalar4d_q, kg / kg, grid_name);
+
+  // FIXME: what is the diff between d_qtracers_dt and tendencies????
+  // FIXME: we might not need this in FM
   add_field<Computed>("d_qtracers_dt", scalar4d_q, kg / kg / s, grid_name);
 
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
@@ -240,21 +245,28 @@ void MAMDryDep::set_grids(
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
                       1 / (m * m) / s, grid_name);
+  // FIXME: we might not need this in FM
   add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
                       grid_name);
 }
 
-// =========================================================================================
-// ON HOST, returns the number of bytes of device memory needed by the above
-// Buffer type given the number of columns and vertical levels
+// ================================================================
+//  REQUEST_BUFFER_SIZE_IN_BYTES
+// ================================================================
+// ON HOST, returns the number of bytes of device memory needed by
+// the above. Buffer type given the number of columns and vertical
+// levels
 size_t MAMDryDep::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_);
 }
 
-// =========================================================================================
-// ON HOST, initializeѕ the Buffer type with sufficient memory to store
-// intermediate (dry) quantities on the given number of columns with the given
-// number of vertical levels. Returns the number of bytes allocated.
+// ================================================================
+//  INIT_BUFFERS
+// ================================================================
+// ON HOST, initializeѕ the Buffer type with sufficient memory to
+// store intermediate (dry) quantities on the given number of
+// columns with the given number of vertical levels. Returns the
+// number of bytes allocated.
 void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
@@ -266,23 +278,30 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for MAMDryDep.");
 }
 
-// =========================================================================================
+// ================================================================
+//  INITIALIZE_IMPL
+// ================================================================
 void MAMDryDep::initialize_impl(const RunType run_type) {
-  // Gather runtime options
-  //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
+  // ---------------------------------------------------------------
+  // Input fields read in from IC file, namelist or other processes
+  // ---------------------------------------------------------------
 
+  // Populate the wet atmosphere state with views from fields
+  // FIMXE: specifically look which among these are actually used by the process
   wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
   wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
-  dry_atm_.T_mid   = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid   = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot")
-                         .get_view<const Real **>();  // FIXME: tot or liq?
-  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+  // Populate the dry atmosphere state with views from fields
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+  // FIXME: tot or liq?
+  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
 
   obukhov_length_ = get_field_in("Obukhov_length").get_view<const Real *>();
   surface_friction_velocty_ =
@@ -295,7 +314,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   aerodynamical_resistance_ =
       get_field_in("aerodynamical_resistance").get_view<const Real *>();
 
-  dry_atm_.p_int     = get_field_in("p_int").get_view<const Real **>();
+  // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.z_iface   = buffer_.z_iface;
   dry_atm_.dz        = buffer_.dz;
@@ -307,19 +326,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf    = 0.0;  // FIXME: for now
 
-  dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
-  wet_dens_    = get_field_out("wetdens").get_view<Real ***>();
-
-  qtracers_      = get_field_out("qtracers").get_view<Real ***>();
-  d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
-
-  aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
-                     .get_view<Real **>();
-  aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
-                     .get_view<Real **>();
-  tendencies_ = get_field_out("Tendencies").get_view<Real ***>();
-  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
-  // number (n) mixing ratios
+  // ---- set wet/dry aerosol-related gas state data
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
@@ -360,9 +367,28 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
-  // set up our preprocess functor
+  // -------------------------------------------------------------
+  // Output fields for the process
+  // -------------------------------------------------------------
+
+  // FIXME: We might need to get rid of few of these fields
+  // as we do not need them in FM
+  dgncur_awet_   = get_field_out("dgncur_awet").get_view<Real ***>();
+  wet_dens_      = get_field_out("wetdens").get_view<Real ***>();
+  qtracers_      = get_field_out("qtracers").get_view<Real ***>();
+  d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
+  aerdepdrycw_   = get_field_out("deposition_flux_of_cloud_borne_aerosols")
+                     .get_view<Real **>();
+  aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
+                     .get_view<Real **>();
+  tendencies_ = get_field_out("Tendencies").get_view<Real ***>();
+
+  //-----------------------------------------------------------------
+  // Setup preprocessing and post processing
+  //-----------------------------------------------------------------
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
+  // FIXME: Where is post processing functor????
 }
 namespace {
 void compute_tendencies(
