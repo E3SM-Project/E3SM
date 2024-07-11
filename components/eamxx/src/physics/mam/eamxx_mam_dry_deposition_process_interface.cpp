@@ -190,23 +190,6 @@ void MAMDryDep::set_grids(
   add_field<Updated>("wetdens", scalar4d_mid, kg / m3, grid_name);
   add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
 
-  // Tempary memory to format the wet_aero.int_aero_nmr and
-  // wet_aero.int_aero_mmr views into the order expected by mam4xx.
-  add_field<Computed>("qtracers", scalar4d_q, kg / kg, grid_name);
-  add_field<Computed>("d_qtracers_dt", scalar4d_q, kg / kg / s, grid_name);
-
-  // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
-                      1 / (m * m) / s, grid_name);
-  // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
-                      1 / (m * m) / s, grid_name);
-  add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
-                      grid_name);
-
-  // TODO: The following are not used by drydep but to create a dry atmosphere
-  // object.
-
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
   for(int m = 0; m < num_aero_modes; ++m) {
@@ -245,6 +228,20 @@ void MAMDryDep::set_grids(
     add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name,
                        "tracers");
   }
+
+  // Tempary memory to format the wet_aero.int_aero_nmr and
+  // wet_aero.int_aero_mmr views into the order expected by mam4xx.
+  add_field<Computed>("qtracers", scalar4d_q, kg / kg, grid_name);
+  add_field<Computed>("d_qtracers_dt", scalar4d_q, kg / kg / s, grid_name);
+
+  // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
+  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
+                      1 / (m * m) / s, grid_name);
+  // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
+  add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
+                      1 / (m * m) / s, grid_name);
+  add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
+                      grid_name);
 }
 
 // =========================================================================================
