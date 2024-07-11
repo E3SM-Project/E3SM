@@ -36,6 +36,7 @@ initial_conditions:
   aerodynamical_resistance: 1e-5
   w_updraft: 1e-5
   pbl_height: 0.0
+  phis: 0.1
 
 # The parameters for I/O control
 Scorpio:

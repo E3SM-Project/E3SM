@@ -15,18 +15,19 @@ namespace scream {
 // The process responsible for handling MAM4 dry deposition. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
-public:
-  using view_2d = Field::view_dev_t<Real **>;
-  using view_3d = Field::view_dev_t<Real ***>;
-  using const_view_1d = Field::view_dev_t<const Real *>;
-  using const_view_2d = Field::view_dev_t<const Real **>;
-  using const_view_3d = Field::view_dev_t<const Real ***>;
+ public:
+  using view_2d                       = Field::view_dev_t<Real **>;
+  using view_3d                       = Field::view_dev_t<Real ***>;
+  using const_view_1d                 = Field::view_dev_t<const Real *>;
+  using const_view_2d                 = Field::view_dev_t<const Real **>;
+  using const_view_3d                 = Field::view_dev_t<const Real ***>;
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
-private:
+
+ private:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  //Wet and dry states of atmosphere
+  // Wet and dry states of atmosphere
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
 
@@ -56,7 +57,7 @@ private:
   const_view_1d friction_velocity_;
   const_view_1d aerodynamical_resistance_;
 
-public:
+ public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // Constructor
@@ -67,10 +68,12 @@ public:
   // --------------------------------------------------------------------------
 
   // The type of subcomponent
-  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; } 
+  AtmosphereProcessType type() const override {
+    return AtmosphereProcessType::Physics;
+  }
 
   // The name of the subcomponent
-  std::string name() const override { return "mam_dry_deposition"; } 
+  std::string name() const override { return "mam_dry_deposition"; }
 
   // grid
   void set_grids(
@@ -87,9 +90,9 @@ public:
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override {/*Do nothing*/}; 
+  void finalize_impl() override{/*Do nothing*/};
 
-    // Atmosphere processes often have a pre-processing step that constructs
+  // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
   struct Preprocess {
