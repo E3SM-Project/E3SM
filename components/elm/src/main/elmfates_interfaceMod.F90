@@ -374,7 +374,6 @@ contains
     call SetFatesGlobalElements1(use_fates,natpft_size,0,var_reader)
 
     natpft_size = fates_maxPatchesPerSite
-    !numpft = natpft_size - 1 # GML Todo: This was in landuse v2, not v1
     max_patch_per_col= max(natpft_size, numcft, maxpatch_urb)
 
     return
