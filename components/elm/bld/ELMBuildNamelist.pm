@@ -813,7 +813,7 @@ sub setup_cmdl_fates_mode {
                      "fates_harvest_mode",
                      "fates_history_dimlevel",
                      "fates_inventory_ctrl_filename",
-		     "fates_parteh_mode",
+                     "fates_parteh_mode",
                      "fates_seeddisp_cadence",
                      "fates_spitfire_mode",
                      "use_fates_cohort_age_tracking",
@@ -3412,17 +3412,17 @@ sub setup_logic_fates {
     my @list  = (  "fates_harvest_mode",
                    "fates_history_dimlevel",
                    "fates_inventory_ctrl_filename",
-		   "fates_parteh_mode",
+                   "fates_parteh_mode",
                    "fates_seeddisp_cadence",
                    "fates_spitfire_mode",
                    "use_fates_cohort_age_tracking",
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
                    "use_fates_inventory_init",
-		   "use_fates_lupft",
+                   "use_fates_lupft",
                    "use_fates_planthydro",
-		   "use_fates_potentialveg",
-		   "use_fates_sp",
+                   "use_fates_potentialveg",
+                   "use_fates_sp",
                    "use_fates_tree_damage");
 
     foreach my $var (@list) {
@@ -3484,7 +3484,7 @@ sub setup_logic_fates {
     my $var = "use_fates_luh";
     if ( defined($nl->get_value($var))  ) {
        if ( &value_is_true($nl->get_value($var)) ) {
-	  $var = "use_fates_potentialveg";
+          $var = "use_fates_potentialveg";
           if ( defined($nl->get_value($var))  ) {
              if ( ! &value_is_true($nl->get_value($var)) ) {
                 $var = "fluh_timeseries";
@@ -3497,7 +3497,7 @@ sub setup_logic_fates {
                 } elsif ( ! -f "$fname" ) {
                    fatal_error("$var does NOT point to a valid filename" );
                 }
-	     }
+             }
           } 
           $var = "use_fates_fixed_biogeog";
           if ( defined($nl->get_value($var))  ) {
@@ -3532,7 +3532,7 @@ sub setup_logic_fates {
           if ( defined($nl->get_value($var))  ) {
              if (! string_is_undef_or_empty($nl->get_value($var))) {
                 fatal_error("fluh_timeseries can not be set when use_fates_potentialveg is true" );
-	     }
+             }
           }
        }
     }
