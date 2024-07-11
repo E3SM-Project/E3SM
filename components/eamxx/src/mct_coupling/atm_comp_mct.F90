@@ -457,6 +457,11 @@ CONTAINS
       print *, "Error: fail to resolve shared ents in phys atm model"
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
+    ierr = iMOAB_UpdateMeshInfo(mphaid)
+    if (ierr > 0 )  then
+      print *, "Error: fail to update mesh info in phys atm model"
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
     tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR !  mask is double too lat:lon:hgt:area:aream:mask:frac
     tagtype = 1 ! dense, double
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
@@ -493,6 +498,13 @@ CONTAINS
 
     ! Aream is computed by mct, so give invalid initial value
     data1 = -9999.0_R8
+    tagname = 'aream'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set aream '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
 #ifdef MOABDEBUG
     outfile = 'AtmPhys.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
