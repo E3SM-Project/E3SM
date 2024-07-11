@@ -3407,8 +3407,6 @@ sub setup_logic_fates {
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
 
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flandusepftdat',  'phys'=>$nl_flags->{'phys'});
 
     # add other fates modes whose defaults don't depend on other modes
     my @list  = (  "fates_harvest_mode",
