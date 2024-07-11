@@ -283,7 +283,7 @@ contains
     if (use_polygonal_tundra) then
       allocate (wt_polygon (begg:endg,1:max_topounits, max_polygon))
     else
-      allocate (wt_polygon (1,1,1)) ! RF-not sure this is needed
+      allocate (wt_polygon (begg:endg,1:max_topounits, 1)) ! RF-not sure this is needed
     endif
 
     allocate (wt_tunit  (begg:endg,1:max_topounits  ))

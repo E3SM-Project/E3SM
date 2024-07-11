@@ -1129,6 +1129,8 @@ contains
          dim1name=grlnd, readvar=readvar)
       if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_LCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
       wt_polygon(begg:endg,1:max_topounits,ilowcenpoly) = arrayl(begg:endg,1:max_topounits)
+    else
+      wt_polygon(begg:endg,1:max_topounits,1) = 0._r8
     endif
 
     ! add two other types
@@ -1203,9 +1205,7 @@ contains
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
-    wt_polygon(begg:endg,:,ihighcenpoly) = wt_polygon(begg:endg,:,ihighcenpoly) / 100._r8
-    wt_polygon(begg:endg,:,iflatcenpoly) = wt_polygon(begg:endg,:,iflatcenpoly) / 100._r8
-    wt_polygon(begg:endg,:,ilowcenpoly) = wt_polygon(begg:endg,:,ilowcenpoly) / 100._r8
+    wt_polygon(begg:endg,:,:) = wt_polygon(begg:endg,:,:) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
     !call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
     call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
