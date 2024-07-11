@@ -595,7 +595,7 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 >lnd/clm2/surfdata_map/fates-sci.1.68.3_api.31.0.0_tools.1.0.1/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c231101.nc</fluh_timeseries>
 
 <!-- Land Use Harmonization static landuse x pft mapping data sets for FATES land use change -->
-<flandusepftdat hgrid="4x5" use_fates=".true." >lnd/clm2/surfdata_map/fates-sci.1.73.0_api.36.0.0/fates_landuse_pft_map_4x5_240206.nc</flandusepftdat>
+<flandusepftdat hgrid="4x5" use_fates=".true." >lnd/clm2/surfdata_map/fates-sci.1.77.0_api.36.0.0/fates_landuse_pft_map_4x5_240206.nc</flandusepftdat>
 
 <!-- GLC mask datasets (relative to {csmdata}) -->
 <!-- Currently glc_grid is not being read from anywhere, so these rules are broken.  -->
