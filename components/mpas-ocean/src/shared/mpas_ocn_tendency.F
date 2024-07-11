@@ -172,12 +172,10 @@ contains
       !    initialize to zero and start accumulating tendency terms
       !
 #ifdef MPAS_OPENACC
-      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
-      !$acc     surfaceThicknessFluxSubglacialRunoff)
+      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
 
       !$acc parallel loop &
-      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
-      !$acc     surfaceThicknessFluxSubglacialRunoff) &
+      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff) &
       !$acc     private(k)
 #else
       !$omp parallel
@@ -866,6 +864,7 @@ contains
          !$omp end parallel
 
          if (trim(config_subglacial_runoff_mode) == 'data') then
+         !$omp parallel
          !$omp do schedule(runtime) private(n)
          do iCell = 1, nCellsAll
              do n=1,nTracersGroup
