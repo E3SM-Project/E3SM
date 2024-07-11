@@ -1893,8 +1893,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(surfaceFluxAttenuationCoefficient, &
-      !$acc            surfaceFluxAttenuationCoefficientRunoff, &
-      !$acc            surfaceFluxAttenuationCoefficientSubglacialRunoff)
+      !$acc            surfaceFluxAttenuationCoefficientRunoff)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -1905,16 +1904,28 @@ contains
          surfaceFluxAttenuationCoefficientRunoff(iCell) = &
                       config_flux_attenuation_coefficient_runoff
       end do
-      if (trim(config_subglacial_runoff_mode) == 'data') then
-         do iCell = 1, nCells
-            surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell) = &
-                      config_flux_attenuation_coefficient_subglacial_runoff
-         end do
-      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
+
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(surfaceFluxAttenuationCoefficientSubglacialRunoff)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1, nCells
+            surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell) = &
+                      config_flux_attenuation_coefficient_subglacial_runoff
+         end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      end if
 
    !--------------------------------------------------------------------
 

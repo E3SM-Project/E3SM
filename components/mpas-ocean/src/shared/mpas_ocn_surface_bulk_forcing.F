@@ -336,13 +336,13 @@ contains
       ! Build surface fluxes at cell centers
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, subglacialRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
 
       !$acc parallel loop &
       !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
-      !$acc     surfaceThicknessFluxSubglacialRunoff, evaporationFlux, snowFlux, &
+      !$acc     evaporationFlux, snowFlux, &
       !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, &
-      !$acc     subglacialRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     iceRunoffFlux, rainFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -352,15 +352,29 @@ contains
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
-      if (trim(config_subglacial_runoff_mode) == 'data') then
-          do iCell = 1, nCells
-            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
-          end do
-      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
+
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(subglacialRunoffFlux)
+
+      !$acc parallel loop &
+      !$acc     present(surfaceThicknessFluxSubglacialRunoff, subglacialRunoffFlux, areaCell)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+          do iCell = 1, nCells
+            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
+          end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      end if
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &

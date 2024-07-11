@@ -190,15 +190,29 @@ contains
             tendThick(k, iCell) = 0.0_RKIND
          end do
       end do
-      if (trim(config_subglacial_runoff_mode) == 'data') then
-         do iCell = 1, nCellsAll
-            surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
-         end do
-      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
+
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+#ifdef MPAS_OPENACC
+      !$acc enter data create(surfaceThicknessFluxSubglacialRunoff)
+
+      !$acc parallel loop &
+      !$acc     present(surfaceThicknessFluxSubglacialRunoff)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+         do iCell = 1, nCellsAll
+            surfaceThicknessFluxSubglacialRunoff(iCell) = 0.0_RKIND
+         end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      end if
 
       ! If turned off, return with zero fluxes, tendencies
       ! Otherwise, start time and call routines to accumulate
@@ -847,14 +861,20 @@ contains
             tracerGroupSurfaceFluxRunoff (n,iCell) = 0.0_RKIND
             tracerGroupSurfaceFluxRemoved(n,iCell) = 0.0_RKIND
          end do
-         if (trim(config_subglacial_runoff_mode) == 'data') then
-             do n=1,nTracersGroup
-                tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
-             end do
-         end if
          end do
          !$omp end do
          !$omp end parallel
+
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+         !$omp do schedule(runtime) private(n)
+         do iCell = 1, nCellsAll
+             do n=1,nTracersGroup
+                tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
+             end do
+         end do
+         !$omp end do
+         !$omp end parallel
+         end if
 
          !
          ! compute surface tracer flux from bulk forcing
