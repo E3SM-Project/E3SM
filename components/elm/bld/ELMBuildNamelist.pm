@@ -3529,12 +3529,16 @@ sub setup_logic_fates {
           if ( $var ne 'no_harvest') {
              fatal_error("fates_harvest_mode set to $var.  It must set to no_harvest when use_fates_potential_veg is true." );
           }
+          # it is ok for fluh_timeseries to be defined as long as the string is empty
           my $var = "fluh_timeseries";
           if ( defined($nl->get_value($var))  ) {
-             fatal_error("fluh_timeseries can not be defined when use_fates_potentialveg is true" );
+             if (! string_is_undef_or_empty($nl->get_value($var))) {
+                fatal_error("fluh_timeseries can not be set when use_fates_potentialveg is true" );
+	     }
           }
        }
     }
+
     # Check fates_harvest_mode compatibility
     my $var = "fates_harvest_mode";
     if ( defined($nl->get_value($var))  ) {
