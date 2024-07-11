@@ -249,7 +249,7 @@ void MAMDryDep::set_grids(
   // FIXME: we might not need this in FM
   add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
                       grid_name);
-}
+}  // set_grids
 
 // ================================================================
 //  REQUEST_BUFFER_SIZE_IN_BYTES
@@ -259,7 +259,7 @@ void MAMDryDep::set_grids(
 // levels
 size_t MAMDryDep::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_);
-}
+}  // requested_buffer_size_in_bytes
 
 // ================================================================
 //  INIT_BUFFERS
@@ -277,7 +277,7 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMDryDep.");
-}
+}  // init_buffers
 
 // ================================================================
 //  INITIALIZE_IMPL
@@ -374,10 +374,10 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   // FIXME: We might need to get rid of few of these fields
   // as we do not need them in FM
-  dgncur_awet_   = get_field_out("dgncur_awet").get_view<Real ***>();
-  wet_dens_      = get_field_out("wetdens").get_view<Real ***>();
-  d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
-  aerdepdrycw_   = get_field_out("deposition_flux_of_cloud_borne_aerosols")
+  dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
+  wet_dens_    = get_field_out("wetdens").get_view<Real ***>();
+  // d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
+  aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
                      .get_view<Real **>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                      .get_view<Real **>();
@@ -387,7 +387,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Allocate memory
   //-----------------------------------------------------------------
   const int pcnst = mam4::aero_model::pcnst;
-  qtracers_       = view_3d("qtracers_", ncol_, nlev_, pcnst);
+  // FIXME: comment what they are and units.....
+  qtracers_      = view_3d("qtracers_", ncol_, nlev_, pcnst);
+  d_qtracers_dt_ = view_3d("d_qtracers_dt", ncol_, nlev_, pcnst);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -395,7 +397,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
   // FIXME: Where is post processing functor????
-}
+}  // initialize_impl
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
@@ -437,6 +439,5 @@ void MAMDryDep::run_impl(const double dt) {
                      // Outputs:
                      aerdepdrycw_, aerdepdryis_, tendencies_);
   Kokkos::fence();
-}
-// =========================================================================================
+}  // run_impl
 }  // namespace scream
