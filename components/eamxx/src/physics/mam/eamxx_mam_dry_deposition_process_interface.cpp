@@ -236,8 +236,6 @@ void MAMDryDep::set_grids(
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
 
-  add_field<Computed>("qtracers", scalar4d_q, kg / kg, grid_name);
-
   // FIXME: what is the diff between d_qtracers_dt and tendencies????
   // FIXME: we might not need this in FM
   add_field<Computed>("d_qtracers_dt", scalar4d_q, kg / kg / s, grid_name);
@@ -378,13 +376,18 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // as we do not need them in FM
   dgncur_awet_   = get_field_out("dgncur_awet").get_view<Real ***>();
   wet_dens_      = get_field_out("wetdens").get_view<Real ***>();
-  qtracers_      = get_field_out("qtracers").get_view<Real ***>();
   d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
   aerdepdrycw_   = get_field_out("deposition_flux_of_cloud_borne_aerosols")
                      .get_view<Real **>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                      .get_view<Real **>();
   tendencies_ = get_field_out("Tendencies").get_view<Real ***>();
+
+  //-----------------------------------------------------------------
+  // Allocate memory
+  //-----------------------------------------------------------------
+  const int pcnst = mam4::aero_model::pcnst;
+  qtracers_       = view_3d("qtracers_", ncol_, nlev_, pcnst);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
