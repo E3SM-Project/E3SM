@@ -158,6 +158,7 @@ void MAMDryDep::set_grids(
   // FIXME: Is is cldfrac_liq instead? find out
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
 
+  //----------- Variables from coupler (land component)---------
   // Obukhov length [m]
   add_field<Required>("Obukhov_length", scalar2d, m, grid_name);
 
@@ -167,17 +168,27 @@ void MAMDryDep::set_grids(
   // Land fraction [fraction]
   add_field<Required>("land_fraction", scalar2d, nondim, grid_name);
 
-  // Ice fraction [unitless]
-  add_field<Required>("ice_fraction", scalar2d, nondim, grid_name);
-
-  // Ocean fraction [unitless]
-  add_field<Required>("ocean_fraction", scalar2d, nondim, grid_name);
-
   // Friction velocity from land model [m/s]
   add_field<Required>("friction_velocity", scalar2d, m / s, grid_name);
 
   // Aerodynamical resistance from land model [s/m]
   add_field<Required>("aerodynamical_resistance", scalar2d, s / m, grid_name);
+
+  //----------- Variables from coupler (ice component)---------
+
+  // Ice fraction [unitless]
+  add_field<Required>("ice_fraction", scalar2d, nondim, grid_name);
+
+  //----------- Variables from coupler (ocean component)---------
+  // Ocean fraction [unitless]
+  add_field<Required>("ocean_fraction", scalar2d, nondim, grid_name);
+
+  // ---------------------------------------------------------------------
+  // These variables are "updated" or inputs/outputs for the process
+  // ---------------------------------------------------------------------
+
+  add_field<Updated>("wetdens", scalar4d_mid, kg / m3, grid_name);
+  add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
 
   // Tempary memory to format the wet_aero.int_aero_nmr and
   // wet_aero.int_aero_mmr views into the order expected by mam4xx.
@@ -192,9 +203,6 @@ void MAMDryDep::set_grids(
                       1 / (m * m) / s, grid_name);
   add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
                       grid_name);
-
-  add_field<Updated>("wetdens", scalar4d_mid, kg / m3, grid_name);
-  add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
 
   // TODO: The following are not used by drydep but to create a dry atmosphere
   // object.
