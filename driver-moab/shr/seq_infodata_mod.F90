@@ -234,6 +234,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: rof_mesh        ! path to river mesh file
      character(SHR_KIND_CL)  :: rof_domain      ! path to river domain file; only for data rof for now
      character(SHR_KIND_CL)  :: ocn_domain      ! path to ocean domain file, used by data ocean models only
+     character(SHR_KIND_CL)  :: ice_domain      ! path to ice domain file, used by data ice models only
      character(SHR_KIND_CL)  :: atm_mesh        ! path to atmosphere domain/mesh file, used by data atm models only
 
      !--- set via components and may be time varying ---
@@ -795,6 +796,7 @@ CONTAINS
        infodata%rof_mesh = 'none'
        infodata%rof_domain = 'none'
        infodata%ocn_domain = 'none' ! will be used for ocean data models only; will be used as a signal 
+       infodata%ice_domain = 'none' ! will be used for ice   data models only; will be used as a signal 
        infodata%atm_mesh = 'none' ! will be used for atmosphere data models only; will be used as a signal
                                     ! not sure if it exists always actually
 
@@ -1040,7 +1042,7 @@ CONTAINS
        wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
        iac_nx, iac_ny, glc_nx, glc_ny, lnd_domain, rof_mesh, rof_domain,  &
-       ocn_domain,  atm_mesh, eps_frac,                                   &
+       ocn_domain, ice_domain,  atm_mesh, eps_frac,                       &
        eps_amask, eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,  &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
@@ -1216,6 +1218,7 @@ CONTAINS
     character(SHR_KIND_CL), optional, intent(OUT) :: rof_mesh
     character(SHR_KIND_CL), optional, intent(OUT) :: rof_domain
     character(SHR_KIND_CL), optional, intent(OUT) :: ocn_domain
+    character(SHR_KIND_CL), optional, intent(OUT) :: ice_domain
     character(SHR_KIND_CL), optional, intent(OUT) :: atm_mesh
 
     real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
@@ -1406,6 +1409,7 @@ CONTAINS
     if ( present(rof_mesh)       ) rof_mesh       = infodata%rof_mesh
     if ( present(rof_domain)     ) rof_domain     = infodata%rof_domain
     if ( present(ocn_domain)     ) ocn_domain     = infodata%ocn_domain
+    if ( present(ice_domain)     ) ice_domain     = infodata%ice_domain
     if ( present(atm_mesh)       ) atm_mesh       = infodata%atm_mesh
 
     if ( present(nextsw_cday)    ) nextsw_cday    = infodata%nextsw_cday
@@ -1602,8 +1606,8 @@ CONTAINS
        wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
        iac_nx, iac_ny, glc_nx, glc_ny, eps_frac, eps_amask, lnd_domain,   &
-       rof_mesh, rof_domain, ocn_domain, atm_mesh, eps_agrid, eps_aarea,  &
-       eps_omask, eps_ogrid, eps_oarea,                                   &
+       rof_mesh, rof_domain, ocn_domain, ice_domain, atm_mesh, eps_agrid, &
+       eps_aarea, eps_omask, eps_ogrid, eps_oarea,                        &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, glc_valid_input, nlmaps_verbosity)
@@ -1777,6 +1781,7 @@ CONTAINS
     character(SHR_KIND_CL), optional, intent(IN)    :: rof_mesh
     character(SHR_KIND_CL), optional, intent(IN)    :: rof_domain
     character(SHR_KIND_CL), optional, intent(IN)    :: ocn_domain
+    character(SHR_KIND_CL), optional, intent(IN)    :: ice_domain
     character(SHR_KIND_CL), optional, intent(IN)    :: atm_mesh
 
     real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
@@ -1966,6 +1971,7 @@ CONTAINS
     if ( present(rof_mesh)       ) infodata%rof_mesh       = rof_mesh
     if ( present(rof_domain)     ) infodata%rof_domain     = rof_domain
     if ( present(ocn_domain)     ) infodata%ocn_domain     = ocn_domain
+    if ( present(ice_domain)     ) infodata%ice_domain     = ice_domain
     if ( present(atm_mesh)       ) infodata%atm_mesh       = atm_mesh
 
     if ( present(nextsw_cday)    ) infodata%nextsw_cday    = nextsw_cday
@@ -2279,6 +2285,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%rof_mesh,                mpicom)
     call shr_mpi_bcast(infodata%rof_domain,              mpicom)
     call shr_mpi_bcast(infodata%ocn_domain,              mpicom)
+    call shr_mpi_bcast(infodata%ice_domain,              mpicom)
     call shr_mpi_bcast(infodata%atm_mesh,                mpicom)
     call shr_mpi_bcast(infodata%nextsw_cday,             mpicom)
     call shr_mpi_bcast(infodata%precip_fact,             mpicom)
@@ -2552,6 +2559,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ice_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ice_ny,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ice_domain,         mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
        deads = infodata%dead_comps
        call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
@@ -3000,6 +3008,7 @@ CONTAINS
     write(logunit,F0I) subname,'rof_mesh                 = ', infodata%rof_mesh
     write(logunit,F0I) subname,'rof_domain               = ', infodata%rof_domain
     write(logunit,F0I) subname,'ocn_domain               = ', infodata%ocn_domain
+    write(logunit,F0I) subname,'ice_domain               = ', infodata%ice_domain
     write(logunit,F0I) subname,'atm_mesh                 = ', infodata%atm_mesh
 
     write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
