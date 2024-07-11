@@ -17,6 +17,15 @@ module atm_comp_mct
   ! MPI
   use mpi
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
+  use iso_c_binding 
+  use seq_comm_mct,     only : num_moab_exports
+#ifdef MOABCOMP
+  use seq_comm_mct, only:  seq_comm_compare_mb_mct
+#endif
+#endif
+
   implicit none
   save
   private
@@ -107,7 +116,6 @@ CONTAINS
     character(len=256) :: caseid, username, hostname
     character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c
     logical (kind=c_bool) :: restarted_run
-
     !-------------------------------------------------------------------------------
 
     ! Grab some data from the cdata structure (coming from the coupler)
@@ -177,6 +185,10 @@ CONTAINS
 
     ! Init MCT domain structure
     call atm_domain_mct (lsize, gsMap_atm, dom_atm)
+
+#ifdef HAVE_MOAB
+    call moab_atm_phys_scream() 
+#endif
 
     ! Init import/export mct attribute vectors
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
@@ -355,5 +367,162 @@ CONTAINS
     data1 = -9999.0_R8
     call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize) 
   end subroutine atm_domain_mct
+
+#ifdef HAVE_MOAB
+  subroutine  moab_atm_phys_scream()
+
+    use iMOAB, only : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+      iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+      iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
+    use iso_c_binding, only: c_int, c_loc
+    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+                              scream_get_local_cols_gids
+    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+    use seq_flds_mod, only: seq_flds_dom_fields
+    use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl, cxx=>shr_kind_cxx
+    use shr_const_mod, only: SHR_CONST_PI
+    use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
+
+    ! Local variables
+    !
+    integer(kind=c_int) :: num_local_cols, num_global_cols
+    character*100 outfile, wopts
+    character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
+    character*32 appname
+    integer :: ATM_PHYS ! used as global identifier for iMOAB app on pphys grid atmosphere (200+ atm id) 
+    !-------------------------------------------------------------------
+    !
+    ! Local Variables
+    !
+    integer        :: ierr,mpi_ierr  ! error codes
+    integer        :: i  ! for loops along dofs
+    integer        :: tagtype, tagindex, numco, ent_type
+    real(r8), pointer :: data1(:)
+    real(r8), pointer :: data2(:)     ! temporary
+    integer(kind=c_int), allocatable, target :: col_gids(:)
+    real(r8), allocatable, target :: moab_vert_coords(:)
+    real(r8)       :: latv, lonv
+    !-------------------------------------------------------------------
+
+    appname="ATM_PHYS_SCREAM"//C_NULL_CHAR
+    ATM_PHYS = 200 + ATM_ID !
+    ierr = iMOAB_RegisterApplication(appname, mpicom_atm, ATM_PHYS, mphaid)
+    if (ierr > 0 )  then
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    if (my_task == master_task) then
+       print *, " moab_atm_phys_scream:: register MOAB app:", trim(appname), "  mphaid=", mphaid
+    endif
+    ! find global ids    
+    num_local_cols  = scream_get_num_local_cols()
+    num_global_cols = scream_get_num_global_cols()
+
+    allocate(col_gids(num_local_cols))
+
+    call scream_get_local_cols_gids(c_loc(col_gids))
+
+    ! Fill in correct values for domain components
+    allocate(moab_vert_coords(num_local_cols*3))
+    allocate( data1(num_local_cols), data2(num_local_cols) )
+    call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
+    do i=1,num_local_cols
+          latv = data1(i) * SHR_CONST_PI/180
+          lonv = data2(i) * SHR_CONST_PI/180
+          moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+          moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+          moab_vert_coords(3*i  )=SIN(latv)
+    enddo
+    ierr = iMOAB_CreateVertices(mphaid, num_local_cols*3, 3, moab_vert_coords)
+    if (ierr > 0 )  then
+      print *, "Error: fail to create MOAB vertices in phys atm model"
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+      print *, "Error: fail to define GLOBAL_ID tag in phys atm model"
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage(mphaid, tagname, num_local_cols , ent_type, col_gids)
+    if (ierr > 0 )  then
+      print *, "Error: fail to set GLOBAL_ID tag in phys atm model"
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    ierr = iMOAB_ResolveSharedEntities( mphaid, num_local_cols, col_gids)
+    if (ierr > 0 )  then
+      print *, "Error: fail to resolve shared ents in phys atm model"
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR !  mask is double too lat:lon:hgt:area:aream:mask:frac
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+      print *, 'Error: fail to create  tags from seq_flds_dom_fields '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    call scream_get_cols_area(c_loc(data1))
+    tagname = 'area'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set area '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    ! Mask and frac are both exactly 1
+    data1 = 1.0
+    tagname = 'mask'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set mask '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    tagname = 'frac'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set frac '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    !call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize)
+    !call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize)
+
+    ! Aream is computed by mct, so give invalid initial value
+    data1 = -9999.0_R8
+#ifdef MOABDEBUG
+    outfile = 'AtmPhys.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  then
+      print *, "Error: fail to write PhysAtm mesh "
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+#endif
+  ! define fields seq_flds_a2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per vertex / entity
+    tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+      print *, "Error: fail to define seq_flds_a2x_fields "
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    ! make sure this is defined too; it could have the same fields, but in different order, or really different 
+    ! fields; need to make sure we have them
+    tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+      print *, "Error: fail to define seq_flds_x2a_fields "
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    deallocate(col_gids)
+    deallocate(data1)
+    deallocate(data2)
+  end subroutine  moab_atm_phys_scream
+#endif
 
 end module atm_comp_mct
