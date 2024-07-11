@@ -1,6 +1,9 @@
 #include "physics/mam/eamxx_mam_dry_deposition_process_interface.hpp"
 
-#include "mam4xx/drydep.hpp"
+// ACI functions are stored in the following hpp file
+#include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
+
+#include "mam4xx/drydep.hpp"//FIXME: Do we need it here???
 
 /*
 Inputs:
@@ -241,10 +244,10 @@ void MAMDryDep::set_grids(
 
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
-                      1 / (m * m) / s, grid_name);
+                      1 / m2 / s, grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
-                      1 / (m * m) / s, grid_name);
+                      1 / m2 / s, grid_name);
   // FIXME: we might not need this in FM
   add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
                       grid_name);
@@ -379,9 +382,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
   aerdepdrycw_   = get_field_out("deposition_flux_of_cloud_borne_aerosols")
                      .get_view<Real **>();
-  aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
+  aerdepdryis_   = get_field_out("deposition_flux_of_interstitial_aerosols")
                      .get_view<Real **>();
-  tendencies_ = get_field_out("Tendencies").get_view<Real ***>();
+  tendencies_    = get_field_out("Tendencies").get_view<Real ***>();
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -390,6 +393,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
                          dry_aero_);
   // FIXME: Where is post processing functor????
 }
+/*
 namespace {
 void compute_tendencies(
     const int ncol, const int nlev, const mam4::DryDeposition dry_deposition,
@@ -478,7 +482,7 @@ void compute_tendencies(
       });
 }
 }  // namespace
-
+*/
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
   using DryDep           = mam4::DryDeposition;
