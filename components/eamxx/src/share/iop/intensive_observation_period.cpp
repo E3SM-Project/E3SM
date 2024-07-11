@@ -541,6 +541,15 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     scorpio::read_var(iop_file,"Ps",ps_data,iop_file_time_idx);
     surface_pressure.sync_to_dev();
 
+    // Read in IOP lev data
+    auto data = iop_file_pressure.get_view<Real*, Host>().data();
+    scorpio::read_var(iop_file,"lev",data);
+
+    // Convert to pressure to millibar (file gives pressure in Pa)
+    for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
+    iop_file_pressure.sync_to_dev();
+    m_helper_fields.insert({"iop_file_pressure", iop_file_pressure});
+
     // Pre-process file pressures, store number of file levels
     // where the last level is the first level equal to surface pressure.
     const auto iop_file_pres_v = iop_file_pressure.get_view<Real*>();
