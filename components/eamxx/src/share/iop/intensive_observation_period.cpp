@@ -268,9 +268,9 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   scorpio::read_var(iop_file,"lon",&iop_file_lon);
 
   const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude"))/
-                             m_params.get<Real>("target_latitude");
+                             ekat::impl::max(m_params.get<Real>("target_latitude"),0.1);
   const Real rel_lon_err = std::fabs(std::fmod(iop_file_lon + 360.0, 360.0)-m_params.get<Real>("target_longitude"))/
-                             m_params.get<Real>("target_longitude");
+                             ekat::impl::max(m_params.get<Real>("target_longitude"),0.1);
   EKAT_REQUIRE_MSG(rel_lat_err < std::numeric_limits<float>::epsilon(),
                    "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
   EKAT_REQUIRE_MSG(rel_lon_err < std::numeric_limits<float>::epsilon(),
