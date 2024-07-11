@@ -3530,6 +3530,8 @@ contains
                       end if
                       zTop = zBot
                    end do
+                else
+                    call mpas_log_write("config_sgr_flux_vertical_location not one of 'bottom', 'uniform', 'top'.", MPAS_LOG_CRIT)
                 end if
              else
                    fracAbsorbedSubglacialRunoff = 0.0_RKIND
