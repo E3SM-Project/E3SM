@@ -146,6 +146,10 @@ module atm2lndType
      real(r8) , pointer :: t_mo_patch                   (:)   => null() ! patch 30-day average temperature (Kelvin)
      real(r8) , pointer :: t_mo_min_patch               (:)   => null() ! patch annual min of t_mo (Kelvin)
 
+     ! Needed for FNM precip downscaling, when used within CPL_BYPASS
+     real(r8), pointer :: forc_uovern                   (:)   => null() ! Froude number (dimensionless)
+
+
    contains
 
      procedure, public  :: Init
@@ -310,6 +314,7 @@ contains
        allocate(this%forc_ndep_nitr_grc         (begg:endg))        ; this%forc_ndep_nitr_grc            (:)   = ival
        allocate(this%forc_soilph_grc            (begg:endg))        ; this%forc_soilph_grc               (:)   = ival
     end if
+    allocate(this%forc_uovern                   (begg:endg))        ; this%uovern                        (:)   = ival
 
   end subroutine InitAllocate
 

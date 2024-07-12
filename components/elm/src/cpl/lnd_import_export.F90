@@ -1030,52 +1030,68 @@ contains
          end if
        end if
 
-       !set the topounit-level atmospheric state and flux forcings (bypass mode)
+       ! Adding topographic downscaling capability within CPL_BYPASS code block
+       ! PET, 7/12/2024
+       if (use_atm_downscaling_to_topunit) then
+        atm2lnd_vars%forc_uovern = x2l(index_x2l_Sa_uovern,i)
+        atm2lnd_vars%forc_rain_not_downscaled_grc = forc_rainc + forc_rainl
+        atm2lnd_vars%forc_snow_not_downscaled_grc = forc_snowc + forc_snowl
+
+          if(atm_gustiness) then
+             call endrun("Error: atm_gustiness not yet supported with multiple topounits (in CPL_BYPASS)")
+          end if
+         do topo = grc_pp%topi(g) , grc_pp%topf(g)
+            top_as%ugust(topo) = 0._r8
+         end do
+
+         call downscale_atm_forcing_to_topounit_cpl_bypass(g, atm2lnd_vars, lnd2atm_vars)
+       else
+         do topo = grc_pp%topi(g), grc_pp%topf(g)
+          top_as%tbot(topo)    = atm2lnd_vars%forc_t_not_downscaled_grc(g)      ! forc_txy  Atm state K
+          top_as%thbot(topo)   = atm2lnd_vars%forc_th_not_downscaled_grc(g)     ! forc_thxy Atm state K
+          top_as%pbot(topo)    = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)   ! ptcmxy    Atm state Pa
+          top_as%qbot(topo)    = atm2lnd_vars%forc_q_not_downscaled_grc(g)      ! forc_qxy  Atm state kg/kg
+          top_as%ubot(topo)    = atm2lnd_vars%forc_u_grc(g)                     ! forc_uxy  Atm state m/s
+          top_as%vbot(topo)    = atm2lnd_vars%forc_v_grc(g)                     ! forc_vxy  Atm state m/s
+          top_as%zbot(topo)    = atm2lnd_vars%forc_hgt_grc(g)                   ! zgcmxy    Atm state m
+          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
+          ! Relative humidity (percent)
+          if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
+             e = esatw(tdc(top_as%tbot(topo)))
+          else
+             e = esati(tdc(top_as%tbot(topo)))
+          end if
+          qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+          top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
+          ! partial pressure of oxygen (Pa)
+          top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
+          ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
+          vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
+          top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
+          top_af%rain(topo)    = forc_rainc + forc_rainl            ! sum of convective and large-scale rain
+          top_af%snow(topo)    = forc_snowc + forc_snowl            ! sum of convective and large-scale snow
+          top_af%solad(topo,2) = atm2lnd_vars%forc_solad_grc(g,2)   ! forc_sollxy  Atm flux  W/m^2
+          top_af%solad(topo,1) = atm2lnd_vars%forc_solad_grc(g,1)   ! forc_solsxy  Atm flux  W/m^2
+          top_af%solai(topo,2) = atm2lnd_vars%forc_solai_grc(g,2)   ! forc_solldxy Atm flux  W/m^2
+          top_af%solai(topo,1) = atm2lnd_vars%forc_solai_grc(g,1)   ! forc_solsdxy Atm flux  W/m^2
+          top_af%lwrad(topo)   = atm2lnd_vars%forc_lwrad_not_downscaled_grc(g)     ! flwdsxy Atm flux  W/m^2
+          ! derived flux forcings
+          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
+                              top_af%solai(topo,2) + top_af%solai(topo,1)
+         end do
+       end if
+
+       !set the topounit-level atmospheric variables that are not handled in downscaling code
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          ! first, all the state forcings
-         top_as%tbot(topo)    = atm2lnd_vars%forc_t_not_downscaled_grc(g)      ! forc_txy  Atm state K
-         top_as%thbot(topo)   = atm2lnd_vars%forc_th_not_downscaled_grc(g)     ! forc_thxy Atm state K
-         top_as%pbot(topo)    = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)   ! ptcmxy    Atm state Pa
-         top_as%qbot(topo)    = atm2lnd_vars%forc_q_not_downscaled_grc(g)      ! forc_qxy  Atm state kg/kg
-         top_as%ubot(topo)    = atm2lnd_vars%forc_u_grc(g)                     ! forc_uxy  Atm state m/s
-         top_as%vbot(topo)    = atm2lnd_vars%forc_v_grc(g)                     ! forc_vxy  Atm state m/s
-         if (implicit_stress) then
+        if (implicit_stress) then
             top_as%wsresp(topo)  = 0._r8                                       !           Atm state m/s/Pa
             top_as%tau_est(topo) = 0._r8                                       !           Atm state Pa
          end if
          top_as%ugust(topo) = 0._r8                                            !           Atm state m/s
-         top_as%zbot(topo)    = atm2lnd_vars%forc_hgt_grc(g)                   ! zgcmxy    Atm state m
-         ! assign the state forcing fields derived from other inputs
-         ! Horizontal windspeed (m/s)
-         top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
          if (atm_gustiness) then
             top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
          end if
-         ! Relative humidity (percent)
-         if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
-            e = esatw(tdc(top_as%tbot(topo)))
-         else
-            e = esati(tdc(top_as%tbot(topo)))
-         end if
-         qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
-         top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
-         ! partial pressure of oxygen (Pa)
-         top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
-         ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
-         vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
-         top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
-
-         ! second, all the flux forcings
-         top_af%rain(topo)    = forc_rainc + forc_rainl            ! sum of convective and large-scale rain
-         top_af%snow(topo)    = forc_snowc + forc_snowl            ! sum of convective and large-scale snow
-         top_af%solad(topo,2) = atm2lnd_vars%forc_solad_grc(g,2)   ! forc_sollxy  Atm flux  W/m^2
-         top_af%solad(topo,1) = atm2lnd_vars%forc_solad_grc(g,1)   ! forc_solsxy  Atm flux  W/m^2
-         top_af%solai(topo,2) = atm2lnd_vars%forc_solai_grc(g,2)   ! forc_solldxy Atm flux  W/m^2
-         top_af%solai(topo,1) = atm2lnd_vars%forc_solai_grc(g,1)   ! forc_solsdxy Atm flux  W/m^2
-         top_af%lwrad(topo)   = atm2lnd_vars%forc_lwrad_not_downscaled_grc(g)     ! flwdsxy Atm flux  W/m^2
-         ! derived flux forcings
-         top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
-                              top_af%solai(topo,2) + top_af%solai(topo,1)
        end do
      
   !-----------------------------------------------------------------------------------------------------
