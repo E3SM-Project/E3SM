@@ -343,6 +343,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
+      <ch4vmr COMPSET=".*SCREAM%RCE.*" > 1650.e-9 </ch4vmr>
+      <co2vmr COMPSET=".*SCREAM%RCE.*" > 348.0e-6 </co2vmr>
+      <n2ovmr COMPSET=".*SCREAM%RCE.*" > 306.0e-9 </n2ovmr>
+      <f11vmr COMPSET=".*SCREAM%RCE.*" > 0.0      </f11vmr>
+      <f12vmr COMPSET=".*SCREAM%RCE.*" > 0.0      </f12vmr>
       <!-- Orbital parameters for solar zenith angle and TSI scaling. For F2010 compsets, -->
       <!-- we set a fixed year for these parameters, but for other compsets we set to a   -->
       <!-- negative value to force the code to get simulated year from the timestamp.     -->
