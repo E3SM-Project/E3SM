@@ -391,8 +391,8 @@ void MAMWetscav::run_impl(const double dt) {
 
   //----------- Variables from convective scheme -------------
 
-  // TODO: Following variables are from convective parameterization (not implemented
-  // yet in EAMxx), so should be zero for now
+  // TODO: Following variables are from convective parameterization (not
+  // implemented yet in EAMxx), so should be zero for now
 
   auto sh_frac = view_2d("sh_frac", ncol_, nlev_);
   Kokkos::deep_copy(sh_frac, 0);
@@ -527,6 +527,11 @@ void MAMWetscav::run_impl(const double dt) {
           }
         });
       });  // icol parallel_for loop
+
+  // call post processing to convert dry mixing ratios to wet mixing ratios
+  // and update the state
+  Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  Kokkos::fence();  // wait before returning to calling function
 }
 
 // =========================================================================================
