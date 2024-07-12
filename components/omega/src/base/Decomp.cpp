@@ -825,12 +825,16 @@ int Decomp::partCellsKWay(
    std::vector<idx_t> CellTask(NCellsGlobal);
    idx_t Edgecut = 0;
 
+   // Convert to idx_t from Omega::I4, in case these aren't the same
+   idx_t NCellsMetis   = NCellsGlobal;
+   idx_t NumTasksMetis = NumTasks;
+
    // Call METIS routine to partition the mesh
    // METIS routines are C code that expect pointers, so we use the
    // idiom &Var[0] to extract the pointer to the data in std::vector
-   int MetisErr = METIS_PartGraphKway(&NCellsGlobal, &NConstraints, &AdjAdd[0],
+   int MetisErr = METIS_PartGraphKway(&NCellsMetis, &NConstraints, &AdjAdd[0],
                                       &Adjacency[0], VrtxWgtPtr, VrtxSize,
-                                      EdgeWgtPtr, &NumTasks, TpWgts, Ubvec,
+                                      EdgeWgtPtr, &NumTasksMetis, TpWgts, Ubvec,
                                       Options, &Edgecut, &CellTask[0]);
 
    if (MetisErr != METIS_OK) {
