@@ -314,7 +314,7 @@ contains
        allocate(this%forc_ndep_nitr_grc         (begg:endg))        ; this%forc_ndep_nitr_grc            (:)   = ival
        allocate(this%forc_soilph_grc            (begg:endg))        ; this%forc_soilph_grc               (:)   = ival
     end if
-    allocate(this%forc_uovern                   (begg:endg))        ; this%uovern                        (:)   = ival
+    allocate(this%forc_uovern                   (begg:endg))        ; this%forc_uovern                        (:)   = ival
 
   end subroutine InitAllocate
 

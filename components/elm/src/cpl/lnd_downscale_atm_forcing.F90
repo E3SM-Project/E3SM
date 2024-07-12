@@ -810,8 +810,7 @@ contains
     !
     ! !ARGUMENTS:
     integer                    , intent(in)    :: g  
-    real(r8)                         , intent(in)    :: x2l(:,:)
-    type(atm2lnd_type)               , intent(in)    :: atm2atm_vars
+    type(atm2lnd_type)               , intent(in)    :: atm2lnd_vars
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
 
     !
@@ -995,8 +994,8 @@ contains
              top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
        		       top_af%solai(t,2) + top_af%solai(t,1)
           else
-             call downscale_atm_state_to_topounit_cpl_bypass(g, t, atm2lnd_vars, lnd2atm_vars, uaflag)
-             call downscale_longwave_to_topounit_cpl_bypass(g, t, atm2lnd_vars, lnd2atm_vars, uaflag)
+             call downscale_atm_state_to_topounit_cpl_bypass(g, t, atm2lnd_vars)
+             call downscale_longwave_to_topounit_cpl_bypass(g, t, atm2lnd_vars)
              top_as%ubot(t)    = atm2lnd_vars%forc_u_grc(g)         ! forc_uxy  Atm state m/s
              top_as%vbot(t)    = atm2lnd_vars%forc_v_grc(g)         ! forc_vxy  Atm state m/s
              top_as%zbot(t)    = atm2lnd_vars%forc_hgt_grc(g)         ! zgcmxy    Atm state m
@@ -1304,9 +1303,9 @@ contains
     ! evaluated at the mean temp.
     ! We assume the same temperature lapse rate as above.
 
-    tair_g = x2l(index_x2l_Sa_tbot,i)
+    tair_g = atm2lnd_vars%forc_t_not_downscaled_grc(g)
     tair_t = top_as%tbot(t)
-    lwrad_g = x2l(index_x2l_Faxa_lwdn,i)
+    lwrad_g = atm2lnd_vars%forc_lwrad_not_downscaled_grc(g)
     top_af%lwrad(t) = lwrad_g - &
           4.0_r8 * lwrad_g/(0.5_r8*(tair_t+tair_g)) * &
           lapse_glcmec * (hsurf_t - hsurf_g)
