@@ -60,6 +60,18 @@
     </desc>
   </entry>
 
+  <!-- Aquaplanet and RCE use this for setting orbital parameters -->
+  <entry id="SCREAM_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match="last">
+    <value compset="EAM%RCE">$SRCROOT/components/eamxx/cime_config/usermods_dirs/rcemip</value>
+    </values>
+    <group>run_component_cam</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
+  </entry>
 
   <description>
     <desc compset="_SCREAM">scream default</desc>

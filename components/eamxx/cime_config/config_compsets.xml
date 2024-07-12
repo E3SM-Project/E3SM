@@ -80,6 +80,18 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F2010-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2000-SCREAMv1-RCE-DP</alias> <!-- RCE compset for DP-EAMxx -->
+      <lname>2000_SCREAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">
@@ -93,19 +105,19 @@
     <!-- DP-EAMxx specific xml vars -->
     <entry id="ATM_NCPL">
       <values>
-        <value  compset=".*DYCOMSrf01">864</value>
+        <value  compset=".*DP-EAMxx">864</value>
       </values>
     </entry>
 
     <entry id="PTS_MULTCOLS_MODE">
       <values>
-        <value  compset=".*DYCOMSrf01">TRUE</value>
+        <value  compset=".*DP-EAMxx">TRUE</value>
       </values>
     </entry>
 
     <entry id="PTS_MODE">
       <values>
-        <value  compset=".*DYCOMSrf01">TRUE</value>
+        <value  compset=".*DP-EAMxx">TRUE</value>
       </values>
     </entry>
 

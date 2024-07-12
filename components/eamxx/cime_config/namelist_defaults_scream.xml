@@ -363,7 +363,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
-      <rad_frequency COMPSET=".*DYCOMSrf01">3</rad_frequency>
+      <rad_frequency COMPSET=".*DP-EAMxx">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
@@ -597,10 +597,10 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Homme control namelist -->
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
-    <cubed_sphere_map COMPSET=".*DYCOMSrf01">2</cubed_sphere_map>
+    <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
-    <dt_remap_factor COMPSET=".*DYCOMSrf01" constraints="ge 1">1</dt_remap_factor>
+    <dt_remap_factor COMPSET=".*DP-EAMxx" constraints="ge 1">1</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
@@ -614,7 +614,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
-    <nu COMPSET=".*DYCOMSrf01">0.216784</nu>
+    <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
     <nu_top hgrid="ne4np4">250000.0</nu_top>
     <nu_top hgrid="ne30np4">250000.0</nu_top>
