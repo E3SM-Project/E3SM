@@ -3,7 +3,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
-#include "pyscream.hpp"
+#include "pyscream_ext.hpp"
 
 #include <pybind11/pybind11.h>
 
