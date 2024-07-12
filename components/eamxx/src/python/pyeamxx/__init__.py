@@ -1,15 +1,15 @@
 """
     This file will serve as a way to organize and expose
-    libpyeamxx internals to the rest of pyeamxx
+    libpyscream internals to the rest of pyscream
 """
 
-from libpyeamxx.libpyeamxx_ext import AtmProc
-from libpyeamxx.libpyeamxx_ext import Grid
-from libpyeamxx.libpyeamxx_ext import ParameterList
-from libpyeamxx.libpyeamxx_ext import init
-from libpyeamxx.libpyeamxx_ext import Field
-from libpyeamxx.libpyeamxx_ext import P3
-from libpyeamxx.libpyeamxx_ext import finalize
+from libpyscream.libpyscream_ext import AtmProc
+from libpyscream.libpyscream_ext import Grid
+from libpyscream.libpyscream_ext import ParameterList
+from libpyscream.libpyscream_ext import init
+from libpyscream.libpyscream_ext import Field
+from libpyscream.libpyscream_ext import P3
+from libpyscream.libpyscream_ext import finalize
 
 
 __all__ = [
