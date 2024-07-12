@@ -519,6 +519,9 @@ void MAMWetscav::run_impl(const double dt) {
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
           for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+            const auto n_mode_i       = progs.n_mode_i[m];
+            const auto tends_n_mode_i = tends.n_mode_i[m];
+            n_mode_i(kk) += tends_n_mode_i(kk) * dt;
             for(int a = 0; a < mam4::num_species_mode(m); ++a) {
               const auto q_aero_i       = progs.q_aero_i[m][a];
               const auto tends_q_aero_i = tends.q_aero_i[m][a];
