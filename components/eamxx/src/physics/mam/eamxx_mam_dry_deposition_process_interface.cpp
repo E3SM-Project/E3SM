@@ -102,6 +102,16 @@ void MAMDryDep::set_grids(
   FieldLayout scalar4d_q{{COL, LEV, CMP}, {ncol_, nlev_, pcnst}};
   FieldLayout scalar4d_qqcw_tends{{COL, CMP, LEV}, {ncol_, pcnst, nlev_}};
 
+  auto make_layout = [](const std::vector<int> &extents,
+                        const std::vector<std::string> &names) {
+    std::vector<FieldTag> tags(extents.size(), CMP);
+    return FieldLayout(tags, extents, names);
+  };
+
+  static constexpr int n_land_type = 11;
+  FieldLayout scalar3d_landtype =
+      make_layout({ncol_, n_land_type}, {"COL", "N_LAND_TYPE"});
+
   using namespace ekat::units;
 
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
@@ -186,12 +196,19 @@ void MAMDryDep::set_grids(
   // Ocean fraction [unitless]
   add_field<Required>("ocean_fraction", scalar2d, nondim, grid_name);
 
+  //----------- Variables from other mam4xx processes ------------
+  // geometric mean wet diameter for number distribution [m]
+  add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
+
+  //----------- FIXME:Variables to revisit-------------------------------
+  // FIXME:[TEMPORARY] These variables should come from data files
+  add_field<Required>("fraction_landuse", scalar4d_mid, m, grid_name);
+
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
 
   add_field<Updated>("wetdens", scalar4d_mid, kg / m3, grid_name);
-  add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -305,15 +322,17 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
 
   obukhov_length_ = get_field_in("Obukhov_length").get_view<const Real *>();
-  surface_friction_velocty_ =
-      get_field_in("surface_friction_velocty").get_view<const Real *>();
   land_fraction_  = get_field_in("land_fraction").get_view<const Real *>();
   ice_fraction_   = get_field_in("ice_fraction").get_view<const Real *>();
   ocean_fraction_ = get_field_in("ocean_fraction").get_view<const Real *>();
+  // geometric mean wet diameter for number distribution [m]
+  dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
   friction_velocity_ =
       get_field_in("friction_velocity").get_view<const Real *>();
   aerodynamical_resistance_ =
       get_field_in("aerodynamical_resistance").get_view<const Real *>();
+  surface_friction_velocty_ =
+      get_field_in("surface_friction_velocty").get_view<const Real *>();
 
   // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.z_mid     = buffer_.z_mid;
@@ -374,9 +393,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   // FIXME: We might need to get rid of few of these fields
   // as we do not need them in FM
-  dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
+
   wet_dens_    = get_field_out("wetdens").get_view<Real ***>();
-  // d_qtracers_dt_ = get_field_out("d_qtracers_dt").get_view<Real ***>();
   aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
                      .get_view<Real **>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
@@ -389,7 +407,10 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   const int pcnst = mam4::aero_model::pcnst;
   // FIXME: comment what they are and units.....
   qtracers_      = view_3d("qtracers_", ncol_, nlev_, pcnst);
-  d_qtracers_dt_ = view_3d("d_qtracers_dt", ncol_, nlev_, pcnst);
+  d_qtracers_dt_ = view_3d("d_qtracers_d_t", ncol_, nlev_, pcnst);
+  for(int i = 0; i < pcnst; ++i) {
+    Kokkos::resize(qqcw_tends_[i], ncol_, nlev_);
+  }
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -410,34 +431,22 @@ void MAMDryDep::run_impl(const double dt) {
   Kokkos::fence();
 
   const DryDep::Config process_config;
-  // Future enhancement:
-  // This is where we can set the fraction of land use parameters:
-  // if (do_soilw) {
-  //   const Real *landuse = get_landuse_from_file(do_soilw);
-  //   for (int i=0; i<DryDep::n_land_type; ++i)
-  //     process_config.fraction_landuse[i] = landuse[i];
-  // }
 
   DryDep dry_deposition;
   const mam4::AeroConfig aero_config;
   dry_deposition.init(aero_config, process_config);
 
-  // validate is not implimented as yet.
-  // const auto policy =
-  // ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  // Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-  //   dry_deposition.validate( aero_config, team, atm, progs);
-  // }
-  // Kokkos::fence();
+  auto fraction_landuse =
+      get_field_in("fraction_landuse").get_view<const Real **>();
 
   compute_tendencies(ncol_, nlev_, dry_deposition, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
-                     aerodynamical_resistance_, qtracers_,
-                     d_qtracers_dt_,  // d_qtracers_dt_ is an output
+                     aerodynamical_resistance_, qtracers_, d_qtracers_dt_,
+                     fraction_landuse,  // d_qtracers_dt_ is an output
                      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_,
                      // Outputs:
-                     aerdepdrycw_, aerdepdryis_, tendencies_);
+                     aerdepdrycw_, aerdepdryis_, tendencies_, qqcw_tends_);
   Kokkos::fence();
 }  // run_impl
 }  // namespace scream

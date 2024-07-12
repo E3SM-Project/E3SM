@@ -2,6 +2,8 @@
 #define EAMXX_MAM_DRY_DEPOSITION_FUNCTIONS_HPP
 
 #include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <mam4xx/aero_config.hpp>
+#include <mam4xx/convproc.hpp>
 #include <mam4xx/mam4.hpp>
 
 namespace scream {
@@ -17,11 +19,13 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
     MAMDryDep::view_3d qtracers, MAMDryDep::view_3d d_qtracers_dt,
+    const MAMDryDep::const_view_2d fraction_landuse,
     const MAMDryDep::view_3d dgncur_awet_, const MAMDryDep::view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
     const mam_coupling::AerosolState wet_aero, MAMDryDep::view_2d aerdepdrycw,
-    MAMDryDep::view_2d aerdepdryis, MAMDryDep::view_3d tendencies) {
+    MAMDryDep::view_2d aerdepdryis, MAMDryDep::view_3d tendencies,
+    MAMDryDep::view_2d qqcw_tends_[mam4::aero_model::pcnst]) {
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
           ncol, nlev);
@@ -89,8 +93,36 @@ void compute_tendencies(
         }
 
         const mam4::AeroConfig aero_config;
-        dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf,
-                                          progs, diags, tends);
+        /*dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf,
+                                          progs, diags, tends);*/
+        mam4::ColumnView qqcw_tends[mam4::aero_model::pcnst];
+        for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
+          qqcw_tends[i] = ekat::subview(qqcw_tends_[i], icol);
+        }
+        // Extract Prognostics
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
+              for(int m = 0; m < mam4::AeroConfig::num_modes(); ++m) {
+                // qqcw_tends[mam4::ConvProc::numptrcw_amode(m)][kk] =
+                // progs.n_mode_c[m][kk];
+                qqcw_tends[mam4::ConvProc::numptrcw_amode(m)][kk] =
+                    progs.n_mode_c[m][kk];
+                for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
+                  if(-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
+                    qqcw_tends[mam4::ConvProc::lmassptrcw_amode(a, m)][kk] =
+                        progs.q_aero_c[m][a][kk];
+              }
+            });
+        /*mam4::aero_model_drydep(
+            team, fraction_landuse, atm.temperature, atm.pressure,
+           atm.interface_pressure , atm.hydrostatic_dp, ekat::subview(qtracers,
+           icol), ekat::subview(dgncur_awet_, i, icol), ekat::subview(wet_dens_,
+           i, icol), qqcw_tends, obklen[icol], surfric[icol], landfrac[icol],
+           icefrac[icol], ocnfrac[icol], friction_velocity[icol],
+           aerodynamical_resistance[icol], ekat::subview(d_qtracers_dt, icol),
+           ptend_lq, dt, ekat::subview(aerdepdrycw, icol),
+            ekat::subview(aerdepdryis, icol), rho, vlc_dry, vlc_trb, vlc_grv,
+           dqdt_tmp);*/
       });
 }
 }  // namespace

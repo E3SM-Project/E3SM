@@ -42,12 +42,16 @@ class MAMDryDep final : public scream::AtmosphereProcess {
 
   view_3d qtracers_;
   view_3d d_qtracers_dt_;
+
+  // inputs
+  // FIXME: collect all inputs and outputs together
   view_3d dgncur_awet_;
   view_3d wet_dens_;
 
   view_3d tendencies_;
   view_2d aerdepdrycw_;
   view_2d aerdepdryis_;
+  view_2d qqcw_tends_[mam4::aero_model::pcnst];
 
   const_view_1d obukhov_length_;
   const_view_1d surface_friction_velocty_;
