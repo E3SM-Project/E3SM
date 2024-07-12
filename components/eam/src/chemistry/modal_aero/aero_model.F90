@@ -220,7 +220,7 @@ contains
     character(len=*), parameter :: subrname = 'aero_model_init'
     character(len=20) :: dummy
     
-    character(len=fieldname_len) :: wetdep_name, depflx_name
+    character(len=fieldname_len) :: wetdep_name, depflx_name, field_name
     character(len=6) :: test_name
     character(len=100) :: errmes
     character(len=2)  :: unit_basename  ! Units 'kg' or '1' 
@@ -1189,6 +1189,7 @@ contains
           end if
        end if
     end do ! l
+#endif
   end subroutine aero_model_init
 
   !=============================================================================

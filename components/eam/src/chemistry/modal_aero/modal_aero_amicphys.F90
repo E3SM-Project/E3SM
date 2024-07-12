@@ -293,7 +293,7 @@ subroutine modal_aero_amicphys_intr(                             &
 ! !USES:
 use cam_history,       only:  outfld, fieldname_len
 use chem_mods,         only:  adv_mass
-use constituents,      only:  cnst_name
+use constituents,      only:  pcnst, cnst_name
 use physconst,         only:  gravit, mwdry, r_universal
 use wv_saturation,     only:  qsat
 use phys_control,      only:  phys_getopts
