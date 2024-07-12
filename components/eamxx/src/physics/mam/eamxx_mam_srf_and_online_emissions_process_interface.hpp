@@ -14,6 +14,15 @@
 // #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
 
+// TODO: determine when these may be necessary
+// #ifndef KOKKOS_ENABLE_CUDA
+// #define protected_except_cuda public
+// #define private_except_cuda public
+// #else
+// #define protected_except_cuda protected
+// #define private_except_cuda private
+// #endif
+
 namespace scream {
 
 // The process responsible for handling MAM4 surface and online emissions. The
@@ -37,7 +46,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
- public:
+public:
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -52,8 +61,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -78,25 +87,25 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
                     const mam_coupling::AerosolState &wet_aero,
                     const mam_coupling::DryAtmosphere &dry_atm,
                     const mam_coupling::AerosolState &dry_aero) {
-      ncol_pre_     = ncol;
-      nlev_pre_     = nlev;
-      wet_atm_pre_  = wet_atm;
+      ncol_pre_ = ncol;
+      nlev_pre_ = nlev;
+      wet_atm_pre_ = wet_atm;
       wet_aero_pre_ = wet_aero;
-      dry_atm_pre_  = dry_atm;
+      dry_atm_pre_ = dry_atm;
       dry_aero_pre_ = dry_aero;
     }
 
     KOKKOS_INLINE_FUNCTION
     void operator()(
         const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
+      const int i = team.league_rank(); // column index
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
       compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
                                 dry_aero_pre_, i);
       team.team_barrier();
 
-    }  // operator()
+    } // operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -106,14 +115,14 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
-  };  // MAMAci::Preprocess
+  }; // MAMAci::Preprocess
 
- private:
+private:
   // preprocessing scratch pad
   Preprocess preprocess_;
 
-};  // MAMSrfOnlineEmiss
+}; // MAMSrfOnlineEmiss
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
+#endif // EAMXX_MAM_SRF_ONLINE_EMISS_HPP

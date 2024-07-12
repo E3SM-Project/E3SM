@@ -16,8 +16,8 @@ write in/outs for all variables clearly
 namespace scream {
 
 // =========================================================================================
-MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm& comm,
-                                     const ekat::ParameterList& params)
+MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
+                                     const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
@@ -35,22 +35,22 @@ void MAMSrfOnlineEmiss::set_grids(
 
   Units n_unit(1 / kg, "#/kg"); // units of number mixing ratios of tracers
 
+  // NOTE: final output with be a flux for each grid point
+  // e.g., flux_<srf,onlilne>_emissions(Nx, Ny, Nspec)
+  //  [kg m^-2 s^-1] or [# m^-2 s^-1]
   grid_ = grids_manager->get_grid("Physics");
-  const auto& grid_name = grid_->name();
+  const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();      // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
 
-  // Define the different field layouts that will be used for this process
-  using namespace ShortFieldTagsNames;
-
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_layout_mid{{COL, LEV}, {ncol_, nlev_}};
-  const FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+  const FieldLayout scalar3d_layout_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_layout_int = grid_->get_3d_scalar_layout(false);
 
   // Layout for 2D (2d horiz) variable
-  const FieldLayout scalar2d_layout{{COL}, {ncol_}};
+  const FieldLayout scalar2d_layout = grid_->get_2d_scalar_layout();
 
   // -------------------------------------------------------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -69,23 +69,24 @@ void MAMSrfOnlineEmiss::set_grids(
                       "tracers"); // liquid cloud water [kg/kg] wet
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
                       "tracers"); // ice cloud water [kg/kg] wet
-  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
-                     "tracers"); // cloud liquid wet number mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
                       "tracers"); // ice number mixing ratio
   add_field<Required>(
       "omega", scalar3d_layout_mid, Pa / s,
       grid_name); // Vertical pressure velocity [Pa/s] at midpoints
 
+  add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
+                     "tracers"); // cloud liquid wet number mixing ratio
+
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char* int_mmr_field_name =
+      const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if (strlen(int_mmr_field_name) > 0) {
@@ -96,13 +97,12 @@ void MAMSrfOnlineEmiss::set_grids(
   }
   // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    // printf("%s \n", int_nmr_field_name);
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
 
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char* cld_mmr_field_name =
+      const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
 
       if (strlen(cld_mmr_field_name) > 0) {
@@ -114,7 +114,7 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // aerosol-related gases: mass mixing ratios
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
   }
@@ -131,7 +131,7 @@ size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
 // ON HOST, initializes the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
-void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager& buffer_manager) {
+void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
                        requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
@@ -143,7 +143,42 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager& buffer_manager) {
       "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
 }
 // =========================================================================================
+// // TODO: comments!
+// void MAMSrfOnlineEmiss::set_emissions_names(
+//     const std::map<std::string, int> map_spec_id, const std::string
+//     emis_type, const ekat::ParameterList &m_params, std::map<std::string,
+//     view_1d_host> &host_views) {
 
+//   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+
+//   // names take the form online_emis_specifier_for_<spec_name>
+//   for (const auto &item : map_spec_id) {
+//     const auto spec_name = item.first;
+//     const int species_id = item.second;
+//     const auto file_name = emis_type + "_emis_specifier_" + spec_name;
+//     const auto &fname = m_params.get<std::string>(file_name);
+
+//     // read data
+//     AtmosphereInput srf_emissions_reader(m_params, grid_,
+//     host_views_emissions,
+//                                          layouts_emissions);
+//     srf_emissions_reader.read_variables();
+//     srf_emissions_reader.finalize();
+//   } // end ispec
+
+//   // for (int i = 0; i < nswbands; i++) {
+//   //   specrefndxsw_host(i, species_id).real() = host_views[sw_real_name](i);
+//   //   specrefndxsw_host(i, species_id).imag() =
+//   //       haero::abs(host_views[sw_im_name](i));
+//   // }
+//   // for (int i = 0; i < nlwbands; i++) {
+//   //   specrefndxlw_host(i, species_id).real() = host_views[lw_real_name](i);
+//   //   specrefndxlw_host(i, species_id).imag() =
+//   //       haero::abs(host_views[lw_im_name](i));
+//   // }
+
+// } // end set_emissions_names
+// =========================================================================================
 // inline void set_emissions_layouts(
 //     const std::map<std::string, int> map_spec_id,
 //     const std::string emis_type,
@@ -160,26 +195,24 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager& buffer_manager) {
 //     // const auto& fname = m_params.get<std::string>(file_name);
 //     // update file name
 
-
 //     // read data
 //     AtmosphereInput srf_emissions_reader(
-//         params_srf_emissions, grid_, host_views_emissions, layouts_emissions);
+//         params_srf_emissions, grid_, host_views_emissions,
+//         layouts_emissions);
 //     srf_emissions_reader.read_variables();
 //     srf_emissions_reader.finalize();
 //   } // end ispec
 
-
-
-  // for (int i = 0; i < nswbands; i++) {
-  //   specrefndxsw_host(i, species_id).real() = host_views[sw_real_name](i);
-  //   specrefndxsw_host(i, species_id).imag() =
-  //       haero::abs(host_views[sw_im_name](i));
-  // }
-  // for (int i = 0; i < nlwbands; i++) {
-  //   specrefndxlw_host(i, species_id).real() = host_views[lw_real_name](i);
-  //   specrefndxlw_host(i, species_id).imag() =
-  //       haero::abs(host_views[lw_im_name](i));
-  // }
+// for (int i = 0; i < nswbands; i++) {
+//   specrefndxsw_host(i, species_id).real() = host_views[sw_real_name](i);
+//   specrefndxsw_host(i, species_id).imag() =
+//       haero::abs(host_views[sw_im_name](i));
+// }
+// for (int i = 0; i < nlwbands; i++) {
+//   specrefndxlw_host(i, species_id).real() = host_views[lw_real_name](i);
+//   specrefndxlw_host(i, species_id).imag() =
+//       haero::abs(host_views[lw_im_name](i));
+// }
 
 // } // end
 // =========================================================================================
@@ -187,16 +220,17 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Gather runtime options
   //(e.g.) runtime_options.lambda_low    = m_params.get<double>("lambda_low");
 
-  wet_atm_.qv = get_field_in("qv").get_view<const Real**>();
-  wet_atm_.qc = get_field_in("qc").get_view<const Real**>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real**>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real**>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real**>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real**>();
-  dry_atm_.omega = get_field_in("omega").get_view<const Real**>();
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
+
   dry_atm_.qv = buffer_.qv_dry;
   dry_atm_.qc = buffer_.qc_dry;
   dry_atm_.nc = buffer_.nc_dry;
@@ -215,40 +249,41 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // number (n) mixing ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] =
-        get_field_out(int_nmr_field_name).get_view<Real**>();
+        get_field_out(int_nmr_field_name).get_view<Real **>();
     dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
     wet_aero_.cld_aero_nmr[m] =
-        get_field_out(cld_nmr_field_name).get_view<Real**>();
+        get_field_out(cld_nmr_field_name).get_view<Real **>();
     dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
 
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char* int_mmr_field_name =
+      const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] =
-            get_field_out(int_mmr_field_name).get_view<Real**>();
+            get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      const char* cld_mmr_field_name =
+      const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
       if (strlen(cld_mmr_field_name) > 0) {
         wet_aero_.cld_aero_mmr[m][a] =
-            get_field_out(cld_mmr_field_name).get_view<Real**>();
+            get_field_out(cld_mmr_field_name).get_view<Real **>();
         dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] = get_field_out(gas_mmr_field_name).get_view<Real**>();
+    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    wet_aero_.gas_mmr[g] =
+        get_field_out(gas_mmr_field_name).get_view<Real **>();
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
@@ -256,148 +291,125 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
 
-  // // read data from file
-  {
-  //   // using namespace ShortFieldTagsNames;
+  // read data from files
+  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  using view_2d_host = typename KT::view_2d<Real>::HostMirror;
+  using strvec_t = std::vector<std::string>;
 
-    using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  // mam_coupling::AerosolSurfaceEmissionsHostData srf_emissions_host_data;
 
-    mam_coupling::AerosolSurfaceEmissionsHostData srf_emissions_host_data;
+  std::map<std::string, int> map_srf_emiss_name_species_id;
+  strvec_t srf_emiss_spec_names;
+  map_srf_emiss_name_species_id["DMS"] = 0;
+  map_srf_emiss_name_species_id["SO2"] = 1;
+  map_srf_emiss_name_species_id["bc_a4"] = 2;
+  map_srf_emiss_name_species_id["num_a1"] = 3;
+  map_srf_emiss_name_species_id["num_a2"] = 4;
+  map_srf_emiss_name_species_id["num_a4"] = 5;
+  map_srf_emiss_name_species_id["pom_a4"] = 6;
+  map_srf_emiss_name_species_id["so4_a1"] = 7;
+  map_srf_emiss_name_species_id["so4_a2"] = 8;
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //   srf_emiss_spec_names.push_back(item.first);
+  // }
 
-  //   {
-      // make a list of host views
-      std::map<std::string, view_1d_host> host_views_srf_emissions;
-      // defines layouts
-      std::map<std::string, FieldLayout> layouts_srf_emissions;
-      ekat::ParameterList params_srf_emissions;
-      std::string prefix_srf_emissions = "srf_emis_specifier_for_";
+  std::map<std::string, int> map_online_emiss_name_species_id;
+  strvec_t online_emiss_spec_names;
+  map_online_emiss_name_species_id["SO2"] = 0;
+  map_online_emiss_name_species_id["SOAG"] = 1;
+  map_online_emiss_name_species_id["bc_a4"] = 2;
+  map_online_emiss_name_species_id["num_a1"] = 3;
+  map_online_emiss_name_species_id["num_a2"] = 4;
+  map_online_emiss_name_species_id["num_a4"] = 5;
+  map_online_emiss_name_species_id["pom_a4"] = 6;
+  map_online_emiss_name_species_id["so4_a1"] = 7;
+  map_online_emiss_name_species_id["so4_a2"] = 8;
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //   online_emiss_spec_names.push_back(item.first);
+  // }
 
-  //     // constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
-  //     // auto specrefndxsw_host = mam_coupling::complex_view_2d::HostMirror(
-  //     //     "specrefndxsw_host", nswbands_, maxd_aspectype);
+  // To create the input object, we need to:
+  // - set names of views
+  // - declare host views
+  // - initialize FieldLayouts
+  // - initialize params
 
-  //     // auto specrefndxlw_host = mam_coupling::complex_view_2d::HostMirror(
-  //     //     "specrefndxlw_host", nlwbands_, maxd_aspectype);
+  using namespace ShortFieldTagsNames;
 
-      std::map<std::string, int> map_srf_emiss_name_species_id;
-      map_srf_emiss_name_species_id["DMS"] = 0;
-      map_srf_emiss_name_species_id["SO2"] = 1;
-      map_srf_emiss_name_species_id["bc_a4"] = 2;
-      map_srf_emiss_name_species_id["num_a1"] = 3;
-      map_srf_emiss_name_species_id["num_a2"] = 4;
-      map_srf_emiss_name_species_id["num_a4"] = 5;
-      map_srf_emiss_name_species_id["pom_a4"] = 6;
-      map_srf_emiss_name_species_id["so4_a1"] = 7;
-      map_srf_emiss_name_species_id["so4_a2"] = 8;
+  // make a list of host views, that holds nspec-dimensional views of
+  // srf/online emissions at a grid point
+  std::map<std::string, view_1d_host> host_views_srf_emiss;
+  // list of layouts of srf/online emissions views
+  // NOTE: these are the same, but it seems best (necessary?) to have
+  // equally-sized lists
+  std::map<std::string, FieldLayout> layouts_srf_emiss;
+  ekat::ParameterList params_srf_emiss;
+  std::string middle_name_emiss = "_emis_specifier_for_";
 
-      std::map<std::string, int> map_online_emiss_name_species_id;
-      map_online_emiss_name_species_id["SO2"] = 0;
-      map_online_emiss_name_species_id["SOAG"] = 1;
-      map_online_emiss_name_species_id["bc_a4"] = 2;
-      map_online_emiss_name_species_id["num_a1"] = 3;
-      map_online_emiss_name_species_id["num_a2"] = 4;
-      map_online_emiss_name_species_id["num_a4"] = 5;
-      map_online_emiss_name_species_id["pom_a4"] = 6;
-      map_online_emiss_name_species_id["so4_a1"] = 7;
-      map_online_emiss_name_species_id["so4_a2"] = 8;
+  // TODO: break this out into a function in emissions_utils.hpp
+  // host_views_srf_emiss[sname] = view_1d_host(sname, mam_coupling::n_srf_emiss);
+  // layouts_srf_emiss.emplace(sname, scalar_srf_emiss_layout);
+  // for (const auto &item : map_srf_emiss_name_species_id) {
+  //     online_emiss_spec_names.push_back(item.first);
+  //     const auto oname = item.first;
+  //     host_views_online_emiss[oname] = view_2d_host(oname, )
+  //   }
 
-      // To create the input object, we need to set:
-      // 1) names (do during read loop)
-      // 2) params
-      // 3) host views
-      // 4) layouts
-      // set_emissions_names(surname_emissions, params_srf_emissions,
-      // host_views_emissions, layouts_emissions);
+  // set names of views
+  const std::string srf_emiss_name = "surface_emissions";
+  // const std::string online_emiss_name = "online_emissions";
 
-      // inline void set_emissions_names(
-      //     const std::map<std::string, int> map_spec_id,
-      //     const std::string emis_type,
-      //     std::map<std::string, view_1d_host>& host_views,
-      //     mam_coupling::complex_view_2d::HostMirror&
-      //         specrefndxsw_host, // complex refractive index for water visible
-      //     mam_coupling::complex_view_2d::HostMirror& specrefndxlw_host) {
+  // declare the host views
+  host_views_srf_emiss[srf_emiss_name] = view_1d_host(srf_emiss_name, 1);
+  // host_views_emissions[online_emiss_name] =
+  //     view_1d_host(online_emiss_name, mam_coupling::n_online_emiss);
 
-      //   // names take the form "online_emis_specifier_for_SO2"
-      //   for (const auto& item : map_spec_id) {
-      //     const auto spec_name = item.first;
-      //     const int species_id = item.second;
-      //     const auto file_name = emis_type + "_emis_specifier_" + spec_name;
-          // const auto& fname = m_params.get<std::string>(file_name);
-          // update file name
+  // initialize and collect FieldLayouts
+  // layout for 2D (2d horiz == 1d flattened col index) scalar-valued variable
+  FieldLayout scalar_srf_emiss_layout{{COL}, {ncol_}, {srf_emiss_name}};
+  // FieldLayout scalar_online_emiss_layout{
+  //     {CMP}, {mam_coupling::n_online_emiss}, {online_emiss_name}};
+  layouts_srf_emiss.emplace(srf_emiss_name, scalar_srf_emiss_layout);
+  // layouts_emissions.emplace(online_emiss_name, scalar_online_emiss_layout);
 
+  // initialize params
+  params_srf_emiss.set("Skip_Grid_Checks", true);
+  // these need to be the emission-type names from the map_<xyz>_emiss_name_species_id maps
+  // params_srf_emiss.set<strvec_t>("Field Names", {srf_emiss_name});
 
-          // // read data
-          // AtmosphereInput srf_emissions_reader(
-          //     params_srf_emissions, grid_, host_views_emissions, layouts_emissions);
-          // srf_emissions_reader.read_variables();
-          // srf_emissions_reader.finalize();
-        // } // end ispec
+  // namelist entries take the form <srf,online>_emis_specifier_for_<spec_name>
+  std::string emis_type = "srf";
+  for (const auto &item : map_srf_emiss_name_species_id) {
+    const auto spec_name = item.first;
+    const int species_id = item.second;
+    const auto file_name = emis_type + middle_name_emiss + spec_name;
+    const auto &fpath = m_params.get<std::string>(file_name);
+    params_srf_emiss.set("Filename", fpath);
 
+    // read data
+    AtmosphereInput srf_emissions_reader(params_srf_emiss, grid_, host_views_srf_emiss, layouts_srf_emiss);
+    srf_emissions_reader.read_variables();
+    srf_emissions_reader.finalize();
+    // copy data to device
 
+  } // end ispec
+  emis_type = "online";
+  // for (const auto &item : map_online_emiss_name_species_id) {
+  //   const auto spec_name = item.first;
+  //   const int species_id = item.second;
+  //   const auto file_name = emis_type + middle_name_emiss + spec_name;
+  //   const auto &fname = m_params.get<std::string>(file_name);
+  //   params_emissions.set("Filename", fname);
 
-        // for (int i = 0; i < nswbands; i++) {
-        //   specrefndxsw_host(i, species_id).real() = host_views[sw_real_name](i);
-        //   specrefndxsw_host(i, species_id).imag() =
-        //       haero::abs(host_views[sw_im_name](i));
-        // }
-        // for (int i = 0; i < nlwbands; i++) {
-        //   specrefndxlw_host(i, species_id).real() = host_views[lw_real_name](i);
-        //   specrefndxlw_host(i, species_id).imag() =
-        //       haero::abs(host_views[lw_im_name](i));
-        // }
+  //   // read data
+  //   AtmosphereInput online_emissions_reader(
+  //       m_params, grid_, host_views_emissions, layouts_emissions);
+  //   online_emissions_reader.read_variables();
+  //   online_emissions_reader.finalize();
+  //   // copy data to device
 
-      // } // end
-
-      // ===============
-      // Names
-      // ===============
-
-      // names take the form <type>_emis_specifier_for_<spec>
-      // set_emissions_names("srf", params_srf_emissions, host_views_srf_emissions, layouts_srf_emissions);
-      // set_emissions_names("online", params_srf_emissions, host_views_online_emissions, layouts_online_emissions);
-
-      // ===============
-      // Params
-      // ===============
-      using strvec_t = std::vector<std::string>;
-      params_srf_emissions.set("Skip_Grid_Checks", true);
-      // params_srf_emissions.set<strvec_t>("Field Names", {refindex_real_sw, refindex_im_sw,
-      //                                      refindex_real_lw, refindex_im_lw});
-      // params_srf_emissions.set("Filename", fname);
-
-      // ===============
-      // Host Views
-      // ===============
-      using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-      std::map<std::string, view_1d_host> host_views;
-
-      // host_views[refindex_real_sw] = view_1d_host(refindex_real_sw,
-      // nswbands); host_views[refindex_im_sw]   = view_1d_host(refindex_im_sw,
-      // nswbands); host_views[refindex_real_lw] =
-      // view_1d_host(refindex_real_lw, nlwbands); host_views[refindex_im_lw] =
-      // view_1d_host(refindex_im_lw, nlwbands);
-
-      // ===============
-      // Layouts
-      // ===============
-      std::map<std::string, FieldLayout> layouts;
-      // FieldLayout scalar_refindex_sw_layout{{SWBND}, {nswbands}};
-      // FieldLayout scalar_refindex_lw_layout{{LWBND}, {nlwbands}};
-
-      // layouts.emplace(refindex_real_sw, scalar_refindex_sw_layout);
-      // layouts.emplace(refindex_im_sw, scalar_refindex_sw_layout);
-      // layouts.emplace(refindex_real_lw, scalar_refindex_lw_layout);
-      // layouts.emplace(refindex_im_lw, scalar_refindex_lw_layout);
-
-      // reshape specrefndxsw_host and copy it to device
-      // mam4::modal_aer_opt::set_device_specrefindex(
-      //     aerosol_optics_device_data_.specrefindex_sw, "short_wave",
-      //     specrefndxsw_host);
-      // mam4::modal_aer_opt::set_device_specrefindex(
-      //     aerosol_optics_device_data_.specrefindex_lw, "long_wave",
-      //     specrefndxlw_host);
-  }
-}
+  // } // end ispec
+} // end initialize_impl()
 
 // =============================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {

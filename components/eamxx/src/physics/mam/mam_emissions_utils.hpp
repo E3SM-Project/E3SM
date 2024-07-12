@@ -18,41 +18,55 @@ using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 // using view_5d_host    = typename KT::view_ND<Real,5>::HostMirror;
 // using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
-// constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-// constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+constexpr int n_srf_emiss = mam4::mo_srf_emissions::n_srf_emiss;
+constexpr int n_online_emiss = mam4::aero_model_emissions::n_online_emiss;
 
-struct AerosolSurfaceEmissionsHostData {
-  // these have dim = n_species
-  view_1d_host emis_species_index;
-  view_1d_host emis_species_units;
-  view_1d_host emis_species_name;
-  // molecular weight
-  view_1d_host emis_species_mw;
-  // number of sectors in each field
-  view_1d_int_host emis_species_nsectors;
-  // FIXME: not quite sure what this does--maybe just a placeholder for fields(:, i_sector)?
-  view_1d_host emis_species_sector;
-  // note fields have dim = n_species x nsectors
-  // TODO: fields have units??? maybe the same as the upper spec units
-  view_2d_host emis_species_fields;
-};
+using namespace ShortFieldTagsNames;
 
-using AerosolSurfaceEmissionsDeviceData =
-    mam4::mo_srf_emissions::AerosolSurfaceEmissionsDeviceData;
+// struct AerosolSurfaceEmissionsHostData {
+//   // these have dim = n_species
+//   view_1d_host emis_species_index;
+//   view_1d_host emis_species_units;
+//   view_1d_host emis_species_name;
+//   // molecular weight
+//   view_1d_host emis_species_mw;
+//   // number of sectors in each field
+//   view_1d_int_host emis_species_nsectors;
+//   // FIXME: not quite sure what this does--maybe just a placeholder for
+//   // fields(:, i_sector)?
+//   view_1d_host emis_species_sector;
+//   // note fields have dim = n_species x nsectors
+//   // TODO: fields have units??? maybe the same as the upper spec units
+//   view_2d_host emis_species_fields;
+// };
 
-inline void set_emissions_params(
-    AerosolSurfaceEmissionsHostData &aerosol_emissions_host_data,
-    ekat::ParameterList &params_emissions,
-    std::map<std::string, FieldLayout> &layouts,
-    std::map<std::string, view_1d_host> &host_views) {
-  // Set up input structure to read data from file.
-  using strvec_t = std::vector<std::string>;
-  using namespace ShortFieldTagsNames;
+// using AerosolSurfaceEmissionsDeviceData =
+    // mam4::mo_srf_emissions::AerosolSurfaceEmissionsDeviceData;
 
-  // using SrfEmisDims = mam4::mo_srf_emissions::AerosolSurfaceEmissionsDimensions;
-  // SrfEmisDims srf_emimssions_dims;
+// inline void set_emissions_params(
+//     AerosolSurfaceEmissionsHostData& aerosol_emissions_host_data,
+//     ekat::ParameterList& params_emissions,
+//     std::map<std::string, FieldLayout>& layouts,
+//     std::map<std::string, view_1d_host>& host_views) {
+//   // Set up input structure to read data from file.
+//   using strvec_t = std::vector<std::string>;
+//   // using namespace ShortFieldTagsNames;
 
-}
+//   // using SrfEmisDims =
+//   // mam4::mo_srf_emissions::AerosolSurfaceEmissionsDimensions; SrfEmisDims
+//   // srf_emimssions_dims;
+// }
+
+// inline void set_emissions_names(const std::map<std::string, int> map_spec_id,
+//                     const std::string emis_type,
+//                     const ekat::ParameterList& m_params,
+//                     std::map<std::string, view_1d_host>& host_views) {
+
+//   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+
+//   std::string
+
+// } // end set_emissions_names
 
 } // namespace scream::mam_coupling
 

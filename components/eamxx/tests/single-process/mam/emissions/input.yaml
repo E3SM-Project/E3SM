@@ -10,7 +10,29 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_srf_online_emiss]
-  
+  mam4_srf_online_emiss:
+    # MAM4xx-Surface-Emissions
+    srf_emis_specifier_for_DMS: ${SCREAM_DATA_DIR}/mam4xx/emissions/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc
+    srf_emis_specifier_for_SO2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_bc_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_num_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_num_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_num_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a4_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_pom_a4_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so4_a1_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so4_a2_surf_1x1_2010_clim_c20190821.nc
+    # MAM4xx-Online-Emissions
+    online_emis_specifier_for_SO2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_SOAG: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_soag_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_bc_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_bc_a4_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_num_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a1_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_num_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a2_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_num_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a4_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_pom_a4_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so4_a1_elev_1x1_2010_clim_c20190821.nc
+    online_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so4_a2_elev_1x1_2010_clim_c20190821.nc
+
+
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE
@@ -30,7 +52,7 @@ initial_conditions:
 
   #we should get the following variables from other processes
   pbl_height : 1.0
-  
+
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]
