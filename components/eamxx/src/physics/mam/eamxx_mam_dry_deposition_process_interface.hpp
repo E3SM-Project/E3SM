@@ -47,6 +47,12 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // FIXME: collect all inputs and outputs together
   view_3d dgncur_awet_;
   view_3d wet_dens_;
+  view_2d rho_;
+  static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
+  view_2d vlc_dry_[mam4::AeroConfig::num_modes()][aerosol_categories_];
+  view_2d vlc_trb_[mam4::AeroConfig::num_modes()][aerosol_categories_];
+  view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
+  view_2d dqdt_tmp_[mam4::aero_model::pcnst];
 
   view_3d tendencies_;
   view_2d aerdepdrycw_;

@@ -408,8 +408,20 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // FIXME: comment what they are and units.....
   qtracers_      = view_3d("qtracers_", ncol_, nlev_, pcnst);
   d_qtracers_dt_ = view_3d("d_qtracers_d_t", ncol_, nlev_, pcnst);
+
+  rho_ = view_2d("rho", ncol_, nlev_);
+
+  for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
+    for(int j = 0; j < aerosol_categories_; ++j) {
+      Kokkos::resize(vlc_dry_[i][j], ncol_, nlev_);
+      Kokkos::resize(vlc_grv_[i][j], ncol_, nlev_);
+    }
+  }
+
+  vlc_dry_, vlc_trb_, vlc_grv_;
   for(int i = 0; i < pcnst; ++i) {
     Kokkos::resize(qqcw_tends_[i], ncol_, nlev_);
+    Kokkos::resize(dqdt_tmp_[i], ncol_, nlev_);
   }
 
   //-----------------------------------------------------------------
