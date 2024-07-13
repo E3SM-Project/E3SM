@@ -458,7 +458,8 @@ void MAMDryDep::run_impl(const double dt) {
                      fraction_landuse,  // d_qtracers_dt_ is an output
                      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_,
                      // Outputs:
-                     aerdepdrycw_, aerdepdryis_, tendencies_, qqcw_tends_);
+                     aerdepdrycw_, aerdepdryis_, tendencies_, qqcw_tends_, rho_,
+                     vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
 }  // run_impl
 }  // namespace scream

@@ -25,7 +25,12 @@ void compute_tendencies(
     const mam_coupling::AerosolState dry_aero,
     const mam_coupling::AerosolState wet_aero, MAMDryDep::view_2d aerdepdrycw,
     MAMDryDep::view_2d aerdepdryis, MAMDryDep::view_3d tendencies,
-    MAMDryDep::view_2d qqcw_tends_[mam4::aero_model::pcnst]) {
+    MAMDryDep::view_2d qqcw_tends_[mam4::aero_model::pcnst],
+    MAMDryDep::view_2d rho_,
+    MAMDryDep::view_2d vlc_dry_[mam4::AeroConfig::num_modes()][4],
+    MAMDryDep::view_2d vlc_trb_[mam4::AeroConfig::num_modes()][4],
+    MAMDryDep::view_2d vlc_grv_[mam4::AeroConfig::num_modes()][4],
+    MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
           ncol, nlev);
