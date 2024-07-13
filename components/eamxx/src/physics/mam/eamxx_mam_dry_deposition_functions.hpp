@@ -19,7 +19,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
     MAMDryDep::view_3d qtracers, MAMDryDep::view_3d d_qtracers_dt,
-    const MAMDryDep::const_view_2d fraction_landuse,
+    MAMDryDep::view_1d fraction_landuse_[mam4::DryDeposition::n_land_type],
     const MAMDryDep::view_3d dgncur_awet_, const MAMDryDep::view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
@@ -65,11 +65,14 @@ void compute_tendencies(
         mam4::Surface surf;
         mam4::Diagnostics diags;
         mam4::Tendencies tends;
+        mam4::ColumnView dgncur_awet[num_aero_modes], wet_dens[num_aero_modes];
 
         for(int i = 0; i < num_aero_modes; ++i) {
           diags.wet_geometric_mean_diameter_i[i] =
               ekat::subview(dgncur_awet_, i, icol);
+          dgncur_awet[i]       = ekat::subview(dgncur_awet_, i, icol);
           diags.wet_density[i] = ekat::subview(wet_dens_, i, icol);
+          wet_dens[i]          = ekat::subview(wet_dens_, i, icol);
         }
         diags.tracer_mixing_ratio      = ekat::subview(qtracers, icol);
         diags.d_tracer_mixing_ratio_dt = ekat::subview(d_qtracers_dt, icol);
@@ -100,6 +103,15 @@ void compute_tendencies(
         const mam4::AeroConfig aero_config;
         /*dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf,
                                           progs, diags, tends);*/
+
+        mam4::ColumnView rho;
+        rho = ekat::subview(rho_, icol);
+
+        Real fraction_landuse[mam4::DryDeposition::n_land_type];
+        for(int i = 0; i < mam4::DryDeposition::n_land_type; ++i) {
+          fraction_landuse[i] = fraction_landuse_[i](icol);
+        }
+
         mam4::ColumnView qqcw_tends[mam4::aero_model::pcnst];
         for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
           qqcw_tends[i] = ekat::subview(qqcw_tends_[i], icol);
@@ -118,16 +130,17 @@ void compute_tendencies(
                         progs.q_aero_c[m][a][kk];
               }
             });
-        /*mam4::aero_model_drydep(
+        bool ptend_lq[mam4::aero_model::pcnst];
+        mam4::aero_model_drydep(
             team, fraction_landuse, atm.temperature, atm.pressure,
-           atm.interface_pressure , atm.hydrostatic_dp, ekat::subview(qtracers,
-           icol), ekat::subview(dgncur_awet_, i, icol), ekat::subview(wet_dens_,
-           i, icol), qqcw_tends, obklen[icol], surfric[icol], landfrac[icol],
-           icefrac[icol], ocnfrac[icol], friction_velocity[icol],
-           aerodynamical_resistance[icol], ekat::subview(d_qtracers_dt, icol),
-           ptend_lq, dt, ekat::subview(aerdepdrycw, icol),
-            ekat::subview(aerdepdryis, icol), rho, vlc_dry, vlc_trb, vlc_grv,
-           dqdt_tmp);*/
+            atm.interface_pressure, atm.hydrostatic_dp,
+            ekat::subview(qtracers, icol), dgncur_awet, wet_dens, qqcw_tends,
+            obklen[icol], surfric[icol], landfrac[icol], icefrac[icol],
+            ocnfrac[icol], friction_velocity[icol],
+            aerodynamical_resistance[icol], ekat::subview(d_qtracers_dt, icol),
+            ptend_lq, dt, ekat::subview(aerdepdrycw, icol),
+            ekat::subview(aerdepdryis, icol)); /*, rho, vlc_dry, vlc_trb,
+            vlc_grv, dqdt_tmp);*/
       });
 }
 }  // namespace

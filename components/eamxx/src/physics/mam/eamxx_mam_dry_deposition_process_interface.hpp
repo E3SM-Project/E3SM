@@ -16,6 +16,7 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
  public:
+  using view_1d                       = Field::view_dev_t<Real *>;
   using view_2d                       = Field::view_dev_t<Real **>;
   using view_3d                       = Field::view_dev_t<Real ***>;
   using const_view_1d                 = Field::view_dev_t<const Real *>;
@@ -45,7 +46,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
 
   // inputs
   // FIXME: collect all inputs and outputs together
-  view_3d dgncur_awet_;
+  view_1d fraction_landuse_[mam4::DryDeposition::n_land_type];
   view_3d wet_dens_;
   view_2d rho_;
   static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
