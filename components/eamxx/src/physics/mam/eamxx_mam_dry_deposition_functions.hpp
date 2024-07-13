@@ -19,7 +19,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
     MAMDryDep::view_3d qtracers, MAMDryDep::view_3d d_qtracers_dt,
-    MAMDryDep::view_1d fraction_landuse_[mam4::DryDeposition::n_land_type],
+    MAMDryDep::view_1d fraction_landuse_[MAMDryDep::n_land_type],
     const MAMDryDep::view_3d dgncur_awet_, const MAMDryDep::view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
@@ -39,22 +39,24 @@ void compute_tendencies(
           ncol, nlev);
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
-        const int num_aero_modes   = mam_coupling::num_aero_modes();
-        const int num_aero_species = mam_coupling::num_aero_species();
-        const int icol             = team.league_rank();
-        const Real t               = 0;
+        static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+        static constexpr int num_aero_species =
+            mam_coupling::num_aero_species();
+        static constexpr int n_land_type = MAMDryDep::n_land_type;
+
+        const int icol = team.league_rank();
 
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, nlev), [&](const int lev) {
               for(int mode = 0; mode < num_aero_modes; ++mode) {
                 int icnst = mam4::ConvProc::numptrcw_amode(mode);
                 qtracers(icol, lev, icnst) =
-                    wet_aero.int_aero_nmr[mode](icol, lev);
+                    dry_aero.int_aero_nmr[mode](icol, lev);
                 for(int species = 0; species < num_aero_species; ++species) {
                   icnst = mam4::ConvProc::lmassptrcw_amode(species, mode);
                   if(-1 < icnst) {
                     qtracers(icol, lev, icnst) =
-                        wet_aero.int_aero_mmr[mode][species](icol, lev);
+                        dry_aero.int_aero_mmr[mode][species](icol, lev);
                   }
                 }
               }
@@ -73,40 +75,36 @@ void compute_tendencies(
         mam4::ColumnView rho;
         rho = ekat::subview(rho_, icol);
 
-        Real fraction_landuse[mam4::DryDeposition::n_land_type];
-        for(int i = 0; i < mam4::DryDeposition::n_land_type; ++i) {
+        Real fraction_landuse[n_land_type];
+        for(int i = 0; i < n_land_type; ++i) {
           fraction_landuse[i] = fraction_landuse_[i](icol);
         }
 
         // FIXME: why mam4::ColumnView didn;t work here, why use
         // Kokkos::View<Real *>. Solution: Use ColumnView in drydep.hpp as well.
-        Kokkos::View<Real *> vlc_dry[mam4::AeroConfig::num_modes()]
-                                    [MAMDryDep::aerosol_categories_],
-            vlc_trb[mam4::AeroConfig::num_modes()]
-                   [MAMDryDep::aerosol_categories_],
-            vlc_grv[mam4::AeroConfig::num_modes()]
-                   [MAMDryDep::aerosol_categories_];
+        static constexpr int nmodes = mam4::AeroConfig::num_modes();
+        mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_],
+            vlc_trb[nmodes][MAMDryDep::aerosol_categories_],
+            vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
 
-        for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
+        for(int i = 0; i < nmodes; ++i) {
           for(int j = 0; j < MAMDryDep::aerosol_categories_; ++j) {
             vlc_dry[i][j] = ekat::subview(vlc_dry_[i][j], icol);
             vlc_trb[i][j] = ekat::subview(vlc_trb_[i][j], icol);
             vlc_grv[i][j] = ekat::subview(vlc_grv_[i][j], icol);
           }
         }
-
-        mam4::ColumnView qqcw_tends[mam4::aero_model::pcnst];
-        Kokkos::View<Real *> dqdt_tmp[mam4::aero_model::pcnst];
-        for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-          qqcw_tends[i] = ekat::subview(
-              qqcw_tends_[i], icol);  // FIXME: Do we need qqcw_tends_, why
-                                      // can't we just use qqcw_tends
-          dqdt_tmp[i] = ekat::subview(dqdt_tmp_[i], icol);
+        static constexpr int pcnst = mam4::aero_model::pcnst;
+        mam4::ColumnView qqcw_tends[pcnst];
+        mam4::ColumnView dqdt_tmp[pcnst];
+        for(int i = 0; i < pcnst; ++i) {
+          qqcw_tends[i] = ekat::subview(qqcw_tends_[i], icol);
+          dqdt_tmp[i]   = ekat::subview(dqdt_tmp_[i], icol);
         }
         // Extract Prognostics
         Kokkos::parallel_for(
             Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
-              for(int m = 0; m < mam4::AeroConfig::num_modes(); ++m) {
+              for(int m = 0; m < nmodes; ++m) {
                 qqcw_tends[mam4::ConvProc::numptrcw_amode(m)][kk] =
                     progs.n_mode_c[m][kk];
                 for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
@@ -115,7 +113,7 @@ void compute_tendencies(
                         progs.q_aero_c[m][a][kk];
               }
             });  // parallel_for nlevs
-        bool ptend_lq[mam4::aero_model::pcnst];
+        bool ptend_lq[pcnst];
         mam4::aero_model_drydep(
             team, fraction_landuse, atm.temperature, atm.pressure,
             atm.interface_pressure, atm.hydrostatic_dp,

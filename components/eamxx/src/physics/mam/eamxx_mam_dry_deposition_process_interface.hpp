@@ -16,14 +16,16 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
  public:
-  using view_1d                            = Field::view_dev_t<Real *>;
-  using view_2d                            = Field::view_dev_t<Real **>;
-  using view_3d                            = Field::view_dev_t<Real ***>;
-  using const_view_1d                      = Field::view_dev_t<const Real *>;
-  using const_view_2d                      = Field::view_dev_t<const Real **>;
-  using const_view_3d                      = Field::view_dev_t<const Real ***>;
+  using view_1d       = Field::view_dev_t<Real *>;
+  using view_2d       = Field::view_dev_t<Real **>;
+  using view_3d       = Field::view_dev_t<Real ***>;
+  using const_view_1d = Field::view_dev_t<const Real *>;
+  using const_view_2d = Field::view_dev_t<const Real **>;
+  using const_view_3d = Field::view_dev_t<const Real ***>;
+
   static constexpr int num_aero_modes      = mam_coupling::num_aero_modes();
   static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
+  static constexpr int n_land_type         = mam4::DryDeposition::n_land_type;
 
  private:
   // number of horizontal columns and vertical levels
