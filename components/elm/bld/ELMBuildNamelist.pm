@@ -3433,7 +3433,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
-                                                                                      'fates_harvest_mode'=>$nl->get_value('fates_harvest_mode') );
+                                                                                      'fates_harvest_mode'=>remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode')) );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
 	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
 	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
