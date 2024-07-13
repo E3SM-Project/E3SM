@@ -506,6 +506,14 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
+        // Zero out tendencies otherwise, they are initialized to junk values
+        for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+          Kokkos::deep_copy(tends.n_mode_i[m], 0);
+          for(int a = 0; a < mam4::num_species_mode(m); ++a) {
+            Kokkos::deep_copy(tends.q_aero_i[m][a], 0);
+          }
+        }
+
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
             // inputs
@@ -528,8 +536,8 @@ void MAMWetscav::run_impl(const double dt) {
               q_aero_i(kk) += tends_q_aero_i(kk) * dt;
             }
           }
-        });
-      });  // icol parallel_for loop
+        });  // parallel_for for update interstitial aerosol state
+      });    // icol parallel_for loop
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
