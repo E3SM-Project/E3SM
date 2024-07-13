@@ -188,14 +188,15 @@ void MAMDryDep::set_grids(
   add_field<Required>("ocean_fraction", scalar2d, nondim, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
-  // geometric mean wet diameter for number distribution [m]
+  // Geometric mean wet diameter for number distribution [m]
   add_field<Required>("dgncur_awet", scalar4d_mid, m, grid_name);
+
+  // Wet density of interstitial aerosol [kg/m3]
+  add_field<Required>("wetdens", scalar4d_mid, kg / m3, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
-
-  add_field<Updated>("wetdens", scalar4d_mid, kg / m3, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -239,6 +240,7 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
+  // FIXME: These are diagnostics, remove them from FM after initial evaluation
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
                       1 / m2 / s, grid_name);
@@ -372,7 +374,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // FIXME: We might need to get rid of few of these fields
   // as we do not need them in FM
 
-  wet_dens_    = get_field_out("wetdens").get_view<Real ***>();
   aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
                      .get_view<Real **>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
@@ -397,7 +398,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   }
 
   for(int i = 0; i < pcnst; ++i) {
-    Kokkos::resize(qqcw_tends_[i], ncol_, nlev_);
+    Kokkos::resize(qqcw_[i], ncol_, nlev_);
     Kokkos::resize(dqdt_tmp_[i], ncol_, nlev_);
   }
 
@@ -424,27 +425,24 @@ void MAMDryDep::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  const DryDep::Config process_config;
-
-  DryDep dry_deposition;
-  const mam4::AeroConfig aero_config;
-  dry_deposition.init(aero_config, process_config);
-
   // FIXME: There are some vars that are not declared "REQUIRED" etc. but still
   // used!!!
 
   // Inputs:
   // geometric mean wet diameter for number distribution [m]
   auto dgncur_awet_ = get_field_in("dgncur_awet").get_view<const Real ***>();
+  auto wet_dens_    = get_field_in("wetdens").get_view<const Real ***>();
 
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
-                     aerodynamical_resistance_, qtracers_, d_qtracers_dt_,
+                     aerodynamical_resistance_, qtracers_,
                      fraction_landuse_,  // d_qtracers_dt_ is an output
                      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
+                     // Inouts-outputs
+                     qqcw_,
                      // Outputs:
-                     aerdepdrycw_, aerdepdryis_, qqcw_tends_, rho_, vlc_dry_,
+                     d_qtracers_dt_, aerdepdrycw_, aerdepdryis_, rho_, vlc_dry_,
                      vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
   // FIXME: Where is update tends and post processing????

@@ -50,7 +50,6 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // inputs
   // FIXME: collect all inputs and outputs together
   view_1d fraction_landuse_[mam4::DryDeposition::n_land_type];
-  view_3d wet_dens_;
   view_2d rho_;
 
   view_2d vlc_dry_[mam4::AeroConfig::num_modes()][aerosol_categories_];
@@ -58,10 +57,9 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d dqdt_tmp_[mam4::aero_model::pcnst];
 
-  view_3d tendencies_;
   view_2d aerdepdrycw_;
   view_2d aerdepdryis_;
-  view_2d qqcw_tends_[mam4::aero_model::pcnst];
+  view_2d qqcw_[mam4::aero_model::pcnst];
 
   const_view_1d obukhov_length_;
   const_view_1d surface_friction_velocty_;

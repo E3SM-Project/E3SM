@@ -10,6 +10,7 @@ namespace scream {
 
 namespace {
 void compute_tendencies(
+    // inputs
     const int ncol, const int nlev, const double dt,
     const MAMDryDep::const_view_1d obklen,
     const MAMDryDep::const_view_1d surfric,
@@ -18,14 +19,21 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d ocnfrac,
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
-    MAMDryDep::view_3d qtracers, MAMDryDep::view_3d d_qtracers_dt,
+    MAMDryDep::view_3d qtracers,  // FIXME: Make it a constant view
     MAMDryDep::view_1d fraction_landuse_[MAMDryDep::n_land_type],
     const MAMDryDep::const_view_3d dgncur_awet_,
-    const MAMDryDep::view_3d wet_dens_,
+    const MAMDryDep::const_view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
-    const mam_coupling::AerosolState dry_aero, MAMDryDep::view_2d aerdepdrycw,
+    const mam_coupling::AerosolState dry_aero,
+
+    // input-outputs
+    MAMDryDep::view_2d qqcw_[mam4::aero_model::pcnst],
+
+    // outputs
+    MAMDryDep::view_3d d_qtracers_dt, MAMDryDep::view_2d aerdepdrycw,
     MAMDryDep::view_2d aerdepdryis,
-    MAMDryDep::view_2d qqcw_tends_[mam4::aero_model::pcnst],
+
+    // work arrays
     MAMDryDep::view_2d rho_,
     MAMDryDep::view_2d vlc_dry_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
@@ -65,7 +73,7 @@ void compute_tendencies(
         mam4::Atmosphere atm    = atmosphere_for_column(dry_atm, icol);
         mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
         mam4::ConstColumnView dgncur_awet[num_aero_modes];
-        mam4::ColumnView wet_dens[num_aero_modes];
+        mam4::ConstColumnView wet_dens[num_aero_modes];
 
         for(int i = 0; i < num_aero_modes; ++i) {
           dgncur_awet[i] = ekat::subview(dgncur_awet_, icol, i);
@@ -96,35 +104,39 @@ void compute_tendencies(
           }
         }
         static constexpr int pcnst = mam4::aero_model::pcnst;
-        mam4::ColumnView qqcw_tends[pcnst];
+        mam4::ColumnView qqcw[pcnst];
         mam4::ColumnView dqdt_tmp[pcnst];
         for(int i = 0; i < pcnst; ++i) {
-          qqcw_tends[i] = ekat::subview(qqcw_tends_[i], icol);
-          dqdt_tmp[i]   = ekat::subview(dqdt_tmp_[i], icol);
+          qqcw[i]     = ekat::subview(qqcw_[i], icol);
+          dqdt_tmp[i] = ekat::subview(dqdt_tmp_[i], icol);
         }
         // Extract Prognostics
         Kokkos::parallel_for(
             Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
               for(int m = 0; m < nmodes; ++m) {
-                qqcw_tends[mam4::ConvProc::numptrcw_amode(m)][kk] =
+                qqcw[mam4::ConvProc::numptrcw_amode(m)][kk] =
                     progs.n_mode_c[m][kk];
                 for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
                   if(-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
-                    qqcw_tends[mam4::ConvProc::lmassptrcw_amode(a, m)][kk] =
+                    qqcw[mam4::ConvProc::lmassptrcw_amode(a, m)][kk] =
                         progs.q_aero_c[m][a][kk];
               }
             });  // parallel_for nlevs
         bool ptend_lq[pcnst];
         mam4::aero_model_drydep(
+            // inputs
             team, fraction_landuse, atm.temperature, atm.pressure,
             atm.interface_pressure, atm.hydrostatic_dp,
-            ekat::subview(qtracers, icol), dgncur_awet, wet_dens, qqcw_tends,
-            obklen[icol], surfric[icol], landfrac[icol], icefrac[icol],
-            ocnfrac[icol], friction_velocity[icol],
-            aerodynamical_resistance[icol], ekat::subview(d_qtracers_dt, icol),
-            ptend_lq, dt, ekat::subview(aerdepdrycw, icol),
-            ekat::subview(aerdepdryis, icol), rho, vlc_dry, vlc_trb, vlc_grv,
-            dqdt_tmp);
+            ekat::subview(qtracers, icol), dgncur_awet, wet_dens, obklen[icol],
+            surfric[icol], landfrac[icol], icefrac[icol], ocnfrac[icol],
+            friction_velocity[icol], aerodynamical_resistance[icol], dt,
+            // input-outputs
+            qqcw,
+            // outputs
+            ekat::subview(d_qtracers_dt, icol), ptend_lq,
+            ekat::subview(aerdepdrycw, icol), ekat::subview(aerdepdryis, icol),
+            // work arrays
+            rho, vlc_dry, vlc_trb, vlc_grv, dqdt_tmp);
       });  // parallel_for for ncols
 }
 }  // namespace
