@@ -303,17 +303,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
 
-  obukhov_length_ = get_field_in("Obukhov_length").get_view<const Real *>();
-  land_fraction_  = get_field_in("land_fraction").get_view<const Real *>();
-  ice_fraction_   = get_field_in("ice_fraction").get_view<const Real *>();
-  ocean_fraction_ = get_field_in("ocean_fraction").get_view<const Real *>();
-  friction_velocity_ =
-      get_field_in("friction_velocity").get_view<const Real *>();
-  aerodynamical_resistance_ =
-      get_field_in("aerodynamical_resistance").get_view<const Real *>();
-  surface_friction_velocty_ =
-      get_field_in("surface_friction_velocty").get_view<const Real *>();
-
   // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.z_iface   = buffer_.z_iface;
@@ -367,18 +356,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
-  // -------------------------------------------------------------
-  // Output fields for the process
-  // -------------------------------------------------------------
-
-  // FIXME: We might need to get rid of few of these fields
-  // as we do not need them in FM
-
-  aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
-                     .get_view<Real **>();
-  aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
-                     .get_view<Real **>();
-
   //-----------------------------------------------------------------
   // Allocate memory
   //-----------------------------------------------------------------
@@ -428,22 +405,55 @@ void MAMDryDep::run_impl(const double dt) {
   // FIXME: There are some vars that are not declared "REQUIRED" etc. but still
   // used!!!
 
-  // Inputs:
-  // geometric mean wet diameter for number distribution [m]
+  // -------------------------------------------------------------
+  // Inputs fields for the process
+  // -------------------------------------------------------------
+
+  // Geometric mean wet diameter for number distribution [m]
   auto dgncur_awet_ = get_field_in("dgncur_awet").get_view<const Real ***>();
-  auto wet_dens_    = get_field_in("wetdens").get_view<const Real ***>();
+  // Wet density of interstitial aerosol [kg/m3]
+  auto wet_dens_ = get_field_in("wetdens").get_view<const Real ***>();
+  // Obukhov length [m]
+  auto obukhov_length_ =
+      get_field_in("Obukhov_length").get_view<const Real *>();
+  // Land fraction [unitless]
+  auto land_fraction_ = get_field_in("land_fraction").get_view<const Real *>();
+  // Ice fraction [unitless]
+  auto ice_fraction_ = get_field_in("ice_fraction").get_view<const Real *>();
+  // Ocean fraction [unitless]
+  auto ocean_fraction_ =
+      get_field_in("ocean_fraction").get_view<const Real *>();
+  // Friction velocity from land model [m/s]
+  auto friction_velocity_ =
+      get_field_in("friction_velocity").get_view<const Real *>();
+  // Aerodynamical resistance from land model [s/m]
+  auto aerodynamical_resistance_ =
+      get_field_in("aerodynamical_resistance").get_view<const Real *>();
+  //  Sfc friction velocity [m/s]
+  auto surface_friction_velocty_ =
+      get_field_in("surface_friction_velocty").get_view<const Real *>();
+
+  // -------------------------------------------------------------
+  // Output fields for the process
+  // -------------------------------------------------------------
+  // Surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
+  auto aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
+                          .get_view<Real **>();
+  // Surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
+  auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
+                          .get_view<Real **>();
 
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
-                     aerodynamical_resistance_, qtracers_,
-                     fraction_landuse_,  // d_qtracers_dt_ is an output
+                     aerodynamical_resistance_, qtracers_, fraction_landuse_,
                      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
-                     // Outputs:
-                     d_qtracers_dt_, aerdepdrycw_, aerdepdryis_, rho_, vlc_dry_,
-                     vlc_trb_, vlc_grv_, dqdt_tmp_);
+                     // Outputs
+                     d_qtracers_dt_, aerdepdrycw_, aerdepdryis_,
+                     // work arrays
+                     rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
   // FIXME: Where is update tends and post processing????
 }  // run_impl

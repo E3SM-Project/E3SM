@@ -20,12 +20,12 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   using view_2d       = Field::view_dev_t<Real **>;
   using view_3d       = Field::view_dev_t<Real ***>;
   using const_view_1d = Field::view_dev_t<const Real *>;
-  using const_view_2d = Field::view_dev_t<const Real **>;
   using const_view_3d = Field::view_dev_t<const Real ***>;
 
-  static constexpr int num_aero_modes      = mam_coupling::num_aero_modes();
-  static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
-  static constexpr int n_land_type         = mam4::DryDeposition::n_land_type;
+  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+  static constexpr int aerosol_categories_ =
+      mam4::DryDeposition::aerosol_categories;
+  static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
 
  private:
   // number of horizontal columns and vertical levels
@@ -57,17 +57,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d dqdt_tmp_[mam4::aero_model::pcnst];
 
-  view_2d aerdepdrycw_;
-  view_2d aerdepdryis_;
   view_2d qqcw_[mam4::aero_model::pcnst];
-
-  const_view_1d obukhov_length_;
-  const_view_1d surface_friction_velocty_;
-  const_view_1d land_fraction_;
-  const_view_1d ice_fraction_;
-  const_view_1d ocean_fraction_;
-  const_view_1d friction_velocity_;
-  const_view_1d aerodynamical_resistance_;
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
