@@ -25,6 +25,7 @@ inline void create_grids_manager (int ncols, int nlevs, const std::string& latlo
   gm_params.set("grids_names",grids_names);
 
   if (latlon_nc_file!="") {
+    gm_params.set("geo_data_source",std::string("IC_FILE"));
     gm_params.set("ic_filename",latlon_nc_file);
   }
 
