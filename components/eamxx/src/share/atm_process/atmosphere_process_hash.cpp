@@ -129,7 +129,7 @@ void AtmosphereProcess
   if (m_comm.am_i_root())
     for (int i = 0; i < nslot; ++i)
       if (show[i])
-        fprintf(stderr, "exxhash> %4d-%9.5f %1d %16llx (%s)\n",
+        fprintf(stderr, "exxhash> %4d-%9.5f %1d %16lx (%s)\n",
                 timestamp().get_year(), timestamp().frac_of_year_in_days(),
                 i, gaccum[i], label.c_str());
 }
