@@ -405,6 +405,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
     for(int j = 0; j < aerosol_categories_; ++j) {
       Kokkos::resize(vlc_dry_[i][j], ncol_, nlev_);
       Kokkos::resize(vlc_grv_[i][j], ncol_, nlev_);
+      Kokkos::resize(vlc_trb_[i][j], ncol_, nlev_);
     }
   }
 

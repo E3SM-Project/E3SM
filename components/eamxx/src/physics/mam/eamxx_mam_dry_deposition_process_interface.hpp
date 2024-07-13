@@ -16,13 +16,14 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
  public:
-  using view_1d                       = Field::view_dev_t<Real *>;
-  using view_2d                       = Field::view_dev_t<Real **>;
-  using view_3d                       = Field::view_dev_t<Real ***>;
-  using const_view_1d                 = Field::view_dev_t<const Real *>;
-  using const_view_2d                 = Field::view_dev_t<const Real **>;
-  using const_view_3d                 = Field::view_dev_t<const Real ***>;
-  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+  using view_1d                            = Field::view_dev_t<Real *>;
+  using view_2d                            = Field::view_dev_t<Real **>;
+  using view_3d                            = Field::view_dev_t<Real ***>;
+  using const_view_1d                      = Field::view_dev_t<const Real *>;
+  using const_view_2d                      = Field::view_dev_t<const Real **>;
+  using const_view_3d                      = Field::view_dev_t<const Real ***>;
+  static constexpr int num_aero_modes      = mam_coupling::num_aero_modes();
+  static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
 
  private:
   // number of horizontal columns and vertical levels
@@ -49,7 +50,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   view_1d fraction_landuse_[mam4::DryDeposition::n_land_type];
   view_3d wet_dens_;
   view_2d rho_;
-  static constexpr int aerosol_categories_ = 4;  // FIXME: get it from mam4xx
+
   view_2d vlc_dry_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d vlc_trb_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
