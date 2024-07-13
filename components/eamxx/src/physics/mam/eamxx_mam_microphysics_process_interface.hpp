@@ -6,12 +6,14 @@
 #include <share/util/scream_common_physics_functions.hpp>
 
 #include "impl/mam4_amicphys.cpp" // mam4xx top-level microphysics function(s)
+#include "impl/helper_micro.hpp"
 
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+
 
 #include <string>
 
@@ -48,6 +50,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
+
 
 public:
 
@@ -224,6 +227,14 @@ private_except_cuda:
 
   // sets defaults for "namelist parameters"
   void set_defaults_();
+
+  std::shared_ptr<AtmosphereInput> linoz_reader_;
+  mam_coupling::LinozReaderParams linoz_params_;
+  mam_coupling::view_1d col_latitudes_copy_;
+  mam_coupling::LinozTimeState linoz_time_state_;
+  mam_coupling::LinozData LinozData_start_;
+  mam_coupling::LinozData LinozData_end_;
+  mam_coupling::LinozData LinozData_out_;
 
 }; // MAMMicrophysics
 

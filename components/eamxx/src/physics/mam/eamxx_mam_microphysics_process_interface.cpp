@@ -13,6 +13,8 @@
 #include "impl/compute_water_content.cpp"
 #include "impl/gas_phase_chemistry.cpp"
 
+
+
 namespace scream
 {
 
@@ -160,34 +162,21 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // case, this call should be idempotent, so it can't hurt.
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
   // read linoz files
-#if 1 
+#if 1
   {
-   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-   using view_2d_host = typename KT::view_2d<Real>::HostMirror;
-   using strvec_t = std::vector<std::string>;
-   std::map<std::string, FieldLayout> layouts_linoz;
-   // const auto& fname = m_params.get<std::string>(table_name); 
-   std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
-   ekat::ParameterList params_Linoz; 
-   params_Linoz.set("Filename", linoz_file_name);
-   // make a list of host views
-   std::map<std::string, view_1d_host> host_views_Linoz;
-   
-   params_Linoz.set("Skip_Grid_Checks", true);
-   params_Linoz.set<strvec_t>(
-      "Field Names",
-      {"o3_clim"});
+  std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
+  // std::vector<Field> io_linoz_fields;
+  linoz_reader_ = create_linoz_data_reader(linoz_file_name,linoz_params_,m_comm);
+  linoz_reader_->read_variables();
+  view_1d col_latitudes("col",ncol_);
+  Kokkos::deep_copy(col_latitudes, col_latitudes_);
+  view_2d o3_clim_org("o3_clim_test", nlev_,ncol_);
+  linoz_params_.views_horiz.push_back(o3_clim_org);
+  view_2d o3_clim_data("o3_clim_data", ncol_, linoz_params_.nlevs);
+  linoz_params_.views_horiz_transpose.push_back(o3_clim_data);
+  linoz_params_.col_latitudes = col_latitudes;
 
-   view_2d_host o3_clim_host("o3_clim_host",ncol_, nlev_);
-   host_views_Linoz["o3_clim"] =
-      view_1d_host(o3_clim_host.data(), o3_clim_host.size());
-
-   layouts_linoz.emplace("o3_clim", scalar3d_layout_mid);   
-
-   AtmosphereInput Linoz_reader(params_Linoz, grid_, host_views_Linoz,
-                                         layouts_linoz);
-   Linoz_reader.read_variables();
-   Linoz_reader.finalize();
+  perform_horizontal_interpolation(linoz_params_);
   }
 #endif
 }
@@ -305,6 +294,44 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // (we'll probably need this later, but we'll just use ATMBufferManager for now)
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
+
+  {
+      // climatology data for linear stratospheric chemistry
+  auto linoz_o3_clim      = buffer_.scratch[0]; // ozone (climatology) [vmr]
+  auto linoz_o3col_clim   = buffer_.scratch[1]; // column o3 above box (climatology) [Dobson Units (DU)]
+  auto linoz_t_clim       = buffer_.scratch[2]; // temperature (climatology) [K]
+  auto linoz_PmL_clim     = buffer_.scratch[3]; // P minus L (climatology) [vmr/s]
+  auto linoz_dPmL_dO3     = buffer_.scratch[4]; // sensitivity of P minus L to O3 [1/s]
+  auto linoz_dPmL_dT      = buffer_.scratch[5]; // sensitivity of P minus L to T3 [K]
+  auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
+  auto linoz_cariolle_psc = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
+
+
+    // Load the first month into spa_end.
+  // Note: At the first time step, the data will be moved into spa_beg,
+  //       and spa_end will be reloaded from file with the new month.
+  const int curr_month = timestamp().get_month()-1; // 0-based
+  std::cout << curr_month << " : curr_month \n";
+  linoz_reader_->read_variables(curr_month);
+  perform_horizontal_interpolation(linoz_params_);
+  linoz_params_.views_vert.push_back(linoz_o3_clim);
+  linoz_params_.kupper = scream::mam_coupling::view_int_1d("kupper",ncol_);
+  linoz_params_.pin = view_2d("pin", ncol_,nlev_);
+
+  perform_vertical_interpolation(linoz_params_,
+                                 dry_atm_.p_mid);
+
+  LinozData_end_.init(ncol_,linoz_params_.nlevs);
+  LinozData_end_.allocate_data_views();
+
+  LinozData_start_.init(ncol_,linoz_params_.nlevs);
+  LinozData_start_.allocate_data_views();
+  // LinozData_start_.deep_copy_data_views(LinozData_end_.data);
+
+  LinozData_out_.init(ncol_,linoz_params_.nlevs);
+  // LinozData_out_.allocate_data_views();
+  LinozData_end_.set_data_views(linoz_params_.views_horiz_transpose);
+  }
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -315,6 +342,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
+
+
 
   // reset internal WSM variables
   //workspace_mgr_.reset_internals();
@@ -339,6 +368,29 @@ void MAMMicrophysics::run_impl(const double dt) {
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
+
+  {
+    /* Gather time and state information for interpolation */
+  auto ts = timestamp()+dt;
+  /* Update the SPATimeState to reflect the current time, note the addition of dt */
+  linoz_time_state_.t_now = ts.frac_of_year_in_days();
+  /* Update time state and if the month has changed, update the data.*/
+  update_linoz_timestate(ts,
+                         linoz_time_state_,
+                         linoz_reader_,
+                         linoz_params_,
+                         LinozData_start_,
+                         LinozData_end_);
+
+  perform_time_interpolation(linoz_time_state_,
+                             LinozData_start_,
+                             LinozData_end_,
+                             LinozData_out_);
+
+  perform_vertical_interpolation(linoz_params_,
+                                 dry_atm_.p_mid);
+
+  }
 
   const_view_1d &col_latitudes = col_latitudes_;
   mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
@@ -543,6 +595,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 }
 
 void MAMMicrophysics::finalize_impl() {
+  // linoz_reader_->finalize();
 }
 
 } // namespace scream
