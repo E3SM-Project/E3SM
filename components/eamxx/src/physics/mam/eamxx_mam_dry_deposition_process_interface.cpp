@@ -94,19 +94,14 @@ void MAMDryDep::set_grids(
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  FieldLayout scalar4d_mid{{NMODES, COL, LEV}, {num_aero_modes, ncol_, nlev_}};
-
-  // Layout for tracers.
-  const int pcnst = mam4::aero_model::pcnst;
-  FieldLayout scalar4d_q{{COL, LEV, CMP}, {ncol_, nlev_, pcnst}};
-  FieldLayout scalar4d_qqcw_tends{{COL, CMP, LEV}, {ncol_, pcnst, nlev_}};
-
   auto make_layout = [](const std::vector<int> &extents,
                         const std::vector<std::string> &names) {
     std::vector<FieldTag> tags(extents.size(), CMP);
     return FieldLayout(tags, extents, names);
   };
+  const int num_aero_modes = mam_coupling::num_aero_modes();
+  FieldLayout scalar4d_mid =
+      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "NMODES", "LEV"});
 
   using namespace ekat::units;
 
@@ -194,7 +189,7 @@ void MAMDryDep::set_grids(
 
   //----------- Variables from other mam4xx processes ------------
   // geometric mean wet diameter for number distribution [m]
-  add_field<Updated>("dgncur_awet", scalar4d_mid, m, grid_name);
+  add_field<Required>("dgncur_awet", scalar4d_mid, m, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -244,20 +239,12 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
-
-  // FIXME: what is the diff between d_qtracers_dt and tendencies????
-  // FIXME: we might not need this in FM
-  add_field<Computed>("d_qtracers_dt", scalar4d_q, kg / kg / s, grid_name);
-
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
                       1 / m2 / s, grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
                       1 / m2 / s, grid_name);
-  // FIXME: we might not need this in FM
-  add_field<Computed>("Tendencies", scalar4d_qqcw_tends, kg / kg / s,
-                      grid_name);
 }  // set_grids
 
 // ================================================================
@@ -309,7 +296,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
   dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-  // FIXME: tot or liq?
+  // FIXME: tot or liq? make notes about it to ensure it is the right one
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
@@ -390,17 +377,16 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
                      .get_view<Real **>();
   aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                      .get_view<Real **>();
-  tendencies_ = get_field_out("Tendencies").get_view<Real ***>();
 
   //-----------------------------------------------------------------
   // Allocate memory
   //-----------------------------------------------------------------
   const int pcnst = mam4::aero_model::pcnst;
   // FIXME: comment what they are and units.....
-  qtracers_      = view_3d("qtracers_", ncol_, nlev_, pcnst);
-  d_qtracers_dt_ = view_3d("d_qtracers_d_t", ncol_, nlev_, pcnst);
+  qtracers_ = view_3d("qtracers_", ncol_, nlev_, pcnst);
 
-  rho_ = view_2d("rho", ncol_, nlev_);
+  rho_           = view_2d("rho", ncol_, nlev_);
+  d_qtracers_dt_ = view_3d("d_qtracers_dt_", ncol_, nlev_, pcnst);
 
   for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
     for(int j = 0; j < aerosol_categories_; ++j) {
@@ -447,18 +433,19 @@ void MAMDryDep::run_impl(const double dt) {
   // FIXME: There are some vars that are not declared "REQUIRED" etc. but still
   // used!!!
 
+  // Inputs:
   // geometric mean wet diameter for number distribution [m]
-  auto dgncur_awet_ = get_field_out("dgncur_awet").get_view<Real ***>();
+  auto dgncur_awet_ = get_field_in("dgncur_awet").get_view<const Real ***>();
 
-  compute_tendencies(ncol_, nlev_, dry_deposition, dt, obukhov_length_,
+  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
                      aerodynamical_resistance_, qtracers_, d_qtracers_dt_,
                      fraction_landuse_,  // d_qtracers_dt_ is an output
-                     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_, wet_aero_,
+                     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
                      // Outputs:
-                     aerdepdrycw_, aerdepdryis_, tendencies_, qqcw_tends_, rho_,
-                     vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
+                     aerdepdrycw_, aerdepdryis_, qqcw_tends_, rho_, vlc_dry_,
+                     vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
   // FIXME: Where is update tends and post processing????
 }  // run_impl

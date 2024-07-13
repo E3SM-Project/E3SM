@@ -10,8 +10,8 @@ namespace scream {
 
 namespace {
 void compute_tendencies(
-    const int ncol, const int nlev, const mam4::DryDeposition dry_deposition,
-    const double dt, const MAMDryDep::const_view_1d obklen,
+    const int ncol, const int nlev, const double dt,
+    const MAMDryDep::const_view_1d obklen,
     const MAMDryDep::const_view_1d surfric,
     const MAMDryDep::const_view_1d landfrac,
     const MAMDryDep::const_view_1d icefrac,
@@ -20,11 +20,11 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d aerodynamical_resistance,
     MAMDryDep::view_3d qtracers, MAMDryDep::view_3d d_qtracers_dt,
     MAMDryDep::view_1d fraction_landuse_[MAMDryDep::n_land_type],
-    const MAMDryDep::view_3d dgncur_awet_, const MAMDryDep::view_3d wet_dens_,
+    const MAMDryDep::const_view_3d dgncur_awet_,
+    const MAMDryDep::view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
-    const mam_coupling::AerosolState dry_aero,
-    const mam_coupling::AerosolState wet_aero, MAMDryDep::view_2d aerdepdrycw,
-    MAMDryDep::view_2d aerdepdryis, MAMDryDep::view_3d tendencies,
+    const mam_coupling::AerosolState dry_aero, MAMDryDep::view_2d aerdepdrycw,
+    MAMDryDep::view_2d aerdepdryis,
     MAMDryDep::view_2d qqcw_tends_[mam4::aero_model::pcnst],
     MAMDryDep::view_2d rho_,
     MAMDryDep::view_2d vlc_dry_[mam4::AeroConfig::num_modes()]
@@ -34,15 +34,14 @@ void compute_tendencies(
     MAMDryDep::view_2d vlc_grv_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
+  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
           ncol, nlev);
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
-        static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
         static constexpr int num_aero_species =
             mam_coupling::num_aero_species();
-        static constexpr int n_land_type = MAMDryDep::n_land_type;
 
         const int icol = team.league_rank();
 
@@ -65,16 +64,18 @@ void compute_tendencies(
 
         mam4::Atmosphere atm    = atmosphere_for_column(dry_atm, icol);
         mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
-        mam4::ColumnView dgncur_awet[num_aero_modes], wet_dens[num_aero_modes];
+        mam4::ConstColumnView dgncur_awet[num_aero_modes];
+        mam4::ColumnView wet_dens[num_aero_modes];
 
         for(int i = 0; i < num_aero_modes; ++i) {
-          dgncur_awet[i] = ekat::subview(dgncur_awet_, i, icol);
-          wet_dens[i]    = ekat::subview(wet_dens_, i, icol);
+          dgncur_awet[i] = ekat::subview(dgncur_awet_, icol, i);
+          wet_dens[i]    = ekat::subview(wet_dens_, icol, i);
         }
 
         mam4::ColumnView rho;
         rho = ekat::subview(rho_, icol);
 
+        static constexpr int n_land_type = MAMDryDep::n_land_type;
         Real fraction_landuse[n_land_type];
         for(int i = 0; i < n_land_type; ++i) {
           fraction_landuse[i] = fraction_landuse_[i](icol);
