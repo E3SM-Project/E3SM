@@ -140,7 +140,7 @@ void AtmosphereProcess::print_fast_global_state_hash (const std::string& label) 
   HashType gaccum;
   bfbhash::all_reduce_HashType(m_comm.mpi_comm(), &laccum, &gaccum, 1);
   if (m_comm.am_i_root())
-    fprintf(stderr, "bfbhash> %14d %16llx (%s)\n",
+    fprintf(stderr, "bfbhash> %14d %16lx (%s)\n",
             timestamp().get_num_steps(), gaccum, label.c_str());
 }
 
