@@ -2195,11 +2195,17 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <use_fates_lupft               use_fates=".true.">.false.</use_fates_lupft>
 <use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
 <use_fates_luh                 use_fates=".true."                                  >.false.</use_fates_luh>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
+<use_fates_nocomp              use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp              use_fates=".true."                      >.false.</use_fates_nocomp>
 <use_fates_fixed_biogeog       use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
+<use_fates_fixed_biogeog       use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog       use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>

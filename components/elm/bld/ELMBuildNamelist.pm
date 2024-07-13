@@ -3545,7 +3545,7 @@ sub setup_logic_fates {
        if ( $mode eq "luhdata_area" || $mode  eq "luhdata_mass" ) {
           # Make sure that use_fates_luh is true when using raw fates luh2 harvest data
           if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
-            fatal_error("use_fates_luh is required to be true when $var is greater than 2" );
+            fatal_error("use_fates_luh is required to be true when $var is luhdata_mass or luhdata_area" );
           }
        } elsif ( $mode  eq 'landuse_timeseries' ) {
           # Check to make sure that the user set the flanduse_timeseries file
