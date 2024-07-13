@@ -312,6 +312,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // FIXME: tot or liq?
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
 
   obukhov_length_ = get_field_in("Obukhov_length").get_view<const Real *>();
   land_fraction_  = get_field_in("land_fraction").get_view<const Real *>();
@@ -459,5 +460,6 @@ void MAMDryDep::run_impl(const double dt) {
                      aerdepdrycw_, aerdepdryis_, tendencies_, qqcw_tends_, rho_,
                      vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
+  // FIXME: Where is update tends and post processing????
 }  // run_impl
 }  // namespace scream

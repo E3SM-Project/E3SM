@@ -44,8 +44,6 @@ void compute_tendencies(
         const int icol             = team.league_rank();
         const Real t               = 0;
 
-        compute_wet_mixing_ratios(team, dry_atm, dry_aero, wet_aero, icol);
-        team.team_barrier();
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, nlev), [&](const int lev) {
               for(int mode = 0; mode < num_aero_modes; ++mode) {
@@ -65,35 +63,35 @@ void compute_tendencies(
 
         mam4::Atmosphere atm    = atmosphere_for_column(dry_atm, icol);
         mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
-        mam4::Surface surf;
-        mam4::Diagnostics diags;
-        mam4::Tendencies tends;
+        // mam4::Surface surf;
+        // mam4::Diagnostics diags;
+        // mam4::Tendencies tends;
         mam4::ColumnView dgncur_awet[num_aero_modes], wet_dens[num_aero_modes];
 
         for(int i = 0; i < num_aero_modes; ++i) {
-          diags.wet_geometric_mean_diameter_i[i] =
-              ekat::subview(dgncur_awet_, i, icol);
-          dgncur_awet[i]       = ekat::subview(dgncur_awet_, i, icol);
-          diags.wet_density[i] = ekat::subview(wet_dens_, i, icol);
-          wet_dens[i]          = ekat::subview(wet_dens_, i, icol);
+          // diags.wet_geometric_mean_diameter_i[i] =
+          //     ekat::subview(dgncur_awet_, i, icol);
+          dgncur_awet[i] = ekat::subview(dgncur_awet_, i, icol);
+          // diags.wet_density[i] = ekat::subview(wet_dens_, i, icol);
+          wet_dens[i] = ekat::subview(wet_dens_, i, icol);
         }
-        diags.tracer_mixing_ratio      = ekat::subview(qtracers, icol);
-        diags.d_tracer_mixing_ratio_dt = ekat::subview(d_qtracers_dt, icol);
-        diags.deposition_flux_of_cloud_borne_aerosols =
-            ekat::subview(aerdepdrycw, icol);
-        diags.deposition_flux_of_interstitial_aerosols =
-            ekat::subview(aerdepdryis, icol);
+        // diags.tracer_mixing_ratio      = ekat::subview(qtracers, icol);
+        // diags.d_tracer_mixing_ratio_dt = ekat::subview(d_qtracers_dt, icol);
+        // diags.deposition_flux_of_cloud_borne_aerosols =
+        //     ekat::subview(aerdepdrycw, icol);
+        // diags.deposition_flux_of_interstitial_aerosols =
+        //     ekat::subview(aerdepdryis, icol);
 
-        diags.Obukhov_length           = obklen[icol];
-        diags.surface_friction_velocty = surfric[icol];
-        diags.land_fraction            = landfrac[icol];
-        diags.ice_fraction             = icefrac[icol];
-        diags.ocean_fraction           = ocnfrac[icol];
-        diags.friction_velocity        = friction_velocity[icol];
-        diags.aerodynamical_resistance = aerodynamical_resistance[icol];
+        // diags.Obukhov_length           = obklen[icol];
+        // diags.surface_friction_velocty = surfric[icol];
+        // diags.land_fraction            = landfrac[icol];
+        // diags.ice_fraction             = icefrac[icol];
+        // diags.ocean_fraction           = ocnfrac[icol];
+        // diags.friction_velocity        = friction_velocity[icol];
+        // diags.aerodynamical_resistance = aerodynamical_resistance[icol];
 
         // Fill Tendency views
-        for(int m = 0; m < num_aero_modes; ++m) {
+        /*for(int m = 0; m < num_aero_modes; ++m) {
           int iconv         = mam4::ConvProc::numptrcw_amode(m);
           tends.n_mode_c[m] = ekat::subview(tendencies, icol, iconv);
           for(int a = 0; a < num_aero_species; ++a) {
@@ -101,9 +99,9 @@ void compute_tendencies(
             if(-1 < iconv)
               tends.q_aero_c[m][a] = ekat::subview(tendencies, icol, iconv);
           }
-        }
+        }*/
 
-        const mam4::AeroConfig aero_config;
+        // const mam4::AeroConfig aero_config;
         /*dry_deposition.compute_tendencies(aero_config, team, t, dt, atm, surf,
                                           progs, diags, tends);*/
 
