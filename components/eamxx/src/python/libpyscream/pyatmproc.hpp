@@ -131,6 +131,14 @@ struct PyAtmProc {
     return pybind11::cast(missing);
   }
 
+  pybind11::list dump_fields() {
+    std::vector<std::string> all_fields;
+    for (auto it : fields) {
+      all_fields.push_back(it.first);
+    }
+    return pybind11::cast(all_fields);
+  }
+
   void setup_output (const std::string& yaml_file) {
     auto comm = PySession::get().comm;
 
@@ -176,6 +184,7 @@ inline void pybind_pyatmproc(pybind11::module& m)
     .def("setup_output",&PyAtmProc::setup_output)
     .def("run",&PyAtmProc::run)
     .def("read_ic",&PyAtmProc::read_ic);
+    .def("dump_fields",&PyAtmProc::dump_fields);
 }
 } // namespace scream
 
