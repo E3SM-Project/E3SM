@@ -1,6 +1,6 @@
 #include "physics/mam/eamxx_mam_dry_deposition_process_interface.hpp"
 
-// ACI functions are stored in the following hpp file
+// Drydep functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
 
 #include "mam4xx/drydep.hpp"  //FIXME: Do we need it here???
@@ -84,7 +84,6 @@ void MAMDryDep::set_grids(
   using namespace ShortFieldTagsNames;
 
   // Layout for 2D (2d horiz) variable
-  // FIXME: Fix layouts based on new format
   const FieldLayout scalar2d{{COL}, {ncol_}};
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
@@ -113,29 +112,30 @@ void MAMDryDep::set_grids(
   auto m3 = m * m * m;  // meter cubed
 
   // --------------------------------------------------------------------------
-  // These variables are "required" or pure inputs for the process
+  // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
   // ----------- Atmospheric quantities -------------
-  // Specific humidity [kg/kg]
+  // Specific humidity [kg/kg](Require only for building DS)
   add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
 
-  // Cloud liquid mass mixing ratio [kg/kg]
+  // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
   add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
 
-  // Cloud ice mass mixing ratio [kg/kg]
+  // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
   add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
 
-  // Cloud liquid number mixing ratio [1/kg]
+  // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
   add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
 
-  // Cloud ice number mixing ratio [1/kg]
+  // Cloud ice number mixing ratio [1/kg](Require only for building DS)
   add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
 
-  // Vertical pressure velocity [Pa/s] at midpoints
+  // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
+  // DS)
   add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
 
   // Total pressure [Pa] at midpoints
@@ -147,26 +147,25 @@ void MAMDryDep::set_grids(
   // Layer thickness(pdel) [Pa] at midpoints
   add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
 
-  // Planetary boundary layer height [m]
+  // Planetary boundary layer height [m] (Require only for building DS)
   add_field<Required>("pbl_height", scalar2d, m, grid_name);
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
 
-  // Surface geopotential [m2/s2]
+  // Surface geopotential [m2/s2] (Require only for building DS)
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   //----------- Variables from microphysics scheme -------------
 
-  // Total cloud fraction [fraction]
-  // FIXME: Is is cldfrac_liq instead? find out
+  // Total cloud fraction [fraction] (Require only for building DS)
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
 
   //----------- Variables from coupler (land component)---------
   // Obukhov length [m]
   add_field<Required>("Obukhov_length", scalar2d, m, grid_name);
 
-  // Surface friction velocty [m]
+  // Surface friction velocty or ustar[m/s]
   add_field<Required>("surface_friction_velocty", scalar2d, m / s, grid_name);
 
   // Land fraction [fraction]
@@ -294,11 +293,10 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
   // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-  // FIXME: tot or liq? make notes about it to ensure it is the right one
+  dry_atm_.T_mid   = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid   = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int   = get_field_in("p_int").get_view<const Real **>();
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
@@ -370,7 +368,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
     for(int j = 0; j < aerosol_categories_; ++j) {
       Kokkos::resize(vlc_dry_[i][j], ncol_, nlev_);
       Kokkos::resize(vlc_grv_[i][j], ncol_, nlev_);
-      Kokkos::resize(vlc_trb_[i][j], ncol_, nlev_);
+      Kokkos::resize(vlc_trb_[i][j], ncol_);
     }
   }
 
@@ -381,6 +379,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
   for(int i = 0; i < n_land_type; ++i) {
+    // FIXME: This should come from a file reading
     Kokkos::resize(fraction_landuse_[i], ncol_);
   }
 
@@ -389,7 +388,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
-  // FIXME: Where is post processing functor????
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                         dry_aero_);
 }  // initialize_impl
 
 // =========================================================================================
@@ -401,9 +401,6 @@ void MAMDryDep::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
-
-  // FIXME: There are some vars that are not declared "REQUIRED" etc. but still
-  // used!!!
 
   // -------------------------------------------------------------
   // Inputs fields for the process
@@ -429,7 +426,7 @@ void MAMDryDep::run_impl(const double dt) {
   // Aerodynamical resistance from land model [s/m]
   auto aerodynamical_resistance_ =
       get_field_in("aerodynamical_resistance").get_view<const Real *>();
-  //  Sfc friction velocity [m/s]
+  //  Sfc friction velocity or ustar [m/s]
   auto surface_friction_velocty_ =
       get_field_in("surface_friction_velocty").get_view<const Real *>();
 
@@ -455,6 +452,9 @@ void MAMDryDep::run_impl(const double dt) {
                      // work arrays
                      rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
-  // FIXME: Where is update tends and post processing????
+  // call post processing to convert dry mixing ratios to wet mixing ratios
+  // and update the state
+  // Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  // Kokkos::fence();  // wait before returning to calling function
 }  // run_impl
 }  // namespace scream

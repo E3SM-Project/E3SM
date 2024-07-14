@@ -50,10 +50,10 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // inputs
   // FIXME: collect all inputs and outputs together
   view_1d fraction_landuse_[mam4::DryDeposition::n_land_type];
+  view_1d vlc_trb_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d rho_;
 
   view_2d vlc_dry_[mam4::AeroConfig::num_modes()][aerosol_categories_];
-  view_2d vlc_trb_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
   view_2d dqdt_tmp_[mam4::aero_model::pcnst];
 
@@ -126,7 +126,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
-    }  // operator()
+    }  // Preprocess operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -136,7 +136,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
-  };  // MAMAci::Preprocess
+  };  // Preprocess
 
   // Atmosphere processes often have a post-processing step prepares output
   // from this process for the Field Manager. This functor implements this
@@ -165,7 +165,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
       const int i = team.league_rank();  // column index
       compute_wet_mixing_ratios(team, dry_atm_post_, dry_aero_post_,
                                 wet_aero_post_, i);
-    }  // operator()
+    }  // operator() Postprocess
 
     // number of horizontal columns and vertical levels
     int ncol_post_, nlev_post_;
@@ -179,6 +179,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
  private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
+  Postprocess postprocess_;
 };  // MAMDryDep
 
 }  // namespace scream

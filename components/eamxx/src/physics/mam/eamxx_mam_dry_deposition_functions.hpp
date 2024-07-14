@@ -37,12 +37,14 @@ void compute_tendencies(
     MAMDryDep::view_2d rho_,
     MAMDryDep::view_2d vlc_dry_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
-    MAMDryDep::view_2d vlc_trb_[mam4::AeroConfig::num_modes()]
+    MAMDryDep::view_1d vlc_trb_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d vlc_grv_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+  // FIXME: WHY we are using a new policy here?? can't we get it from the
+  // run_impl??
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
           ncol, nlev);
@@ -93,13 +95,14 @@ void compute_tendencies(
         // Kokkos::View<Real *>. Solution: Use ColumnView in drydep.hpp as well.
         static constexpr int nmodes = mam4::AeroConfig::num_modes();
         mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_],
-            vlc_trb[nmodes][MAMDryDep::aerosol_categories_],
             vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
+
+        Real vlc_trb[nmodes][MAMDryDep::aerosol_categories_];
 
         for(int i = 0; i < nmodes; ++i) {
           for(int j = 0; j < MAMDryDep::aerosol_categories_; ++j) {
             vlc_dry[i][j] = ekat::subview(vlc_dry_[i][j], icol);
-            vlc_trb[i][j] = ekat::subview(vlc_trb_[i][j], icol);
+            vlc_trb[i][j] = vlc_trb_[i][j](icol);
             vlc_grv[i][j] = ekat::subview(vlc_grv_[i][j], icol);
           }
         }
