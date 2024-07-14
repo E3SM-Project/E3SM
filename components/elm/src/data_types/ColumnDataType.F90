@@ -28,7 +28,7 @@ module ColumnDataType
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
-  use elm_varctl      , only : use_extrasnowlayers
+  use elm_varctl      , only : use_extrasnowlayers, use_polygonal_tundra
   use elm_varctl      , only : use_fan
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
@@ -1494,9 +1494,11 @@ contains
          ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
 
     this%excess_ice(begc:endc, :) = spval
-    call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
-         avgflag='A', long_name='Excess ground ice (0 to 1)', &
-         ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
+    if (use_polygonal_tundra) then
+      call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
+           avgflag='A', long_name='Excess ground ice (0 to 1)', &
+           ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
+    end if
 
     this%h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='H2OSFC',  units='mm',  &
@@ -1814,17 +1816,19 @@ contains
              this%h2osoi_ice(c,j) = 0._r8
              this%h2osoi_liq(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol(c,j)
           endif
+          ! RPF 240713 - notes from Chuck: initialize all to 0.36_r8
+          this%excess_ice(c,j) = 0.36_r8
           ! RPF - to do: a) apply to only polygonal ground
           ! b) pull in ALT information to get starting point right.
           ! for now, assuming no excess ice in top meter, 0.5 for 1-4 m,
           ! 0.2 below 4 m. Also: need to check signs!
-          if (col_pp%z(c,j) > -1._r8) then
-            this%excess_ice(c,j) = 0._r8
-          else if (col_pp%z(c,j) > -4._r8 .and. col_pp%z(c,j) < -1._r8) then
-            this%excess_ice(c,j) = 0.5_r8
-          else
-            this%excess_ice(c,j) = 0.2_r8
-          end if
+          !if (col_pp%z(c,j) > -1._r8) then
+          !  this%excess_ice(c,j) = 0._r8
+          !else if (col_pp%z(c,j) > -4._r8 .and. col_pp%z(c,j) < -1._r8) then
+          !  this%excess_ice(c,j) = 0.5_r8
+          !else
+          !  this%excess_ice(c,j) = 0.2_r8
+          !end if
        end do
 
        this%h2osoi_liq_old(c,:) = this%h2osoi_liq(c,:)
@@ -1882,10 +1886,12 @@ contains
          long_name='ice lens', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2osoi_ice)
 
-    call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
-         dim1name='column', dim2name='levgrnd', switchdim=.true., &
-         long_name='excess ground ice (0 to 1)', units='1', &
-         interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
+    if (use_polygonal_tundra) then
+      call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
+           dim1name='column', dim2name='levgrnd', switchdim=.true., &
+           long_name='excess ground ice (0 to 1)', units='1', &
+           interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
+    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
