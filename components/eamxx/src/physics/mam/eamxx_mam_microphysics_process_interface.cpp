@@ -171,12 +171,10 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   view_1d col_latitudes("col",ncol_);
   Kokkos::deep_copy(col_latitudes, col_latitudes_);
   view_2d o3_clim_org("o3_clim_test", nlev_,ncol_);
-  linoz_params_.views_horiz.push_back(o3_clim_org);
-  view_2d o3_clim_data("o3_clim_data", ncol_, linoz_params_.nlevs);
-  linoz_params_.views_horiz_transpose.push_back(o3_clim_data);
+  linoz_params_.views_horiz[0]=o3_clim_org;
   linoz_params_.col_latitudes = col_latitudes;
 
-  perform_horizontal_interpolation(linoz_params_);
+  // perform_horizontal_interpolation(linoz_params_);
   }
 #endif
 }
@@ -314,7 +312,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   LinozData_out_.init(ncol_,linoz_params_.nlevs);
   LinozData_out_.allocate_data_views();
-  // LinozData_end_.set_data_views(linoz_params_.views_horiz_transpose);
 
   interpolated_Linoz_data_.init(ncol_,nlev_);
   std::vector<view_2d> list_linoz_views;
@@ -327,8 +324,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const int curr_month = timestamp().get_month()-1; // 0-based
   std::cout << curr_month << " : curr_month \n";
   linoz_reader_->read_variables(curr_month);
-  perform_horizontal_interpolation(linoz_params_);
-  linoz_params_.views_vert.push_back(linoz_o3_clim);
+  perform_horizontal_interpolation(linoz_params_,LinozData_end_);
   linoz_params_.kupper = scream::mam_coupling::view_int_1d("kupper",ncol_);
   linoz_params_.pin = view_2d("pin", ncol_,nlev_);
 

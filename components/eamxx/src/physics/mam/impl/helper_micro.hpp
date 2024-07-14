@@ -17,15 +17,13 @@ namespace scream::mam_coupling {
   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
 
   struct LinozReaderParams {
-  // std::shared_ptr<AtmosphereInput> linoz_reader;
   int nlevs{-1};
   int nlat{-1};
   std::vector<Field> io_fields;
-  std::vector<view_2d> views_horiz_transpose;
-  std::vector<view_2d> views_vert;
+
   // work arrays
   view_int_1d kupper;
-  std::vector<view_2d> views_horiz;
+  view_2d views_horiz[1];
   //
   view_2d pin;
   view_1d col_latitudes;
@@ -64,8 +62,6 @@ namespace scream::mam_coupling {
 
     void allocate_data_views()
     {
-      std::cout<< ncol_<<" ncol_ \n";
-      std::cout<< nlev_<<" nlev_ \n";
       EKAT_REQUIRE_MSG (ncol_ != int(-1),
       "Error! ncols has not been set. \n");
       EKAT_REQUIRE_MSG (nlev_ !=int(-1),
@@ -143,17 +139,18 @@ namespace scream::mam_coupling {
   }
 
 
- static void perform_horizontal_interpolation( const LinozReaderParams& linoz_params)
+ static void perform_horizontal_interpolation( const LinozReaderParams& linoz_params,
+                                               LinozData& linoz_data_out)
  {
   // FIXME: get this inputs from eamxx interface.
   const auto col_latitudes = linoz_params.col_latitudes;
-  const int ncol = col_latitudes.extent(0);
-  const int nlev =linoz_params.views_horiz[0].extent(0);
+  const int ncol = linoz_data_out.ncol_;
+  const int linoz_data_nlev = linoz_data_out.nlev_;
+  const int nvars = linoz_data_out.nvars_;
 
   // We can ||ize over columns as well as over variables and bands
-  const int num_vars = linoz_params.nlevs;
-  LIV horiz_interp(num_vars, linoz_params.nlat, ncol);
-  const auto policy_setup = ESU::get_default_team_policy(num_vars, ncol);
+  LIV horiz_interp(linoz_data_nlev, linoz_params.nlat, ncol);
+  const auto policy_setup = ESU::get_default_team_policy(1, ncol);
   auto lat = linoz_params.io_fields[0].get_view<Real*>();
 
   Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
@@ -171,74 +168,31 @@ namespace scream::mam_coupling {
     const int kk = team.league_rank();
     const auto x1 = lat;
     const auto x2 = col_latitudes;
-    auto var_org=linoz_params.io_fields[2].get_view<Real**>();
-    const auto y1 = ekat::subview(var_org,kk);
-    const auto y2 = ekat::subview(linoz_params.views_horiz[0],kk);
-    horiz_interp.lin_interp(team, x1, x2, y1, y2, kk);
+    for (int ivar = 0; ivar < nvars; ++ivar) {
+        auto var_org = linoz_params.io_fields[ivar+2].get_view<Real**>();
+        const auto y1 = ekat::subview(var_org,kk);
+        const auto y2 = ekat::subview(linoz_params.views_horiz[ivar],kk);
+       horiz_interp.lin_interp(team, x1, x2, y1, y2, kk);
+    }
   });
   Kokkos::fence();
 
 
   // FIXME: Does ekat or kokkos have a call to transpose a view?
-  const auto policy_transpose = ESU::get_default_team_policy(ncol*nlev,1);
+  const auto policy_transpose = ESU::get_default_team_policy(ncol*linoz_data_nlev,1);
   Kokkos::parallel_for("transpose_horization_data", policy_transpose,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-    const int icol = team.league_rank() / nlev;
-    const int ilev = team.league_rank() % nlev;
-    const auto input = linoz_params.views_horiz[0];
-    const auto output = linoz_params.views_horiz_transpose[0];
-    output(icol, ilev) = input(ilev, icol);
+    const int icol = team.league_rank() / linoz_data_nlev;
+    const int ilev = team.league_rank() % linoz_data_nlev;
+    for (int ivar = 0; ivar < nvars; ++ivar) {
+      const auto input = linoz_params.views_horiz[ivar];
+      const auto output = linoz_data_out.data[ivar];
+      output(icol, ilev) = input(ilev, icol);
+    }// ivar
   });
   Kokkos::fence();
 
  }
-
-
-void static
-perform_vertical_interpolation_linear(
-  const LinozReaderParams& linoz_params,
-  const view_2d& p_tgt,
-  const int ncols,
-  const int nlevs)
-{
-  const int nlevs_src = linoz_params.nlevs;
-  const int nlevs_tgt = nlevs;
-
-  LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
-
-  // We can ||ize over columns as well as over variables and bands
-  const int num_vars = 1;
-  const int num_vert_packs = nlevs_tgt;
-  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
-
-  const auto lev = linoz_params.io_fields[1].get_view< Real*>();
-
-  // Setup the linear interpolation object
-  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
-    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-    const int icol = team.league_rank();
-    // Setup
-    vert_interp.setup(team, lev, ekat::subview(p_tgt,icol));
-  });
-  Kokkos::fence();
-
-  // Now use the interpolation object in || over all variables.
-  const int outer_iters = ncols*num_vars;
-  const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
-  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
-    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-
-    const int icol = team.league_rank();
-    const auto x1 = lev;
-    const auto x2 = ekat::subview(p_tgt,icol);
-
-    const auto y1 = ekat::subview(linoz_params.views_horiz_transpose[0],icol);
-    const auto y2 = ekat::subview(linoz_params.views_vert[0],icol);
-    vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
-  });
-  Kokkos::fence();
-}
-
 // Direct port of components/eam/src/chemistry/utils/tracer_data.F90/vert_interp
 static void vert_interp(int ncol,
                  int levsiz,
@@ -361,7 +315,7 @@ void static update_linoz_timestate(const util::TimeStamp& ts,
     //       will proceed.
     int next_month = (time_state.current_month + 1) % 12;
     linoz_reader->read_variables(next_month);
-    perform_horizontal_interpolation(linoz_params);
+    perform_horizontal_interpolation(linoz_params, data_end);
     //
   } // end if
 } // update_linoz_timestate
@@ -426,6 +380,53 @@ static view_1d get_var_column (const LinozData& data,
   });
   Kokkos::fence();
 } // perform_time_interpolation
+
+#if 0
+void static
+perform_vertical_interpolation_linear(
+  const LinozReaderParams& linoz_params,
+  const view_2d& p_tgt,
+  const int ncols,
+  const int nlevs)
+{
+  const int nlevs_src = linoz_params.nlevs;
+  const int nlevs_tgt = nlevs;
+
+  LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
+
+  // We can ||ize over columns as well as over variables and bands
+  const int num_vars = 1;
+  const int num_vert_packs = nlevs_tgt;
+  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+  const auto lev = linoz_params.io_fields[1].get_view< Real*>();
+
+  // Setup the linear interpolation object
+  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+    const int icol = team.league_rank();
+    // Setup
+    vert_interp.setup(team, lev, ekat::subview(p_tgt,icol));
+  });
+  Kokkos::fence();
+
+  // Now use the interpolation object in || over all variables.
+  const int outer_iters = ncols*num_vars;
+  const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
+  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+
+    const int icol = team.league_rank();
+    const auto x1 = lev;
+    const auto x2 = ekat::subview(p_tgt,icol);
+
+    const auto y1 = ekat::subview(linoz_params.views_horiz_transpose[0],icol);
+    const auto y2 = ekat::subview(linoz_params.views_vert[0],icol);
+    vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
+  });
+  Kokkos::fence();
+}
+#endif
 
 
 } // namespace scream::mam_coupling
