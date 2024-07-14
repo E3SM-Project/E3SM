@@ -84,16 +84,6 @@ namespace scream::mam_coupling {
       data[ivar] =list_of_views[ivar];
       }
     }
-    void deep_copy_data_views(const view_2d in_data[]){
-
-      for (int ivar = 0; ivar< nvars_; ++ivar) {
-        EKAT_REQUIRE_MSG(data[ivar].data() != 0,
-                   "Error! Insufficient memory size.\n");
-        EKAT_REQUIRE_MSG(in_data[ivar].data() != 0,
-                   "Error! Insufficient memory size.\n");
-        Kokkos::deep_copy(data[ivar],in_data[ivar] );
-      }
-    }
   };
 
   // define the different field layouts that will be used for this process
@@ -159,7 +149,6 @@ namespace scream::mam_coupling {
   const auto col_latitudes = linoz_params.col_latitudes;
   const int ncol = col_latitudes.extent(0);
   const int nlev =linoz_params.views_horiz[0].extent(0);
-
 
   // We can ||ize over columns as well as over variables and bands
   const int num_vars = linoz_params.nlevs;
@@ -300,32 +289,40 @@ static void vert_interp(int ncol,
 } // vert_interp
 
 static void perform_vertical_interpolation(const LinozReaderParams& linoz_params,
-                                           const const_view_2d& p_mid)
+                                           const const_view_2d& p_mid,
+                                           LinozData& non_interpolated_linoz,
+                                           LinozData& interpolated_linoz)
 {
-  const int ncol = p_mid.extent(0);
-  const int nlev = p_mid.extent(1);
+  const int ncol = interpolated_linoz.ncol_;
+  const int nlev = interpolated_linoz.nlev_;
+
+  const int nvars = non_interpolated_linoz.nvars_;
+  const int nlevs_linoz = non_interpolated_linoz.nlev_;
 
   const auto kupper = linoz_params.kupper;
   const auto levs = linoz_params.io_fields[1].get_view< Real*>();
   const auto pin = linoz_params.pin;
-
-  for (int kk = 0; kk < linoz_params.nlevs; ++kk)
+  // FIXME: we do not need to update pin every time iteration.
+  for (int kk = 0; kk < nlevs_linoz; ++kk)
   {
     const auto pin_kk = Kokkos::subview(pin,Kokkos::ALL,kk);
     Kokkos::deep_copy(pin_kk,levs(kk));
   }// i
   Kokkos::fence();
 
-  const auto policy_interp = ESU::get_default_team_policy(1, 1);
+  const auto policy_interp = ESU::get_default_team_policy(nvars, 1);
   Kokkos::parallel_for("vertical_interpolation_linoz", policy_interp,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+  const int ivar = team.league_rank();
+  const auto var_non_inter = non_interpolated_linoz.data[ivar];
+  const auto var_inter = interpolated_linoz.data[ivar];
   scream::mam_coupling::vert_interp(ncol,
-              linoz_params.nlevs,
+              nlevs_linoz,
               nlev,
               pin,
               p_mid,
-              linoz_params.views_horiz_transpose[0],
-              linoz_params.views_vert[0],
+              var_non_inter,
+              var_inter,
               //work array
               kupper);
     });
@@ -352,7 +349,10 @@ void static update_linoz_timestate(const util::TimeStamp& ts,
     time_state.days_this_month = util::days_in_month(ts.get_year(),month+1);
 
     // // Copy spa_end'data into spa_beg'data, and read in the new spa_end
-    data_beg.deep_copy_data_views(data_end.data);
+    for (int ivar = 0; ivar < data_beg.nvars_; ++ivar)
+    {
+      Kokkos::deep_copy(data_beg.data[ivar],data_end.data[ivar]);
+    }
 
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.

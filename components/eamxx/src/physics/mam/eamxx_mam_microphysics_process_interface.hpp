@@ -235,6 +235,7 @@ private_except_cuda:
   mam_coupling::LinozData LinozData_start_;
   mam_coupling::LinozData LinozData_end_;
   mam_coupling::LinozData LinozData_out_;
+  mam_coupling::LinozData interpolated_Linoz_data_;
 
 }; // MAMMicrophysics
 

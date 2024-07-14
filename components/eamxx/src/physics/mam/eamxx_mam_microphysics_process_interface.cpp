@@ -306,6 +306,20 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
   auto linoz_cariolle_psc = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
+  LinozData_end_.init(ncol_,linoz_params_.nlevs);
+  LinozData_end_.allocate_data_views();
+
+  LinozData_start_.init(ncol_,linoz_params_.nlevs);
+  LinozData_start_.allocate_data_views();
+
+  LinozData_out_.init(ncol_,linoz_params_.nlevs);
+  LinozData_out_.allocate_data_views();
+  // LinozData_end_.set_data_views(linoz_params_.views_horiz_transpose);
+
+  interpolated_Linoz_data_.init(ncol_,nlev_);
+  std::vector<view_2d> list_linoz_views;
+  list_linoz_views.push_back(linoz_o3_clim);
+  interpolated_Linoz_data_.set_data_views(list_linoz_views);
 
     // Load the first month into spa_end.
   // Note: At the first time step, the data will be moved into spa_beg,
@@ -319,18 +333,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   linoz_params_.pin = view_2d("pin", ncol_,nlev_);
 
   perform_vertical_interpolation(linoz_params_,
-                                 dry_atm_.p_mid);
+                                 dry_atm_.p_mid,
+                                 LinozData_end_,
+                                 interpolated_Linoz_data_);
 
-  LinozData_end_.init(ncol_,linoz_params_.nlevs);
-  LinozData_end_.allocate_data_views();
-
-  LinozData_start_.init(ncol_,linoz_params_.nlevs);
-  LinozData_start_.allocate_data_views();
-  // LinozData_start_.deep_copy_data_views(LinozData_end_.data);
-
-  LinozData_out_.init(ncol_,linoz_params_.nlevs);
-  // LinozData_out_.allocate_data_views();
-  LinozData_end_.set_data_views(linoz_params_.views_horiz_transpose);
   }
 }
 
@@ -388,7 +394,9 @@ void MAMMicrophysics::run_impl(const double dt) {
                              LinozData_out_);
 
   perform_vertical_interpolation(linoz_params_,
-                                 dry_atm_.p_mid);
+                                 dry_atm_.p_mid,
+                                 LinozData_out_,
+                                 interpolated_Linoz_data_);
 
   }
 
