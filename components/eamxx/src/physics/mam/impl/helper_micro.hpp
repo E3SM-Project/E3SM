@@ -16,6 +16,14 @@ namespace scream::mam_coupling {
   using ExeSpace = typename KT::ExeSpace;
   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
 
+  constexpr int NVARS_LINOZ=7;
+  const std::vector<std::string>
+  linoz_var_names={"o3_clim", "o3col_clim",
+                   "t_clim", "PmL_clim", "dPmL_dO3",
+                   "dPmL_dT", "dPmL_dO3col"};
+                  //  ,"cariolle_psc"};
+
+
   struct LinozReaderParams {
   int nlevs{-1};
   int nlat{-1};
@@ -25,10 +33,10 @@ namespace scream::mam_coupling {
   view_1d levs;
 
   // non_interpolated data from linoz files.
-  view_2d data_orig[1];
+  view_2d data_orig[NVARS_LINOZ];
 
   // data arrays after horizontal interpolation.
-  view_2d views_horiz[1];
+  view_2d data_horiz[NVARS_LINOZ];
 
   // work arrays
   view_int_1d kupper;
@@ -65,8 +73,8 @@ namespace scream::mam_coupling {
     }
     int ncol_{-1};
     int nlev_{-1};
-    int nvars_{1};
-    view_2d data[1];
+    int nvars_{NVARS_LINOZ};
+    view_2d data[NVARS_LINOZ];
 
     void allocate_data_views()
     {
@@ -88,6 +96,27 @@ namespace scream::mam_coupling {
       data[ivar] =list_of_views[ivar];
       }
     }
+
+    void set_data_views(const view_2d& linoz_o3_clim,
+                        const view_2d& linoz_o3col_clim,
+                        const view_2d& linoz_t_clim,
+                        const view_2d& linoz_PmL_clim,
+                        const view_2d& linoz_dPmL_dO3,
+                        const view_2d& linoz_dPmL_dT,
+                        const view_2d& linoz_dPmL_dO3col)
+                        // ,
+                        // const view_2d& linoz_cariolle_psc)
+    {
+      data[0] = linoz_o3_clim;
+      data[1] = linoz_o3col_clim;
+      data[2] = linoz_t_clim;
+      data[3] = linoz_PmL_clim;
+      data[4] = linoz_dPmL_dO3;
+      data[5] = linoz_dPmL_dT;
+      data[6] = linoz_dPmL_dO3col;
+      // data[7] = linoz_cariolle_psc;
+    }
+
   };
 
   // define the different field layouts that will be used for this process
@@ -95,6 +124,8 @@ namespace scream::mam_coupling {
   create_linoz_data_reader (
       const std::string& linoz_data_file,
       LinozReaderParams& linoz_params,
+      const int ncol,
+      const const_view_1d const_col_latitudes,
       const ekat::Comm& comm)
   {
 
@@ -129,34 +160,47 @@ namespace scream::mam_coupling {
   auto scalar1d_lev_layout_linoz = make_layout({nlevs_data},
                                              {"lev"});
 
-  const int nvars=1;
+  const int nvars=NVARS_LINOZ;
 
   Field lat (FieldIdentifier("lat",  scalar1d_lat_layout_linoz,  nondim,io_grid->name()));
   Field lev (FieldIdentifier("lev",  scalar1d_lev_layout_linoz,  nondim,io_grid->name()));
-
-  Field o3_clim (FieldIdentifier("o3_clim",  scalar2d_layout_linoz,  nondim,io_grid->name()));
-
-  o3_clim.allocate_view();
   lat.allocate_view();
   lev.allocate_view();
 
   std::vector<Field> io_fields;
   io_fields.push_back(lat);
   io_fields.push_back(lev);
-  io_fields.push_back(o3_clim);
+
+  // FIXME: units are wrong.
+  for (int ivar = 0; ivar < nvars; ++ivar) {
+    auto var_name = linoz_var_names[ivar];
+    // set and allocate fields
+    Field f(FieldIdentifier(var_name,  scalar2d_layout_linoz,  nondim,io_grid->name()));
+    f.allocate_view();
+    io_fields.push_back(f);
+    // get views
+    linoz_params.data_orig[ivar] = io_fields[ivar+2].get_view<Real**>();
+    // allocate views to store data after horizontal interpolation.
+    linoz_params.data_horiz[ivar]=view_2d(var_name+"_test", nlevs_data, ncol);
+  }
 
   linoz_params.latitudes=io_fields[0].get_view<Real*>();
   linoz_params.levs = io_fields[1].get_view< Real*>();
 
-  for (int ivar = 0; ivar < nvars; ++ivar) {
-    linoz_params.data_orig[ivar] = io_fields[ivar+2].get_view<Real**>();
-  }
+  // make a copy of col_latitudes without const Real
+  view_1d col_latitudes("col",ncol);
+  Kokkos::deep_copy(col_latitudes, const_col_latitudes);
+  linoz_params.col_latitudes = col_latitudes;
+
+  // allocate temp views
+  linoz_params.kupper = view_int_1d("kupper",ncol);
+  linoz_params.pin = view_2d("pin", ncol,nlevs_data);
+
   return std::make_shared<AtmosphereInput>(linoz_data_file, io_grid,io_fields,true);
   }
 
 
- static void perform_horizontal_interpolation( const LinozReaderParams& linoz_params,
-                                               LinozData& linoz_data_out)
+ static void perform_horizontal_interpolation( const              LinozReaderParams& linoz_params, LinozData& linoz_data_out)
  {
   // FIXME: get this inputs from eamxx interface.
   const auto col_latitudes = linoz_params.col_latitudes;
@@ -187,7 +231,7 @@ namespace scream::mam_coupling {
     for (int ivar = 0; ivar < nvars; ++ivar) {
         const auto var_org = linoz_params.data_orig[ivar];
         const auto y1 = ekat::subview(var_org,kk);
-        const auto y2 = ekat::subview(linoz_params.views_horiz[ivar],kk);
+        const auto y2 = ekat::subview(linoz_params.data_horiz[ivar],kk);
        horiz_interp.lin_interp(team, x1, x2, y1, y2, kk);
     }
   });
@@ -201,7 +245,7 @@ namespace scream::mam_coupling {
     const int icol = team.league_rank() / linoz_data_nlev;
     const int ilev = team.league_rank() % linoz_data_nlev;
     for (int ivar = 0; ivar < nvars; ++ivar) {
-      const auto input = linoz_params.views_horiz[ivar];
+      const auto input = linoz_params.data_horiz[ivar];
       const auto output = linoz_data_out.data[ivar];
       output(icol, ilev) = input(ilev, icol);
     }// ivar

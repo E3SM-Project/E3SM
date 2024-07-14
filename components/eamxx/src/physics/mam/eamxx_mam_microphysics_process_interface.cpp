@@ -165,16 +165,8 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
 #if 1
   {
   std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
-  // std::vector<Field> io_linoz_fields;
-  linoz_reader_ = create_linoz_data_reader(linoz_file_name,linoz_params_,m_comm);
-  linoz_reader_->read_variables();
-  view_1d col_latitudes("col",ncol_);
-  Kokkos::deep_copy(col_latitudes, col_latitudes_);
-  view_2d o3_clim_org("o3_clim_test", nlev_,ncol_);
-  linoz_params_.views_horiz[0]=o3_clim_org;
-  linoz_params_.col_latitudes = col_latitudes;
-
-  // perform_horizontal_interpolation(linoz_params_);
+  linoz_reader_ = create_linoz_data_reader(linoz_file_name,
+  linoz_params_, ncol_, col_latitudes_, m_comm);
   }
 #endif
 }
@@ -314,19 +306,23 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   LinozData_out_.allocate_data_views();
 
   interpolated_Linoz_data_.init(ncol_,nlev_);
-  std::vector<view_2d> list_linoz_views;
-  list_linoz_views.push_back(linoz_o3_clim);
-  interpolated_Linoz_data_.set_data_views(list_linoz_views);
+
+  interpolated_Linoz_data_.set_data_views(linoz_o3_clim,
+                                          linoz_o3col_clim,
+                                          linoz_t_clim,
+                                          linoz_PmL_clim,
+                                          linoz_dPmL_dO3,
+                                          linoz_dPmL_dT,
+                                          linoz_dPmL_dO3col);
+                                          // ,
+                                          // linoz_cariolle_psc);
 
     // Load the first month into spa_end.
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  std::cout << curr_month << " : curr_month \n";
   linoz_reader_->read_variables(curr_month);
-  perform_horizontal_interpolation(linoz_params_,LinozData_end_);
-  linoz_params_.kupper = scream::mam_coupling::view_int_1d("kupper",ncol_);
-  linoz_params_.pin = view_2d("pin", ncol_,nlev_);
+  perform_horizontal_interpolation(linoz_params_, LinozData_end_);
 
   perform_vertical_interpolation(linoz_params_,
                                  dry_atm_.p_mid,
