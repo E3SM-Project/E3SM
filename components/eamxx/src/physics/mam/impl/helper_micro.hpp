@@ -11,18 +11,16 @@ namespace scream::mam_coupling {
 
   using namespace ShortFieldTagsNames;
 
-      // using npack equal to 1.
+  // using npack equal to 1.
   using LIV = ekat::LinInterp<Real,1>;
   using ExeSpace = typename KT::ExeSpace;
   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
 
-  constexpr int NVARS_LINOZ=7;
+  constexpr int NVARS_LINOZ=8;
   const std::vector<std::string>
   linoz_var_names={"o3_clim", "o3col_clim",
                    "t_clim", "PmL_clim", "dPmL_dO3",
-                   "dPmL_dT", "dPmL_dO3col"};
-                  //  ,"cariolle_psc"};
-
+                   "dPmL_dT", "dPmL_dO3col","cariolle_pscs"};
 
   struct LinozReaderParams {
   int nlevs{-1};
@@ -103,9 +101,8 @@ namespace scream::mam_coupling {
                         const view_2d& linoz_PmL_clim,
                         const view_2d& linoz_dPmL_dO3,
                         const view_2d& linoz_dPmL_dT,
-                        const view_2d& linoz_dPmL_dO3col)
-                        // ,
-                        // const view_2d& linoz_cariolle_psc)
+                        const view_2d& linoz_dPmL_dO3col,
+                        const view_2d& linoz_cariolle_pscs)
     {
       data[0] = linoz_o3_clim;
       data[1] = linoz_o3col_clim;
@@ -114,13 +111,13 @@ namespace scream::mam_coupling {
       data[4] = linoz_dPmL_dO3;
       data[5] = linoz_dPmL_dT;
       data[6] = linoz_dPmL_dO3col;
-      // data[7] = linoz_cariolle_psc;
+      data[7] = linoz_cariolle_pscs;
     }
 
   };
 
   // define the different field layouts that will be used for this process
-  static std::shared_ptr<AtmosphereInput>
+  inline std::shared_ptr<AtmosphereInput>
   create_linoz_data_reader (
       const std::string& linoz_data_file,
       LinozReaderParams& linoz_params,
@@ -184,7 +181,7 @@ namespace scream::mam_coupling {
     linoz_params.data_horiz[ivar]=view_2d(var_name+"_test", nlevs_data, ncol);
   }
 
-  linoz_params.latitudes=io_fields[0].get_view<Real*>();
+  const auto& latitudes_degree = io_fields[0].get_view<Real*>();
   linoz_params.levs = io_fields[1].get_view< Real*>();
 
   // make a copy of col_latitudes without const Real
@@ -196,11 +193,32 @@ namespace scream::mam_coupling {
   linoz_params.kupper = view_int_1d("kupper",ncol);
   linoz_params.pin = view_2d("pin", ncol,nlevs_data);
 
+  const auto& pin = linoz_params.pin;
+  view_1d latitudes("lat",nlevs_data );
+
+  const auto& levs = linoz_params.levs;
+  const auto policy_interp = ESU::get_default_team_policy(ncol, nlevs_data);
+  const int pi =haero::Constants::pi;
+  Kokkos::parallel_for("unit_convertion", policy_interp,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+      // mbar->pascals
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs_data), [&] (const Int& kk) {
+      pin(icol, kk) = levs(kk)*100;
+      // radians to degrees
+      if (icol==0){
+        latitudes(kk) = latitudes_degree (kk)* pi/180.;
+      }
+      });
+    });
+  Kokkos::fence();
+  linoz_params.latitudes=latitudes;
+
   return std::make_shared<AtmosphereInput>(linoz_data_file, io_grid,io_fields,true);
   }
 
 
- static void perform_horizontal_interpolation( const              LinozReaderParams& linoz_params, LinozData& linoz_data_out)
+ inline void perform_horizontal_interpolation( const              LinozReaderParams& linoz_params, LinozData& linoz_data_out)
  {
   // FIXME: get this inputs from eamxx interface.
   const auto col_latitudes = linoz_params.col_latitudes;
@@ -213,7 +231,7 @@ namespace scream::mam_coupling {
   const auto policy_setup = ESU::get_default_team_policy(1, ncol);
   auto lat = linoz_params.latitudes;
 
-  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
+  Kokkos::parallel_for("vert_interp_setup_loop", policy_setup,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
     // Setup
     horiz_interp.setup(team, lat, col_latitudes);
@@ -254,7 +272,8 @@ namespace scream::mam_coupling {
 
  }
 // Direct port of components/eam/src/chemistry/utils/tracer_data.F90/vert_interp
-static void vert_interp(int ncol,
+KOKKOS_INLINE_FUNCTION
+void vert_interp(int ncol,
                  int levsiz,
                  int pver,
                  const view_2d&  pin,
@@ -295,14 +314,14 @@ static void vert_interp(int ncol,
             } else {
                 Real dpu = pmid(i, k) - pin(i, kupper(i));
                 Real dpl = pin(i, kupper(i) + 1) - pmid(i, k);
-                dataout(i, k) = (datain(i, kupper[i]) * dpl + datain(i, kupper(i) + 1) * dpu) / (dpl + dpu);
+                dataout(i, k) = (datain(i, kupper(i)) * dpl + datain(i, kupper(i) + 1) * dpu) / (dpl + dpu);
             }// end if
         } // end col
     } // end k
 
 } // vert_interp
 
-static void perform_vertical_interpolation(const LinozReaderParams& linoz_params,
+inline void perform_vertical_interpolation(const LinozReaderParams& linoz_params,
                                            const const_view_2d& p_mid,
                                            LinozData& non_interpolated_linoz,
                                            LinozData& interpolated_linoz)
@@ -316,13 +335,7 @@ static void perform_vertical_interpolation(const LinozReaderParams& linoz_params
   const auto kupper = linoz_params.kupper;
   const auto levs = linoz_params.levs;
   const auto pin = linoz_params.pin;
-  // FIXME: we do not need to update pin every time iteration.
-  for (int kk = 0; kk < nlevs_linoz; ++kk)
-  {
-    const auto pin_kk = Kokkos::subview(pin,Kokkos::ALL,kk);
-    Kokkos::deep_copy(pin_kk,levs(kk));
-  }// i
-  Kokkos::fence();
+
 
   const auto policy_interp = ESU::get_default_team_policy(nvars, 1);
   Kokkos::parallel_for("vertical_interpolation_linoz", policy_interp,
@@ -330,7 +343,7 @@ static void perform_vertical_interpolation(const LinozReaderParams& linoz_params
   const int ivar = team.league_rank();
   const auto var_non_inter = non_interpolated_linoz.data[ivar];
   const auto var_inter = interpolated_linoz.data[ivar];
-  scream::mam_coupling::vert_interp(ncol,
+  vert_interp(ncol,
               nlevs_linoz,
               nlev,
               pin,
@@ -345,7 +358,7 @@ static void perform_vertical_interpolation(const LinozReaderParams& linoz_params
 }//perform_vertical_interpolation
 
 // This function is based on update_spa_timestate
-void static update_linoz_timestate(const util::TimeStamp& ts,
+inline void update_linoz_timestate(const util::TimeStamp& ts,
                                    LinozTimeState& time_state,
                                    std::shared_ptr<AtmosphereInput> linoz_reader,
                                    const LinozReaderParams& linoz_params,
@@ -381,20 +394,20 @@ void static update_linoz_timestate(const util::TimeStamp& ts,
 } // update_linoz_timestate
 
 KOKKOS_INLINE_FUNCTION
-static Real linear_interp(const Real& x0, const Real& x1, const Real& t)
+Real linear_interp(const Real& x0, const Real& x1, const Real& t)
 {
   return (1 - t)*x0 + t*x1;
 } // linear_interp
 
 KOKKOS_INLINE_FUNCTION
-static view_1d get_var_column (const LinozData& data,
+view_1d get_var_column (const LinozData& data,
                                const int icol,
                                const int ivar)
 {
     return ekat::subview(data.data[ivar],icol);
 } // get_var_column
 // This function is based on the SPA::perform_time_interpolation function.
- static void perform_time_interpolation(
+ inline void perform_time_interpolation(
   const LinozTimeState& time_state,
   const LinozData&  data_beg,
   const LinozData&  data_end,
@@ -441,215 +454,5 @@ static view_1d get_var_column (const LinozData& data,
   Kokkos::fence();
 } // perform_time_interpolation
 
-#if 0
-void static
-perform_vertical_interpolation_linear(
-  const LinozReaderParams& linoz_params,
-  const view_2d& p_tgt,
-  const int ncols,
-  const int nlevs)
-{
-  const int nlevs_src = linoz_params.nlevs;
-  const int nlevs_tgt = nlevs;
-
-  LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
-
-  // We can ||ize over columns as well as over variables and bands
-  const int num_vars = 1;
-  const int num_vert_packs = nlevs_tgt;
-  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
-
-  const auto lev = linoz_params.io_fields[1].get_view< Real*>();
-
-  // Setup the linear interpolation object
-  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
-    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-    const int icol = team.league_rank();
-    // Setup
-    vert_interp.setup(team, lev, ekat::subview(p_tgt,icol));
-  });
-  Kokkos::fence();
-
-  // Now use the interpolation object in || over all variables.
-  const int outer_iters = ncols*num_vars;
-  const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
-  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
-    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-
-    const int icol = team.league_rank();
-    const auto x1 = lev;
-    const auto x2 = ekat::subview(p_tgt,icol);
-
-    const auto y1 = ekat::subview(linoz_params.views_horiz_transpose[0],icol);
-    const auto y2 = ekat::subview(linoz_params.views_vert[0],icol);
-    vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
-  });
-  Kokkos::fence();
-}
-#endif
-
-
 } // namespace scream::mam_coupling
 #endif //EAMXX_MAM_HELPER_MICRO
-
-  // scream::mam_coupling::create_linoz_data_reader(linoz_file_name,linoz_params,m_comm);
-
-  //  auto scalar2d_layout_linoz = make_layout({nlevs_data, nlat_data},
-  //                                            {"lev","lat"});
-
-  //  auto scalar1d_lat_layout_linoz = make_layout({nlat_data},
-  //                                            {"lat"});
-  //  ekat::ParameterList params_Linoz;
-  //  params_Linoz.set("Filename", linoz_file_name);
-  //  // make a list of host views
-  //  std::map<std::string, view_1d_host> host_views_Linoz;
-  //  params_Linoz.set("Skip_Grid_Checks", true);
-  //  params_Linoz.set<strvec_t>(
-  //     "Field Names",
-  //     {"o3_clim",
-  //     "lat"});
-  //  view_2d_host o3_clim_host("o3_clim_host",nlevs_data, nlat_data);
-  //  view_1d_host lat_host("lat_host", nlat_data);
-  //  host_views_Linoz["o3_clim"] =
-  //     view_1d_host(o3_clim_host.data(), o3_clim_host.size());
-  //  host_views_Linoz["lat"] =
-  //     view_1d_host(lat_host.data(), lat_host.size());
-
-  //  layouts_linoz.emplace("o3_clim", scalar2d_layout_linoz);
-  //  layouts_linoz.emplace("lat", scalar1d_lat_layout_linoz);
-
-  //  linoz_reader_=std::make_shared<AtmosphereInput>(params_Linoz, grid_, host_views_Linoz,
-  //                                        layouts_linoz);
-
-  //  linoz_reader_ = AtmosphereInput(params_Linoz, grid_, host_views_Linoz,
-  //                                        layouts_linoz);
-
-  //  AtmosphereInput Linoz_reader(params_Linoz, grid_, host_views_Linoz,
-  //                                        layouts_linoz);
-    // linoz_reader_ = scream::mam_coupling::create_linoz_data_reader(linoz_file_name);
-  // linoz_reader_->finalize();
-//   #if 0
-//  static void vertical_interpolation( LinozReaderParams& linoz_params,
-//                                      const view_2d& pmid)
-//  {
-//   const int nlev = pmid.extent(1);
-//   const int ncol = pmid.extent(0);
-//   const int num_vars = linoz_params.nlevs;
-//   LIV horiz_interp(num_vars, nlev, ncol);
-//   const auto policy_setup = ESU::get_default_team_policy(num_vars, ncol);
-
-//   auto lev = linoz_params.io_fields[1].get_view<Real*>();
-//     // We can ||ize over columns as well as over variables and bands
-//   LIV ver_interp(num_vars, linoz_params.nlevs, nlev);
-//   const auto policy_setup = ESU::get_default_team_policy(num_vars, nlev);
-
-
-
-//  }
-
-//   static std::shared_ptr<AtmosphereInput>
-//   create_linoz_data_reader (
-//       const std::string& linoz_data_file)
-//   {
-
-//    using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-//    using view_2d_host = typename KT::view_2d<Real>::HostMirror;
-//    using strvec_t = std::vector<std::string>;
-
-
-//    std::map<std::string, FieldLayout> layouts_linoz;
-//    // const auto& fname = m_params.get<std::string>(table_name);
-//    scorpio::register_file(linoz_data_file,scorpio::Read);
-//    const int nlevs_data = scorpio::get_dimlen(linoz_data_file,"lev");
-//    const int nlat_data = scorpio::get_dimlen(linoz_data_file,"lat");
-//    scorpio::release_file(linoz_data_file);
-//    std::cout << "nlevs_data" << nlevs_data << "\n";
-//    std::cout << "nlat_data" << nlat_data << "\n";
-
-//    auto scalar2d_layout_linoz = make_layout({nlevs_data, nlat_data},
-//                                              {"lev","lat"});
-
-//    auto scalar1d_lat_layout_linoz = make_layout({nlat_data},
-//                                              {"lat"});
-//    ekat::ParameterList params_Linoz;
-//    params_Linoz.set("Filename", linoz_data_file);
-//    // make a list of host views
-//    std::map<std::string, view_1d_host> host_views_Linoz;
-//    params_Linoz.set("Skip_Grid_Checks", true);
-//    params_Linoz.set<strvec_t>(
-//       "Field Names",
-//       {"o3_clim",
-//       "lat"});
-//    view_2d_host o3_clim_host("o3_clim_host",nlevs_data, nlat_data);
-//    view_1d_host lat_host("lat_host", nlat_data);
-//    host_views_Linoz["o3_clim"] =
-//       view_1d_host(o3_clim_host.data(), o3_clim_host.size());
-//    host_views_Linoz["lat"] =
-//       view_1d_host(lat_host.data(), lat_host.size());
-
-//    layouts_linoz.emplace("o3_clim", scalar2d_layout_linoz);
-//    layouts_linoz.emplace("lat", scalar1d_lat_layout_linoz);
-
-//    return std::make_shared<AtmosphereInput>(params_Linoz, grid_, host_views_Linoz,
-//                                          layouts_linoz);
-//   }
-// #endif
-
-// #if 0
-//    std::cout << "o3_clim: " << o3_clim_host(0,0) << "\n";
-//    std::cout << "lat: " << lat_host(0) << "\n";
-
-//    std::cout << "col_latitudes_.extents(0): " << col_latitudes_.extent(0) << "\n";
-//    std::cout << "ncol_: " << ncol_ << "\n";
-
-
-
-//   using LIV = ekat::LinInterp<Real,1>;
-//   using ExeSpace = typename KT::ExeSpace;
-//   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
-
-//   // We can ||ize over columns as well as over variables and bands
-//   const int num_vars = nlevs_data;
-//   LIV horiz_interp(num_vars, nlat_data, ncol_);
-//   const auto policy_setup = ESU::get_default_team_policy(num_vars, ncol_);
-//   // Setup the linear interpolation object
-//   // auto& col_latitudes= col_latitudes_;
-//   col_latitudes_copy_ = view_1d("col",ncol_);
-//   Kokkos::deep_copy(col_latitudes_copy_, col_latitudes_);
-
-//   view_1d lat("lat",nlat_data );
-//   Kokkos::deep_copy(lat, lat_host);
-
-//   Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
-//     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-//     // Setup
-//     horiz_interp.setup(team, lat, col_latitudes);
-//   });
-//   Kokkos::fence();
-
-//   // Now use the interpolation object in || over all variables.
-//   const int outer_iters = nlevs_data;
-//   const auto policy_interp = ESU::get_default_team_policy(outer_iters, ncol_);
-//   Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
-//     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-//     const int kk = team.league_rank();
-//     const auto x1 = lat;
-//     const auto x2 = col_latitudes;
-//     const auto y1 = ekat::subview(o3_clim_host,kk);
-//     const auto y2 = ekat::subview(o3_clim_test,kk);
-//     horiz_interp.lin_interp(team, x1, x2, y1, y2, kk);
-//   });
-//   Kokkos::fence();
-//   std::cout << "o3_clim_host \n";
-//   for (int i = 0; i < nlat_data; ++i)
-//   {
-//     std::cout <<lat(i)<<" lat " << o3_clim_host(10,i)<< ",\n";
-//   }
-
-//   std::cout << "o3_clim_test \n";
-//   for (int i = 0; i < ncol_; ++i)
-//   {
-//     std::cout <<col_latitudes(i)<<" lat " << o3_clim_test(10,i)<< ",\n";
-//   }
-
-// #endif

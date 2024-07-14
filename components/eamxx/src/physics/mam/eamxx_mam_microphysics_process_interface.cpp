@@ -161,14 +161,13 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Tracers group -- do we need this in addition to the tracers above? In any
   // case, this call should be idempotent, so it can't hurt.
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
-  // read linoz files
-#if 1
+  // Creating a Linoz reader and setting Linoz parameters involves reading data from a file
+  // and configuring the necessary parameters for the Linoz model.
   {
   std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
   linoz_reader_ = create_linoz_data_reader(linoz_file_name,
   linoz_params_, ncol_, col_latitudes_, m_comm);
   }
-#endif
 }
 
 // this checks whether we have the tracers we expect
@@ -294,7 +293,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto linoz_dPmL_dO3     = buffer_.scratch[4]; // sensitivity of P minus L to O3 [1/s]
   auto linoz_dPmL_dT      = buffer_.scratch[5]; // sensitivity of P minus L to T3 [K]
   auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
-  auto linoz_cariolle_psc = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
+  auto linoz_cariolle_pscs = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
   LinozData_end_.init(ncol_,linoz_params_.nlevs);
   LinozData_end_.allocate_data_views();
@@ -313,9 +312,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
                                           linoz_PmL_clim,
                                           linoz_dPmL_dO3,
                                           linoz_dPmL_dT,
-                                          linoz_dPmL_dO3col);
-                                          // ,
-                                          // linoz_cariolle_psc);
+                                          linoz_dPmL_dO3col,
+                                          linoz_cariolle_pscs);
 
     // Load the first month into spa_end.
   // Note: At the first time step, the data will be moved into spa_beg,
@@ -361,7 +359,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto linoz_dPmL_dO3     = buffer_.scratch[4]; // sensitivity of P minus L to O3 [1/s]
   auto linoz_dPmL_dT      = buffer_.scratch[5]; // sensitivity of P minus L to T3 [K]
   auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
-  auto linoz_cariolle_psc = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
+  auto linoz_cariolle_pscs = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
@@ -370,7 +368,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   {
     /* Gather time and state information for interpolation */
   auto ts = timestamp()+dt;
-  /* Update the SPATimeState to reflect the current time, note the addition of dt */
+  /* Update the LinozTimeState to reflect the current time, note the addition of dt */
   linoz_time_state_.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
   update_linoz_timestate(ts,
@@ -559,7 +557,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         zenith_angle, pmid, dt, rlats,
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
         linoz_PmL_clim(icol, k), linoz_dPmL_dO3(icol, k), linoz_dPmL_dT(icol, k),
-        linoz_dPmL_dO3col(icol, k), linoz_cariolle_psc(icol, k),
+        linoz_dPmL_dO3col(icol, k), linoz_cariolle_pscs(icol, k),
         chlorine_loading, config.linoz.psc_T, vmr[o3_ndx],
         do3_linoz, do3_linoz_psc, ss_o3,
         o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
