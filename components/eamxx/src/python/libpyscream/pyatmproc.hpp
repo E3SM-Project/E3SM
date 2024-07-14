@@ -183,7 +183,7 @@ inline void pybind_pyatmproc(pybind11::module& m)
     .def("get_params",&PyAtmProc::get_params)
     .def("setup_output",&PyAtmProc::setup_output)
     .def("run",&PyAtmProc::run)
-    .def("read_ic",&PyAtmProc::read_ic);
+    .def("read_ic",&PyAtmProc::read_ic)
     .def("dump_fields",&PyAtmProc::dump_fields);
 }
 } // namespace scream
