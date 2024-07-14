@@ -3400,7 +3400,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+          <arg name="ranks_bind">--cpu-bind=list:0-7:8-15:16-23:24-31:32-39:40-47:52-59:60-67:68-75:76-83:84-91:92-99 -envall</arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
@@ -3436,27 +3436,61 @@
 	<env name="NETCDF_C_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
         <env name="NETCDF_FORTRAN_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
 	<env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/pnetcdf</env>
-     <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
-                <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/bin:$ENV{PATH}</env>
-	<env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
+        <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
+                   <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/bin:$ENV{PATH}</env>
+		<!--<env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>-->
+	<env name="RANKS_BIND">list:0-7:8-15:16-23:24-31:32-39:40-47:52-59:60-67:68-75:76-83:84-91:92-99</env>
      </environment_variables>
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
-     </environment_variables>
+</environment_variables>
+
+<!--#Tim's suggestions
+export FI_MR_CACHE_MONITOR=memhooks # Servesh suggestion
+export MPIR_CVAR_ALLREDUCE_INTRA_ALGORITHM=recursive_doubling
+unset MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE
+unset MPIR_CVAR_COLL_SELECTION_TUNING_JSON_FILE
+unset MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE
+export MPICH_ABORT_ON_ERROR=1
+export MPIR_CVAR_DEBUG_SUMMARY=1
+export SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS=0 # Patrick suggest for segv@end
+export FI_LOG_LEVEL=warn # to debug hangs
+export ZES_ENABLE_SYSMAN=1 # enable GPU memory usage checking
+export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
+-->
+<!-- for unset use empty variable value, works -->
+
      <environment_variables compiler="oneapi-ifxgpu">
-	     <env name="ZES_ENABLE_SYSMAN">1</env> <!-- REALLY NEEDED!!!!!!!!!! -->
-        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
-        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
-        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
-        <env name="romio_cb_read">disable</env>
+	<env name="ZES_ENABLE_SYSMAN">1</env> <!-- REALLY NEEDED!!!!!!!!!! -->
+	<!--<env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>-->
+	<!--<env name="ONEAPI_MPICH_GPU">NO_GPU</env>-->
+
+	<env name="MPIR_CVAR_ENABLE_GPU">1</env>
+	<env name="MPIR_CVAR_ALLREDUCE_INTRA_ALGORITHM">recursive_doubling</env>
+	<env name="MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE"></env>
+
+        <env name="MPICH_ABORT_ON_ERROR">1</env>
+        <env name="MPIR_CVAR_DEBUG_SUMMARY">1</env>
+
+	<env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
-        <env name="SYCL_CACHE_PERSISTENT">1</env>
-        <env name="GATOR_INITIAL_MB">4000MB</env>
+
+	<!--<env name="SYCL_CACHE_PERSISTENT">1</env>-->
+	<env name="SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS">0</env>
+
+	<env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
-        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+
+	<env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
+
+	<env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
-    </environment_variables>
+        <env name="FI_MR_CACHE_MONITOR">memhooks</env>
+        <env name="FI_LOG_LEVEL">warn</env>
+
+</environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
