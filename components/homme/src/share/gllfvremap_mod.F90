@@ -265,22 +265,24 @@ contains
 
   subroutine gfr_init_hxx() bind(c)
 #if KOKKOS_TARGET
-    use control_mod, only: theta_hydrostatic_mode
-    use iso_c_binding, only: c_bool
+    use control_mod, only: theta_hydrostatic_mode_integer
+    use iso_c_binding, only: c_int
     interface
-       subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode, &
+       subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode_integer, &
             fv_metdet, g2f_remapd, f2g_remapd, D_f, Dinv_f) bind(c)
          use iso_c_binding, only: c_bool, c_int, c_double
          integer (c_int), value, intent(in) :: nelemd, np, nf, nf_max
-         logical (c_bool), value, intent(in) :: theta_hydrostatic_mode
+         !logical (c_bool), value, intent(in) :: theta_hydrostatic_mode
+         integer (c_int), value, intent(in) :: theta_hydrostatic_mode_integer
          real (c_double), dimension(nf*nf,nelemd), intent(in) :: fv_metdet
          real (c_double), dimension(np,np,nf_max*nf_max), intent(in) :: g2f_remapd
          real (c_double), dimension(nf_max*nf_max,np,np), intent(in) :: f2g_remapd
          real (c_double), dimension(nf*nf,2,2,nelemd), intent(in) :: D_f, Dinv_f
        end subroutine init_gllfvremap_c
     end interface
-    logical (c_bool) :: thm
-    thm = theta_hydrostatic_mode
+    integer (c_int) :: thm
+    !logical (c_bool) :: thm
+    thm = theta_hydrostatic_mode_integer
     call init_gllfvremap_c(nelemd, np, gfr%nphys, nphys_max, thm, &
          gfr%fv_metdet, gfr%g2f_remapd, gfr%f2g_remapd, gfr%D_f, gfr%Dinv_f)
 #endif
