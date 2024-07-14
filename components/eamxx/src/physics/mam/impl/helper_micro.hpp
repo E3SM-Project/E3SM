@@ -19,11 +19,19 @@ namespace scream::mam_coupling {
   struct LinozReaderParams {
   int nlevs{-1};
   int nlat{-1};
-  std::vector<Field> io_fields;
+  // latitude array in linoz data.
+  view_1d latitudes;
+  // hybrid level pressure at interfaces (1000*(A+B))
+  view_1d levs;
+
+  // non_interpolated data from linoz files.
+  view_2d data_orig[1];
+
+  // data arrays after horizontal interpolation.
+  view_2d views_horiz[1];
 
   // work arrays
   view_int_1d kupper;
-  view_2d views_horiz[1];
   //
   view_2d pin;
   view_1d col_latitudes;
@@ -86,7 +94,6 @@ namespace scream::mam_coupling {
   static std::shared_ptr<AtmosphereInput>
   create_linoz_data_reader (
       const std::string& linoz_data_file,
-      // std::vector<Field> io_fields,
       LinozReaderParams& linoz_params,
       const ekat::Comm& comm)
   {
@@ -103,11 +110,8 @@ namespace scream::mam_coupling {
   const int nlevs_data = scorpio::get_dimlen(linoz_data_file,"lev");
   const int nlat_data = scorpio::get_dimlen(linoz_data_file,"lat");
   scorpio::release_file(linoz_data_file);
-  std::cout << "nlevs_data: " << nlevs_data << "\n";
-  std::cout << "nlat_data: " << nlat_data << "\n";
   linoz_params.nlevs=nlevs_data;
   linoz_params.nlat=nlat_data;
-
 
   // create an IO grid, with that number of cols
   // linoz files do not have number of cols,
@@ -125,17 +129,29 @@ namespace scream::mam_coupling {
   auto scalar1d_lev_layout_linoz = make_layout({nlevs_data},
                                              {"lev"});
 
-  Field o3_clim (FieldIdentifier("o3_clim",  scalar2d_layout_linoz,  nondim,io_grid->name()));
+  const int nvars=1;
+
   Field lat (FieldIdentifier("lat",  scalar1d_lat_layout_linoz,  nondim,io_grid->name()));
   Field lev (FieldIdentifier("lev",  scalar1d_lev_layout_linoz,  nondim,io_grid->name()));
+
+  Field o3_clim (FieldIdentifier("o3_clim",  scalar2d_layout_linoz,  nondim,io_grid->name()));
+
   o3_clim.allocate_view();
   lat.allocate_view();
   lev.allocate_view();
-  linoz_params.io_fields.push_back(lat);
-  linoz_params.io_fields.push_back(lev);
-  linoz_params.io_fields.push_back(o3_clim);
 
-  return std::make_shared<AtmosphereInput>(linoz_data_file,io_grid,linoz_params.io_fields,true);
+  std::vector<Field> io_fields;
+  io_fields.push_back(lat);
+  io_fields.push_back(lev);
+  io_fields.push_back(o3_clim);
+
+  linoz_params.latitudes=io_fields[0].get_view<Real*>();
+  linoz_params.levs = io_fields[1].get_view< Real*>();
+
+  for (int ivar = 0; ivar < nvars; ++ivar) {
+    linoz_params.data_orig[ivar] = io_fields[ivar+2].get_view<Real**>();
+  }
+  return std::make_shared<AtmosphereInput>(linoz_data_file, io_grid,io_fields,true);
   }
 
 
@@ -151,7 +167,7 @@ namespace scream::mam_coupling {
   // We can ||ize over columns as well as over variables and bands
   LIV horiz_interp(linoz_data_nlev, linoz_params.nlat, ncol);
   const auto policy_setup = ESU::get_default_team_policy(1, ncol);
-  auto lat = linoz_params.io_fields[0].get_view<Real*>();
+  auto lat = linoz_params.latitudes;
 
   Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
@@ -169,7 +185,7 @@ namespace scream::mam_coupling {
     const auto x1 = lat;
     const auto x2 = col_latitudes;
     for (int ivar = 0; ivar < nvars; ++ivar) {
-        auto var_org = linoz_params.io_fields[ivar+2].get_view<Real**>();
+        const auto var_org = linoz_params.data_orig[ivar];
         const auto y1 = ekat::subview(var_org,kk);
         const auto y2 = ekat::subview(linoz_params.views_horiz[ivar],kk);
        horiz_interp.lin_interp(team, x1, x2, y1, y2, kk);
@@ -254,7 +270,7 @@ static void perform_vertical_interpolation(const LinozReaderParams& linoz_params
   const int nlevs_linoz = non_interpolated_linoz.nlev_;
 
   const auto kupper = linoz_params.kupper;
-  const auto levs = linoz_params.io_fields[1].get_view< Real*>();
+  const auto levs = linoz_params.levs;
   const auto pin = linoz_params.pin;
   // FIXME: we do not need to update pin every time iteration.
   for (int kk = 0; kk < nlevs_linoz; ++kk)
