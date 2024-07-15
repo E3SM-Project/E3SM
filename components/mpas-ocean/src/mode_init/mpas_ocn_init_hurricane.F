@@ -105,12 +105,13 @@ contains
     type (mpas_pool_type), pointer :: verticalMeshPool
 
     ! local variables
-    integer :: iCell, k, idx, iEdge, iVertex
+    integer :: iCell, k, idx, iEdge, iVertex, slice
     real (kind=RKIND) :: dlon, dlat, dw
     real (kind=RKIND) :: maxBottomDepth, globalMaxBottomDepth, globalMinBottomDepth
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
     real (kind=RKIND), parameter :: eps=1.0e-12
     real (kind=RKIND), parameter :: pi = 4.0_RKIND*ATAN(1.0_RKIND)
+    real (kind=RKIND):: edgeBathyValue
 
     ! Define dimension pointers
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevels, nVertLevelsP1
@@ -126,6 +127,7 @@ contains
          fCell, fEdge, fVertex, &
          latCell, latEdge, latVertex, &
          lonCell
+    integer, dimension(:,:), pointer :: cellsOnEdge
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
     real (kind=RKIND), dimension(:), allocatable :: uVelocityAverage, vVelocityAverage
@@ -181,6 +183,14 @@ contains
     do while(associated(block_ptr))
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
       if (MAXVAL(bottomDepthObserved) > maxBottomDepth) then
         maxBottomDepth = MAXVAL(bottomDepthObserved)
@@ -193,9 +203,48 @@ contains
     call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMinBottomDepth)
     !write(*,*) globalMaxBottomDepth, globzalMinBottomDepth
 
+    !------------------------
+    do iCell = 1, nCellsSolve
+       bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
+
+       if ( .not. ( config_use_subgrid_wetting_drying .and. &
+            MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init') )  ) then
+          ! sea level rise adjustment
+          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
+
+
+         ! enforce minimum and maximum bottom depth
+          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
+          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
+          ssh(iCell) = 0.0_RKIND ; 
+        end if    
+    end do
+
+    if (config_use_subgrid_wetting_drying) then
+       call ocn_subgrid_init(domain,iErr)
+    end if
+    if ( config_use_wetting_drying .and. config_use_subgrid_wetting_drying ) then   
+      if ( .not. MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init') )then       
+        do iEdge = 1, nEdgesSolve
+          !
+          edgeBathyValue = 1.0e10_RKIND ;
+          do slice = 1, 2
+
+           if ( cellsOnEdge(slice,iEdge) <= nCellsSolve ) then
+               edgeBathyValue = min( edgeBathyValue, bottomDepth(cellsOnEdge(slice,iEdge)) ) ;
+           end if
+          end do
+          subgridEdgeBathymetryMean(iEdge) = edgeBathyValue ; 
+          !
+        end do
+      end if
+    end if
+    !-----------------------
+
+
     if (config_use_subgrid_wetting_drying) then
 
-       call ocn_subgrid_init(domain,iErr)
+       !   call ocn_subgrid_init(domain,iErr)
        if (MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init')) then
 
           allocate(uVelocityAverage(nEdgesSolve))
@@ -217,9 +266,8 @@ contains
                                              config_Buttermilk_bay_subgrid_use_thin_layer, &
                                              uVelocityAverage, &
                                              vVelocityAverage, &
-                                             iErr)
+                                             iErr) !
        else
-
 
          call mpas_log_write( 'Setting default subgrid table values')
          do iCell = 1, nCellsSolve
@@ -237,7 +285,7 @@ contains
 
        end if
     end if
-
+ 
     !--------------------------------------------------------------------
     ! Use this section to set initial values
     !--------------------------------------------------------------------
@@ -304,18 +352,15 @@ contains
        end if
 
 
-       do iCell = 1, nCellsSolve
-
-          bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
-
-          ! sea level rise adjustment
-          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
-
-          ! enforce minimum and maximum bottom depth
-          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
-          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
-
-        end do
+!       do iCell = 1, nCellsSolve       
+!          bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
+!          ! sea level rise adjustment
+!          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
+!
+!          ! enforce minimum and maximum bottom depth
+!          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
+!          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
+!        end do
 
         if (config_use_wetting_drying) then
           do iCell = 1, nCellsSolve
@@ -401,6 +446,7 @@ contains
               restingThickness(k, iCell) = layerThickness(k, iCell)
             end do
           end do
+          !
         end if
 
         do iCell = 1, nCellsSolve
@@ -416,7 +462,7 @@ contains
              activeTracers(idx, k, iCell) = 33.0_RKIND
           end do
 
-       end do
+        end do
 
 
        ! Set Coriolis parameters
@@ -449,6 +495,21 @@ contains
        end if
 
 
+       ! Set bottomDepthObserved to -bottomDepth so that the values of
+       ! the cell-averaged bottomDepth of cells with subgrid bathymetry are not
+       ! overwrtten by the base values in base mesh file in the multiple
+       ! stages setup                                                 
+       if ( config_use_subgrid_wetting_drying ) then
+         do iCell = 1, nCellsSolve
+            bottomDepthObserved(iCell) = -1.0_RKIND*bottomDepth(iCell) ; 
+         end do  
+       endif        
+       
+!       do iCell = 1, nCellsSolve
+!         if ( ssh(iCell) < 0 ) then
+!            write(*,*) "after = ", iCell, ssh(iCell) ; 
+!          end if
+!       end do
        block_ptr => block_ptr % next
     end do
 
