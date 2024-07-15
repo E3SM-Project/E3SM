@@ -461,6 +461,14 @@ void MAMWetscav::run_impl(const double dt) {
   // inside a parallel_for.
   const int nlev = nlev_;
 
+  // Zero out tendencies otherwise, they are initialized to junk values
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    Kokkos::deep_copy(tends.n_mode_i[m], 0);
+    for(int a = 0; a < mam4::num_species_mode(m); ++a) {
+            Kokkos::deep_copy(tends.q_aero_i[m][a], 0);
+    }
+  }
+
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -505,14 +513,6 @@ void MAMWetscav::run_impl(const double dt) {
         auto qaerwat_icol     = ekat::subview(qaerwat, icol);
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
-
-        // Zero out tendencies otherwise, they are initialized to junk values
-        for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-          Kokkos::deep_copy(tends.n_mode_i[m], 0);
-          for(int a = 0; a < mam4::num_species_mode(m); ++a) {
-            Kokkos::deep_copy(tends.q_aero_i[m][a], 0);
-          }
-        }
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
