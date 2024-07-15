@@ -126,8 +126,6 @@ struct LimiterFunctor {
         diff(ilev) = (dp(ilev) - m_dp3d_thresh*dp0(ilev))*spheremp;
       });
 
-      kv.team_barrier();
-
       Real min_diff = Kokkos::reduction_identity<Real>::min();
       auto diff_as_real = Homme::viewAsReal(diff);
       auto dp_as_real   = Homme::viewAsReal(dp);
@@ -143,7 +141,6 @@ struct LimiterFunctor {
 #endif
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
-      kv.team_barrier();
 
       auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_np1,igp,jgp);
 
@@ -188,8 +185,7 @@ struct LimiterFunctor {
           dp(ilev) = diff(ilev)/spheremp + m_dp3d_thresh*dp0(ilev);
           vtheta_dp(ilev) *= dp(ilev);
         });
-      } //end of min_diff < 0
-      kv.team_barrier();
+      } // end of min_diff < 0
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {

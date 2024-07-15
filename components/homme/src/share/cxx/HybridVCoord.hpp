@@ -108,7 +108,6 @@ public:
       auto dp_ij = Homme::subview(dp,igp,jgp);
 
       ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv,dp_ij,ps(igp,jgp));
-      kv.team_barrier();
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
         ps(igp,jgp) += hybrid_ai0*ps0;
