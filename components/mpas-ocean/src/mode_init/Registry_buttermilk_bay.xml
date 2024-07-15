@@ -18,6 +18,14 @@
 		<nml_option name="config_Buttermilk_bay_subgrid_table_levels" type="integer" default_value="10" units="unitless"
 			description="Number of levels in suvgrid lookup tables"
 			possible_values="Any positive integer number"
+	         />
+		<nml_option name="config_Buttermilk_bay_topography_extrapolation_method" type="character" default_value="nearest" units="unitless"
+			description="extrapolation method"
+			possible_values="nearest/constant"
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_extrapolation_constant_value" type="real" default_value="-1.0e10" units="unitless"
+			description="value to be used in the extrapolcation method if it is set to constant"
+			possible_values="any real number"
 		/>
 		<nml_option name="config_Buttermilk_bay_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
 			description="Whether to include thin layer in subgrid tables"
@@ -54,5 +62,13 @@
 		<nml_option name="config_Buttermilk_bay_topography_varname" type="character" default_value="Band1" units="unitless"
 			description="Variable name for the topography in the topography file."
 			possible_values="Variable name from input file."
+	        />
+		<nml_option name="config_Buttermilk_bay_topography_fill_value" type="real" default_value="99999" units="unitless"
+			description="fill value in the topography file."
+			possible_values="any real number"
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_positive" type="character" default_value="up" units="unitless"
+			description="direction in which the topo value is positive"
+			possible_values="up/down"
 		/>
 	</nml_record>
