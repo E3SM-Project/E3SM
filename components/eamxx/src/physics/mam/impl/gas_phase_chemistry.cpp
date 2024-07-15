@@ -94,7 +94,113 @@ void populate_etfphot(HostView1D we, HostView1D etfphot) {
   // FIXME: zero the photon flux for now
   Kokkos::deep_copy(etfphot, 0);
 }
+// This version uses scream_scorpio_interface to read netcdf files.
+mam4::mo_photo::PhotoTableData read_photo_table(const std::string& rsf_file,
+                      const std::string& xs_long_file) {
 
+
+// set up the lng_indexer and pht_alias_mult_1 views based on our
+// (hardwired) chemical mechanism
+HostViewInt1D lng_indexer_h("lng_indexer(host)", mam4::mo_photo::phtcnt);
+
+
+int nw, nump, numsza, numcolo3, numalb, nt, np_xs; // table dimensions
+scorpio::register_file(rsf_file,scorpio::Read);
+// read and broadcast dimension data
+nump     = scorpio::get_dimlen(rsf_file,"numz");
+numsza   = scorpio::get_dimlen(rsf_file, "numsza");
+numalb   = scorpio::get_dimlen(rsf_file, "numalb");
+numcolo3 = scorpio::get_dimlen(rsf_file, "numcolo3fact");
+
+scorpio::register_file(xs_long_file,scorpio::Read);
+nt       = scorpio::get_dimlen(xs_long_file, "numtemp");
+nw       = scorpio::get_dimlen(xs_long_file, "numwl");
+np_xs    = scorpio::get_dimlen(xs_long_file, "numprs");
+
+//FIXME: hard-coded for only one photo reaction.
+std::string rxt_names[1] = {"jh2o2"};
+int numj = 1;
+// allocate the photolysis table
+auto table = mam4::mo_photo::create_photo_table_data(nw, nt, np_xs, numj,
+                                                       nump, numsza, numcolo3,
+                                                       numalb);
+
+// allocate host views for table data
+auto rsf_tab_h = Kokkos::create_mirror_view(table.rsf_tab);
+auto xsqy_h = Kokkos::create_mirror_view(table.xsqy);
+auto sza_h = Kokkos::create_mirror_view(table.sza);
+auto alb_h = Kokkos::create_mirror_view(table.alb);
+auto press_h = Kokkos::create_mirror_view(table.press);
+auto colo3_h = Kokkos::create_mirror_view(table.colo3);
+auto o3rat_h = Kokkos::create_mirror_view(table.o3rat);
+auto etfphot_h = Kokkos::create_mirror_view(table.etfphot);
+auto prs_h = Kokkos::create_mirror_view(table.prs);
+
+// read file data into our host views
+scorpio::read_var(rsf_file, "pm", press_h.data());
+scorpio::read_var(rsf_file, "sza", sza_h.data());
+scorpio::read_var(rsf_file, "alb", alb_h.data());
+scorpio::read_var(rsf_file, "colo3fact", o3rat_h.data());
+scorpio::read_var(rsf_file, "colo3", colo3_h.data());
+// it produces an error.
+scorpio::read_var(rsf_file, "RSF", rsf_tab_h.data());
+scorpio::read_var(xs_long_file, "pressure", prs_h.data());
+
+// read xsqy data (using lng_indexer_h for the first index)
+//FIXME: hard-coded for only one photo reaction.
+for (int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
+  auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
+  scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
+}
+
+// populate etfphot by rebinning solar data
+HostView1D wc_h("wc", nw), wlintv_h("wlintv", nw), we_h("we", nw+1);
+
+scorpio::read_var(rsf_file, "wc", wc_h.data());
+scorpio::read_var(rsf_file, "wlintv", wlintv_h.data());
+for (int i = 0; i < nw; ++i) {
+      we_h(i) = wc_h(i) - 0.5 * wlintv_h(i);
+}
+we_h(nw) = wc_h(nw-1) - 0.5 * wlintv_h(nw-1);
+populate_etfphot(we_h, etfphot_h);
+scorpio::release_file(rsf_file);
+scorpio::release_file(xs_long_file);
+
+// copy host photolysis table into place on device
+Kokkos::deep_copy(table.rsf_tab,          rsf_tab_h);
+Kokkos::deep_copy(table.xsqy,             xsqy_h);
+Kokkos::deep_copy(table.sza,              sza_h);
+Kokkos::deep_copy(table.alb,              alb_h);
+Kokkos::deep_copy(table.press,            press_h);
+Kokkos::deep_copy(table.colo3,            colo3_h);
+Kokkos::deep_copy(table.o3rat,            o3rat_h);
+Kokkos::deep_copy(table.etfphot,          etfphot_h);
+Kokkos::deep_copy(table.prs,              prs_h);
+// set pht_alias_mult_1 to 1
+Kokkos::deep_copy(table.pht_alias_mult_1, 1.0);
+// Kokkos::deep_copy(table.lng_indexer,      lng_indexer_h);
+
+  // compute gradients (on device)
+  Kokkos::parallel_for("del_p", nump-1, KOKKOS_LAMBDA(int i) {
+    table.del_p(i) = 1.0/::abs(table.press(i)- table.press(i+1));
+  });
+  Kokkos::parallel_for("del_sza", numsza-1, KOKKOS_LAMBDA(int i) {
+    table.del_sza(i) = 1.0/(table.sza(i+1) - table.sza(i));
+  });
+  Kokkos::parallel_for("del_alb", numalb-1, KOKKOS_LAMBDA(int i) {
+    table.del_alb(i) = 1.0/(table.alb(i+1) - table.alb(i));
+  });
+  Kokkos::parallel_for("del_o3rat", numcolo3-1, KOKKOS_LAMBDA(int i) {
+    table.del_o3rat(i) = 1.0/(table.o3rat(i+1) - table.o3rat(i));
+  });
+  Kokkos::parallel_for("dprs", np_xs-1, KOKKOS_LAMBDA(int i) {
+    table.dprs(i) = 1.0/(table.prs(i) - table.prs(i+1));
+  });
+
+return table;
+}
+
+#if 0
 // ON HOST, reads the photolysis table (used for gas phase chemistry) from the
 // files with the given names
 mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
@@ -122,6 +228,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
     nt       = nc_dimension(xs_long_file, xs_long_id, "numtemp");
     nw       = nc_dimension(xs_long_file, xs_long_id, "numwl");
     np_xs    = nc_dimension(xs_long_file, xs_long_id, "numprs");
+    std::cout <<nump<<" : nump\n";
 
     int dim_data[7] = {nump, numsza, numcolo3, numalb, nt, nw, np_xs};
     comm.broadcast(dim_data, 7, mpi_root);
@@ -256,7 +363,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
 
   return table;
 }
-
+#endif
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION

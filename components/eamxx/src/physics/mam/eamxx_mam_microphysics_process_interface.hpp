@@ -38,6 +38,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   using view_1d_int   = typename KT::template view_1d<int>;
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
+  using view_3d       = typename KT::template view_3d<Real>;
   using const_view_1d = typename KT::template view_1d<const Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
@@ -236,6 +237,12 @@ private_except_cuda:
   mam_coupling::LinozData LinozData_end_;
   mam_coupling::LinozData LinozData_out_;
   mam_coupling::LinozData interpolated_Linoz_data_;
+  //
+  view_2d work_photo_table_;
+  std::vector<Real> chlorine_values_;
+  std::vector<int> chlorine_time_secs_;
+  view_3d photo_rates_;
+  view_2d lwc_;
 
 }; // MAMMicrophysics
 

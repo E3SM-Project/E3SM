@@ -10,6 +10,10 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_aero_microphys]
+  mam4_aero_microphys:
+   mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc
+   mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+   mam4_chlorine_loading_ymd : 20100101   
 
 grids_manager:
   Type: Mesh Free

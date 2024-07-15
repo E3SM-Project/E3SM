@@ -75,11 +75,11 @@ void MAMMicrophysics::set_defaults_() {
   // e3smv2/bld/namelist_files/namelist_defaults_eam.xml
 
   // photolysis
-  set_file_location(config_.photolysis.rsf_file,         "../waccm/phot/RSF_GT200nm_v3.0_c080811.nc");
-  set_file_location(config_.photolysis.xs_long_file,     "../waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc");
+  // set_file_location(config_.photolysis.rsf_file,         "../waccm/phot/RSF_GT200nm_v3.0_c080811.nc");
+  // set_file_location(config_.photolysis.xs_long_file,     "../waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc");
 
   // stratospheric chemistry
-  set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
+  // set_file_location(config_.linoz.chlorine_loading_file, "../cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc");
 
   // dry deposition
   set_file_location(config_.drydep.srf_file,             "../cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc");
@@ -164,9 +164,12 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Creating a Linoz reader and setting Linoz parameters involves reading data from a file
   // and configuring the necessary parameters for the Linoz model.
   {
-  std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
+  // std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
+  std::string linoz_file_name =
+      m_params.get<std::string>("mam4_linoz_file_name");
   linoz_reader_ = create_linoz_data_reader(linoz_file_name,
   linoz_params_, ncol_, col_latitudes_, m_comm);
+
   }
 }
 
@@ -259,9 +262,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // create our photolysis rate calculation table
-  /*photo_table_ = impl::read_photo_table(get_comm(),
-                                        config_.photolysis.rsf_file,
-                                        config_.photolysis.xs_long_file);*/
+  const std::string rsf_file =
+      m_params.get<std::string>("mam4_rsf_file");
+  const std::string xs_long_file =
+      m_params.get<std::string>("mam4_xs_long_file");
+
+  photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
 
   // FIXME: read relevant land use data from drydep surface file
 
@@ -327,6 +333,16 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
                                  LinozData_end_,
                                  interpolated_Linoz_data_);
 
+  // const std::string linoz_chlorine_file = "Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc";
+  // auto ts = timestamp();
+  // int chlorine_loading_ymd=20100101;
+  auto ts = timestamp();
+  std::string linoz_chlorine_file =
+      m_params.get<std::string>("mam4_linoz_chlorine_file");
+  int chlorine_loading_ymd =
+      m_params.get<int>("mam4_chlorine_loading_ymd");
+  scream::mam_coupling::create_linoz_chlorine_reader (linoz_chlorine_file, ts, chlorine_loading_ymd,
+   chlorine_values_, chlorine_time_secs_ );
   }
 }
 
@@ -365,9 +381,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
 
+  auto ts = timestamp()+dt;
   {
     /* Gather time and state information for interpolation */
-  auto ts = timestamp()+dt;
+
   /* Update the LinozTimeState to reflect the current time, note the addition of dt */
   linoz_time_state_.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
@@ -387,8 +404,9 @@ void MAMMicrophysics::run_impl(const double dt) {
                                  dry_atm_.p_mid,
                                  LinozData_out_,
                                  interpolated_Linoz_data_);
-
   }
+  const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(ts, chlorine_values_,
+                           chlorine_time_secs_);
 
   const_view_1d &col_latitudes = col_latitudes_;
   mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
@@ -409,11 +427,11 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-    /*auto z_iface = ekat::subview(dry_atm.z_iface, icol);
+    auto z_iface = ekat::subview(dry_atm.z_iface, icol);
     Real phis = dry_atm.phis(icol);
 
     // set surface state data
-    /*haero::Surface sfc{};
+    haero::Surface sfc{};
 
     // fetch column-specific subviews into aerosol prognostics
     mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero, icol);
@@ -423,7 +441,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-    impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
+    //impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
@@ -444,10 +462,10 @@ void MAMMicrophysics::run_impl(const double dt) {
     constexpr int extcnt = mam4::gas_chemistry::extcnt;
     view_2d extfrc; // FIXME: where to allocate? (nlev, extcnt)
     mam4::mo_setext::Forcing forcings[extcnt]; // FIXME: forcings seem to require file data
-    mam4::mo_setext::extfrc_set(forcings, extfrc);*/
+    //mam4::mo_setext::extfrc_set(forcings, extfrc);
 
     // compute aerosol microphysics on each vertical level within this column
-    /*Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
 
       constexpr int num_modes = mam4::AeroConfig::num_modes();
       constexpr int gas_pcnst = mam_coupling::gas_pcnst();
@@ -468,12 +486,12 @@ void MAMMicrophysics::run_impl(const double dt) {
       //  mozart/mo_gas_phase_chemdr.F90)
       Real q[gas_pcnst] = {};
       Real qqcw[gas_pcnst] = {};
-      mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
+      //mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
 
       // convert mass mixing ratios to volume mixing ratios (VMR), equivalent
       // to tracer mixing ratios (TMR))
       Real vmr[gas_pcnst], vmrcw[gas_pcnst];
-      mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
+      //mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
 
       // aerosol/gas species tendencies (output)
       Real vmr_tendbb[gas_pcnst][nqtendbb] = {};
@@ -492,20 +510,21 @@ void MAMMicrophysics::run_impl(const double dt) {
       //---------------------
       // Gas Phase Chemistry
       //---------------------
+      //
       Real photo_rates_k[mam4::mo_photo::phtcnt];
       for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
         photo_rates_k[i] = photo_rates(k, i);
       }
-      Real extfrc_k[extcnt];
+      /*Real extfrc_k[extcnt];
       for (int i = 0; i < extcnt; ++i) {
         extfrc_k[i] = extfrc(k, i);
-      }
+      }*/
       constexpr int nfs = mam4::gas_chemistry::nfs; // number of "fixed species"
       // NOTE: we compute invariants here and pass them out to use later with
       // NOTE: setsox
       Real invariants[nfs];
-      impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                photo_rates_k, extfrc_k, vmr, invariants);
+      /*impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
+                                photo_rates_k, extfrc_k, vmr, invariants);*/
 
       //----------------------
       // Aerosol microphysics
@@ -519,8 +538,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       const Real mbar = haero::Constants::molec_weight_dry_air;
       constexpr int indexm = 0;  // FIXME: index of xhnm in invariants array (??)
       Real cldnum = 0.0; // FIXME: droplet number concentration: where do we get this?
-      setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
-        cldfrac, cldnum, invariants[indexm], config.setsox, vmrcw, vmr);
+      /*setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
+        cldfrac, cldnum, invariants[indexm], config.setsox, vmrcw, vmr);*/
 
       // calculate aerosol water content using water uptake treatment
       // * dry and wet diameters [m]
@@ -530,14 +549,14 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[num_modes] = {};
       Real wetdens[num_modes]     = {};
       Real qaerwat[num_modes]     = {};
-      impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
+      //impl::compute_water_content(progs, k, qv, temp, pmid, dgncur_a, dgncur_awet, wetdens, qaerwat);
 
       // do aerosol microphysics (gas-aerosol exchange, nucleation, coagulation)
       /*impl::modal_aero_amicphys_intr(config.amicphys, step, dt, t, pmid, pdel,
                                      zm, pblh, qv, cldfrac, vmr, vmrcw, vmr_pregaschem,
                                      vmr_precldchem, vmrcw_precldchem, vmr_tendbb,
                                      vmrcw_tendbb, dgncur_a, dgncur_awet,
-                                     wetdens, qaerwat);
+                                     wetdens, qaerwat);*/
 
       //-----------------
       // LINOZ chemistry
@@ -547,9 +566,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       // including in the first rev
       Real do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
            zenith_angle_degrees;
-
-      // FIXME: Need to get chlorine loading data from file
-      Real chlorine_loading = 0.0;
 
       Real rlats = col_lat * M_PI / 180.0; // convert column latitude to radians
       int o3_ndx = 0; // index of "O3" in solsym array (in EAM)
@@ -582,9 +598,9 @@ void MAMMicrophysics::run_impl(const double dt) {
       //mam4::drydep::drydep_xactive(...);
 
       // transfer updated prognostics from work arrays
-      mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
-      mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);
-    });*/
+      //mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
+      //mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);*/
+    });
   });
 
   // postprocess output
