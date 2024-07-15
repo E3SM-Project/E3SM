@@ -107,13 +107,8 @@ struct CaarFunctorImpl {
   struct TagPostExchange {};
 
   // Policies
-#ifndef NDEBUG
-  template<typename Tag>
-  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
-#else
   template<typename Tag>
   using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Tag>;
-#endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
 

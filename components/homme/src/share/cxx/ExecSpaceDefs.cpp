@@ -6,7 +6,6 @@
 
 #include <cassert>
 
-#include <sstream>
 #include <vector>
 
 #include "ExecSpaceDefs.hpp"
@@ -35,32 +34,9 @@ void initialize_kokkos () {
   // provides, as that algorithm is hardcoded in Kokkos::initialize(int& narg,
   // char* arg[]). Once the behavior is exposed in the InitArguments version of
   // initialize, we can remove this string code.
-  //   If for some reason we're running on a GPU platform, have Cuda enabled,
-  // but are using a different execution space, this initialization is still
-  // OK. The rank gets a GPU assigned and simply will ignore it.
-#ifdef KOKKOS_ENABLE_CUDA
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_HIP)
-  int nd;
-  const auto ret = hipGetDeviceCount(&nd);
-  if (ret != hipSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#endif
 #ifdef HOMMEXX_ENABLE_GPU  
-  std::stringstream ss;
-  ss << "--kokkos-num-devices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
+  const char *const map_device = "--kokkos-map-device-id-by=mpi_rank";
+  args.push_back(const_cast<char*>(map_device));
 #endif
 
 
