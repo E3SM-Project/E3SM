@@ -597,25 +597,25 @@ int initTendTest(const std::string &mesh) {
    I4 IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
-      LOG_ERROR("AuxVarsTest: error initializing parallel IO");
+      LOG_ERROR("TendencyTermsTest: error initializing parallel IO");
    }
 
    int DecompErr = Decomp::init(mesh);
    if (DecompErr != 0) {
       Err++;
-      LOG_ERROR("AuxVarsTest: error initializing default decomposition");
+      LOG_ERROR("TendencyTermsTest: error initializing default decomposition");
    }
 
    int HaloErr = Halo::init();
    if (HaloErr != 0) {
       Err++;
-      LOG_ERROR("AuxVarsTest: error initializing default halo");
+      LOG_ERROR("TendencyTermsTest: error initializing default halo");
    }
 
    int MeshErr = HorzMesh::init();
    if (MeshErr != 0) {
       Err++;
-      LOG_ERROR("AuxVarsTest: error initializing default mesh");
+      LOG_ERROR("TendencyTermsTest: error initializing default mesh");
    }
 
    return Err;
