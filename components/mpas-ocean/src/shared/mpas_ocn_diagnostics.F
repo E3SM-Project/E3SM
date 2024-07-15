@@ -2724,6 +2724,7 @@ contains
       integer :: nCells
       integer :: iCell
       integer :: k
+      logical, save:: first = .true. 
 
       nCells = nCellsAll
 
@@ -2736,6 +2737,12 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k)
 #endif
+
+!      if ( first ) then 
+!          write(*,*) "Enter  ssh calcuation " 
+!          first = .false. ;
+!      end if
+
       do iCell = 1, nCells
 
          ! Compute zMid, the z-coordinate of the middle of the layer.
@@ -2754,10 +2761,24 @@ contains
               + layerThickness(k  ,iCell)
          end do
 
-         ! copy zTop(1,iCell) into sea-surface height array
-         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         if (config_use_subgrid_wetting_drying) then
+            call ocn_subgrid_ssh_lookup(layerThickness(1,iCell), &
+                                        subgridWetVolumeCellTable(:,iCell), &
+                                        subgridSshCellTableRange(:,iCell), &
+                                        bottomDepth(iCell), &
+                                        subgridCellBathymetryMin(iCell), & 
+                                        ssh(iCell))
+
+            zTop(1,iCell) = ssh(iCell)
+            zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
+         else
+            ! copy zTop(1,iCell) into sea-surface height array
+            ssh(iCell) = zTop(minLevelCell(iCell),iCell)
+         end if
 
       end do
+
+!      first = .false. ;
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
