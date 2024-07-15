@@ -100,7 +100,7 @@ void MAMDryDep::set_grids(
   };
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_mid =
-      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "NMODES", "LEV"});
+      make_layout({ncol_, num_aero_modes, nlev_}, {"ncol", "num_modes", "lev"});
 
   using namespace ekat::units;
 
@@ -396,7 +396,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 void MAMDryDep::run_impl(const double dt) {
   using DryDep           = mam4::DryDeposition;
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -440,6 +440,8 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
+  populated_fraction_landuse(fraction_landuse_, ncol_);
+  // std::cout<<"fraction_landuse_:"<<fraction_landuse_[1](0)<<std::endl;
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,

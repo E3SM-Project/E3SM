@@ -10,8 +10,9 @@ CreateADUnitTest(${TEST_BASE_NAME}
 )
 
 # Set AD configurable options
-set (ATM_TIME_STEP 1)
+set (ATM_TIME_STEP 3600)
 SetVarDependingOnTestSize(NUM_STEPS 12 24 36)
+SetVarDependingOnTestSize(NUM_STEPS 1 1 1)
 set (RUN_T0 2021-10-12-45000)
 
 ## Copy (and configure) yaml files needed by tests

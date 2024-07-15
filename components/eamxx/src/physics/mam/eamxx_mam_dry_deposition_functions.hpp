@@ -42,12 +42,15 @@ void compute_tendencies(
     MAMDryDep::view_2d vlc_grv_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
+  auto printb = [](const std::string &name, const double &val) {
+    std::cout << name << ":" << std::setprecision(15) << val << std::endl;
+  };
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   // FIXME: WHY we are using a new policy here?? can't we get it from the
   // run_impl??
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
-          ncol, nlev);
+          1, nlev);
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         static constexpr int num_aero_species =
@@ -126,6 +129,7 @@ void compute_tendencies(
               }
             });  // parallel_for nlevs
         bool ptend_lq[pcnst];
+        printb("bef:qqcw:", qqcw[23](63));
         mam4::aero_model_drydep(
             // inputs
             team, fraction_landuse, atm.temperature, atm.pressure,
@@ -140,8 +144,25 @@ void compute_tendencies(
             ekat::subview(aerdepdrycw, icol), ekat::subview(aerdepdryis, icol),
             // work arrays
             rho, vlc_dry, vlc_trb, vlc_grv, dqdt_tmp);
+        printb("aft:qqcw:", qqcw[23](63));
       });  // parallel_for for ncols
 }
+
+void populated_fraction_landuse(MAMDryDep::view_1d flu[11], const int ncol) {
+  Real temp[11] = {0.28044346587077795E-003, 0.26634987180780171E-001,
+                   0.16803558403621365E-001, 0.18076055155371872E-001,
+                   0.00000000000000000E+000, 0.00000000000000000E+000,
+                   0.91803784897907303E+000, 0.17186036997038400E-002,
+                   0.00000000000000000E+000, 0.00000000000000000E+000,
+                   0.18448503115578840E-001};
+
+  for(int icol = 0; icol < ncol; ++icol) {
+    for(int kk = 0; kk < 11; ++kk) {
+      flu[kk](icol) = temp[kk];
+    }
+  }
+}
+
 }  // namespace
 }  // namespace scream
 
