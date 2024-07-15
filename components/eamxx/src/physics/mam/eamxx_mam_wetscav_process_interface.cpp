@@ -463,9 +463,9 @@ void MAMWetscav::run_impl(const double dt) {
 
   // Zero out tendencies otherwise, they are initialized to junk values
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    Kokkos::deep_copy(tends.n_mode_i[m], 0);
+    Kokkos::deep_copy(dry_aero_tends_.int_aero_nmr[m], 0);
     for(int a = 0; a < mam4::num_species_mode(m); ++a) {
-            Kokkos::deep_copy(tends.q_aero_i[m][a], 0);
+      Kokkos::deep_copy(dry_aero_tends_.int_aero_mmr[m][a], 0);
     }
   }
 
