@@ -14,10 +14,8 @@ class KineticAuxVars {
    Array2DReal KineticEnergyCell;
    Array2DReal VelocityDivCell;
 
-   KineticAuxVars(const HorzMesh *Mesh, int NVertLevels);
-
-   void addMetaData() const;
-   void defineIOFields() const;
+   KineticAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
+                  int NVertLevels);
 
    KOKKOS_FUNCTION void
    computeVarsOnCell(int ICell, int KChunk,
@@ -48,6 +46,9 @@ class KineticAuxVars {
       }
    }
 
+   void registerFields(const std::string &AuxGroupName) const;
+   void unregisterFields() const;
+
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
@@ -56,9 +57,8 @@ class KineticAuxVars {
    Array1DR8 DvEdge;
    Array1DR8 AreaCell;
 
-   // names used in defining MetaData and IOFields
-   static const std::string KineticEnergyCellName;
-   static const std::string VelocityDivCellName;
+   void addMetaData(const std::string &AuxGroupName) const;
+   void defineIOFields() const;
 };
 
 } // namespace OMEGA

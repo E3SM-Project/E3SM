@@ -6,7 +6,6 @@
 #include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "MetaData.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "auxiliaryVars/KineticAuxVars.h"
@@ -309,7 +308,8 @@ int testKineticAuxVars(const Array2DReal &LayerThicknessCell,
 
    // Compute numerical result
 
-   KineticAuxVars KineticAux(Mesh, NVertLevels);
+   KineticAuxVars KineticAux("", Mesh, NVertLevels);
+
    parallelFor(
        {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
           KineticAux.computeVarsOnCell(ICell, KLevel, NormalVelocityEdge);
@@ -354,7 +354,7 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
 
    // Compute numerical result
 
-   LayerThicknessAuxVars LayerThicknessAux(Mesh, NVertLevels);
+   LayerThicknessAuxVars LayerThicknessAux("", Mesh, NVertLevels);
    LayerThicknessAux.FluxThickEdgeChoice = Upwind;
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
@@ -393,7 +393,7 @@ int testVorticityAuxVars(const Array2DReal &LayerThickCell,
 
    const auto Decomp = Decomp::getDefault();
    const auto Mesh   = HorzMesh::getDefault();
-   VorticityAuxVars VorticityAux(Mesh, NVertLevels);
+   VorticityAuxVars VorticityAux("", Mesh, NVertLevels);
 
    // Compute exact results for vertex variables
 
@@ -509,7 +509,7 @@ int testVelocityDel2AuxVars(Real RTol) {
 
    const auto Decomp = Decomp::getDefault();
    const auto Mesh   = HorzMesh::getDefault();
-   VelocityDel2AuxVars VelocityDel2Aux(Mesh, NVertLevels);
+   VelocityDel2AuxVars VelocityDel2Aux("", Mesh, NVertLevels);
 
    // Use analytical expressions to compute inputs
 
@@ -645,13 +645,6 @@ int initAuxVarsTest(const std::string &mesh) {
       Err++;
       LOG_ERROR("AuxVarsTest: error initializing default mesh");
    }
-
-   const auto &Mesh = HorzMesh::getDefault();
-   MetaDim::create("NCells", Mesh->NCellsSize);
-   MetaDim::create("NVertices", Mesh->NVerticesSize);
-   MetaDim::create("NEdges", Mesh->NEdgesSize);
-   MetaDim::create("NVertLevels", NVertLevels);
-   MetaGroup::create("auxiliaryVars");
 
    return Err;
 }

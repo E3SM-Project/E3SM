@@ -6,30 +6,38 @@
 
 namespace OMEGA {
 
-const std::string LayerThicknessAuxVars::FluxLayerThickEdgeName =
-    "FluxLayerThickEdge";
-const std::string LayerThicknessAuxVars::MeanLayerThickEdgeName =
-    "MeanLayerThickEdge";
-
-LayerThicknessAuxVars::LayerThicknessAuxVars(const HorzMesh *Mesh,
+LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
+                                             const HorzMesh *Mesh,
                                              int NVertLevels)
-    : FluxLayerThickEdge("FluxLayerThickEdge", Mesh->NEdgesSize, NVertLevels),
-      MeanLayerThickEdge("MeanLayerThickEdge", Mesh->NEdgesSize, NVertLevels),
-      CellsOnEdge(Mesh->CellsOnEdge) {
-   addMetaData();
+    : FluxLayerThickEdge("FluxLayerThickEdge" + AuxStateSuffix,
+                         Mesh->NEdgesSize, NVertLevels),
+      MeanLayerThickEdge("MeanLayerThickEdge" + AuxStateSuffix,
+                         Mesh->NEdgesSize, NVertLevels),
+      CellsOnEdge(Mesh->CellsOnEdge) {}
+
+void LayerThicknessAuxVars::registerFields(
+    const std::string &AuxGroupName) const {
+   addMetaData(AuxGroupName);
    defineIOFields();
 }
 
-void LayerThicknessAuxVars::addMetaData() const {
+void LayerThicknessAuxVars::unregisterFields() const {
+   IOField::erase(FluxLayerThickEdge.label());
+   IOField::erase(MeanLayerThickEdge.label());
+   MetaData::destroy(FluxLayerThickEdge.label());
+   MetaData::destroy(MeanLayerThickEdge.label());
+}
+
+void LayerThicknessAuxVars::addMetaData(const std::string &AuxGroupName) const {
    auto EdgeDim      = MetaDim::get("NEdges");
    auto VertDim      = MetaDim::get("NVertLevels");
-   auto AuxMetaGroup = MetaGroup::get("auxiliaryVars");
+   auto AuxMetaGroup = MetaGroup::get(AuxGroupName);
 
    const Real FillValue = -9.99e30;
 
    // Flux layer thickness on edges
    auto FluxLayerThickEdgeMeta = ArrayMetaData::create(
-       FluxLayerThickEdgeName,
+       FluxLayerThickEdge.label(),
        "layer thickness used for fluxes through edges. May be centered, "
        "upwinded, or a combination of the two.", /// long Name or description
        "m",                                      /// units
@@ -40,11 +48,11 @@ void LayerThicknessAuxVars::addMetaData() const {
        2,                 /// number of dimensions
        {EdgeDim, VertDim} /// dim pointers
    );
-   AuxMetaGroup->addField(FluxLayerThickEdgeName);
+   AuxMetaGroup->addField(FluxLayerThickEdge.label());
 
    // Mean layer thickness on edges
    auto MeanLayerThickEdgeMeta = ArrayMetaData::create(
-       MeanLayerThickEdgeName,
+       MeanLayerThickEdge.label(),
        "layer thickness averaged from cell center to edges", /// long Name or
                                                              /// description
        "m",                                                  /// units
@@ -55,19 +63,19 @@ void LayerThicknessAuxVars::addMetaData() const {
        2,                                /// number of dimensions
        {EdgeDim, VertDim}                /// dim pointers
    );
-   AuxMetaGroup->addField(MeanLayerThickEdgeName);
+   AuxMetaGroup->addField(MeanLayerThickEdge.label());
 }
 
 void LayerThicknessAuxVars::defineIOFields() const {
    int Err;
 
    // Flux layer thickness on edges
-   Err = IOField::define(FluxLayerThickEdgeName);
-   Err = IOField::attachData(FluxLayerThickEdgeName, FluxLayerThickEdge);
+   Err = IOField::define(FluxLayerThickEdge.label());
+   Err = IOField::attachData(FluxLayerThickEdge.label(), FluxLayerThickEdge);
 
    // Mean layer thickness on edges
-   Err = IOField::define(MeanLayerThickEdgeName);
-   Err = IOField::attachData(MeanLayerThickEdgeName, MeanLayerThickEdge);
+   Err = IOField::define(MeanLayerThickEdge.label());
+   Err = IOField::attachData(MeanLayerThickEdge.label(), MeanLayerThickEdge);
 }
 
 } // namespace OMEGA
