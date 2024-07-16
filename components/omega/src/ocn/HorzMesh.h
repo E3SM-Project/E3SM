@@ -87,21 +87,27 @@ class HorzMesh {
    // Note that all sizes are actual counts (1-based) so that loop extents
    // should always use the 0:NCellsXX-1 form.
 
-   I4 NCellsOwned; ///< Number of cells owned by this task
-   I4 NCellsAll;   ///< Total number of local cells (owned + all halo)
-   I4 NCellsSize;  ///< Array size (incl padding, bndy cell) for cell arrays
+   Array1DI4 NCellsHalo;      ///< num cells owned+halo for halo layer
+   HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
+   I4 NCellsOwned;            ///< Number of cells owned by this task
+   I4 NCellsAll;  ///< Total number of local cells (owned + all halo)
+   I4 NCellsSize; ///< Array size (incl padding, bndy cell) for cell arrays
 
-   I4 NEdgesOwned;    ///< Number of edges owned by this task
-   I4 NEdgesAll;      ///< Total number (owned+halo) of local edges
+   Array1DI4 NEdgesHalo;      ///< num cells owned+halo for halo layer
+   HostArray1DI4 NEdgesHaloH; ///< num cells owned+halo for halo layer
+   I4 NEdgesOwned;            ///< Number of edges owned by this task
+   I4 NEdgesAll;              ///< Total number (owned+halo) of local edges
    I4 NEdgesSize;     ///< Array length (incl padding, bndy) for edge dim
    I4 MaxCellsOnEdge; ///< Max number of cells sharing an edge
    I4 MaxEdges;       ///< Max number of edges around a cell
    I4 MaxEdges2;      ///< Max number of edges around a cell x2
 
-   I4 NVerticesOwned; ///< Number of vertices owned by this task
-   I4 NVerticesAll;   ///< Total number (owned+halo) of local vertices
-   I4 NVerticesSize;  ///< Array length (incl padding, bndy) for vrtx dim
-   I4 VertexDegree;   ///< Number of cells that meet at each vertex
+   Array1DI4 NVerticesHalo;      ///< num cells owned+halo for halo layer
+   HostArray1DI4 NVerticesHaloH; ///< num cells owned+halo for halo layer
+   I4 NVerticesOwned;            ///< Number of vertices owned by this task
+   I4 NVerticesAll;  ///< Total number (owned+halo) of local vertices
+   I4 NVerticesSize; ///< Array length (incl padding, bndy) for vrtx dim
+   I4 VertexDegree;  ///< Number of cells that meet at each vertex
 
    // Mesh connectivity
 
