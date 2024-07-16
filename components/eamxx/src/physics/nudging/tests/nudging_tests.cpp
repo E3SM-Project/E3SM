@@ -169,6 +169,9 @@ TEST_CASE("nudging_tests") {
       auto fine_h = fine.get_view<Real**,Host>();
       auto data_h = data.get_view<Real**,Host>();
       const bool is_pmid = data.name()=="p_mid";
+      const int nlevs_fine = 2*nlevs_data-1;
+      const int top = 0;
+      const int bot = nlevs_fine-1;
       for (int icol=0; icol<ncols_data; ++icol) {
         // Even entries match original data
         for (int ilev=0; ilev<nlevs_data; ++ilev) {
@@ -179,8 +182,6 @@ TEST_CASE("nudging_tests") {
           fine_h(icol,2*ilev+1) = (fine_h(icol,2*ilev)+fine_h(icol,2*ilev+2))/2;
         }
         if (not in_bounds) {
-          const int top = 0;
-          const int bot = 2*nlevs_data - 1;
           fine_h(icol,top) *= 0.5;
           fine_h(icol,bot) *= is_pmid ? 2 : 1;
         }

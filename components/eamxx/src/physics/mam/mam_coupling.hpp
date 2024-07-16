@@ -21,6 +21,7 @@ using view_2d       = typename KT::template view_2d<Real>;
 using view_3d       = typename KT::template view_3d<Real>;
 using const_view_1d = typename KT::template view_1d<const Real>;
 using const_view_2d = typename KT::template view_2d<const Real>;
+using const_view_3d = typename KT::template view_3d<const Real>;
 
 using complex_view_3d = typename KT::template view_3d<Kokkos::complex<Real>>;
 using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
@@ -76,7 +77,7 @@ constexpr int num_aero_tracers() {
 
 // Given a MAM aerosol mode index, returns a string denoting the symbolic
 // name of the mode.
-inline
+KOKKOS_INLINE_FUNCTION
 const char* aero_mode_name(const int mode) {
   static const char *mode_names[num_aero_modes()] = {
     "1",
@@ -87,9 +88,25 @@ const char* aero_mode_name(const int mode) {
   return mode_names[mode];
 }
 
+// Given a MAM aerosol species ID, returns a string denoting the symbolic
+// name of the species.
+KOKKOS_INLINE_FUNCTION
+const char* aero_species_name(const int species_id) {
+  static const char *species_names[num_aero_species()] = {
+    "soa",
+    "so4",
+    "pom",
+    "bc",
+    "nacl",
+    "dst",
+    "mom",
+  };
+  return species_names[species_id];
+}
+
 // Given a MAM aerosol-related gas ID, returns a string denoting the symbolic
 // name of the gas species.
-inline
+KOKKOS_INLINE_FUNCTION
 const char* gas_species_name(const int gas_id) {
   static const char *species_names[num_aero_gases()] = {
     "O3",
@@ -110,14 +127,14 @@ constexpr int max_field_name_len() {
   return 128;
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 size_t gpu_strlen(const char* s) {
   size_t l = 0;
   while (s[l]) ++l;
   return l;
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 void concat_2_strings(const char *s1, const char *s2, char *concatted) {
   size_t len1 = gpu_strlen(s1);
   for (size_t i = 0; i < len1; ++i)
@@ -128,7 +145,7 @@ void concat_2_strings(const char *s1, const char *s2, char *concatted) {
   concatted[len1+len2] = 0;
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 void concat_3_strings(const char *s1, const char *s2, const char *s3, char *concatted) {
   size_t len1 = gpu_strlen(s1);
   for (size_t i = 0; i < len1; ++i)
@@ -142,31 +159,31 @@ void concat_3_strings(const char *s1, const char *s2, const char *s3, char *conc
   concatted[len1+len2+len3] = 0;
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 char* int_aero_nmr_names(int mode) {
   static char int_aero_nmr_names_[num_aero_modes()][max_field_name_len()] = {};
   return int_aero_nmr_names_[mode];
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 char* cld_aero_nmr_names(int mode) {
   static char cld_aero_nmr_names_[num_aero_modes()][max_field_name_len()] = {};
   return cld_aero_nmr_names_[mode];
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 char* int_aero_mmr_names(int mode, int species) {
   static char int_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
   return int_aero_mmr_names_[mode][species];
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 char* cld_aero_mmr_names(int mode, int species) {
   static char cld_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
   return cld_aero_mmr_names_[mode][species];
 }
 
-inline
+KOKKOS_INLINE_FUNCTION
 char* gas_mmr_names(int gas_id) {
   static char gas_mmr_names_[num_aero_gases()][max_field_name_len()] = {};
   return gas_mmr_names_[gas_id];
@@ -176,7 +193,7 @@ char* gas_mmr_names(int gas_id) {
 
 // Given a MAM aerosol mode index, returns the name of the related interstitial
 // modal number mixing ratio field in EAMxx ("num_a<1-based-mode-index>")
-inline
+KOKKOS_INLINE_FUNCTION
 const char* int_aero_nmr_field_name(const int mode) {
   if (!int_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_a", aero_mode_name(mode), int_aero_nmr_names(mode));
@@ -186,7 +203,7 @@ const char* int_aero_nmr_field_name(const int mode) {
 
 // Given a MAM aerosol mode index, returns the name of the related cloudborne
 // modal number mixing ratio field in EAMxx ("num_c<1-based-mode-index>>")
-inline
+KOKKOS_INLINE_FUNCTION
 const char* cld_aero_nmr_field_name(const int mode) {
   if (!cld_aero_nmr_names(mode)[0]) {
     concat_2_strings("num_c", aero_mode_name(mode), cld_aero_nmr_names(mode));
@@ -199,13 +216,12 @@ const char* cld_aero_nmr_field_name(const int mode) {
 // field in EAMxx. The form of the field name is "<species>_a<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
-inline
+KOKKOS_INLINE_FUNCTION
 const char* int_aero_mmr_field_name(const int mode, const int species) {
   if (!int_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      auto aerosol_species_name =mam4::aero_id_short_name(aero_id);
-      concat_3_strings(aerosol_species_name.c_str(),
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
                        "_a", aero_mode_name(mode),
                        int_aero_mmr_names(mode, species));
     }
@@ -218,13 +234,12 @@ const char* int_aero_mmr_field_name(const int mode, const int species) {
 // field in EAMxx. The form of the field name is "<species>_c<1-based-mode-index>".
 // If the desired species is not present within the desire mode, returns a blank
 // string ("").
-inline
+KOKKOS_INLINE_FUNCTION
 const char* cld_aero_mmr_field_name(const int mode, const int species) {
   if (!cld_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      auto aerosol_species_name =mam4::aero_id_short_name(aero_id);
-      concat_3_strings(aerosol_species_name.c_str(),
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)),
                        "_c", aero_mode_name(mode),
                        cld_aero_mmr_names(mode, species));
     }
@@ -234,7 +249,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 
 // Given a MAM aerosol-related gas identifier, returns the name of its mass
 // mixing ratio field in EAMxx
-inline
+KOKKOS_INLINE_FUNCTION
 const char* gas_mmr_field_name(const int gas) {
   return const_cast<const char*>(gas_species_name(gas));
 }
@@ -247,7 +262,6 @@ struct WetAtmosphere {
   const_view_2d nc;      // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi;      // wet cloud ice water mass mixing ratio [kg cloud ice water / kg moist air]
   const_view_2d ni;      // wet cloud ice water number mixing ratio [# / kg moist air]
-  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -265,11 +279,12 @@ struct DryAtmosphere {
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
   const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
-  const_view_2d p_int;    // total pressure at grid interfaces [Pa]
+  const_view_2d p_int;     // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
   const_view_1d phis;      // surface geopotential [m2/s2]
+  const_view_2d omega;   // vertical pressure velocity [Pa/s]
 };
 
 // This type stores aerosol number and mass mixing ratios evolved by MAM. It
@@ -584,9 +599,12 @@ void compute_vertical_layer_heights(const Team& team,
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
-  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, dz);
+  // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
+  PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
+            dz);//output
   team.team_barrier();
-  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, z_iface);
+  PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
+   z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
 }
@@ -605,8 +623,9 @@ void compute_updraft_velocities(const Team& team,
   constexpr int nlev = mam4::nlev;
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
-    const auto rho = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
-    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
+    dry_atm.dz(i,k) = PF::calculate_dz(dry_atm.p_del(i,k), dry_atm.p_mid(i,k), dry_atm.T_mid(i,k), wet_atm.qv(i,k));
+    const auto rho  = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
+    dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(dry_atm.omega(i,k), rho);
   });
 }
 
@@ -704,6 +723,23 @@ void compute_wet_mixing_ratios(const Team& team,
     }
   });
 }
+
+// Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
+// "packs". Following function copies a 2d view till model levels
+inline
+void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
+                         const_view_2d &inp_view,             //input view to copy
+                         const int dim,                       //dimension till view should be copied
+                         view_2d &out_view) {                 //output view
+
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [&](int kk) {
+          out_view(icol, kk) = inp_view(icol, kk);
+        });
+      });
+ }
 
 // Because CUDA C++ doesn't allow us to declare and use constants outside of
 // KOKKOS_INLINE_FUNCTIONS, we define this macro that allows us to (re)define
@@ -885,6 +921,7 @@ void transfer_work_arrays_to_prognostics(const Real q[gas_pcnst()],
         progs.q_aero_i[m][a](k) = q[i];
         progs.q_aero_c[m][a](k) = qqcw[i];
       } else { // constituent is a modal number mixing ratio
+        int m = static_cast<int>(mode_index);
         progs.n_mode_i[m](k) = q[i];
         progs.n_mode_c[m](k) = qqcw[i];
       }

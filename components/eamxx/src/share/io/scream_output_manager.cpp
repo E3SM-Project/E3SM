@@ -17,6 +17,12 @@
 namespace scream
 {
 
+OutputManager::
+~OutputManager ()
+{
+  finalize();
+}
+
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
@@ -334,6 +340,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
   start_timer(timer_root);
+  start_timer("EAMxx::IO::" + m_params.name());
 
   // Check if this is a write step (and what kind)
   // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
@@ -545,6 +552,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
   }
 
+  stop_timer("EAMxx::IO::" + m_params.name());
   stop_timer(timer_root);
 }
 /*===============================================================================================*/
@@ -558,9 +566,25 @@ void OutputManager::finalize()
     scorpio::release_file (m_checkpoint_file_specs.filename);
   }
 
-  // Swapping with an empty mgr is the easiest way to cleanup.
-  OutputManager other;
-  std::swap(*this,other);
+  // Reset everything to a default constructed object.
+  // NOTE: it's themptying to std::swap(*this,OutputManager()),
+  //       but that calls ~OutputManager() on the destructor,
+  //       which in turns calls finalize, causing endless recursion.
+  m_output_streams = {};
+  m_geo_data_streams = {};
+  m_globals.clear();
+  m_io_comm = {};
+  m_params  = {};
+  m_filename_prefix = {};
+  m_time_bnds = {};
+  m_avg_type = {};
+  m_output_control = {};
+  m_checkpoint_control = {};
+  m_output_file_specs = {};
+  m_checkpoint_file_specs = {};
+  m_case_t0 = {};
+  m_run_t0 = {};
+  m_atm_logger = {};
 }
 
 long long OutputManager::res_dep_memory_footprint () const {

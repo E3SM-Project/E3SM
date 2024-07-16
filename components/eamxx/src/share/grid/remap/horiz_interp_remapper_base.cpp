@@ -124,6 +124,20 @@ create_layout (const FieldLayout& fl_in,
   std::vector<std::string> tdims_names;
   std::string vdim_name;
   switch (fl_in.type()) {
+    case LayoutType::Scalar0D: [[ fallthrough ]];
+    case LayoutType::Vector0D: [[ fallthrough ]];
+    case LayoutType::Tensor0D:
+      // 0d layouts are the same on all grids
+      fl_out = fl_in;
+      break;
+    case LayoutType::Scalar1D:
+      // 1d layouts require the grid correct number of levs
+      fl_out = grid->get_vertical_layout(midpoints);
+      break;
+    case LayoutType::Vector1D:
+      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
+      fl_out = grid->get_vertical_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
+      break;
     case LayoutType::Scalar2D:
       fl_out = grid->get_2d_scalar_layout();
       break;

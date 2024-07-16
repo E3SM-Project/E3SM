@@ -27,6 +27,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
+  using SC           = scream::shoc::Constants<Real>;
 
   using Spack                = typename SHF::Spack;
   using IntSmallPack         = typename SHF::IntSmallPack;
@@ -78,10 +79,14 @@ public:
       const Real cpair = C::Cpair;
       const Real ggr = C::gravit;
       const Real inv_ggr = 1/ggr;
+      const Real mintke = SC::mintke;
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
+
+        
+        cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
 
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
@@ -92,7 +97,7 @@ public:
         EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
-        tke(i,k) = ekat::max(sp(0.004), tke(i,k));
+        tke(i,k) = ekat::max(mintke, tke(i,k));
 
         // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
         // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
@@ -198,6 +203,8 @@ public:
     view_2d        thlm;
     view_2d        qw;
     view_2d        cloud_frac;
+    view_2d        cldfrac_liq;
+    view_2d        cldfrac_liq_prev;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -213,7 +220,8 @@ public:
                        const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
-                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
+                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
+                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -254,6 +262,8 @@ public:
       inv_exner = inv_exner_;
       thlm = thlm_;
       qw = qw_;
+      cldfrac_liq=cldfrac_liq_;
+      cldfrac_liq_prev=cldfrac_liq_prev_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -385,7 +395,7 @@ public:
     static constexpr int num_2d_vector_mid  = 18;
     static constexpr int num_2d_vector_int  = 12;
 #else
-    static constexpr int num_2d_vector_mid  = 23;
+    static constexpr int num_2d_vector_mid  = 22;
     static constexpr int num_2d_vector_int  = 13;
 #endif
     static constexpr int num_2d_vector_tr   = 1;

@@ -72,6 +72,9 @@ public:
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout (const bool midpoints) const;
+  FieldLayout get_vertical_layout (const bool midpoints,
+                                   const int vector_dim,
+                                   const std::string& vec_dim_name = e2str(FieldTag::Component)) const;
   virtual FieldLayout get_2d_scalar_layout () const = 0;
   virtual FieldLayout get_2d_vector_layout (const int vector_dim, const std::string& vec_dim_name) const = 0;
   virtual FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims,
@@ -142,7 +145,10 @@ public:
   }
 
   // Sets pre-existing field as geometry data.
-  void set_geometry_data (const Field& f);
+  // NOTE: setter is const, since we do allow adding new data even if grid is const
+  //       E.g., this allows atm procs to define coordinate vars for dimensions
+  //       peculiar to that process
+  void set_geometry_data (const Field& f) const;
   void delete_geometry_data (const std::string& name);
 
   bool has_geometry_data (const std::string& name) const {
@@ -244,7 +250,7 @@ protected:
   // The map lid->idx
   Field     m_lid_to_idx;
 
-  std::map<std::string,Field>  m_geo_fields;
+  mutable std::map<std::string,Field>  m_geo_fields;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;

@@ -153,11 +153,7 @@ struct DefaultThreadsDistribution {
   team_num_threads_vectors(const int num_parallel_iterations,
                            const ThreadPreferences tp = ThreadPreferences()) {
     return Parallel::team_num_threads_vectors_from_pool(
-#ifdef KOKKOS_ENABLE_DEPRECATED_CODE
-      ExecSpaceType::thread_pool_size()
-#else
-      ExecSpaceType::impl_thread_pool_size()
-#endif
+      ExecSpaceType().impl_thread_pool_size()
       , num_parallel_iterations, tp);
   }
 };
@@ -193,7 +189,7 @@ static
 typename std::enable_if<!OnGpu<ExecSpaceType>::value,int>::type
 get_num_concurrent_teams (const Kokkos::TeamPolicy<ExecSpaceType,Tags...>& policy) {
   const int team_size = policy.team_size();
-  const int concurrency = ExecSpaceType::concurrency();
+  const int concurrency = ExecSpaceType().concurrency();
   return (concurrency + team_size - 1) / team_size;
 }
 
@@ -201,9 +197,6 @@ template<typename ExecSpaceType, typename... Tags>
 static
 typename std::enable_if<OnGpu<ExecSpaceType>::value,int>::type
 get_num_concurrent_teams (const Kokkos::TeamPolicy<ExecSpaceType,Tags...>& policy) {
-  // const int team_size = policy.team_size() * policy.vector_length();
-  // const int concurrency = ExecSpaceType::concurrency();
-  // return (concurrency + team_size - 1) / team_size;
   return policy.league_size();
 }
 

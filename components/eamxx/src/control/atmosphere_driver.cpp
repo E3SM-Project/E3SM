@@ -200,9 +200,6 @@ setup_iop ()
                                                        hyam,
                                                        hybm);
 
-  auto dx_short_f = phys_grid->get_geometry_data("dx_short");
-  m_iop->set_grid_spacing(dx_short_f.get_view<const Real,Host>()());
-
   // Set IOP object in atm processes
   m_atm_process_group->set_iop(m_iop);
 }
@@ -729,6 +726,7 @@ void AtmosphereDriver::initialize_output_managers () {
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    params.rename(ekat::split(fname,"/").back());
     auto& checkpoint_pl = params.sublist("Checkpoint Control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
@@ -1614,7 +1612,7 @@ void AtmosphereDriver::run (const int dt) {
   // that quantity at the beginning of the timestep. Or they may need to store
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
-  for (auto it : m_output_managers) {
+  for (auto& it : m_output_managers) {
     it.init_timestep(m_current_ts,dt);
   }
 

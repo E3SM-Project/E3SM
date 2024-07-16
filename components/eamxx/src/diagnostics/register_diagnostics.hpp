@@ -23,6 +23,7 @@
 #include "diagnostics/aodvis.hpp"
 #include "diagnostics/number_path.hpp"
 #include "diagnostics/aerocom_cld.hpp"
+#include "diagnostics/atm_backtend.hpp"
 
 namespace scream {
 
@@ -36,9 +37,11 @@ inline void register_diagnostics () {
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
   diag_factory.register_product("z_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
-  diag_factory.register_product("geopotential_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("z_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("geopotential_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("geopotential_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("height_int",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product("height_mid",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("dz",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
   diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
@@ -53,6 +56,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("AerosolOpticalDepth550nm",&create_atmosphere_diagnostic<AODVis>);
   diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
+  diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
 }
 
 } // namespace scream

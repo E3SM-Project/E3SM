@@ -19,12 +19,10 @@ program convterr
   !
   integer :: im, jm
   
-  integer,  parameter :: ncube = 3000 !dimension of cubed-sphere grid
-!  integer,  parameter :: ncube = 540 !dimension of cubed-sphere grid
+  integer :: ncube !dimension of cubed-sphere grid
   !        integer,  parameter :: ncube = 361 ! for debugging
   
   integer*2,  allocatable, dimension(:,:) :: terr     ! global 30-sec terrain data
-  integer*1,  allocatable, dimension(:,:) :: landfrac ! global 30-sec land fraction
   
   integer :: alloc_error,dealloc_error  
   integer :: i,j,n,k,index                                ! index
@@ -44,7 +42,7 @@ program convterr
   
   real(r8) :: alpha, beta,da,wt,dlat
   integer  :: ipanel,icube,jcube
-  real(r8), allocatable, dimension(:,:,:)   :: weight,terr_cube,landfrac_cube,sgh30_cube
+  real(r8), allocatable, dimension(:,:,:)   :: weight,terr_cube,sgh30_cube
   integer , allocatable, dimension(:,:)     :: idx,idy,idp
   !
   real(r8) :: dx,dy
@@ -72,11 +70,31 @@ program convterr
   real(r8) :: vol,dx_rad,vol_cube,area_latlon,darea_latlon       ! latitude array
   real(r8), allocatable, dimension(:,:) :: darea_cube
 
+  INTEGER :: iargc
+
+  character(len=1024) :: raw_latlon_data_file,output_file,string_ncube
+  
+  iargc = command_argument_count()
+  if (iargc /= 3) then
+      print *, "Usage: <executable> raw_latlon_data_file output_file ncube"
+      stop
+  end if
+
+  call get_command_argument(1, raw_latlon_data_file)
+  call get_command_argument(2, output_file)
+  call get_command_argument(3, string_ncube)
+  read(string_ncube, *) ncube
+
+  write(*,*) "Raw lat/lon data file: ", trim(raw_latlon_data_file)
+  write(*,*) "Output file: ", trim(output_file)
+  write(*,*) "ncube: ", ncube
+
   !
   ! read in USGS data from netCDF file
   !
   !        status = nf_open('topo-lowres.nc', 0, ncid) !for debugging
-  status = nf_open('usgs-rawdata.nc', 0, ncid)
+  status = nf_open(raw_latlon_data_file, 0, ncid)
+  write(*,*) "Opening: ",TRIM(raw_latlon_data_file)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'lat', dimlatid)
@@ -91,12 +109,6 @@ program convterr
   
   WRITE(*,*) "lon-lat dimensions: ",im,jm
   
-  allocate ( landfrac(im,jm),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
-    stop
-  end if
-  
   allocate ( terr(im,jm),stat=alloc_error )
   if( alloc_error /= 0 ) then
     print*,'Program could not allocate space for terr'
@@ -105,26 +117,17 @@ program convterr
   
   allocate ( lon(im),stat=alloc_error )
   if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
+    print*,'Program could not allocate space for lon'
     stop
   end if
   
   allocate ( lat(jm),stat=alloc_error )
   if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
+    print*,'Program could not allocate space for lat'
     stop
   end if
   
   terr = -32768  ! integer*2
-  landfrac = -99.0
-  
-  status = NF_INQ_VARID(ncid, 'landfract', landid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  status = NF_GET_VAR_INT1(ncid, landid,landfrac)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  WRITE(*,*) "min/max of 30sec land fraction",MINVAL(landfrac),MAXVAL(landfrac)
-  
   
   status = NF_INQ_VARID(ncid, 'htopo', topoid)
   IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
@@ -152,16 +155,6 @@ program convterr
   if (status .ne. NF_NOERR) call handle_err(status)
   
   WRITE(*,*) 'done reading in USGS data from netCDF file'
-  
-  WRITE(*,*) "Adjustments to land fraction: Extend land fraction for Ross Ice shelf by"
-  WRITE(*,*) "setting all landfractions south of 79S to 1"
-  DO j=1,jm
-    IF (lat(j)<-79.0) THEN
-      DO i=1,im
-        landfrac(i,j) = 1
-      END DO
-    END IF
-  END DO
   
   WRITE(*,*) "compute volume for USGS raw data"
   vol = 0.0
@@ -197,12 +190,6 @@ program convterr
     stop
   end if
   terr_cube = 0.0
-  allocate ( landfrac_cube(ncube,ncube,6),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for terr_cube'
-    stop
-  end if
-  landfrac_cube = 0.0
   allocate ( idx(im,jm),stat=alloc_error )
   if( alloc_error /= 0 ) then
     print*,'Program could not allocate space for idx'
@@ -247,16 +234,32 @@ program convterr
       weight(icube,jcube,ipanel) = weight(icube,jcube,ipanel)+wt
       !
       terr_cube    (icube,jcube,ipanel)     = terr_cube    (icube,jcube,ipanel)+wt*DBLE(terr(i,j))
-      landfrac_cube(icube,jcube,ipanel)     = landfrac_cube(icube,jcube,ipanel)+wt*DBLE(landfrac(i,j))
       !
       ! save "index-association" for variance computation
       !
       idx(i,j) = icube
       idy(i,j) = jcube
       idp(i,j) = ipanel
+  !WRITE(*,*) "terr_cube(icube,jcube,ipanel) at j,i = ",icube,jcube,ipanel,j,i,terr_cube(icube,jcube,ipanel)
     END DO
   END DO
+  
 
+
+  DO k=1,6
+    DO j=1,ncube          
+      DO i=1,ncube
+        IF (ABS(weight(i,j,k))<1.0E-9) THEN
+          WRITE(*,*) "there is no lat-lon grid point in cubed sphere cell ",i,j,k
+          WRITE(*,*) "fatal error"
+          write(*,*) "weight     ",i,j,k,weight(i,j,k)
+          STOP
+        ELSE
+          terr_cube        (i,j,k) = terr_cube        (i,j,k)/weight(i,j,k)                
+        END IF
+      END DO
+    END DO
+  END DO
   WRITE(*,*) "min/max value of terr_cube:", MINVAL(terr_cube), MAXVAL(terr_cube)
   !
   ! compute volume of topography on cubed-sphere
@@ -306,8 +309,8 @@ program convterr
   !
   ! write data to NetCDF file
   !
-  CALL wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
-  DEALLOCATE(weight,terr,landfrac,idx,idy,idp,lat,lon)
+  CALL wrt_cube(ncube,terr_cube,sgh30_cube,raw_latlon_data_file,output_file)
+  DEALLOCATE(weight,terr,idx,idy,idp,lat,lon)
   WRITE(*,*) "done writing cubed sphere data"
 end program convterr
 
@@ -431,7 +434,7 @@ END SUBROUTINE CubedSphereABPFromRLL
 !
 ! write netCDF file
 ! 
-subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
+subroutine wrt_cube(ncube,terr_cube,sgh30_cube,raw_latlon_data_file,output_file)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
 #     include         <netcdf.inc>
@@ -440,7 +443,8 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   ! Dummy arguments
   !
   integer, intent(in) :: ncube
-  real (r8), dimension(6*ncube*ncube), intent(in) :: terr_cube,landfrac_cube,sgh30_cube
+  real (r8), dimension(6*ncube*ncube), intent(in) :: terr_cube,sgh30_cube
+  character(len=1024) :: raw_latlon_data_file, git_http, tmp_string, output_file
   !
   ! Local variables
   !
@@ -461,14 +465,12 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   integer  :: nc_grdcntrlat_id   ! netCDF grid center lat id
   integer  :: nc_grdcntrlon_id   ! netCDF grid center lon id
   integer  :: nc_terr_id
-  integer  :: nc_landfrac_id
   integer  :: nc_var_id
   
   
   integer, dimension(2) :: nc_dims2_id ! netCDF dim id array for 2-d arrays
   integer :: grid_dims
   
-  character(18), parameter :: grid_file_out = 'USGS-topo-cube.nc'
   character(90), parameter :: grid_name = 'equi-angular gnomonic cubed sphere grid'
   
   character (len=32) :: fout       ! NetCDF output file
@@ -510,13 +512,30 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
     end do
   end do
   
-  WRITE(*,*) "Create NetCDF file for output"
-  ncstat = nf_create (grid_file_out, NF_64BIT_OFFSET,nc_grid_id)
+  WRITE(*,*) "Create NetCDF file for output: ", TRIM(output_file)
+  ncstat = nf_create (TRIM(output_file), NF_64BIT_DATA,nc_grid_id)
   call handle_err(ncstat)
   
   ncstat = nf_put_att_text (nc_grid_id, NF_GLOBAL, 'title',len_trim(grid_name), grid_name)
   call handle_err(ncstat)
+
+  ncstat = nf_put_att_text (nc_grid_id, NF_GLOBAL, 'raw_topo',len_trim(raw_latlon_data_file), TRIM(raw_latlon_data_file)) 
+  call handle_err(ncstat)
+
+  git_http='https://github.com/E3SM.git (modified according to https://github.com/NCAR/Topo.git)'
+
+  ncstat = nf_put_att_text (nc_grid_id, NF_GLOBAL, 'source_code',len_trim(git_http), TRIM(git_http))
+  call handle_err(ncstat)
   
+  call DATE_AND_TIME(DATE=datestring)
+  tmp_string = 'Written on date: ' // datestring
+  status = nf_put_att_text (nc_grid_id,NF_GLOBAL,'history',len_trim(tmp_string), TRIM(tmp_string))
+  call handle_err(ncstat)
+
+  tmp_string='Peter Hjort Lauritzen (NCAR)'
+  ncstat = nf_put_att_text (nc_grid_id, NF_GLOBAL, 'author',len_trim(tmp_string), TRIM(tmp_string)) 
+  call handle_err(ncstat)
+
   WRITE(*,*) "define grid size dimension"
   ncstat = nf_def_dim (nc_grid_id, 'grid_size', 6*ncube*ncube, nc_gridsize_id)
   call handle_err(ncstat)
@@ -545,13 +564,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   ncstat = nf_def_var (nc_grid_id, 'terr', NF_DOUBLE,1, nc_gridsize_id, nc_terr_id)
   call handle_err(ncstat)
   ncstat = nf_put_att_text (nc_grid_id, nc_terr_id, 'units',1, 'm')
-  call handle_err(ncstat)
-  
-  WRITE(*,*) "define landfrac_cube array"
-  ncstat = nf_def_var (nc_grid_id, 'LANDFRAC', NF_DOUBLE,1, nc_gridsize_id, nc_landfrac_id)
-  call handle_err(ncstat)
-  ncstat = nf_put_att_text (nc_grid_id, nc_landfrac_id, 'long_name',70,&
-       'land ocean transition mask: ocean (0), continent (1), transition (0-1)')
   call handle_err(ncstat)
   
   WRITE(*,*) "define sgh30_cube array"
@@ -584,9 +596,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   call handle_err(ncstat)
   
   ncstat = nf_put_var_double(nc_grid_id, nc_terr_id, terr_cube)
-  call handle_err(ncstat)
-  
-  ncstat = nf_put_var_double(nc_grid_id, nc_landfrac_id, landfrac_cube)
   call handle_err(ncstat)
   
   ncstat = nf_put_var_double(nc_grid_id, nc_var_id, sgh30_cube)

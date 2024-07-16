@@ -207,6 +207,21 @@ size_t dtype_size (const std::string& dtype) {
   return 0;
 }
 
+int pio_iotype (IOType iotype) {
+  int iotype_int;
+  auto& s = ScorpioSession::instance();
+  switch(iotype){
+    case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
+    case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
+    case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
+    case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
+    case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
+    default:
+      EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
+  }
+  return iotype_int;
+}
+
 // ====================== Local utilities ========================== //
 
 namespace impl {
@@ -313,9 +328,9 @@ void init_subsystem(const ekat::Comm& comm, const int atm_id)
   s.pio_rearranger = PIO_REARR_SUBSET;
   s.pio_format     = PIO_64BIT_DATA;
 #if PIO_USE_PNETCDF
-  s.pio_type_default = PIO_IOTYPE_PNETCDF;
+  s.pio_type_default = pio_iotype(IOType::PnetCDF);
 #elif PIO_USE_NETCDF
-  s.pio_type_default = PIO_IOTYPE_NETCDF;
+  s.pio_type_default = pio_iotype(IOType::NetCDF);
 #else
 #error "Standalone EAMxx requires either PNETCDF or NETCDF iotype to be available in Scorpio"
 #endif
@@ -395,9 +410,7 @@ void register_file (const std::string& filename,
   if (f.mode == Unset) {
     // First time we ask for this file. Call PIO open routine(s)
     int err;
-    int iotype_int = iotype==IOType::DefaultIOType
-                   ? s.pio_type_default
-                   : static_cast<int>(iotype);
+    int iotype_int = pio_iotype(iotype);
     if (mode & Read) {
       auto write = mode & Write ? PIO_WRITE : PIO_NOWRITE;
       err = PIOc_openfile(s.pio_sysid,&f.ncid,&iotype_int,filename.c_str(),write);
@@ -1378,12 +1391,50 @@ T get_attribute (const std::string& filename,
   if (varname=="GLOBAL") {
     varid = PIO_GLOBAL;
   } else {
-    varid = impl::get_var(filename,varname,"scorpio::set_any_attribute").ncid;
+    varid = impl::get_var(filename,varname,"scorpio::get_attribute").ncid;
   }
 
+  // If the attribute type does not match T, we need a temporary, since we can't pass T* where pio expects
+  // a different type of pointer
+  int att_type, err;
+  err = PIOc_inq_atttype(pf.file->ncid,varid,attname.c_str(),&att_type);
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_atttype");
+
   T val;
-  int err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
+  if (att_type!=nctype(get_dtype<T>())) {
+
+    if (att_type==PIO_INT) {
+      int tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_INT64) {
+      std::int64_t tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_FLOAT) {
+      float tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else if (att_type==PIO_DOUBLE) {
+      double tmp;
+      err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&tmp));
+      check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+      val = tmp;
+    } else {
+      EKAT_ERROR_MSG (
+          "Unrecognized/unsupported att type\n"
+          " - filename: " + filename + "\n"
+          " - varname : " + varname  + "\n"
+          " - attname : " + attname  + "\n"
+          " - attype  : " + std::to_string(att_type) + "\n");
+    }
+  } else {
+    err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),reinterpret_cast<void*>(&val));
+    check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","get_att");
+  }
 
   return val;
 }
@@ -1421,12 +1472,12 @@ std::string get_attribute (const std::string& filename,
   int err;
   PIO_Offset len;
   err = PIOc_inq_attlen(pf.file->ncid,varid,attname.c_str(),&len);
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","inq_attlen");
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_attlen");
 
   std::string val(len,'\0');
 
   err = PIOc_get_att(pf.file->ncid,varid,attname.c_str(),val.data());
-  check_scorpio_noerr(err,filename,"attribute",attname,"set_attribute","put_att");
+  check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","put_att");
 
   return val;
 }

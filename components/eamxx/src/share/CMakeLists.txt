@@ -27,6 +27,7 @@ set(SHARE_SRC
   grid/remap/horiz_interp_remapper_data.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
+  iop/intensive_observation_period.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
@@ -60,7 +61,9 @@ target_include_directories(scream_share PUBLIC
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
-endif ()
+else()
+  target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
+endif()
 
 target_link_libraries(scream_share PUBLIC ekat pioc)
 target_compile_options(scream_share PUBLIC

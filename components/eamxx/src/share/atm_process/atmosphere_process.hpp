@@ -1,8 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include "control/intensive_observation_period.hpp"
-
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
@@ -282,6 +281,10 @@ public:
   // Set IOP object
   virtual void set_iop(const iop_ptr& iop) {
     m_iop = iop;
+  }
+
+  std::shared_ptr<logger_t> get_logger () const {
+    return m_atm_logger;
   }
 
 protected:
