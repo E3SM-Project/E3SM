@@ -578,25 +578,41 @@ be lost if SCREAM_HACK_XML is not enabled.
     <e3sm_casename>${CASE}</e3sm_casename>
   </e3sm_parameters>
 
-  <!-- Settings for IOP -->
+  <!-- Default settings for DP-EAMxx -->
   <iop_options>
     <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
     <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
-    <iop_file COMPSET=".*DYCOMSrf01">${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc</iop_file>
     <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
-    <target_latitude COMPSET=".*DYCOMSrf01">31.5</target_latitude>
     <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
-    <target_longitude COMPSET=".*DYCOMSrf01">238.5</target_longitude>
     <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>
-    <iop_dosubsidence COMPSET=".*DYCOMSrf01">true</iop_dosubsidence>
     <iop_srf_prop type="logical" doc="Use IOP file specified surface values in surface coupling importer.">false</iop_srf_prop>
-    <iop_srf_prop COMPSET=".*DYCOMSrf01">true</iop_srf_prop>
     <iop_nudge_uv type="logical" doc="Nudge winds to those in the IOP file.">false</iop_nudge_uv>
     <iop_nudge_tq type="logical" doc="Nudge thermodynamics to those in the IOP file.">false</iop_nudge_tq>
     <iop_nudge_tq_low type="real" doc="Lowest layer to apply nudging for t and q (pressure in hPa).">1100</iop_nudge_tq_low>
     <iop_nudge_tq_high type="real" doc="Highest layer to apply nudging for t and q (pressure in hPa).">0</iop_nudge_tq_high>
     <iop_nudge_tscale type="real" doc="Time scale to nudge thermodynamics or winds to.">10800</iop_nudge_tscale>
     <iop_coriolis type="logical" doc="Apply coriolis forcing to winds based on large scale winds in IOP file.">false</iop_coriolis>
+
+    <!-- Case Specific Settings for DP-EAMxx tests, overwrite certain defaults above -->
+    <!-- ARM97 -->
+    <iop_file COMPSET=".*ARM97">${DIN_LOC_ROOT}/atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iop_file>
+    <target_latitude COMPSET=".*ARM97">36.605</target_latitude>
+    <target_longitude COMPSET=".*ARM97">262.515</target_longitude>
+    <iop_srf_prop COMPSET=".*ARM97">true</iop_srf_prop>
+    <iop_nudge_uv COMPSET=".*ARM97">true</iop_nudge_uv>
+
+    <!-- RCE -->
+    <iop_file COMPSET=".*RCE">${DIN_LOC_ROOT}/atm/cam/scam/iop/RCE_iopfile_4scam.nc</iop_file>
+    <target_latitude COMPSET=".*RCE">0.0</target_latitude>
+    <target_longitude COMPSET=".*RCE">0.0</target_longitude>
+
+    <!-- General compset; set to DYCOMSrf01 settings by default for testing purposes -->
+    <iop_file COMPSET=".*General">${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc</iop_file>
+    <target_latitude COMPSET=".*General">31.5</target_latitude>
+    <target_longitude COMPSET=".*General">238.5</target_longitude>
+    <iop_dosubsidence COMPSET=".*General">true</iop_dosubsidence>
+    <iop_srf_prop COMPSET=".*General">true</iop_srf_prop>
+
   </iop_options>
 
   <!-- Homme control namelist -->
@@ -649,13 +665,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
-    <se_ne_x COMPSET=".*DYCOMSrf01">5</se_ne_x>
+    <se_ne_x COMPSET=".*DP-EAMxx">5</se_ne_x>
     <se_ne_y>0</se_ne_y>
-    <se_ne_y COMPSET=".*DYCOMSrf01">5</se_ne_y>
+    <se_ne_y COMPSET=".*DP-EAMxx">5</se_ne_y>
     <se_lx>0</se_lx>
-    <se_lx COMPSET=".*DYCOMSrf01">50000</se_lx>
+    <se_lx COMPSET=".*DP-EAMxx">50000</se_lx>
     <se_ly>0</se_ly>
-    <se_ly COMPSET=".*DYCOMSrf01">50000</se_ly>
+    <se_ly COMPSET=".*DP-EAMxx">50000</se_ly>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>

@@ -75,19 +75,19 @@
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DP-DYCOMSrf01</alias> <!-- DP-EAMxx DYCOMSrf01 case -->
-      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%DYCOMSrf01</lname>
+      <alias>F2010-SCREAMv1-DP-General</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts for all cases.  For testing purposes set to DYCOMSrf01 case -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%General</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset -->
-      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+      <alias>F2010-SCREAMv1-DP-ARM97</alias> <!-- DP-EAMxx ARM97 case -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%ARM97</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
-      <alias>F2000-SCREAMv1-RCE-DP</alias> <!-- RCE compset for DP-EAMxx -->
+      <alias>F2000-SCREAMv1-DP-RCE</alias> <!-- RCE compset for DP-EAMxx -->
       <lname>2000_SCREAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
@@ -98,11 +98,13 @@
       <values>
         <value  compset=".*DYAMOND-1">2016-08-01</value>
         <value  compset=".*DYAMOND-2">2020-01-20</value>
-        <value  compset=".*DYCOMSrf01">1999-07-10</value>
+        <value  compset=".*General">1999-07-10</value>
+        <value  compset=".*ARM97">1999-06-23</value>
+        <value  compset=".*RCE">2000-01-01</value>
       </values>
     </entry>
 
-    <!-- DP-EAMxx specific xml vars -->
+    <!-- DP-EAMxx specific xml vars, set some general DP-EAMxx defaults -->
     <entry id="ATM_NCPL">
       <values>
         <value  compset=".*DP-EAMxx">864</value>
@@ -121,39 +123,44 @@
       </values>
     </entry>
 
-    <entry id="PTS_LAT">
-      <values>
-        <value  compset=".*DYCOMSrf01">31.5</value>
-      </values>
-    </entry>
-
-    <entry id="PTS_LON">
-      <values>
-        <value  compset=".*DYCOMSrf01">238.5</value>
-      </values>
-    </entry>
-
     <entry id="PTS_NX">
       <values>
-        <value  compset=".*DYCOMSrf01">225</value>
+        <value  compset=".*DP-EAMxx">225</value>
       </values>
     </entry>
 
     <entry id="PTS_NY">
       <values>
-        <value  compset=".*DYCOMSrf01">1</value>
+        <value  compset=".*DP-EAMxx">1</value>
       </values>
     </entry>
 
     <entry id="ICE_NX">
       <values>
-        <value  compset=".*DYCOMSrf01">225</value>
+        <value  compset=".*DP-EAMxx">225</value>
       </values>
     </entry>
 
     <entry id="ICE_NY">
       <values>
-        <value  compset=".*DYCOMSrf01">1</value>
+        <value  compset=".*DP-EAMxx">1</value>
+      </values>
+    </entry>
+
+    <!-- Set some case specific DP-EAMxx defaults for testing -->
+    <entry id="PTS_LAT">
+      <values>
+        <value  compset=".*General">31.5</value>
+        <value  compset=".*ARM97">36.605</value>
+        <value  compset=".*RCE">0.0</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_LON">
+      <values>
+        <value  compset=".*General">238.5</value>
+        <value  compset=".*ARM97">262.515</value>
+        <value  compset=".*RCE">0.0</value>
       </values>
     </entry>
 
