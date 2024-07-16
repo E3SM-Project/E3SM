@@ -83,7 +83,7 @@ create_horiz_remapper (
   const int ncols_data = scorpio::get_dimlen(spa_data_file,"ncol");
   const int nswbands   = scorpio::get_dimlen(spa_data_file,"swband");
   const int nlwbands   = scorpio::get_dimlen(spa_data_file,"lwband");
-  scorpio::eam_pio_closefile(spa_data_file);
+  scorpio::release_file(spa_data_file);
 
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of code)
@@ -114,8 +114,8 @@ create_horiz_remapper (
 
   const auto layout_2d   = tgt_grid->get_2d_scalar_layout();
   const auto layout_ccn3 = tgt_grid->get_3d_scalar_layout(true);
-  const auto layout_sw   = tgt_grid->get_3d_vector_layout(true,SWBND,nswbands);
-  const auto layout_lw   = tgt_grid->get_3d_vector_layout(true,LWBND,nlwbands);
+  const auto layout_sw   = tgt_grid->get_3d_vector_layout(true,nswbands,"swband");
+  const auto layout_lw   = tgt_grid->get_3d_vector_layout(true,nlwbands,"lwband");
   const auto nondim = ekat::units::Units::nondimensional();
 
   Field ps          (FieldIdentifier("PS",        layout_2d,  nondim,tgt_grid->name()));
@@ -491,8 +491,8 @@ void SPAFunctions<S,D>
 
   const int ncols    = sw_layout.dim(COL);
   const int nlevs    = sw_layout.dim(LEV);
-  const int nswbands = sw_layout.dim(SWBND);
-  const int nlwbands = lw_layout.dim(LWBND);
+  const int nswbands = sw_layout.dim("swband");
+  const int nlwbands = lw_layout.dim("lwband");
 
   Kokkos::deep_copy(spa_input.PS,ps);
   Kokkos::fence();

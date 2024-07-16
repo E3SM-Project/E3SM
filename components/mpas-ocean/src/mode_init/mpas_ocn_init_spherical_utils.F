@@ -19,11 +19,13 @@
 
 module ocn_init_spherical_utils
 
+   use shr_kind_mod, only: SHR_KIND_R8
+   use shr_const_mod
+
    use mpas_kind_types
    use mpas_io_units
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
    use mpas_stream_manager
 
    use ocn_config
@@ -293,15 +295,15 @@ contains
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
         do iCell = 1, nCellsSolve
-           fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
+           fCell(iCell) = 2.0_RKIND * SHR_CONST_OMEGA * sin(latCell(iCell))
         end do
 
         do iVertex = 1, nVerticesSolve
-           fVertex(iVertex) = 2.0_RKIND * omega * sin( latVertex(iVertex) )
+           fVertex(iVertex) = 2.0_RKIND * SHR_CONST_OMEGA * sin( latVertex(iVertex) )
         end do
 
         do iEdge = 1, nEdgesSolve
-           fEdge(iEdge) = 2.0_RKIND * omega * sin( latEdge(iEdge) )
+           fEdge(iEdge) = 2.0_RKIND * SHR_CONST_OMEGA * sin( latEdge(iEdge) )
         end do
 
         block_ptr => block_ptr % next

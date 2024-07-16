@@ -354,6 +354,20 @@ std::vector<std::string> filename_glob(const std::vector<std::string>& patterns)
 // Use globloc for each filename pattern
 std::vector<std::string> globloc(const std::string& pattern);
 
+constexpr int eamxx_swbands() {
+  // This function returns the total number of SW bands in RRTMGP,
+  return 14;
+}
+
+constexpr int eamxx_vis_swband_idx() {
+  // This function returns the index of the visible SW band in RRTMGP,
+  // which currently (as of 2024-04-23) is supposed to be 10.
+  // This index is used in the AODVis diagnostic, and should ideally
+  // be shared across interested processes for further diagnostics.
+  // This index (10) corresponds to the band that has wavelength 550 nm.
+  return 10;
+}
+
 } // namespace scream
 
 #endif // SCREAM_UTILS_HPP

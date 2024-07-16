@@ -238,8 +238,6 @@ void HommeDynamics
   if (trace_gases_workaround.is_restart()) return; // always false b/c it hasn't been set yet
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
-  auto molmol = mol/mol;
-  molmol.set_string("mol/mol");
   const auto& rgn = m_cgll_grid->name();
   const auto& pgn = m_phys_grid->name();
   const auto rnc = m_cgll_grid->get_num_local_dofs();
@@ -247,10 +245,10 @@ void HommeDynamics
   const auto nlev = m_cgll_grid->get_num_vertical_levels();
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   for (const auto& e : trace_gases_workaround.get_active_gases()) {
-    add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), molmol, rgn, ps);
+    add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), mol/mol, rgn, ps);
     // 'Updated' rather than just 'Computed' so that it gets written to the
     // restart file.
-    add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), molmol, pgn, ps);
+    add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), mol/mol, pgn, ps);
   }
   trace_gases_workaround.set_remapper(gm->create_remapper(m_cgll_grid, m_dyn_grid));
 }
