@@ -45,7 +45,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   view_3d qtracers_;
-  view_3d d_qtracers_dt_;
+  view_3d ptend_q_;
 
   // inputs
   // FIXME: collect all inputs and outputs together

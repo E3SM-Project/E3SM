@@ -30,7 +30,7 @@ void compute_tendencies(
     MAMDryDep::view_2d qqcw_[mam4::aero_model::pcnst],
 
     // outputs
-    MAMDryDep::view_3d d_qtracers_dt, MAMDryDep::view_2d aerdepdrycw,
+    MAMDryDep::view_3d ptend_q, MAMDryDep::view_2d aerdepdrycw,
     MAMDryDep::view_2d aerdepdryis,
 
     // work arrays
@@ -43,7 +43,7 @@ void compute_tendencies(
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
   auto printb = [](const std::string &name, const double &val) {
-    std::cout << name << ":" << std::setprecision(15) << val << std::endl;
+    // std::cout << name << ":" << std::setprecision(15) << val << std::endl;
   };
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   // FIXME: WHY we are using a new policy here?? can't we get it from the
@@ -140,12 +140,57 @@ void compute_tendencies(
             // input-outputs
             qqcw,
             // outputs
-            ekat::subview(d_qtracers_dt, icol), ptend_lq,
+            ekat::subview(ptend_q, icol), ptend_lq,
             ekat::subview(aerdepdrycw, icol), ekat::subview(aerdepdryis, icol),
             // work arrays
             rho, vlc_dry, vlc_trb, vlc_grv, dqdt_tmp);
         printb("aft:qqcw:", qqcw[23](63));
+        printb("aft:ptend:", ptend_q(0, 63, 23));
       });  // parallel_for for ncols
+}
+
+void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
+                              const int ncol, const int nlev,
+                              // output
+                              const mam_coupling::AerosolState dry_aero) {
+  const auto policy =
+      ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
+          1, nlev);
+  static constexpr int nmodes = mam4::AeroConfig::num_modes();
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
+              for(int m = 0; m < nmodes; ++m) {
+                dry_aero.int_aero_nmr[m](icol, kk) +=
+                    ptend_q(icol, kk, mam4::ConvProc::numptrcw_amode(m)) * dt;
+                for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
+                  if(-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
+                    dry_aero.int_aero_mmr[m][a](icol, kk) +=
+                        ptend_q(icol, kk,
+                                mam4::ConvProc::lmassptrcw_amode(a, m)) *
+                        dt;
+              }
+            });  // parallel_for nlevs
+      });
+}
+
+void update_cloudborne_mmrs(
+    const MAMDryDep::view_2d qqcw[mam4::aero_model::pcnst], const double dt,
+    const int ncol, const int nlev_,
+    // output
+    const mam_coupling::AerosolState dry_aero) {
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m],
+                      qqcw[mam4::ConvProc::numptrcw_amode(m)]);
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      if(dry_aero.cld_aero_mmr[m][a].data()) {
+        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a],
+                          qqcw[mam4::ConvProc::lmassptrcw_amode(a, m)]);
+      }
+    }
+  }
 }
 
 void populated_fraction_landuse(MAMDryDep::view_1d flu[11], const int ncol) {

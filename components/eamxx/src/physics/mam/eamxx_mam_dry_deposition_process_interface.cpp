@@ -361,8 +361,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // FIXME: comment what they are and units.....
   qtracers_ = view_3d("qtracers_", ncol_, nlev_, pcnst);
 
-  rho_           = view_2d("rho", ncol_, nlev_);
-  d_qtracers_dt_ = view_3d("d_qtracers_dt_", ncol_, nlev_, pcnst);
+  rho_     = view_2d("rho", ncol_, nlev_);
+  ptend_q_ = view_3d("ptend_q_", ncol_, nlev_, pcnst);
 
   for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
     for(int j = 0; j < aerosol_categories_; ++j) {
@@ -388,12 +388,16 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                         dry_aero_);
+  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                          dry_aero_);
 }  // initialize_impl
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
+  auto printb = [](const std::string &name, const double &val) {
+    std::cout << name << ":" << std::setprecision(15) << val << std::endl;
+  };
+
   using DryDep           = mam4::DryDeposition;
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
@@ -441,7 +445,33 @@ void MAMDryDep::run_impl(const double dt) {
                           .get_view<Real **>();
 
   populated_fraction_landuse(fraction_landuse_, ncol_);
-  // std::cout<<"fraction_landuse_:"<<fraction_landuse_[1](0)<<std::endl;
+  for(int m = 0; m < num_aero_modes; ++m) {
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    printb("inter_before:", dry_aero_.int_aero_nmr[m](0, 63));
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(m, a);
+
+      if(strlen(int_mmr_field_name) > 0) {
+        printb("inter_before:", dry_aero_.int_aero_mmr[m][a](0, 63));
+      }
+    }
+  }
+
+  for(int m = 0; m < num_aero_modes; ++m) {
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+
+    printb("cld_before:", dry_aero_.cld_aero_nmr[m](0, 63));
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+
+      if(strlen(cld_mmr_field_name) > 0) {
+        printb("cld_before:", dry_aero_.cld_aero_mmr[m][a](0, 63));
+      }
+    }
+  }
+
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
@@ -450,13 +480,53 @@ void MAMDryDep::run_impl(const double dt) {
                      // Inouts-outputs
                      qqcw_,
                      // Outputs
-                     d_qtracers_dt_, aerdepdrycw_, aerdepdryis_,
+                     ptend_q_, aerdepdrycw_, aerdepdryis_,
                      // work arrays
                      rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
+
+  // Update the interstitial aerosols using ptend.
+  update_interstitial_mmrs(ptend_q_, dt, ncol_, nlev_,  // inputs
+                           dry_aero_);                  // output
+
+  // Update the interstitial aerosols
+  update_cloudborne_mmrs(qqcw_, dt, ncol_, nlev_,  // inputs
+                         dry_aero_);               // output
+
+  for(int m = 0; m < num_aero_modes; ++m) {
+    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    printb("inter_after:", dry_aero_.int_aero_nmr[m](0, 63));
+    std::cout << int_nmr_field_name << std::endl;
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(m, a);
+
+      if(strlen(int_mmr_field_name) > 0) {
+        printb("inter_after:", dry_aero_.int_aero_mmr[m][a](0, 63));
+        std::cout << int_mmr_field_name << std::endl;
+      }
+    }
+  }
+
+  for(int m = 0; m < num_aero_modes; ++m) {
+    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+
+    printb("cld_after:", dry_aero_.cld_aero_nmr[m](0, 63));
+    std::cout << cld_nmr_field_name << std::endl;
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char *cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+
+      if(strlen(cld_mmr_field_name) > 0) {
+        printb("cld_after:", dry_aero_.cld_aero_mmr[m][a](0, 63));
+        std::cout << cld_mmr_field_name << std::endl;
+      }
+    }
+  }
+
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
-  // Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
-  // Kokkos::fence();  // wait before returning to calling function
+  Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  Kokkos::fence();  // wait before returning to calling function
 }  // run_impl
 }  // namespace scream
