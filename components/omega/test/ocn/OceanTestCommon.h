@@ -257,14 +257,22 @@ inline Real maxVal(const Array2DReal &Arr) {
    return MaxVal;
 }
 
-inline Real sum(const Array2DReal &Arr) {
+inline Real sum(const Array2DReal &Arr, int Extent0, int Extent1) {
    Real Sum;
 
    parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1)},
+       {Extent0, Extent1},
        KOKKOS_LAMBDA(int I, int J, Real &Accum) { Accum += Arr(I, J); }, Sum);
 
    return Sum;
+}
+
+inline Real sum(const Array2DReal &Arr) {
+   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1));
+}
+
+inline Real sum(const Array2DReal &Arr, int Extent0) {
+   return sum(Arr, Extent0, Arr.extent_int(1));
 }
 
 struct ErrorMeasures {
