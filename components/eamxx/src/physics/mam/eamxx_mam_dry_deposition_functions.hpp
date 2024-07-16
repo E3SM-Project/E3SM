@@ -42,22 +42,20 @@ void compute_tendencies(
     MAMDryDep::view_2d vlc_grv_[mam4::AeroConfig::num_modes()]
                                [MAMDryDep::aerosol_categories_],
     MAMDryDep::view_2d dqdt_tmp_[mam4::aero_model::pcnst]) {
-  auto printb = [](const std::string &name, const double &val) {
-    // std::cout << name << ":" << std::setprecision(15) << val << std::endl;
-  };
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
-  // FIXME: WHY we are using a new policy here?? can't we get it from the
-  // run_impl??
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
-          1, nlev);
+          1, nlev);  // FIXME: change 1 to ncol
+
+  // Parallel loop over all the columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         static constexpr int num_aero_species =
             mam_coupling::num_aero_species();
 
         const int icol = team.league_rank();
-
+        // Parallel loop over all the levels to populate qtracers array using
+        // dry_aero
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, nlev), [&](const int lev) {
               for(int mode = 0; mode < num_aero_modes; ++mode) {
@@ -75,8 +73,11 @@ void compute_tendencies(
             });  // parallel_for for nlevs
         team.team_barrier();
 
+        // Create atm and progs objects
         mam4::Atmosphere atm    = atmosphere_for_column(dry_atm, icol);
         mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
+
+        // Extract column data (or 1d view) from 2d views of data
         mam4::ConstColumnView dgncur_awet[num_aero_modes];
         mam4::ConstColumnView wet_dens[num_aero_modes];
 
@@ -94,11 +95,9 @@ void compute_tendencies(
           fraction_landuse[i] = fraction_landuse_[i](icol);
         }
 
-        // FIXME: why mam4::ColumnView didn;t work here, why use
-        // Kokkos::View<Real *>. Solution: Use ColumnView in drydep.hpp as well.
         static constexpr int nmodes = mam4::AeroConfig::num_modes();
-        mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_],
-            vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
+        mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_];
+        mam4::ColumnView vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
 
         Real vlc_trb[nmodes][MAMDryDep::aerosol_categories_];
 
@@ -116,7 +115,7 @@ void compute_tendencies(
           qqcw[i]     = ekat::subview(qqcw_[i], icol);
           dqdt_tmp[i] = ekat::subview(dqdt_tmp_[i], icol);
         }
-        // Extract Prognostics
+        // Extract qqcw from Prognostics
         Kokkos::parallel_for(
             Kokkos::TeamThreadRange(team, nlev), KOKKOS_LAMBDA(int kk) {
               for(int m = 0; m < nmodes; ++m) {
@@ -128,8 +127,8 @@ void compute_tendencies(
                         progs.q_aero_c[m][a][kk];
               }
             });  // parallel_for nlevs
-        bool ptend_lq[pcnst];
-        printb("bef:qqcw:", qqcw[23](63));
+
+        bool ptend_lq[pcnst];  // currently unused
         mam4::aero_model_drydep(
             // inputs
             team, fraction_landuse, atm.temperature, atm.pressure,
@@ -144,11 +143,10 @@ void compute_tendencies(
             ekat::subview(aerdepdrycw, icol), ekat::subview(aerdepdryis, icol),
             // work arrays
             rho, vlc_dry, vlc_trb, vlc_grv, dqdt_tmp);
-        printb("aft:qqcw:", qqcw[23](63));
-        printb("aft:ptend:", ptend_q(0, 63, 23));
       });  // parallel_for for ncols
-}
+}  // Compute_tendencies ends
 
+// Update interstitial aerosols using ptend_q tendencies
 void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
                               const int ncol, const int nlev,
                               // output
@@ -173,12 +171,13 @@ void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
                         dt;
               }
             });  // parallel_for nlevs
-      });
-}
+      });        // parallel_for icol
+}  // Update interstitial aerosols ends
 
+// Update cloud borne aerosols using qqcw
 void update_cloudborne_mmrs(
     const MAMDryDep::view_2d qqcw[mam4::aero_model::pcnst], const double dt,
-    const int ncol, const int nlev_,
+    const int nlev_,
     // output
     const mam_coupling::AerosolState dry_aero) {
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -191,8 +190,9 @@ void update_cloudborne_mmrs(
       }
     }
   }
-}
+}  // Update cloud borne aerosols ends
 
+// FIXME: remove the following function
 void populated_fraction_landuse(MAMDryDep::view_1d flu[11], const int ncol) {
   Real temp[11] = {0.28044346587077795E-003, 0.26634987180780171E-001,
                    0.16803558403621365E-001, 0.18076055155371872E-001,

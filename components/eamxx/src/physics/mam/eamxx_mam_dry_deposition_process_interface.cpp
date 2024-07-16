@@ -3,57 +3,13 @@
 // Drydep functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
 
-#include "mam4xx/drydep.hpp"  //FIXME: Do we need it here???
-
 /*
-Inputs:
-
-Atmosphere:
-  temperature        "T_mid"
-  pressure           "p_mid"
-  interface_pressure "p_int"
-  hydrostatic_dp     "pseudo_density"
-
-Diagnostics:
-  tracer_mixing_ratio              "qtracers"
-  wet_geometric_mean_diameter_i    "dgncur_awet"
-  wet_density                      "wetdens"
-
-Diagnostic Scalar Parameters, one per column:
-  "Obukhov_length"
-  "surface_friction_velocty"
-  "land_fraction"
-  "ice_fraction"
-  "ocean_fraction"
-  "friction_velocity"
-  "aerodynamical_resistance"
-
-Prognostics:
-  n_mode_c    "mam_coupling::cld_aero_nmr_field_name(m)"
-  q_aero_c    "mam_coupling::int_aero_nmr_field_name(m)"
-
-
-
-Outputs:
-
-Diagnostics:
-  d_tracer_mixing_ratio_dt                 "d_qtracers_dt"
-  deposition_flux_of_cloud_borne_aerosols
-"deposition_flux_of_cloud_borne_aerosols"
-  deposition_flux_of_interstitial_aerosols
-"deposition_flux_of_interstitial_aerosols"
-
-Computed internally, could be exposed if needed by another process
-  vlc_grv(nlev) : dep velocity of gravitational settling [m/s]
-  vlc_trb(nlev) : dep velocity of turbulent dry deposition [m/s]
-  vlc_dry(nlev) : dep velocity, sum of vlc_grv and vlc_trb [m/s]
-
-Tendencies:
-  n_mode_c   "Tendencies"
-  q_aero_c   "Tendencies"
-
+-----------------------------------------------------------------
+NOTES:
+1. Add a CIME test and multi-process tests
+2. Ensure that the submodule for MAM4xx is the main branch
+-----------------------------------------------------------------
 */
-
 namespace scream {
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
@@ -490,8 +446,8 @@ void MAMDryDep::run_impl(const double dt) {
                            dry_aero_);                  // output
 
   // Update the interstitial aerosols
-  update_cloudborne_mmrs(qqcw_, dt, ncol_, nlev_,  // inputs
-                         dry_aero_);               // output
+  update_cloudborne_mmrs(qqcw_, dt, nlev_,  // inputs
+                         dry_aero_);        // output
 
   for(int m = 0; m < num_aero_modes; ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
