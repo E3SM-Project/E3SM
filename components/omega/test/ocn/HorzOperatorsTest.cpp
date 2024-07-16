@@ -395,6 +395,9 @@ int initOperatorsTest(const std::string &MeshFile) {
    MachEnv *DefEnv  = MachEnv::getDefaultEnv();
    MPI_Comm DefComm = DefEnv->getComm();
 
+   // Initialize the Logging system
+   initLogging(DefEnv);
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;

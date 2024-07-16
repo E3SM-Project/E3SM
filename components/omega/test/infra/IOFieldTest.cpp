@@ -24,6 +24,13 @@ int initIOFieldTest() {
 
    int Err = 0;
 
+   // Initialize the Machine Environment and retrieve the default environment
+   OMEGA::MachEnv::init(MPI_COMM_WORLD);
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+
+   // Initialize the Logging system
+   OMEGA::initLogging(DefEnv);
+
    // Define dimensions
    OMEGA::I4 NCellsSize  = 100;
    OMEGA::I4 NVertLevels = 64;

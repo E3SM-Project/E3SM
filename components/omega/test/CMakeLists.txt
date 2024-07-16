@@ -171,7 +171,7 @@ add_omega_test(
     METADATA_TEST
     testMetadata.exe
     infra/MetadataTest.cpp
-    ""
+    "-n;1"
 )
 
 ##################
@@ -193,7 +193,7 @@ add_omega_test(
     TIMEMGR_TEST
     testTimeMgr.exe
     infra/TimeMgrTest.cpp
-    ""
+    "-n;1"
 )
 
 ##################
@@ -204,7 +204,7 @@ add_omega_test(
     REDUCTIONS_TEST
     testReductions.exe
     base/ReductionsTest.cpp
-    "-n 2;--cpu-bind=cores"
+    "-n;2;--cpu-bind=cores"
 )
 
 ##################
@@ -215,5 +215,5 @@ add_omega_test(
     KOKKOS_TEST
     testKokkos.exe
     infra/OmegaKokkosTest.cpp
-    ""
+    "-n;1"
 )

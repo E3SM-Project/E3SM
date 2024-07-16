@@ -35,6 +35,8 @@ int initDecompTest() {
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
    MPI_Comm DefComm       = DefEnv->getComm();
 
+   OMEGA::initLogging(DefEnv);
+
    // Initialize the IO system
    Err = OMEGA::IO::init(DefComm);
    if (Err != 0)

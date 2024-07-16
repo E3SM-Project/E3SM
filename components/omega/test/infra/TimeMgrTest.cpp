@@ -14,6 +14,7 @@
 #include "TimeMgr.h"
 #include "DataTypes.h"
 #include "Logging.h"
+#include "mpi.h"
 
 //------------------------------------------------------------------------------
 // TimeFrac test
@@ -4334,6 +4335,16 @@ int main(int argc, char *argv[]) {
    OMEGA::I4 Err{0};
    OMEGA::I4 TotErr{0};
 
+   // Initialize the global MPI environment
+   MPI_Init(&argc, &argv);
+
+   // Initialize the Machine Environment and retrieve the default environment
+   OMEGA::MachEnv::init(MPI_COMM_WORLD);
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+
+   // Initialize the Logging system
+   OMEGA::initLogging(DefEnv);
+
    Err = testTimeFrac();
    TotErr += Err;
 
@@ -4351,6 +4362,8 @@ int main(int argc, char *argv[]) {
 
    Err = testClock();
    TotErr += Err;
+
+   MPI_Finalize();
 
    if (TotErr == 0) {
       LOG_INFO("TimeMgrTest: Successful completion");
