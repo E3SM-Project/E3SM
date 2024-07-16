@@ -118,6 +118,17 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
+  private:
+  template <bool HYDROSTATIC, bool CONSERVATIVE> void epoch1_blockOps();
+  template <bool RSPLIT_ZERO> void epoch2_scanOps();
+  template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch3_blockOps();
+  void epoch4_scanOps();
+  template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch5_colOps();
+  template <bool HYDROSTATIC, bool RSPLIT_ZERO, bool PGRAD_CORRECTION> void epoch6_blockOps();
+  template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch7_col();
+  void caar_compute();
+
+  public:
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
@@ -187,7 +198,7 @@ struct CaarFunctorImpl {
     if (m_theta_hydrostatic_mode) {
       // pi=pnh, and no wtens/phitens
       num_scalar_mid_buf -= 1;
-      num_scalar_int_buf -= 3;
+      num_scalar_int_buf -= 2;
 
       // No grad_w_i/v_i
       num_vector_int_buf -= 2;
@@ -197,7 +208,7 @@ struct CaarFunctorImpl {
       num_scalar_int_buf -=2;
       if (m_theta_hydrostatic_mode) {
         // No dp_i
-        num_scalar_int_buf -= 1;
+        //num_scalar_int_buf -= 1;
       }
     }
 
@@ -255,10 +266,10 @@ struct CaarFunctorImpl {
     mem += m_buffers.v_tens.size();
 
     // Interface scalars
-    if (!m_theta_hydrostatic_mode || m_rsplit==0) {
+    //if (!m_theta_hydrostatic_mode || m_rsplit==0) {
       m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nslots);
       mem += m_buffers.dp_i.size();
-    }
+    //}
 
     if (!m_theta_hydrostatic_mode) {
       m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nslots);
@@ -275,9 +286,9 @@ struct CaarFunctorImpl {
     if (!m_theta_hydrostatic_mode) {
       m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nslots);
       mem += m_buffers.phi_tens.size();
-      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
-      mem += m_buffers.w_tens.size();
     }
+    m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
+    mem += m_buffers.w_tens.size();
 
     // Interface vectors
     if (!m_theta_hydrostatic_mode) {
@@ -341,12 +352,25 @@ struct CaarFunctorImpl {
     profiling_resume();
 
     GPTLstart("caar compute");
+
+#undef TREY
+//#define TREY
+#ifdef TREY
+
+    caar_compute();
+    Kokkos::fence();
+    GPTLstop("caar compute");
+
+#else
+
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
     Kokkos::fence();
     GPTLstop("caar compute");
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
+
+#endif
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
@@ -539,8 +563,10 @@ struct CaarFunctorImpl {
       auto dp      = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
       auto div_vdp = Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp);
       auto pi      = Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp);
-      auto omega_i = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
-      auto pi_i    = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,1,igp,jgp);
+      //auto omega_i = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
+      auto omega_i = Homme::subview(m_buffers.w_tens,kv.team_idx,igp,jgp);
+      //auto pi_i    = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,1,igp,jgp);
+      auto pi_i    = Homme::subview(m_buffers.dp_i,kv.team_idx,igp,jgp);
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         pi_i(0)[0] = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
@@ -561,11 +587,13 @@ struct CaarFunctorImpl {
       kv.team_barrier();
 
       ColumnOps::column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
+      kv.team_barrier();
       // Average omega_i to midpoints, and change sign, since later
       //   omega=v*grad(pi)-average(omega_i)
       auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
       ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv,omega_i,omega,-1.0);
     });
+
     kv.team_barrier();
 
     // Compute grad(pi)
@@ -637,6 +665,7 @@ struct CaarFunctorImpl {
         // Compute interface horiz velocity
         auto u_i  = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
         auto v_i  = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+
         ColumnOps::compute_interface_values(kv.team,dp,dp_i,u,u_i);
         ColumnOps::compute_interface_values(kv.team,dp,dp_i,v,v_i);
 
@@ -1133,7 +1162,6 @@ struct CaarFunctorImpl {
         ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv, w_sq, Homme::subview(m_buffers.temp,kv.team_idx,igp,jgp),0.5);
       });
       kv.team_barrier();
-
       // Compute grad(average(w^2/2)). Store in wvor.
       m_sphere_ops.gradient_sphere(kv, Homme::subview(m_buffers.temp,kv.team_idx),
                                        wvor);
@@ -1174,8 +1202,8 @@ struct CaarFunctorImpl {
       if (!m_theta_hydrostatic_mode) {
         // Compute wvor = grad(average(w^2/2)) - average(w*grad(w))
         // Note: vtens is already storing grad(avg(w^2/2))
-        auto gradw_x = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
-        auto gradw_y = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+        auto gradw_x = Homme::subview(m_buffers.grad_w_i,kv.team_idx,0,igp,jgp);
+        auto gradw_y = Homme::subview(m_buffers.grad_w_i,kv.team_idx,1,igp,jgp);
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp);
 
         const auto w_gradw_x = [&gradw_x,&w_i] (const int ilev) -> Scalar {

@@ -200,7 +200,7 @@ private:
   std::vector<T*> ie_data_ptr;
   const Int nlev, qsized, ntimelev;
 
-#ifdef COMPOSE_ENABLE_GPU
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   COMPOSE_INLINE_FUNCTION static T& unused () {
     static T unused = 0;
     assert(0);
