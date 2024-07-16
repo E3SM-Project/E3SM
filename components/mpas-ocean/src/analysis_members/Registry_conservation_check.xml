@@ -149,11 +149,11 @@
 			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
 		/>
 		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
-			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_ais_river_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
 		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
-			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_ais_ice_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg s^-1"

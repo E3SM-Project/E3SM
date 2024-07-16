@@ -229,7 +229,8 @@ add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 # Namelist group: coupling #
 ############################
 
-add_default($nl, 'config_remove_AIS_coupler_runoff');
+add_default($nl, 'config_remove_ais_river_runoff');
+add_default($nl, 'config_remove_ais_ice_runoff');
 
 ######################################
 # Namelist group: shortwaveRadiation #

@@ -344,7 +344,8 @@
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 
 <!-- coupling -->
-<config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
+<config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
+<config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
