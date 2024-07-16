@@ -3530,8 +3530,6 @@ contains
                       end if
                       zTop = zBot
                    end do
-                else
-                    call mpas_log_write("config_sgr_flux_vertical_location not one of 'bottom', 'uniform', 'top'.", MPAS_LOG_CRIT)
                 end if
              else
                    fracAbsorbedSubglacialRunoff = 0.0_RKIND
@@ -4694,6 +4692,13 @@ contains
 
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &
                                           hollandJenkinsOn, err)
+
+      if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
+      else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
+      else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
+      else
+        call mpas_log_write("config_sgr_flux_vertical_location not one of 'bottom', 'uniform', 'top'.", MPAS_LOG_CRIT)
+      end if
 
     end subroutine ocn_diagnostics_init!}}}
 

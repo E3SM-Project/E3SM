@@ -221,8 +221,6 @@ contains
                       transmissionCoeffTop = transmissionCoeffBot
                    end do
                 end do
-            else
-                call mpas_log_write("config_sgr_flux_vertical_location not one of 'bottom', 'uniform', 'top'.", MPAS_LOG_CRIT)
             end if
         end if
 
