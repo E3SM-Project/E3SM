@@ -344,7 +344,7 @@
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 <config_flux_attenuation_coefficient_subglacial_runoff>0.001</config_flux_attenuation_coefficient_subglacial_runoff>
 <config_sgr_flux_vertical_location>'uniform'</config_sgr_flux_vertical_location>
-<config_use_sgr_opt_kpp>1</config_use_sgr_opt_kpp>
+<config_use_sgr_opt_kpp>.true.</config_use_sgr_opt_kpp>
 <config_use_sgr_opt_temp_prescribed>.false.</config_use_sgr_opt_temp_prescribed>
 <config_use_sgr_opt_salt_prescribed>.false.</config_use_sgr_opt_salt_prescribed>
 <config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>

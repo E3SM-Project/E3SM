@@ -3505,7 +3505,7 @@ contains
                                  -layerThickness(kmin, iCell)/ &
                            config_flux_attenuation_coefficient_runoff))
          if (trim(config_subglacial_runoff_mode) == 'data') then
-             if (config_use_sgr_opt_kpp == 1) then
+             if (config_use_sgr_opt_kpp) then
                 if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
                     fracAbsorbedSubglacialRunoff = 1.0_RKIND &
                           - exp( max(-100.0_RKIND, &

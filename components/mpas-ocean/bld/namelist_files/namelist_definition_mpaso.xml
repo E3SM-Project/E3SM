@@ -1204,11 +1204,11 @@ Valid values: 'top','uniform', 'bottom'.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_sgr_opt_kpp" type="integer"
+<entry id="config_use_sgr_opt_kpp" type="logical"
 	category="forcing" group="forcing">
-Option to use or not subglacial runoff (sgr) in kpp calculation.
+If true, include subglacial runoff (sgr) contribution in kpp calculation.
 
-Valid values: 0 - don't use, 1 - use
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

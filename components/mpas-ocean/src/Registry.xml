@@ -714,16 +714,16 @@
 					description="Selects the vertical location where subglacial runoff is fluxed."
 					possible_values="'top','uniform', 'bottom'"
 		/>
-		<nml_option name="config_use_sgr_opt_kpp" type="integer" default_value="1" units="non-dimensional"
-					description="option to use or not subglacial runoff (sgr) in kpp calculation"
-					possible_values="0 - don't use, 1 - use"
+		<nml_option name="config_use_sgr_opt_kpp" type="logical" default_value=".true."
+					description="If true, include subglacial runoff (sgr) contribution in kpp calculation."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_sgr_opt_temp_prescribed" type="logical" default_value=".false."
-					description="If true, subglacial runoff temperature is set to config_sgr_temperature_prescribed. If false, the temperature is set to local freezing point"
+					description="If true, subglacial runoff temperature is set to config_sgr_temperature_prescribed. If false, the temperature is set to local freezing point."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_sgr_opt_salt_prescribed" type="logical" default_value=".false."
-					description="If true, subglacial runoff salinity is set to config_sgr_salinity_prescribed. If false, the salinity is set to 0 PSU"
+					description="If true, subglacial runoff salinity is set to config_sgr_salinity_prescribed. If false, the salinity is set to 0 PSU."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_sgr_temperature_prescribed" type="real" default_value="0.0" units="C"
