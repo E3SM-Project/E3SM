@@ -593,7 +593,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <iop_nudge_tscale type="real" doc="Time scale to nudge thermodynamics or winds to.">10800</iop_nudge_tscale>
     <iop_coriolis type="logical" doc="Apply coriolis forcing to winds based on large scale winds in IOP file.">false</iop_coriolis>
 
-    <!-- Case Specific Settings for DP-EAMxx tests, overwrite certain defaults above -->
+    <!-- Case Specific Settings for DP-EAMxx tests, overwrite certain defaults set above -->
     <!-- ARM97 -->
     <iop_file COMPSET=".*ARM97">${DIN_LOC_ROOT}/atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iop_file>
     <target_latitude COMPSET=".*ARM97">36.605</target_latitude>

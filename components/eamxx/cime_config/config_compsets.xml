@@ -104,7 +104,7 @@
       </values>
     </entry>
 
-    <!-- DP-EAMxx specific xml vars, set some general DP-EAMxx defaults -->
+    <!-- DP-EAMxx specific xml vars, set some universal DP-EAMxx defaults for all test cases -->
     <entry id="ATM_NCPL">
       <values>
         <value  compset=".*DP-EAMxx">864</value>
