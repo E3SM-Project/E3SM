@@ -347,8 +347,8 @@
 <config_use_sgr_opt_kpp>1</config_use_sgr_opt_kpp>
 <config_use_sgr_opt_temp>'sgr'</config_use_sgr_opt_temp>
 <config_use_sgr_opt_salt>'sgr'</config_use_sgr_opt_salt>
-<config_sgr_temperature>0.0</config_sgr_temperature>
-<config_sgr_salinity>0.0</config_sgr_salinity>
+<config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
+<config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
 <config_subglacial_runoff_mode>'off'</config_subglacial_runoff_mode>
 
 <!-- coupling -->

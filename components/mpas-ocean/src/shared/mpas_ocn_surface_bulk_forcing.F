@@ -600,7 +600,7 @@ contains
                if ( trim(config_use_sgr_opt_temp) == 'prescribed' ) then
                    !sgr with fixed prescribed temperature (for debugging only)
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_temperature / areaCell(iCell)
+                       config_sgr_temperature_prescribed / areaCell(iCell)
                else if ( trim(config_use_sgr_opt_temp) == 'sgr' ) then
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
@@ -611,7 +611,7 @@ contains
                if ( trim(config_use_sgr_opt_salt) == 'prescribed' ) then
                    !sgr with fixed prescribed temperature (for debugging only)
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_salinity / areaCell(iCell)
+                       config_sgr_salinity_prescribed / areaCell(iCell)
                else if ( trim(config_use_sgr_opt_salt) == 'sgr' ) then
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND

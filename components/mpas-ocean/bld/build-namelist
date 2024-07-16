@@ -713,8 +713,8 @@ add_default($nl, 'config_sgr_flux_vertical_location');
 add_default($nl, 'config_use_sgr_opt_kpp');
 add_default($nl, 'config_use_sgr_opt_temp');
 add_default($nl, 'config_use_sgr_opt_salt');
-add_default($nl, 'config_sgr_temperature');
-add_default($nl, 'config_sgr_salinity');
+add_default($nl, 'config_sgr_temperature_prescribed');
+add_default($nl, 'config_sgr_salinity_prescribed');
 if ($OCN_SGR eq 'data') {
 	add_default($nl, 'config_subglacial_runoff_mode', 'val'=>"data");
 } else {

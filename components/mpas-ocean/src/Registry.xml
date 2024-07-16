@@ -720,17 +720,17 @@
 		/>
 		<nml_option name="config_use_sgr_opt_temp" type="character" default_value="sgr"
 					description="option to choose sgr temperature"
-					possible_values="'sgr' - this is 0 salinity, 'prescribed' - this salinity specified in config_sgr_salinity"
+					possible_values="'sgr' - this is temperature at local freezing point, 'prescribed' - this temperature specified in config_sgr_temperature_prescribed"
 		/>
 		<nml_option name="config_use_sgr_opt_salt" type="character" default_value="sgr"
 					description="option to choose sgr salinity"
-					possible_values="'sgr' - this is temperature at local freezing point, 'prescribed' - this temperature specified in config_sgr_temperature"
+					possible_values="'sgr' - this is 0 salinity, 'prescribed' - this salinity specified in config_sgr_salinity_prescribed"
 		/>
-		<nml_option name="config_sgr_temperature" type="real" default_value="0.0" units="C"
+		<nml_option name="config_sgr_temperature_prescribed" type="real" default_value="0.0" units="C"
 			        description="option to set fixed sgr temperature, applied when config_use_sgr_opt_temp = 'prescribed'"
 					possible_values="Any real number."
 		/>
-		<nml_option name="config_sgr_salinity" type="real" default_value="0.0" units="1.e-3"
+		<nml_option name="config_sgr_salinity_prescribed" type="real" default_value="0.0" units="1.e-3"
 					description="option to set fixed sgr salinity, applied when config_use_sgr_opt_salt = 'prescribed'"
 					possible_values="Any positive real number"
 		/>
