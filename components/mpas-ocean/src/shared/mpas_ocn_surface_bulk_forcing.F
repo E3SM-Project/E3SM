@@ -597,22 +597,22 @@ contains
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
            if (trim(config_subglacial_runoff_mode) == 'data') then
-               if ( trim(config_use_sgr_opt_temp) == 'prescribed' ) then
-                   !sgr with fixed prescribed temperature (for debugging only)
+               if ( config_use_sgr_opt_temp_prescribed ) then
+                   !sgr with fixed prescribed temperature
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
                        config_sgr_temperature_prescribed / areaCell(iCell)
-               else if ( trim(config_use_sgr_opt_temp) == 'sgr' ) then
+               else
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
                        ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
                                                  inLandIceCavity=.true.) / areaCell(iCell)
                end if
 
-               if ( trim(config_use_sgr_opt_salt) == 'prescribed' ) then
-                   !sgr with fixed prescribed temperature (for debugging only)
+               if ( config_use_sgr_opt_salt_prescribed ) then
+                   !sgr with fixed prescribed temperature
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
                        config_sgr_salinity_prescribed / areaCell(iCell)
-               else if ( trim(config_use_sgr_opt_salt) == 'sgr' ) then
+               else
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
                end if

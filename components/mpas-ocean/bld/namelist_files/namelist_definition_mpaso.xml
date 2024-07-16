@@ -1212,25 +1212,25 @@ Valid values: 0 - don't use, 1 - use
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_sgr_opt_temp" type="char*1024"
+<entry id="config_use_sgr_opt_temp_prescribed" type="logical"
 	category="forcing" group="forcing">
-Option to choose sgr temperature
+If true, subglacial runoff temperature is set to config_sgr_temperature_prescribed. If false, the temperature is set to local freezing point.
 
-Valid values: 'sgr', 'prescribed'.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_sgr_opt_salt" type="char*1024"
+<entry id="config_use_sgr_opt_salt_prescribed" type="logical"
 	category="forcing" group="forcing">
-Option to choose sgr salinity
+If true, subglacial runoff salinity is set to config_sgr_salinity_prescribed. If false, the salinity is set to 0 PSU.
 
-Valid values: 'sgr', 'prescribed'.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_sgr_temperature_prescribed" type="real"
 	category="forcing" group="forcing">
-Option to choose sgr temperature, applied when config_use_sgr_opt_temp = 'prescribed'
+Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true.
 
 Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
@@ -1238,7 +1238,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_sgr_salinity_prescribed" type="real"
 	category="forcing" group="forcing">
-Option to choose sgr salinity, applied when config_use_sgr_opt_temp = 'prescribed'
+Prescribed subglacial runoff salinity value, applied when config_use_sgr_opt_salt_prescribed = .true.
 
 Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
