@@ -143,7 +143,7 @@ def buildnml(case, caseroot, compname):
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.oQU240wLI.20240221.nc'
         if ocn_sgr == 'data':
-            data_sgr_file = 'DSGR.MALI.out2055.oQU240wLI.20240328.nc'
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.oQU240wLI.20240328.nc'
 
     elif ocn_grid == 'oQU120':
         decomp_date = '230424'
@@ -282,7 +282,7 @@ def buildnml(case, caseroot, compname):
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.SOwISC12to60E2r4.20210114.nc'
         if ocn_sgr == 'data':
-            data_sgr_file = 'DSGR.MALI.out2055.SOwISC12to60E2r4.20240328.nc'
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.SOwISC12to60E2r4.20240328.nc'
 
     elif ocn_grid == 'FRISwISC08to60E3r1':
         decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/partitions
@@ -359,7 +359,7 @@ def buildnml(case, caseroot, compname):
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.ECwISC30to60E2r1.20240221.nc'
         if ocn_sgr == 'data':
-            data_sgr_file = 'DSGR.MALI.out2055.ECwISC30to60E2r1.20240328.nc'
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.ECwISC30to60E2r1.20240328.nc'
 
     elif ocn_grid == 'IcoswISC30E3r5':
         decomp_date = '20231120'
@@ -380,7 +380,7 @@ def buildnml(case, caseroot, compname):
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
         if ocn_sgr == 'data':
-            data_sgr_file = 'DSGR.MALI.out2055.IcoswISC30E3r5.20240328.nc'
+            data_sgr_file = 'DSGR.massFlux.massFlux.MALI.out2055.IcoswISC30E3r5.20240328.nc'
 
     elif ocn_grid == 'IcosXISC30E3r7':
         decomp_date = '20240314'

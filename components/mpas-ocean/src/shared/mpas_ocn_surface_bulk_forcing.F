@@ -362,13 +362,13 @@ contains
       !$acc enter data copyin(subglacialRunoffFlux)
 
       !$acc parallel loop &
-      !$acc     present(surfaceThicknessFluxSubglacialRunoff, subglacialRunoffFlux, areaCell)
+      !$acc     present(surfaceThicknessFluxSubglacialRunoff, subglacialRunoffFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
           do iCell = 1, nCells
-            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / areaCell(iCell)
+            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / rho_sw
           end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -600,18 +600,18 @@ contains
                if ( config_use_sgr_opt_temp_prescribed ) then
                    !sgr with fixed prescribed temperature
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_temperature_prescribed / areaCell(iCell)
+                       config_sgr_temperature_prescribed / rho_sw
                else
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
                        ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
-                                                 inLandIceCavity=.true.) / areaCell(iCell)
+                                                 inLandIceCavity=.true.) / rho_sw
                end if
 
                if ( config_use_sgr_opt_salt_prescribed ) then
                    !sgr with fixed prescribed temperature
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_salinity_prescribed / areaCell(iCell)
+                       config_sgr_salinity_prescribed / rho_sw
                else
                    !sgr with temperature equal to the local freezing point of freshwater
                    tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND

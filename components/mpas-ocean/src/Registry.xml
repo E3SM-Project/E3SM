@@ -3807,7 +3807,7 @@
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="subglacialRunoffFlux" type="real" dimensions="nCells Time" units="m^3 s^-1"
+		<var name="subglacialRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from subglacial runoff at cell centers from ice sheet model. Positive into the ocean."
 			 packages="dataSubglacialRunoffFluxPKG"
 		/>
