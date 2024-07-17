@@ -25,6 +25,18 @@ if (NOT EAMXX_ENABLE_GPU)
   list(APPEND SHOC_SRCS
     eti/shoc_adv_sgs_tke.cpp
     eti/shoc_assumed_pdf.cpp
+    eti/shoc_assumed_pdf_compute_buoyancy_flux.cpp
+    eti/shoc_assumed_pdf_compute_cloud_liquid_variance.cpp
+    eti/shoc_assumed_pdf_compute_liquid_water_flux.cpp
+    eti/shoc_assumed_pdf_compute_qs.cpp
+    eti/shoc_assumed_pdf_compute_sgs_liquid.cpp
+    eti/shoc_assumed_pdf_compute_temperature.cpp
+    eti/shoc_assumed_pdf_inplume_correlations.cpp
+    eti/shoc_assumed_pdf_qw_parameters.cpp
+    eti/shoc_assumed_pdf_compute_s.cpp
+    eti/shoc_assumed_pdf_thl_parameters.cpp
+    eti/shoc_assumed_pdf_tilde_to_real.cpp
+    eti/shoc_assumed_pdf_vv_parameters.cpp
     eti/shoc_calc_shoc_varorcovar.cpp
     eti/shoc_calc_shoc_vertflux.cpp
     eti/shoc_check_length_scale_shoc_length.cpp
