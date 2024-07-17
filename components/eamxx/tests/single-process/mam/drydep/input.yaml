@@ -23,11 +23,20 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: /qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/3src/screami_unit_tests_mam4xx_ne2np4L72_LAT_m38.0068938875434_LON_16p9323465700125_DRYDEP.nc
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   fraction_landuse: 0.2
   w_updraft: 1e-5
   pbl_height: 0.0
+  Obukhov_length: -0.48167567011091336E+002
+  friction_velocity: 0.47569674433601039E+000
+  land_fraction: 0.14675684171817760E+000
+  ice_fraction: 0.00000000000000000E+000
+  ocean_fraction: 0.85324315828182240E+000
+  surface_friction_velocty: 0.27482164092221828E+000
+  aerodynamical_resistance: 0.45506166067091662E+002
+  dgnumwet: 0.41417721820867320E-007
+  wetdens: 0.15100083211582764E+004
 
 # The parameters for I/O control
 Scorpio:

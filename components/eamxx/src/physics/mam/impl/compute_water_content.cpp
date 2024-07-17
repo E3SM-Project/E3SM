@@ -23,7 +23,7 @@ void compute_water_content(const mam4::Prognostics &progs, int k,
   // extract aerosol tracers for this level into state_q, which is needed
   // for computing dry aerosol properties below
   // FIXME: we should eliminate this index translation stuff
-  constexpr int nvars = mam4::aero_model::pcnst;
+  constexpr int nvars = aero_model::pcnst;
   Real state_q[nvars]; // aerosol tracers for level k
   for (int imode = 0; imode < num_modes; ++imode) {
     int la, lc; // interstitial and cloudborne indices within state_q

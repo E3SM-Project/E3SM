@@ -145,7 +145,7 @@ void MAMDryDep::set_grids(
 
   //----------- Variables from other mam4xx processes ------------
   // Geometric mean wet diameter for number distribution [m]
-  add_field<Required>("dgncur_awet", scalar4d_mid, m, grid_name);
+  add_field<Required>("dgnumwet", scalar4d_mid, m, grid_name);
 
   // Wet density of interstitial aerosol [kg/m3]
   add_field<Required>("wetdens", scalar4d_mid, kg / m3, grid_name);
@@ -355,7 +355,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -368,7 +367,7 @@ void MAMDryDep::run_impl(const double dt) {
   // -------------------------------------------------------------
 
   // Geometric mean wet diameter for number distribution [m]
-  auto dgncur_awet_ = get_field_in("dgncur_awet").get_view<const Real ***>();
+  auto dgncur_awet_ = get_field_in("dgnumwet").get_view<const Real ***>();
   // Wet density of interstitial aerosol [kg/m3]
   auto wet_dens_ = get_field_in("wetdens").get_view<const Real ***>();
   // Obukhov length [m]
@@ -401,10 +400,10 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
-  //FIXME: remove it if it read from a file
+  // FIXME: remove it if it read from a file
   populated_fraction_landuse(fraction_landuse_, ncol_);
 
-  //Call drydeposition and get tendencies
+  // Call drydeposition and get tendencies
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
