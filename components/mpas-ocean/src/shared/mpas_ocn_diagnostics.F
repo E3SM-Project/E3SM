@@ -1707,7 +1707,8 @@ contains
                 activeTracers, layerThicknessEdgeFlux, normalVelocity, &
                 tracersSurfaceLayerValue, indexSurfaceLayerDepth, &
                 normalVelocitySurfaceLayer, &
-                surfaceFluxAttenuationCoefficient)!{{{
+                surfaceFluxAttenuationCoefficient, &
+                surfaceFluxAttenuationCoefficientRunoff)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
