@@ -1733,7 +1733,7 @@ contains
          indexSurfaceLayerDepth,     &!< [out] layer index at sfc lyr depth
          normalVelocitySurfaceLayer, &!< [out] avg velocity over sfc layer
          surfaceFluxAttenuationCoefficient, &!< [out] sfc flx attenuation
-         surfaceFluxAttenuationCoefficientRunoff &!< [out] sfc flx attenuation
+         surfaceFluxAttenuationCoefficientRunoff !< [out] sfc flx attenuation
 
       !-----------------------------------------------------------------
       ! local variables
