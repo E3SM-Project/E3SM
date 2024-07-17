@@ -19,7 +19,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d ocnfrac,
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
-    MAMDryDep::view_3d qtracers,  // FIXME: Make it a constant view
+    MAMDryDep::view_3d qtracers,
     MAMDryDep::view_1d fraction_landuse_[MAMDryDep::n_land_type],
     const MAMDryDep::const_view_3d dgncur_awet_,
     const MAMDryDep::const_view_3d wet_dens_,
@@ -45,7 +45,7 @@ void compute_tendencies(
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
-          1, nlev);  // FIXME: change 1 to ncol
+          ncol, nlev);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
@@ -192,7 +192,7 @@ void update_cloudborne_mmrs(
   }
 }  // Update cloud borne aerosols ends
 
-// FIXME: remove the following function
+// FIXME: remove the following function after implementing file read for landuse
 void populated_fraction_landuse(MAMDryDep::view_1d flu[11], const int ncol) {
   Real temp[11] = {0.28044346587077795E-003, 0.26634987180780171E-001,
                    0.16803558403621365E-001, 0.18076055155371872E-001,

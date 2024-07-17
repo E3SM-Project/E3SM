@@ -241,6 +241,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" nlev="128" >0</top_level_mam4xx>
     </mam4_aci>
 
+    <!-- MAM4xx-Dry Deposition -->
+    <mam4_drydep inherit="atm_proc_base">
+    </mam4_drydep>
+
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 

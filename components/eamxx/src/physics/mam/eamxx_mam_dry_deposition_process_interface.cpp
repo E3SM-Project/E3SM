@@ -8,6 +8,7 @@
 NOTES:
 1. Add a CIME test and multi-process tests
 2. Ensure that the submodule for MAM4xx is the main branch
+3. Read file for fractional landuse
 -----------------------------------------------------------------
 */
 namespace scream {
@@ -56,7 +57,7 @@ void MAMDryDep::set_grids(
   };
   const int num_aero_modes = mam_coupling::num_aero_modes();
   FieldLayout scalar4d_mid =
-      make_layout({ncol_, num_aero_modes, nlev_}, {"ncol", "num_modes", "lev"});
+      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "num_modes", "lev"});
 
   using namespace ekat::units;
 
@@ -243,16 +244,20 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Populate the wet atmosphere state with views from fields
   // FIMXE: specifically look which among these are actually used by the process
   wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+
+  // Following wet_atm vars are required only for building DS
   wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
   // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid   = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid   = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int   = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+
+  // Following dry_atm vars are required only for building DS
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
@@ -322,21 +327,21 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
     for(int j = 0; j < aerosol_categories_; ++j) {
-      Kokkos::resize(vlc_dry_[i][j], ncol_, nlev_);
-      Kokkos::resize(vlc_grv_[i][j], ncol_, nlev_);
-      Kokkos::resize(vlc_trb_[i][j], ncol_);
+      vlc_dry_[i][j] = view_2d("vlc_dry_[i][j]", ncol_, nlev_);
+      vlc_grv_[i][j] = view_2d("vlc_grv_[i][j]", ncol_, nlev_);
+      vlc_trb_[i][j] = view_1d("vlc_trb_[i][j]", ncol_);
     }
   }
 
   for(int i = 0; i < pcnst; ++i) {
-    Kokkos::resize(qqcw_[i], ncol_, nlev_);
-    Kokkos::resize(dqdt_tmp_[i], ncol_, nlev_);
+    qqcw_[i]     = view_2d("qqcw_[i]", ncol_, nlev_);
+    dqdt_tmp_[i] = view_2d("dqdt_tmp_[i]", ncol_, nlev_);
   }
 
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
   for(int i = 0; i < n_land_type; ++i) {
     // FIXME: This should come from a file reading
-    Kokkos::resize(fraction_landuse_[i], ncol_);
+    fraction_landuse_[i] = view_1d("fraction_landuse_[i]", ncol_);
   }
 
   //-----------------------------------------------------------------
@@ -350,13 +355,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  auto printb = [](const std::string &name, const double &val) {
-    std::cout << name << ":" << std::setprecision(15) << val << std::endl;
-  };
 
-  using DryDep           = mam4::DryDeposition;
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -400,34 +401,10 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
+  //FIXME: remove it if it read from a file
   populated_fraction_landuse(fraction_landuse_, ncol_);
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    printb("inter_before:", dry_aero_.int_aero_nmr[m](0, 63));
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
 
-      if(strlen(int_mmr_field_name) > 0) {
-        printb("inter_before:", dry_aero_.int_aero_mmr[m][a](0, 63));
-      }
-    }
-  }
-
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-
-    printb("cld_before:", dry_aero_.cld_aero_nmr[m](0, 63));
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-
-      if(strlen(cld_mmr_field_name) > 0) {
-        printb("cld_before:", dry_aero_.cld_aero_mmr[m][a](0, 63));
-      }
-    }
-  }
-
+  //Call drydeposition and get tendencies
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
@@ -448,37 +425,6 @@ void MAMDryDep::run_impl(const double dt) {
   // Update the interstitial aerosols
   update_cloudborne_mmrs(qqcw_, dt, nlev_,  // inputs
                          dry_aero_);        // output
-
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    printb("inter_after:", dry_aero_.int_aero_nmr[m](0, 63));
-    std::cout << int_nmr_field_name << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-
-      if(strlen(int_mmr_field_name) > 0) {
-        printb("inter_after:", dry_aero_.int_aero_mmr[m][a](0, 63));
-        std::cout << int_mmr_field_name << std::endl;
-      }
-    }
-  }
-
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-
-    printb("cld_after:", dry_aero_.cld_aero_nmr[m](0, 63));
-    std::cout << cld_nmr_field_name << std::endl;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-
-      if(strlen(cld_mmr_field_name) > 0) {
-        printb("cld_after:", dry_aero_.cld_aero_mmr[m][a](0, 63));
-        std::cout << cld_mmr_field_name << std::endl;
-      }
-    }
-  }
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
