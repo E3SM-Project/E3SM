@@ -355,6 +355,7 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
    // Compute numerical result
 
    LayerThicknessAuxVars LayerThicknessAux(Mesh, NVertLevels);
+   LayerThicknessAux.FluxThickEdgeChoice = Upwind;
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           LayerThicknessAux.computeVarsOnEdge(IEdge, KLevel, LayerThickCell,

@@ -17,7 +17,7 @@ class LayerThicknessAuxVars {
    Array2DReal MeanLayerThickEdge;
 
    // TODO(mwarusz): get this from config
-   FluxThickEdgeOption FluxThickEdgeChoice = Upwind;
+   FluxThickEdgeOption FluxThickEdgeChoice = Center;
 
    LayerThicknessAuxVars(const HorzMesh *Mesh, int NVertLevels);
 
