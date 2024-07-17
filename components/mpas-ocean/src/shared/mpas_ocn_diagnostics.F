@@ -4742,10 +4742,9 @@ contains
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &
                                           hollandJenkinsOn, err)
 
-      if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
-      else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
-      else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
-      else
+      if ( trim(config_sgr_flux_vertical_location) /= 'top' .and. &
+           trim(config_sgr_flux_vertical_location) /= 'uniform' .and. &
+           trim(config_sgr_flux_vertical_location) /= 'bottom' ) then
         call mpas_log_write("config_sgr_flux_vertical_location not one of 'bottom', 'uniform', 'top'.", MPAS_LOG_CRIT)
       end if
 
