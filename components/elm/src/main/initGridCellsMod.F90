@@ -13,7 +13,7 @@ module initGridCellsMod
   use spmdMod        , only : masterproc,iam
   use abortutils     , only : endrun
   use elm_varctl     , only : iulog
-  use elm_varctl     , only : use_fates, use_fates_sp
+  use elm_varctl     , only : use_fates, use_fates_sp, use_polygonal_tundra
   use elm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc_pp
@@ -22,7 +22,7 @@ module initGridCellsMod
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
   use initSubgridMod , only : elm_ptrs_compdown, elm_ptrs_check
-  use initSubgridMod , only : add_topounit, add_landunit, add_column, add_patch
+  use initSubgridMod , only : add_topounit, add_landunit, add_polygon_landunit, add_column, add_patch
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -351,7 +351,7 @@ contains
     logical , intent(in)    :: setdata           ! set info or just compute
     !
     ! !LOCAL VARIABLES:
-    integer  :: m,tgi                                ! index
+    integer  :: m,tgi,z                          ! index
     integer  :: npfts                            ! number of pfts in landunit
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
@@ -376,6 +376,7 @@ contains
     ! by using said mapping table
     
     if (npfts > 0) then
+      ! do standard veg landunit first
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
        
        ! Assume one column on the landunit
@@ -388,6 +389,27 @@ contains
           end if
           call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
        end do
+
+       ! add polygonal landunits and columns if feature turned on
+       ! continue to assume one column per landunit.
+       if (use_polygonal_tundra) then
+         ! loop over polygon types:
+         do z = 1,3
+           call add_polygon_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit, polytype = z)
+           call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+           ! add patch:
+           do m = natpft_lb,natpft_ub
+             if(use_fates .and. .not.use_fates_sp) then
+               p_wt = 1.0_r8/real(natpft_size,r8)
+             else
+               p_wt = wt_nat_patch(gi,topo_ind,m)
+             end if
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+             write(iulog,*) "polygon column counter:", z, pi, ci, li, ti
+           end do 
+         end do
+       end if 
+
     end if
 
   end subroutine set_landunit_veg_compete
@@ -526,7 +548,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: my_ltype                         ! landunit type for crops
-    integer  :: m,tgi                                ! index
+    integer  :: m,tgi,z                                ! index
     integer  :: npfts                            ! number of pfts in landunit
     real(r8) :: wtlunit2topounit                 ! landunit weight in topounit
     !------------------------------------------------------------------------
@@ -551,7 +573,7 @@ contains
        end if
 
        call add_landunit(li=li, ti=ti, ltype=my_ltype, wttopounit=wtlunit2topounit)
-       
+
        ! Set column and pft properties for this landunit 
        ! (each column has its own pft)
 
