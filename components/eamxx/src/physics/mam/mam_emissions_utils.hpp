@@ -21,7 +21,25 @@ using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 constexpr int n_srf_emiss = mam4::mo_srf_emissions::n_srf_emiss;
 constexpr int n_online_emiss = mam4::aero_model_emissions::n_online_emiss;
 
+// FIXME: this will need to change when we remap to flattened column idx
+constexpr int nlat_srf = 96;
+constexpr int	nlon_srf = 144;
+
+constexpr int nalti_online = 13;
+constexpr int nlat_online = 96;
+constexpr int nlon_online = 144;
+
 using namespace ShortFieldTagsNames;
+
+// std::map<std::string, std::vector<std::string>> map_srf_emiss_file_vars;
+
+inline void set_file_var_names(std::map<std::string, std::vector<std::string>> &var_map,
+                               std::map<std::string, int> &spec_map) {
+  // for (const auto &spec : spec_map) {
+  //   std::string spec_name = spec.first;
+  //   std::cout << "var_map[spec_name] = " << var_map[spec_name] << "\n";
+  // }
+}
 
 // struct AerosolSurfaceEmissionsHostData {
 //   // these have dim = n_species
