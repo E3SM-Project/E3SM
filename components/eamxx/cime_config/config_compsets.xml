@@ -99,7 +99,7 @@
         <value  compset=".*DYAMOND-1">2016-08-01</value>
         <value  compset=".*DYAMOND-2">2020-01-20</value>
         <value  compset=".*General">1999-07-10</value>
-        <value  compset=".*ARM97">1999-06-23</value>
+        <value  compset=".*ARM97">1997-06-23</value>
         <value  compset=".*RCE">2000-01-01</value>
       </values>
     </entry>
