@@ -8,3 +8,4 @@ set(MPI_PATH "/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/")
 set(NETCDF_PATH "/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/")
 execute_process(COMMAND /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+

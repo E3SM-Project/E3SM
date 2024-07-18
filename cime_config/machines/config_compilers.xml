@@ -2246,8 +2246,8 @@ flags should be captured within MPAS CMake files.
     <append> -llapack -lblas</append>
   </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0-magic/</MPI_PATH>
+  <NETCDF_PATH>/usr/gdata/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
   <SLIBS>
     <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
   </SLIBS>
