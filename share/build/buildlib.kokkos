@@ -50,9 +50,9 @@ OR
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    # If we are using Trilinos, we must use the Kokkos that comes with it
-    if case.get_value("USE_TRILINOS"):
-        print ("You case is using Trilinos and will use its Kokkos")
+    # If we are using Albany/Trilinos, we must use the Kokkos that comes with it
+    if case.get_value("USE_ALBANY") or case.get_value("USE_TRILINOS"):
+        print ("case is using Trilinos and will use its Kokkos")
         return
 
     installed_kokkos_dir = os.environ.get("Kokkos_ROOT")

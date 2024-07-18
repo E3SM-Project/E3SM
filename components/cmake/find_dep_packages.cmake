@@ -12,22 +12,23 @@
 # simply setting ${Package}_ROOT in their shell.
 
 # If using albany or trilinos, we should already have kokkos
-if(USE_TRILINOS)
+if (USE_ALBANY OR USE_TRILINOS)
   find_package(Trilinos REQUIRED)
-elseif(USE_KOKKOS)
+
+  # When Albany becomes a nice cmake package, that finds its deps, you can
+  # move this line above if (USE_TRILINOS), and turn that if in elseif.
+  # Until then, we must find Albany *after* trilinos has been found
+  if (USE_ALBANY)
+    find_package(Albany REQUIRED)
+  endif()
+elseif (USE_KOKKOS)
+  # Kokkos will be built in the sharedlibs if Kokkos_ROOT is
+  # unset.
   if (NOT DEFINED ENV{Kokkos_ROOT})
     # Kokkos will be built in the sharedlibs if Kokkos_ROOT is unset.
     set(ENV{Kokkos_ROOT} ${INSTALL_SHAREDPATH})
   endif()
-
   find_package(Kokkos REQUIRED)
-endif()
-
-# When Albany becomes a nice cmake package, that finds its deps, you can
-# move this line above if (USE_TRILINOS), and turn that if in elseif.
-# Until then, we must find Albany *after* trilinos has been found
-if (USE_ALBANY)
-  find_package(Albany REQUIRED)
 endif()
 
 if (USE_MOAB)
