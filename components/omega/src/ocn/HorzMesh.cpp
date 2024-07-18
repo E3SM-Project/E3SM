@@ -126,6 +126,12 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
+   // TODO: implement setMasks during Mesh constructor
+   // setMasks()
+
+   // set mesh scaling coefficients
+   setMeshScaling();
+
    // Associate this instance with a name
    AllHorzMeshes.emplace(Name, *this);
 
@@ -558,6 +564,51 @@ void HorzMesh::computeEdgeSign() {
 
    EdgeSignOnVertexH = createHostMirrorCopy(EdgeSignOnVertex);
 } // end computeEdgeSign
+
+//------------------------------------------------------------------------------
+// set computational masks for mesh elements
+// TODO: this is just a placeholder, implement actual masks for edges, cells,
+// and vertices
+void HorzMesh::setMasks(int NVertLevels) {
+
+   EdgeMask = Array2DR8("EdgeMask", NEdgesSize, NVertLevels);
+
+   OMEGA_SCOPE(O_EdgeMask, EdgeMask);
+
+   parallelFor(
+       {NEdgesAll}, KOKKOS_LAMBDA(int Edge) {
+          for (int K = 0; K < NVertLevels; ++K) {
+             O_EdgeMask(Edge, K) = 1.0;
+          }
+       });
+
+   EdgeMaskH = createHostMirrorCopy(EdgeMask);
+
+} // end setMasks
+
+//------------------------------------------------------------------------------
+// Set mesh scaling coefficients for mixing terms in momentum and tracer
+// equations so viscosity and diffusion scale with mesh.
+void HorzMesh::setMeshScaling() {
+
+   MeshScalingDel2 = Array1DR8("MeshScalingDel2", NEdgesSize);
+   MeshScalingDel4 = Array1DR8("MeshScalingDel4", NEdgesSize);
+
+   OMEGA_SCOPE(o_MeshScalingDel2, MeshScalingDel2);
+   OMEGA_SCOPE(o_MeshScalingDel4, MeshScalingDel4);
+
+   // TODO: implement mesh scaling by cell area, only no scaling
+   // option for now
+   parallelFor(
+       {NEdgesAll}, KOKKOS_LAMBDA(int Edge) {
+          o_MeshScalingDel2(Edge) = 1.0;
+          o_MeshScalingDel4(Edge) = 1.0;
+       });
+
+   MeshScalingDel2H = createHostMirrorCopy(MeshScalingDel2);
+   MeshScalingDel4H = createHostMirrorCopy(MeshScalingDel4);
+
+} // end setMeshScaling
 
 //------------------------------------------------------------------------------
 // Perform copy to device for mesh variables

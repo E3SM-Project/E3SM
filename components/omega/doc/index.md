@@ -34,6 +34,7 @@ userGuide/IOField
 userGuide/Halo
 userGuide/HorzMesh
 userGuide/HorzOperators
+userGuide/TendencyTerms
 userGuide/TimeMgr
 userGuide/Reductions
 ```
@@ -60,6 +61,7 @@ devGuide/IOField
 devGuide/Halo
 devGuide/HorzMesh
 devGuide/HorzOperators
+devGuide/TendencyTerms
 devGuide/TimeMgr
 devGuide/Reductions
 ```
