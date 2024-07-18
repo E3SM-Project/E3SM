@@ -93,6 +93,18 @@ private_except_cuda:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
+  // The orbital year, used for zenith angle calculations:
+  // If > 0, use constant orbital year for duration of simulation
+  // If < 0, use year from timestamp for orbital parameters
+  Int m_orbital_year;
+
+  // Orbital parameters, used for zenith angle calculations.
+  // If >= 0, bypass computation based on orbital year and use fixed parameters
+  // If <  0, compute based on orbital year, specified above
+  Real m_orbital_eccen;  // Eccentricity
+  Real m_orbital_obliq;  // Obliquity
+  Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+
   // configuration data (for the moment, we plan to be able to move this to
   // the device, so we can't use C++ strings)
   struct Config {

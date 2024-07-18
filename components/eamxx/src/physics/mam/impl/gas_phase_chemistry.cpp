@@ -371,7 +371,6 @@ mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
 KOKKOS_INLINE_FUNCTION
 void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
                          const Real photo_rates[mam4::mo_photo::phtcnt], // in
-                         const Real extfrc[mam4::gas_chemistry::extcnt], // in
                          Real q[mam4::gas_chemistry::gas_pcnst], // VMRs, inout
                          Real invariants[mam4::gas_chemistry::nfs]) { // out
   // constexpr Real rga = 1.0/haero::Constants::gravity;
@@ -380,13 +379,13 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
   constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
   constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;       // number of species with external forcing
-  constexpr int indexm = 0;  // FIXME: index of total atm density in invariants array
+  constexpr int indexm = mam4::gas_chemistry::indexm;       // index of total atm density in invariant array 
 
   constexpr int phtcnt = mam4::mo_photo::phtcnt; // number of photolysis reactions
 
   constexpr int itermax = mam4::gas_chemistry::itermax;
   constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
+  constexpr int nfs = mam4::gas_chemistry::nfs;
 
   // NOTE: vvv these arrays were copied from mam4xx/gas_chem_mechanism.hpp vvv
   constexpr int permute_4[gas_pcnst] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
@@ -420,6 +419,9 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // ... compute the column's invariants
   // Real h2ovmr = q[0];
   // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: not ported yet
+  for (int i = 0; i < nfs; ++i) {
+    invariants[i] = 0.1;
+  }
 
   // ... set rates for "tabular" and user specified reactions
   Real reaction_rates[rxntot];
@@ -439,13 +441,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // Photolysis rates at time = t(n+1)
   //===================================
 
-  // compute the rate of change from forcing
-  Real extfrc_rates[extcnt]; // [1/cm^3/s]
-  for (int mm = 0; mm < extcnt; ++mm) {
-    if (mm != synoz_ndx) {
-      extfrc_rates[mm] = extfrc[mm] / invariants[indexm];
-    }
-  }
 
   // ... Form the washout rates
   Real het_rates[gas_pcnst];
@@ -478,7 +473,7 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // solve chemical system implicitly
   Real prod_out[clscnt4], loss_out[clscnt4];
-  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc_rates, dt,
+  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, dt,
     permute_4, clsmap_4, factor, epsilon, prod_out, loss_out);
 
   // save h2so4 change by gas phase chem (for later new particle nucleation)

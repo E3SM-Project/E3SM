@@ -2,6 +2,7 @@
 #include <share/io/scream_scorpio_interface.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
+#include "share/util/scream_common_physics_functions.hpp"
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
 
@@ -12,6 +13,10 @@
 #include "impl/compute_o3_column_density.cpp"
 #include "impl/compute_water_content.cpp"
 #include "impl/gas_phase_chemistry.cpp"
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+
+// For EKAT units package
+#include "ekat/util/ekat_units.hpp"
 
 
 
@@ -276,6 +281,16 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   step_ = 0;
+ 
+  // Determine orbital year. If orbital_year is negative, use current year
+  // from timestamp for orbital year; if positive, use provided orbital year
+  // for duration of simulation.
+  m_orbital_year = m_params.get<Int>("orbital_year",-9999);
+ 
+  // Get orbital parameters from yaml file
+  m_orbital_eccen = m_params.get<Int>("orbital_eccentricity",-9999);
+  m_orbital_obliq = m_params.get<Int>("orbital_obliquity"   ,-9999);
+  m_orbital_mvelp = m_params.get<Int>("orbital_mvelp"       ,-9999);
 
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
@@ -623,6 +638,33 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   const auto& lwc =lwc_;
 
+
+  // Compute orbital parameters; these are used both for computing
+  // the solar zenith angle.
+  auto ts = timestamp();
+  double obliqr, lambm0, mvelpp;
+  auto orbital_year = m_orbital_year;
+  auto eccen = m_orbital_eccen;
+  auto obliq = m_orbital_obliq;
+  auto mvelp = m_orbital_mvelp;
+  if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
+    // use fixed orbital parameters; to force this, we need to set
+    // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
+    // our c2f bridge as shr_orb_undef_int_c2f
+    orbital_year = shr_orb_undef_int_c2f;
+  } else if (orbital_year < 0) {
+    // compute orbital parameters based on current year
+    orbital_year = ts.get_year();
+  }
+  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
+                     &obliqr, &lambm0, &mvelpp);
+  // Use the orbital parameters to calculate the solar declination and eccentricity factor
+  double delta, eccf;
+  auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
+  shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                     obliqr, &delta, &eccf);
+
+
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const int icol = team.league_rank(); // column index
@@ -652,7 +694,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-    // impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
+    impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays_icol;
@@ -671,16 +713,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real esfact = 0.0; // FIXME: earth-sun distance factor
 
     const auto& photo_rates_icol = ekat::subview(photo_rates, icol);
-#if 0
     mam4::mo_photo::table_photo(photo_rates_icol, atm.pressure, atm.hydrostatic_dp,
      atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, atm.liquid_mixing_ratio,
      atm.cloud_fraction, esfact, photo_table, photo_work_arrays_icol);
-#endif
-    // compute external forcings at time t(n+1) [molecules/cm^3/s]
-    constexpr int extcnt = mam4::gas_chemistry::extcnt;
-    view_2d extfrc; // FIXME: where to allocate? (nlev, extcnt)
-    mam4::mo_setext::Forcing forcings[extcnt]; // FIXME: forcings seem to require file data
-    //mam4::mo_setext::extfrc_set(forcings, extfrc);
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
@@ -735,16 +770,12 @@ void MAMMicrophysics::run_impl(const double dt) {
       for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
         photo_rates_k[i] = photo_rates_icol(k, i);
       }
-      /*Real extfrc_k[extcnt];
-      for (int i = 0; i < extcnt; ++i) {
-        extfrc_k[i] = extfrc(k, i);
-      }*/
       constexpr int nfs = mam4::gas_chemistry::nfs; // number of "fixed species"
       // NOTE: we compute invariants here and pass them out to use later with
       // NOTE: setsox
       Real invariants[nfs];
-      /*impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
-                                photo_rates_k, extfrc_k, vmr, invariants);*/
+      impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
+                                  photo_rates_k, vmr, invariants);
 
       //----------------------
       // Aerosol microphysics
