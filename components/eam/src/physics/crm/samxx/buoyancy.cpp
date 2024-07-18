@@ -80,8 +80,10 @@ void buoyancy() {
             real tmp8 = qci(k,j,i,icrm)-qi0(k,icrm);
             real tmp9 = tmp5+tmp7;
             real tmp10 = tmp6+tmp8;
-            real tmp11 = tmp_bou_kp-bou0(kp,icrm);
-            real tmp12 = tmp_bou   -bou0(k,icrm);
+            // real tmp11 = tmp_bou_kp-bou0(kp,icrm);
+            // real tmp12 = tmp_bou   -bou0(k,icrm);
+            real tmp11 = 9.81 * ( tmp_bou_kp - bou0(kp,icrm) ) / tmp_bou_kp;
+            real tmp12 = 9.81 * ( tmp_bou    - bou0(k ,icrm) ) / tmp_bou   ; 
             w2z = w2z+0.5*(tmp3*tmp3+tmp4*tmp4);
             wqcz = wqcz+0.5*(tmp3*tmp5+tmp4*tmp6);
             wqtz = wqtz+0.5*(tmp3*tmp9+tmp4*tmp10);
