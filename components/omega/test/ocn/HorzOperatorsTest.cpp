@@ -26,14 +26,14 @@ struct TestSetupPlane {
    Real Lx = 1;
    Real Ly = std::sqrt(3) / 2;
 
-   Real ExpectedDivErrorLInf   = 0.00124886886594427027;
-   Real ExpectedDivErrorL2     = 0.00124886886590974385;
-   Real ExpectedGradErrorLInf  = 0.00125026071878537952;
-   Real ExpectedGradErrorL2    = 0.00134354611117262204;
-   Real ExpectedCurlErrorLInf  = 0.161365663569699946;
-   Real ExpectedCurlErrorL2    = 0.161348016897141039;
-   Real ExpectedReconErrorLInf = 0.00450897496974901352;
-   Real ExpectedReconErrorL2   = 0.00417367308684470691;
+   ErrorMeasures ExpectedDivErrors   = {0.00124886886594427027,
+                                        0.00124886886590974385};
+   ErrorMeasures ExpectedGradErrors  = {0.00125026071878537952,
+                                        0.00134354611117262204};
+   ErrorMeasures ExpectedCurlErrors  = {0.161365663569699946,
+                                        0.161348016897141039};
+   ErrorMeasures ExpectedReconErrors = {0.00450897496974901352,
+                                        0.00417367308684470691};
 
    KOKKOS_FUNCTION Real exactScalar(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
@@ -73,14 +73,14 @@ struct TestSetupSphere1 {
    // TODO: get this from the mesh
    Real Radius = 6371220;
 
-   Real ExpectedDivErrorLInf   = 0.013659577398978353;
-   Real ExpectedDivErrorL2     = 0.00367052484586382743;
-   Real ExpectedGradErrorLInf  = 0.00187912292540628936;
-   Real ExpectedGradErrorL2    = 0.00149841802817334306;
-   Real ExpectedCurlErrorLInf  = 0.0271404735181308317;
-   Real ExpectedCurlErrorL2    = 0.025202316610921989;
-   Real ExpectedReconErrorLInf = 0.0206375134079833517;
-   Real ExpectedReconErrorL2   = 0.00692590524910695858;
+   ErrorMeasures ExpectedDivErrors   = {0.013659577398978353,
+                                        0.00367052484586382743};
+   ErrorMeasures ExpectedGradErrors  = {0.00187912292540628936,
+                                        0.00149841802817334306};
+   ErrorMeasures ExpectedCurlErrors  = {0.0271404735181308317,
+                                        0.025202316610921989};
+   ErrorMeasures ExpectedReconErrors = {0.0206375134079833517,
+                                        0.00692590524910695858};
 
    KOKKOS_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return Radius * std::cos(Lon) * std::pow(std::cos(Lat), 4);
@@ -119,14 +119,14 @@ struct TestSetupSphere2 {
    // TODO: get this from the mesh
    Real Radius = 6371220;
 
-   Real ExpectedDivErrorLInf   = 1.37734693033362766e-10;
-   Real ExpectedDivErrorL2     = 0.000484370621558727582;
-   Real ExpectedGradErrorLInf  = 0.000906351303388669991;
-   Real ExpectedGradErrorL2    = 0.000949206041390823676;
-   Real ExpectedCurlErrorLInf  = 0.00433205620592059647;
-   Real ExpectedCurlErrorL2    = 0.00204725417666192042;
-   Real ExpectedReconErrorLInf = 0.0254271921029878764;
-   Real ExpectedReconErrorL2   = 0.00419630561428921064;
+   ErrorMeasures ExpectedDivErrors   = {1.37734693033362766e-10,
+                                        0.000484370621558727582};
+   ErrorMeasures ExpectedGradErrors  = {0.000906351303388669991,
+                                        0.000949206041390823676};
+   ErrorMeasures ExpectedCurlErrors  = {0.00433205620592059647,
+                                        0.00204725417666192042};
+   ErrorMeasures ExpectedReconErrors = {0.0254271921029878764,
+                                        0.00419630561428921064};
 
    KOKKOS_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lat), 2);
@@ -201,17 +201,9 @@ int testDivergence(Real RTol) {
    ErrorMeasures DivErrors;
    Err += computeErrors(DivErrors, NumDivCell, ExactDivCell, Mesh, OnCell,
                         NVertLevels);
-
    // Check error values
-   if (!isApprox(DivErrors.LInf, Setup.ExpectedDivErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Divergence LInf FAIL");
-   }
-
-   if (!isApprox(DivErrors.L2, Setup.ExpectedDivErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Divergence L2 FAIL");
-   }
+   Err += checkErrors("OperatorsTest", "Divergence", DivErrors,
+                      Setup.ExpectedDivErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("OperatorsTest: Divergence PASS");
@@ -256,17 +248,9 @@ int testGradient(Real RTol) {
    ErrorMeasures GradErrors;
    Err += computeErrors(GradErrors, NumGradEdge, ExactGradEdge, Mesh, OnEdge,
                         NVertLevels);
-
    // Check error values
-   if (!isApprox(GradErrors.LInf, Setup.ExpectedGradErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Gradient LInf FAIL");
-   }
-
-   if (!isApprox(GradErrors.L2, Setup.ExpectedGradErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Gradient L2 FAIL");
-   }
+   Err += checkErrors("OperatorsTest", "Gradient", GradErrors,
+                      Setup.ExpectedGradErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("OperatorsTest: Gradient PASS");
@@ -310,17 +294,9 @@ int testCurl(Real RTol) {
    ErrorMeasures CurlErrors;
    Err += computeErrors(CurlErrors, NumCurlVertex, ExactCurlVertex, Mesh,
                         OnVertex, NVertLevels);
-
    // Check error values
-   if (!isApprox(CurlErrors.LInf, Setup.ExpectedCurlErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Curl LInf FAIL");
-   }
-
-   if (!isApprox(CurlErrors.L2, Setup.ExpectedCurlErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Curl L2 FAIL");
-   }
+   Err += checkErrors("OperatorsTest", "Curl", CurlErrors,
+                      Setup.ExpectedCurlErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("OperatorsTest: Curl PASS");
@@ -368,16 +344,9 @@ int testRecon(Real RTol) {
    ErrorMeasures ReconErrors;
    Err += computeErrors(ReconErrors, NumReconEdge, ExactReconEdge, Mesh, OnEdge,
                         NVertLevels);
-
-   if (!isApprox(ReconErrors.LInf, Setup.ExpectedReconErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Recon LInf FAIL");
-   }
-
-   if (!isApprox(ReconErrors.L2, Setup.ExpectedReconErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("OperatorsTest: Recon L2 FAIL");
-   }
+   // Check error values
+   Err += checkErrors("OperatorsTest", "Recon", ReconErrors,
+                      Setup.ExpectedReconErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("OperatorsTest: Recon PASS");
