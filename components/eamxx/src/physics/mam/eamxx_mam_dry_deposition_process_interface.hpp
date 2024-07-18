@@ -16,16 +16,17 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public scream::AtmosphereProcess {
  public:
-  using view_1d       = Field::view_dev_t<Real *>;
-  using view_2d       = Field::view_dev_t<Real **>;
-  using view_3d       = Field::view_dev_t<Real ***>;
-  using const_view_1d = Field::view_dev_t<const Real *>;
-  using const_view_3d = Field::view_dev_t<const Real ***>;
-
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   static constexpr int aerosol_categories_ =
       mam4::DryDeposition::aerosol_categories;
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
+
+  using view_1d       = Field::view_dev_t<Real *>;
+  using view_2d       = Field::view_dev_t<Real **>;
+  using view_3d       = Field::view_dev_t<Real ***>;
+  using view_4d       = Field::view_dev_t<Real ****>;
+  using const_view_1d = Field::view_dev_t<const Real *>;
+  using const_view_3d = Field::view_dev_t<const Real ***>;
 
  private:
   // number of horizontal columns and vertical levels
@@ -49,15 +50,15 @@ class MAMDryDep final : public scream::AtmosphereProcess {
 
   // inputs
   // FIXME: collect all inputs and outputs together
-  view_1d fraction_landuse_[mam4::DryDeposition::n_land_type];
-  view_1d vlc_trb_[mam4::AeroConfig::num_modes()][aerosol_categories_];
+  view_2d fraction_landuse_;
+  view_3d vlc_trb_;
   view_2d rho_;
 
-  view_2d vlc_dry_[mam4::AeroConfig::num_modes()][aerosol_categories_];
-  view_2d vlc_grv_[mam4::AeroConfig::num_modes()][aerosol_categories_];
-  view_2d dqdt_tmp_[mam4::aero_model::pcnst];
+  view_4d vlc_dry_;
+  view_4d vlc_grv_;
+  view_3d dqdt_tmp_;
 
-  view_2d qqcw_[mam4::aero_model::pcnst];
+  view_3d qqcw_;
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;

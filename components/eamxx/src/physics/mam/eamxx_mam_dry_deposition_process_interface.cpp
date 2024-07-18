@@ -325,24 +325,16 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   rho_     = view_2d("rho", ncol_, nlev_);
   ptend_q_ = view_3d("ptend_q_", ncol_, nlev_, pcnst);
 
-  for(int i = 0; i < mam4::AeroConfig::num_modes(); ++i) {
-    for(int j = 0; j < aerosol_categories_; ++j) {
-      vlc_dry_[i][j] = view_2d("vlc_dry_[i][j]", ncol_, nlev_);
-      vlc_grv_[i][j] = view_2d("vlc_grv_[i][j]", ncol_, nlev_);
-      vlc_trb_[i][j] = view_1d("vlc_trb_[i][j]", ncol_);
-    }
-  }
+  vlc_dry_ = view_4d("vlc_dry_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
+  vlc_grv_ = view_4d("vlc_grv_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
+  vlc_trb_ = view_3d("vlc_trb_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_);
 
-  for(int i = 0; i < pcnst; ++i) {
-    qqcw_[i]     = view_2d("qqcw_[i]", ncol_, nlev_);
-    dqdt_tmp_[i] = view_2d("dqdt_tmp_[i]", ncol_, nlev_);
-  }
+  qqcw_     = view_3d("qqcw_", pcnst, ncol_, nlev_);
+  dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
 
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
-  for(int i = 0; i < n_land_type; ++i) {
-    // FIXME: This should come from a file reading
-    fraction_landuse_[i] = view_1d("fraction_landuse_[i]", ncol_);
-  }
+  // FIXME: This should come from a file reading
+  fraction_landuse_ = view_2d("fraction_landuse_", n_land_type, ncol_);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
