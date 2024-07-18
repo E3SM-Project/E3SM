@@ -83,6 +83,33 @@ module PhotosynthesisType
 
      ! ED specific variables
      real(r8), pointer :: lmrcanopy_patch   (:)   => null()! sunlit leaf maintenance respiration rate (umol CO2/m**2/s) (ED specific)
+     ! photosynthesis acclimation by QZ
+     real(r8) , pointer :: vcmaxacctop_sun(:)      ! canopy top: maximum rate of carboxylation at t_veg10 (umol CO2/m**2/s)
+     real(r8) , pointer :: macc_sun(:)
+     real(r8) , pointer :: mcacc_sun(:)
+     real(r8) , pointer :: macc_mcacc_sun(:)
+     real(r8) , pointer :: jterm_sun(:)
+     real(r8) , pointer :: jmaxacctop_sun (:)      ! canopy top: maximum electron transport rate at t_veg10 (umol electrons/m**2/s)
+     real(r8) , pointer :: tpuacctop_sun  (:)      ! canopy top: triose phosphate utilization rate at t_veg10 (umol CO2/m**2/s)
+     real(r8) , pointer :: lmracctop_sun  (:)      ! canopy top: leaf maintenance respiration rate at t_veg10 (umol CO2/m**2/s)
+     real(r8) , pointer :: vcmax25top_sun (:)      ! canopy top: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
+     real(r8) , pointer :: jmax25top_sun  (:)      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s)
+     real(r8) , pointer :: tpu25top_sun   (:)      ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
+     real(r8) , pointer :: lmr25top_sun   (:)      ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+     real(r8) , pointer :: vcmaxacctop_sha(:)
+     real(r8) , pointer :: macc_sha(:)
+     real(r8) , pointer :: mcacc_sha(:)
+     real(r8) , pointer :: macc_mcacc_sha(:)
+     real(r8) , pointer :: jterm_sha(:)
+     real(r8) , pointer :: jmaxacctop_sha (:)
+     real(r8) , pointer :: tpuacctop_sha  (:)
+     real(r8) , pointer :: lmracctop_sha  (:)
+     real(r8) , pointer :: vcmax25top_sha (:)
+     real(r8) , pointer :: jmax25top_sha  (:)
+     real(r8) , pointer :: tpu25top_sha   (:)
+     real(r8) , pointer :: lmr25top_sha   (:)
+     real(r8) , pointer :: vcmax_25acc_patch     (:,:)
+     real(r8) , pointer :: jmax_25acc_patch      (:,:)
      ! Plant hydraulic stress specific variables
      real(r8), pointer, public :: ac_phs_patch      (:,:,:) => null()! patch Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
      real(r8), pointer, public :: aj_phs_patch      (:,:,:) => null()! patch RuBP-limited gross photosynthesis (umol CO2/m**2/s)
@@ -198,6 +225,32 @@ contains
     allocate(this%psncanopy_patch   (begp:endp))           ; this%psncanopy_patch   (:)   = spval
 
     allocate(this%lmrcanopy_patch   (begp:endp))           ; this%lmrcanopy_patch   (:)   = spval
+    allocate(this%vcmaxacctop_sun       (begp:endp))       ; this%vcmaxacctop_sun   (:)   = spval
+    allocate(this%macc_sun          (begp:endp))       ; this%macc_sun      (:)   = spval
+    allocate(this%mcacc_sun         (begp:endp))       ; this%mcacc_sun     (:)   = spval
+    allocate(this%macc_mcacc_sun    (begp:endp))       ; this%macc_mcacc_sun(:)   = spval
+    allocate(this%jterm_sun         (begp:endp))       ; this%jterm_sun     (:)   = spval
+    allocate(this%jmaxacctop_sun        (begp:endp))       ; this%jmaxacctop_sun    (:)   = spval
+    allocate(this%tpuacctop_sun         (begp:endp))       ; this%tpuacctop_sun     (:)   = spval
+    allocate(this%lmracctop_sun         (begp:endp))       ; this%lmracctop_sun     (:)   = spval
+    allocate(this%vcmax25top_sun        (begp:endp))       ; this%vcmax25top_sun    (:)   = spval
+    allocate(this%jmax25top_sun         (begp:endp))       ; this%jmax25top_sun     (:)   = spval
+    allocate(this%tpu25top_sun          (begp:endp))       ; this%tpu25top_sun      (:)   = spval
+    allocate(this%lmr25top_sun          (begp:endp))       ; this%lmr25top_sun      (:)   = spval
+    allocate(this%vcmaxacctop_sha       (begp:endp))       ; this%vcmaxacctop_sha   (:)   = spval
+    allocate(this%macc_sha          (begp:endp))       ; this%macc_sha      (:)   = spval
+    allocate(this%mcacc_sha         (begp:endp))       ; this%mcacc_sha     (:)   = spval
+    allocate(this%macc_mcacc_sha    (begp:endp))       ; this%macc_mcacc_sha(:)   = spval
+    allocate(this%jterm_sha         (begp:endp))       ; this%jterm_sha     (:)   = spval
+    allocate(this%jmaxacctop_sha        (begp:endp))       ; this%jmaxacctop_sha    (:)   = spval
+    allocate(this%tpuacctop_sha         (begp:endp))       ; this%tpuacctop_sha     (:)   = spval
+    allocate(this%lmracctop_sha         (begp:endp))       ; this%lmracctop_sha     (:)   = spval
+    allocate(this%vcmax25top_sha        (begp:endp))       ; this%vcmax25top_sha    (:)   = spval
+    allocate(this%jmax25top_sha         (begp:endp))       ; this%jmax25top_sha     (:)   = spval
+    allocate(this%tpu25top_sha          (begp:endp))       ; this%tpu25top_sha      (:)   = spval
+    allocate(this%lmr25top_sha          (begp:endp))       ; this%lmr25top_sha      (:)   = spval
+    allocate(this%vcmax_25acc_patch     (begp:endp,1:nlevcan)) ; this%vcmax_25acc_patch     (:,:) = spval
+    allocate(this%jmax_25acc_patch      (begp:endp,1:nlevcan)) ; this%jmax_25acc_patch      (:,:) = spval
 ! plant hydraulics
     allocate(this%ac_phs_patch      (begp:endp,2,1:nlevcan)) ; this%ac_phs_patch (:,:,:) = spval
     allocate(this%aj_phs_patch      (begp:endp,2,1:nlevcan)) ; this%aj_phs_patch (:,:,:) = spval
@@ -224,6 +277,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
+    real(r8), pointer :: ptr1d(:) ! QZ
     !---------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -329,6 +383,133 @@ contains
     call hist_addfld1d (fname='RSSHA', units='s/m',  &
          avgflag='M', long_name='shaded leaf stomatal resistance', &
          ptr_patch=this%rssha_patch, set_lake=spval, set_urb=spval, default='inactive')
+
+     ! photosynthesis acclimation by QZ
+     !this%cisun_z_patch(begp:endp,1) = spval
+     !call hist_addfld1d (fname='cisun_z_patch', units='',  &
+     !    avgflag='M', long_name='cisun_z_patch', &
+     !    ptr_patch=this%cisun_z_patch(begp:endp,1), set_lake=spval, set_urb=spval, default='active')
+     !this%cisha_z_patch(begp:endp,1) = spval
+     !call hist_addfld1d (fname='cisha_z_patch', units='', &
+     !    avgflag='M', long_name='cisha_z_patch', &
+     !    ptr_patch=this%cisha_z_patch(begp:endp,1), set_lake=spval, set_urb=spval, default='active')
+
+     this%vcmax_z_patch(begp:endp,:) = spval
+     ptr1d => this%vcmax_z_patch(begp:endp,1)
+     call hist_addfld1d (fname='vcmax_z', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='vcmax_z', &
+         ptr_patch=ptr1d, default='active')
+
+     this%vcmaxacctop_sun(begp:endp) = spval
+     call hist_addfld1d (fname='vcmaxacctop_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='maximum rate of carboxylation', &
+         ptr_patch=this%vcmaxacctop_sun, set_lake=spval, set_urb=spval, default='active')
+     this%macc_sun(begp:endp) = spval
+     call hist_addfld1d (fname='macc_sun', units='-',  &
+         avgflag='A', long_name='macc_sun', &
+         ptr_patch=this%macc_sun, set_lake=spval, set_urb=spval, default='active')
+     this%mcacc_sun(begp:endp) = spval
+     call hist_addfld1d (fname='mcacc_sun', units='-',  &
+         avgflag='A', long_name='mcacc_sun', &
+         ptr_patch=this%mcacc_sun, set_lake=spval, set_urb=spval, default='active')
+     this%macc_mcacc_sun(begp:endp) = spval
+     call hist_addfld1d (fname='macc_mcacc_sun', units='-',  &
+         avgflag='A', long_name='macc_mcacc_sun', &
+         ptr_patch=this%macc_mcacc_sun, set_lake=spval, set_urb=spval, default='active')
+     this%jterm_sun(begp:endp) = spval
+     call hist_addfld1d (fname='jterm_sun', units='-',  &
+         avgflag='A', long_name='jterm_sun', &
+         ptr_patch=this%jterm_sun, set_lake=spval, set_urb=spval, default='active')
+     this%jmaxacctop_sun(begp:endp) = spval
+     call hist_addfld1d (fname='jmaxacctop_sun', units='umol electrons/m**2/s',  &
+         avgflag='A', long_name='maximum electron transport rate', &
+         ptr_patch=this%jmaxacctop_sun, set_lake=spval, set_urb=spval, default='active')
+     this%tpuacctop_sun(begp:endp) = spval
+     call hist_addfld1d (fname='tpuacctop_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='triose phosphate utilization rate', &
+         ptr_patch=this%tpuacctop_sun, set_lake=spval, set_urb=spval, default='active')
+     this%lmracctop_sun(begp:endp) = spval
+     call hist_addfld1d (fname='lmracctop_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='leaf maintenance respiration rate', &
+         ptr_patch=this%lmracctop_sun, set_lake=spval, set_urb=spval, default='active')
+
+     this%vcmax25top_sun(begp:endp) = spval
+     call hist_addfld1d (fname='vcmax25top_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='maximum rate of carboxylation', &
+         ptr_patch=this%vcmax25top_sun, set_lake=spval, set_urb=spval, default='active')
+     this%jmax25top_sun(begp:endp) = spval
+     call hist_addfld1d (fname='jmax25top_sun', units='umol electrons/m**2/s', &
+         avgflag='A', long_name='maximum electron transport rate', &
+         ptr_patch=this%jmax25top_sun, set_lake=spval, set_urb=spval, default='active')
+     this%tpu25top_sun(begp:endp) = spval
+     call hist_addfld1d (fname='tpu25top_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='triose phosphate utilization rate', &
+         ptr_patch=this%tpu25top_sun, set_lake=spval, set_urb=spval, default='active')
+     this%lmr25top_sun(begp:endp) = spval
+     call hist_addfld1d (fname='lmr25top_sun', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='leaf maintenance respiration rate', &
+         ptr_patch=this%lmr25top_sun, set_lake=spval, set_urb=spval, default='active')
+
+     this%vcmaxacctop_sha(begp:endp) = spval
+     call hist_addfld1d (fname='vcmaxacctop_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='maximum rate of carboxylation', &
+         ptr_patch=this%vcmaxacctop_sha, set_lake=spval, set_urb=spval, default='active')
+     this%macc_sha(begp:endp) = spval
+     call hist_addfld1d (fname='macc_sha', units='-',  &
+         avgflag='A', long_name='macc_sha', &
+         ptr_patch=this%macc_sha, set_lake=spval, set_urb=spval, default='active')
+     this%mcacc_sha(begp:endp) = spval
+     call hist_addfld1d (fname='mcacc_sha', units='-',  &
+         avgflag='A', long_name='mcacc_sha', &
+         ptr_patch=this%mcacc_sha, set_lake=spval, set_urb=spval, default='active')
+     this%macc_mcacc_sha(begp:endp) = spval
+     call hist_addfld1d (fname='macc_mcacc_sha', units='-',  &
+         avgflag='A', long_name='macc_mcacc_sha', &
+         ptr_patch=this%macc_mcacc_sha, set_lake=spval, set_urb=spval, default='active')
+     this%jterm_sha(begp:endp) = spval
+     call hist_addfld1d (fname='jterm_sha', units='-',  &
+         avgflag='A', long_name='jterm_sha', &
+         ptr_patch=this%jterm_sha, set_lake=spval, set_urb=spval, default='active')
+     this%jmaxacctop_sha(begp:endp) = spval
+     call hist_addfld1d (fname='jmaxacctop_sha', units='umol electrons/m**2/s', &
+         avgflag='A', long_name='maximum electron transport rate', &
+         ptr_patch=this%jmaxacctop_sha, set_lake=spval, set_urb=spval, default='active')
+     this%tpuacctop_sha(begp:endp) = spval
+     call hist_addfld1d (fname='tpuacctop_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='triose phosphate utilization rate', &
+         ptr_patch=this%tpuacctop_sha, set_lake=spval, set_urb=spval, default='active')
+     this%lmracctop_sha(begp:endp) = spval
+     call hist_addfld1d (fname='lmracctop_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='leaf maintenance respiration rate', &
+         ptr_patch=this%lmracctop_sha, set_lake=spval, set_urb=spval, default='active')
+
+     this%vcmax25top_sha(begp:endp) = spval
+     call hist_addfld1d (fname='vcmax25top_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='maximum rate of carboxylation', &
+         ptr_patch=this%vcmax25top_sha, set_lake=spval, set_urb=spval, default='active')
+     this%jmax25top_sha(begp:endp) = spval
+     call hist_addfld1d (fname='jmax25top_sha', units='umol electrons/m**2/s', &
+         avgflag='A', long_name='maximum electron transport rate', &
+         ptr_patch=this%jmax25top_sha, set_lake=spval, set_urb=spval, default='active')
+     this%tpu25top_sha(begp:endp) = spval
+     call hist_addfld1d (fname='tpu25top_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='triose phosphate utilization rate', &
+         ptr_patch=this%tpu25top_sha, set_lake=spval, set_urb=spval, default='active')
+     this%lmr25top_sha(begp:endp) = spval
+     call hist_addfld1d (fname='lmr25top_sha', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='leaf maintenance respiration rate', &
+         ptr_patch=this%lmr25top_sha, set_lake=spval, set_urb=spval, default='active')
+
+     this%vcmax_25acc_patch(begp:endp,:) = spval
+     ptr1d => this%vcmax_25acc_patch(begp:endp,1)
+     call hist_addfld1d (fname='vcmax_25acc', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='vcmax_25acc', &
+         ptr_patch=ptr1d, default='active')
+     this%jmax_25acc_patch(begp:endp,:) = spval
+     ptr1d => this%jmax_25acc_patch(begp:endp,1)
+     call hist_addfld1d (fname='jmax_25acc', units='umol CO2/m**2/s',  &
+         avgflag='A', long_name='jmax_25acc', &
+         ptr_patch=ptr1d, default='active')
 
   end subroutine InitHistory
 

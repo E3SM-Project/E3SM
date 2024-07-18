@@ -47,6 +47,9 @@ module VegetationDataType
   type, public :: vegetation_energy_state
     ! temperature variables
     real(r8), pointer :: t_veg              (:) => null() ! vegetation temperature (K)
+    real(r8), pointer :: cisun              (:) => null() ! patch sun ci ! QZ
+    real(r8), pointer :: cisha              (:) => null() ! patch sha ci ! QZ
+    real(r8), pointer :: qabs               (:) => null() ! patch absorb PAR ! QZ
     real(r8), pointer :: t_ref2m            (:) => null() ! 2 m height surface air temperature (K)
     real(r8), pointer :: t_ref2m_r          (:) => null() ! rural 2 m height surface air temperature (K)
     real(r8), pointer :: t_ref2m_u          (:) => null() ! urban 2 m height surface air temperature (K)
@@ -68,6 +71,9 @@ module VegetationDataType
     real(r8), pointer :: t_ref2m_max_inst_u (:) => null() ! instantaneous daily max of average 2 m height surface air temp - urban (K)
     real(r8), pointer :: t_veg24            (:) => null() ! 24hr average vegetation temperature (K)
     real(r8), pointer :: t_veg240           (:) => null() ! 240hr average vegetation temperature (K)
+    real(r8), pointer :: cisun10            (:) => null() ! patch 240hr average sun ci ! QZ
+    real(r8), pointer :: cisha10            (:) => null() ! patch 240hr average sha ci ! QZ
+    real(r8), pointer :: qabs10             (:) => null() ! patch 240hr average absorb PAR ! QZ
     real(r8), pointer :: gdd0               (:) => null() ! growing degree-days base  0C from planting  (ddays)
     real(r8), pointer :: gdd8               (:) => null() ! growing degree-days base  8C from planting  (ddays)
     real(r8), pointer :: gdd10              (:) => null() ! growing degree-days base 10C from planting  (ddays)
@@ -167,6 +173,7 @@ module VegetationDataType
     real(r8), pointer :: leafn                  (:)   => null()  ! (gN/m2) leaf N
     real(r8), pointer :: leafn_storage          (:)   => null()  ! (gN/m2) leaf N storage
     real(r8), pointer :: leafn_xfer             (:)   => null()  ! (gN/m2) leaf N transfer
+    real(r8), pointer :: leafcn_acc             (:)   => null()  ! QZ
     real(r8), pointer :: frootn                 (:)   => null()  ! (gN/m2) fine root N
     real(r8), pointer :: frootn_storage         (:)   => null()  ! (gN/m2) fine root N storage
     real(r8), pointer :: frootn_xfer            (:)   => null()  ! (gN/m2) fine root N transfer
@@ -1071,6 +1078,9 @@ module VegetationDataType
     ! allocate for each member of veg_es
     !-----------------------------------------------------------------------
     allocate(this%t_veg              (begp:endp))                   ; this%t_veg              (:)   = spval
+    allocate(this%cisun              (begp:endp))                   ; this%cisun              (:)   = spval
+    allocate(this%cisha              (begp:endp))                   ; this%cisha              (:)   = spval
+    allocate(this%qabs               (begp:endp))                   ; this%qabs               (:)   = spval
     allocate(this%t_ref2m            (begp:endp))                   ; this%t_ref2m            (:)   = spval
     allocate(this%t_ref2m_r          (begp:endp))                   ; this%t_ref2m_r          (:)   = spval
     allocate(this%t_ref2m_u          (begp:endp))                   ; this%t_ref2m_u          (:)   = spval
@@ -1091,6 +1101,9 @@ module VegetationDataType
     allocate(this%t_ref2m_max_inst_u (begp:endp))                   ; this%t_ref2m_max_inst_u (:)   = spval
     allocate(this%t_veg24            (begp:endp))                   ; this%t_veg24            (:)   = spval
     allocate(this%t_veg240           (begp:endp))                   ; this%t_veg240           (:)   = spval
+    allocate(this%cisun10            (begp:endp))                   ; this%cisun10            (:)   = spval
+    allocate(this%cisha10            (begp:endp))                   ; this%cisha10            (:)   = spval
+    allocate(this%qabs10             (begp:endp))                   ; this%qabs10             (:)   = spval
     allocate(this%gdd0               (begp:endp))                   ; this%gdd0               (:)   = spval
     allocate(this%gdd8               (begp:endp))                   ; this%gdd8               (:)   = spval
     allocate(this%gdd10              (begp:endp))                   ; this%gdd10              (:)   = spval
@@ -1107,6 +1120,21 @@ module VegetationDataType
     call hist_addfld1d (fname='TV', units='K',  &
          avgflag='A', long_name='vegetation temperature', &
          ptr_patch=this%t_veg)
+
+    this%cisun(begp:endp) = spval
+    call hist_addfld1d (fname='cisun', units='-',  &
+         avgflag='A', long_name='ci sun', &
+         ptr_patch=this%cisun)
+
+    this%cisha(begp:endp) = spval
+    call hist_addfld1d (fname='cisha', units='-',  &
+         avgflag='A', long_name='ci sha', &
+         ptr_patch=this%cisha)
+
+    this%qabs(begp:endp) = spval
+    call hist_addfld1d (fname='qabs', units='K',  &
+         avgflag='A', long_name='absorb PAR', &
+         ptr_patch=this%qabs)
 
     this%t_ref2m(begp:endp) = spval
     call hist_addfld1d (fname='TSA', units='K',  &
@@ -1175,12 +1203,27 @@ module VegetationDataType
     this%t_veg24(begp:endp) = spval
     call hist_addfld1d (fname='TV24', units='K',  &
          avgflag='A', long_name='vegetation temperature (last 24hrs)', &
-         ptr_patch=this%t_veg24, default='inactive')
+         ptr_patch=this%t_veg24, default='active')
 
     this%t_veg240(begp:endp)  = spval
     call hist_addfld1d (fname='TV240', units='K',  &
          avgflag='A', long_name='vegetation temperature (last 240hrs)', &
-         ptr_patch=this%t_veg240, default='inactive')
+         ptr_patch=this%t_veg240, default='active')
+
+    this%cisun10(begp:endp)  = spval
+    call hist_addfld1d (fname='cisun240', units='K',  &
+         avgflag='A', long_name='ci sun (last 240hrs)', &
+         ptr_patch=this%cisun10, default='active')
+
+    this%cisha10(begp:endp)  = spval
+    call hist_addfld1d (fname='cisha240', units='K',  &
+         avgflag='A', long_name='ci sha (last 240hrs)', &
+         ptr_patch=this%cisha10, default='active')
+
+    this%qabs10(begp:endp)  = spval
+    call hist_addfld1d (fname='qabs240', units='K',  &
+         avgflag='A', long_name='absorb PAR (last 240hrs)', &
+         ptr_patch=this%qabs10, default='active')
 
     if (crop_prog) then
        this%gdd0(begp:endp) = spval
@@ -1230,6 +1273,12 @@ module VegetationDataType
     do p = begp, endp
        c = veg_pp%column(p)
        l = veg_pp%landunit(p)
+
+       ! normal day partial pressure of CO2 is 385 µmol/mol x 101.325 kPa =
+       ! 39 Pa; intracellular leaf co2 is about 70% of air co2 ! QZ
+       this%cisun(p) = 39.0_r8 * 0.7_r8
+       this%cisha(p) = 39.0_r8 * 0.7_r8
+       this%qabs(p) = 0.0_r8
 
        if (use_vancouver) then
           this%t_veg(p)   = 297.56
@@ -1296,6 +1345,21 @@ module VegetationDataType
          long_name='vegetation temperature', units='K', &
          interpinic_flag='interp', readvar=readvar, data=this%t_veg)
 
+    call restartvar(ncid=ncid, flag=flag, varname='cisun', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='ci sun', units='-', &
+         interpinic_flag='interp', readvar=readvar, data=this%cisun)
+
+    call restartvar(ncid=ncid, flag=flag, varname='cisha', xtype=ncd_double, &
+         dim1name='pft', &
+         long_name='ci sha', units='-', &
+         interpinic_flag='interp', readvar=readvar, data=this%cisha)
+
+    call restartvar(ncid=ncid, flag=flag, varname='qabs', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='absorb PAR', units='-', &
+         interpinic_flag='interp', readvar=readvar, data=this%qabs)
+                                                                                     
     call restartvar(ncid=ncid, flag=flag, varname='T_REF2M', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='2m height surface air temperature', units='K', &
@@ -1441,6 +1505,21 @@ module VegetationDataType
          desc='240hr average of vegetation temperature',  accum_type='runmean', accum_period=-10,  &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
+    this%cisun10(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='cisun240', units='-', &
+         desc='240hr average of sun ci',  accum_type='runmean', accum_period=-10, &
+         subgrid_type='pft', numlev=1, init_value=27._r8)
+
+    this%cisha10(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='cisha240', units='-', &
+         desc='240hr average of sha ci',  accum_type='runmean', accum_period=-10, &
+         subgrid_type='pft', numlev=1, init_value=27._r8)
+ 
+     this%qabs10(bounds%begp:bounds%endp) = spval
+     call init_accum_field (name='qabs240', units='-', &
+          desc='240hr average of absorb PAR',  accum_type='runmean', accum_period=-10, &
+          subgrid_type='pft', numlev=1, init_value=0._r8)
+
     if ( crop_prog )then
        call init_accum_field (name='TDM10', units='K', &
             desc='10-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-10, &
@@ -1512,6 +1591,15 @@ module VegetationDataType
 
     call extract_accum_field ('T_VEG240', rbufslp, nstep)
     this%t_veg240(begp:endp) = rbufslp(begp:endp)
+
+    call extract_accum_field ('cisun240', rbufslp, nstep)
+    this%cisun10(begp:endp) = rbufslp(begp:endp)
+
+    call extract_accum_field ('cisha240', rbufslp, nstep)
+    this%cisha10(begp:endp) = rbufslp(begp:endp)
+
+    call extract_accum_field ('qabs240', rbufslp, nstep)
+    this%qabs10(begp:endp) = rbufslp(begp:endp)                      
 
     if (crop_prog) then
        call extract_accum_field ('TDM10', rbufslp, nstep)
@@ -1608,6 +1696,21 @@ module VegetationDataType
     call update_accum_field  ('T_VEG240', rbufslp       , nstep)
     call extract_accum_field ('T_VEG240', this%t_veg240 , nstep)
 
+    do p = begp,endp
+       rbufslp(p) = this%cisun(p)
+    end do
+    call update_accum_field  ('cisun240', rbufslp      , nstep)
+    call extract_accum_field ('cisun240', this%cisun10 , nstep)
+    do p = begp,endp
+       rbufslp(p) = this%cisha(p)
+    end do
+    call update_accum_field  ('cisha240', rbufslp      , nstep)
+    call extract_accum_field ('cisha240', this%cisha10 , nstep)
+    do p = begp,endp
+       rbufslp(p) = this%qabs(p)
+    end do
+    call update_accum_field  ('qabs240', rbufslp       , nstep)
+    call extract_accum_field ('qabs240', this%qabs10   , nstep)       
 
     ! Accumulate and extract TREFAV - hourly average 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
@@ -3681,6 +3784,7 @@ module VegetationDataType
     allocate(this%leafn                  (begp:endp))           ; this%leafn               (:)   = spval
     allocate(this%leafn_storage          (begp:endp))           ; this%leafn_storage       (:)   = spval
     allocate(this%leafn_xfer             (begp:endp))           ; this%leafn_xfer          (:)   = spval
+    allocate(this%leafcn_acc             (begp:endp))           ; this%leafcn_acc          (:)   = spval
     allocate(this%frootn                 (begp:endp))           ; this%frootn              (:)   = spval
     allocate(this%frootn_storage         (begp:endp))           ; this%frootn_storage      (:)   = spval
     allocate(this%frootn_xfer            (begp:endp))           ; this%frootn_xfer         (:)   = spval
@@ -3777,6 +3881,11 @@ module VegetationDataType
     call hist_addfld1d (fname='LEAFN_XFER', units='gN/m^2', &
          avgflag='A', long_name='leaf N transfer', &
          ptr_patch=this%leafn_xfer, default='inactive')
+
+    this%leafcn_acc(begp:endp) = spval
+    call hist_addfld1d (fname='LEAFCN_ACC', units='gC/gN', &
+         avgflag='A', long_name='leaf C:N ratio inferred from acclimated vcmax', &
+         ptr_patch=this%leafcn_acc, default='active')
 
     this%frootn(begp:endp) = spval
     call hist_addfld1d (fname='FROOTN', units='gN/m^2', &
@@ -3917,6 +4026,7 @@ module VegetationDataType
           end if
 
           this%leafn_xfer(p)        = 0._r8
+          this%leafcn_acc(p)        = 20._r8
           if ( crop_prog )then
              this%grainn(p)            = 0._r8
              this%grainn_storage(p)    = 0._r8
@@ -4305,6 +4415,7 @@ module VegetationDataType
        this%leafn(i)              = value_veg
        this%leafn_storage(i)      = value_veg
        this%leafn_xfer(i)         = value_veg
+       this%leafcn_acc(i)         = 20._r8
        this%frootn(i)             = value_veg
        this%frootn_storage(i)     = value_veg
        this%frootn_xfer(i)        = value_veg

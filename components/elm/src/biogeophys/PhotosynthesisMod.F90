@@ -62,6 +62,9 @@ module  PhotosynthesisMod
   private :: ft             ! photosynthesis temperature response
   private :: fth            ! photosynthesis temperature inhibition
   private :: fth25          ! scaling factor for photosynthesis temperature inhibition
+  private :: ftacc          ! photosynthesis temperature response !NGS
+  private :: fthacc         ! photosynthesis temperature inhibition !NGS
+  private :: fth25acc       ! scaling factor for photosynthesis temperature inhibition ! NGS
   !------------------------------------------------------------------------
   ! For plant hydraulics approach
   private :: hybrid_PHS     ! hybrid solver for ci
@@ -255,20 +258,33 @@ contains
     real(r8) :: bbbopt(bounds%begp:bounds%endp)! Ball-Berry minimum leaf conductance, unstressed (umol H2O/m**2/s)
     real(r8) :: mbbopt(bounds%begp:bounds%endp)! Ball-Berry slope of conductance-photosynthesis relationship, unstressed
     real(r8) :: kn(bounds%begp:bounds%endp)    ! leaf nitrogen decay coefficient
-    real(r8) :: vcmax25top     ! canopy top: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
-    real(r8) :: jmax25top      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s)
-    real(r8) :: tpu25top       ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
-    real(r8) :: lmr25top       ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+    !real(r8) :: vcmax25top     ! canopy top: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
+    !real(r8) :: jmax25top      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s)
+    !real(r8) :: tpu25top       ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
+    !real(r8) :: lmr25top       ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
     real(r8) :: kp25top        ! canopy top: initial slope of CO2 response curve (C4 plants) at 25C
 
     real(r8) :: vcmax25        ! leaf layer: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
     real(r8) :: jmax25         ! leaf layer: maximum electron transport rate at 25C (umol electrons/m**2/s)
     real(r8) :: tpu25          ! leaf layer: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
     real(r8) :: lmr25          ! leaf layer: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+    real(r8) :: vcmaxacc        ! leaf layer: maximum rate of carboxylation at t_veg10 (umol CO2/m**2/s) ! NGS
+    real(r8) :: jmaxacc         ! leaf layer: maximum electron transport rate at t_veg10 (umol CO2/m**2/s) ! NGS
+    real(r8) :: tpuacc          ! leaf layer: triose phosphate utilization rate at t_veg10 (umol CO2/m**2/s) ! NGS
+    real(r8) :: lmracc          ! leaf layer: leaf maintenance respiration rate at t_veg10 (umol CO2/m**2/s) ! NGS
     real(r8) :: kp25           ! leaf layer: Initial slope of CO2 response curve (C4 plants) at 25C
     real(r8) :: kc25           ! Michaelis-Menten constant for CO2 at 25C (Pa)
     real(r8) :: ko25           ! Michaelis-Menten constant for O2 at 25C (Pa)
     real(r8) :: cp25           ! CO2 compensation point at 25C (Pa)
+    real(r8) :: kc10           ! QZ
+    real(r8) :: ko10           ! QZ
+    real(r8) :: cp10           ! QZ
+    real(r8) :: macc           ! QZ
+    real(r8) :: c_macc         ! QZ
+    real(r8) :: mcacc          ! QZ
+    real(r8) :: delta          ! QZ
+    real(r8) :: delta_term     ! QZ
+    real(r8) :: jterm          ! QZ
 
     real(r8) :: vcmaxha        ! activation energy for vcmax (J/mol)
     real(r8) :: jmaxha         ! activation energy for jmax (J/mol)
@@ -292,6 +308,9 @@ contains
     real(r8) :: jmaxc          ! scaling factor for high temperature inhibition (25 C = 1.0)
     real(r8) :: tpuc           ! scaling factor for high temperature inhibition (25 C = 1.0)
     real(r8) :: lmrc           ! scaling factor for high temperature inhibition (25 C = 1.0)
+    real(r8) :: toptv          ! optimum temperature for vcmax ! NGS
+    real(r8) :: toptj          ! optimum temperature for jmax  ! NGS
+    real(r8) :: topt           ! topt ! NGS
 
     real(r8) :: fnps           ! fraction of light absorbed by non-photosynthetic pigments
     real(r8) :: theta_psii     ! empirical curvature parameter for electron transport rate
@@ -307,6 +326,16 @@ contains
     real(r8) :: gs                ! leaf stomatal conductance (m/s)
     real(r8) :: hs                ! fractional humidity at leaf surface (dimensionless)
     real(r8) :: sco               ! relative specificity of rubisco
+    real(r8) :: ft                ! photosynthesis temperature response (statement function) ! NGS
+    real(r8) :: fth               ! photosynthesis temperature inhibition (statement function)
+    real(r8) :: fth25             ! ccaling factor for photosynthesis temperature inhibition (statement function)
+    real(r8) :: ftacc             ! photosynthesis temperature response (statement function)
+    real(r8) :: fthacc            ! photosynthesis temperature inhibition (statement function)
+    real(r8) :: fth25acc          ! ccaling factor for photosynthesis temperature inhibition (statement function)
+    real(r8) :: ftaccopt          ! photosynthesis temperature response (statement function)
+    real(r8) :: fthaccopt         ! photosynthesis temperature inhibition (statement function)
+    real(r8) :: fth25accopt       ! ccaling factor for photosynthesis temperature inhibition (statement function)
+    real(r8) :: t10_              ! t10 (K) ! NGS
     real(r8) :: tl                ! leaf temperature in photosynthesis temperature function (K)
     real(r8) :: ha                ! activation energy in photosynthesis temperature function (J/mol)
     real(r8) :: hd                ! deactivation energy in photosynthesis temperature function (J/mol)
@@ -355,6 +384,20 @@ contains
     real(r8) , pointer :: ci_z        (:,:)
     real(r8) , pointer :: alphapsnsun (:)
     real(r8) , pointer :: alphapsnsha (:)
+    real(r8) , pointer :: ci_patch    (:)   ! QZ
+    real(r8) , pointer :: ci10        (:)   ! QZ
+    real(r8) , pointer :: vcmax25top(:)     ! canopy top: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
+    real(r8) , pointer :: jmax25top(:)      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s) 
+    real(r8) , pointer :: tpu25top(:)       ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
+    real(r8) , pointer :: lmr25top(:)       ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+    real(r8) , pointer :: vcmaxacctop(:)    ! canopy top: maximum rate of carboxylation at t_veg10 (umol CO2/m**2/s) !NGS
+    real(r8) , pointer :: jmaxacctop(:)     ! canopy top: maximum electron transport rate at t_veg10 (umol electrons/m**2/s)
+    real(r8) , pointer :: tpuacctop(:)      ! canopy top: triose phosphate utilization rate at t_veg10 (umol CO2/m**2/s)
+    real(r8) , pointer :: lmracctop(:)      ! canopy top: leaf maintenance respiration rate at t_veg10 (umol CO2/m**2/s) !NGS 
+    real(r8) , pointer :: macc2(:)          ! QZ
+    real(r8) , pointer :: mcacc2(:)         ! QZ
+    real(r8) , pointer :: macc_mcacc2(:)    ! QZ
+    real(r8) , pointer :: jterm2(:)         ! QZ
 
     real(r8) :: lpc(bounds%begp:bounds%endp)   ! leaf P concentration (gP leaf/m^2)
     real(r8) :: sum_nscaler
@@ -362,6 +405,34 @@ contains
     integer  :: rad_layers_patch
     !------------------------------------------------------------------------------
     ! Temperature and soil water response functions
+    ft(tl,ha) = exp( ha / (rgas*1.e-3_r8*(tfrz+25._r8)) * (1._r8 - (tfrz+25._r8)/tl) )
+    fth(tl,hd,se,scaleFactor) = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) )
+    fth25(hd,se) = 1._r8 + exp( (-hd+se*(tfrz+25._r8)) / (rgas*1.e-3_r8*(tfrz+25._r8)) )
+    !ftacc(tl,ha) = exp( ha / (rgas*1.e-3_r8*(tfrz+25._r8)) * (1._r8 - (tfrz+25._r8)/tl)) !NGS
+    !fthacc(tl,hd,se,scaleFactor) = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) ) !NGS
+    !fth25acc(hd,se) = 1._r8 + exp( (-hd+se*(tfrz+25._r8)) / (rgas*1.e-3_r8*(tfrz+25._r8)) ) !NGS
+    !temperature response for acclimated basal rate. Basal temperature switched from 25C to t_veg10 (temperature leaves are acclimated to) NGS_v3
+    !ftacc(tl,ha) = exp( ha / (rgas*1.e-3_r8*(topt)) * (1._r8 - (topt)/tl)) !NGS_v3
+    !ftacc(tl,ha) = exp( ha / (rgas*1.e-3_r8*(tfrz+25._r8)) * (1._r8 - (tfrz+25._r8)/tl) ) ! modified by QZ
+    ! adjusted by NGS because basal temperature is t10(p)
+    ftacc(tl,ha,t10_) = exp( ha / (rgas*1.e-3_r8*(t10_)) * (1._r8 - (t10_)/tl) ) !NGS_v8
+    fthacc(tl,hd,se,scaleFactor) = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) ) !NGS_v3
+    !fth25acc(hd,se) = 1._r8 + exp( (-hd+se*(topt)) / (rgas*1.e-3_r8*(topt)) ) !NGS_v3
+    !fth25acc(hd,se) = 1._r8 + exp( (-hd+se*(tfrz+25._r8)) / (rgas*1.e-3_r8*(tfrz+25._r8)) ) ! modified by QZ
+    ! adjusted by NGS because basal temperature is t10(p)
+    fth25acc(hd,se,t10_) = 1._r8 + exp( (-hd+se*(t10_)) / (rgas*1.e-3_r8*(t10_)) )
+    ftaccopt(tl,ha,topt) = exp( ha / (rgas*1.e-3_r8*(topt)) * (1._r8 - (topt)/tl)) !NGS_v6
+    fthaccopt(tl,hd,se,scaleFactor) = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) ) !NGS_v6
+    fth25accopt(hd,se,topt) = 1._r8 + exp( (-hd+se*(topt)) / (rgas*1.e-3_r8*(topt)) ) !NGS_v6
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(esat_tv)     == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(eair)        == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(oair)        == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(cair)        == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(rb)          == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(btran)       == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(dayl_factor) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                       &
          c3psn         => veg_vp%c3psn                         , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3
@@ -388,6 +459,8 @@ contains
          gb_mol        => photosyns_vars%gb_mol_patch              , & ! Output: [real(r8) (:)   ]  leaf boundary layer conductance (umol H2O/m**2/s)
          gs_mol        => photosyns_vars%gs_mol_patch              , & ! Output: [real(r8) (:,:) ]  leaf stomatal conductance (umol H2O/m**2/s)
          vcmax_z       => photosyns_vars%vcmax_z_patch             , & ! Output: [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)
+         vcmax_25acc   => photosyns_vars%vcmax_25acc_patch         , & ! QZ
+         jmax_25acc    => photosyns_vars%jmax_25acc_patch          , & ! QZ
          cp            => photosyns_vars%cp_patch                  , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)
          kc            => photosyns_vars%kc_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)
          ko            => photosyns_vars%ko_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)
@@ -402,6 +475,10 @@ contains
          leafn         => veg_ns%leafn           , &
          leafn_storage => veg_ns%leafn_storage   , &
          leafn_xfer    => veg_ns%leafn_xfer      , &
+         leafcn_acc    => veg_ns%leafcn_acc      , & ! QZ
+         t_veg10       => veg_es%t_veg240        , & ! QZ
+         qabs10        => veg_es%qabs10          , & ! QZ
+         qabs_patch    => veg_es%qabs            , & ! QZ
          leafp         => veg_ps%leafp         , &
          leafp_storage => veg_ps%leafp_storage , &
          leafp_xfer    => veg_ps%leafp_xfer    , &
@@ -424,6 +501,20 @@ contains
          psn_wc    =>    photosyns_vars%psnsun_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wj    =>    photosyns_vars%psnsun_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wp    =>    photosyns_vars%psnsun_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
+         ci_patch  =>    veg_es%cisun                        ! QZ
+         ci10      =>    veg_es%cisun10                      ! QZ
+         vcmaxacctop =>  photosyns_vars%vcmaxacctop_sun      ! QZ
+         jmaxacctop  =>  photosyns_vars%jmaxacctop_sun       ! QZ
+         tpuacctop   =>  photosyns_vars%tpuacctop_sun        ! QZ
+         lmracctop   =>  photosyns_vars%lmracctop_sun        ! QZ
+         vcmax25top  =>  photosyns_vars%vcmax25top_sun       ! QZ
+         jmax25top   =>  photosyns_vars%jmax25top_sun        ! QZ
+         tpu25top    =>  photosyns_vars%tpu25top_sun         ! QZ
+         lmr25top    =>  photosyns_vars%lmr25top_sun         ! QZ
+         macc2       => photosyns_vars%macc_sun              ! QZ
+         mcacc2      => photosyns_vars%mcacc_sun             ! QZ
+         macc_mcacc2 => photosyns_vars%macc_mcacc_sun        ! QZ
+         jterm2      => photosyns_vars%jterm_sun             ! QZ
       else if (phase == 'sha') then !shade
          par_z     =>    solarabs_vars%parsha_z_patch        ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
          lai_z     =>    canopystate_vars%laisha_z_patch     ! Input:  [real(r8) (:,:) ]  leaf area index for canopy layer, sunlit or shaded
@@ -439,6 +530,20 @@ contains
          psn_wc    =>    photosyns_vars%psnsha_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wj    =>    photosyns_vars%psnsha_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wp    =>    photosyns_vars%psnsha_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
+         ci_patch  =>    veg_es%cisha                        ! QZ
+         ci10      =>    veg_es%cisha10                      ! QZ
+         vcmaxacctop =>  photosyns_vars%vcmaxacctop_sha      ! QZ
+         jmaxacctop  =>  photosyns_vars%jmaxacctop_sha       ! QZ
+         tpuacctop   =>  photosyns_vars%tpuacctop_sha        ! QZ
+         lmracctop   =>  photosyns_vars%lmracctop_sha        ! QZ
+         vcmax25top  =>  photosyns_vars%vcmax25top_sha       ! QZ
+         jmax25top   =>  photosyns_vars%jmax25top_sha        ! QZ
+         tpu25top    =>  photosyns_vars%tpu25top_sha         ! QZ
+         lmr25top    =>  photosyns_vars%lmr25top_sha         ! QZ
+         macc2       => photosyns_vars%macc_sha              ! QZ
+         mcacc2      => photosyns_vars%mcacc_sha             ! QZ
+         macc_mcacc2 => photosyns_vars%macc_mcacc_sha        ! QZ
+         jterm2      => photosyns_vars%jterm_sha             ! QZ
       end if
 
 
@@ -492,7 +597,8 @@ contains
          tpuhd   = veg_vp%tpuhd(veg_pp%itype(p))   !200000._r8
          lmrhd   = veg_vp%lmrhd(veg_pp%itype(p))   !150650._r8
          lmrse   = veg_vp%lmrse(veg_pp%itype(p))   !490._r8
-         lmrc    = fth25 (lmrhd, lmrse)
+         !lmrc    = fth25 (lmrhd, lmrse)
+         lmrc    = fth25acc (lmrhd, lmrse, t10(p)) !NGS
 
          ! C3 or C4 photosynthesis logical variable
 
@@ -548,21 +654,88 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         if ( .not. nu_com_leaf_physiology) then
+         !if ( .not. nu_com_leaf_physiology) then
+         if ( .True. ) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
 
             ! vcmax25 at canopy top, as in CN but using lnc at top of the canopy
-            vcmax25top = lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 * dayl_factor(p)
-            if (.not. use_cn) then
-               vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
+            vcmax25top(p) = lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 * dayl_factor(p)
+
+            ! parameters to calculate acclimated Vcmax (vcmaxacctop) !NGS
+            kc10 = kc25 * ft(t_veg10(p), kcha) !NGS
+            ko10 = ko25 * ft(t_veg10(p), koha) !NGS
+            cp10 = cp25 * ft(t_veg10(p), cpha) !NGS
+            macc = (ci10(p) - cp10) / (ci10(p) + 2*cp10) !NGS
+            mcacc = (ci10(p) - cp10) / (ci10(p)+kc10*(1._r8+oair(p)/ko10)) !NGS
+               
+            !delta = 1.44287 ! based on theta = 0.99 and cstar of ~0.041 !NGS
+            !delta_term = (1 + (macc * delta) - sqrt((1 + (macc * delta))**2 - (4 * 0.99 * macc * delta))) !NGS
+            !jterm = delta_term / 1.98 !NGS
+            !delta = 0.9529062_r8 ! based on theta = 0.85 and cstar of ~0.78 !NGS_v2
+            !delta_term = (1._r8 + (macc * delta) - sqrt((1._r8 + (macc * delta))**2._r8 - (4._r8 * 0.85_r8 * macc * delta))) !NGS_v2
+            !jterm = delta_term / (0.85_r8 * 2._r8) !NGS_v2
+                     
+            macc =  min(max(macc,  0.1_r8),1.0_r8) ! modified by QZ
+            mcacc = min(max(mcacc, 0.1_r8),1.0_r8) ! modified by QZ
+                  
+            c_macc = (0.21345_r8 / macc) !NGS_v7
+                  
+            if (macc < 0.3702705_r8) then !NGS_v7
+                delta = max(0.7_r8 - sqrt(max(0.15_r8 * (1 / (c_macc * (1 - (0.85_r8 * c_macc))) - 3.4_r8),0._r8)),0._r8) !NGS_v7
             else
-               if ( Carbon_only ) vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
+                delta = max(0.7_r8 - sqrt(max(0.15_r8 * (1 / (c_macc * (1 - (0.85_r8 * c_macc))) - 3.4_r8),0._r8)),0._r8) !NGS_v7
+                !delta = (1.5_r8 - 0.67_r8 ) / (1.0_r8 - 0.37_r8)  * (macc - 0.37_r8) + 0.67_r8 ! modified by QZ
+            end if
+
+            delta_term = (1._r8 + (delta) - sqrt(max((1._r8 + delta)**2._r8 - (4._r8 * 0.85_r8 * delta),0._r8))) !NGS_v4
+            jterm = delta_term / (0.85_r8 * 8._r8) !NGS_v2
+
+            vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+            jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+
+            toptv = (0.44_r8 * (t10(p)-tfrz) + 24.92_r8) + tfrz !NGS_v6
+            toptj = (0.33_r8 * (t10(p)-tfrz) + 26.21_r8) + tfrz !NGS_v6
+
+            vcmaxc = fth25accopt (vcmaxhd, vcmaxse, toptv) !NGS
+            jmaxc  = fth25accopt (jmaxhd, jmaxse, toptj) !NGS
+
+            ! vcmaxacctop(p) = qabs10(p) * (macc / mcacc) * jterm * ftaccopt(t10(p), vcmaxha, toptv) * fthaccopt(t10(p), vcmaxhd, vcmaxse, vcmaxc) !NGS_v6
+            vcmaxacctop(p) = 40.0_r8 * qabs10(p) * 0.425_r8 * max(0.352_r8 + 0.022_r8 * (t10(p) - tfrz) - 0.00034 * (t10(p) - tfrz)**2._r8, 0.1496_r8) * (macc / mcacc) * jterm !NGS_v8, changed temperature response of qabs10 (quantum yield), using qabs equation below
+            macc2(p) = macc
+            mcacc2(p) = mcacc
+            macc_mcacc2(p) = macc/mcacc
+            jterm2(p) = jterm
+
+            ! end calculation of vcmaxacctop NGS
+
+            if (.not. use_cn) then
+               vcmax25top(p) = vcmax25top(p) * fnitr(veg_pp%itype(p))
+            else
+               if ( Carbon_only ) vcmax25top(p) = vcmax25top(p) * fnitr(veg_pp%itype(p))
             end if
 
             ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
             ! used jmax25 = 1.97 vcmax25, from Wullschleger (1993) Journal of Experimental Botany 44:907-920.
-            jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+            jmax25top(p) = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top(p)
+            !!jmaxacctop(p) = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmaxacctop(p) ! QZ
+            !jmaxacctop(p) = ((0.85_r8 * 8._r8 * mcacc * delta) / (macc * delta_term)) * vcmaxacctop(p) !NGS_v5
+            jmaxacctop(p) = 40.0_r8 * qabs10(p) * 0.425_r8 * max(0.352_r8 + 0.022_r8 * (t10(p) - tfrz) - 0.00034 * (t10(p) - tfrz)**2._r8, 0.1496_r8) * delta
+            !!jmaxacctop(p) = qabs10(p) * delta * ftaccopt(t10(p), jmaxha, toptj) * fthaccopt(t10(p), jmaxhd, jmaxse, jmaxc) !NGS_v6, NGS_JV_v1
+            !jmaxacctop(p) = ((-0.15_r8 * (t10(p)-tfrz)) + (jv_c_sens * cp10) + (jv_ct_sens * (t10(p)-tfrz) * cp10) + 5.8_r8) * vcmaxacctop(p) !NGS_JV_v1
+
+            vcmaxacctop(p) = min(max(vcmaxacctop(p), 10.0_r8), 300.0_r8)
+            jmaxacctop(p) = min(max(jmaxacctop(p), 10.0_r8), 500.0_r8)
+
+            ! leafcn_acc (gC/gN)
+            ! slatop (m2/gC)
+            ! vcmaxacctop (umolCO2/m2/s)
+            ! act25 (umolCO2/gRubisco/s) Rubisco activity at 25 C
+            ! fnr (gRubisco/gN in Rubisco)
+            ! flnr (gN Rubisco / gN leaf) 
+            leafcn_acc(p) = 1.0_r8/(slatop(veg_pp%itype(p)) * vcmaxacctop(p) / act25 / fnr / flnr(veg_pp%itype(p)))
+            !leafcn_acc(p) = min(max(leafcn_acc(p),14.0_r8),40.0_r8) !CN ratio 14-40, with 50% flexibility
+            leafcn_acc(p) = min(max(leafcn_acc(p),leafcn(veg_pp%itype(p))*0.5_r8),leafcn(veg_pp%itype(p))*1.5_r8)
 
          else
 
@@ -571,9 +744,9 @@ contains
             if ( Carbon_only  .or.  carbonphosphorus_only ) then
 
                lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
-               vcmax25top = lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 * dayl_factor(p)
-               vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
-               jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+               vcmax25top(p)= lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 * dayl_factor(p)
+               vcmax25top(p)= vcmax25top(p) * fnitr(veg_pp%itype(p))
+               jmax25top(p) = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top(p)
 
             else if (  carbonnitrogen_only  ) then ! only N control, from Kattge 2009 Global Change Biology 15 (4), 976-991
 
@@ -608,10 +781,10 @@ contains
                   lnc(p) = 0.0_r8
                end if
 
-               vcmax25top = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
-               jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
-               vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
-               jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
+               vcmax25top(p) = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
+               jmax25top(p) = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top(p)
+               vcmax25top(p) = min(max(vcmax25top(p), 10.0_r8), 150.0_r8)
+               jmax25top(p) = min(max(jmax25top(p), 10.0_r8), 250.0_r8)
 
             else
 
@@ -649,28 +822,29 @@ contains
                      lpc(p) = leafp(p) / (total_lai * sum_nscaler)
                      lnc(p) = min(max(lnc(p),0.25_r8),3.0_r8) ! based on doi: 10.1002/ece3.1173
                      lpc(p) = min(max(lpc(p),0.014_r8),0.85_r8) ! based on doi: 10.1002/ece3.1173
-                     vcmax25top = exp(vcmax_np1(veg_pp%itype(p)) + vcmax_np2(veg_pp%itype(p))*log(lnc(p)) + &
+                     vcmax25top(p) = exp(vcmax_np1(veg_pp%itype(p)) + vcmax_np2(veg_pp%itype(p))*log(lnc(p)) + &
                           vcmax_np3(veg_pp%itype(p))*log(lpc(p)) + vcmax_np4(veg_pp%itype(p))*log(lnc(p))*log(lpc(p)))&
                           * dayl_factor(p)
-                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc(p))) * dayl_factor(p)
-                     vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
-                     jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
+                     jmax25top(p) = exp(jmax_np1 + jmax_np2*log(vcmax25top(p)) + jmax_np3*log(lpc(p))) * dayl_factor(p)
+                     vcmax25top(p) = min(max(vcmax25top(p), 10.0_r8), 150.0_r8)
+                     jmax25top(p) = min(max(jmax25top(p), 10.0_r8), 250.0_r8)
                   else
                      lnc(p) = 0.0_r8
                      lpc(p) = 0.0_r8
-                     vcmax25top = 0.0_r8
-                     jmax25top = 0.0_r8
+                     vcmax25top(p) = 0.0_r8
+                     jmax25top(p) = 0.0_r8
                   end if
                else
                   lnc(p)     = 0.0_r8
-                  vcmax25top = 0.0_r8
-                  jmax25top  = 0.0_r8
+                  vcmax25top(p) = 0.0_r8
+                  jmax25top(p)  = 0.0_r8
                end if
             end if
          end if
 
-         tpu25top  = 0.167_r8 * vcmax25top
-         kp25top   = 20000._r8 * vcmax25top
+         tpu25top(p)  = 0.167_r8 * vcmax25top(p)
+         kp25top   = 20000._r8 * vcmax25top(p)
+         tpuacctop(p) = 0.167_r8 * vcmaxacctop(p) !NGS
 
          ! Nitrogen scaling factor. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593 used
          ! kn = 0.11. Here, derive kn from vcmax25 as in Lloyd et al (2010) Biogeosciences, 7, 1833-1859
@@ -681,7 +855,7 @@ contains
          if (dayl_factor(p) .eq. 0._r8) then
             kn(p) =  0._r8
          else
-            kn(p) = exp(0.00963_r8 * vcmax25top/dayl_factor(p) - 2.43_r8)
+            kn(p) = exp(0.00963_r8 * vcmax25top(p)/dayl_factor(p) - 2.43_r8)
          end if
 
          if (use_cn) then
@@ -701,15 +875,18 @@ contains
             !
             ! Then scale this value at the top of the canopy for canopy depth
 
-            lmr25top = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
-            lmr25top = lmr25top * lnc(p) / 12.e-06_r8
+            lmr25top(p) = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+            lmr25top(p) = lmr25top(p) * lnc(p) / 12.e-06_r8
+            lmracctop(p) = vcmaxacctop(p) * 0.015_r8 ! NGS
          else
             ! Leaf maintenance respiration in proportion to vcmax25top
 
             if (c3flag(p)) then
-               lmr25top = vcmax25top * 0.015_r8
+               lmr25top(p) = vcmax25top(p) * 0.015_r8
+               lmracctop(p) = vcmaxacctop(p) * 0.015_r8 ! NGS
             else
-               lmr25top = vcmax25top * 0.025_r8
+               lmr25top(p) = vcmax25top(p) * 0.025_r8
+               lmracctop(p) = vcmaxacctop(p) * 0.015_r8 ! NGS
             end if
          end if
 
@@ -734,16 +911,19 @@ contains
             else if (nlevcan > 1) then
                nscaler = exp(-kn(p) * laican)
             end if
+            nscaler = 1._r8
 
             ! Maintenance respiration
 
-            lmr25 = lmr25top * nscaler
+            !lmr25 = lmr25top * nscaler
             if (c3flag(p)) then
-               lmr_z(p,iv) = lmr25 * ft(t_veg(p), lmrha) * fth(t_veg(p), lmrhd, lmrse, lmrc)
+               lmracc = lmracctop(p) * nscaler !NGS
+               lmr_z(p,iv) = lmracc * ftacc(t_veg(p), lmrha, t10(p)) * fthacc(t_veg(p),lmrhd, lmrse, lmrc) ! NGS
             else
+               lmr25 = lmr25top(p) * nscaler ! NGS
                lmr_z(p,iv) = lmr25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
                lmr_z(p,iv) = lmr_z(p,iv) / (1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) ))
-            end if
+            end if        
 
             if (par_z(p,iv) <= 0._r8) then           ! night time
 
@@ -758,23 +938,37 @@ contains
 
             else                                     ! day time
 
-               vcmax25 = vcmax25top * nscaler
-               jmax25 = jmax25top * nscaler
-               tpu25 = tpu25top * nscaler
-               kp25 = kp25top * nscaler
+               if (c3flag(p)) then !NGS
+                  vcmaxacc = vcmaxacctop(p) * nscaler
+                  jmaxacc = jmaxacctop(p) * nscaler
+                  tpuacc = tpuacctop(p) * nscaler
+               else
+                  vcmax25 = vcmax25top(p) * nscaler
+                  jmax25 = jmax25top(p) * nscaler
+                  tpu25 = tpu25top(p) * nscaler
+                  kp25 = kp25top * nscaler
+               end if
 
                ! Adjust for temperature
 
                vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
                jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
                tpuse = vcmaxse
-               vcmaxc = fth25 (vcmaxhd, vcmaxse)
-               jmaxc  = fth25 (jmaxhd, jmaxse)
-               tpuc   = fth25 (tpuhd, tpuse)
-               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), vcmaxha) * fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
-               jmax_z(p,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
-               tpu_z(p,iv) = tpu25 * ft(t_veg(p), tpuha) * fth(t_veg(p), tpuhd, tpuse, tpuc)
 
+               vcmaxc = fth25acc(vcmaxhd, vcmaxse, t10(p)) !NGS
+               jmaxc  = fth25acc(jmaxhd, jmaxse, t10(p)) !NGS
+               tpuc   = fth25acc(tpuhd, tpuse, t10(p)) !NGS 
+               vcmax_z(p,iv) = vcmaxacc * ftacc(t_veg(p), vcmaxha, t10(p)) * fthacc(t_veg(p), vcmaxhd, vcmaxse, vcmaxc) ! NGS
+               jmax_z(p,iv) = jmaxacc * ftacc(t_veg(p), jmaxha, t10(p)) * fthacc(t_veg(p), jmaxhd, jmaxse, jmaxc) ! NGS
+               tpu_z(p,iv) = tpuacc * ftacc(t_veg(p), tpuha, t10(p)) * fthacc(t_veg(p), tpuhd, tpuse, tpuc)       ! NGS
+               vcmax_25acc(p,iv) = vcmaxacc / (ft(298.15_r8, vcmaxha) * fth(298.15_r8, vcmaxhd, vcmaxse, vcmaxc)) ! NGS
+               jmax_25acc(p,iv) = jmaxacc / (ft(298.15_r8, jmaxha) * fth(298.15_r8, jmaxhd, jmaxse, jmaxc))       ! NGS
+               !vcmaxc = fth25 (vcmaxhd, vcmaxse)
+               !jmaxc  = fth25 (jmaxhd, jmaxse)
+               !tpuc   = fth25 (tpuhd, tpuse)
+               !vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), vcmaxha) * fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
+               !jmax_z(p,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
+               !tpu_z(p,iv) = tpu25 * ft(t_veg(p), tpuha) * fth(t_veg(p), tpuhd, tpuse, tpuc)
                if (.not. c3flag(p)) then
                   vcmax_z(p,iv) = vcmax25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
                   vcmax_z(p,iv) = vcmax_z(p,iv) / (1._r8 + exp( 0.2_r8*((tfrz+15._r8)-t_veg(p)) ))
@@ -786,9 +980,10 @@ contains
             end if
 
             ! Adjust for soil water
-
-            vcmax_z(p,iv) = vcmax_z(p,iv) * btran(p)
-            lmr_z(p,iv) = lmr_z(p,iv) * btran(p)
+            if (.not. c3flag(p)) then ! NGS
+               vcmax_z(p,iv) = vcmax_z(p,iv) * btran(p)
+               lmr_z(p,iv) = lmr_z(p,iv) * btran(p)
+            end if
          end do       ! canopy layer loop
       end do          ! patch loop
 
@@ -826,6 +1021,8 @@ contains
                rs_z(p,iv) = min(rsmax0, 1._r8/bbb(p) * cf)
                ci_z(p,iv) = 0._r8
                rh_leaf(p) = 0._r8
+               ci_patch(p) = 0._r8    ! QZ
+               qabs_patch(p) = 0._r8  ! QZ
 
             else                                     ! day time
 
@@ -837,6 +1034,7 @@ contains
                ! umol photons/m**2/s using the factor 4.6
 
                qabs  = 0.5_r8 * (1._r8 - fnps) * par_z(p,iv) * 4.6_r8
+               qabs_patch(p) = qabs
                aquad = theta_psii
                bquad = -(qabs + jmax_z(p,iv))
                cquad = qabs * jmax_z(p,iv)
@@ -875,6 +1073,11 @@ contains
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
                ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               if (ci_z(p,iv) > 0._r8) then ! QZ
+                  ci_patch(p) = ci_z(p,iv)
+               else
+                  ci_patch(p) = 0._r8
+               end if
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -1571,7 +1774,138 @@ contains
 
   end subroutine ci_func
   !------------------------------------------------------------------------------
+  function ftacc(tl, ha, t10_) result(ans) 
+    ! 
+    !!DESCRIPTION:        
+    ! photosynthesis temperature response
+    ! 
+    !!USES
+    use elm_varcon  , only : rgas, tfrz
+    ! 
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
+    real(r8), intent(in) :: ha  ! activation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: t10_ ! K
+    ! 
+    ! !LOCAL VARIABLES:   
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------
+  
+    ans = exp( ha / (rgas*1.e-3_r8*(t10_)) * (1._r8 - (t10_)/tl) )
+  
+    return
+  end function ftacc      
+  !-------------------------------------------------------------------------------   
+  function fthacc(tl,hd,se,scaleFactor) result(ans)
+    !
+    !!DESCRIPTION:
+    !photosynthesis temperature inhibition
+    !
+    use elm_varcon  , only : rgas, tfrz
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
+    real(r8), intent(in) :: hd  ! deactivation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: se  ! entropy term in photosynthesis temperature function (J/mol/K)
+    real(r8), intent(in) :: scaleFactor  ! scaling factor for high temperature inhibition (25 C = 1.0)
+    !
+    ! !LOCAL VARIABLES:      
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------   
 
+    ans = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) )
+
+    return
+  end function fthacc
+  !-------------------------------------------------------------------------------   
+  function fth25acc(hd,se,t10_)result(ans)
+    !
+    !!DESCRIPTION:   
+    ! scaling factor for photosynthesis temperature inhibition
+    !
+    !!USES
+    use elm_varcon  , only : rgas, tfrz
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: hd    ! deactivation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: se    ! entropy term in photosynthesis temperature function (J/mol/K)
+    real(r8), intent(in) :: t10_  ! K
+    !
+    ! !LOCAL VARIABLES:   
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------   
+
+    ans = 1._r8 + exp( (-hd+se*(t10_)) / (rgas*1.e-3_r8*(t10_)) )
+
+    return
+  end function fth25acc
+  !-------------------------------------------------------------------------------
+  function ftaccopt(tl, ha,topt) result(ans)
+    !
+    !!DESCRIPTION:
+    ! photosynthesis temperature response
+    !
+    !!USES
+    use elm_varcon  , only : rgas, tfrz
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
+    real(r8), intent(in) :: ha  ! activation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: topt
+    !
+    ! !LOCAL VARIABLES:   
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------
+
+    ans = exp( ha / (rgas*1.e-3_r8*(topt)) * (1._r8 - (topt)/tl))
+
+    return
+  end function ftaccopt
+  !-------------------------------------------------------------------------------   
+  function fthaccopt(tl,hd,se,scaleFactor) result(ans)
+    !
+    !!DESCRIPTION:
+    !photosynthesis temperature inhibition
+    !
+    use elm_varcon  , only : rgas, tfrz
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
+    real(r8), intent(in) :: hd  ! deactivation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: se  ! entropy term in photosynthesis temperature function (J/mol/K)
+    real(r8), intent(in) :: scaleFactor  ! scaling factor for high temperature inhibition (25 C = 1.0)
+    !
+    ! !LOCAL VARIABLES:      
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------   
+
+    ans = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) )
+
+    return
+  end function fthaccopt
+  !-------------------------------------------------------------------------------   
+  function fth25accopt(hd,se,topt)result(ans)
+    !
+    !!DESCRIPTION:   
+    ! scaling factor for photosynthesis temperature inhibition
+    !
+    !!USES
+    use elm_varcon  , only : rgas, tfrz
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in) :: hd    ! deactivation energy in photosynthesis temperature function (J/mol)
+    real(r8), intent(in) :: se    ! entropy term in photosynthesis temperature function (J/mol/K)
+    real(r8), intent(in) :: topt
+    !
+    ! !LOCAL VARIABLES:   
+    real(r8) :: ans
+    !-------------------------------------------------------------------------------   
+
+    ans = 1._r8 + exp( (-hd+se*(topt)) / (rgas*1.e-3_r8*(topt)) )
+
+    return
+  end function fth25accopt
+  !------------------------------------------------------------------------------
   subroutine PhotosynthesisHydraulicStress ( bounds, fn, filterp, &
        esat_tv, eair, oair, cair, rb, bsun, bsha, btran, dayl_factor,  &
        qsatl, qaf, &

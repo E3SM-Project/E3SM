@@ -40,6 +40,7 @@ module CNNitrogenStateType
      real(r8), pointer :: leafn_patch                  (:)     ! patch (gN/m2) leaf N 
      real(r8), pointer :: leafn_storage_patch          (:)     ! patch (gN/m2) leaf N storage
      real(r8), pointer :: leafn_xfer_patch             (:)     ! patch (gN/m2) leaf N transfer
+     real(r8), pointer :: leafcn_acc_patch             (:)     ! QZ
      real(r8), pointer :: frootn_patch                 (:)     ! patch (gN/m2) fine root N
      real(r8), pointer :: frootn_storage_patch         (:)     ! patch (gN/m2) fine root N storage
      real(r8), pointer :: frootn_xfer_patch            (:)     ! patch (gN/m2) fine root N transfer
@@ -255,6 +256,7 @@ contains
     allocate(this%leafn_patch              (begp:endp))                   ; this%leafn_patch              (:)   = nan
     allocate(this%leafn_storage_patch      (begp:endp))                   ; this%leafn_storage_patch      (:)   = nan     
     allocate(this%leafn_xfer_patch         (begp:endp))                   ; this%leafn_xfer_patch         (:)   = nan     
+    allocate(this%leafcn_acc_patch         (begp:endp))                   ; this%leafcn_acc_patch         (:)   = nan
     allocate(this%frootn_patch             (begp:endp))                   ; this%frootn_patch             (:)   = nan
     allocate(this%frootn_storage_patch     (begp:endp))                   ; this%frootn_storage_patch     (:)   = nan     
     allocate(this%frootn_xfer_patch        (begp:endp))                   ; this%frootn_xfer_patch        (:)   = nan     
@@ -516,6 +518,7 @@ contains
           end if
 
           this%leafn_xfer_patch(p)        = 0._r8
+          this%leafcn_acc_patch(p)        = 20._r8
           if ( crop_prog )then
              this%grainn_patch(p)            = 0._r8
              this%grainn_storage_patch(p)    = 0._r8
@@ -756,6 +759,7 @@ contains
        this%leafn_patch(i)              = value_patch
        this%leafn_storage_patch(i)      = value_patch
        this%leafn_xfer_patch(i)         = value_patch
+       this%leafcn_acc_patch(i)         = 20.0_r8
        this%frootn_patch(i)             = value_patch
        this%frootn_storage_patch(i)     = value_patch
        this%frootn_xfer_patch(i)        = value_patch

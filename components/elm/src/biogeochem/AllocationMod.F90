@@ -1058,6 +1058,13 @@ contains
         leafcp                       => veg_vp%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
         vmax_minsurf_p_vr            => veg_vp%vmax_minsurf_p_vr                          , &
         leafn                        => veg_ns%leafn                        , &
+        frootn                       => veg_ns%frootn                       , &
+        frootcn                      => veg_vp%frootcn                      , &
+        frootc_storage               => veg_cs%frootc_storage               , &
+        frootc_xfer                  => veg_cs%frootc_xfer                  , &
+        frootn_storage               => veg_ns%frootn_storage               , &
+        frootn_xfer                  => veg_ns%frootn_xfer                  , &
+        leafcn_acc                   => veg_ns%leafcn_acc                   , &
         vmax_plant_nh4               => veg_vp%vmax_plant_nh4                             , &
         vmax_plant_no3               => veg_vp%vmax_plant_no3                             , &
         vmax_plant_p                 => veg_vp%vmax_plant_p                               , &
@@ -1257,10 +1264,14 @@ contains
               if (.not.(carbonphosphorus_only .or. carbon_only))then
                  do f = 1,n_pcomp
                     p = filter_pcomp(f)
-                    cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
-                         max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
-                         leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                         (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                    cn_scalar(p) = min(max(((frootc(p) + frootc_storage(p) + frootc_xfer(p)) / &
+                         max(frootn(p) + frootn_storage(p) + frootn_xfer(p), 1e-20_r8) - &
+                         frootcn(ivt(p))*(1- cn_stoich_var)) / &
+                         (frootcn(ivt(p)) - frootcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                    !cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                    !     max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                    !     leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                    !     (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
                  end do
               end if
               
@@ -2025,6 +2036,7 @@ contains
          leafc_xfer                   => veg_cs%leafc_xfer                     , &
          leafn_storage                => veg_ns%leafn_storage                , &
          leafn_xfer                   => veg_ns%leafn_xfer                   , &
+         leafcn_acc                   => veg_ns%leafcn_acc                   , &
          leafp_storage                => veg_ps%leafp_storage              , &
          leafp_xfer                   => veg_ps%leafp_xfer                 , &
          annsum_potential_gpp         => cnstate_vars%annsum_potential_gpp_patch               , &
@@ -2316,7 +2328,8 @@ contains
              g1 = grperc(ivt(p))
              g2 = grpnow(ivt(p))
 
-             cnl = leafcn(ivt(p))
+             !cnl = leafcn(ivt(p))
+             cnl = leafcn_acc(p)
              cnfr = frootcn(ivt(p))
              cnlw = livewdcn(ivt(p))
              cndw = deadwdcn(ivt(p))
@@ -3907,7 +3920,7 @@ contains
     end if
 
     ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem or fine root
-    if (laindex > laimax) then
+    if (laindex > 10.0_r8) then
        if (woody == 1.0_r8) then
           alloc_stem = alloc_stem + alloc_leaf/2._r8 - 0.005_r8
           alloc_froot = alloc_froot + alloc_leaf/2._r8 - 0.005_r8

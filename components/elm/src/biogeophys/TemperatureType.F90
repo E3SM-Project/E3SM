@@ -24,6 +24,9 @@ module TemperatureType
 
      ! Temperatures
      real(r8), pointer :: t_veg_patch              (:)   ! patch vegetation temperature (Kelvin)
+     real(r8), pointer :: cisun_patch              (:)   ! patch sun ci ! QZ
+     real(r8), pointer :: cisha_patch              (:)   ! patch sha ci ! QZ
+     real(r8), pointer :: qabs_patch               (:)   ! patch absorb PAR ! QZ
      real(r8), pointer :: t_h2osfc_col             (:)   ! col surface water temperature
      real(r8), pointer :: t_h2osfc_bef_col         (:)   ! col surface water temperature from time-step before  
      real(r8), pointer :: t_ssbef_col              (:,:) ! col soil/snow temperature before update (-nlevsno+1:nlevgrnd) 
@@ -72,6 +75,9 @@ module TemperatureType
      !
      real(r8), pointer :: t_veg24_patch           (:)   ! patch 24hr average vegetation temperature (K)
      real(r8), pointer :: t_veg240_patch          (:)   ! patch 240hr average vegetation temperature (Kelvin)
+     real(r8), pointer :: cisun10_patch           (:)   ! patch 240hr average sun ci ! QZ
+     real(r8), pointer :: cisha10_patch           (:)   ! patch 240hr average sha ci ! QZ
+     real(r8), pointer :: qabs10_patch            (:)   ! patch 240hr average absorb PAR ! QZ
      real(r8), pointer :: gdd0_patch              (:)   ! patch growing degree-days base  0C from planting  (ddays)
      real(r8), pointer :: gdd8_patch              (:)   ! patch growing degree-days base  8C from planting  (ddays)
      real(r8), pointer :: gdd10_patch             (:)   ! patch growing degree-days base 10C from planting  (ddays)
@@ -171,6 +177,9 @@ contains
 
     ! Temperatures
     allocate(this%t_veg_patch              (begp:endp))                      ; this%t_veg_patch              (:)   = nan
+    allocate(this%cisun_patch              (begp:endp))                      ; this%cisun_patch              (:)   = nan
+    allocate(this%cisha_patch              (begp:endp))                      ; this%cisha_patch              (:)   = nan
+    allocate(this%qabs_patch               (begp:endp))                      ; this%qabs_patch               (:)   = nan
     allocate(this%t_h2osfc_col             (begc:endc))                      ; this%t_h2osfc_col             (:)   = nan
     allocate(this%t_h2osfc_bef_col         (begc:endc))                      ; this%t_h2osfc_bef_col         (:)   = nan
     allocate(this%t_ssbef_col              (begc:endc,-nlevsno+1:nlevgrnd))  ; this%t_ssbef_col              (:,:) = nan
@@ -212,6 +221,9 @@ contains
     ! Accumulated fields
     allocate(this%t_veg24_patch            (begp:endp))                      ; this%t_veg24_patch            (:)   = nan
     allocate(this%t_veg240_patch           (begp:endp))                      ; this%t_veg240_patch           (:)   = nan
+    allocate(this%cisun10_patch            (begp:endp))                      ; this%cisun10_patch            (:)   = 27.0_r8
+    allocate(this%cisha10_patch            (begp:endp))                      ; this%cisha10_patch            (:)   = 27.0_r8
+    allocate(this%qabs10_patch             (begp:endp))                      ; this%qabs10_patch             (:)   = 285.0_r8
     allocate(this%gdd0_patch               (begp:endp))                      ; this%gdd0_patch               (:)   = spval
     allocate(this%gdd8_patch               (begp:endp))                      ; this%gdd8_patch               (:)   = spval
     allocate(this%gdd10_patch              (begp:endp))                      ; this%gdd10_patch              (:)   = spval
