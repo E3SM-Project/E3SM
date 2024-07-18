@@ -219,7 +219,7 @@ class Decomp {
    /// Initializes Omega decomposition info and creates the default
    /// decomposition based on the default MachEnv and configuration
    /// options.
-   static int init();
+   static int init(const std::string &MeshFileName = "OmegaMesh.nc");
 
    /// Construct a new decomposition across an input MachEnv with
    /// NPart partitions of a mesh that is read from a mesh file.

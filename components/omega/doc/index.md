@@ -33,7 +33,11 @@ userGuide/IO
 userGuide/IOField
 userGuide/Halo
 userGuide/HorzMesh
+userGuide/HorzOperators
+userGuide/AuxiliaryVariables
+userGuide/TendencyTerms
 userGuide/TimeMgr
+userGuide/Reductions
 ```
 
 ```{toctree}
@@ -57,7 +61,11 @@ devGuide/IO
 devGuide/IOField
 devGuide/Halo
 devGuide/HorzMesh
+devGuide/HorzOperators
+devGuide/AuxiliaryVariables
+devGuide/TendencyTerms
 devGuide/TimeMgr
+devGuide/Reductions
 ```
 
 ```{toctree}
@@ -80,8 +88,10 @@ design/Reductions
 design/ShallowWaterOmega0
 design/State
 design/Tendency
+design/AuxiliaryVariables
 design/TimeMgr
 design/Timers
+design/TimeStepping
 design/Tracers
 
 design/OmegaDesignTemplate

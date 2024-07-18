@@ -33,18 +33,18 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
   EKAT_REQUIRE_MSG(is_valid_src_layout(src.get_layout()),
       "Error! Source field has an invalid layout.\n"
       " - field name  : " + src.name() + "\n"
-      " - field layout: " + to_string(src.get_layout()) + "\n");
+      " - field layout: " + src.get_layout().to_string() + "\n");
   EKAT_REQUIRE_MSG(is_valid_tgt_layout(tgt.get_layout()),
       "Error! Source field has an invalid layout.\n"
       " - field name  : " + tgt.name() + "\n"
-      " - field layout: " + to_string(tgt.get_layout()) + "\n");
+      " - field layout: " + tgt.get_layout().to_string() + "\n");
 
   EKAT_REQUIRE_MSG(compatible_layouts(src.get_layout(),tgt.get_layout()),
       "Error! Source and target layouts are not compatible.\n"
       " - src name: " + src.name() + "\n"
       " - tgt name: " + tgt.name() + "\n"
-      " - src layout: " + to_string(src.get_layout()) + "\n"
-      " - tgt layout: " + to_string(tgt.get_layout()) + "\n");
+      " - src layout: " + src.get_layout().to_string() + "\n"
+      " - tgt layout: " + tgt.get_layout().to_string() + "\n");
 
   do_register_field (src,tgt);
 
@@ -57,6 +57,34 @@ register_field (const field_type& src, const field_type& tgt) {
   register_field(src.get_header().get_identifier(),
                  tgt.get_header().get_identifier());
   bind_field(src,tgt);
+}
+
+void AbstractRemapper::
+register_field_from_src (const field_type& src) {
+  const auto& src_fid = src.get_header().get_identifier();
+  const auto& tgt_fid = create_tgt_fid(src_fid);
+
+  Field tgt(tgt_fid);
+  const auto& src_ap = src.get_header().get_alloc_properties();
+        auto& tgt_ap = tgt.get_header().get_alloc_properties();
+  tgt_ap.request_allocation(src_ap.get_largest_pack_size());
+  tgt.allocate_view();
+
+  register_field(src,tgt);
+}
+
+void AbstractRemapper::
+register_field_from_tgt (const field_type& tgt) {
+  const auto& tgt_fid = tgt.get_header().get_identifier();
+  const auto& src_fid = create_src_fid(tgt_fid);
+
+  Field src(src_fid);
+  const auto& tgt_ap = tgt.get_header().get_alloc_properties();
+        auto& src_ap = src.get_header().get_alloc_properties();
+  src_ap.request_allocation(tgt_ap.get_largest_pack_size());
+  src.allocate_view();
+
+  register_field(src,tgt);
 }
 
 void AbstractRemapper::

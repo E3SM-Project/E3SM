@@ -3,6 +3,7 @@ NThreads      = 1
 partmethod    = 4
 topology      = "cube"
 test_case     = "held_suarez0"
+sub_case=2
 ne            = NE
 ndays         = 400
 statefreq     = SFREQ
@@ -13,8 +14,8 @@ tstep_type    = 5
 qsize         = 1
 theta_advect_form = 1
 pgrad_correction=1
-hv_ref_profiles=2
-hv_theta_correction=1
+hv_ref_profiles=6
+hv_theta_correction=0
 limiter_option = 9
 dt_remap_factor = 1
 dt_tracer_factor = 1
@@ -26,11 +27,11 @@ runtype       = RUNTYPE
 tstep         = TSTEP
 integration   = "explicit"
 nu            = NU1
-nu_top = 2.5e5  ! default 2.5e5    HSV1 1.5ok.  2.0 bad
+nu_top = 0      ! default 2.5e5    HSV1 1.5ok.  2.0 bad
                 ! timesplit version.  5e5 works.  10e5 crashes.  
 hypervis_scaling = 3  ! 0 for constant coeff HV
 hypervis_order = 2
-hypervis_subcycle = 2
+hypervis_subcycle = 1
 hypervis_subcycle_tom = 1
 /
 &vert_nl

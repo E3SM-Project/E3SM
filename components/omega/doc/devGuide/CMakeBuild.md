@@ -55,7 +55,6 @@ OMEGA_CIME_COMPILER: E3SM compiler name defined in config_machines.xml
 OMEGA_CIME_MACHINE: E3SM machine name defined in config_machines.xml
 OMEGA_CXX_FLAGS: a list for C++ compiler flags
 OMEGA_LINK_OPTIONS: a list for linker flags
-OMEGA_EXE_LINKER_FLAGS: linker flags for building the Omega executable
 OMEGA_BUILD_EXECUTABLE: Enable building the Omega executable
 OMEGA_BUILD_TEST: Enable building Omega tests
 OMEGA_PARMETIS_ROOT: Parmetis installtion directory

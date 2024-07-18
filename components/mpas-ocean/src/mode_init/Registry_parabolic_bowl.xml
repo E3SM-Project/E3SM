@@ -2,16 +2,16 @@
 		<nml_option name="config_parabolic_bowl_vert_levels" type="integer" default_value="3" units="unitless"
 			description="Number of vertical levels in parabolic bowl."
 			possible_values="Any positive integer"
-	        />
-	        <nml_option name="config_parabolic_bowl_Coriolis_parameter" type="real" default_value="1.031e-4" units="1/s"
+		/>
+		<nml_option name="config_parabolic_bowl_Coriolis_parameter" type="real" default_value="1.031e-4" units="1/s"
 			description="Coriolis paramter"
 			possible_values="Any real number"
 		/>
-	        <nml_option name="config_parabolic_bowl_eta0" type="real" default_value="2.0" units="m"
+		<nml_option name="config_parabolic_bowl_eta0" type="real" default_value="2.0" units="m"
 			description="surface elevation magnitude"
 			possible_values="Any real number"
 		/>
-                <nml_option name="config_parabolic_bowl_b0" type="real" default_value="50.0" units="m"
+		<nml_option name="config_parabolic_bowl_b0" type="real" default_value="50.0" units="m"
 			description="maximum water depth"
 			possible_values="Any real number"
 		/>
@@ -23,13 +23,24 @@
 			description="Gravitational accerlation"
 			possible_values="Any real number"
 		/>
-	        <nml_option name="config_parabolic_bowl_adjust_domain_center" type="logical" default_value="true" units="unitless"
+		<nml_option name="config_parabolic_bowl_adjust_domain_center" type="logical" default_value=".true." units="unitless"
 			description="Flag to adjust mesh coordinates"
+			possible_values='.true. or .false'
+		/>
+		<nml_option name="config_parabolic_bowl_subgrid_refinement_level" type="integer" default_value="3" units="unitless"
+			description="Level of refinement to evaluate subgrid bathymety"
+			possible_values="Any positive integer number"
+		/>
+		<nml_option name="config_parabolic_bowl_subgrid_edge_bathymetry_max_pixel" type="logical" default_value=".true." units="unitless"
+			description="Whether edge subgrid calculations are based on edge CV average or subgrid pixels along edge"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_parabolic_bowl_subgrid_table_levels" type="integer" default_value="10" units="unitless"
+			description="Number of levels in suvgrid lookup tables"
+			possible_values="Any positive integer number"
+		/>
+		<nml_option name="config_parabolic_bowl_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
+			description="Whether to include thin layer in subgrid tables"
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
-
-  
-
-
-

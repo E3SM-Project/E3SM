@@ -22,6 +22,8 @@ using namespace OMEGA;
 
 int main(int argc, char *argv[]) {
 
+   int RetVal = 0;
+
    // initialize environments
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -41,45 +43,59 @@ int main(int argc, char *argv[]) {
       SizeTmp = sizeof(MyInt4);
       if (SizeTmp == 4)
          std::cout << "Size of I4: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of I4: FAIL " << SizeTmp << std::endl;
+      }
 
       SizeTmp = sizeof(MyInt8);
       if (SizeTmp == 8)
          std::cout << "Size of I8: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of I8: FAIL " << SizeTmp << std::endl;
+      }
 
       SizeTmp = sizeof(MyR4);
       if (SizeTmp == 4)
          std::cout << "Size of R4: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of R4: FAIL " << SizeTmp << std::endl;
+      }
 
       SizeTmp = sizeof(MyR8);
       if (SizeTmp == 8)
          std::cout << "Size of R8: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of R8: FAIL " << SizeTmp << std::endl;
+      }
 
       SizeTmp = sizeof(MyReal);
 #ifdef SINGLE_PRECISION
       if (SizeTmp == 4)
          std::cout << "Size of Real is 4: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of Real is 4: FAIL " << SizeTmp << std::endl;
+      }
 #else
       if (SizeTmp == 8)
          std::cout << "Size of Real is 8: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of Real is 8: FAIL " << SizeTmp << std::endl;
+      }
 #endif
 
       SizeTmp = sizeof(MyRealLiteral);
       if (SizeTmp == sizeof(Real))
          std::cout << "Size of Real literal: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Size of Real literal: FAIL " << SizeTmp << std::endl;
+      }
 
       // Test creation of device arrays and copying to/from host
       // by initializing on the device, copying to host and comparing with
@@ -113,8 +129,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 1DI4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 1DI4 test: FAIL" << std::endl;
+      }
 
       // Test for 2DI4
       Array2DI4 TstArr2DI4("TstArr2DI4", NumCells, NumVertLvls);
@@ -144,8 +162,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 2DI4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 2DI4 test: FAIL" << std::endl;
+      }
 
       // Test for 3DI4
       Array3DI4 TstArr3DI4("TstArr3DI4", NumTracers, NumCells, NumVertLvls);
@@ -181,8 +201,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 3DI4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 3DI4 test: FAIL" << std::endl;
+      }
 
       // Test for 4DI4
       Array4DI4 TstArr4DI4("TstArr4DI4", NumTimeLvls, NumTracers, NumCells,
@@ -224,8 +246,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 4DI4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 4DI4 test: FAIL" << std::endl;
+      }
 
       // Test for 5DI4
       Array5DI4 TstArr5DI4("TstArr5DI4", NumExtra, NumTimeLvls, NumTracers,
@@ -272,8 +296,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 5DI4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 5DI4 test: FAIL" << std::endl;
+      }
 
       // Test for 1DI8
       Array1DI8 TstArr1DI8("TstArr1DI8", NumCells);
@@ -297,8 +323,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 1DI8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 1DI8 test: FAIL" << std::endl;
+      }
 
       // Test for 2DI8
       Array2DI8 TstArr2DI8("TstArr2DI8", NumCells, NumVertLvls);
@@ -328,8 +356,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 2DI8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 2DI8 test: FAIL" << std::endl;
+      }
 
       // Test for 3DI8
       Array3DI8 TstArr3DI8("TstArr3DI8", NumTracers, NumCells, NumVertLvls);
@@ -365,8 +395,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 3DI8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 3DI8 test: FAIL" << std::endl;
+      }
 
       // Test for 4DI8
       Array4DI8 TstArr4DI8("TstArr4DI8", NumTimeLvls, NumTracers, NumCells,
@@ -408,8 +440,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 4DI8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 4DI8 test: FAIL" << std::endl;
+      }
 
       // Test for 5DI8
       Array5DI8 TstArr5DI8("TstArr5DI8", NumExtra, NumTimeLvls, NumTracers,
@@ -456,8 +490,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 5DI8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 5DI8 test: FAIL" << std::endl;
+      }
 
       // Test for 1DR4
       Array1DR4 TstArr1DR4("TstArr1DR4", NumCells);
@@ -481,8 +517,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 1DR4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 1DR4 test: FAIL" << std::endl;
+      }
 
       // Test for 2DR4
       Array2DR4 TstArr2DR4("TstArr2DR4", NumCells, NumVertLvls);
@@ -512,8 +550,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 2DR4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 2DR4 test: FAIL" << std::endl;
+      }
 
       // Test for 3DR4
       Array3DR4 TstArr3DR4("TstArr3DR4", NumTracers, NumCells, NumVertLvls);
@@ -549,8 +589,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 3DR4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 3DR4 test: FAIL" << std::endl;
+      }
 
       // Test for 4DR4
       Array4DR4 TstArr4DR4("TstArr4DR4", NumTimeLvls, NumTracers, NumCells,
@@ -592,8 +634,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 4DR4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 4DR4 test: FAIL" << std::endl;
+      }
 
       // Test for 5DR4
       Array5DR4 TstArr5DR4("TstArr5DR4", NumExtra, NumTimeLvls, NumTracers,
@@ -640,8 +684,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 5DR4 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 5DR4 test: FAIL" << std::endl;
+      }
 
       // Test for 1DR8
       Array1DR8 TstArr1DR8("TstArr1DR8", NumCells);
@@ -665,8 +711,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 1DR8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 1DR8 test: FAIL" << std::endl;
+      }
 
       // Test for 2DR8
       Array2DR8 TstArr2DR8("TstArr2DR8", NumCells, NumVertLvls);
@@ -696,8 +744,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 2DR8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 2DR8 test: FAIL" << std::endl;
+      }
 
       // Test for 3DR8
       Array3DR8 TstArr3DR8("TstArr3DR8", NumTracers, NumCells, NumVertLvls);
@@ -733,8 +783,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 3DR8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 3DR8 test: FAIL" << std::endl;
+      }
 
       // Test for 4DR8
       Array4DR8 TstArr4DR8("TstArr4DR8", NumTimeLvls, NumTracers, NumCells,
@@ -776,8 +828,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 4DR8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 4DR8 test: FAIL" << std::endl;
+      }
 
       // Test for 5DR8
       Array5DR8 TstArr5DR8("TstArr5DR8", NumExtra, NumTimeLvls, NumTracers,
@@ -824,8 +878,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 5DR8 test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 5DR8 test: FAIL" << std::endl;
+      }
 
       // Test for 1DReal
       Array1DReal TstArr1DReal("TstArr1DReal", NumCells);
@@ -849,8 +905,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 1DReal test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 1DReal test: FAIL" << std::endl;
+      }
 
       // Test for 2DReal
       Array2DReal TstArr2DReal("TstArr2DReal", NumCells, NumVertLvls);
@@ -880,8 +938,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 2DReal test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 2DReal test: FAIL" << std::endl;
+      }
 
       // Test for 3DReal
       Array3DReal TstArr3DReal("TstArr3DReal", NumTracers, NumCells,
@@ -919,8 +979,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 3DReal test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 3DReal test: FAIL" << std::endl;
+      }
 
       // Test for 4DReal
       Array4DReal TstArr4DReal("TstArr4DReal", NumTimeLvls, NumTracers,
@@ -962,8 +1024,10 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 4DReal test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 4DReal test: FAIL" << std::endl;
+      }
 
       // Test for 5DReal
       Array5DReal TstArr5DReal("TstArr5DReal", NumExtra, NumTimeLvls,
@@ -1010,14 +1074,21 @@ int main(int argc, char *argv[]) {
 
       if (icount == 0)
          std::cout << "Kokkos 5DReal test: PASS" << std::endl;
-      else
+      else {
+         RetVal += 1;
          std::cout << "Kokkos 5DReal test: FAIL" << std::endl;
+      }
 
       // finalize environments
       // MPI_Status status;
    }
    Kokkos::finalize();
    MPI_Finalize();
+
+   if (RetVal >= 256)
+      RetVal = 255;
+
+   return RetVal;
 
 } // end of main
 //===-----------------------------------------------------------------------===/

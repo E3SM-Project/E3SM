@@ -4358,5 +4358,10 @@ int main(int argc, char *argv[]) {
       LOG_INFO("TimeMgrTest: Failed");
    }
 
+   if (TotErr >= 256)
+      TotErr = 255;
+
+   return TotErr;
+
 } // end of main
 //===-----------------------------------------------------------------------===/

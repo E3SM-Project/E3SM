@@ -13,6 +13,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "MachEnv.h"
+#include "OmegaKokkos.h"
 
 #include <string>
 
@@ -60,6 +61,11 @@ class HorzMesh {
    // KOKKOS_LAMBDA does not allow to have parallel_* functions inside of a
    // private function.
    void computeEdgeSign();
+
+   void setMasks(int NVertLevels);
+
+   void setMeshScaling();
+
    // Variables
    // Since these are used frequently, we make them public to reduce the
    // number of retrievals required.
@@ -202,6 +208,19 @@ class HorzMesh {
 
    Array2DR8 EdgeSignOnVertex;      ///< Sign of vector connecting vertices
    HostArray2DR8 EdgeSignOnVertexH; ///< Sign of vector connecting vertices
+
+   // Masks
+   Array2DR8 EdgeMask;      ///< Mask to determine if computations should be
+                            ///  done on edge
+   HostArray2DR8 EdgeMaskH; ///< Mask to determine if computations should be
+                            ///  done on edge
+
+   // Mesh scaling
+   Array1DR8 MeshScalingDel2;      /// Coef to Laplacian mixing terms
+   HostArray1DR8 MeshScalingDel2H; /// Coef to Laplacian mixing terms
+
+   Array1DR8 MeshScalingDel4;      /// Coef to biharmonic mixing terms
+   HostArray1DR8 MeshScalingDel4H; /// Coef to biharmonic mixing terms
 
    // Methods
 

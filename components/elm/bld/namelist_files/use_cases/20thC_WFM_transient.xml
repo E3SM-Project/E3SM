@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc            >Simulate transient land-use, and aerosol deposition changes from 1850 to 2015</use_case_desc>
+<use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2015</use_case_desc>
+<use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2015</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2015</use_case_desc>
+
+<sim_year>1850</sim_year>
+
+<sim_year_range>1850-2000</sim_year_range>
+
+<clm_start_type>arb_ic</clm_start_type>
+
+<clm_demand >flanduse_timeseries</clm_demand>
+
+
+
+
+
+<stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
+<model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
+
+
+<!-- BGCv2 compsets -->
+
+<fsurdat>lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
+<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
+<tw_irr>.true.</tw_irr>
+<irrigate>.true.</irrigate>
+<create_crop_landunit>.true.</create_crop_landunit>
+<do_transient_crops>.true.</do_transient_crops>
+<firrig_data>.true.</firrig_data>
+<extra_gw_irr>.false.</extra_gw_irr>
+<stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
+<stream_year_first_ndep>1850</stream_year_first_ndep>
+<stream_year_last_ndep>2101</stream_year_last_ndep>
+<model_year_align_ndep>1850</model_year_align_ndep>
+<stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
+<stream_year_first_popdens>1850</stream_year_first_popdens>
+<stream_year_last_popdens>2100</stream_year_last_popdens>
+<model_year_align_popdens>1850</model_year_align_popdens>
+</namelist_defaults>

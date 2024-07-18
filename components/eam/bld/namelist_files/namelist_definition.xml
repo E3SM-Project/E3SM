@@ -473,6 +473,26 @@ Turn on additional verbose output  for integrated conservation checks.
 Default: FALSE
 </entry>
 
+<!-- Transformed Eulerian Mean (TEM) budget outputs -->
+
+<entry id="phys_grid_ctem_zm_nbas" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+Number of zonal mean basis functions (number of m=0 spherical harmonics) used in
+Transformed Eulerian Mean (TEM) diagnostics
+</entry>
+
+<entry id="phys_grid_ctem_za_nlat" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+Number of latitude grid points for zonal average TEM diagnostics history fields
+</entry>
+
+<entry id="phys_grid_ctem_nfreq" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+  Frequency of TEM diagnostic calculations.
+  If &gt; 0, frequency is specified as number of timesteps.
+  If &lt; 0, frequency is specified as number of hours.
+</entry>
+
 <!-- Dry Convective Adjustment -->
 
 <entry id="nlvdry" type="integer"  category="dry_conv_adj"
@@ -4706,7 +4726,9 @@ Default: FALSE
 
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
-Turn off microphysics computation.
+Turn off microphysics computation for MG2.  For P3 this disables the generation of
+liquid precipitation via autoconversion only, to be used for idealized simulations of
+warm phase boundary layer clouds.
 Default: FALSE
 </entry>                                                                        |
                                                                                 |

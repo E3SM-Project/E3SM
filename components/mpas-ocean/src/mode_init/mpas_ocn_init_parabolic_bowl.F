@@ -33,6 +33,8 @@ module ocn_init_parabolic_bowl
    use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
+   use ocn_subgrid
+   use ocn_init_subgrid
 
    implicit none
    private
@@ -132,6 +134,9 @@ contains
     real (kind=RKIND):: xshift = 0.0, yshift = 0.0 
     real (kind=RKIND) :: layerThicknessEdgeAverage
     real (kind=RKIND), dimension(:,:), allocatable :: rSubgridPoints, sSubgridPoints
+    real (kind=RKIND), dimension(:), allocatable :: subgridBathymetryValues, subgridAreas
+    real (kind=RKIND), dimension(:), allocatable :: subgridSshValues
+    real (kind=RKIND), dimension(:), allocatable :: subgridUValues, subgridVValues
     real (kind=RKIND), dimension(:), allocatable :: uVelocityAverage, vVelocityAverage
     integer :: nSubgridCell, nSubgridEdge, nSubgridVertex
     integer :: nSubgridTriPerSlice
@@ -141,6 +146,12 @@ contains
     integer :: slice, nSlice
     integer :: i,j
     real (kind=RKIND) :: deltaZ
+
+    integer:: nsubgridCellEdge, iEdgeSegment
+    real (kind=RKIND), dimension(:,:), allocatable :: cellEdgeBathymetryValues
+    real (kind=RKIND), dimension(:), allocatable:: dsEdge
+    integer:: jj
+    real (kind=RKIND), dimension(:), allocatable:: xSubgridCell, ySubgridCell
 
     iErr = 0
 
@@ -212,137 +223,180 @@ contains
 
 
     block_ptr => domain % blocklist
-    do while(associated(block_ptr))
-       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-       call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-       call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
-       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+    call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+    call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+    call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+    call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels) ;
-       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve) ;
-       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve) ; 
-       call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve) ; 
-       call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+    call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels) ;
+    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve) ;
+    call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve) ; 
+    call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve) ; 
+    call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+    
+    call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+    call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+
+    call mpas_pool_get_array(meshPool, 'xCell', xCell)
+    call mpas_pool_get_array(meshPool, 'yCell', yCell)
+    call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+    call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
+    call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+    call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+    call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+    call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+    call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+    call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+    call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+    call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+    call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+
+    call mpas_pool_get_array(meshPool, 'fCell', fCell)
+    call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+    call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+    
+    call mpas_pool_get_array(meshPool, 'xEdge', xEdge ) 
+    call mpas_pool_get_array(meshPool, 'yEdge', yEdge ) 
+    call mpas_pool_get_array(meshPool, 'xVertex', xVertex ) 
+    call mpas_pool_get_array(meshPool, 'yVertex', yVertex ) 
+
+    call mpas_pool_get_array(statePool, 'zMid', zMid, 1) ;
+
+    call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+    call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors ) ;
+    call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity ) ;
+
+    call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+    call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+
+    call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+    call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+
+    ! if config_parabolic_bowl_adjust_domain_center == .true.,
+    ! Adjust center of the mesh so that its center is located at (0,0)
+    if ( config_parabolic_bowl_adjust_domain_center ) then
+       xCell = xCell - xshift ; 
+       yCell = yCell - yshift ;
+
+       xEdge = xEdge - xshift ;
+       yEdge = yEdge - yshift ;
+
+       xVertex = xVertex - xshift ;
+       yVertex = yVertex - yshift ; 
+    end if
+
+
+    ! Initlialze vector
+    call mpas_initialize_vectors(meshPool) ; 
+
+
+    minLevelCell(:) = 1
+    do iCell = 1, nCellsSolve
+      ! Set up vertical grid
+      maxLevelCell(iCell) = nVertLevels ; ! sigma coordinates 
+    end do
+
+
+    do iCell = 1, nCellsSolve
       
-       call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
-       call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+       ! Set temperature
+       activeTracers(index_temperature, :, iCell) = 10.0_RKIND
 
-       call mpas_pool_get_array(meshPool, 'xCell', xCell)
-       call mpas_pool_get_array(meshPool, 'yCell', yCell)
-       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-       call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
-       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+       ! Set salinity
+       activeTracers(index_salinity, :, iCell) = 30.0_RKIND
 
-       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
-       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+      ! Set Coriolis parameters, if other than zero
+      fCell(iCell) = config_parabolic_bowl_coriolis_parameter ; 
+    end do
 
-       call mpas_pool_get_array(meshPool, 'fCell', fCell)
-       call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-       call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
-       
-       call mpas_pool_get_array(meshPool, 'xEdge', xEdge ) 
-       call mpas_pool_get_array(meshPool, 'yEdge', yEdge ) 
-       call mpas_pool_get_array(meshPool, 'xVertex', xVertex ) 
-       call mpas_pool_get_array(meshPool, 'yVertex', yVertex ) 
+    do iEdge = 1, nEdgesSolve
+      fEdge(iEdge) = config_parabolic_bowl_coriolis_parameter ;  
+    end do
 
-       call mpas_pool_get_array(statePool, 'zMid', zMid, 1) ;
+    do iVertex = 1, nVerticesSolve
+      fVertex(iVertex) =  config_parabolic_bowl_coriolis_parameter ;
+    end do
 
-       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-       call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors ) ;
-       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity ) ;
+    allocate(uVelocityAverage(nEdgesSolve))
+    allocate(vVelocityAverage(nEdgesSolve))
+    
+    if (config_use_subgrid_wetting_drying) then
 
-       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+       call ocn_subgrid_init(domain,iErr)
+       call ocn_init_subgrid_calculations(domain, &
+                                          ocn_init_parabolic_bowl_bathymetry, &
+                                          ocn_init_parabolic_bowl_velocity, &
+                                          ocn_init_parabolic_bowl_ssh, &
+                                          config_parabolic_bowl_subgrid_refinement_level, &
+                                          config_parabolic_bowl_subgrid_edge_bathymetry_max_pixel, &
+                                          config_parabolic_bowl_subgrid_use_thin_layer, &
+                                          uVelocityAverage, &
+                                          vVelocityAverage, &
+                                          iErr)
+    end if
 
-       call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+    ! Find max bottom depth
+    maxBottomDepth = maxval( bottomDepth ) ; 
+    minBottomDepth = minval( bottomDepth ) ; 
+    call mpas_dmpar_max_real( domain % dminfo, maxBottomDepth, globalMaxBottomDepth ) ;
+    call mpas_dmpar_min_real( domain % dminfo, minBottomDepth, globalMinBottomDepth ) ;
 
+    ! Set refBottomDepth and refZMid
+    do k = 1, nVertLevels
+      refBottomDepth(k) = globalMaxBottomDepth*interfaceLocations(k+1) ; 
+      refZMid(k) = -0.5_RKIND*( interfaceLocations(k+1) + interfaceLocations(k))*globalMaxBottomDepth ; 
+    end do
 
-       ! if config_parabolic_bowl_adjust_domain_center == .true.,
-       ! Adjust center of the mesh so that its center is located at (0,0)
-       if ( config_parabolic_bowl_adjust_domain_center ) then
-          xCell = xCell - xshift ; 
-          yCell = yCell - yshift ;
+    ! Set vertCoordMovementWeights
+    vertCoordMovementWeights(:) = 1.0_RKIND
 
-          xEdge = xEdge - xshift ;
-          yEdge = yEdge - yshift ;
+    ! Set velocity
+    do iEdge = 1, nEdgesSolve
 
-          xVertex = xVertex - xshift ;
-          yVertex = yVertex - yshift ; 
-       end if
+      if (config_use_subgrid_wetting_drying) then
+         do k = 1, nVertLevels 
+            normalVelocity(k,iEdge) = uVelocityAverage(iEdge)*edgeNormalVectors(1,iEdge) &
+                                    + vVelocityAverage(iEdge)*edgeNormalVectors(2,iEdge) ;
+         end do
+      else
+         call ocn_init_parabolic_bowl_velocity(xEdge(iEdge), yEdge(iEdge), uu, vv)
+         do k = 1, nVertLevels 
+            normalVelocity(k,iEdge) = uu*edgeNormalVectors(1,iEdge) + vv*edgeNormalVectors(2,iEdge) ;
+         end do
+      end if
+    end do
 
+    ! Set layer thickness and ssh
+    if (config_use_wetting_drying) then
 
-       ! Initlialze edge normal vectors
-       call mpas_initialize_vectors(meshPool) ; 
+      do iCell = 1, nCellsSolve
+        ! Set up vertical grid
+        maxLevelCell(iCell) = nVertLevels ; ! sigma coordinates 
+       end do
 
-
-       minLevelCell(:) = 1
        do iCell = 1, nCellsSolve
-         ! Set up vertical grid
-         maxLevelCell(iCell) = nVertLevels ; ! sigma coordinates 
-        end do
-
-
-       do iCell = 1, nCellsSolve
-         
-          ! Set temperature
-          activeTracers(index_temperature, :, iCell) = 10.0_RKIND
-
-          ! Set salinity
-          activeTracers(index_salinity, :, iCell) = 30.0_RKIND
-
-         ! Set Coriolis parameters
-         fCell(iCell) = config_parabolic_bowl_coriolis_parameter ; 
-      end do
-
-      do iEdge = 1, nEdgesSolve
-         fEdge(iEdge) = config_parabolic_bowl_coriolis_parameter ;  
-      end do
-
-      do iVertex = 1, nVerticesSolve
-         fVertex(iVertex) =  config_parabolic_bowl_coriolis_parameter ;
-      end do
-
-
-      ! Find max bottom depth
-      maxBottomDepth = maxval( bottomDepth ) ; 
-      minBottomDepth = minval( bottomDepth ) ; 
-      call mpas_dmpar_max_real( domain % dminfo, maxBottomDepth, globalMaxBottomDepth ) ;
-      call mpas_dmpar_min_real( domain % dminfo, minBottomDepth, globalMinBottomDepth ) ;
-
-      ! Set refBottomDepth and refZMid
-      do k = 1, nVertLevels
-        refBottomDepth(k) = globalMaxBottomDepth*interfaceLocations(k+1) ; 
-        refZMid(k) = -0.5_RKIND*( interfaceLocations(k+1) + interfaceLocations(k))*globalMaxBottomDepth ; 
-      end do
-
-      ! Set vertCoordMovementWeights
-      vertCoordMovementWeights(:) = 1.0_RKIND
-
-      ! Set velocity
-      do iEdge = 1, nEdgesSolve
-
-        call ocn_init_parabolic_bowl_velocity(xEdge(iEdge), yEdge(iEdge), uu, vv)
-        do k = 1, nVertLevels 
-           normalVelocity(k,iEdge) = uu*edgeNormalVectors(1,iEdge) + vv*edgeNormalVectors(2,iEdge) ;
-        end do
-      end do
-
-      ! Set layer thickness and ssh
-      if (config_use_wetting_drying) then
-
-         do iCell = 1, nCellsSolve
-           !
-           ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
-           ! add a thin layer of nlayer*config_drying_min_cellhight 
-           ! 
+         !
+         ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
+         ! add a thin layer of nlayer*config_drying_min_cellhight 
+         ! 
  
+         if (config_use_subgrid_wetting_drying) then
+
+           call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
+                                       subgridWetVolumeCellTable(:,iCell),&
+                                       subgridSshCellTableRange(:,iCell),&
+                                       bottomDepth(iCell),&
+                                       subgridCellBathymetryMin(iCell),&
+                                       ssh(iCell))
+           !call ocn_subgrid_layer_thickness_lookup(ssh(iCell), & 
+           !                                subgridWetVolumeCellTable(:,iCell), &
+           !                                subgridSshCellTableRange(:,iCell),&
+           !                                bottomDepth(iCell),&
+           !                                LayerThickness(1,iCell))
+
+         else
            call ocn_init_parabolic_bowl_bathymetry(xCell(iCell),yCell(iCell),bottomDepth(iCell))
            call ocn_init_parabolic_bowl_ssh(xCell(iCell),yCell(iCell),bottomDepth(iCell),ssh(iCell))
            ssh(iCell) = - bottomDepth(iCell) + &
@@ -359,17 +413,25 @@ contains
                  realArgs=(/layerThickness(k,iCell)/))
              end if
            end do
-         
-         
-           do k = 1, maxLevelCell(iCell)
-             restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
-           end do
+         endif
+       
+       
+         do k = 1, maxLevelCell(iCell)
+           restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
          end do
-         
-      end if 
+       end do
+       
+    end if 
 
-      block_ptr => block_ptr % next
-    end do
+    if (config_use_subgrid_wetting_drying) then
+    do iCell = 1,nCellsSolve
+      call ocn_subgrid_layer_thickness_lookup(ssh(iCell), & 
+                                              subgridWetVolumeCellTable(:,iCell), &
+                                              subgridSshCellTableRange(:,iCell),&
+                                              bottomDepth(iCell),&
+                                              subgridLayerThicknessDebug(iCell))
+    enddo
+    endif
 
     deallocate(interfaceLocations)
     !--------------------------------------------------------------------
@@ -436,6 +498,7 @@ contains
  
       ssh = (sqrtOneMC2/oneMC) - 1.0_RKIND - ((RR**2)/(LL**2))*( (oneMC2/(oneMC**2)) - 1.0_RKIND ) ;
       ssh = config_parabolic_bowl_b0*ssh ; 
+      !ssh = - bottomDepth + max(ssh + bottomDepth, config_drying_min_cell_height + eps)
 
    !--------------------------------------------------------------------
 
@@ -506,6 +569,7 @@ contains
 
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_parabolic_bowl_vert_levels
+      integer, pointer :: config_subgrid_table_levels, config_parabolic_bowl_subgrid_table_levels
    
       iErr = 0
 
@@ -519,7 +583,17 @@ contains
       if(config_vert_levels <= 0 .and. config_parabolic_bowl_vert_levels > 0) then
          config_vert_levels = config_parabolic_bowl_vert_levels
       else if (config_vert_levels <= 0) then
-         call mpas_log_write( 'Validation failed for para_bowl. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
+         call mpas_log_write( 'Validation failed for parabolic_bowl. Not given a usable value for vertical levels.', MPAS_LOG_CRIT)
+         iErr = 1
+      end if
+
+      call mpas_pool_get_config(configPool, 'config_subgrid_table_levels', config_subgrid_table_levels)
+      call mpas_pool_get_config(configPool, 'config_parabolic_bowl_subgrid_table_levels', config_parabolic_bowl_subgrid_table_levels)
+
+      if (config_subgrid_table_levels <= 0 .and. config_parabolic_bowl_subgrid_table_levels > 0) then
+         config_subgrid_table_levels = config_parabolic_bowl_subgrid_table_levels  
+      else if (config_subgrid_table_levels <= 0) then
+         call mpas_log_write( 'Validation failed for parabolic_bowl. Not given a usable value for subgrid table levels.', MPAS_LOG_CRIT)
          iErr = 1
       end if
 

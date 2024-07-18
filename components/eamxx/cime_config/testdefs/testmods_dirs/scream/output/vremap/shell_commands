@@ -1,0 +1,10 @@
+# Look for all the eamxx_***_output.yaml files in the case folder and
+# sets vertical remap
+
+CASEROOT=$(./xmlquery --value CASEROOT)
+YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+
+YAML_FILES=$(ls -1 | grep 'eamxx_.*_output.yaml')
+for fname in ${YAML_FILES}; do
+  $YAML_EDIT_SCRIPT -f $fname --vertical-remap-file \${DIN_LOC_ROOT}/atm/scream/maps/vrt_remapping_p_levs_20230926.nc
+done

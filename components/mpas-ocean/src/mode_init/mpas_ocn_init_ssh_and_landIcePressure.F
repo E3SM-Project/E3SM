@@ -25,9 +25,7 @@ module ocn_init_ssh_and_landIcePressure
    use mpas_io_units
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
 
-   use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
 
@@ -159,7 +157,7 @@ contains
        end if
 
        do iCell = 1, nCells
-         if(modifyLandIcePressureMask(iCell) == 0) then
+         if(sshAdjustmentMask(iCell) == 0) then
            ssh(iCell) = 0.0_RKIND
            landIcePressure(iCell) = 0.0_RKIND
 

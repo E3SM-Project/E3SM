@@ -4,6 +4,8 @@
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scream_io_utils.hpp"
+#include "share/io/scream_io_file_specs.hpp"
+#include "share/io/scream_io_control.hpp"
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -66,7 +68,7 @@ public:
 
   // Constructor(s) & Destructor
   OutputManager () = default;
-  virtual ~OutputManager () = default;
+  virtual ~OutputManager ();
 
   // Set up the manager, creating all output streams. Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options
@@ -110,6 +112,8 @@ public:
       m_atm_logger = atm_logger;
   }
   void add_global (const std::string& name, const ekat::any& global);
+
+  void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
@@ -171,9 +175,6 @@ protected:
   // Whether a restarted run can resume filling previous run output file (if not full)
   bool m_resume_output_file = false;
 
-  // If the user specifies freq units "none" or "never", output is disabled
-  bool m_output_disabled = false;
-
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the
   // restart happens, and the latter being the start time of the *original* run.
@@ -182,6 +183,9 @@ protected:
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+
+  // If true, we save grid data in output file
+  bool m_save_grid_data;
 };
 
 } // namespace scream

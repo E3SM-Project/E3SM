@@ -38,6 +38,13 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
  : AtmosphereDiagnostic(comm,params)
 {
   m_field_name = m_params.get<std::string>("field_name");
+  auto surf_ref = m_params.get<std::string>("surface_reference");
+  EKAT_REQUIRE_MSG(surf_ref == "sealevel" or surf_ref == "surface",
+      "Error! Invalid surface reference for FieldAtHeight.\n"
+      " -        field name: " + m_field_name + "\n"
+      " - surface reference: " + surf_ref + "\n"
+      " -     valid options: sealevel, surface\n");
+  m_z_name = (surf_ref == "sealevel") ? "z" : "height";
   const auto& location = m_params.get<std::string>("vertical_location");
   auto chars_start = location.find_first_not_of("0123456789.");
   EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
@@ -52,7 +59,7 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
       "Error! Invalid string for height value for FieldAtHeight.\n"
       " - input string   : " + location + "\n"
       " - expected format: Nm, with N integer\n");
-  m_diag_name = m_field_name + "_at_" + m_params.get<std::string>("vertical_location");
+  m_diag_name = m_field_name + "_at_" + m_params.get<std::string>("vertical_location") + "_above_" + surf_ref;
 }
 
 void FieldAtHeight::
@@ -62,8 +69,8 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>(m_field_name,gname);
 
   // We don't know yet which one we need
-  add_field<Required>("z_mid",gname);
-  add_field<Required>("z_int",gname);
+  add_field<Required>(m_z_name+"_mid",gname);
+  add_field<Required>(m_z_name+"_int",gname);
 }
 
 void FieldAtHeight::
@@ -82,18 +89,18 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
       "Error! Field rank not supported by FieldAtHeight.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + fid.name() + "\n"
-      " - field layout: " + to_string(layout) + "\n");
+      " - field layout: " + layout.to_string() + "\n");
 
   // Figure out the z value
-  m_z_name = tag==LEV ? "z_mid" : "z_int";
+  m_z_suffix = tag==LEV ? "_mid" : "_int";
 
   // All good, create the diag output
-  FieldIdentifier d_fid (m_diag_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  FieldIdentifier d_fid (m_diag_name,layout.clone().strip_dim(tag),fid.get_units(),fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
@@ -111,7 +118,7 @@ initialize_impl (const RunType /*run_type*/)
 // =========================================================================================
 void FieldAtHeight::compute_diagnostic_impl()
 {
-  const auto z_view = get_field_in(m_z_name).get_view<const Real**>();
+  const auto z_view = get_field_in(m_z_name + m_z_suffix).get_view<const Real**>();
   const Field& f = get_field_in(m_field_name);
   const auto& fl = f.get_header().get_identifier().get_layout();
 

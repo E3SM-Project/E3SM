@@ -1846,7 +1846,8 @@ contains
     real(rtype),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
     !local variables:
-    real(rtype)                            :: inv_dum,lammax,lammin
+    real(rtype)                            :: lammax,lammin
+    real(rtype)                            :: mass_to_d3_factor
 
     !--------------------------------------------------------------------------
 
@@ -1858,25 +1859,25 @@ contains
        ! find spot in lookup table
        ! (scaled N/q for lookup table parameter space_
        nr      = max(nr,nsmall)
-       inv_dum = bfb_cbrt(qr/(cons1*nr*6._rtype))
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       lamr   = bfb_cbrt(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))  ! recalculate slope based on mu_r
+       mass_to_d3_factor = cons1*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)
+       lamr   = bfb_cbrt(mass_to_d3_factor*nr/qr)  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*500._rtype  !500=1/(2mm) is inverse of max allowed number-weighted mean raindrop diameter
        
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
           lamr = lammin
-          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
+          nr   = lamr * lamr * lamr * qr / mass_to_d3_factor
        elseif (lamr.gt.lammax) then
           lamr = lammax
-          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
+          nr   = lamr * lamr * lamr * qr / mass_to_d3_factor
        endif
 
        cdistr  = nr/bfb_gamma(mu_r+1._rtype)
-       logn0r  = bfb_log10(nr)+(mu_r+1._rtype)*bfb_log10(lamr)-bfb_log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
+       logn0r  = bfb_log10(cdistr)+(mu_r+1._rtype)*bfb_log10(lamr) !note: logn0r is calculated as log10(n0r)
 
     else
 

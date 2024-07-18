@@ -9,6 +9,8 @@ target_include_directories(
     ${OMEGA_SOURCE_DIR}/src/base
     ${OMEGA_SOURCE_DIR}/src/infra
     ${OMEGA_SOURCE_DIR}/src/ocn
+    ${PIOC_SOURCE_DIR}
+    ${PIOC_BINARY_DIR}
     ${Parmetis_INCLUDE_DIRS}
 )
 
@@ -44,7 +46,7 @@ if(GKlib_FOUND)
 endif()
 
 # Add source files for the library
-file(GLOB _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
+file(GLOB_RECURSE _LIBSRC_FILES infra/*.cpp base/*.cpp ocn/*.cpp)
 
 add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
 
@@ -69,6 +71,8 @@ if(OMEGA_BUILD_EXECUTABLE)
     PRIVATE
     ${OMEGA_LIB_NAME}
     OmegaLibFlags
-)
+  )
+
+  set_target_properties(${OMEGA_EXE_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 endif()

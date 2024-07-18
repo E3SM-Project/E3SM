@@ -74,7 +74,7 @@ TEST_CASE("field_at_level")
 
   using IPDF = std::uniform_int_distribution<int>;
   IPDF ipdf (1,nlevs-2);
-  for (const std::string& lev_loc : {"model_top", "model_bot", "rand"}) {
+  for (const std::string lev_loc : {"model_top", "model_bot", "rand"}) {
     int lev;
     std::string lev_str;
     if (lev_loc=="bot") {
