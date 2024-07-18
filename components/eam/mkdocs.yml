@@ -2,6 +2,24 @@ site_name: EAM
 
 nav:
  - Introduction: 'index.md'
- - Users's Guide: user-guide/index.md
- - Developers's Guide: dev-guide/index.md
- - Technical Guide: tech-guide/index.md
+ - User Guide:
+   - user-guide/index.md
+   - Namelist Parameters: user-guide/namelist_parameters.md
+   - Aerosol Properties: user-guide/aerosol_phys_prop.md
+   - Emission Oxidants: user-guide/emission_oxidant_files.md
+ - Developer Guide: dev-guide/index.md
+ - Technical Guide:
+   - tech-guide/index.md
+   - tech-guide/homme.md
+   - tech-guide/atmosphere-grid-overview.md
+   - tech-guide/p3.md
+   - tech-guide/clubb.md
+   - tech-guide/zm.md
+   - RRTMG: tech-guide/rrtmg.md
+   - tech-guide/mam.md
+   - tech-guide/vbs.md
+   - tech-guide/dust.md
+   - tech-guide/oceanfilms.md
+   - tech-guide/chemUCIlinozv3.md
+   - COSP: tech-guide/cosp.md
+   - tech-guide/armdiags.md

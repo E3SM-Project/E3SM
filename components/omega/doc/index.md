@@ -35,7 +35,9 @@ userGuide/Halo
 userGuide/HorzMesh
 userGuide/HorzOperators
 userGuide/AuxiliaryVariables
+userGuide/TendencyTerms
 userGuide/TimeMgr
+userGuide/Reductions
 ```
 
 ```{toctree}
@@ -61,7 +63,9 @@ devGuide/Halo
 devGuide/HorzMesh
 devGuide/HorzOperators
 devGuide/AuxiliaryVariables
+devGuide/TendencyTerms
 devGuide/TimeMgr
+devGuide/Reductions
 ```
 
 ```{toctree}

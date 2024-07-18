@@ -6,9 +6,9 @@
  
  ./xmlchange RUN_TYPE="hybrid"
  ./xmlchange GET_REFCASE="TRUE"
- ./xmlchange RUN_REFCASE="20231209.v3.LR.piControl-spinup.chrysalis"
- ./xmlchange RUN_REFDATE="1801-01-01"
- ./xmlchange RUN_REFDIR=${INPUTDATA_ROOT}"/e3sm_init/V3.SSP370_SSP585.ne30pg2_r05_IcoswISC30E3r5/v3.LR.piControl-spinup/1801-01-01-00000"
+ ./xmlchange RUN_REFCASE="v3.LR.historical_0101"
+ ./xmlchange RUN_REFDATE="2015-01-01"
+ ./xmlchange RUN_REFDIR=${INPUTDATA_ROOT}"/e3sm_init/v3.SSP.ne30pg2_r05_IcoswISC30E3r5/v3.LR.historical_0101/2015-01-01-00000"
 
  exit
 

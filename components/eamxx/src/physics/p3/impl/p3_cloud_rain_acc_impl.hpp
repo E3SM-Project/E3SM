@@ -20,9 +20,12 @@ void Functions<S,D>
   const Spack& qc_incld, const Spack& nc_incld,
   const Spack& qr_incld, const Spack& inv_qc_relvar,
   Spack& qc2qr_accret_tend, Spack& nc_accret_tend,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
+
+  const Scalar p3_k_accretion = p3constants.p3_k_accretion;;
 
   Spack sgs_var_coef;
   // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
@@ -32,7 +35,7 @@ void Functions<S,D>
   if (qr_and_qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
     qc2qr_accret_tend.set(qr_and_qc_not_small,
-              sgs_var_coef * sp(67.0) * pow(qc_incld * qr_incld, sp(1.15)));
+              sgs_var_coef * sp(p3_k_accretion) * pow(qc_incld * qr_incld, sp(1.15)));
     nc_accret_tend.set(qr_and_qc_not_small, qc2qr_accret_tend * nc_incld / qc_incld);
 
     qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);

@@ -69,9 +69,50 @@ FieldLayout AbstractGrid::
 get_vertical_layout (const bool midpoints) const
 {
   using namespace ShortFieldTagsNames;
-  return midpoints ? FieldLayout ({ LEV},{m_num_vert_levs})
-                   : FieldLayout ({ILEV},{m_num_vert_levs+1});
+  const auto t = midpoints ? LEV : ILEV;
+  const auto d = m_num_vert_levs + (midpoints ? 0 : 1);
+  return FieldLayout({t},{d}).rename_dims(m_special_tag_names);
+}
 
+FieldLayout AbstractGrid::
+get_vertical_layout (const bool midpoints,
+                     const int vector_dim,
+                     const std::string& vec_dim_name) const
+{
+  using namespace ShortFieldTagsNames;
+  auto l = get_vertical_layout(midpoints);
+  l.append_dim(CMP,vector_dim,vec_dim_name);
+  return l;
+}
+
+FieldLayout
+AbstractGrid::get_2d_vector_layout (const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+  return get_2d_vector_layout(vector_dim,e2str(CMP));
+}
+
+FieldLayout
+AbstractGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
+  return get_2d_tensor_layout(cmp_dims,names);
+}
+
+FieldLayout
+AbstractGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+  return get_3d_vector_layout(midpoints,vector_dim,e2str(CMP));
+}
+
+FieldLayout
+AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const
+{
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
+  return get_3d_tensor_layout(midpoints,cmp_dims,names);
 }
 
 bool AbstractGrid::is_unique () const {
@@ -146,33 +187,30 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  const auto lt = get_layout_type(layout.tags());
-  if (lt==LayoutType::Scalar0D or lt==LayoutType::Vector0D) {
-    // 0d layouts are compatible with any grid
-    // Let's return true early to avoid segfautls below
-    return true;
-  }
-  const bool midpoints = layout.tags().back()==LEV;
-  const bool is_vec = layout.is_vector_layout();
-  const int vec_dim = is_vec ? layout.dims()[layout.get_vector_dim()] : 0;
-  const auto vec_tag = is_vec ? layout.get_vector_tag() : INV;
-
-  switch (lt) {
+  const bool midpoints = layout.has_tag(LEV);
+  switch (layout.type()) {
+    case LayoutType::Scalar0D: [[fallthrough]];
+    case LayoutType::Vector0D:
+    case LayoutType::Tensor0D:
+      // 0d quantities are always ok
+      return true;
     case LayoutType::Scalar1D: [[fallthrough]];
     case LayoutType::Vector1D:
-      // 1d layouts need the right number of levels
-      return layout.dims().back() == m_num_vert_levs or
-             layout.dims().back() == (m_num_vert_levs+1);
+      return layout.congruent(get_vertical_layout(midpoints));
     case LayoutType::Scalar2D:
-      return layout==get_2d_scalar_layout();
+      return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
-      return layout==get_2d_vector_layout(vec_tag,vec_dim);
+      return layout.congruent(get_2d_vector_layout(layout.get_vector_dim()));
+    case LayoutType::Tensor2D:
+      return layout.congruent(get_2d_tensor_layout(layout.get_tensor_dims()));
     case LayoutType::Scalar3D:
-      return layout==get_3d_scalar_layout(midpoints);
+      return layout.congruent(get_3d_scalar_layout(midpoints));
     case LayoutType::Vector3D:
-      return layout==get_3d_vector_layout(midpoints,vec_tag,vec_dim);
+      return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
+    case LayoutType::Tensor3D:
+      return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
     default:
-      // Anything else is probably no
+      // Anything else is probably not ok
       return false;
   }
 }
@@ -197,6 +235,26 @@ get_global_max_dof_gid () const ->gid_type
   return m_global_max_dof_gid;
 }
 
+auto AbstractGrid::
+get_global_min_partitioned_dim_gid () const ->gid_type
+{
+  // Lazy calculation
+  if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
+    m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
+  }
+  return m_global_min_partitioned_dim_gid;
+}
+
+auto AbstractGrid::
+get_global_max_partitioned_dim_gid () const ->gid_type
+{
+  // Lazy calculation
+  if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
+    m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
+  }
+  return m_global_max_partitioned_dim_gid;
+}
+
 Field
 AbstractGrid::get_dofs_gids () const {
   return m_dofs_gids.get_const();
@@ -205,6 +263,16 @@ AbstractGrid::get_dofs_gids () const {
 Field
 AbstractGrid::get_dofs_gids () {
   return m_dofs_gids;
+}
+
+Field
+AbstractGrid::get_partitioned_dim_gids () {
+  return m_partitioned_dim_gids;
+}
+
+Field
+AbstractGrid::get_partitioned_dim_gids () const {
+  return m_partitioned_dim_gids.get_const();
 }
 
 Field
@@ -234,8 +302,8 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
       "Error! Cannot create geometry data, since it already exists.\n"
       "  - grid name: " + this->name() + "\n"
       "  - geo data name: " + name + "\n"
-      "  - geo data layout: " + to_string(m_geo_fields.at(name).get_header().get_identifier().get_layout()) + "\n"
-      "  - input layout: " + to_string(fid.get_layout()) + "\n");
+      "  - geo data layout: " + m_geo_fields.at(name).get_header().get_identifier().get_layout().to_string() + "\n"
+      "  - input layout: " + fid.get_layout().to_string() + "\n");
 
   // Create field and the read only copy as well
   auto& f = m_geo_fields[name] = Field(fid);
@@ -244,7 +312,18 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
 }
 
 void
-AbstractGrid::set_geometry_data (const Field& f)
+AbstractGrid::delete_geometry_data (const std::string& name)
+{
+  EKAT_REQUIRE_MSG (has_geometry_data(name),
+      "Error! Cannot delete geometry data, since it is does not exist.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data name: " + name + "\n");
+
+  m_geo_fields.erase(name);
+}
+
+void
+AbstractGrid::set_geometry_data (const Field& f) const
 {
   EKAT_REQUIRE_MSG (not has_geometry_data(f.name()),
       "Error! Cannot set geometry data, since it already exists.\n"
@@ -484,8 +563,10 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
 {
   if (shallow) {
     m_dofs_gids = src.m_dofs_gids;
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids;
   } else {
     m_dofs_gids = src.m_dofs_gids.clone();
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone();
   }
 
   if (shallow) {
@@ -501,6 +582,9 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
       m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
+
+  m_global_max_dof_gid = src.m_global_max_dof_gid;
+  m_global_min_dof_gid = src.m_global_min_dof_gid;
   m_is_unique = src.m_is_unique;
   m_is_unique_computed = src.m_is_unique_computed;
 }

@@ -83,7 +83,8 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const physics::P3_Constants<S> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -233,7 +234,7 @@ Int Functions<S,D>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
 
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {
@@ -253,7 +254,7 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
-      pratot, prctot, hydrometeorsPresent, nk);
+      pratot, prctot, hydrometeorsPresent, nk, p3constants);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -281,14 +282,14 @@ Int Functions<S,D>
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
       onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf(i));
+      diagnostic_outputs.precip_liq_surf(i), p3constants);
 
     // Ice sedimentation:  (adaptive substepping)
     ice_sedimentation(
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
       oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i));
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), p3constants);
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
@@ -304,7 +305,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr);
+      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, p3constants);
 
     //
     // merge ice categories with similar properties
@@ -343,7 +344,8 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const physics::P3_Constants<S> & p3constants)
 {
 #ifndef SCREAM_SMALL_KERNELS
   return p3_main_internal(runtime_options,
@@ -354,7 +356,7 @@ Int Functions<S,D>
                          history_only,
                          lookup_tables,
                          workspace_mgr,
-                         nj, nk);
+                         nj, nk, p3constants);
 #else 
   return p3_main_internal_disp(runtime_options,
                                prognostic_state,
@@ -364,7 +366,7 @@ Int Functions<S,D>
                                history_only,
                                lookup_tables,
                                workspace_mgr,
-                               nj, nk);
+                               nj, nk, p3constants);
 #endif
 }
 } // namespace p3

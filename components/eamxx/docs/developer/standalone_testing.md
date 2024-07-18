@@ -33,9 +33,9 @@ make baseline
 ```
 
 The tests will run, automatically using the baseline file, which is located in
-the CMake-configurable path `${SCREAM_TEST_DATA_DIR}`. By default, this path is
-set to `data/` within your build directory (which is `$RUN_ROOT_DIR`, in
-our case).
+the CMake-configurable path `${SCREAM_BASELINES_DIR}`. By default, this path is
+set to an invalid string. If baselines tests are enabled, we check that a valid
+path has been provided.
 
 To run all of SCREAM's tests, make sure you're in `$RUN_ROOT_DIR` and type
 

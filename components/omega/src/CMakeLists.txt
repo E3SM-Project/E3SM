@@ -9,6 +9,8 @@ target_include_directories(
     ${OMEGA_SOURCE_DIR}/src/base
     ${OMEGA_SOURCE_DIR}/src/infra
     ${OMEGA_SOURCE_DIR}/src/ocn
+    ${PIOC_SOURCE_DIR}
+    ${PIOC_BINARY_DIR}
     ${Parmetis_INCLUDE_DIRS}
 )
 

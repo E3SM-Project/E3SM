@@ -1,0 +1,90 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+  mass_column_conservation_error_tolerance: 1e-3
+  energy_column_conservation_error_tolerance: 1e-4
+  column_conservation_checks_fail_handling_type: Warning
+  property_check_data_fields: [phis]
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+  pbl_height : 1.0
+  phis : 1.0
+
+atmosphere_processes:
+  atm_procs_list: [homme,physics]
+  schedule_type: Sequential
+  homme:
+    Moisture: moist
+  physics:
+    atm_procs_list: [mac_mic,mam4_optics,rrtmgp]
+    schedule_type: Sequential
+    Type: Group
+    mac_mic:
+      atm_procs_list: [shoc,CldFraction,p3]
+      schedule_type: Sequential
+      Type: Group
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      p3:
+        do_prescribed_ccn: false
+        enable_column_conservation_checks: true
+        max_total_ni: 740.0e3
+      shoc:
+        enable_column_conservation_checks: true
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        Ckh: 0.1
+        Ckm: 0.1
+
+    mam4_optics:
+      mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
+      mam4_mode2_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
+      mam4_mode3_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc
+      mam4_mode4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc
+      mam4_water_refindex_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc
+      mam4_soa_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocphi_rrtmg_c20240206.nc
+      mam4_dust_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc
+      mam4_nacl_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ssam_rrtmg_c20240206.nc
+      mam4_so4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/sulfate_rrtmg_c20240206.nc
+      mam4_pom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
+      mam4_bc_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
+      mam4_mom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/poly_rrtmg_c20240206.nc
+
+    rrtmgp:
+      column_chunk_size: 123
+      active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      enable_column_conservation_checks: true
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

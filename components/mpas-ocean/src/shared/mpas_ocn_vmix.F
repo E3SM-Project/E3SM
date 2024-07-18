@@ -1462,6 +1462,7 @@ contains
          !$acc    vertViscTopOfCell, vertViscTopOfEdge) &
          !$acc    private(cell1, cell2, k, Nsurf, N)
 #else
+         !$omp parallel
          !$omp do schedule(runtime) private(cell1, cell2, k, Nsurf, N)
 #endif
          do iEdge=1,nEdgesOwned
@@ -1480,6 +1481,7 @@ contains
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
+         !$omp end parallel
 #endif
          call mpas_timer_stop('GOTM avg')
       endif
@@ -1583,9 +1585,44 @@ contains
                !$acc enter data copyin(tracerGroupSurfaceFlux)
 #endif
 
-               call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+               if (trim(groupItr % memberName) /= 'activeTracers' .and. &
+                   config_cvmix_background_diffusion_passive_enable) then
+
+
+#ifdef MPAS_OPENACC
+                  !$acc parallel loop present(vertDiffPassiveTopOfCell, vertDiffTopOfCell)
+#else
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k, iTracer)
+#endif
+                  do iCell = 1, nCellsOwned
+                  do k = 2, maxLevelCell(iCell)
+                      vertDiffPassiveTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) - &
+                         config_cvmix_background_diffusion + config_cvmix_background_diffusion_passive
+                  end do
+                  end do
+#ifndef MPAS_OPENACC
+                  !$omp end do
+                  !$omp end parallel
+#endif
+
+
+
+
+
+
+#ifdef MPAS_OPENACC
+                      !$acc update host (vertDiffPassiveTopOfCell)
+#endif
+
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffPassiveTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               else
+                      call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
+                        vertNonLocalFlux, tracerGroupSurfaceFlux,  &
+                        config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+               end if
 #ifdef MPAS_OPENACC
                !$acc exit data delete(tracerGroupSurfaceFlux)
 #endif

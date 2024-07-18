@@ -133,12 +133,11 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
   om_pl.set<double>("fill_value",FillValue);
-  om_pl.set<bool>("track_fill",true);
   om_pl.set<Real>("fill_threshold",fill_threshold);
+  om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);
-  ctrl_pl.set("MPI Ranks in Filename",true);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -149,6 +148,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   const int nsteps = num_output_steps*freq;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
     // Update time
     t += dt;
 
@@ -222,24 +222,24 @@ void read (const std::string& avg_type, const std::string& freq_units,
       auto f0 = fm0->get_field(fn).clone();
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
-	Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
+        Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
-	Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
+        Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
-	Real test_val = (n*freq%2==0) ? n*freq : FillValue;
+        Real test_val = (n*freq%2==0) ? n*freq : FillValue;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else { // Is avg_type = AVERAGE
-	// Note, for AVERAGE type output with filling we need to check that the
-	// number of contributing fill steps surpasses the fill_threshold, if not
-	// then we know that the snap will reflect the fill value.
-	Real test_val;
-	Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
-	Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
+        // Note, for AVERAGE type output with filling we need to check that the
+        // number of contributing fill steps surpasses the fill_threshold, if not
+        // then we know that the snap will reflect the fill value.
+        Real test_val;
+        Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
+        Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
         test_val = (M/freq > fill_threshold) ? a + (M+1.0) : FillValue;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
@@ -248,10 +248,10 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Check that the fill value gets appropriately set for each variable
-  Real fill_out;
   for (const auto& fn: fnames) {
-    scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
-    REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
+    // NOTE: use float, since default fp_precision for I/O is 'single'
+    auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
+    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
   }
 }
 
@@ -271,7 +271,7 @@ TEST_CASE ("io_filled") {
   };
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   auto seed = get_random_test_seed(&comm);
 
@@ -295,7 +295,7 @@ TEST_CASE ("io_filled") {
       print(" PASS\n");
     }
   }
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace
