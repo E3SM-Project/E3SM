@@ -106,6 +106,9 @@ int initHaloTest() {
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
    MPI_Comm DefComm       = DefEnv->getComm();
 
+   // Initialize the logging system
+   OMEGA::initLogging(DefEnv);
+
    // Initialize the IO system
    IErr = OMEGA::IO::init(DefComm);
    if (IErr != 0)

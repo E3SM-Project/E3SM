@@ -101,16 +101,23 @@ additional E3SM and Omega specific requirements must be addressed.
 
 The software design will implement a global switch for setting the minimum log
 severity and message format using predefined global C++ defines. The severity
-level can be set at compile-time using `-D LOG_LEVEL=<level>`, where `<level>`
+level can be set at compile-time using `-D OMEGA_LOG_LEVEL=<level>`, where `<level>`
 can be one of the predefined levels: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`,
 or `CRITICAL`, where the severity increases from `TRACE` to `CRITICAL`. Log
 messages that have severity equal to or higher than the specified level will be
 stored in the log destination.
 
-Furthermore, the message format can be set using `-D LOG_PATTERN=<pattern>` at
+Furthermore, the message format can be set using `-D OMEGA_LOG_PATTERN=<pattern>` at
 compile time, where `<pattern>` represents a format in the form of `%flag`,
 similar to the strftime function. This pattern defines the layout of the log
 message.
+
+Users can control which MPI ranks generate log files using
+`-D OMEGA_LOG_TASKS=<tasks-pattern>` at compile time. The `<tasks-pattern>` is
+either all for all tasks to generate log files, or comma-separated MPI rank
+numbers, or a range of MPI ranks with a dash. For example,
+`-D OMEGA_LOG_TASKS=0,2-3` indicates that MPI ranks 0, 2, and 3 generate log
+files.
 
 #### 4.1.2 Class/structs/data types
 
@@ -120,7 +127,7 @@ No public data type is necessary for the logging system.
 
 The OMEGA logging system includes multiple macros that allow for logging at
 various severity levels. These macros guarantee that log messages with severity
-levels lower than the specified `LOG_LEVEL` will not be compiled.
+levels lower than the specified `OMEGA_LOG_LEVEL` will not be compiled.
 
 #### 4.2.1 Log write
 

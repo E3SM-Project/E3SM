@@ -13,6 +13,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "MachEnv.h"
+#include "Logging.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -30,6 +31,9 @@ void InitMachEnvs() {
    // Initialize several environments in reverse order that they
    // are tested.  Use the default environment as the parent
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+
+   // Initialize the Logging system
+   OMEGA::initLogging(DefEnv);
 
    // Initialize general subset environment
    int InclSize     = 4;

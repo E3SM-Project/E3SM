@@ -10,6 +10,7 @@
 
 #include <mpi.h>
 
+#include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 #include "Reductions.h"
@@ -33,6 +34,9 @@ int main(int argc, char *argv[]) {
       Comm            = DefEnv->getComm();
       MyTask          = DefEnv->getMyTask();
       MySize          = DefEnv->getNumTasks();
+
+      // Initialize the Logging system
+      OMEGA::initLogging(DefEnv);
 
       I4 MyInt4 = 1, MyResI4 = 0;
       I8 MyInt8 = 2, MyResI8 = 0;

@@ -10,93 +10,76 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if defined(OMEGA_LOG_LEVEL)
+#define SPDLOG_ACTIVE_LEVEL OMEGA_LOG_LEVEL
+#else
+// default level: info(2)
+#define SPDLOG_ACTIVE_LEVEL 2
+#endif
+
 #include "LogFormatters.h"
+#include "MachEnv.h"
 #include <spdlog/spdlog.h>
+#include <string>
+
+#if defined(OMEGA_LOG_UNBUFFERED)
+#define _LOG_FLUSH spdlog::logger::flush()
+#else
+#define _LOG_FLUSH (void)0
+#endif
+
+#define LOG_TRACE(msg, ...)                                                   \
+   spdlog::trace(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOG_DEBUG(msg, ...)                                                   \
+   spdlog::debug(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOG_INFO(msg, ...)                                                   \
+   spdlog::info(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOG_WARN(msg, ...)                                                   \
+   spdlog::warn(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOG_ERROR(msg, ...)                                                   \
+   spdlog::error(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOG_CRITICAL(msg, ...)                                   \
+   spdlog::critical(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), \
+                    ##__VA_ARGS__);                              \
+   _LOG_FLUSH
+
+#define LOGGER_TRACE(logger, msg, ...)                                        \
+   logger->trace(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOGGER_DEBUG(logger, msg, ...)                                        \
+   logger->debug(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOGGER_INFO(logger, msg, ...)                                        \
+   logger->info(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOGGER_WARN(logger, msg, ...)                                        \
+   logger->warn(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOGGER_ERROR(logger, msg, ...)                                        \
+   logger->error(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+   _LOG_FLUSH
+#define LOGGER_CRITICAL(logger, msg, ...)                        \
+   logger->critical(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), \
+                    ##__VA_ARGS__);                              \
+   _LOG_FLUSH
+
+#ifndef OMEGA_LOG_TASKS
+#define OMEGA_LOG_TASKS 0
+#endif
 
 namespace OMEGA {
 
 const std::string OmegaDefaultLogfile = "omega.log";
 
-void initLogging(std::shared_ptr<spdlog::logger> Logger);
-void initLogging(std::string const &LogFilePath);
+int initLogging(std::shared_ptr<spdlog::logger> Logger);
+int initLogging(const OMEGA::MachEnv *DefEnv,
+                std::string const &LogFilePath = OmegaDefaultLogfile);
+std::string _PackLogMsg(const char *file, int line, const std::string &msg);
 } // namespace OMEGA
-
-#define LOG_LEVEL_TRACE    SPDLOG_LEVEL_TRACE
-#define LOG_LEVEL_DEBUG    SPDLOG_LEVEL_DEBUG
-#define LOG_LEVEL_INFO     SPDLOG_LEVEL_INFO
-#define LOG_LEVEL_WARN     SPDLOG_LEVEL_WARN
-#define LOG_LEVEL_ERROR    SPDLOG_LEVEL_ERROR
-#define LOG_LEVEL_CRITICAL SPDLOG_LEVEL_CRITICAL
-#define LOG_LEVEL_OFF      SPDLOG_LEVEL_OFF
-
-#if !defined(LOG_ACTIVE_LEVEL)
-#define LOG_ACTIVE_LEVEL LOG_LEVEL_INFO
-#endif
-
-#if defined(LOG_UNBUFFERED_LOGGING)
-#define _LOG_FLUSH(logger) logger->flush()
-#else
-#define _LOG_FLUSH(logger) (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_TRACE
-#define LOGGER_TRACE(logger, ...)            \
-   SPDLOG_LOGGER_TRACE(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_TRACE(...) LOGGER_TRACE(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_TRACE(logger, ...) (void)0
-#define LOG_TRACE(...)            (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_DEBUG
-#define LOGGER_DEBUG(logger, ...)            \
-   SPDLOG_LOGGER_DEBUG(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_DEBUG(...) LOGGER_DEBUG(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_DEBUG(logger, ...) (void)0
-#define LOG_DEBUG(...)            (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_INFO
-#define LOGGER_INFO(logger, ...)            \
-   SPDLOG_LOGGER_INFO(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_INFO(...) LOGGER_INFO(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_INFO(logger, ...) (void)0
-#define LOG_INFO(...)            (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_WARN
-#define LOGGER_WARN(logger, ...)            \
-   SPDLOG_LOGGER_WARN(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_WARN(...) LOGGER_WARN(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_WARN(logger, ...) (void)0
-#define LOG_WARN(...)            (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_ERROR
-#define LOGGER_ERROR(logger, ...)            \
-   SPDLOG_LOGGER_ERROR(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_ERROR(...) LOGGER_ERROR(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_ERROR(logger, ...) (void)0
-#define LOG_ERROR(...)            (void)0
-#endif
-
-#if LOG_ACTIVE_LEVEL <= LOG_LEVEL_CRITICAL
-#define LOGGER_CRITICAL(logger, ...)            \
-   SPDLOG_LOGGER_CRITICAL(logger, __VA_ARGS__); \
-   _LOG_FLUSH(logger)
-#define LOG_CRITICAL(...) LOGGER_CRITICAL(spdlog::default_logger(), __VA_ARGS__)
-#else
-#define LOGGER_CRITICAL(logger, ...) (void)0
-#define LOG_CRITICAL(...)            (void)0
-#endif
 
 #endif // OMEGA_LOG_H

@@ -38,6 +38,9 @@ int main(int argc, char *argv[]) {
    OMEGA::I4 MyTask       = DefEnv->getMyTask();
    bool IsMaster          = DefEnv->isMasterTask();
 
+   // Initialize the Logging system
+   OMEGA::initLogging(DefEnv);
+
    // Define some variables for a reference configuration
    // These are meant to create a hierachy that tests at least two levels
    // and includes a variable of each supported type.
