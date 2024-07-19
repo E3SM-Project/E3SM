@@ -594,6 +594,9 @@ int initTendTest(const std::string &mesh) {
    MachEnv *DefEnv  = MachEnv::getDefaultEnv();
    MPI_Comm DefComm = DefEnv->getComm();
 
+   // Initialize logging
+   initLogging(DefEnv);
+
    I4 IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
