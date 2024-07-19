@@ -15,7 +15,7 @@ The state class will have a method to register the progostic variables with IOSt
 ### 2.2 Requirement: Update timestep
 A method will be responsible for advancing the prognostic variables prior to the beginning of a new timestep.
 The left-most index of the prognostic variables will be a time index, which will facilitate flexibility with timestepping schemes.
-The time level update will include a halo exchange and an exchange of time level. 
+The time level update will include a halo exchange and an exchange of time level.
 
 ### 2.3 Requirement: Can be used as a common data type for tendency and provis variables
 The timestepping scheme will require storage for the tendency terms and the intermediate stage. The state class can also be used to fulfill this need.
