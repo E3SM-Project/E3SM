@@ -834,6 +834,8 @@ end subroutine micro_p3_readnl
     real(rtype) :: icwmrst(pcols,pver) ! stratus water mixing ratio - on grid
     real(rtype) :: rho(pcols,pver)
     real(rtype) :: reff_rain(pcols,pver)
+    real(rtype) :: deff_rain(pcols,pver)
+
     real(rtype) :: col_location(pcols,3),tmp_loc(pcols)  ! Array of column lon (index 1) and lat (index 2)
     integer     :: tmpi_loc(pcols) ! Global column index temp array
 
@@ -1358,6 +1360,7 @@ end subroutine micro_p3_readnl
    aqrain    = 0._rtype
    anrain    = 0._rtype
    freqr     = 0._rtype
+   deff_rain = reff_rain*2._rtype*1.e6_rtype !rain effective diameter in microns
    ! Prognostic precipitation
    where (rain(:ncol,top_lev:) >= 1.e-7_rtype)
       aqrain(:ncol,top_lev:) = rain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
@@ -1412,6 +1415,7 @@ end subroutine micro_p3_readnl
    call outfld('FREQI',       freqi,       pcols,    lchnk)
    call outfld('FREQR',       freqr,       pcols,    lchnk)
    call outfld('CDNUMC',      cdnumc,      pcols,    lchnk)
+   call outfld('ADRAIN',      deff_rain,      pcols,    lchnk)
 
    call outfld('CLOUDFRAC_LIQ_MICRO',  cld_frac_l,      pcols, lchnk)
    call outfld('CLOUDFRAC_ICE_MICRO',  cld_frac_i,      pcols, lchnk)
