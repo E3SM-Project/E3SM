@@ -6,7 +6,7 @@
 The tendency terms in OMEGA are implemented as functors, which define an operation over a number of vertical levels for particular a cell, edge, or vertex.
 Tendency functors take information which remains constant during the forward simulation (such as `HorzMesh` and `Config`)  as constructor arguments.
 The `operator()` method is overloaded with the relevant discrete /parameterization.
-This approach allows for a modularization of the tendency terms that enables flexible groupings of work within larger cell/edge/vertex loops. 
+This approach allows for a modularization of the tendency terms that enables flexible groupings of work within larger cell/edge/vertex loops.
 This type of flexibility will be important for optimizing the code across different device architectures.
 
 ## 2 Requirements
@@ -35,22 +35,22 @@ The algorithmic formulation for each tendency can be found in the algorithms des
 
 #### 4.1.2 Class/structs/data types
 The tendency functor is a class the overrides the `operator()` method.
-The class contains private member variables for any constant data that are defined by the constructor. 
+The class contains private member variables for any constant data that are defined by the constructor.
 Each tendency term will have a `bool` variable which can be set to enable/disable the computation of the tendency.
 
 ```c++
 class ThicknessFluxDivergenceOnCell {
   public:
- 
+
     bool enabled = false;
- 
+
     ThicknessFluxDivergenceOnCell(const HorzMesh *Mesh, Config *Options);
-  
+
     KOKKOS_FUNCTION void operator()(Array2DReal &Tend
                                     int ICell,
                                     int KChunk,
                                     const Array2DReal &ThicknessFlux);
-  
+
   private:
     Array1DI4 NEdgesOnCell;
     Array2DI4 EdgesOnCell;
@@ -101,4 +101,3 @@ Each tendency operator will be used in a CTest which will compare its result aga
 
 ### 5.2 Convergence testing
 The tendency terms for the shallow water equations will be tested on existing test cases implemented in Polaris to verify they produce the correct convergence rates.
-
