@@ -91,7 +91,7 @@ OceanState::OceanState(
 
    // Open the state file for reading (assume IO has already been initialized)
    I4 Err;
-   Err = OMEGA::IO::openFile(StateFileID, StateFileName, IO::ModeRead);
+   Err = IO::openFile(StateFileID, StateFileName, IO::ModeRead);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error opening state file");
 
@@ -125,11 +125,11 @@ OceanState::~OceanState() {
    // Kokkos arrays removed when no longer in scope
 
    int Err;
-   OMEGA::IOField::erase(LayerThicknessIOName);
-   OMEGA::IOField::erase(NormalVelocityIOName);
-   Err = OMEGA::MetaGroup::destroy(StateGroupName);
-   Err = OMEGA::MetaData::destroy(LayerThicknessIOName);
-   Err = OMEGA::MetaData::destroy(NormalVelocityIOName);
+   IOField::erase(LayerThicknessIOName);
+   IOField::erase(NormalVelocityIOName);
+   Err = MetaGroup::destroy(StateGroupName);
+   Err = MetaData::destroy(LayerThicknessIOName);
+   Err = MetaData::destroy(NormalVelocityIOName);
 
 } // end destructor
 
@@ -205,16 +205,16 @@ void OceanState::defineIOFields() {
    }
 
    // Create metadata dimensions
-   auto CellDim = OMEGA::MetaDim::get("NCells");
-   auto EdgeDim = OMEGA::MetaDim::get("NEdges");
-   auto VertDim = OMEGA::MetaDim::get("NVertLevels");
+   auto CellDim = MetaDim::get("NCells");
+   auto EdgeDim = MetaDim::get("NEdges");
+   auto VertDim = MetaDim::get("NVertLevels");
 
-   std::vector<std::shared_ptr<OMEGA::MetaDim>> LayerThicknessDim{CellDim,
-                                                                  VertDim};
-   std::vector<std::shared_ptr<OMEGA::MetaDim>> NormalVelocityDim{EdgeDim,
+   std::vector<std::shared_ptr<MetaDim>> LayerThicknessDim{CellDim,
+                                                           VertDim};
+   std::vector<std::shared_ptr<MetaDim>> NormalVelocityDim{EdgeDim,
                                                                   VertDim};
    // Create metadate for variables
-   auto NormalVelocityMeta = OMEGA::ArrayMetaData::create(
+   auto NormalVelocityMeta = ArrayMetaData::create(
        NormalVelocityIOName,
        "Velocity component normal to edge", /// long Name
        "m/s",                               /// units
@@ -226,7 +226,7 @@ void OceanState::defineIOFields() {
        NormalVelocityDim /// dim pointers
    );
 
-   auto LayerThicknessMeta = OMEGA::ArrayMetaData::create(
+   auto LayerThicknessMeta = ArrayMetaData::create(
        LayerThicknessIOName,
        "Thickness of layer on cell center", /// long Name
        "m",                                 /// units
@@ -239,24 +239,24 @@ void OceanState::defineIOFields() {
    );
 
    // Define IOFields for state variables
-   Err = OMEGA::IOField::define(NormalVelocityIOName);
-   Err = OMEGA::IOField::define(LayerThicknessIOName);
+   Err = IOField::define(NormalVelocityIOName);
+   Err = IOField::define(LayerThicknessIOName);
 
    // Group state metadata
    StateGroupName = "State";
    if (Name != "Default") {
       StateGroupName.append(Name);
    }
-   auto StateMetaGroup = OMEGA::MetaGroup::create(StateGroupName);
+   auto StateMetaGroup = MetaGroup::create(StateGroupName);
 
    Err = StateMetaGroup->addField(NormalVelocityIOName);
    Err = StateMetaGroup->addField(LayerThicknessIOName);
 
    // Associate IOField with data
-   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>(NormalVelocityIOName,
-                                                      NormalVelocity[CurLevel]);
-   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>(LayerThicknessIOName,
-                                                      LayerThickness[CurLevel]);
+   Err = IOField::attachData<Array2DR8>(NormalVelocityIOName,
+                                        NormalVelocity[CurLevel]);
+   Err = IOField::attachData<Array2DR8>(LayerThicknessIOName,
+                                        LayerThickness[CurLevel]);
 } // end defineIOFields
 
 //------------------------------------------------------------------------------
@@ -327,7 +327,7 @@ void OceanState::updateTimeLevels() {
 
    // Update time levels for layer thickness
    copyToHost(NewLevel);
-   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[NewLevel], OMEGA::OnCell);
+   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[NewLevel], OnCell);
    copyToDevice(NewLevel);
 
    Array2DR8 Temp;
@@ -340,7 +340,7 @@ void OceanState::updateTimeLevels() {
 
    // Update time levels for normal velocity
    copyToHost(NewLevel);
-   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[NewLevel], OMEGA::OnEdge);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[NewLevel], OnEdge);
    copyToDevice(NewLevel);
 
    for (int Level = 0; Level < NTimeLevels - 1; Level++) {
@@ -351,10 +351,10 @@ void OceanState::updateTimeLevels() {
    // Update IOField data associations
    int Err = 0;
 
-   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>(NormalVelocityIOName,
-                                                      NormalVelocity[CurLevel]);
-   Err = OMEGA::IOField::attachData<OMEGA::Array2DR8>(LayerThicknessIOName,
-                                                      LayerThickness[CurLevel]);
+   Err = IOField::attachData<Array2DR8>(NormalVelocityIOName,
+                                        NormalVelocity[CurLevel]);
+   Err = IOField::attachData<Array2DR8>(LayerThicknessIOName,
+                                        LayerThickness[CurLevel]);
 
 } // end updateTimeLevels
 
