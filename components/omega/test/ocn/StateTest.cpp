@@ -109,8 +109,16 @@ int main(int argc, char *argv[]) {
          }
 
          // Create "default" state
-         OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp,
-                                         DefHalo, NVertLevels, NTimeLevels);
+         if (NTimeLevels == 2) {
+
+            OMEGA::OceanState::init();
+            OMEGA::OceanState *DefOceanState = OMEGA::OceanState::getDefault();
+
+         } else {
+
+            OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp,
+                                            DefHalo, NVertLevels, NTimeLevels);
+         }
 
          // Test retrieval of the default state
          OMEGA::OceanState *DefState = OMEGA::OceanState::get("Default");
