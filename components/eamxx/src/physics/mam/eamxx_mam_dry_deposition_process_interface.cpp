@@ -120,10 +120,10 @@ void MAMDryDep::set_grids(
 
   //----------- Variables from coupler (land component)---------
   // Obukhov length [m]
-  add_field<Required>("Obukhov_length", scalar2d, m, grid_name);
+  add_field<Required>("obklen", scalar2d, m, grid_name);
 
   // Surface friction velocty or ustar[m/s]
-  add_field<Required>("surface_friction_velocty", scalar2d, m / s, grid_name);
+  add_field<Required>("ustar", scalar2d, m / s, grid_name);
 
   // Land fraction [fraction]
   add_field<Required>("landfrac", scalar2d, nondim, grid_name);
@@ -366,8 +366,7 @@ void MAMDryDep::run_impl(const double dt) {
   // Wet density of interstitial aerosol [kg/m3]
   auto wet_dens_ = get_field_in("wetdens").get_view<const Real ***>();
   // Obukhov length [m]
-  auto obukhov_length_ =
-      get_field_in("Obukhov_length").get_view<const Real *>();
+  auto obukhov_length_ = get_field_in("obklen").get_view<const Real *>();
   // Land fraction [unitless]
   auto land_fraction_ = get_field_in("landfrac").get_view<const Real *>();
   // Ice fraction [unitless]
@@ -381,7 +380,7 @@ void MAMDryDep::run_impl(const double dt) {
       get_field_in("ram1").get_view<const Real *>();
   //  Sfc friction velocity or ustar [m/s]
   auto surface_friction_velocty_ =
-      get_field_in("surface_friction_velocty").get_view<const Real *>();
+      get_field_in("ustar").get_view<const Real *>();
 
   // -------------------------------------------------------------
   // Output fields for the process
