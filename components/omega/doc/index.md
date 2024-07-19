@@ -87,6 +87,7 @@ design/IOStreams
 design/Reductions
 design/ShallowWaterOmega0
 design/State
+design/Tendency
 design/AuxiliaryVariables
 design/TimeMgr
 design/Timers
