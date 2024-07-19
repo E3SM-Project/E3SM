@@ -325,9 +325,12 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   rho_     = view_2d("rho", ncol_, nlev_);
   ptend_q_ = view_3d("ptend_q_", ncol_, nlev_, pcnst);
 
-  vlc_dry_ = view_4d("vlc_dry_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
-  vlc_grv_ = view_4d("vlc_grv_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
-  vlc_trb_ = view_3d("vlc_trb_", mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_);
+  vlc_dry_ = view_4d("vlc_dry_", mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
+  vlc_grv_ = view_4d("vlc_grv_", mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
+  vlc_trb_ = view_3d("vlc_trb_", mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_);
 
   qqcw_     = view_3d("qqcw_", pcnst, ncol_, nlev_);
   dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
