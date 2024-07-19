@@ -126,22 +126,22 @@ void MAMDryDep::set_grids(
   add_field<Required>("surface_friction_velocty", scalar2d, m / s, grid_name);
 
   // Land fraction [fraction]
-  add_field<Required>("land_fraction", scalar2d, nondim, grid_name);
+  add_field<Required>("landfrac", scalar2d, nondim, grid_name);
 
   // Friction velocity from land model [m/s]
-  add_field<Required>("friction_velocity", scalar2d, m / s, grid_name);
+  add_field<Required>("fv", scalar2d, m / s, grid_name);
 
   // Aerodynamical resistance from land model [s/m]
-  add_field<Required>("aerodynamical_resistance", scalar2d, s / m, grid_name);
+  add_field<Required>("ram1", scalar2d, s / m, grid_name);
 
   //----------- Variables from coupler (ice component)---------
 
   // Ice fraction [unitless]
-  add_field<Required>("ice_fraction", scalar2d, nondim, grid_name);
+  add_field<Required>("icefrac", scalar2d, nondim, grid_name);
 
   //----------- Variables from coupler (ocean component)---------
   // Ocean fraction [unitless]
-  add_field<Required>("ocean_fraction", scalar2d, nondim, grid_name);
+  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
   // Geometric mean wet diameter for number distribution [m]
@@ -369,18 +369,16 @@ void MAMDryDep::run_impl(const double dt) {
   auto obukhov_length_ =
       get_field_in("Obukhov_length").get_view<const Real *>();
   // Land fraction [unitless]
-  auto land_fraction_ = get_field_in("land_fraction").get_view<const Real *>();
+  auto land_fraction_ = get_field_in("landfrac").get_view<const Real *>();
   // Ice fraction [unitless]
-  auto ice_fraction_ = get_field_in("ice_fraction").get_view<const Real *>();
+  auto ice_fraction_ = get_field_in("icefrac").get_view<const Real *>();
   // Ocean fraction [unitless]
-  auto ocean_fraction_ =
-      get_field_in("ocean_fraction").get_view<const Real *>();
+  auto ocean_fraction_ = get_field_in("ocnfrac").get_view<const Real *>();
   // Friction velocity from land model [m/s]
-  auto friction_velocity_ =
-      get_field_in("friction_velocity").get_view<const Real *>();
+  auto friction_velocity_ = get_field_in("fv").get_view<const Real *>();
   // Aerodynamical resistance from land model [s/m]
   auto aerodynamical_resistance_ =
-      get_field_in("aerodynamical_resistance").get_view<const Real *>();
+      get_field_in("ram1").get_view<const Real *>();
   //  Sfc friction velocity or ustar [m/s]
   auto surface_friction_velocty_ =
       get_field_in("surface_friction_velocty").get_view<const Real *>();
