@@ -1,0 +1,69 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mac_mic,mam4_drydep]
+  schedule_type: Sequential
+  mac_mic:
+    atm_procs_list: [shoc]
+    Type: Group
+    schedule_type: Sequential
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    shoc:
+      lambda_low: 0.001
+      lambda_high: 0.04
+      lambda_slope: 2.65
+      lambda_thresh: 0.02
+      thl2tune: 1.0
+      qw2tune: 1.0
+      qwthl2tune: 1.0
+      w2tune: 1.0
+      length_fac: 0.5
+      c_diag_3rd_mom: 7.0
+      Ckh: 0.1
+      Ckm: 0.1
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    aliases: [Physics]
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:   72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+
+  #variables needed for SHOC
+  surf_sens_flux: 0.0
+  surf_evap: 0.0
+  
+  #variables needed for mam4-drydep
+  fraction_landuse: 0.2
+  w_updraft: 1e-5
+  pbl_height: 0.0
+  Obukhov_length: -0.48167567011091336E+002
+  fv: 0.47569674433601039E+000
+  landfrac: 0.14675684171817760E+000
+  icefrac: 0.00000000000000000E+000
+  ocnfrac: 0.85324315828182240E+000
+  surface_friction_velocty: 0.27482164092221828E+000
+  ram1: 0.45506166067091662E+002
+  dgnumwet: 0.41417721820867320E-007
+  wetdens: 0.15100083211582764E+004
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...
