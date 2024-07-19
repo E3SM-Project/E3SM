@@ -209,34 +209,33 @@ void OceanState::defineIOFields() {
    auto EdgeDim = MetaDim::get("NEdges");
    auto VertDim = MetaDim::get("NVertLevels");
 
-   std::vector<std::shared_ptr<MetaDim>> LayerThicknessDim{CellDim,
-                                                           VertDim};
-   std::vector<std::shared_ptr<MetaDim>> NormalVelocityDim{EdgeDim,
-                                                                  VertDim};
-   // Create metadate for variables
-   auto NormalVelocityMeta = ArrayMetaData::create(
-       NormalVelocityIOName,
-       "Velocity component normal to edge", /// long Name
-       "m/s",                               /// units
-       "",                                  /// CF standard Name
-       -9.99E+10,                           /// min valid value
-       9.99E+10,                            /// max valid value
-       -9.99E+30,        /// scalar used for undefined entries
-       2,                /// number of dimensions
-       NormalVelocityDim /// dim pointers
-   );
+   std::vector<std::shared_ptr<MetaDim>> LayerThicknessDim{CellDim, VertDim};
+   std::vector<std::shared_ptr<MetaDim>> NormalVelocityDim{EdgeDim, VertDim};
 
-   auto LayerThicknessMeta = ArrayMetaData::create(
-       LayerThicknessIOName,
-       "Thickness of layer on cell center", /// long Name
-       "m",                                 /// units
-       "cell_thickness",                    /// CF standard Name
-       0.0,                                 /// min valid value
-       9.99E+30,                            /// max valid value
-       -9.99E+30,        /// scalar used for undefined entries
-       2,                /// number of dimensions
-       LayerThicknessDim /// dim pointers
-   );
+   // Create metadate for variables
+   auto NormalVelocityMeta =
+       ArrayMetaData::create(NormalVelocityIOName,
+                             "Velocity component normal to edge", /// long Name
+                             "m/s",                               /// units
+                             "",        /// CF standard Name
+                             -9.99E+10, /// min valid value
+                             9.99E+10,  /// max valid value
+                             -9.99E+30, /// scalar used for undefined entries
+                             2,         /// number of dimensions
+                             NormalVelocityDim /// dim pointers
+       );
+
+   auto LayerThicknessMeta =
+       ArrayMetaData::create(LayerThicknessIOName,
+                             "Thickness of layer on cell center", /// long Name
+                             "m",                                 /// units
+                             "cell_thickness", /// CF standard Name
+                             0.0,              /// min valid value
+                             9.99E+30,         /// max valid value
+                             -9.99E+30, /// scalar used for undefined entries
+                             2,         /// number of dimensions
+                             LayerThicknessDim /// dim pointers
+       );
 
    // Define IOFields for state variables
    Err = IOField::define(NormalVelocityIOName);
