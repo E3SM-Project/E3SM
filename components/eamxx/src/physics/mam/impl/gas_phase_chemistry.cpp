@@ -104,6 +104,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(const std::string& rsf_file,
 HostViewInt1D lng_indexer_h("lng_indexer(host)", mam4::mo_photo::phtcnt);
 
 
+
 int nw, nump, numsza, numcolo3, numalb, nt, np_xs; // table dimensions
 scorpio::register_file(rsf_file,scorpio::Read);
 // read and broadcast dimension data
@@ -120,6 +121,7 @@ np_xs    = scorpio::get_dimlen(xs_long_file, "numprs");
 //FIXME: hard-coded for only one photo reaction.
 std::string rxt_names[1] = {"jh2o2"};
 int numj = 1;
+lng_indexer_h(0)=0;
 // allocate the photolysis table
 auto table = mam4::mo_photo::create_photo_table_data(nw, nt, np_xs, numj,
                                                        nump, numsza, numcolo3,
@@ -178,7 +180,7 @@ Kokkos::deep_copy(table.etfphot,          etfphot_h);
 Kokkos::deep_copy(table.prs,              prs_h);
 // set pht_alias_mult_1 to 1
 Kokkos::deep_copy(table.pht_alias_mult_1, 1.0);
-// Kokkos::deep_copy(table.lng_indexer,      lng_indexer_h);
+Kokkos::deep_copy(table.lng_indexer,      lng_indexer_h);
 
   // compute gradients (on device)
   Kokkos::parallel_for("del_p", nump-1, KOKKOS_LAMBDA(int i) {

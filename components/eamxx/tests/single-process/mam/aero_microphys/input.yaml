@@ -14,7 +14,8 @@ atmosphere_processes:
    mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc
    mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
    mam4_chlorine_loading_ymd : 20100101   
-
+   mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/RSF_GT200nm_v3.0_c080811.nc
+   mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/temp_prs_GT200nm_JPL10_c130206.nc
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE

@@ -3,6 +3,9 @@
 
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
@@ -19,6 +22,7 @@ namespace scream::mam_coupling {
   using view_1d_host    = typename KT::view_1d<Real>::HostMirror;
 
   constexpr int NVARS_LINOZ=8;
+  constexpr int MAX_NVARS_TRACER=5;
   const std::vector<std::string>
   linoz_var_names={"o3_clim", "o3col_clim",
                    "t_clim", "PmL_clim", "dPmL_dO3",
@@ -59,6 +63,61 @@ namespace scream::mam_coupling {
     // Number of days in the current month, cast as a Real
     Real days_this_month;
   }; // LinozTimeState
+
+  struct TracerData{
+    TracerData() = default;
+    TracerData(const int ncol, const int nlev, const int nvars)
+    {
+      init (ncol,nlev, nvars);
+    }
+    void init (const int ncol,
+               const int nlev,
+               const int nvars){
+     ncol_=ncol;
+     nlev_=nlev;
+     nvars_=nvars;
+     EKAT_REQUIRE_MSG (nvars_ <= int(MAX_NVARS_TRACER),
+      "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+    }
+
+    int ncol_{-1};
+    int nlev_{-1};
+    int nvars_{-1};
+    view_2d data[MAX_NVARS_TRACER];
+    view_1d ps;
+
+    void allocate_data_views()
+    {
+      EKAT_REQUIRE_MSG (ncol_ != int(-1),
+      "Error! ncols has not been set. \n");
+      EKAT_REQUIRE_MSG (nlev_ !=int(-1),
+      "Error! nlevs has not been set. \n");
+
+      for (int ivar = 0; ivar< nvars_; ++ivar) {
+        data[ivar] = view_2d("linoz_1",ncol_,nlev_);
+      }
+    } //allocate_data_views
+
+    void allocate_ps()
+    {
+      ps = view_1d("ps",ncol_);
+    }
+
+    void set_data_views(view_2d list_of_views[])
+    {
+     for (int ivar = 0; ivar< nvars_; ++ivar) {
+      EKAT_REQUIRE_MSG(list_of_views[ivar].data() != 0,
+                   "Error! Insufficient memory  size.\n");
+      data[ivar] =list_of_views[ivar];
+      }
+    }
+
+    void set_data_ps(const view_1d& ps_in)
+    {
+      ps = ps_in;
+    }
+
+  };
 
   struct LinozData {
 
@@ -522,5 +581,288 @@ view_1d get_var_column (const LinozData& data,
   return values[index] + delt*( values[index+1] - values[index] );
   }
 
+inline
+std::shared_ptr<AbstractRemapper>
+create_horiz_remapper (
+    const std::shared_ptr<const AbstractGrid>& model_grid,
+    const std::string& trace_data_file,
+    const std::string& map_file,
+    std::vector<std::string>& var_names
+    )
+{
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(trace_data_file,scorpio::Read);
+  const int nlevs_data = scorpio::get_dimlen(trace_data_file,"lev");
+  const int ncols_data = scorpio::get_dimlen(trace_data_file,"ncol");
+  scorpio::release_file(trace_data_file);
+
+  // We could use model_grid directly if using same num levels,
+  // but since shallow clones are cheap, we may as well do it (less lines of code)
+  auto horiz_interp_tgt_grid = model_grid->clone("tracer_horiz_interp_tgt_grid",true);
+  horiz_interp_tgt_grid->reset_num_vertical_lev(nlevs_data);
+
+  const int ncols_model = model_grid->get_num_global_dofs();
+  std::shared_ptr<AbstractRemapper> remapper;
+  if (ncols_data==ncols_model) {
+    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
+  } else {
+    EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
+      "       spa data to be at the same or coarser resolution as the model.\n");
+    // We must have a valid map file
+    EKAT_REQUIRE_MSG (map_file!="",
+        "ERROR: Spa data is on a different grid than the model one,\n"
+        "       but spa_remap_file is missing from SPA parameter list.");
+
+    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
+  }
+
+  remapper->registration_begins();
+  const auto tgt_grid = remapper->get_tgt_grid();
+  const auto layout_2d   = tgt_grid->get_2d_scalar_layout();
+  const auto layout_3d_mid = tgt_grid->get_3d_scalar_layout(true);
+  const auto nondim = ekat::units::Units::nondimensional();
+
+
+  for(auto  var_name : var_names){
+    Field ifield(FieldIdentifier(var_name,  layout_3d_mid,  nondim,tgt_grid->name()));
+    ifield.allocate_view();
+    remapper->register_field_from_tgt (ifield);
+  }
+
+  Field ps (FieldIdentifier("PS",        layout_2d,  nondim,tgt_grid->name()));
+  ps.allocate_view();
+  remapper->register_field_from_tgt (ps);
+  remapper->registration_ends();
+
+  return remapper;
+
+} // create_horiz_remapper
+
+inline
+std::shared_ptr<AtmosphereInput>
+create_tracer_data_reader
+(
+    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+    const std::string& tracer_data_file)
+{
+  std::vector<Field> io_fields;
+  for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<AtmosphereInput>(tracer_data_file,io_grid,io_fields,true);
+} // create_tracer_data_reader
+
+inline
+void
+update_tracer_data_from_file(
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    const util::TimeStamp&            ts,
+    const int                         time_index, // zero-based
+    AbstractRemapper&                 tracer_horiz_interp,
+    TracerData& tracer_data)
+{
+ // 1. read from field
+ scorpio_reader->read_variables(time_index);
+ // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same grid as model)
+ tracer_horiz_interp.remap(/*forward = */ true);
+ //
+ const int nvars =tracer_data.nvars_;
+ // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw, tau_sw, tau_lw
+ // 3. Copy from the tgt field of the remapper into the spa_data
+//  auto ps          = tracer_horiz_interp.get_tgt_field (0).get_view<const Real*>();
+  //
+ for (int i = 0; i < nvars; ++i) {
+  tracer_data.data[i] = tracer_horiz_interp.get_tgt_field (i).get_view< Real**>();
+ }
+
+} // update_tracer_data_from_file
+inline void
+update_tracer_timestate(
+    std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    const util::TimeStamp&            ts,
+    AbstractRemapper&                 tracer_horiz_interp,
+    LinozTimeState&                   time_state,
+    TracerData&  data_tracer_beg,
+    TracerData&  data_tracer_end)
+{
+  // Now we check if we have to update the data that changes monthly
+  // NOTE:  This means that SPA assumes monthly data to update.  Not
+  //        any other frequency.
+  const auto month = ts.get_month() - 1; // Make it 0-based
+  if (month != time_state.current_month) {
+    //
+    const auto tracer_beg = data_tracer_beg.data;
+    const auto tracer_end = data_tracer_end.data;
+    const int nvars=data_tracer_end.nvars_;
+
+    // Update the SPA time state information
+    time_state.current_month = month;
+    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month+1,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(),month+1);
+
+    // Copy spa_end'data into spa_beg'data, and read in the new spa_end
+    for (int ivar = 0; ivar < nvars ; ++ivar)
+    {
+      Kokkos::deep_copy(tracer_beg[ivar],  tracer_end[ivar]);
+    }
+    // Update the SPA forcing data for this month and next month
+    // Start by copying next months data to this months data structure.
+    // NOTE: If the timestep is bigger than monthly this could cause the wrong values
+    //       to be assigned.  A timestep greater than a month is very unlikely so we
+    //       will proceed.
+    int next_month = (time_state.current_month + 1) % 12;
+    update_tracer_data_from_file(scorpio_reader, ts,
+                                 next_month,
+                                 tracer_horiz_interp,
+                                 data_tracer_end);
+  }
+
+} // END updata_spa_timestate
+
+// This function is based on the SPA::perform_time_interpolation function.
+ inline void perform_time_interpolation(
+  const LinozTimeState& time_state,
+
+  const TracerData& data_tracer_beg,
+  const TracerData& data_tracer_end,
+  const TracerData& data_tracer_out)
+{
+  // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
+  //       IF this ever ceases to be the case, you can interp those too.
+  // Gather time stamp info
+  auto& t_now = time_state.t_now;
+  auto& t_beg = time_state.t_beg_month;
+  auto& delta_t = time_state.days_this_month;
+
+  // We can ||ize over columns as well as over variables and bands
+  const auto data_beg = data_tracer_beg.data;
+  const auto data_end = data_tracer_end.data;
+  const auto data_out = data_tracer_out.data;
+   const int num_vars = data_tracer_end.nvars_;
+
+  const int ncol = data_beg[0].extent(0);
+  const int num_vert = data_beg[0].extent(1);
+
+  const int outer_iters = ncol*num_vars;
+
+  const auto policy = ESU::get_default_team_policy(outer_iters, num_vert);
+
+  auto delta_t_fraction = (t_now-t_beg) / delta_t;
+
+  EKAT_REQUIRE_MSG (delta_t_fraction>=0 && delta_t_fraction<=1,
+      "Error! Convex interpolation with coefficient out of [0,1].\n"
+      "  t_now  : " + std::to_string(t_now) + "\n"
+      "  t_beg  : " + std::to_string(t_beg) + "\n"
+      "  delta_t: " + std::to_string(delta_t) + "\n");
+
+  Kokkos::parallel_for("linoz_time_interp_loop", policy,
+    KOKKOS_LAMBDA(const Team& team) {
+
+    // The policy is over ncols*num_vars, so retrieve icol/ivar
+    const int icol = team.league_rank() / num_vars;
+    const int ivar = team.league_rank() % num_vars;
+
+    // Get column of beg/end/out variable
+    auto var_beg = ekat::subview(data_beg[ivar],icol);
+    auto var_end = ekat::subview(data_end[ivar],icol);
+    auto var_out = ekat::subview(data_out[ivar],icol);
+
+    Kokkos::parallel_for (Kokkos::TeamVectorRange(team,num_vert),
+                          [&] (const int& k) {
+      var_out(k) = linear_interp(var_beg(k),var_end(k),delta_t_fraction);
+    });
+  });
+  Kokkos::fence();
+} // perform_time_interpolation
+
+inline void
+compute_source_pressure_levels(
+  const view_1d& ps_src,
+  const view_2d& p_src,
+  const const_view_1d& hyam,
+  const const_view_1d& hybm)
+{
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+  using C = scream::physics::Constants<Real>;
+
+  constexpr auto P0 = C::P0;
+
+  const int ncols = ps_src.extent(0);
+  const int num_vert_packs = p_src.extent(1);
+  const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+  Kokkos::parallel_for("tracer_compute_p_src_loop", policy,
+    KOKKOS_LAMBDA (const Team& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
+                         [&](const int k) {
+      p_src(icol,k) = ps_src(icol) * hybm(k)  + P0 * hyam(k);
+    });
+  });
+} // compute_source_pressure_levels
+
+#if 1
+inline void
+perform_vertical_interpolation(
+  const view_2d p_src,
+  const view_2d p_tgt,
+  const TracerData& input,
+  const TracerData& output)
+{
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+  using LIV = ekat::LinInterp<Real,1>;
+
+  // At this stage, begin/end must have the same horiz dimensions
+  EKAT_REQUIRE(input.ncol_==output.ncol_);
+
+  const int ncols     = input.ncol_;
+  const int nlevs_src = input.nlev_;
+  const int nlevs_tgt = output.nlev_;
+
+  LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
+
+  // We can ||ize over columns as well as over variables and bands
+  const int num_vars = input.nvars_;
+  const int num_vert_packs = nlevs_tgt;
+  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+  // Setup the linear interpolation object
+  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+
+    const int icol = team.league_rank();
+
+    // Setup
+    vert_interp.setup(team, ekat::subview(p_src,icol),
+                            ekat::subview(p_tgt,icol));
+  });
+  Kokkos::fence();
+
+  // Now use the interpolation object in || over all variables.
+  const int outer_iters = ncols*num_vars;
+  const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
+  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+
+    const int icol = team.league_rank() / num_vars;
+    const int ivar = team.league_rank() % num_vars;
+
+    const auto x1 = ekat::subview(p_src,icol);
+    const auto x2 = ekat::subview(p_tgt,icol);
+
+    const auto y1 = ekat::subview(input.data[ivar],icol);
+    const auto y2 = ekat::subview(output.data[ivar],icol);
+
+    vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
+  });
+  Kokkos::fence();
+}
+
+#endif
 } // namespace scream::mam_coupling
 #endif //EAMXX_MAM_HELPER_MICRO

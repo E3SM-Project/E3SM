@@ -171,6 +171,22 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   linoz_params_, ncol_, col_latitudes_, m_comm);
 
   }
+  std::string my_file="oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc";
+  std::string spa_map_file="";
+  std::vector<std::string> var_names{"O3","HO2","NO3","OH"};
+  TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names);
+  TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,my_file);
+
+  // 3 Read in hyam/hybm in start/end data, and pad them
+   const auto io_grid = TracerHorizInterp_->get_src_grid();
+  Field hyam(FieldIdentifier("hyam",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+  Field hybm(FieldIdentifier("hybm",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+  hyam.allocate_view();
+  hybm.allocate_view();
+  AtmosphereInput hvcoord_reader(my_file,io_grid,{hyam,hybm},true);
+  hvcoord_reader.read_variables();
+  hvcoord_reader.finalize();
+
 }
 
 // this checks whether we have the tracers we expect
@@ -344,6 +360,36 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   scream::mam_coupling::create_linoz_chlorine_reader (linoz_chlorine_file, ts, chlorine_loading_ymd,
    chlorine_values_, chlorine_time_secs_ );
   }
+
+  const int photo_table_len = get_photo_table_work_len(photo_table_);
+  work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
+
+    // here's where we store per-column photolysis rates
+  photo_rates_ = view_3d("photo_rates", ncol_, nlev_, mam4::mo_photo::phtcnt);
+  //  liquid water cloud content
+  lwc_= view_2d("liquid_water_cloud_content", ncol_, nlev_);
+
+
+  //
+  // Load the first month into spa_end.
+  // Note: At the first time step, the data will be moved into spa_beg,
+  //       and spa_end will be reloaded from file with the new month.
+  const int curr_month = timestamp().get_month()-1; // 0-based
+  const int nvars = 4;
+  const auto io_grid = TracerHorizInterp_->get_src_grid();
+  const int num_cols_io = io_grid->get_num_local_dofs(); // Number of columns on this rank
+  const int num_levs_io = io_grid->get_num_vertical_levels();  // Number of levels per column
+
+  tracer_data_end_.init(num_cols_io, num_levs_io, nvars);
+  scream::mam_coupling::update_tracer_data_from_file(TracerDataReader_,
+  timestamp(),curr_month, *TracerHorizInterp_, tracer_data_end_);
+
+  tracer_data_beg_.init(num_cols_io, num_levs_io, nvars);
+  tracer_data_beg_.allocate_data_views();
+
+  tracer_data_out_.init(num_cols_io, num_levs_io, nvars);
+  tracer_data_out_.allocate_data_views();
+
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -362,10 +408,6 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // NOTE: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
-
-  // here's where we store per-column photolysis rates
-  using View2D = haero::DeviceType::view_2d<Real>;
-  View2D photo_rates("photo_rates", nlev_, mam4::mo_photo::phtcnt);
 
   // climatology data for linear stratospheric chemistry
   auto linoz_o3_clim      = buffer_.scratch[0]; // ozone (climatology) [vmr]
@@ -404,9 +446,32 @@ void MAMMicrophysics::run_impl(const double dt) {
                                  dry_atm_.p_mid,
                                  LinozData_out_,
                                  interpolated_Linoz_data_);
+
+
   }
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(ts, chlorine_values_,
                            chlorine_time_secs_);
+
+  {
+  /* Gather time and state information for interpolation */
+  auto ts = timestamp()+dt;
+  /* Update the SPATimeState to reflect the current time, note the addition of dt */
+  linoz_time_state_.t_now = ts.frac_of_year_in_days();
+  /* Update time state and if the month has changed, update the data.*/
+  scream::mam_coupling::update_tracer_timestate(
+    TracerDataReader_,
+    ts,
+    *TracerHorizInterp_,
+    linoz_time_state_,
+    tracer_data_beg_,
+    tracer_data_end_);
+
+  scream::mam_coupling::perform_time_interpolation(
+  linoz_time_state_,
+  tracer_data_beg_,
+  tracer_data_end_,
+  tracer_data_out_);
+  }
 
   const_view_1d &col_latitudes = col_latitudes_;
   mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
@@ -418,6 +483,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   // FIXME: read relevant linoz climatology data from file(s) based on time
 
   // FIXME: read relevant chlorine loading data from file based on time
+  const auto& work_photo_table = work_photo_table_;
+  const auto& photo_rates = photo_rates_;
+
+  const auto& lwc =lwc_;
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
@@ -441,11 +510,20 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
+<<<<<<< HEAD
     //impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
+=======
+    // impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
+>>>>>>> microphysics - Adding photo table paths to input file.
 
     // set up photolysis work arrays for this column.
-    mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
+    mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays_icol;
     // FIXME: set views here
+    const auto& work_photo_table_icol = ekat::subview(work_photo_table, icol);
+    // set work view using 1D photo_work_arrays_icol
+    mam4::mo_photo::set_photo_table_work_arrays(photo_table,
+                                                work_photo_table_icol,
+                                                photo_work_arrays_icol);
 
     // ... look up photolysis rates from our table
     // NOTE: the table interpolation operates on an entire column of data, so we
@@ -453,10 +531,11 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
-    mam4::ColumnView lwc; // FIXME: liquid water cloud content: where do we get this?
-    mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
-      atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc,
-      atm.cloud_fraction, esfact, photo_table, photo_work_arrays);
+    const auto& photo_rates_icol = ekat::subview(photo_rates, icol);
+
+    mam4::mo_photo::table_photo(photo_rates_icol, atm.pressure, atm.hydrostatic_dp,
+     atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc_icol,
+     atm.cloud_fraction, esfact, photo_table, photo_work_arrays_icol);
 
     // compute external forcings at time t(n+1) [molecules/cm^3/s]
     constexpr int extcnt = mam4::gas_chemistry::extcnt;
@@ -513,7 +592,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       //
       Real photo_rates_k[mam4::mo_photo::phtcnt];
       for (int i = 0; i < mam4::mo_photo::phtcnt; ++i) {
-        photo_rates_k[i] = photo_rates(k, i);
+        photo_rates_k[i] = photo_rates_icol(k, i);
       }
       /*Real extfrc_k[extcnt];
       for (int i = 0; i < extcnt; ++i) {
