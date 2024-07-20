@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/usr/bin/env csh
 # need to use single thread
 foreach component ( ATM LND ICE OCN CPL GLC ROF WAV )
  ./xmlchange NTASKS_$component=1
