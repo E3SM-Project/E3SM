@@ -838,7 +838,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu</command>
-        <command name="load">gcc</command>
+        <command name="load">gcc-native</command>
         <command name="load">cray-libsci</command>
       </modules>
 
