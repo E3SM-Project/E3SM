@@ -220,8 +220,12 @@ contains
       ! Compute surface mass flux array from bulk forcing
       call ocn_surface_bulk_forcing_thick(forcingPool, &
                                           surfaceThicknessFlux, &
-                                          surfaceThicknessFluxRunoff, &
+                                          surfaceThicknessFluxRunoff, err)
+
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+            call ocn_surface_bulk_forcing_thick_subglacial_runoff(forcingPool, &
                                           surfaceThicknessFluxSubglacialRunoff, err)
+      end if
 
       ! Compute surface thickness flux from land ice
       call ocn_surface_land_ice_fluxes_thick(forcingPool, &
@@ -242,11 +246,14 @@ contains
       ! Compute surface flux tendency
       call ocn_thick_surface_flux_tend(fractionAbsorbed, &
                                        fractionAbsorbedRunoff, &
-                                       fractionAbsorbedSubglacialRunoff, &
                                        surfaceThicknessFlux, &
                                        surfaceThicknessFluxRunoff, &
+                                       tendThick, err)
+      if (trim(config_subglacial_runoff_mode) == 'data') then
+            call ocn_thick_surface_flux_tend(fractionAbsorbedSubglacialRunoff, &
                                        surfaceThicknessFluxSubglacialRunoff, &
                                        tendThick, err)
+      end if
 
       ! Compute contribution from frazil ice formation
       call ocn_frazil_forcing_layer_thickness(forcingPool, &
@@ -1244,10 +1251,15 @@ contains
          endif ! compute budgets
 
          call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, &
-                               fractionAbsorbedRunoff, fractionAbsorbedSubglacialRunoff, &
+                               fractionAbsorbedRunoff, &
                                layerThickness, tracerGroupSurfaceFlux, &
-                               tracerGroupSurfaceFluxRunoff, tracerGroupSurfaceFluxSubglacialRunoff,  &
+                               tracerGroupSurfaceFluxRunoff,  &
                                tracerGroupTend, err)
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+                call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbedSubglacialRunoff, &
+                               layerThickness, tracerGroupSurfaceFluxSubglacialRunoff,  &
+                               tracerGroupTend, err)
+         end if
 
          !
          ! Compute shortwave absorption

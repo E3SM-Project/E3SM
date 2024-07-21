@@ -49,7 +49,8 @@ module ocn_surface_bulk_forcing
    public :: ocn_surface_bulk_forcing_tracers, &
              ocn_surface_bulk_forcing_vel, &
              ocn_surface_bulk_forcing_thick, &
-             ocn_surface_bulk_forcing_init
+             ocn_surface_bulk_forcing_init, &
+             ocn_surface_bulk_forcing_thick_subglacial_runoff
 
    !--------------------------------------------------------------------
    !
@@ -281,7 +282,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, surfaceThicknessFluxSubglacialRunoff, err)!{{{
+   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -292,8 +293,6 @@ contains
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceThicknessFlux !< Input/Output: Array for surface thickness flux
       real (kind=RKIND), dimension(:), intent(inout) ::  &
          surfaceThicknessFluxRunoff !< Input/Output: Array for surface thickness flux due to river runoff
-      real (kind=RKIND), dimension(:), intent(inout) ::  &
-         surfaceThicknessFluxSubglacialRunoff !< Input/Output: Array for surface thickness flux due to subglacial runoff
 
       !-----------------------------------------------------------------
       !
@@ -313,7 +312,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
-      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
 
       err = 0
@@ -327,7 +325,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
@@ -357,7 +354,68 @@ contains
       !$omp end parallel
 #endif
 
-      if (trim(config_subglacial_runoff_mode) == 'data') then
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+#endif
+
+      call mpas_timer_stop("bulk_thick")
+
+   end subroutine ocn_surface_bulk_forcing_thick!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_thick_subglacial_runoff
+!
+!> \brief   Determines the thickness forcing array used for the bulk forcing.
+!> \author  Doug Jacobsen
+!> \date    04/25/12
+!> \details
+!>  This routine computes the thickness forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_thick_subglacial_runoff(forcingPool, surfaceThicknessFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:), intent(inout) ::  &
+         surfaceThicknessFluxSubglacialRunoff !< Input/Output: Array for surface thickness flux due to subglacial runoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+
+      err = 0
+
+      if (bulkThicknessFluxOff) return
+
+      call mpas_timer_start("bulk_thick", .false.)
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      nCells = nCellsHalo( 2 )
+
+      ! Build surface fluxes at cell centers
+
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(subglacialRunoffFlux)
 
@@ -374,16 +432,15 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
-      end if
 
 #ifdef MPAS_OPENACC
-      !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, subglacialRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc exit data delete(subglacialRunoffFlux)
 #endif
 
       call mpas_timer_stop("bulk_thick")
 
-   end subroutine ocn_surface_bulk_forcing_thick!}}}
+   end subroutine ocn_surface_bulk_forcing_thick_subglacial_runoff!}}}
+
 
 !***********************************************************************
 !
