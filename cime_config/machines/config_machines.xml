@@ -201,6 +201,7 @@
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
         <command name="unload">gcc-native</command>
+        <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
         <command name="unload">nvidia</command>
         <command name="unload">aocc</command>
