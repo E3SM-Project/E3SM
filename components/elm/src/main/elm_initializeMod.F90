@@ -269,10 +269,10 @@ contains
 
     allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
-    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
-    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
+    !allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
@@ -294,16 +294,13 @@ contains
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
     call pftconrd()
-    ! by user-defined PFT (numbers and names), 'numpft/mxpft_nc' changed and other indices
-    ! a few arrays had been allocated in elm_initializedMod.F90:L266-268 and require redo after this 'pftconrd' call
-    if ((numpft/=mxpft .or. numpft/=numveg) .or. (mxpft_nc/=24 .or. mxpft_nc/=numveg)) then
-       if (associated(wt_nat_patch)) deallocate(wt_nat_patch)
-       allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
-       if (associated(wt_cft)) deallocate(wt_cft)
-       allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-       if (associated(fert_cft)) deallocate(fert_cft)
-       allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    endif
+    ! if by user-defined PFT (numbers and names), 'numpft/mxpft_nc' may be changed including other derived indices
+    !
+    ! a few arrays allocation previously done above is moved here i.e. after this 'pftconrd' call
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
+    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
 
     call soilorder_conrd()
 
