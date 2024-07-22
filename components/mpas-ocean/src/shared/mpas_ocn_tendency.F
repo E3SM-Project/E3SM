@@ -250,7 +250,7 @@ contains
                                        surfaceThicknessFluxRunoff, &
                                        tendThick, err)
       if (trim(config_subglacial_runoff_mode) == 'data') then
-            call ocn_thick_surface_flux_tend(fractionAbsorbedSubglacialRunoff, &
+            call ocn_thick_surface_flux_tend_subglacial_runoff(fractionAbsorbedSubglacialRunoff, &
                                        surfaceThicknessFluxSubglacialRunoff, &
                                        tendThick, err)
       end if
@@ -1256,7 +1256,7 @@ contains
                                tracerGroupSurfaceFluxRunoff,  &
                                tracerGroupTend, err)
          if (trim(config_subglacial_runoff_mode) == 'data') then
-                call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbedSubglacialRunoff, &
+                call ocn_tracer_surface_flux_tend_subglacial_runoff(meshPool, fractionAbsorbedSubglacialRunoff, &
                                layerThickness, tracerGroupSurfaceFluxSubglacialRunoff,  &
                                tracerGroupTend, err)
          end if
