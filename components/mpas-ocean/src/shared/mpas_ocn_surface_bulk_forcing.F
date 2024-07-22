@@ -50,7 +50,9 @@ module ocn_surface_bulk_forcing
              ocn_surface_bulk_forcing_vel, &
              ocn_surface_bulk_forcing_thick, &
              ocn_surface_bulk_forcing_init, &
+             ocn_surface_bulk_forcing_tracers_subglacial_runoff, &
              ocn_surface_bulk_forcing_thick_subglacial_runoff
+
 
    !--------------------------------------------------------------------
    !
@@ -79,7 +81,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup,   &
-      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxSubglacialRunoff, tracersSurfaceFluxRemoved, dt, layerThickness, err)!{{{
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, dt, layerThickness, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -99,8 +101,6 @@ contains
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux !< Input/Output: Surface flux for tracer group
       real (kind=RKIND), dimension(:,:), intent(inout) ::   &
          tracersSurfaceFluxRunoff !< Input/Output: Surface flux for tracer group due to river runoff
-      real (kind=RKIND), dimension(:,:), intent(inout) ::   &
-         tracersSurfaceFluxSubglacialRunoff !< Input/Output: Surface flux for tracer group due to subglacial runoff
       real (kind=RKIND), dimension(:,:), intent(inout) ::   &
          tracersSurfaceFluxRemoved !< Input/Output: Accumulator for ignored Surface flux for tracer group
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
@@ -125,11 +125,68 @@ contains
       call mpas_timer_start("bulk_" // trim(groupName))
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
-            tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxSubglacialRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)
+            tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)
       end if
       call mpas_timer_stop("bulk_" // trim(groupName))
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_tracers_subglacial_runoff
+!
+!> \brief   Determines the tracers forcing array used for the bulk forcing.
+!> \author  Doug Jacobsen
+!> \date    04/25/12
+!> \details
+!>  This routine computes the tracers forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_tracers_subglacial_runoff(meshPool, groupName, forcingPool,   &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      character (len=*) :: groupName !< Input: Name of tracer group
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:,:), intent(inout) ::   &
+         tracersSurfaceFluxSubglacialRunoff !< Input/Output: Surface flux for tracer group due to subglacial runoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+      call mpas_timer_start("bulk_" // trim(groupName))
+      if ( trim(groupName) == 'activeTracers' ) then
+         call ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
+            tracersSurfaceFluxSubglacialRunoff, err)
+      end if
+      call mpas_timer_stop("bulk_" // trim(groupName))
+
+   end subroutine ocn_surface_bulk_forcing_tracers_subglacial_runoff!}}}
 
 !***********************************************************************
 !
@@ -503,7 +560,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
-      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxSubglacialRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)!{{{
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -520,7 +577,6 @@ contains
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxRunoff
-      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxSubglacialRunoff
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxRemoved
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
@@ -548,7 +604,7 @@ contains
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
 
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
-                                                  seaIceHeatFlux, icebergHeatFlux, evaporationFlux, riverRunoffFlux, subglacialRunoffFlux
+                                                  seaIceHeatFlux, icebergHeatFlux, evaporationFlux, riverRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
@@ -589,7 +645,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
@@ -653,28 +708,6 @@ contains
            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
-           if (trim(config_subglacial_runoff_mode) == 'data') then
-               if ( config_use_sgr_opt_temp_prescribed ) then
-                   !sgr with fixed prescribed temperature
-                   tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_temperature_prescribed / rho_sw
-               else
-                   !sgr with temperature equal to the local freezing point of freshwater
-                   tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
-                                                 inLandIceCavity=.true.) / rho_sw
-               end if
-
-               if ( config_use_sgr_opt_salt_prescribed ) then
-                   !sgr with fixed prescribed temperature
-                   tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
-                       config_sgr_salinity_prescribed / rho_sw
-               else
-                   !sgr with temperature equal to the local freezing point of freshwater
-                   tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
-               end if
-           end if
-
            ! Accumulate fluxes that use the freezing point
 ! mrp performance note: should call ocn_freezing_temperature just once here
            seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
@@ -693,12 +726,6 @@ contains
            ! add river runoff contribution for sending through coupler
            totalFreshWaterTemperatureFlux(iCell) = surfaceTemperatureFluxWithoutRunoff &
               + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
-
-           ! add subglacial runoff contribution for sending through coupler
-           if (trim(config_subglacial_runoff_mode) == 'data') then
-                totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
-              + tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell)
-           end if
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
@@ -719,6 +746,125 @@ contains
       !$omp end parallel
 
    end subroutine ocn_surface_bulk_forcing_active_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff
+!
+!> \brief   Determines the active tracers forcing array used for the bulk forcing.
+!> \author  Doug Jacobsen
+!> \date    04/25/12
+!> \details
+!>  This routine computes the active tracers forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxSubglacialRunoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+      integer, pointer :: index_temperature_fluxPtr, index_salinity_fluxPtr
+      integer :: index_temperature_flux, index_salinity_flux
+      integer, dimension(:), pointer :: nCellsArray
+
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: totalFreshWaterTemperatureFlux
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_temperatureSurfaceFlux', &
+                                   index_temperature_fluxPtr)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_salinitySurfaceFlux', &
+                                   index_salinity_fluxPtr)
+      index_temperature_flux = index_temperature_fluxPtr
+      index_salinity_flux    = index_salinity_fluxPtr
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+
+      call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
+
+      nCells = nCellsArray( 3 )
+
+      ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
+      ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
+      ! Assume surface fluxes of water have zero salinity. So the RHS forcing is zero for salinity.
+      ! Only include this heat forcing when bulk thickness is turned on
+      ! indices on tracerGroup are (iTracer, iLevel, iCell)
+      if (.not. bulkThicknessFluxOff) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+
+           if ( config_use_sgr_opt_temp_prescribed ) then
+               !sgr with fixed prescribed temperature
+               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   config_sgr_temperature_prescribed / rho_sw
+           else
+               !sgr with temperature equal to the local freezing point of freshwater
+               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
+                                             inLandIceCavity=.true.) / rho_sw
+           end if
+
+           if ( config_use_sgr_opt_salt_prescribed ) then
+               !sgr with fixed prescribed temperature
+               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   config_sgr_salinity_prescribed / rho_sw
+           else
+               !sgr with temperature equal to the local freezing point of freshwater
+               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
+           end if
+
+           ! add subglacial runoff contribution for sending through coupler
+           totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
+              + tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell)
+
+         end do
+         !$omp end do
+         !$omp end parallel
+      endif ! bulkThicknessFluxOn
+
+   end subroutine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff!}}}
 
 end module ocn_surface_bulk_forcing
 

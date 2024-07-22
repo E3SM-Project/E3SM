@@ -891,9 +891,13 @@ contains
                                   forcingPool, tracerGroup, &
                                   tracerGroupSurfaceFlux, &
                                   tracerGroupSurfaceFluxRunoff, &
-                                  tracerGroupSurfaceFluxSubglacialRunoff, &
                                   tracerGroupSurfaceFluxRemoved, &
                                   dt, layerThickness, err)
+            if (trim(config_subglacial_runoff_mode) == 'data') then
+                call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
+                                      forcingPool, &
+                                      tracerGroupSurfaceFluxSubglacialRunoff, err)
+            end if
 
          end if ! sfc bulk forcing
 
