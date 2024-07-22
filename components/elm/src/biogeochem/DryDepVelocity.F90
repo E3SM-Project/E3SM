@@ -294,7 +294,7 @@ CONTAINS
             !if (elmveg == nc3crop                             ) wesveg = 2
             !if (elmveg == nc3irrig                            ) wesveg = 2
             !if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
-            if (crop(elmveg) == 1.0_r8 .or. iscft(elmveg) == 1.0_r8  ) wesveg = 2
+            if (crop(elmveg) == 1.0_r8 .or. iscft(elmveg)) wesveg = 2
 #ifndef _OPENACC
             if (wesveg == wveg_unset )then
                write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)

@@ -420,7 +420,7 @@ contains
        t =veg_pp%topounit(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
-             if (iscft(veg_pp%itype(p)) < 1) then
+             if (.not. iscft(veg_pp%itype(p))) then
                 l =veg_pp%landunit(p)
                 if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                    fnc = fnc + 1

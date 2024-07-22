@@ -1895,13 +1895,13 @@ contains
     minplantjday(:,:) = huge(1)
     maxplantjday(:,:) = huge(1)
     do n = 0, mxpft
-      if (iscft(n)>=1) then
+      if (iscft(n)) then
        minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
        maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
       end if
     end do
     do n = 0, mxpft
-      if (iscft(n)>=1) then
+      if (iscft(n)) then
        minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
        maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
       end if

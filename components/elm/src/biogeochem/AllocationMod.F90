@@ -585,7 +585,7 @@ contains
          mr = leaf_mr(p) + froot_mr(p)
          if (woody(ivt(p)) >= 1.0_r8) then
             mr = mr + livestem_mr(p) + livecroot_mr(p)
-         else if (iscft(ivt(p)) >= 1) then
+         else if (iscft(ivt(p))) then
             if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
          end if
 
@@ -672,7 +672,7 @@ contains
 
          f5 = 0._r8 ! continued intializations from above
 
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
 
             if (croplive(p) .and. percrop(ivt(p)) == 0.0_r8 ) then
                ! same phases appear in subroutine CropPhenology
@@ -822,7 +822,7 @@ contains
             p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
                  (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
-         else if (iscft(ivt(p)) >= 1) then ! skip generic crops
+         else if (iscft(ivt(p))) then ! skip generic crops
             cng = graincn(ivt(p))
             cpg = graincp(ivt(p))
             c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
@@ -852,10 +852,10 @@ contains
          !              retransn pool has N from leaves, stems, and roots for
          !              retranslocation
 
-         if (iscft(ivt(p)) >= 1 .and. grain_flag(p) == 1._r8) then
+         if (iscft(ivt(p)) .and. grain_flag(p) == 1._r8) then
             avail_retransn(p) = plant_ndemand(p)
             avail_retransp(p) = plant_pdemand(p)
-         else if (iscft(ivt(p)) < 1 .and. annsum_potential_gpp(p) > 0._r8) then
+         else if ((.not. iscft(ivt(p))) .and. annsum_potential_gpp(p) > 0._r8) then
             avail_retransn(p) = (annmax_retransn(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
             avail_retransp(p) = (annmax_retransp(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
          else
@@ -2142,7 +2142,7 @@ contains
 
              fcur = fcur2(ivt(p))
 
-             if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+             if (iscft(ivt(p))) then ! skip 2 generic crops
                  if (croplive(p)) then
                      f1 = aroot(p) / aleaf(p)
                      f3 = astem(p) / aleaf(p)
@@ -2328,7 +2328,7 @@ contains
 
              fcur = fcur2(ivt(p))
 
-             if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+             if (iscft(ivt(p))) then ! skip 2 generic crops
                  if (croplive(p)) then
                      f1 = aroot(p) / aleaf(p)
                      f3 = astem(p) / aleaf(p)
@@ -2345,10 +2345,10 @@ contains
              sminn_to_npool(p) = sminn_to_plant_patch(p)
              sminp_to_ppool(p) = sminp_to_plant_patch(p)
 
-             if (iscft(ivt(p)) >= 1 .and. grain_flag(p) == 1._r8) then
+             if (iscft(ivt(p)) .and. grain_flag(p) == 1._r8) then
                 avail_retransn(p) = retransn(p)/dt
                 avail_retransp(p) = retransp(p)/dt
-             else if (iscft(ivt(p)) < 1 .and. annsum_potential_gpp(p) > 0._r8) then
+             else if ((.not. iscft(ivt(p))) .and. annsum_potential_gpp(p) > 0._r8) then
                 avail_retransn(p) = (annmax_retransn(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
                 avail_retransp(p) = (annmax_retransp(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
              else
@@ -2374,7 +2374,7 @@ contains
              mr = leaf_mr(p) + froot_mr(p)
              if (woody(ivt(p)) >= 1.0_r8) then
                 mr = mr + livestem_mr(p) + livecroot_mr(p)
-             else if (iscft(ivt(p)) >= 1) then
+             else if (iscft(ivt(p))) then
                 if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
              end if
 
@@ -2473,7 +2473,7 @@ contains
                  p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
                      (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
-             else if (iscft(ivt(p)) >= 1) then ! skip generic crops
+             else if (iscft(ivt(p))) then ! skip generic crops
                  cng = graincn(ivt(p))
                  cpg = graincp(ivt(p))
                  c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
@@ -2559,7 +2559,7 @@ contains
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * fcur * (1 + g1)
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
             end if
-            if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+            if (iscft(ivt(p))) then ! skip 2 generic crops
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * fcur * (1 + g1)
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
                cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
@@ -2590,7 +2590,7 @@ contains
             cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
             cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
             cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
             cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
@@ -2643,7 +2643,7 @@ contains
             npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
             npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             cng = graincn(ivt(p))
             npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
             npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
@@ -2687,7 +2687,7 @@ contains
             ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
             ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             cpg = graincp(ivt(p))
             ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
             ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
@@ -2717,7 +2717,7 @@ contains
             gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
             gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(p)
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
             gresp_storage = gresp_storage + cpool_to_grainc_storage(p)
          end if
@@ -2771,7 +2771,7 @@ contains
                      npool_to_deadcrootn(p) = cpool_to_deadcrootc(p) / cndw
                      npool_to_deadcrootn_storage(p) = cpool_to_deadcrootc_storage(p) / cndw
                  end if
-                 if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+                 if (iscft(ivt(p))) then ! skip 2 generic crops
                      cng = graincn(ivt(p))
                      supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
                      supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw &
@@ -2843,7 +2843,7 @@ contains
                      ppool_to_deadcrootp(p) = cpool_to_deadcrootc(p) / cpdw
                      ppool_to_deadcrootp_storage(p) = cpool_to_deadcrootc_storage(p) / cpdw
                  end if
-                 if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+                 if (iscft(ivt(p))) then ! skip 2 generic crops
                      cpg = graincp(ivt(p))
                      supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw &
                           - ppool_to_livestemp(p),0._r8)

@@ -147,7 +147,7 @@ module VegetationPropertiesType
      real(r8), pointer :: climatezone(:)   => null()   !climate zone adapted
      real(r8), pointer :: nonvascular(:)   => null()   !nonvascular type or vascular
      real(r8), pointer :: graminoid(:)     => null()   !graminoid or not
-     real(r8), pointer :: iscft(:)         => null()   !generic crop (0) or (1) crop for prognostic crop modules
+     logical,  pointer :: iscft(:)         => null()   !.false. = generic crop, .true. = prognostic crop
      real(r8), pointer :: needleleaf(:)    => null()   !needleleaf or broadleaf
      real(r8), pointer :: nfixer(:)        => null()   !cablity of nitrogen fixation from atm. N2
 
@@ -318,7 +318,7 @@ contains
     allocate( this%climatezone(0:numpft))                        ; this%climatezone(:)           =spval
     allocate( this%nonvascular(0:numpft))                        ; this%nonvascular(:)           =spval
     allocate( this%graminoid(0:numpft))                          ; this%graminoid(:)             =spval
-    allocate( this%iscft(0:numpft))                              ; this%iscft(:)                 =spval
+    allocate( this%iscft(0:numpft))                              ; this%iscft(:)                 =.false.
     allocate( this%needleleaf(0:numpft))                         ; this%needleleaf(:)            =spval
     allocate( this%nfixer(0:numpft))                             ; this%nfixer(:)                =spval
     ! -----------------------------------------------------------------------------------------------------------

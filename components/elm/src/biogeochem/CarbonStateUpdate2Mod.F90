@@ -186,7 +186,7 @@ contains
          veg_cs%deadcrootc(p)          = veg_cs%deadcrootc(p)         - veg_cf%hrv_deadcrootc_to_litter(p)         * dt
 
          ! crops
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
              veg_cs%livestemc(p)       = veg_cs%livestemc(p)          - veg_cf%hrv_livestemc_to_prod1c(p)          *dt
              veg_cs%leafc(p)           = veg_cs%leafc(p)              - veg_cf%hrv_leafc_to_prod1c(p)              *dt
              veg_cs%grainc(p)          = veg_cs%grainc(p)             - veg_cf%hrv_grainc_to_prod1c(p)             *dt

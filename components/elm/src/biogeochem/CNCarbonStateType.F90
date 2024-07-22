@@ -459,7 +459,7 @@ contains
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    this%leafc_patch(p)         = 1._r8 * ratio
                    this%leafc_storage_patch(p) = 0._r8
-                else if (iscft(veg_pp%itype(p)) >= 1) then ! prognostic crop types
+                else if (iscft(veg_pp%itype(p))) then ! prognostic crop types
                    this%leafc_patch(p) = 0._r8
                    this%leafc_storage_patch(p) = 0._r8
                 else
@@ -866,7 +866,7 @@ contains
             this%gresp_storage_patch(p)      + &
             this%gresp_xfer_patch(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%storvegc_patch(p) =            &
                this%storvegc_patch(p)       + &
                this%grainc_storage_patch(p) + &

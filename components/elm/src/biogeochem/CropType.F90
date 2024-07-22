@@ -454,7 +454,7 @@ contains
                interpinic_flag='copy', readvar=readvar, data=restyear)
           if (readvar) then
              do p = bounds%begp, bounds%endp
-                if (iscft(veg_pp%itype(p)) >= 1 .and. &
+                if (iscft(veg_pp%itype(p)) .and. &
                      veg_pp%active(p)) then
                    this%nyrs_crop_active_patch(p) = restyear
                 end if

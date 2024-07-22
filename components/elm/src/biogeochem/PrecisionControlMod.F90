@@ -211,7 +211,7 @@ contains
                veg_ps%frootp_xfer(p) = 0._r8
             end if
 
-            if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+            if ( crop_prog .and. iscft(veg_pp%itype(p)))then
                ! grain C and N
                if (abs(veg_cs%grainc(p)) < ccrit) then
                   pc = pc + veg_cs%grainc(p)
@@ -513,7 +513,7 @@ contains
                endif
             end if
 
-            if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+            if ( crop_prog .and. iscft(veg_pp%itype(p)))then
                ! xsmrpool (C only)
                if (abs(veg_cs%xsmrpool(p)) < ccrit) then
                   pc = pc + veg_cs%xsmrpool(p)

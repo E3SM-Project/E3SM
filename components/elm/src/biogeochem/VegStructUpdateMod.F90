@@ -147,7 +147,7 @@ contains
             ! alpha are set by PFT, and alpha is scaled to CLM time step by multiplying by
             ! dt and dividing by dtsmonth (seconds in average 30 day month)
             ! tsai_min scaled by 0.5 to match MODIS satellite derived values
-            if (crop(ivt(p)) == 1 .and. iscft(ivt(p)) == 0) then ! generic crops
+            if (crop(ivt(p)) == 1 .and. .not. iscft(ivt(p))) then ! generic crops
 
                tsai_alpha = 1.0_r8-1.0_r8*dt/dtsmonth
                tsai_min = 0.1_r8
@@ -193,7 +193,7 @@ contains
 
                hbot(p) = max(0._r8, min(3._r8, htop(p)-1._r8))
 
-            else if (iscft(ivt(p)) >= 1) then ! prognostic crops
+            else if (iscft(ivt(p))) then ! prognostic crops
 
                if (tlai(p) >= laimx(ivt(p))) peaklai(p) = 1 ! used in CNAllocation
 

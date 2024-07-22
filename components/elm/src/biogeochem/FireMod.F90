@@ -305,12 +305,12 @@ contains
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop veg types
-              if( crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p)) == 1 )then
+              if( crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p)))then
                  cropf_col(c) = cropf_col(c) + veg_pp%wtcol(p)
               end if
               ! For natural vegetation (non-crop and non-bare-soil)
               if( veg_pp%itype(p) /= noveg .and. &
-                  (crop(veg_pp%itype(p)) == 0 .and. iscft(veg_pp%itype(p)) == 0) )then
+                  (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) )then
                  lfwt(c) = lfwt(c) + veg_pp%wtcol(p)
               end if
            end if
@@ -332,7 +332,7 @@ contains
               ! column-level litter carbon
               ! is available, so we use leaf carbon to estimate the
               ! litter carbon for crop PFTs
-              if( (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p)) == 1) .and. &
+              if( (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p))) .and. &
                   veg_pp%wtcol(p) > 0._r8 .and. leafc_col(c) > 0._r8 )then
                  fuelc_crop(c)=fuelc_crop(c) + (leafc(p) + leafc_storage(p) + &
                       leafc_xfer(p))*veg_pp%wtcol(p)/cropf_col(c)     + &
@@ -370,7 +370,7 @@ contains
               p = col_pp%pfti(c) + pi - 1
 
               ! For non-crop -- natural vegetation and bare-soil
-              if( (crop(veg_pp%itype(p)) == 0 .and. iscft(veg_pp%itype(p)) == 0) .and. &
+              if( (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) .and. &
                   cropf_col(c)  <  1.0_r8 ) then
                  if( btran2(p) .ne. spval) then
                     if (btran2(p)  <=  1._r8 ) then
@@ -509,7 +509,7 @@ contains
               p = col_pp%pfti(c) + pi - 1
               ! For crop
               if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. &
-                  (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p)) == 1) .and.  &
+                  (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p))) .and.  &
                    kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
@@ -982,7 +982,7 @@ contains
         c = veg_pp%column(p)
 
         itype = veg_pp%itype(p)
-        if( (crop(veg_pp%itype(p)) == 0 .and. iscft(veg_pp%itype(p)) == 0) .and. &
+        if( (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) .and. &
             cropf_col(c) < 1.0_r8)then
            ! For non-crop (bare-soil and natural vegetation)
            if (transient_landcover) then    !true when landuse data is used

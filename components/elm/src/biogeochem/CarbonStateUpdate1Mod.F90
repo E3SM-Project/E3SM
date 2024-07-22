@@ -284,7 +284,7 @@ contains
                 veg_cs%deadcrootc(p)      = veg_cs%deadcrootc(p)      + veg_cf%deadcrootc_xfer_to_deadcrootc(p)*dt
                 veg_cs%deadcrootc_xfer(p) = veg_cs%deadcrootc_xfer(p) - veg_cf%deadcrootc_xfer_to_deadcrootc(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
             veg_cs%livestemc(p)       = veg_cs%livestemc(p)      + veg_cf%livestemc_xfer_to_livestemc(p)*dt
             veg_cs%livestemc_xfer(p)  = veg_cs%livestemc_xfer(p) - veg_cf%livestemc_xfer_to_livestemc(p)*dt
@@ -303,7 +303,7 @@ contains
             veg_cs%livecrootc(p) = veg_cs%livecrootc(p) - veg_cf%livecrootc_to_deadcrootc(p)*dt
             veg_cs%deadcrootc(p) = veg_cs%deadcrootc(p) + veg_cf%livecrootc_to_deadcrootc(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%livestemc(p)  = veg_cs%livestemc(p)  - veg_cf%livestemc_to_litter(p)*dt
             veg_cs%grainc(p)     = veg_cs%grainc(p)     - veg_cf%grainc_to_food(p)*dt
 
@@ -319,7 +319,7 @@ contains
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livestem_curmr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livecroot_curmr(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livestem_curmr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%grain_curmr(p)*dt
          end if
@@ -337,7 +337,7 @@ contains
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livestem_xsmr(p)*dt
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livecroot_xsmr(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livestem_xsmr(p)*dt
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%grain_xsmr(p)*dt
             if (harvdate(p) < 999) then ! beginning at harvest, send to atm
@@ -373,7 +373,7 @@ contains
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_deadcrootc_storage(p)*dt
             veg_cs%deadcrootc_storage(p)  = veg_cs%deadcrootc_storage(p) + veg_cf%cpool_to_deadcrootc_storage(p)*dt
          end if
-         if ( iscft(ivt(p)) >= 1 ) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%livestemc(p)           = veg_cs%livestemc(p)          + veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc_storage(p)*dt
@@ -393,7 +393,7 @@ contains
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livecroot_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadcroot_gr(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_grain_gr(p)*dt
          end if
@@ -407,7 +407,7 @@ contains
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_livecroot_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_deadcroot_gr(p)*dt
          end if
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_livestem_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_grain_gr(p)*dt
          end if
@@ -421,7 +421,7 @@ contains
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livecroot_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadcroot_storage_gr(p)*dt
          end if
-         if ( iscft(ivt(p)) >= 1 ) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_grain_storage_gr(p)*dt
          end if
@@ -447,7 +447,7 @@ contains
             veg_cs%gresp_storage(p)      = veg_cs%gresp_storage(p)     - veg_cf%gresp_storage_to_xfer(p)*dt
             veg_cs%gresp_xfer(p)         = veg_cs%gresp_xfer(p)        + veg_cf%gresp_storage_to_xfer(p)*dt
          end if
-         if ( iscft(ivt(p)) >= 1 ) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
             veg_cs%livestemc_storage(p)  = veg_cs%livestemc_storage(p) - veg_cf%livestemc_storage_to_xfer(p)*dt
             veg_cs%livestemc_xfer(p)     = veg_cs%livestemc_xfer(p)    + veg_cf%livestemc_storage_to_xfer(p)*dt

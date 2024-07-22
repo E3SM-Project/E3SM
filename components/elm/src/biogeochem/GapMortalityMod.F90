@@ -142,7 +142,7 @@ contains
          ! displayed pools
            veg_cf%m_leafc_to_litter(p)     = 0._r8 
            veg_cf%m_livestemc_to_litter(p) = 0._r8 
-         if(iscft(ivt(p)) < 1 .or. (iscft(ivt(p)) >= 1 .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
            veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
          end if
@@ -181,7 +181,7 @@ contains
          ! displayed pools
          veg_nf%m_leafn_to_litter(p) = 0._r8 
          veg_nf%m_livestemn_to_litter(p) = 0._r8 
-         if(iscft(ivt(p)) < 1 .or. (iscft(ivt(p)) >= 1 .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_nf%m_leafn_to_litter(p)               = veg_ns%leafn(p)               * m
            veg_nf%m_livestemn_to_litter(p)           = veg_ns%livestemn(p)           * m
          end if
@@ -190,7 +190,7 @@ contains
          veg_nf%m_livecrootn_to_litter(p)          = veg_ns%livecrootn(p)          * m
          veg_nf%m_deadcrootn_to_litter(p)          = veg_ns%deadcrootn(p)          * m
          veg_nf%m_retransn_to_litter(p) = 0._r8
-         if (iscft(ivt(p)) < 1) then
+         if (.not. iscft(ivt(p))) then
             veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m
          end if
          veg_nf%m_npool_to_litter(p)               = veg_ns%npool(p)               * m
@@ -225,7 +225,7 @@ contains
          ! displayed pools
          veg_pf%m_leafp_to_litter(p)     = 0._r8 
          veg_pf%m_livestemp_to_litter(p) = 0._r8 
-         if(iscft(ivt(p)) < 1 .or. (iscft(ivt(p)) >= 1 .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_pf%m_leafp_to_litter(p)               = veg_ps%leafp(p)               * m
            veg_pf%m_livestemp_to_litter(p)           = veg_ps%livestemp(p)           * m
          endif
@@ -235,7 +235,7 @@ contains
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m
          
          veg_pf%m_retransp_to_litter(p)            = 0._r8 
-         if (iscft(ivt(p)) < 1) then
+         if (.not. iscft(ivt(p))) then
             veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
          end if
          veg_pf%m_ppool_to_litter(p)               = veg_ps%ppool(p)               * m

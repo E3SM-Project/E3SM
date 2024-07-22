@@ -2447,7 +2447,7 @@ module VegetationDataType
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    this%leafc(p)         = 1._r8 * ratio
                    this%leafc_storage(p) = 0._r8
-                else if (iscft(veg_pp%itype(p)) >= 1) then ! prognostic crop types
+                else if (iscft(veg_pp%itype(p))) then ! prognostic crop types
                    this%leafc(p) = 0._r8
                    this%leafc_storage(p) = 0._r8
                 else
@@ -3572,7 +3572,7 @@ module VegetationDataType
             this%gresp_storage(p)      + &
             this%gresp_xfer(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%storvegc(p) =            &
                this%storvegc(p)       + &
                this%grainc_storage(p) + &
@@ -4249,7 +4249,7 @@ module VegetationDataType
            this%npool(p)              + &
            this%retransn(p)
 
-      if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegn(p) = &
               this%dispvegn(p) + &
               this%grainn(p)
@@ -4997,7 +4997,7 @@ module VegetationDataType
            this%ppool(p)              + &
            this%retransp(p)
 
-      if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegp(p) = &
               this%dispvegp(p) + &
               this%grainp(p)
@@ -8189,7 +8189,7 @@ module VegetationDataType
             this%cpool_livecroot_storage_gr(p) + &
             this%cpool_deadcroot_storage_gr(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%mr(p) = &
                this%mr(p) + &
                this%grain_mr(p)
@@ -8214,7 +8214,7 @@ module VegetationDataType
             this%storage_gr(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%ar(p) = &
                this%mr(p) + &
                this%gr(p) + &
@@ -8324,7 +8324,7 @@ module VegetationDataType
        this%wood_harvestc(p) = &
             this%hrv_deadstemc_to_prod10c(p) + &
             this%hrv_deadstemc_to_prod100c(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%wood_harvestc(p) = &
                this%wood_harvestc(p) + &
                this%hrv_cropc_to_prod1c(p)
@@ -8354,7 +8354,7 @@ module VegetationDataType
             this%m_gresp_xfer_to_fire(p)           + &
             this%m_cpool_to_fire(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%litfall(p) =                  &
                this%litfall(p)             + &
                this%livestemc_to_litter(p) + &
@@ -8393,7 +8393,7 @@ module VegetationDataType
        this%leafc_loss(p) =  this%leafc_loss(p) + &
             this%hrv_leafc_to_litter(p)  
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%leafc_loss(p) = &
                this%leafc_loss(p) + &
                this%hrv_leafc_to_prod1c(p)
@@ -8437,7 +8437,7 @@ module VegetationDataType
             this%hrv_deadcrootc_storage_to_litter(p) + &
             this%hrv_deadcrootc_xfer_to_litter(p)
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%woodc_loss(p) = &
                this%woodc_loss(p) + &
                this%hrv_grainc_to_prod1c(p) + &
@@ -8562,7 +8562,7 @@ module VegetationDataType
             this%cpool_to_deadstemc(p)              + &
             this%deadstemc_xfer_to_deadstemc(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%agnpp(p) =                    &
                this%agnpp(p)               + &
                this%cpool_to_grainc(p)     + &
@@ -9720,7 +9720,7 @@ module VegetationDataType
        this%wood_harvestn(p) = &
             this%hrv_deadstemn_to_prod10n(p) + &
             this%hrv_deadstemn_to_prod100n(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestn(p) = &
             this%wood_harvestn(p) + &
             this%hrv_cropn_to_prod1n(p)
@@ -10776,7 +10776,7 @@ module VegetationDataType
        this%wood_harvestp(p) = &
             this%hrv_deadstemp_to_prod10p(p) + &
             this%hrv_deadstemp_to_prod100p(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestp(p) = &
             this%wood_harvestp(p) + &
             this%hrv_cropp_to_prod1p(p)

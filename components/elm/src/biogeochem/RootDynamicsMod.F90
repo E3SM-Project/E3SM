@@ -136,7 +136,7 @@ contains
          p = filter_soilp(f)
          c = pcolumn(p)
          if (ivt(p) /= noveg) then
-            if (iscft(ivt(p)) >= 1) then !skip generic crop types
+            if (iscft(ivt(p))) then !skip generic crop types
                if (huigrain(p) > 0._r8) then
                   root_depth(p) = max(zi(c,2), min(hui(p)/huigrain(p)* root_dmx(ivt(p)), root_dmx(ivt(p))))
                end if

@@ -644,7 +644,7 @@ contains
       ystates(s_deadcrootc_xfer)    = veg_cs%deadcrootc_xfer(p)
       ystates(s_deadcrootc_storage) = veg_cs%deadcrootc_storage(p)
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       ystates(s_livestemc)          = veg_cs%livestemc(p)
       ystates(s_livestemc_xfer)     = veg_cs%livestemc_xfer(p)
       ystates(s_livestemc_storage)  = veg_cs%livestemc_storage(p)
@@ -675,7 +675,7 @@ contains
          + veg_cf%cpool_livecroot_storage_gr(p) &
          + veg_cf%cpool_deadcroot_storage_gr(p)
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       ar_p= ar_p                                 &
         + veg_cf%livestem_curmr(p)             &
         + veg_cf%grain_curmr(p)                &
@@ -713,7 +713,7 @@ contains
       rfluxes(f_deadcrootc_storage_to_xfer)   = veg_cf%deadcrootc_storage_to_xfer(p)
       rfluxes(f_gresp_storage_to_xfer)        = veg_cf%gresp_storage_to_xfer(p)
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       rfluxes(f_cpool_to_livestemc)           = veg_cf%cpool_to_livestemc(p)
       rfluxes(f_cpool_to_livestemc_storage)   = veg_cf%cpool_to_livestemc_storage(p)
       rfluxes(f_cpool_to_grainc)              = veg_cf%cpool_to_grainc(p)
@@ -767,7 +767,7 @@ contains
       call fpmax(rfluxes(f_deadcrootc_storage_to_xfer)   , veg_cf%deadcrootc_storage_to_xfer(p))
       call fpmax(rfluxes(f_gresp_storage_to_xfer)        , veg_cf%gresp_storage_to_xfer(p))
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       call fpmax(rfluxes(f_cpool_to_livestemc)           , veg_cf%cpool_to_livestemc(p))
       call fpmax(rfluxes(f_cpool_to_livestemc_storage)   , veg_cf%cpool_to_livestemc_storage(p))
       call fpmax(rfluxes(f_cpool_to_grainc)              , veg_cf%cpool_to_grainc(p))
@@ -806,7 +806,7 @@ contains
         call ascal(veg_cf%cpool_livecroot_storage_gr(p), rscal)
         call ascal(veg_cf%cpool_deadcroot_storage_gr(p), rscal)
       endif
-      if (iscft(ivt(p)) >= 1) then
+      if (iscft(ivt(p))) then
         call ascal(veg_cf%livestem_curmr(p)            , rscal)
         call ascal(veg_cf%grain_curmr(p)               , rscal)
         call ascal(veg_cf%cpool_livestem_gr(p)         , rscal)
@@ -878,7 +878,7 @@ contains
       ystates(s_deadcrootn_xfer)     = veg_ns%deadcrootn_xfer(p)
       ystates(s_deadcrootn_storage)  = veg_ns%deadcrootn_storage(p)
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       ystates(s_grainn)              = veg_ns%grainn(p)
       ystates(s_grainn_xfer)         = veg_ns%grainn_xfer(p)
       ystates(s_grainn_storage)      = veg_ns%grainn_storage(p)
@@ -917,7 +917,7 @@ contains
       rfluxes(f_deadcrootn_xfer_to_deadcrootn) = veg_nf%deadcrootn_xfer_to_deadcrootn(p)
     endif
 
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       rfluxes(f_npool_to_livestemn)            = veg_nf%npool_to_livestemn(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_nf%npool_to_livestemn_storage(p)
       rfluxes(f_npool_to_grainn)               = veg_nf%npool_to_grainn(p)
@@ -973,7 +973,7 @@ contains
       call fpmax(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_nf%deadcrootn_xfer_to_deadcrootn(p))
     endif
 
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       call fpmax(rfluxes(f_npool_to_livestemn)            , veg_nf%npool_to_livestemn(p))
       call fpmax(rfluxes(f_npool_to_livestemn_storage)    , veg_nf%npool_to_livestemn_storage(p))
       call fpmax(rfluxes(f_npool_to_grainn)               , veg_nf%npool_to_grainn(p))
@@ -1063,7 +1063,7 @@ contains
       ystates(s_deadcrootn_xfer)     = veg_ps%deadcrootp_xfer(p)
       ystates(s_deadcrootn_storage)  = veg_ps%deadcrootp_storage(p)
     endif
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       ystates(s_grainn)              = veg_ps%grainp(p)
       ystates(s_grainn_xfer)         = veg_ps%grainp_xfer(p)
       ystates(s_grainn_storage)      = veg_ps%grainp_storage(p)
@@ -1102,7 +1102,7 @@ contains
       rfluxes(f_deadcrootn_xfer_to_deadcrootn) = veg_pf%deadcrootp_xfer_to_deadcrootp(p)
     endif
 
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       rfluxes(f_npool_to_livestemn)            = veg_pf%ppool_to_livestemp(p)
       rfluxes(f_npool_to_livestemn_storage)    = veg_pf%ppool_to_livestemp_storage(p)
       rfluxes(f_npool_to_grainn)               = veg_pf%ppool_to_grainp(p)
@@ -1158,7 +1158,7 @@ contains
       call fpmax(rfluxes(f_deadcrootn_xfer_to_deadcrootn) , veg_pf%deadcrootp_xfer_to_deadcrootp(p))
     endif
 
-    if (iscft(ivt(p)) >= 1) then
+    if (iscft(ivt(p))) then
       call fpmax(rfluxes(f_npool_to_livestemn)            , veg_pf%ppool_to_livestemp(p))
       call fpmax(rfluxes(f_npool_to_livestemn_storage)    , veg_pf%ppool_to_livestemp_storage(p))
       call fpmax(rfluxes(f_npool_to_grainn)               , veg_pf%ppool_to_grainp(p))

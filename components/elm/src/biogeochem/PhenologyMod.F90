@@ -2205,27 +2205,17 @@ contains
     minplantjday(:,:) = huge(1)
     maxplantjday(:,:) = huge(1)
     do n = 0, mxpft
-      if (iscft(n)>=1) then
+      if (iscft(n)) then
         minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
         maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
       end if
     end do
     do n = 0, mxpft
-      if (iscft(n)>=1) then
+      if (iscft(n)) then
         minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
         maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
       end if
     end do
-
-    ! with flag 'iscft', the following is not needed anymore
-    !do n = nppercropmin, nppercropmax
-    !   minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
-    !   maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
-    !end do
-    !do n = nppercropmin, nppercropmax
-    !   minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
-    !   maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
-    !end do
 
     ! Figure out what hemisphere each PFT is in
     do p = bounds%begp, bounds%endp
@@ -3068,7 +3058,7 @@ contains
 
             if (offset_counter(p) == dt) then
                t1 = 1.0_r8 / dt
-               if (iscft(ivt(p)) >= 1) then
+               if (iscft(ivt(p))) then
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
@@ -3085,7 +3075,7 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-               if (iscft(ivt(p)) >= 1) then
+               if (iscft(ivt(p))) then
                   if (offset_counter(p) == dt) then
                       t1 = 1.0_r8 / dt
 
@@ -3119,7 +3109,7 @@ contains
             else
                if (offset_counter(p) == dt) then
                   t1 = 1.0_r8 / dt
-                  if (iscft(ivt(p)) >= 1) then
+                  if (iscft(ivt(p))) then
                      ! this assumes that offset_counter == dt for crops
                      ! if this were ever changed, we'd need to add code to the "else"
                      leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
@@ -3503,7 +3493,7 @@ contains
                      ! new ones for now (slevis)
                      ! The food is now directed to the product pools (BDrewniak)
 
-                     if (iscft(ivt(p)) >= 1) then ! add livestemc to litter
+                     if (iscft(ivt(p))) then ! add livestemc to litter
                         ! stem litter carbon fluxes
                         phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                              + livestemc_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)

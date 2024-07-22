@@ -255,7 +255,7 @@ contains
                   veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
               end if
 
-              if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ps%livestemp(p)       = veg_ps%livestemp(p)      + veg_pf%livestemp_xfer_to_livestemp(p)*dt
                   veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p) - veg_pf%livestemp_xfer_to_livestemp(p)*dt
@@ -280,7 +280,7 @@ contains
                   veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
                   veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
               end if
-              if (iscft(ivt(p)) >= 1) then ! Beth adds retrans from froot
+              if (iscft(ivt(p))) then ! Beth adds retrans from froot
                   veg_ps%frootp(p)     = veg_ps%frootp(p)     - veg_pf%frootp_to_retransp(p)*dt
                   veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%frootp_to_retransp(p)*dt
                   veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_litter(p)*dt
@@ -331,7 +331,7 @@ contains
                   veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + veg_pf%ppool_to_deadcrootp_storage(p)*dt
               end if
 
-              if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
                   veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
@@ -359,7 +359,7 @@ contains
                   veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + veg_pf%deadcrootp_storage_to_xfer(p)*dt
               end if
 
-              if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p) - veg_pf%livestemp_storage_to_xfer(p)*dt
                   veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)    + veg_pf%livestemp_storage_to_xfer(p)*dt

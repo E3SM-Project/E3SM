@@ -703,7 +703,7 @@ contains
        get_map_EF = vocemis_vars%efisop_grc(4,g_in, ti_in)
     else if (graminoid(ivt_in) == 1) then            !grass
        get_map_EF = vocemis_vars%efisop_grc(5,g_in, ti_in)
-    else if (crop(ivt_in) == 1 .or. iscft(ivt_in) == 1) then !crops
+    else if (crop(ivt_in) == 1 .or. iscft(ivt_in)) then !crops
        get_map_EF = vocemis_vars%efisop_grc(6,g_in, ti_in)
     end if
 

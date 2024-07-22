@@ -1007,7 +1007,7 @@ contains
            this%npool_patch(p)              + &
            this%retransn_patch(p)
 
-      if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegn_patch(p) = &
               this%dispvegn_patch(p) + &
               this%grainn_patch(p)

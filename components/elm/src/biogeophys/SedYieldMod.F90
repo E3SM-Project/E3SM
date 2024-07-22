@@ -218,7 +218,7 @@ contains
                         (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
-                     if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)) >=1 )then
+                     if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)))then
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
                            fgndcov * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
                         
@@ -266,7 +266,7 @@ contains
                      nh = 0.03_r8 + 0.05_r8*max(Crsd,Clai)
                      fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
                   
-                     if ( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)) >= 1 ) then
+                     if ( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p))) then
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
                         Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &

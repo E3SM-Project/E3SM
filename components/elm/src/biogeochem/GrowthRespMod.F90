@@ -102,7 +102,7 @@ contains
       do fp = 1,num_soilp
 
         p = filter_soilp(fp)
-         if (iscft(ivt(p)) >= 1) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
 
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
 

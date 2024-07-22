@@ -1675,7 +1675,7 @@ contains
             this%cpool_livecroot_storage_gr_patch(p) + &
             this%cpool_deadcroot_storage_gr_patch(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%mr_patch(p) = &
                this%mr_patch(p) + &
                this%grain_mr_patch(p)
@@ -1700,7 +1700,7 @@ contains
             this%storage_gr_patch(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%ar_patch(p) = &
                this%mr_patch(p) + &
                this%gr_patch(p) + &
@@ -1812,7 +1812,7 @@ contains
        this%wood_harvestc_patch(p) = &
             this%hrv_deadstemc_to_prod10c_patch(p) + &
             this%hrv_deadstemc_to_prod100c_patch(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%wood_harvestc_patch(p) = &
                this%wood_harvestc_patch(p) + &
                this%hrv_cropc_to_prod1c_patch(p)
@@ -1842,7 +1842,7 @@ contains
             this%m_gresp_xfer_to_fire_patch(p)           + &
             this%m_cpool_to_fire_patch(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
 
           this%litfall_patch(p) =                  &
                this%litfall_patch(p)             + &
@@ -1878,7 +1878,7 @@ contains
             this%hrv_leafc_to_litter_patch(p)    + &
             this%leafc_to_litter_patch(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%leafc_loss_patch(p) = &
                this%leafc_loss_patch(p) + &
                this%hrv_leafc_to_prod1c_patch(p)
@@ -1920,7 +1920,7 @@ contains
             this%hrv_deadcrootc_storage_to_litter_patch(p) + &
             this%hrv_deadcrootc_xfer_to_litter_patch(p)   
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%woodc_loss_patch(p) = &
                this%woodc_loss_patch(p) + &
                this%hrv_grainc_to_prod1c_patch(p) + &
@@ -2592,7 +2592,7 @@ end subroutine CSummary_interface
             this%cpool_to_deadstemc_patch(p)              + &
             this%deadstemc_xfer_to_deadstemc_patch(p)
 
-       if ( crop_prog .and. iscft(veg_pp%itype(p)) >= 1 )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%agnpp_patch(p) =                    &
                this%agnpp_patch(p)               + &
                this%cpool_to_grainc_patch(p)     + &
