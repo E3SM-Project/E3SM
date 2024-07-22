@@ -355,6 +355,7 @@ end subroutine moab_map_init_rcfile
     real(r8), dimension(:), allocatable  :: wghts
     real(kind=r8) , allocatable  :: targtags(:,:), targtags_ini(:,:)
     real(kind=r8)  :: factor
+    integer  :: filter_type ! used for caas projection
 #endif
     !
     ! Local Variables
@@ -649,7 +650,8 @@ end subroutine moab_map_init_rcfile
             call shr_sys_flush(logunit)
          endif
 #endif
-         ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+         filter_type = 0 ! no
+         ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights '
             call shr_sys_abort(subname//' ERROR in applying weights')
