@@ -894,7 +894,7 @@ contains
                                   tracerGroupSurfaceFluxRemoved, &
                                   dt, layerThickness, err)
             if (trim(config_subglacial_runoff_mode) == 'data') then
-                call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
+                call ocn_surface_bulk_forcing_tracers_subglacial_runoff(meshPool, groupName, &
                                       forcingPool, &
                                       tracerGroupSurfaceFluxSubglacialRunoff, err)
             end if
