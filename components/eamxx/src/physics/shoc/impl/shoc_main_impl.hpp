@@ -685,7 +685,9 @@ Int Functions<S,D>::shoc_main(
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
 
-    shoc_output.pblh(i) = pblh_s;
+    shoc_output.obklen(i) = obklen_s;
+    shoc_output.ustar(i)  = ustar_s;
+    shoc_output.pblh(i)   s= pblh_s;
   });
   Kokkos::fence();
 #else

@@ -395,7 +395,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
   add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
-  add_postcondition_check<LowerBound>(get_field_out("obklen"),m_grid,0);
   add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
   // For qv, ensure it doesn't get negative, by allowing repair of any neg value.
