@@ -436,21 +436,30 @@ _TESTS = {
         },
 
     #fates testmod coverage
+    "fates_landuse" : {
+        "time"    : "00:40:00",
+        "tests"   : (
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_logging",
+            "ERS_D_Ld30.f45_g37.IELMFATES.elm-fates_cold_landuse",
+            "ERS_D_Ld30.f45_g37.IELMFATES.elm-fates_cold_luh2",
+            "ERS_D_Ld30.f45_g37.IELMFATES.elm-fates_cold_luh2harvestarea",
+            "ERS_D_Ld30.f45_g37.IELMFATES.elm-fates_cold_luh2harvestmass",
+            )
+        },
+    #fates testmod coverage
     "fates" : {
-        "inherit" : ("fates_long_tests", "fates_elm_developer"),
+        "inherit" : ("fates_long_tests", "fates_elm_developer", "fates_landuse"),
         "tests" : (
             "ERP_Ld15.ne4pg2_ne4pg2.IELMFATES.elm-fates_cold_allvars",
             "ERP_Ld3.f09_g16.IELMFATES.elm-fates_cold",
             "ERP_D_Ld3.f19_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld3_PS.f09_g16.IELMFATES.elm-fates_cold",
             "ERS_D_Ld5.f45_g37.IELMFATES.elm-fates_cold",
-            "ERS_D_Ld30.f45_g37.IELMFATES.elm-fates_cold_landuse",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_satphen",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_fixedbiogeo",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp",
             "ERS_Ld30.f45_g37.IELMFATES.elm-fates_cold_nocomp_fixedbiogeo",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates",
-            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_logging",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nofire",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
