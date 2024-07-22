@@ -230,6 +230,9 @@ private_except_cuda:
   // column areas, latitudes, longitudes
   const_view_1d col_areas_, col_latitudes_, col_longitudes_;
 
+  // surface albedo: shortwave, direct
+  const_view_1d d_sfc_alb_dir_vis_;
+
   // time step number
   int step_;
 
@@ -248,7 +251,6 @@ private_except_cuda:
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
   view_3d photo_rates_;
-  view_2d lwc_;
 
   // invariants members
   std::shared_ptr<AtmosphereInput>  TracerDataReader_;
@@ -257,6 +259,7 @@ private_except_cuda:
   mam_coupling::TracerData tracer_data_beg_;
   mam_coupling::TracerData tracer_data_out_;
   view_2d p_src_invariant_;
+  view_3d invariants_;
   std::string oxid_file_name_;
   view_2d cnst_offline_[4];
 
@@ -275,12 +278,10 @@ private_except_cuda:
   std::vector<mam_coupling::TracerData> vert_emis_data_end_;
   std::vector<mam_coupling::TracerData> vert_emis_data_beg_;
   std::vector<mam_coupling::TracerData> vert_emis_data_out_;
-  std::vector<std::string> vert_emis_file_name_;
   std::vector<const_view_1d> vert_emis_altitude_int_;
-  std::vector<view_2d> vert_emis_output_;
-
-
-
+  std::map< std::string, std::string >vert_emis_file_name_;
+  std::map< std::string, std::vector<std::string> > vert_emis_var_names_;
+  view_2d vert_emis_output_[mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS];
 
 
 

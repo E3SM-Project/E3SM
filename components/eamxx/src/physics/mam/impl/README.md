@@ -1,4 +1,4 @@
-# MAM4 Integration Code
+#MAM4 Integration Code
 
 This folder contains C++ implementations of the higher-level MAM4 interface
 routines for aerosol microphysics, cloud-aerosol interactions, and optical

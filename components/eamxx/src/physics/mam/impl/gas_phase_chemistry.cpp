@@ -20,26 +20,33 @@ using HostViewInt1D = haero::DeviceType::view_1d<int>::HostMirror;
 int nc_dimension(const char *file, int nc_id, const char *dim_name) {
   int dim_id;
   int result = nc_inq_dimid(nc_id, dim_name, &dim_id);
-  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch " << dim_name <<
-    " dimension ID from NetCDF file '" << file << "'\n");
+  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch "
+                                    << dim_name
+                                    << " dimension ID from NetCDF file '"
+                                    << file << "'\n");
   size_t dim;
   result = nc_inq_dimlen(nc_id, dim_id, &dim);
-  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch " << dim_name <<
-    " dimension from NetCDF file '" << file << "'\n");
+  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch "
+                                    << dim_name
+                                    << " dimension from NetCDF file '" << file
+                                    << "'\n");
   return static_cast<int>(dim);
 }
 
 // ON HOST (MPI root rank only), reads data from the given NetCDF variable from
 // the file with the given ID into the given Kokkos host View
 template <typename V>
-void read_nc_var(const char *file, int nc_id, const char *var_name, V host_view) {
+void read_nc_var(const char *file, int nc_id, const char *var_name,
+                 V host_view) {
   int var_id;
   int result = nc_inq_varid(nc_id, var_name, &var_id);
-  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch ID for variable '" << var_name <<
-    "' from NetCDF file '" << file << "'\n");
+  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch ID for variable '"
+                                    << var_name << "' from NetCDF file '"
+                                    << file << "'\n");
   result = nc_get_var(nc_id, var_id, host_view.data());
-  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't read data for variable '" << var_name <<
-    "' from NetCDF file '" << file << "'\n");
+  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't read data for variable '"
+                                    << var_name << "' from NetCDF file '"
+                                    << file << "'\n");
 }
 
 // ON HOST (MPI root rank only), reads data from the NetCDF variable with the
@@ -47,8 +54,9 @@ void read_nc_var(const char *file, int nc_id, const char *var_name, V host_view)
 template <typename V>
 void read_nc_var(const char *file, int nc_id, int var_id, V host_view) {
   int result = nc_get_var(nc_id, var_id, host_view.data());
-  EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't read data for variable with ID " <<
-    var_id << " from NetCDF file '" << file << "'\n");
+  EKAT_REQUIRE_MSG(result == 0,
+                   "Error! Couldn't read data for variable with ID "
+                       << var_id << " from NetCDF file '" << file << "'\n");
 }
 
 // ON HOST (MPI root only), sets the lng_indexer and pht_alias_mult_1 host views
@@ -59,18 +67,22 @@ void set_lng_indexer_and_pht_alias_mult_1(const char *file, int nc_id,
   // NOTE: it seems that the chemical mechanism we're using
   // NOTE: 1. sets pht_alias_lst to a blank string [1]
   // NOTE: 2. sets pht_alias_mult_1 to 1.0 [1]
-  // NOTE: 3. sets rxt_tag_lst to ['jh2o2', 'usr_HO2_HO2', 'usr_SO2_OH', 'usr_DMS_OH'] [2]
-  // NOTE: References:
-  // NOTE: [1] (https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/pp_linoz_mam4_resus_mom_soag/mo_sim_dat.F90#L117)
-  // NOTE: [2] (https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/pp_linoz_mam4_resus_mom_soag/mo_sim_dat.F90#L99)
+  // NOTE: 3. sets rxt_tag_lst to ['jh2o2', 'usr_HO2_HO2', 'usr_SO2_OH',
+  // 'usr_DMS_OH'] [2] NOTE: References: NOTE: [1]
+  // (https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/pp_linoz_mam4_resus_mom_soag/mo_sim_dat.F90#L117)
+  // NOTE: [2]
+  // (https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/pp_linoz_mam4_resus_mom_soag/mo_sim_dat.F90#L99)
 
-  // populate lng_indexer (see https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/mozart/mo_jlong.F90#L180)
-  static const char *var_names[4] = {"jh2o2", "usr_HO2_HO2", "usr_SO2_OH", "usr_DMS_OH"};
-  for (int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
+  // populate lng_indexer (see
+  // https://github.com/eagles-project/e3sm_mam4_refactor/blob/refactor-maint-2.0/components/eam/src/chemistry/mozart/mo_jlong.F90#L180)
+  static const char *var_names[4] = {"jh2o2", "usr_HO2_HO2", "usr_SO2_OH",
+                                     "usr_DMS_OH"};
+  for(int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
     int var_id;
     int result = nc_inq_varid(nc_id, var_names[m], &var_id);
     EKAT_REQUIRE_MSG(result == 0, "Error! Couldn't fetch ID for variable '"
-      << var_names[m] << "' from NetCDF file '" << file << "'\n");
+                                      << var_names[m] << "' from NetCDF file '"
+                                      << file << "'\n");
     lng_indexer(m) = var_id;
   }
 
@@ -82,7 +94,8 @@ void set_lng_indexer_and_pht_alias_mult_1(const char *file, int nc_id,
 // solar data from our solar_data_file
 void populate_etfphot(HostView1D we, HostView1D etfphot) {
   // FIXME: It looks like EAM is relying on a piece of infrastructure that
-  // FIXME: we just don't have in EAMxx (eam/src/chemistry/utils/solar_data.F90).
+  // FIXME: we just don't have in EAMxx
+  // (eam/src/chemistry/utils/solar_data.F90).
   // FIXME: I have no idea whether EAMxx has a plan for supporting this
   // FIXME: solar irradiance / photon flux data, and I'm not going to recreate
   // FIXME: that capability here. So this is an unplugged hole.
@@ -94,112 +107,140 @@ void populate_etfphot(HostView1D we, HostView1D etfphot) {
   // FIXME: zero the photon flux for now
   Kokkos::deep_copy(etfphot, 0);
 }
+
+std::vector<Real> populate_etfphot_from_e3sm_case()
+{
+  // We obtained these values from an e3sm simulations.
+  // We should only use this function on Host.
+  std::vector<Real> etfphot_data = {
+    7.5691227E+11, 8.6525905E+11, 1.0355749E+12, 1.1846288E+12, 2.1524405E+12,
+    3.2362584E+12, 3.7289849E+12, 4.4204330E+12, 4.6835350E+12, 6.1217728E+12,
+    4.5575051E+12, 5.3491446E+12, 4.7016063E+12, 5.4281722E+12, 4.5023968E+12,
+    6.8931981E+12, 6.2012647E+12, 6.1430771E+12, 5.7820385E+12, 7.6770646E+12,
+    1.3966509E+13, 1.2105348E+13, 2.8588980E+13, 3.2160821E+13, 2.4978066E+13,
+    2.7825401E+13, 2.3276451E+13, 3.6343684E+13, 6.1787886E+13, 7.8009914E+13,
+    7.6440824E+13, 7.6291458E+13, 9.4645085E+13, 1.0124628E+14, 1.0354111E+14,
+    1.0999650E+14, 1.0889946E+14, 1.1381912E+14, 1.3490042E+14, 1.5941519E+14,
+    1.4983265E+14, 1.5184267E+14, 1.5991420E+14, 1.6976697E+14, 1.8771840E+14,
+    1.6434367E+14, 1.8371960E+14, 2.1966369E+14, 1.9617879E+14, 2.2399700E+14,
+    1.8429912E+14, 2.0129736E+14, 2.0541588E+14, 2.4334962E+14, 3.5077122E+14,
+    3.4517894E+14, 3.5749668E+14, 3.6624304E+14, 3.4975113E+14, 3.5566025E+14,
+    4.2825273E+14, 4.8406375E+14, 4.9511159E+14, 5.2695368E+14, 5.2401611E+14,
+    5.0877746E+14, 4.8780853E+14
+  };
+  return etfphot_data;
+}
+
 // This version uses scream_scorpio_interface to read netcdf files.
-mam4::mo_photo::PhotoTableData read_photo_table(const std::string& rsf_file,
-                      const std::string& xs_long_file) {
+mam4::mo_photo::PhotoTableData read_photo_table(
+    const std::string &rsf_file, const std::string &xs_long_file) {
+  // set up the lng_indexer and pht_alias_mult_1 views based on our
+  // (hardwired) chemical mechanism
+  HostViewInt1D lng_indexer_h("lng_indexer(host)", mam4::mo_photo::phtcnt);
 
+  int nw, nump, numsza, numcolo3, numalb, nt, np_xs;  // table dimensions
+  scorpio::register_file(rsf_file, scorpio::Read);
+  // read and broadcast dimension data
+  nump     = scorpio::get_dimlen(rsf_file, "numz");
+  numsza   = scorpio::get_dimlen(rsf_file, "numsza");
+  numalb   = scorpio::get_dimlen(rsf_file, "numalb");
+  numcolo3 = scorpio::get_dimlen(rsf_file, "numcolo3fact");
 
-// set up the lng_indexer and pht_alias_mult_1 views based on our
-// (hardwired) chemical mechanism
-HostViewInt1D lng_indexer_h("lng_indexer(host)", mam4::mo_photo::phtcnt);
+  scorpio::register_file(xs_long_file, scorpio::Read);
+  nt    = scorpio::get_dimlen(xs_long_file, "numtemp");
+  nw    = scorpio::get_dimlen(xs_long_file, "numwl");
+  np_xs = scorpio::get_dimlen(xs_long_file, "numprs");
 
+  // FIXME: hard-coded for only one photo reaction.
+  std::string rxt_names[1] = {"jh2o2"};
+  int numj                 = 1;
+  lng_indexer_h(0)         = 0;
+  // allocate the photolysis table
+  auto table = mam4::mo_photo::create_photo_table_data(
+      nw, nt, np_xs, numj, nump, numsza, numcolo3, numalb);
 
+  // allocate host views for table data
+  auto rsf_tab_h = Kokkos::create_mirror_view(table.rsf_tab);
+  auto xsqy_h    = Kokkos::create_mirror_view(table.xsqy);
+  auto sza_h     = Kokkos::create_mirror_view(table.sza);
+  auto alb_h     = Kokkos::create_mirror_view(table.alb);
+  auto press_h   = Kokkos::create_mirror_view(table.press);
+  auto colo3_h   = Kokkos::create_mirror_view(table.colo3);
+  auto o3rat_h   = Kokkos::create_mirror_view(table.o3rat);
+  // auto etfphot_h = Kokkos::create_mirror_view(table.etfphot);
+  auto prs_h     = Kokkos::create_mirror_view(table.prs);
 
-int nw, nump, numsza, numcolo3, numalb, nt, np_xs; // table dimensions
-scorpio::register_file(rsf_file,scorpio::Read);
-// read and broadcast dimension data
-nump     = scorpio::get_dimlen(rsf_file,"numz");
-numsza   = scorpio::get_dimlen(rsf_file, "numsza");
-numalb   = scorpio::get_dimlen(rsf_file, "numalb");
-numcolo3 = scorpio::get_dimlen(rsf_file, "numcolo3fact");
+  // read file data into our host views
+  scorpio::read_var(rsf_file, "pm", press_h.data());
+  scorpio::read_var(rsf_file, "sza", sza_h.data());
+  scorpio::read_var(rsf_file, "alb", alb_h.data());
+  scorpio::read_var(rsf_file, "colo3fact", o3rat_h.data());
+  scorpio::read_var(rsf_file, "colo3", colo3_h.data());
+  // it produces an error.
+  scorpio::read_var(rsf_file, "RSF", rsf_tab_h.data());
+  scorpio::read_var(xs_long_file, "pressure", prs_h.data());
 
-scorpio::register_file(xs_long_file,scorpio::Read);
-nt       = scorpio::get_dimlen(xs_long_file, "numtemp");
-nw       = scorpio::get_dimlen(xs_long_file, "numwl");
-np_xs    = scorpio::get_dimlen(xs_long_file, "numprs");
+  // read xsqy data (using lng_indexer_h for the first index)
+  // FIXME: hard-coded for only one photo reaction.
+  for(int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
+    auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
+    scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
+  }
 
-//FIXME: hard-coded for only one photo reaction.
-std::string rxt_names[1] = {"jh2o2"};
-int numj = 1;
-lng_indexer_h(0)=0;
-// allocate the photolysis table
-auto table = mam4::mo_photo::create_photo_table_data(nw, nt, np_xs, numj,
-                                                       nump, numsza, numcolo3,
-                                                       numalb);
+  // populate etfphot by rebinning solar data
+  HostView1D wc_h("wc", nw), wlintv_h("wlintv", nw), we_h("we", nw + 1);
 
-// allocate host views for table data
-auto rsf_tab_h = Kokkos::create_mirror_view(table.rsf_tab);
-auto xsqy_h = Kokkos::create_mirror_view(table.xsqy);
-auto sza_h = Kokkos::create_mirror_view(table.sza);
-auto alb_h = Kokkos::create_mirror_view(table.alb);
-auto press_h = Kokkos::create_mirror_view(table.press);
-auto colo3_h = Kokkos::create_mirror_view(table.colo3);
-auto o3rat_h = Kokkos::create_mirror_view(table.o3rat);
-auto etfphot_h = Kokkos::create_mirror_view(table.etfphot);
-auto prs_h = Kokkos::create_mirror_view(table.prs);
+  scorpio::read_var(rsf_file, "wc", wc_h.data());
+  scorpio::read_var(rsf_file, "wlintv", wlintv_h.data());
+  for(int i = 0; i < nw; ++i) {
+    we_h(i) = wc_h(i) - 0.5 * wlintv_h(i);
+  }
+  we_h(nw) = wc_h(nw - 1) - 0.5 * wlintv_h(nw - 1);
+  // populate_etfphot(we_h, etfphot_h);
+  // FIXME: etfphot_data is hard-coded.
+  auto etfphot_data = populate_etfphot_from_e3sm_case();
+  auto etfphot_h = HostView1D((Real *)etfphot_data.data(),nw);
 
-// read file data into our host views
-scorpio::read_var(rsf_file, "pm", press_h.data());
-scorpio::read_var(rsf_file, "sza", sza_h.data());
-scorpio::read_var(rsf_file, "alb", alb_h.data());
-scorpio::read_var(rsf_file, "colo3fact", o3rat_h.data());
-scorpio::read_var(rsf_file, "colo3", colo3_h.data());
-// it produces an error.
-scorpio::read_var(rsf_file, "RSF", rsf_tab_h.data());
-scorpio::read_var(xs_long_file, "pressure", prs_h.data());
+  scorpio::release_file(rsf_file);
+  scorpio::release_file(xs_long_file);
 
-// read xsqy data (using lng_indexer_h for the first index)
-//FIXME: hard-coded for only one photo reaction.
-for (int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
-  auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
-  scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
-}
-
-// populate etfphot by rebinning solar data
-HostView1D wc_h("wc", nw), wlintv_h("wlintv", nw), we_h("we", nw+1);
-
-scorpio::read_var(rsf_file, "wc", wc_h.data());
-scorpio::read_var(rsf_file, "wlintv", wlintv_h.data());
-for (int i = 0; i < nw; ++i) {
-      we_h(i) = wc_h(i) - 0.5 * wlintv_h(i);
-}
-we_h(nw) = wc_h(nw-1) - 0.5 * wlintv_h(nw-1);
-populate_etfphot(we_h, etfphot_h);
-scorpio::release_file(rsf_file);
-scorpio::release_file(xs_long_file);
-
-// copy host photolysis table into place on device
-Kokkos::deep_copy(table.rsf_tab,          rsf_tab_h);
-Kokkos::deep_copy(table.xsqy,             xsqy_h);
-Kokkos::deep_copy(table.sza,              sza_h);
-Kokkos::deep_copy(table.alb,              alb_h);
-Kokkos::deep_copy(table.press,            press_h);
-Kokkos::deep_copy(table.colo3,            colo3_h);
-Kokkos::deep_copy(table.o3rat,            o3rat_h);
-Kokkos::deep_copy(table.etfphot,          etfphot_h);
-Kokkos::deep_copy(table.prs,              prs_h);
-// set pht_alias_mult_1 to 1
-Kokkos::deep_copy(table.pht_alias_mult_1, 1.0);
-Kokkos::deep_copy(table.lng_indexer,      lng_indexer_h);
+  // copy host photolysis table into place on device
+  Kokkos::deep_copy(table.rsf_tab, rsf_tab_h);
+  Kokkos::deep_copy(table.xsqy, xsqy_h);
+  Kokkos::deep_copy(table.sza, sza_h);
+  Kokkos::deep_copy(table.alb, alb_h);
+  Kokkos::deep_copy(table.press, press_h);
+  Kokkos::deep_copy(table.colo3, colo3_h);
+  Kokkos::deep_copy(table.o3rat, o3rat_h);
+  Kokkos::deep_copy(table.etfphot, etfphot_h);
+  Kokkos::deep_copy(table.prs, prs_h);
+  // set pht_alias_mult_1 to 1
+  Kokkos::deep_copy(table.pht_alias_mult_1, 1.0);
+  Kokkos::deep_copy(table.lng_indexer, lng_indexer_h);
 
   // compute gradients (on device)
-  Kokkos::parallel_for("del_p", nump-1, KOKKOS_LAMBDA(int i) {
-    table.del_p(i) = 1.0/::abs(table.press(i)- table.press(i+1));
-  });
-  Kokkos::parallel_for("del_sza", numsza-1, KOKKOS_LAMBDA(int i) {
-    table.del_sza(i) = 1.0/(table.sza(i+1) - table.sza(i));
-  });
-  Kokkos::parallel_for("del_alb", numalb-1, KOKKOS_LAMBDA(int i) {
-    table.del_alb(i) = 1.0/(table.alb(i+1) - table.alb(i));
-  });
-  Kokkos::parallel_for("del_o3rat", numcolo3-1, KOKKOS_LAMBDA(int i) {
-    table.del_o3rat(i) = 1.0/(table.o3rat(i+1) - table.o3rat(i));
-  });
-  Kokkos::parallel_for("dprs", np_xs-1, KOKKOS_LAMBDA(int i) {
-    table.dprs(i) = 1.0/(table.prs(i) - table.prs(i+1));
-  });
+  Kokkos::parallel_for(
+      "del_p", nump - 1, KOKKOS_LAMBDA(int i) {
+        table.del_p(i) = 1.0 / haero::abs(table.press(i) - table.press(i + 1));
+      });
+  Kokkos::parallel_for(
+      "del_sza", numsza - 1, KOKKOS_LAMBDA(int i) {
+        table.del_sza(i) = 1.0 / (table.sza(i + 1) - table.sza(i));
+      });
+  Kokkos::parallel_for(
+      "del_alb", numalb - 1, KOKKOS_LAMBDA(int i) {
+        table.del_alb(i) = 1.0 / (table.alb(i + 1) - table.alb(i));
+      });
+  Kokkos::parallel_for(
+      "del_o3rat", numcolo3 - 1, KOKKOS_LAMBDA(int i) {
+        table.del_o3rat(i) = 1.0 / (table.o3rat(i + 1) - table.o3rat(i));
+      });
+  Kokkos::parallel_for(
+      "dprs", np_xs - 1, KOKKOS_LAMBDA(int i) {
+        table.dprs(i) = 1.0 / (table.prs(i) - table.prs(i + 1));
+      });
 
-return table;
+  return table;
 }
 
 #if 0
@@ -369,31 +410,41 @@ mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
-void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
-                         const Real photo_rates[mam4::mo_photo::phtcnt], // in
-                         Real q[mam4::gas_chemistry::gas_pcnst], // VMRs, inout
-                         Real invariants[mam4::gas_chemistry::nfs]) { // out
+void gas_phase_chemistry(
+    Real zm, Real zi, Real phis, Real temp, Real pmid, Real pdel, Real dt,
+    const Real photo_rates[mam4::mo_photo::phtcnt],  // in
+    const Real extfrc[mam4::gas_chemistry::extcnt],  // in
+    Real invariants[mam4::gas_chemistry::nfs],       // in
+    Real q[mam4::gas_chemistry::gas_pcnst]) {        // VMRs, inout
   // constexpr Real rga = 1.0/haero::Constants::gravity;
   // constexpr Real m2km = 0.01; // converts m -> km
 
-  // The following things are chemical mechanism dependent! See mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
-  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst; // number of gas phase species
-  constexpr int rxntot = mam4::gas_chemistry::rxntot;       // number of chemical reactions
-  constexpr int indexm = mam4::gas_chemistry::indexm;       // index of total atm density in invariant array 
+  // The following things are chemical mechanism dependent! See
+  // mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
+  constexpr int gas_pcnst =
+      mam4::gas_chemistry::gas_pcnst;  // number of gas phase species
+  constexpr int rxntot =
+      mam4::gas_chemistry::rxntot;  // number of chemical reactions
+  constexpr int extcnt =
+      mam4::gas_chemistry::extcnt;  // number of species with external forcing
+  constexpr int indexm =
+      mam4::gas_chemistry::indexm;  // index of total atm density in invariant
+                                    // array
 
-  constexpr int phtcnt = mam4::mo_photo::phtcnt; // number of photolysis reactions
+  constexpr int phtcnt =
+      mam4::mo_photo::phtcnt;  // number of photolysis reactions
 
   constexpr int itermax = mam4::gas_chemistry::itermax;
   constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
-  constexpr int nfs = mam4::gas_chemistry::nfs;
+  constexpr int nfs     = mam4::gas_chemistry::nfs;
 
   // NOTE: vvv these arrays were copied from mam4xx/gas_chem_mechanism.hpp vvv
   constexpr int permute_4[gas_pcnst] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                                         10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
                                         20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
-  constexpr int clsmap_4[gas_pcnst] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-                                       11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                                       21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
+  constexpr int clsmap_4[gas_pcnst]  = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+                                        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                                        21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
 
   // These indices for species are fixed by the chemical mechanism
   // std::string solsym[] = {"O3", "H2O2", "H2SO4", "SO2", "DMS", "SOAG",
@@ -403,8 +454,10 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   //                         "so4_a3", "bc_a3", "pom_a3", "soa_a3", "mom_a3",
   //                         "num_a3", "pom_a4", "bc_a4", "mom_a4", "num_a4"};
   constexpr int ndx_h2so4 = 2;
+  // Q: note that "num_a3" is not part of this list in the e3sm refactored code.
   // std::string extfrc_list[] = {"SO2", "so4_a1", "so4_a2", "pom_a4", "bc_a4",
-  //                              "num_a1", "num_a2", "num_a3", "num_a4", "SOAG"};
+  //                              "num_a1", "num_a2", "num_a3", "num_a4",
+  //                              "SOAG"};
   constexpr int synoz_ndx = -1;
 
   // fetch the zenith angle (not its cosine!) in degrees for this column.
@@ -416,13 +469,6 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // Real zsurf = rga * phis;
   // Real zmid = m2km * (zm + zsurf);
 
-  // ... compute the column's invariants
-  // Real h2ovmr = q[0];
-  // setinv(invariants, temp, h2ovmr, q, pmid); FIXME: not ported yet
-  for (int i = 0; i < nfs; ++i) {
-    invariants[i] = 0.1;
-  }
-
   // ... set rates for "tabular" and user specified reactions
   Real reaction_rates[rxntot];
   mam4::gas_chemistry::setrxt(reaction_rates, temp);
@@ -430,24 +476,30 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // set reaction rates based on chemical invariants
   // (indices (ndxes?) are taken from mam4 validation data and translated from
   // 1-based indices to 0-based indices)
-  int usr_HO2_HO2_ndx = 1, usr_DMS_OH_ndx = 5,
-      usr_SO2_OH_ndx = 3, inv_h2o_ndx = 3;
-  mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants, invariants[indexm],
-                              usr_HO2_HO2_ndx, usr_DMS_OH_ndx,
-                              usr_SO2_OH_ndx, inv_h2o_ndx);
+  int usr_HO2_HO2_ndx = 1, usr_DMS_OH_ndx = 5, usr_SO2_OH_ndx = 3,
+      inv_h2o_ndx = 3;
+  mam4::gas_chemistry::usrrxt(reaction_rates, temp, invariants,
+                              invariants[indexm], usr_HO2_HO2_ndx,
+                              usr_DMS_OH_ndx, usr_SO2_OH_ndx, inv_h2o_ndx);
   mam4::gas_chemistry::adjrxt(reaction_rates, invariants, invariants[indexm]);
 
   //===================================
   // Photolysis rates at time = t(n+1)
   //===================================
 
+  // compute the rate of change from forcing
+  Real extfrc_rates[extcnt]; // [1/cm^3/s]
+  for (int mm = 0; mm < extcnt; ++mm) {
+    if (mm != synoz_ndx) {
+      extfrc_rates[mm] = extfrc[mm] / invariants[indexm];
+    }
+  }
 
   // ... Form the washout rates
   Real het_rates[gas_pcnst];
   // FIXME: not ported yet
-  //sethet(het_rates, pmid, zmid, phis, temp, cmfdqr, prain, nevapr, delt,
+  // sethet(het_rates, pmid, zmid, phis, temp, cmfdqr, prain, nevapr, delt,
   //       invariants[indexm], q);
-
 
   // save h2so4 before gas phase chem (for later new particle nucleation)
   Real del_h2so4_gasprod = q[ndx_h2so4];
@@ -456,14 +508,15 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
   // Class solution algorithms
   //===========================
 
-  // copy photolysis rates into reaction_rates (assumes photolysis rates come first)
-  for (int i = 0; i < phtcnt; ++i) {
+  // copy photolysis rates into reaction_rates (assumes photolysis rates come
+  // first)
+  for(int i = 0; i < phtcnt; ++i) {
     reaction_rates[i] = photo_rates[i];
   }
 
   // ... solve for "Implicit" species
   bool factor[itermax];
-  for (int i = 0; i < itermax; ++i) {
+  for(int i = 0; i < itermax; ++i) {
     factor[i] = true;
   }
 
@@ -473,13 +526,13 @@ void gas_phase_chemistry(Real zm, Real zi, Real phis, Real temp, Real pmid, Real
 
   // solve chemical system implicitly
   Real prod_out[clscnt4], loss_out[clscnt4];
-  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, dt,
-    permute_4, clsmap_4, factor, epsilon, prod_out, loss_out);
+  mam4::gas_chemistry::imp_sol(q, reaction_rates, het_rates, extfrc_rates, dt, permute_4,
+                               clsmap_4, factor, epsilon, prod_out, loss_out);
 
   // save h2so4 change by gas phase chem (for later new particle nucleation)
-  if (ndx_h2so4 > 0) {
+  if(ndx_h2so4 > 0) {
     del_h2so4_gasprod = q[ndx_h2so4] - del_h2so4_gasprod;
   }
 }
 
-} // namespace scream::impl
+}  // namespace scream::impl

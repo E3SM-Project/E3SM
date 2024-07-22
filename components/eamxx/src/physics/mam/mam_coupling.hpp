@@ -647,7 +647,7 @@ void compute_vertical_layer_heights(const Team& team,
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
-  
+
   // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
             dz);//output
@@ -901,6 +901,27 @@ void transfer_prognostics_to_work_arrays(const mam4::Prognostics &progs,
     }
   }
 }
+
+// FIXME: check if we have ported these function in mam4xx. If no, let's move there.
+KOKKOS_INLINE_FUNCTION
+void mmr2vmr(const Real q[gas_pcnst()],//in
+             const Real mw[gas_pcnst()],//in
+             Real vmr[gas_pcnst()])// out
+{
+for (int i = 0; i < gas_pcnst(); ++i) {
+   vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw[i]);
+}
+}//mmr2vmr
+// FIXME: check if we have ported these function in mam4xx. If no, let's move there.
+KOKKOS_INLINE_FUNCTION
+void vmr2mmr(const Real vmr[gas_pcnst()], //in
+             const Real mw[gas_pcnst()], // in
+            Real q[gas_pcnst()]) // out
+{
+for (int i = 0; i < gas_pcnst(); ++i) {
+   q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw[i]);
+}
+}//mmr2vmr
 
 // converts the quantities in the work arrays q and qqcw from mass/number
 // mixing ratios to volume/number mixing ratios
