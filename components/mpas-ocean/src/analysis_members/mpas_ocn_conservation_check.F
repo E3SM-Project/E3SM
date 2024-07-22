@@ -983,7 +983,7 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
                 sumArray( 8) = sumArray( 8) + areaCell(iCell) * removedIceRunoffFlux(iCell)
                 sumArray( 9) = sumArray( 9) + areaCell(iCell) * icebergFreshwaterFlux(iCell)
                 if (trim(config_subglacial_runoff_mode) == 'data') then
-                    sumArray(13) = sumArray(13) + areaCell(iCell) * subglacialRunoffFlux(iCell) / areaCell(iCell) * rho_sw
+                    sumArray(13) = sumArray(13) + areaCell(iCell) * subglacialRunoffFlux(iCell)
                 end if
             enddo
 
