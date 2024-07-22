@@ -3936,7 +3936,6 @@ contains
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
    endif
-   endif
 
 !-----------------------------------------------------------------------
 !EOC
