@@ -687,7 +687,7 @@ Int Functions<S,D>::shoc_main(
 
     shoc_output.obklen(i) = obklen_s;
     shoc_output.ustar(i)  = ustar_s;
-    shoc_output.pblh(i)   s= pblh_s;
+    shoc_output.pblh(i)   = pblh_s;
   });
   Kokkos::fence();
 #else
