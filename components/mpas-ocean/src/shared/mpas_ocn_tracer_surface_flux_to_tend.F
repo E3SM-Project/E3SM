@@ -270,8 +270,6 @@ contains
 
       if (.not. surfaceTracerFluxOn) return
 
-      call mpas_timer_start("surface_tracer_flux")
-
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
@@ -307,6 +305,8 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+      call mpas_timer_stop("surface_tracer_subglacial_runoff_flux")
 
    !--------------------------------------------------------------------
 
