@@ -248,13 +248,15 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
 
-  const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
-  m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
-  scorpio::read_var(iop_file,"tsec",m_time_info.iop_file_times_in_sec.data());
-
-  // From now on, when we read vars, "time" must be treated as unlimited, to avoid issues
+  // When we read vars, "time" must be treated as unlimited, to avoid issues
   if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
     scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+  }
+
+  const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
+  m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
+  for (int t=0; t<ntimes; ++t) {
+    scorpio::read_var(iop_file,"tsec",&m_time_info.iop_file_times_in_sec(t),t);
   }
 
   // Check that lat/lon from iop file match the targets in parameters. Note that
