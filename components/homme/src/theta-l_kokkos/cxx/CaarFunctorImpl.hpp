@@ -353,9 +353,7 @@ struct CaarFunctorImpl {
 
     GPTLstart("caar compute");
 
-#undef TREY
-//#define TREY
-#ifdef TREY
+#if 1
 
     caar_compute();
     Kokkos::fence();
