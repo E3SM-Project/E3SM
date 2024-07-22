@@ -97,7 +97,7 @@ Design specifics will be added at a later time.
 
 The timestepping will be tested with a time-only convergence test on the equations
 $$
-\frac{\partial \boldsymbol{u}}{\partial t} = 
+\frac{\partial \boldsymbol{u}}{\partial t} =
  -Ra \, \boldsymbol{u}
 \hspace{1cm}   (1)
 $$
@@ -108,7 +108,7 @@ $$
 $$
 
 $$
-\frac{\partial h \phi}{\partial t} = 
+\frac{\partial h \phi}{\partial t} =
 - \frac{h}{\tau} \left( \phi - \phi_0 \right)
 \hspace{1cm}   (3)
 $$
