@@ -22,7 +22,7 @@ namespace OMEGA {
 
 // create the static class members
 OceanState *OceanState::DefaultOceanState = nullptr;
-std::map<std::string, OceanState> OceanState::AllOceanStates;
+std::map<std::string, std::unique_ptr<OceanState>> OceanState::AllOceanStates;
 
 //------------------------------------------------------------------------------
 // Initialize the state. Assumes that Decomp has already been initialized.
@@ -41,12 +41,9 @@ int OceanState::init() {
    int NTimeLevels = 2;
    int NVertLevels = 60;
 
-   // Create the default state
-   OceanState DefOceanState("Default", DefHorzMesh, DefDecomp, DefHalo,
-                            NVertLevels, NTimeLevels);
-
-   // Retrieve this mesh and set pointer to DefaultOceanState
-   OceanState::DefaultOceanState = OceanState::get("Default");
+   // Create the default state and set pointer to it
+   OceanState::DefaultOceanState = create("Default", DefHorzMesh, DefDecomp,
+                                          DefHalo, NVertLevels, NTimeLevels);
    return Err;
 }
 
@@ -113,10 +110,37 @@ OceanState::OceanState(
       NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);
    }
 
-   // Associate this instance with a name
-   AllOceanStates.emplace(Name, *this);
-
 } // end state constructor
+
+/// Create a new state by calling the constructor and put it in the
+/// AllOceanStates map
+OceanState *
+OceanState::create(const std::string &Name, //< [in] Name for new state
+                   HorzMesh *Mesh,          //< [in] HorzMesh for state
+                   Decomp *MeshDecomp,      //< [in] Decomp for Mesh
+                   Halo *MeshHalo,          //< [in] Halo for Mesh
+                   const int NVertLevels,   //< [in] number of vertical levels
+                   const int NTimeLevels    //< [in] number of time levels
+) {
+
+   // Check to see if a state of the same name already exists and
+   // if so, exit with an error
+   if (AllOceanStates.find(Name) != AllOceanStates.end()) {
+      LOG_ERROR(
+          "Attempted to create an OceanState with name {} but an OceanState of "
+          "that name already exists",
+          Name);
+      return nullptr;
+   }
+
+   // create a new state on the heap and put it in a map of
+   // unique_ptrs, which will manage its lifetime
+   auto *NewOceanState = new OceanState(Name, Mesh, MeshDecomp, MeshHalo,
+                                        NVertLevels, NTimeLevels);
+   AllOceanStates.emplace(Name, NewOceanState);
+
+   return NewOceanState;
+} // end state create
 
 //------------------------------------------------------------------------------
 // Destroys a local mesh and deallocates all arrays
@@ -371,7 +395,7 @@ OceanState *OceanState::get(const std::string Name ///< [in] Name of state
 
    // if found, return the state pointer
    if (it != AllOceanStates.end()) {
-      return &(it->second);
+      return it->second.get();
 
       // otherwise print error and return null pointer
    } else {

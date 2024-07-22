@@ -23,6 +23,7 @@
 #include "Logging.h"
 #include "MachEnv.h"
 #include "mpi.h"
+#include <memory>
 #include <numeric>
 
 namespace OMEGA {
@@ -54,7 +55,7 @@ class Halo {
 
    /// All halos are tracked/stored within the class as a map paired with a
    /// name for later retrieval.
-   static std::map<std::string, Halo> AllHalos;
+   static std::map<std::string, std::unique_ptr<Halo>> AllHalos;
 
    const Decomp *MyDecomp{nullptr}; /// Pointer to decomposition object
 
@@ -252,14 +253,23 @@ class Halo {
    int unpackBuffer(HostArray5DR4 &Array);
    int unpackBuffer(HostArray5DR8 &Array);
 
+   /// Construct a new halo labeled Name for the input MachEnv and Decomp
+   Halo(const std::string &Name, const MachEnv *InEnv, const Decomp *InDecomp);
+
+   // Forbid copy and move construction
+   Halo(const Halo &) = delete;
+   Halo(Halo &&)      = delete;
+
  public:
    // Methods
 
    /// initialize default Halo
    static int init();
 
-   /// Construct a new halo labeled Name for the input MachEnv and Decomp
-   Halo(const std::string &Name, const MachEnv *InEnv, const Decomp *InDecomp);
+   /// Creates a new halo by calling the constructor and puts it in the AllHalos
+   /// map
+   static Halo *create(const std::string &Name, const MachEnv *Env,
+                       const Decomp *Decomp);
 
    /// Destructor
    ~Halo();

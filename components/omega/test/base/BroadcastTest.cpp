@@ -187,8 +187,8 @@ int main(int argc, char *argv[]) {
    // Initialize general subset environment
    int InclSize     = 4;
    int InclTasks[4] = {1, 2, 5, 7};
-   OMEGA::MachEnv tmpEnv1("Subset", DefEnv, InclSize, InclTasks);
-   OMEGA::MachEnv *SubsetEnv = OMEGA::MachEnv::getEnv("Subset");
+   OMEGA::MachEnv *SubsetEnv =
+       OMEGA::MachEnv::create("Subset", DefEnv, InclSize, InclTasks);
    OMEGA::I4 MyVal;
 
    const int MyTask = DefEnv->getMyTask();

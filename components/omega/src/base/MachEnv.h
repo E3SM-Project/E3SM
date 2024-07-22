@@ -20,7 +20,11 @@
 #include "mpi.h"
 
 #include <map>
+#include <memory>
 #include <string>
+// Note that we should replace iostream and std::cerr with the logging
+// capability once that is enabled.
+#include <iostream>
 
 namespace OMEGA {
 
@@ -61,24 +65,16 @@ class MachEnv {
 
    /// All environments are tracked/stored within the class as a
    /// map paired with a name for later retrieval.
-   static std::map<std::string, MachEnv> AllEnvs;
+   static std::map<std::string, std::unique_ptr<MachEnv>> AllEnvs;
+
+   /// CONSTRUCTORS
+   /// All constructors are declared private to prevent accidental creation
+   /// of new environments, MachEnv::create is the only way to create a new
+   /// environment
 
    /// Constructor for environment based on input MPI communicator
-   /// This should only be used for the default environment so is
-   /// kept private and called from the init routine.
    MachEnv(const std::string Name, ///< [in] name of the environment
            const MPI_Comm inComm   ///< [in] MPI communicator to use
-   );
-
- public:
-   // Methods
-
-   /// Initializes the Machine Environment and creates the default
-   /// machine environment based on an input MPI communicator. In
-   /// standalone mode, this will typically be MPI_COMM_WORLD, but
-   /// in coupled mode, this is the communicator assigned to the
-   /// Omega component.
-   static void init(const MPI_Comm InComm ///< [in] MPI communicator to use
    );
 
    /// Constructs a new environment with a given name from a contiguous
@@ -111,6 +107,44 @@ class MachEnv {
            const int NewSize,         ///< [in] num tasks in new env
            const int Tasks[],         ///< [in] vector of parent tasks to incl
            const int InMasterTask = 0 ///< [in] optional task to use for master
+   );
+
+   // forbid copy and move construction
+   MachEnv(const MachEnv &) = delete;
+   MachEnv(MachEnv &&)      = delete;
+
+ public:
+   // Methods
+
+   // Creates a new environment by calling the constructor with the
+   // supplied arguments and stores it in the map of all environments.
+   // This a variadic template because MachEnv constructors have different
+   // numbers of arguments and we want to simply forward the supplied
+   // arguments to the constructor
+   template <class... ArgTypes>
+   static MachEnv *create(const std::string &Name, ArgTypes &&...Args) {
+      // Check to see if an environment of the same name already exists and
+      // if so, exit with an error
+      if (AllEnvs.find(Name) != AllEnvs.end()) {
+         std::cerr << "Attempted to create a MachEnv with name " << Name
+                   << " but an Env of that name already exists ";
+         return nullptr;
+      }
+
+      // create a new environment on the heap and put it in a map of
+      // unique_ptrs, which will manage its lifetime
+      auto *NewEnv = new MachEnv(Name, std::forward<ArgTypes>(Args)...);
+      AllEnvs.emplace(Name, NewEnv);
+
+      return getEnv(Name);
+   }
+
+   /// Initializes the Machine Environment and creates the default
+   /// machine environment based on an input MPI communicator. In
+   /// standalone mode, this will typically be MPI_COMM_WORLD, but
+   /// in coupled mode, this is the communicator assigned to the
+   /// Omega component.
+   static void init(const MPI_Comm InComm ///< [in] MPI communicator to use
    );
 
    /// Removes a MachEnv

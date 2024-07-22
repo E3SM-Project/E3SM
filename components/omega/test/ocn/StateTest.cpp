@@ -116,8 +116,8 @@ int main(int argc, char *argv[]) {
 
          } else {
 
-            OMEGA::OceanState DefOceanState("Default", DefHorzMesh, DefDecomp,
-                                            DefHalo, NVertLevels, NTimeLevels);
+            OMEGA::OceanState::create("Default", DefHorzMesh, DefDecomp,
+                                      DefHalo, NVertLevels, NTimeLevels);
          }
 
          // Test retrieval of the default state
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
          }
 
          // Create "test" state
-         OMEGA::OceanState TestOceanState("Test", DefHorzMesh, DefDecomp,
-                                          DefHalo, NVertLevels, NTimeLevels);
+         OMEGA::OceanState::create("Test", DefHorzMesh, DefDecomp, DefHalo,
+                                   NVertLevels, NTimeLevels);
 
          OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
          if (TestState) { // true if non-null ptr

@@ -38,16 +38,16 @@ void InitMachEnvs() {
    // Initialize general subset environment
    int InclSize     = 4;
    int InclTasks[4] = {1, 2, 5, 7};
-   OMEGA::MachEnv tmpEnv1("Subset", DefEnv, InclSize, InclTasks);
+   OMEGA::MachEnv::create("Subset", DefEnv, InclSize, InclTasks);
 
    // Initialize strided environment
-   OMEGA::MachEnv tmpEnv2("Stride", DefEnv, 4, 1, 2);
+   OMEGA::MachEnv::create("Stride", DefEnv, 4, 1, 2);
 
    // Initialize contiguous subset environment
-   OMEGA::MachEnv tmpEnv3("Contig", DefEnv, 4);
+   OMEGA::MachEnv::create("Contig", DefEnv, 4);
 
    // Initialize contiguous subset environment but different master task
-   OMEGA::MachEnv tmpEnv4("Contig2", DefEnv, 4, 2);
+   OMEGA::MachEnv::create("Contig2", DefEnv, 4, 2);
 
 } // end of InitMachEnvs
 

@@ -42,7 +42,20 @@ class OceanState {
 
    static OceanState *DefaultOceanState;
 
-   static std::map<std::string, OceanState> AllOceanStates;
+   static std::map<std::string, std::unique_ptr<OceanState>> AllOceanStates;
+
+   /// Construct a new local state for a given decomposition
+   OceanState(const std::string &Name, ///< [in] Name for mesh
+              HorzMesh *Mesh,          ///< [in] Horizontal mesh
+              Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
+              Halo *MeshHalo_,         ///< [in] Halo for Mesh
+              const int NVertLevels_,  ///< [in] Number of vertical levels
+              const int NTimeLevels_   ///< [in] Number of time levels
+   );
+
+   // Forbid copy and move construction
+   OceanState(const OceanState &) = delete;
+   OceanState(OceanState &&)      = delete;
 
  public:
    // Variables
@@ -96,13 +109,15 @@ class OceanState {
    /// Initialize Omega local state
    static int init();
 
-   /// Construct a new local state for a given decomposition
-   OceanState(const std::string &Name, ///< [in] Name for mesh
-              HorzMesh *Mesh,          ///< [in] Horizontal mesh
-              Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
-              Halo *MeshHalo_,         ///< [in] Halo for Mesh
-              const int NVertLevels_,  ///< [in] Number of vertical levels
-              const int NTimeLevels_   ///< [in] Number of time levels
+   /// Create a new state by calling the constructor and put it in the
+   /// AllOceanStates map
+   static OceanState *
+   create(const std::string &Name, ///< [in] Name for mesh
+          HorzMesh *Mesh,          ///< [in] Horizontal mesh
+          Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
+          Halo *MeshHalo,          ///< [in] Halo for Mesh
+          const int NVertLevels,   ///< [in] Number of vertical levels
+          const int NTimeLevels    ///< [in] Number of time levels
    );
 
    /// Swap time levels to update state arrays

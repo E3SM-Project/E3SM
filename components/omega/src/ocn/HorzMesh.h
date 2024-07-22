@@ -15,6 +15,7 @@
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 
+#include <memory>
 #include <string>
 
 namespace OMEGA {
@@ -55,7 +56,16 @@ class HorzMesh {
 
    static HorzMesh *DefaultHorzMesh;
 
-   static std::map<std::string, HorzMesh> AllHorzMeshes;
+   static std::map<std::string, std::unique_ptr<HorzMesh>> AllHorzMeshes;
+
+   /// Construct a new local mesh for a given decomposition
+   HorzMesh(const std::string &Name, ///< [in] Name for mesh
+            Decomp *Decomp           ///< [in] Decomposition for mesh
+   );
+
+   // Forbid copy and move construction
+   HorzMesh(const HorzMesh &) = delete;
+   HorzMesh(HorzMesh &&)      = delete;
 
  public:
    // KOKKOS_LAMBDA does not allow to have parallel_* functions inside of a
@@ -227,9 +237,10 @@ class HorzMesh {
    /// Initialize Omega local mesh
    static int init();
 
-   /// Construct a new local mesh for a given decomposition
-   HorzMesh(const std::string &Name, ///< [in] Name for mesh
-            Decomp *Decomp           ///< [in] Decomposition for mesh
+   /// Creates a new mesh by calling the constructor and puts it in the
+   /// AllHorzMeshes map
+   static HorzMesh *create(const std::string &Name, ///< [in] Name for mesh
+                           Decomp *Decomp ///< [in] Decomposition for mesh
    );
 
    /// Destructor - deallocates all memory and deletes a HorzMesh
