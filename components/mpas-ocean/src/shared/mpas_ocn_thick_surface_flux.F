@@ -175,8 +175,8 @@ contains
 !  routine ocn_thick_surface_flux_tend_subglacial_runoff
 !
 !> \brief   Computes tendency term from horizontal advection of thickness
-!> \author  Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine computes the horizontal advection tendency for
 !>  thickness based on current state and user choices of forcings.
@@ -276,8 +276,8 @@ contains
 !  routine ocn_thick_surface_flux_init
 !
 !> \brief   Initializes ocean horizontal thickness surface fluxes
-!> \author  Doug Jacobsen
-!> \date    12/17/12
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine initializes quantities related to thickness
 !>  surface fluxes in the ocean.

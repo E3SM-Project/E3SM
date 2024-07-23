@@ -136,8 +136,8 @@ contains
 !  routine ocn_surface_bulk_forcing_tracers_subglacial_runoff
 !
 !> \brief   Determines the tracers forcing array used for the bulk forcing.
-!> \author  Doug Jacobsen
-!> \date    04/25/12
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine computes the tracers forcing arrays used later in MPAS.
 !
@@ -425,8 +425,8 @@ contains
 !  routine ocn_surface_bulk_forcing_thick_subglacial_runoff
 !
 !> \brief   Determines the thickness forcing array used for the bulk forcing.
-!> \author  Doug Jacobsen
-!> \date    04/25/12
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine computes the thickness forcing arrays used later in MPAS.
 !
@@ -752,8 +752,8 @@ contains
 !  routine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff
 !
 !> \brief   Determines the active tracers forcing array used for the bulk forcing.
-!> \author  Doug Jacobsen
-!> \date    04/25/12
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine computes the active tracers forcing arrays used later in MPAS.
 !
