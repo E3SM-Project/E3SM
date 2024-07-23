@@ -71,6 +71,10 @@ macro(read_cime_config)
     set(NEWCASE_COMMAND "${NEWCASE_COMMAND} --compiler ${OMEGA_CIME_COMPILER}")
   endif()
 
+  if(NOT "${OMEGA_CIME_PROJECT}" STREQUAL "")
+    set(NEWCASE_COMMAND "${NEWCASE_COMMAND} --project ${OMEGA_CIME_PROJECT}")
+  endif()
+
   run_bash_command("${NEWCASE_COMMAND}" NEWCASE_OUTPUT)
   run_bash_command("cd ${CASEROOT} && ./case.setup" CASESETUP_OUTPUT)
   run_bash_command("source ${CASEROOT}/.env_mach_specific.sh && env" ENV_OUTPUT)
