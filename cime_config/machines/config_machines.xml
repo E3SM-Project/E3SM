@@ -2022,75 +2022,7 @@
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
       </arguments>
     </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-
-      <modules>
-        <command name="unload">cray-hdf5-parallel</command>
-        <command name="unload">cray-netcdf-hdf5parallel</command>
-        <command name="unload">cray-parallel-netcdf</command>
-        <command name="unload">cray-netcdf</command>
-        <command name="unload">cray-hdf5</command>
-        <command name="unload">PrgEnv-gnu</command>
-        <command name="unload">PrgEnv-intel</command>
-        <command name="unload">PrgEnv-nvidia</command>
-        <command name="unload">PrgEnv-cray</command>
-        <command name="unload">PrgEnv-aocc</command>
-        <command name="unload">intel</command>
-        <command name="unload">intel-oneapi</command>
-        <command name="unload">nvidia</command>
-        <command name="unload">aocc</command>
-        <command name="unload">cudatoolkit</command>
-        <command name="unload">climate-utils</command>
-        <command name="unload">matlab</command>
-        <command name="unload">craype-accel-nvidia80</command>
-        <command name="unload">craype-accel-host</command>
-        <command name="unload">perftools-base</command>
-        <command name="unload">perftools</command>
-        <command name="unload">darshan</command>
-      </modules>
-
-      <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
-      </modules>
-
-      <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel/2023.1.0</command>
-      </modules>
-
-      <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.7</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
-      </modules>
-
-      <modules compiler="amdclang">
-        <command name="load">PrgEnv-aocc</command>
-        <command name="load">aocc/4.0.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
-      </modules>
-
-      <modules>
-        <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.20</command>
-        <command name="load">cray-mpich/8.1.25</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
-        <command name="load">cmake/3.24.3</command>
-        <command name="load">evp-patch</command>
-      </modules>
-    </module_system>
+    <module_system type="none"/>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
