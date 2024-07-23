@@ -63,6 +63,63 @@ void coriolis() {
       // dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-fcory(j+offy_fcory,icrm)*(u(k,j+offy_u,i+offx_u,icrm)-ug0(k,icrm));
     // });
 
+    // #ifdef MMF_DO_CORIOLIS_W
+    //   // calculate zonal wind perturbation
+    //   real4d up_av_on_w("up_av_on_w",nzm,ny,nx,ncrms);
+    //   real2d ub_av_on_w("ub_av_on_w",nzm,ncrms);
+    //   real factor_xy = 1.0/( (real) nx * (real) ny );
+      
+      // parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      //   int ic=i+1;
+      //   int kc=k+1;
+      //   real tmp;
+      //   tmp = u(k ,j+offy_u,i+offx_u,icrm);
+      // });
+      // parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      //   int ic=i+1;
+      //   int kc=k+1;
+      //   real tmp;
+      //   tmp = u(k ,j+offy_u,ic+offx_u,icrm);
+      // });
+      // parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      //   int ic=i+1;
+      //   int kc=k+1;
+      //   real tmp;
+      //   tmp = u(kc,j+offy_u,i+offx_u,icrm);
+      // });
+      // parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      //   int ic=i+1;
+      //   int kc=k+1;
+      //   real tmp;
+      //   tmp = u(kc,j+offy_u,ic+offx_u,icrm);
+      // });
+      // parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      //   real tmp;
+      //   tmp = up_av_on_w(k,j,i,icrm);
+      // });
+
+    #ifdef MMF_DO_CORIOLIS_W
+      // calculate zonal wind perturbation
+      real4d u_av_on_w("u_av_on_w",nzm+1,ny,nx,ncrms);
+      real2d u_av_on_w_mean("u_av_on_w_mean",nzm+1,ncrms);
+      
+      parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+        u_av_on_w(k+1,j,i,icrm) = 0.25*( u(k  ,j+offy_u,i  +offx_u,icrm)
+                                        +u(k  ,j+offy_u,i+1+offx_u,icrm)
+                                        +u(k+1,j+offy_u,i  +offx_u,icrm)
+                                        +u(k+1,j+offy_u,i+1+offx_u,icrm));
+      });
+      
+      real factor_xy = 1.0/( (real) nx * (real) ny );
+      parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+        yakl::atomicAdd( u_av_on_w_mean(k+1,icrm), u_av_on_w(k+1,j,i,icrm) / factor_xy );
+      });
+
+      parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+        dwdt(na-1,k+1,j,i,icrm) += fcorzy(j,icrm) * ( u_av_on_w(k+1,j,i,icrm) - u_av_on_w_mean(k+1,icrm) );
+      });
+    #endif
+
     // ignore V wind terms for testing non-traditional coriolis terms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=k+1;
@@ -74,11 +131,13 @@ void coriolis() {
                                +w(k ,j+offy_w,i+offx_w,icrm) + w(k ,j+offy_w,ib+offx_w,icrm));
         dudt(na-1,k,j,i,icrm) += -1*fcorzy(j,icrm)*w_av_on_u;
       #endif
-      #ifdef MMF_DO_CORIOLIS_W
-        real u_av_on_w = 0.25*( u(k ,j+offy_u,i+offx_u,icrm) + u(k ,j+offy_u,ic+offx_u,icrm)
-                               +u(kc,j+offy_u,i+offx_u,icrm) + u(kc,j+offy_u,ic+offx_u,icrm));
-        dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*u_av_on_w;
-      #endif
+      // #ifdef MMF_DO_CORIOLIS_W
+        // if (kc<=nzm-1)
+        // real u_av_on_w = 0.25*( u(k ,j+offy_u,i+offx_u,icrm) + u(k ,j+offy_u,ic+offx_u,icrm)
+        //                        +u(kc,j+offy_u,i+offx_u,icrm) + u(kc,j+offy_u,ic+offx_u,icrm));
+        // dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*u_av_on_w;
+        // dwdt(na-1,kc,j,i,icrm) += fcorzy(j,icrm)*up_av_on_w(k,j,i,icrm);
+      // #endif
       #ifdef MMF_DO_CORIOLIS_ESMT
         if (use_ESMT) {
           real w_av_on_s = 0.5*( w(kc,j+offy_w,i+offx_w,icrm) + w(k,j+offy_w,i+offx_w,icrm) );

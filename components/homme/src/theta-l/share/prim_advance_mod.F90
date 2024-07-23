@@ -1324,6 +1324,10 @@ contains
         v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces 
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
+#ifdef HOMME_DO_NCT
+        ! Non-traditional Coriolis torque
+        w_tens(:,:,k) = w_tens(:,:,k) + elem(ie)%fcorz(i,j) * v_i(:,:,1,k) * scale1
+#endif
 
         ! phi - tendency on interfaces
         ! vtemp(:,:,:,k) = gradphinh_i(:,:,:,k) + &
@@ -1471,6 +1475,16 @@ contains
                    - gradKE(i,j,1,k) - mgrad(i,j,1,k) &
                   -Cp*vtheta(i,j,k)*gradexner(i,j,1,k)&
                   -wvor(i,j,1,k) )*scale1
+#ifdef HOMME_DO_NCT
+              ! Non-traditional Coriolis torque
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%fcorz(i,j) &
+                              * ( elem(ie)%state%w_i(i,j,k+1,n0) &
+                                 +elem(ie)%state%w_i(i,j,k  ,n0))/2
+                              ! * ( ( eta_dot_dpdn(i,j,k) &
+                              !      +eta_dot_dpdn(i,j,k+1))/2 ) &
+                              ! * ( elem(ie)%state%w_i(i,j,k+1,n0) &
+                              !    -elem(ie)%state%w_i(i,j,k  ,n0))
+#endif
 
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
