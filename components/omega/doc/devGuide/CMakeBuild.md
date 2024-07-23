@@ -53,6 +53,7 @@ OMEGA_C_COMPILER: C compiler
 OMEGA_Fortran_COMPILER: Fortran compiler
 OMEGA_CIME_COMPILER: E3SM compiler name defined in config_machines.xml
 OMEGA_CIME_MACHINE: E3SM machine name defined in config_machines.xml
+OMEGA_CIME_PROJECT: Slurm account passed to CIME during Omega build
 OMEGA_CXX_FLAGS: a list for C++ compiler flags
 OMEGA_LINK_OPTIONS: a list for linker flags
 OMEGA_BUILD_EXECUTABLE: Enable building the Omega executable
