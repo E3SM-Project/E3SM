@@ -13,8 +13,10 @@
 #include "Config.h"
 #include "HorzMesh.h"
 #include "MachEnv.h"
+#include "OceanState.h"
 
 namespace OMEGA {
+
 
 /// Divergence of thickness flux at cell centers, for updating layer thickness
 /// arrays
@@ -260,6 +262,69 @@ class VelocityHyperDiffOnEdge {
    Array1DR8 MeshScalingDel4;
    Array2DR8 EdgeMask;
 };
+
+/// A class that can be used to calculate the thickness and
+/// velocity tendencies within the timestepping algorithm.
+class Tendencies {
+ public:
+   // Arrays for accumulating tendencies
+   Array2DReal LayerThicknessTend;
+   Array2DReal NormalVelocityTend;
+
+   // Instances of tendency terms
+   ThicknessFluxDivOnCell ThicknessFluxDiv;
+   PotentialVortHAdvOnEdge PotientialVortHAdv;
+   KEGradOnEdge KEGrad;
+   SSHGradOnEdge SHHGrad;
+   VelocityDiffusionOnEdge VelocityDiffusion;
+   VelocityHyperDiffOnEdge VelocityHyperDiff;
+
+   // Methods to compute tendency groups
+   // TODO Add AuxilaryState as calling argument
+   void computeThicknessTendencies(OceanState *State);
+   void computeVelocityTendencies(OceanState *State);
+   void computeAllTendencies(OceanState *State);
+
+   // Construct a new tendency object
+   Tendencies(const std::string &Name, ///< [in] Name for tendencies
+              const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+              int NVertLevels,         ///< [in] Number of vertical levels
+              Config *Options          ///< [in] Configuration options
+   );
+
+   // Destructor
+   ~Tendencies();
+
+   // Initialize Omega tendencies
+   static int init();
+
+   // Deallocates arrays
+   static void clear();
+
+   // Remove tendencies object by name
+   static void erase(std::string InName ///< [in]
+   );
+
+   // get default tendencies
+   static Tendencies *getDefault();
+
+   // get tendencies by name
+   static Tendencies *get(std::string name ///< [in]
+   );
+
+ private:
+   // Mesh sizes
+   I4 NCellsOwned; ///< Number of cells owned by this task
+   I4 NEdgesOwned; ///< Number of edges owned by this task
+   I4 NChunks;     ///< Number of vertical level chunks
+
+   // Pointer to default tendencies
+   static Tendencies *DefaultTendencies;
+
+   // Map of all tendency objects
+   static std::map<std::string, Tendencies> AllTendencies;
+
+}; // end class Tendencies
 
 } // namespace OMEGA
 #endif
