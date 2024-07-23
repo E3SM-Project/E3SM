@@ -388,7 +388,7 @@ public:
 #ifndef SCREAM_SMALL_KERNELS
     static constexpr int num_1d_scalar_ncol = 4;
 #else
-    static constexpr int num_1d_scalar_ncol = 17;
+    static constexpr int num_1d_scalar_ncol = 15;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SMALL_KERNELS
@@ -413,9 +413,7 @@ public:
     uview_1d<Real> ke_a;
     uview_1d<Real> wv_a;
     uview_1d<Real> wl_a;
-    uview_1d<Real> ustar;
     uview_1d<Real> kbfs;
-    uview_1d<Real> obklen;
     uview_1d<Real> ustar2;
     uview_1d<Real> wstar;
 #endif

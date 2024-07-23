@@ -2801,7 +2801,9 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     uw_sfc_d  (temp_1d_d[index_counter++]),
     vw_sfc_d  (temp_1d_d[index_counter++]),
     phis_d    (temp_1d_d[index_counter++]),
-    pblh_d    ("pblh",shcol);
+    pblh_d    ("pblh",shcol),
+    ustar_d   ("ustar",shcol),
+    obklen_d  ("obklen",shcol);
 
   index_counter = 0;
   view_2d
@@ -2878,7 +2880,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d};
-  SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d, tkh_d};
+  SHF::SHOCOutput shoc_output{pblh_d, ustar_d, obklen_d, shoc_ql2_d, tkh_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
@@ -2897,9 +2899,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     ke_a   ("ke_a", shcol),
     wv_a   ("wv_a", shcol),
     wl_a   ("wl_a", shcol),
-    ustar  ("ustar", shcol),
     kbfs   ("kbfs", shcol),
-    obklen ("obklen", shcol),
     ustar2 ("ustar2", shcol),
     wstar  ("wstar", shcol);
 
@@ -2911,7 +2911,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     dz_zi   ("dz_zi",   shcol, nlevi_packs);
 
   SHF::SHOCTemporaries shoc_temporaries{
-    se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
+    se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, kbfs, ustar2, wstar,
     rho_zt, shoc_qv, tabs, dz_zt, dz_zi};
 #endif
 
