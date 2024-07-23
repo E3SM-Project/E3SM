@@ -234,6 +234,9 @@ contains
             err = ior(err, err_tmp)
             call mpas_timer_stop("vertical scheme")
          enddo
+
+         ! Reassign extrapolated TF back to primary TF field
+         ismip6shelfMelt_3dThermalForcing(:,:) = TFocean(:,:)
       else
          ! do nothing
          call mpas_log_write('ocean data will NOT be extrapolated into the MALI ice draft')
