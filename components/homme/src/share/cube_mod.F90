@@ -792,6 +792,7 @@ contains
                      (-cos(lon)*cos(lat)*sin(rangle) + sin(lat)*cos(rangle))
              else
                 elem%fcor(i,j) = 2.0D0*omega*SIN(elem%spherep(i,j)%lat)
+                elem%fcorz(i,j)= 2.0D0*omega*COS(elem%spherep(i,j)%lat)
              endif
        end do
     end do

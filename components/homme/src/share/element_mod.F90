@@ -129,6 +129,7 @@ module element_mod
      integer(kind=long_kind)  :: gdofP(np,np)                         ! global degree of freedom (P-grid)
 
      real (kind=real_kind)    :: fcor(np,np)                          ! Coriolis term
+     real (kind=real_kind)    :: fcorz(np,np)                         ! Non-Traditional Coriolis term
 
      type (index_t) :: idxP
      integer :: FaceNum
