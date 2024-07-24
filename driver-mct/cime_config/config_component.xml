@@ -2655,16 +2655,16 @@
     https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
     </desc>
     <values>
-      <value compclass="ATM">64bit_offset</value>
-      <value compclass="CPL">64bit_offset</value>
-      <value compclass="OCN">64bit_offset</value>
-      <value compclass="WAV">64bit_offset</value>
-      <value compclass="GLC">64bit_offset</value>
-      <value compclass="ICE">64bit_offset</value>
-      <value compclass="ROF">64bit_offset</value>
-      <value compclass="LND">64bit_offset</value>
-      <value compclass="ESP">64bit_offset</value>
-      <value compclass="IAC">64bit_offset</value>
+      <value compclass="ATM">64bit_data</value>
+      <value compclass="CPL">64bit_data</value>
+      <value compclass="OCN">64bit_data</value>
+      <value compclass="WAV">64bit_data</value>
+      <value compclass="GLC">64bit_data</value>
+      <value compclass="ICE">64bit_data</value>
+      <value compclass="ROF">64bit_data</value>
+      <value compclass="LND">64bit_data</value>
+      <value compclass="ESP">64bit_data</value>
+      <value compclass="IAC">64bit_data</value>
     </values>
   </entry>
 
