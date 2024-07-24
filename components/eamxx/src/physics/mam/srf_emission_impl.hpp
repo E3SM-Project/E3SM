@@ -79,7 +79,22 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   remapper->registration_ends();
 
   return remapper;
+}  // create_horiz_remapper
+
+template <typename S, typename D>
+std::shared_ptr<AtmosphereInput>
+srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
+    const std::shared_ptr<AbstractRemapper> &horiz_remapper,
+    const std::string &srfEmiss_data_file) {
+  std::vector<Field> io_fields;
+  for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
+                                           io_fields, true);
 }
+
 }  // namespace
 }  // namespace scream::mam_coupling
 

@@ -132,7 +132,12 @@ void MAMSrfOnlineEmiss::set_grids(
   // 2. Initialize the size of the SPAData structures.
   srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_);
   srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_);
-  // SrfEmissData_out_.init(ncol_, false);
+  srfEmissData_out_.init(ncol_, false);
+  // 3. Skip as we don't need vertical interpolation
+  // 4. Create reader for srfEmiss data. The reader is an
+  //    AtmosphereInput object
+  srfEmissDataReader_ = srfEmissFunc::create_srfEmiss_data_reader(
+      srfEmissHorizInterp_, so2_data_file);
 }
 
 // =========================================================================================

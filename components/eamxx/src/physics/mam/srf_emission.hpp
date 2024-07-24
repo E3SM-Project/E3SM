@@ -54,6 +54,11 @@ struct srfEmissFunctions {
       const std::shared_ptr<const AbstractGrid> &model_grid,
       const std::string &spa_data_file, const std::string &map_file,
       const bool use_iop = false);
+
+  static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
+      const std::shared_ptr<AbstractRemapper> &horiz_remapper,
+      const std::string &srfEmiss_data_file);
+
 };  // struct srfEmissFunctions
 }  // namespace
 }  // namespace scream::mam_coupling
