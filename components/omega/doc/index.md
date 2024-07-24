@@ -35,6 +35,7 @@ userGuide/Halo
 userGuide/HorzMesh
 userGuide/HorzOperators
 userGuide/AuxiliaryVariables
+userGuide/AuxiliaryState
 userGuide/TendencyTerms
 userGuide/OceanState
 userGuide/TimeMgr
@@ -64,6 +65,7 @@ devGuide/Halo
 devGuide/HorzMesh
 devGuide/HorzOperators
 devGuide/AuxiliaryVariables
+devGuide/AuxiliaryState
 devGuide/TendencyTerms
 devGuide/OceanState
 devGuide/TimeMgr
@@ -91,6 +93,7 @@ design/ShallowWaterOmega0
 design/State
 design/Tendency
 design/AuxiliaryVariables
+design/AuxiliaryState
 design/TimeMgr
 design/Timers
 design/TimeStepping
