@@ -952,7 +952,6 @@ contains
             if (use_T_rho_dependent_snowthk) then ! chose which snow thermal conductivity to use 
                if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
                     bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
-                    !write(iulog,*)"CAW bw(c,j)",bw(c,j)
 
                        do i = 1, 5
                         if (i == 1) then
@@ -981,10 +980,6 @@ contains
                            thk(c,j) = k_snw_vals(size(k_snw_tmps))
                        end if
 
-                     !  write(iulog,*)"CAW snow layer:",j
-                     !  write(iulog,*)"CAW snow temp:",t_soisno(c,j)
-                     !  write(iulog,*)"CAW snow density:",bw(c,j)
-                     !  write(iulog,*)"CAW snow thk:",thk(c,j) 
                end if
 
 
