@@ -2079,10 +2079,13 @@
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
 
     <mpirun mpilib="default">
-    <executable>mpirun</executable>
+      <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -launcher fork -hosts localhost -np {{ total_tasks }}</arg>
+        <arg name="num_tasks">-l -n {{ total_tasks }} -bind-to core</arg>
       </arguments>
+      <!--arguments>
+        <arg name="num_tasks"> -launcher fork -hosts localhost -np {{ total_tasks }}</arg>
+      </arguments-->
     </mpirun>
     <module_system type="none"/>
 
