@@ -2952,6 +2952,8 @@ contains
      block_ptr => block_ptr % next
    end do
 
+   errorCode = 0
+
 !-----------------------------------------------------------------------
 !EOC
 
