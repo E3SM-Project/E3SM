@@ -50,6 +50,11 @@ OR
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
+    # If we are using Albany/Trilinos, we must use the Kokkos that comes with it
+    if case.get_value("USE_ALBANY") or case.get_value("USE_TRILINOS"):
+        print ("case is using Trilinos and will use its Kokkos")
+        return
+
     installed_kokkos_dir = os.environ.get("Kokkos_ROOT")
     if installed_kokkos_dir is not None:
         # We are trying to use a pre-installed kokkos. Look for the relevant folders/libs,
@@ -65,9 +70,10 @@ def buildlib(bldroot, installpath, case):
         # often arch dependent (e.g., $prefix/lib or $prefix/lib64)... The best thing
         # would be to run a small cmake script, that calls find_package. But E3SM's
         # cmake build system will do that soon enough, so any error will be caught there.
+        print (f"Using pre-installed Kokkos_ROOT: {kokkos_root}")
         return
     else:
-        print ("no value foudn in env for Kokkos_ROOT. building from scratch")
+        print ("no value found in env for Kokkos_ROOT. building from scratch")
 
     srcroot = case.get_value("SRCROOT")
     ekat_dir = os.path.join(srcroot, "externals", "ekat")
