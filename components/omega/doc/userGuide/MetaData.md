@@ -1,6 +1,6 @@
 (omega-user-metadata)=
 
-# Metadata
+## Metadata
 
 ### Introduction to Metadata in Omega
 - **Purpose**: Enhances Omega and E3SM data file management for streamlined analysis, archiving, and provenance.

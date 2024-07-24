@@ -124,7 +124,7 @@ OMEGA::Alarm PeriodicAlarm("Periodic Alarm", AlarmInterval, AlarmStart);
 ```
 The status of an Alarm can be checked using the `isRinging` method, which
 returns true or false depending on the Alarm status:
-```c+++
+```c++
 SingleAlarm.isRinging();
 ```
 The `reset` method takes a TimeInstant as input and will switch a ringing Alarm
