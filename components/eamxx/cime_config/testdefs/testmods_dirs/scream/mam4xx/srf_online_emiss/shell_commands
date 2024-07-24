@@ -1,0 +1,13 @@
+
+#Default scream has 10 tracers, MAM4xx adds another 31 making a total of 41 tracer
+#Set total number of tracers to 41. We are using append here as last entry wins while parsing xml options
+./xmlchange --append SCREAM_CMAKE_OPTIONS="SCREAM_NUM_TRACERS 41"
+
+#modify initial condition file to get aerosol species ICs
+$CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
+
+# Add spa as RRTMG needs spa
+$CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,spa,rrtmgp,mam4_srf_online_emiss" -b
+
+
+

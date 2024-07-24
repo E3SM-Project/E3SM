@@ -33,16 +33,16 @@ void MAMSrfOnlineEmiss::set_grids(
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   Units q_unit(kg / kg, "kg/kg");
 
-  Units n_unit(1 / kg, "#/kg"); // units of number mixing ratios of tracers
+  Units n_unit(1 / kg, "#/kg");  // units of number mixing ratios of tracers
 
   // NOTE: final output with be a flux for each grid point
   // e.g., flux_<srf,onlilne>_emissions(Nx, Ny, Nspec)
   //  [kg m^-2 s^-1] or [# m^-2 s^-1]
-  grid_ = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
-  ncol_ = grid_->get_num_local_dofs();      // Number of columns on this rank
-  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
@@ -56,56 +56,56 @@ void MAMSrfOnlineEmiss::set_grids(
   // These variables are "required" or pure inputs for the process
   // -------------------------------------------------------------------------------------------------------------------------
   add_field<Required>("T_mid", scalar3d_layout_mid, K,
-                      grid_name); // temperature [K]
+                      grid_name);  // temperature [K]
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa,
-                      grid_name); // pressure at mid points in [Pa]
+                      grid_name);  // pressure at mid points in [Pa]
   add_field<Required>("p_int", scalar3d_layout_int, Pa,
-                      grid_name); // total pressure
+                      grid_name);  // total pressure
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,
-                      grid_name); // pseudo density in [Pa]
+                      grid_name);  // pseudo density in [Pa]
   add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers"); // specific humidity
+                      "tracers");  // specific humidity
   add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers"); // liquid cloud water [kg/kg] wet
+                      "tracers");  // liquid cloud water [kg/kg] wet
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name,
-                      "tracers"); // ice cloud water [kg/kg] wet
+                      "tracers");  // ice cloud water [kg/kg] wet
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name,
-                      "tracers"); // ice number mixing ratio
+                      "tracers");  // ice number mixing ratio
   add_field<Required>(
       "omega", scalar3d_layout_mid, Pa / s,
-      grid_name); // Vertical pressure velocity [Pa/s] at midpoints
+      grid_name);  // Vertical pressure velocity [Pa/s] at midpoints
 
   add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name,
-                     "tracers"); // cloud liquid wet number mixing ratio
+                     "tracers");  // cloud liquid wet number mixing ratio
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
     add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name, "tracers");
-    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
 
-      if (strlen(int_mmr_field_name) > 0) {
+      if(strlen(int_mmr_field_name) > 0) {
         add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name, "tracers");
       }
     }
   }
   // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
 
     add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit,
                        grid_name);
-    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
 
-      if (strlen(cld_mmr_field_name) > 0) {
+      if(strlen(cld_mmr_field_name) > 0) {
         add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, q_unit,
                            grid_name);
       }
@@ -113,11 +113,21 @@ void MAMSrfOnlineEmiss::set_grids(
   }
 
   // aerosol-related gases: mass mixing ratios
-  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
                        grid_name, "tracers");
   }
+
+  // Reading so2 srf emiss data
+
+  std::string so2_data_file =
+      "/compyfs/inputdata/atm/scream/mam4xx/emissions/test_DECK_ne30/"
+      "cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc";
+  std::string srf_map_file = "";
+  // Init horizontal remap
+  srfEmissHorizInterp_ = srfEmissFunc::create_horiz_remapper(
+      grid_, so2_data_file, srf_map_file, m_iop != nullptr);
 }
 
 // =========================================================================================
@@ -132,9 +142,9 @@ size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
 void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
-                       requested_buffer_size_in_bytes(),
-                   "Error! Insufficient buffer size.\n");
+  EKAT_REQUIRE_MSG(
+      buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+      "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
@@ -181,7 +191,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] =
@@ -194,11 +204,11 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
         get_field_out(cld_nmr_field_name).get_view<Real **>();
     dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
 
-    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
-      if (strlen(int_mmr_field_name) > 0) {
+      if(strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
@@ -207,14 +217,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const char *cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
-      if (strlen(cld_mmr_field_name) > 0) {
+      if(strlen(cld_mmr_field_name) > 0) {
         wet_aero_.cld_aero_mmr[m][a] =
             get_field_out(cld_mmr_field_name).get_view<Real **>();
         dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
-  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     wet_aero_.gas_mmr[g] =
         get_field_out(gas_mmr_field_name).get_view<Real **>();
@@ -231,9 +241,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
   // these probably belong in mam4xx
   std::map<std::string, int> map_srf_emiss_name_species_id;
-  map_srf_emiss_name_species_id["DMS"] = 0;
-  map_srf_emiss_name_species_id["SO2"] = 1;
-  map_srf_emiss_name_species_id["bc_a4"] = 2;
+  map_srf_emiss_name_species_id["DMS"]    = 0;
+  map_srf_emiss_name_species_id["SO2"]    = 1;
+  map_srf_emiss_name_species_id["bc_a4"]  = 2;
   map_srf_emiss_name_species_id["num_a1"] = 3;
   map_srf_emiss_name_species_id["num_a2"] = 4;
   map_srf_emiss_name_species_id["num_a4"] = 5;
@@ -243,9 +253,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
   // these probably belong in mam4xx
   std::map<std::string, int> map_online_emiss_name_species_id;
-  map_online_emiss_name_species_id["SO2"] = 0;
-  map_online_emiss_name_species_id["SOAG"] = 1;
-  map_online_emiss_name_species_id["bc_a4"] = 2;
+  map_online_emiss_name_species_id["SO2"]    = 0;
+  map_online_emiss_name_species_id["SOAG"]   = 1;
+  map_online_emiss_name_species_id["bc_a4"]  = 2;
   map_online_emiss_name_species_id["num_a1"] = 3;
   map_online_emiss_name_species_id["num_a2"] = 4;
   map_online_emiss_name_species_id["num_a4"] = 5;
@@ -263,107 +273,121 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   params_srf_emiss.set("Skip_Grid_Checks", true);
   params_online_emiss.set("Skip_Grid_Checks", true);
 
-  // FIXME: this, and all places used, will need to change to a flattened column index
-  int numlat_srf = scream::mam_coupling::nlat_srf;
-  int numlon_srf = scream::mam_coupling::nlon_srf;
+  // FIXME: this, and all places used, will need to change to a flattened column
+  // index
+  int numlat_srf      = scream::mam_coupling::nlat_srf;
+  int numlon_srf      = scream::mam_coupling::nlon_srf;
   int numcol_fake_srf = numlat_srf * numlon_srf;
-  const auto srf_emiss_var_names = mam4::mo_srf_emissions::srf_emimssions_data_fields;
+  const auto srf_emiss_var_names =
+      mam4::mo_srf_emissions::srf_emimssions_data_fields;
 
   view_2d_host srf_emiss_host;
 
   // TODO: break this out into a function in emissions_utils.hpp
   // namelist entries take the form <srf,online>_emis_specifier_for_<spec_name>
   std::string emis_type = "srf";
-  for (const auto &item : map_srf_emiss_name_species_id) {
+  for(const auto &item : map_srf_emiss_name_species_id) {
     const std::string srf_emiss_name = item.first;
     // FIXME: for some reason, SOAG only has 12 altitude levels, rather than 13
     // Is this correct or an error in the data?
-    if (srf_emiss_name == "DMS") {
-      numlat_srf = 180;
-      numlon_srf = 360;
+    if(srf_emiss_name == "DMS") {
+      numlat_srf      = 180;
+      numlon_srf      = 360;
       numcol_fake_srf = numlat_srf * numlon_srf;
     } else {
-      numlat_srf = scream::mam_coupling::nlat_srf;
-      numlon_srf = scream::mam_coupling::nlon_srf;
+      numlat_srf      = scream::mam_coupling::nlat_srf;
+      numlon_srf      = scream::mam_coupling::nlon_srf;
       numcol_fake_srf = numlat_srf * numlon_srf;
     }
     std::map<std::string, view_1d_host> host_views_srf_emiss;
     std::map<std::string, FieldLayout> layouts_srf_emiss;
     // FIXME: this will need to change to a flattened column index
-    FieldLayout scalar_srf_emiss_layout({CMP, CMP}, {numlat_srf, numlon_srf}, {"lat", "lon"});
-    for ( const auto &var_name : srf_emiss_var_names.at(srf_emiss_name) ) {
+    FieldLayout scalar_srf_emiss_layout({CMP, CMP}, {numlat_srf, numlon_srf},
+                                        {"lat", "lon"});
+    for(const auto &var_name : srf_emiss_var_names.at(srf_emiss_name)) {
       host_views_srf_emiss[var_name] = view_1d_host(var_name, numcol_fake_srf);
       layouts_srf_emiss.emplace(var_name, scalar_srf_emiss_layout);
     }
     // const auto spec_name = item.first;
     // const int species_id = item.second;
     const auto file_name = emis_type + middle_name_emiss + srf_emiss_name;
-    const auto &fpath = m_params.get<std::string>(file_name);
+    const auto &fpath    = m_params.get<std::string>(file_name);
     params_srf_emiss.set("Filename", fpath);
 
     // read data
-    AtmosphereInput srf_emissions_reader(params_srf_emiss, grid_, host_views_srf_emiss, layouts_srf_emiss);
-    srf_emissions_reader.read_variables();
-    srf_emissions_reader.finalize();
-    // copy data into host view for sending, columnwise, to mam4xx's mo_srf_emissions
+    /// AtmosphereInput srf_emissions_reader(
+    //    params_srf_emiss, grid_, host_views_srf_emiss, layouts_srf_emiss);
+    // srf_emissions_reader.read_variables();
+    // srf_emissions_reader.finalize();
+    // copy data into host view for sending, columnwise, to mam4xx's
+    // mo_srf_emissions
     // TODO: any reason not to just copy to device here?
     // TODO: Could probably be a parfor here
     // for (int colidx_fake = 0; colidx_fake < numcol_fake_srf; ++colidx_fake) {
-    //   srf_emiss_host(colidx_fake, species_id) = host_views_srf_emiss[srf_emiss_name](colidx_fake);
+    //   srf_emiss_host(colidx_fake, species_id) =
+    //   host_views_srf_emiss[srf_emiss_name](colidx_fake);
     // }
-  } // end item
+  }  // end item
 
-  // FIXME: this, and all places used, will need to change to a flattened column index
-  const int numlat_online = scream::mam_coupling::nlat_online;
+  // FIXME: this, and all places used, will need to change to a flattened column
+  // index
+  /*const int numlat_online = scream::mam_coupling::nlat_online;
   const int numlon_online = scream::mam_coupling::nlon_online;
-  int numalti_online = scream::mam_coupling::nalti_online;
-  int numcol_fake_online = numlat_online * numlon_online * numalti_online;
-  const auto online_emiss_var_names = mam4::aero_model_emissions::online_emimssions_data_fields;
+  int numalti_online      = scream::mam_coupling::nalti_online;
+  int numcol_fake_online  = numlat_online * numlon_online * numalti_online;
+  const auto online_emiss_var_names =
+      mam4::aero_model_emissions::online_emimssions_data_fields;
 
   // view_3d_host online_emiss_host;
   emis_type = "online";
-  for (const auto &item : map_online_emiss_name_species_id) {
+  for(const auto &item : map_online_emiss_name_species_id) {
     const std::string online_emiss_name = item.first;
     // FIXME: for some reason, SOAG only has 12 altitude levels, rather than 13
     // Is this correct or an error in the data?
-    if (online_emiss_name == "SOAG") {
-      numalti_online = 12;
+    if(online_emiss_name == "SOAG") {
+      numalti_online     = 12;
       numcol_fake_online = numlat_online * numlon_online * numalti_online;
     } else {
-      numalti_online = 13;
+      numalti_online     = 13;
       numcol_fake_online = numlat_online * numlon_online * numalti_online;
     }
     std::map<std::string, view_1d_host> host_views_online_emiss;
     std::map<std::string, FieldLayout> layouts_online_emiss;
     // FIXME: this will need to change to a flattened column index
-    FieldLayout scalar_online_emiss_layout({CMP, CMP, CMP}, {numalti_online, numlat_online, numlon_online}, {"altitude", "lat", "lon"});
-    for ( const auto &var_name : online_emiss_var_names.at(online_emiss_name) ) {
-      host_views_online_emiss[var_name] = view_1d_host(var_name, numcol_fake_online);
+    FieldLayout scalar_online_emiss_layout(
+        {CMP, CMP, CMP}, {numalti_online, numlat_online, numlon_online},
+        {"altitude", "lat", "lon"});
+    for(const auto &var_name : online_emiss_var_names.at(online_emiss_name)) {
+      host_views_online_emiss[var_name] =
+          view_1d_host(var_name, numcol_fake_online);
       layouts_online_emiss.emplace(var_name, scalar_online_emiss_layout);
-    } // end var_name
+    }  // end var_name
     // const auto spec_name = item.first;
     // const int species_id = item.second;
     const auto file_name = emis_type + middle_name_emiss + online_emiss_name;
-    const auto &fpath = m_params.get<std::string>(file_name);
+    const auto &fpath    = m_params.get<std::string>(file_name);
     params_online_emiss.set("Filename", fpath);
 
     // read data
-    AtmosphereInput online_emissions_reader(params_online_emiss, grid_, host_views_online_emiss, layouts_online_emiss);
+    AtmosphereInput online_emissions_reader(params_online_emiss, grid_,
+                                            host_views_online_emiss,
+                                            layouts_online_emiss);
     online_emissions_reader.read_variables();
     online_emissions_reader.finalize();
-    // copy data into host view for sending, columnwise, to mam4xx's mo_online_emissions
+    // copy data into host view for sending, columnwise, to mam4xx's
+    // mo_online_emissions
     // TODO: any reason not to just copy to device here?
     // TODO: Could probably be a parfor here
     // for (int colidx_fake = 0; colidx_fake < numcol_fake; ++colidx_fake) {
-    //   online_emiss_host(colidx_fake_online, species_id) = host_views_online_emiss[online_emiss_name](colidx_fake);
+    //   online_emiss_host(colidx_fake_online, species_id) =
+    //   host_views_online_emiss[online_emiss_name](colidx_fake);
     // }
-  } // end item
-
-} // end initialize_impl()
+  }  // end item
+*/
+}  // end initialize_impl()
 
 // =============================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -411,4 +435,4 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 }
 
 // =============================================================================
-} // namespace scream
+}  // namespace scream
