@@ -200,12 +200,14 @@
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">gcc-native</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
         <command name="unload">nvidia</command>
         <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">climate-utils</command>
+        <command name="unload">cray-libsci</command>
         <command name="unload">matlab</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -215,8 +217,8 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>
+        <command name="load">gcc/12.2.0</command>
         <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
@@ -282,8 +284,8 @@
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
-      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$BLAS_ROOT"; fi}</env>
-      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
     <environment_variables compiler="intel">
@@ -508,12 +510,14 @@
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">gcc-native</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
         <command name="unload">nvidia</command>
         <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">climate-utils</command>
+        <command name="unload">cray-libsci</command>
         <command name="unload">matlab</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -523,24 +527,19 @@
       </modules>
 
       <modules compiler="gnu">
-        <!--command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command-->
         <command name="load">PrgEnv-gnu/8.5.0</command>
         <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
       <modules compiler="intel">
-        <!--command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel/2023.1.0</command-->
         <command name="load">PrgEnv-intel/8.5.0</command>
-        <command name="load">intel/2023.2.0</command>
+        <command name="load">intel/2024.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/23.9</command>
+        <command name="load">nvidia/24.5</command>
         <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
@@ -554,9 +553,6 @@
         <command name="load">craype-accel-host</command>
         <command name="load">craype/2.7.30</command>
         <command name="load">cray-mpich/8.1.28</command>
-        <!--command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command-->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.9</command>
@@ -596,8 +592,8 @@
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
-      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$BLAS_ROOT"; fi}</env>
-      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
     <environment_variables compiler="intel">
@@ -825,12 +821,14 @@
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">gcc-native</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
         <command name="unload">nvidia</command>
         <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">climate-utils</command>
+        <command name="unload">cray-libsci</command>
         <command name="unload">matlab</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -841,7 +839,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu</command>
-        <command name="load">gcc</command>
+        <command name="load">gcc-native</command>
         <command name="load">cray-libsci</command>
       </modules>
 
@@ -852,24 +850,24 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.7</command>
+        <command name="load">nvidia/24.5</command>
         <command name="load">cray-libsci</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
-        <command name="load">aocc/4.0.0</command>
+        <command name="load">aocc/4.0.1</command>
         <command name="load">cray-libsci</command>
       </modules>
 
       <modules>
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
-        <command name="load">craype/2.7.21</command>
-        <command name="load">cray-mpich/8.1.26</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">craype/2.7.30</command>
+        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
         <command name="load">cmake/3.24.3</command>
       </modules>
     </module_system>
