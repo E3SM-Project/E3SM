@@ -128,6 +128,11 @@ void MAMSrfOnlineEmiss::set_grids(
   // Init horizontal remap
   srfEmissHorizInterp_ = srfEmissFunc::create_horiz_remapper(
       grid_, so2_data_file, srf_map_file, m_iop != nullptr);
+
+  // 2. Initialize the size of the SPAData structures.
+  srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_);
+  srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_);
+  // SrfEmissData_out_.init(ncol_, false);
 }
 
 // =========================================================================================

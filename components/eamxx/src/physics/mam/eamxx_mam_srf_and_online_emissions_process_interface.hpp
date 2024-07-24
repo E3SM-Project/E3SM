@@ -130,6 +130,10 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // preprocessing scratch pad
   Preprocess preprocess_;
 
+  srfEmissFunc::srfEmissInput srfEmissData_start_;
+  srfEmissFunc::srfEmissInput srfEmissData_end_;
+  // srfEmissFunc::srfEmissOutput        srfEmissData_out_;
+
 };  // MAMSrfOnlineEmiss
 
 }  // namespace scream
