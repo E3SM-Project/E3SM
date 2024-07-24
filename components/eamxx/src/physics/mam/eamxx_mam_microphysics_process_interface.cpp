@@ -167,25 +167,16 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
   std::string linoz_file_name =
       m_params.get<std::string>("mam4_linoz_file_name");
-  linoz_reader_ = create_linoz_data_reader(linoz_file_name,
-  linoz_params_, ncol_, col_latitudes_, m_comm);
-
   }
-  std::string my_file="oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc";
-  std::string spa_map_file="";
-  std::vector<std::string> var_names{"O3","HO2","NO3","OH"};
-  TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names);
-  TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,my_file);
+  {
+     std::string my_file="oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc";
+     std::string spa_map_file="";
+     std::vector<std::string> var_names{"O3","HO2","NO3","OH"};
+     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names);
+     TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,my_file);
+     tracer_data_out_.set_hyam_n_hybm(TracerHorizInterp_,my_file);
+  }
 
-  // 3 Read in hyam/hybm in start/end data, and pad them
-   const auto io_grid = TracerHorizInterp_->get_src_grid();
-  Field hyam(FieldIdentifier("hyam",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
-  Field hybm(FieldIdentifier("hybm",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
-  hyam.allocate_view();
-  hybm.allocate_view();
-  AtmosphereInput hvcoord_reader(my_file,io_grid,{hyam,hybm},true);
-  hvcoord_reader.read_variables();
-  hvcoord_reader.finalize();
 
 }
 
@@ -283,7 +274,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const std::string xs_long_file =
       m_params.get<std::string>("mam4_xs_long_file");
 
-  photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
+  // photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
 
   // FIXME: read relevant land use data from drydep surface file
 
@@ -317,37 +308,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
   auto linoz_cariolle_pscs = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
-  LinozData_end_.init(ncol_,linoz_params_.nlevs);
-  LinozData_end_.allocate_data_views();
-
-  LinozData_start_.init(ncol_,linoz_params_.nlevs);
-  LinozData_start_.allocate_data_views();
-
-  LinozData_out_.init(ncol_,linoz_params_.nlevs);
-  LinozData_out_.allocate_data_views();
-
-  interpolated_Linoz_data_.init(ncol_,nlev_);
-
-  interpolated_Linoz_data_.set_data_views(linoz_o3_clim,
-                                          linoz_o3col_clim,
-                                          linoz_t_clim,
-                                          linoz_PmL_clim,
-                                          linoz_dPmL_dO3,
-                                          linoz_dPmL_dT,
-                                          linoz_dPmL_dO3col,
-                                          linoz_cariolle_pscs);
-
     // Load the first month into spa_end.
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  linoz_reader_->read_variables(curr_month);
-  perform_horizontal_interpolation(linoz_params_, LinozData_end_);
-
-  perform_vertical_interpolation(linoz_params_,
-                                 dry_atm_.p_mid,
-                                 LinozData_end_,
-                                 interpolated_Linoz_data_);
 
   // const std::string linoz_chlorine_file = "Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc";
   // auto ts = timestamp();
@@ -386,9 +350,18 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   tracer_data_beg_.init(num_cols_io, num_levs_io, nvars);
   tracer_data_beg_.allocate_data_views();
+  tracer_data_beg_.allocate_ps();
 
   tracer_data_out_.init(num_cols_io, num_levs_io, nvars);
   tracer_data_out_.allocate_data_views();
+  tracer_data_out_.allocate_ps();
+
+  p_src_invariant_ = view_2d("pressure_src_invariant",num_cols_io, num_levs_io );
+
+  for (int ivar = 0; ivar< nvars; ++ivar) {
+    cnst_offline_[ivar] = view_2d("cnst_offline_",ncol_, nlev_ );
+  }
+
 
 }
 
@@ -423,55 +396,27 @@ void MAMMicrophysics::run_impl(const double dt) {
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
 
-  auto ts = timestamp()+dt;
-  {
-    /* Gather time and state information for interpolation */
-
-  /* Update the LinozTimeState to reflect the current time, note the addition of dt */
-  linoz_time_state_.t_now = ts.frac_of_year_in_days();
-  /* Update time state and if the month has changed, update the data.*/
-  update_linoz_timestate(ts,
-                         linoz_time_state_,
-                         linoz_reader_,
-                         linoz_params_,
-                         LinozData_start_,
-                         LinozData_end_);
-
-  perform_time_interpolation(linoz_time_state_,
-                             LinozData_start_,
-                             LinozData_end_,
-                             LinozData_out_);
-
-  perform_vertical_interpolation(linoz_params_,
-                                 dry_atm_.p_mid,
-                                 LinozData_out_,
-                                 interpolated_Linoz_data_);
+  /* Gather time and state information for interpolation */
+  const auto ts = timestamp()+dt;
 
 
-  }
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(ts, chlorine_values_,
                            chlorine_time_secs_);
 
-  {
-  /* Gather time and state information for interpolation */
-  auto ts = timestamp()+dt;
-  /* Update the SPATimeState to reflect the current time, note the addition of dt */
-  linoz_time_state_.t_now = ts.frac_of_year_in_days();
-  /* Update time state and if the month has changed, update the data.*/
-  scream::mam_coupling::update_tracer_timestate(
-    TracerDataReader_,
-    ts,
-    *TracerHorizInterp_,
-    linoz_time_state_,
-    tracer_data_beg_,
-    tracer_data_end_);
 
-  scream::mam_coupling::perform_time_interpolation(
-  linoz_time_state_,
-  tracer_data_beg_,
-  tracer_data_end_,
-  tracer_data_out_);
-  }
+  // /* Update the LinozTimeState to reflect the current time, note the addition of dt */
+  linoz_time_state_.t_now = ts.frac_of_year_in_days();
+  scream::mam_coupling::advance_tracer_data(TracerDataReader_,
+                      *TracerHorizInterp_,
+                      ts,
+                      linoz_time_state_,
+                      tracer_data_beg_,
+                      tracer_data_end_,
+                      tracer_data_out_,
+                      p_src_invariant_,
+                      dry_atm_.p_mid,
+                      cnst_offline_);
+
 
   const_view_1d &col_latitudes = col_latitudes_;
   mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
@@ -521,6 +466,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     // FIXME: set views here
     const auto& work_photo_table_icol = ekat::subview(work_photo_table, icol);
     // set work view using 1D photo_work_arrays_icol
+
     mam4::mo_photo::set_photo_table_work_arrays(photo_table,
                                                 work_photo_table_icol,
                                                 photo_work_arrays_icol);
@@ -532,11 +478,11 @@ void MAMMicrophysics::run_impl(const double dt) {
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
     const auto& photo_rates_icol = ekat::subview(photo_rates, icol);
-
+#if 0
     mam4::mo_photo::table_photo(photo_rates_icol, atm.pressure, atm.hydrostatic_dp,
      atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc_icol,
      atm.cloud_fraction, esfact, photo_table, photo_work_arrays_icol);
-
+#endif
     // compute external forcings at time t(n+1) [molecules/cm^3/s]
     constexpr int extcnt = mam4::gas_chemistry::extcnt;
     view_2d extfrc; // FIXME: where to allocate? (nlev, extcnt)
@@ -648,6 +594,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
       Real rlats = col_lat * M_PI / 180.0; // convert column latitude to radians
       int o3_ndx = 0; // index of "O3" in solsym array (in EAM)
+#if 0
       mam4::lin_strat_chem::lin_strat_chem_solve_kk(o3_col_dens_i(k), temp,
         zenith_angle, pmid, dt, rlats,
         linoz_o3_clim(icol, k), linoz_t_clim(icol, k), linoz_o3col_clim(icol, k),
@@ -656,7 +603,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         chlorine_loading, config.linoz.psc_T, vmr[o3_ndx],
         do3_linoz, do3_linoz_psc, ss_o3,
         o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
-
+#endif
       // update source terms above the ozone decay threshold
       if (k > nlev - config.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
@@ -688,7 +635,6 @@ void MAMMicrophysics::run_impl(const double dt) {
 }
 
 void MAMMicrophysics::finalize_impl() {
-  // linoz_reader_->finalize();
 }
 
 } // namespace scream

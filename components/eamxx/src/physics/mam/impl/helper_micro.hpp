@@ -85,6 +85,8 @@ namespace scream::mam_coupling {
     int nvars_{-1};
     view_2d data[MAX_NVARS_TRACER];
     view_1d ps;
+    const_view_1d hyam;
+    const_view_1d hybm;
 
     void allocate_data_views()
     {
@@ -100,6 +102,8 @@ namespace scream::mam_coupling {
 
     void allocate_ps()
     {
+      EKAT_REQUIRE_MSG (ncol_ != int(-1),
+      "Error! ncols has not been set. \n");
       ps = view_1d("ps",ncol_);
     }
 
@@ -117,6 +121,23 @@ namespace scream::mam_coupling {
       ps = ps_in;
     }
 
+    void set_hyam_n_hybm(const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+                              const std::string& tracer_file_name)
+    {
+
+      // Read in hyam/hybm in start/end data, and pad them
+      auto nondim = ekat::units::Units::nondimensional();
+      const auto io_grid = horiz_remapper->get_src_grid();
+      Field hyam_f(FieldIdentifier("hyam",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+      Field hybm_f(FieldIdentifier("hybm",io_grid->get_vertical_layout(true),nondim,io_grid->name()));
+      hyam_f.allocate_view();
+      hybm_f.allocate_view();
+      AtmosphereInput hvcoord_reader(tracer_file_name,io_grid,{hyam_f,hybm_f},true);
+      hvcoord_reader.read_variables();
+      hvcoord_reader.finalize();
+      hyam = hyam_f.get_view<const Real*>();
+      hybm = hyam_f.get_view<const Real*>();
+    }
   };
 
   struct LinozData {
@@ -143,8 +164,9 @@ namespace scream::mam_coupling {
       "Error! nlevs has not been set. \n");
 
       for (int ivar = 0; ivar< nvars_; ++ivar) {
-        data[ivar] = view_2d("linoz_1",ncol_,nlev_);
+        data[ivar] = view_2d("data_tracer",ncol_,nlev_);
       }
+
     } //allocate_data_views
 
     void set_data_views(std::vector<view_2d>& list_of_views)
@@ -670,13 +692,15 @@ update_tracer_data_from_file(
  tracer_horiz_interp.remap(/*forward = */ true);
  //
  const int nvars =tracer_data.nvars_;
- // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw, tau_sw, tau_lw
- // 3. Copy from the tgt field of the remapper into the spa_data
-//  auto ps          = tracer_horiz_interp.get_tgt_field (0).get_view<const Real*>();
+
   //
  for (int i = 0; i < nvars; ++i) {
   tracer_data.data[i] = tracer_horiz_interp.get_tgt_field (i).get_view< Real**>();
  }
+
+  // Recall, the fields are registered in the order: tracers, ps
+ // 3. Copy from the tgt field of the remapper into the spa_data
+ tracer_data.ps = tracer_horiz_interp.get_tgt_field(nvars).get_view< Real*>();
 
 } // update_tracer_data_from_file
 inline void
@@ -725,7 +749,6 @@ update_tracer_timestate(
 // This function is based on the SPA::perform_time_interpolation function.
  inline void perform_time_interpolation(
   const LinozTimeState& time_state,
-
   const TracerData& data_tracer_beg,
   const TracerData& data_tracer_end,
   const TracerData& data_tracer_out)
@@ -741,10 +764,16 @@ update_tracer_timestate(
   const auto data_beg = data_tracer_beg.data;
   const auto data_end = data_tracer_end.data;
   const auto data_out = data_tracer_out.data;
-   const int num_vars = data_tracer_end.nvars_;
 
-  const int ncol = data_beg[0].extent(0);
-  const int num_vert = data_beg[0].extent(1);
+
+  const auto ps_beg = data_tracer_beg.ps;
+  const auto ps_end = data_tracer_end.ps;
+  const auto ps_out = data_tracer_out.ps;
+
+  const int num_vars = data_tracer_end.nvars_;
+
+  const int ncol = data_tracer_beg.ncol_;
+  const int num_vert = data_tracer_beg.nlev_;
 
   const int outer_iters = ncol*num_vars;
 
@@ -766,14 +795,19 @@ update_tracer_timestate(
     const int ivar = team.league_rank() % num_vars;
 
     // Get column of beg/end/out variable
-    auto var_beg = ekat::subview(data_beg[ivar],icol);
-    auto var_end = ekat::subview(data_end[ivar],icol);
-    auto var_out = ekat::subview(data_out[ivar],icol);
+      auto var_beg = ekat::subview(data_beg[ivar],icol);
+      auto var_end = ekat::subview(data_end[ivar],icol);
+      auto var_out = ekat::subview(data_out[ivar],icol);
 
     Kokkos::parallel_for (Kokkos::TeamVectorRange(team,num_vert),
                           [&] (const int& k) {
       var_out(k) = linear_interp(var_beg(k),var_end(k),delta_t_fraction);
     });
+
+    if(ivar==1){
+       ps_out(icol) = linear_interp(ps_beg(icol), ps_end(icol),delta_t_fraction);
+    }
+
   });
   Kokkos::fence();
 } // perform_time_interpolation
@@ -790,7 +824,6 @@ compute_source_pressure_levels(
   using C = scream::physics::Constants<Real>;
 
   constexpr auto P0 = C::P0;
-
   const int ncols = ps_src.extent(0);
   const int num_vert_packs = p_src.extent(1);
   const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
@@ -805,24 +838,39 @@ compute_source_pressure_levels(
   });
 } // compute_source_pressure_levels
 
-#if 1
+
 inline void
 perform_vertical_interpolation(
-  const view_2d p_src,
-  const view_2d p_tgt,
+  const view_2d& p_src_c,
+  const const_view_2d& p_tgt_c,
   const TracerData& input,
-  const TracerData& output)
+  const view_2d output[])
 {
   using ExeSpace = typename KT::ExeSpace;
   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
   using LIV = ekat::LinInterp<Real,1>;
 
   // At this stage, begin/end must have the same horiz dimensions
-  EKAT_REQUIRE(input.ncol_==output.ncol_);
+  EKAT_REQUIRE(input.ncol_==output[0].extent(0));
+#if 1
+  // FIXME: I was encountering a compilation error when using const_view_2d.
+  // The issue is fixed by https://github.com/E3SM-Project/EKAT/pull/346.
+  // I will keep this code until this PR is merged into the EKAT master branch and
+  // we update the EKAT version in our code.
+  // I am converting const_view_2d to view_2d.
+  auto p_src_ptr = (Real *)p_src_c.data();
+  view_2d p_src(p_src_ptr,p_src_c.extent(0),p_src_c.extent(1));
+  auto p_tgt_ptr = (Real *)p_tgt_c.data();
+  view_2d p_tgt(p_tgt_ptr,p_tgt_c.extent(0),p_tgt_c.extent(1));
+#else
+  const auto p_src = p_src_c;
+  const auto p_tgt = p_tgt_c;
+#endif
 
   const int ncols     = input.ncol_;
-  const int nlevs_src = input.nlev_;
-  const int nlevs_tgt = output.nlev_;
+  // FIXME: I am getting FPEs if I do not subtract 1 from nlevs_src.
+  const int nlevs_src = input.nlev_-1;
+  const int nlevs_tgt = output[0].extent(1);
 
   LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
 
@@ -832,11 +880,10 @@ perform_vertical_interpolation(
   const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
 
   // Setup the linear interpolation object
-  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
+  Kokkos::parallel_for("tracer_vert_interp_setup_loop", policy_setup,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
 
     const int icol = team.league_rank();
-
     // Setup
     vert_interp.setup(team, ekat::subview(p_src,icol),
                             ekat::subview(p_tgt,icol));
@@ -846,7 +893,7 @@ perform_vertical_interpolation(
   // Now use the interpolation object in || over all variables.
   const int outer_iters = ncols*num_vars;
   const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
-  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
+  Kokkos::parallel_for("tracer_vert_interp_loop", policy_interp,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
 
     const int icol = team.league_rank() / num_vars;
@@ -856,13 +903,59 @@ perform_vertical_interpolation(
     const auto x2 = ekat::subview(p_tgt,icol);
 
     const auto y1 = ekat::subview(input.data[ivar],icol);
-    const auto y2 = ekat::subview(output.data[ivar],icol);
+    const auto y2 = ekat::subview(output[ivar],icol);
 
     vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
   });
   Kokkos::fence();
 }
 
-#endif
+inline void
+advance_tracer_data(std::shared_ptr<AtmosphereInput>& scorpio_reader,
+                    AbstractRemapper& tracer_horiz_interp,
+                    const util::TimeStamp& ts,
+                    LinozTimeState& time_state,
+                    TracerData& data_tracer_beg,
+                    TracerData& data_tracer_end,
+                    TracerData& data_tracer_out,
+                    const view_2d& p_src,
+                    const const_view_2d& p_tgt,
+                    const view_2d output[])
+{
+
+  /* Update the TracerTimeState to reflect the current time, note the addition of dt */
+  time_state.t_now = ts.frac_of_year_in_days();
+  /* Update time state and if the month has changed, update the data.*/
+  update_tracer_timestate(
+    scorpio_reader,
+    ts,
+    tracer_horiz_interp,
+    time_state,
+    data_tracer_beg,
+    data_tracer_end);
+  // Step 1. Perform time interpolation
+  perform_time_interpolation(
+  time_state,
+  data_tracer_beg,
+  data_tracer_end,
+  data_tracer_out);
+  // Step 2. Compute source pressure levels
+  compute_source_pressure_levels(
+    data_tracer_out.ps,
+    p_src,
+    data_tracer_out.hyam,
+    data_tracer_out.hybm);
+
+  // Step 3. Perform vertical interpolation
+
+  perform_vertical_interpolation(
+  p_src,
+  p_tgt,
+  data_tracer_out,
+  output);
+
+}// advance_tracer_data
+
+
 } // namespace scream::mam_coupling
 #endif //EAMXX_MAM_HELPER_MICRO
