@@ -1,6 +1,8 @@
 #ifndef SRF_EMISSION_HPP
 #define SRF_EMISSION_HPP
 
+#include "share/util/scream_timing.hpp"
+
 namespace scream::mam_coupling {
 namespace {
 
@@ -58,6 +60,12 @@ struct srfEmissFunctions {
   static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &srfEmiss_data_file);
+
+  static void update_srfEmiss_data_from_file(
+      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      const util::TimeStamp &ts,
+      const int time_index,  // zero-based
+      AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input);
 
 };  // struct srfEmissFunctions
 }  // namespace

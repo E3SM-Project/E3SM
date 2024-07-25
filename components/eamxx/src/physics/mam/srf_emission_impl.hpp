@@ -33,16 +33,18 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
-                     "Error! We do not allow to coarsen spa data to fit the "
-                     "model. We only allow\n"
-                     "       spa data to be at the same or coarser resolution "
-                     "as the model.\n");
+    EKAT_REQUIRE_MSG(
+        ncols_data <= ncols_model,
+        "Error! We do not allow to coarsen srfEmiss data to fit the "
+        "model. We only allow\n"
+        "       srfEmiss data to be at the same or coarser resolution "
+        "as the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG(
         map_file != "",
-        "ERROR: Spa data is on a different grid than the model one,\n"
-        "       but spa_remap_file is missing from SPA parameter list.");
+        "ERROR: srfEmiss data is on a different grid than the model one,\n"
+        "       but srfEmiss_remap_file is missing from srfEmiss parameter "
+        "list.");
 
     remapper =
         std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
@@ -94,6 +96,71 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
   return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
                                            io_fields, true);
 }
+
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    const int time_index,  // zero-based
+    AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
+  using namespace ShortFieldTagsNames;
+  using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
+  using Member = typename KokkosTypes<DefaultDevice>::MemberType;
+
+  start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
+
+  // 1. Read from file
+  start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::read_data");
+  scorpio_reader->read_variables(time_index);
+  stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::read_data");
+
+  // 2. Run the horiz remapper (it is a do-nothing op if srfEmiss data is on
+  // same grid as model)
+  start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
+  srfEmiss_horiz_interp.remap(/*forward = */ true);
+  stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
+
+  // 3. Copy from the tgt field of the remapper into the srfEmiss_data, padding
+  // data if necessary
+  start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::copy_and_pad");
+  // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
+  // tau_sw, tau_lw
+
+  auto agr = srfEmiss_horiz_interp.get_tgt_field(0).get_view<const Real *>();
+  auto rco = srfEmiss_horiz_interp.get_tgt_field(1).get_view<const Real *>();
+  auto shp = srfEmiss_horiz_interp.get_tgt_field(2).get_view<const Real *>();
+  auto slv = srfEmiss_horiz_interp.get_tgt_field(3).get_view<const Real *>();
+  auto tra = srfEmiss_horiz_interp.get_tgt_field(4).get_view<const Real *>();
+  auto wst = srfEmiss_horiz_interp.get_tgt_field(5).get_view<const Real *>();
+
+  const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
+                           .get_header()
+                           .get_identifier()
+                           .get_layout();
+
+  const int ncols = layout.dim(COL);
+
+  auto srfEmiss_data_agr = ekat::scalarize(srfEmiss_input.data.AGR);
+  auto srfEmiss_data_rco = ekat::scalarize(srfEmiss_input.data.RCO);
+  auto srfEmiss_data_shp = ekat::scalarize(srfEmiss_input.data.SHP);
+  auto srfEmiss_data_slv = ekat::scalarize(srfEmiss_input.data.SLV);
+  auto srfEmiss_data_tra = ekat::scalarize(srfEmiss_input.data.TRA);
+  auto srfEmiss_data_wst = ekat::scalarize(srfEmiss_input.data.WST);
+
+  auto copy_and_pad = KOKKOS_LAMBDA(const Member &team) {
+    int icol                = team.league_rank();
+    srfEmiss_data_agr(icol) = agr(icol);
+    srfEmiss_data_rco(icol) = rco(icol);
+    srfEmiss_data_shp(icol) = shp(icol);
+    srfEmiss_data_slv(icol) = slv(icol);
+    srfEmiss_data_tra(icol) = tra(icol);
+    srfEmiss_data_wst(icol) = wst(icol);
+  };
+  Kokkos::fence();
+  stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::copy_and_pad");
+
+  stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
+
+}  // END update_srfEmiss_data_from_file
 
 }  // namespace
 }  // namespace scream::mam_coupling

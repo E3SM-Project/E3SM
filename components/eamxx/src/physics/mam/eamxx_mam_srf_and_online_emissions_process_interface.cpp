@@ -241,6 +241,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
+  // Load the first month into srfEmiss_end.
+  // Note: At the first time step, the data will be moved into srfEmiss_beg,
+  //       and srfEmiss_end will be reloaded from file with the new month.
+  const int curr_month = timestamp().get_month() - 1;  // 0-based
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      srfEmissDataReader_, timestamp(), curr_month, *srfEmissHorizInterp_,
+      srfEmissData_end_);
+
   // set up our preprocess functor
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
