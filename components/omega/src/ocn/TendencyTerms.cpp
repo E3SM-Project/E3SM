@@ -51,9 +51,9 @@ void Tendencies::clear() { AllTendencies.clear(); } // end clear
 
 //------------------------------------------------------------------------------
 // Removes tendencies from list by name
-void Tendencies::erase(const std::string Name){
+void Tendencies::erase(const std::string Name) {
 
-    AllTendencies.erase(Name);
+   AllTendencies.erase(Name);
 
 } // end erase
 
@@ -72,14 +72,14 @@ Tendencies *Tendencies::get(const std::string Name ///< [in] Name of tendencies
 
    auto it = AllTendencies.find(Name);
 
-    if (it != AllTendencies.end()) {
+   if (it != AllTendencies.end()) {
       return &(it->second);
-    } else {
+   } else {
       LOG_ERROR(
           "Tendencies::get: Attempt to retrieve non-existent tendencies:");
       LOG_ERROR("{} has not been defined or has been removed", Name);
       return nullptr;
-    }
+   }
 
 } // end get tendencies
 
@@ -126,7 +126,8 @@ void Tendencies::computeThicknessTendencies(
    Array2DReal ThickFluxEdge;
    parallelFor(
        {LocNCellsOwned, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
-          LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk, ThickFluxEdge);
+          LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
+                              ThickFluxEdge);
        });
 
 } // end thickness tehndency compute
@@ -154,8 +155,9 @@ void Tendencies::computeVelocityTendencies(
    Array2DReal TangentVelEdge;     // TODO get variables from AuxState
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk, NormRVortEdge,
-                             NormFEdge, FluxLayerThickEdge, TangentVelEdge);
+          LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
+                                NormRVortEdge, NormFEdge, FluxLayerThickEdge,
+                                TangentVelEdge);
        });
 
    // Compute kinetic energy gradient
@@ -178,7 +180,7 @@ void Tendencies::computeVelocityTendencies(
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocVelocityDiffusion(LocNormalVelocityTend, IEdge, KChunk, DivCell,
-                            RVortVertex);
+                               RVortVertex);
        });
 
    // Compute del4 horizontal diffusion
@@ -186,8 +188,8 @@ void Tendencies::computeVelocityTendencies(
    Array2DReal Del2RVortVertex; // TODO get variables from AuxState
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk, Del2DivCell,
-                            Del2RVortVertex);
+          LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
+                               Del2DivCell, Del2RVortVertex);
        });
 
 } // end velocity tendency compute
@@ -195,7 +197,8 @@ void Tendencies::computeVelocityTendencies(
 //------------------------------------------------------------------------------
 // Compute both layer thickness and normal velocity tendencies
 // TODO Add AuxilaryState as argument
-void Tendencies::computeAllTendencies(OceanState *State ///< [in] State variables
+void Tendencies::computeAllTendencies(
+    OceanState *State ///< [in] State variables
 ) {
 
    computeThicknessTendencies(State);

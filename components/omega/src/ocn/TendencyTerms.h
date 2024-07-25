@@ -17,7 +17,6 @@
 
 namespace OMEGA {
 
-
 /// Divergence of thickness flux at cell centers, for updating layer thickness
 /// arrays
 class ThicknessFluxDivOnCell {
