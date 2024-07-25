@@ -10,7 +10,7 @@
 
 ## 1 Overview
 
-The solution methods for a partial differential equation come in two categories: the spatial discretizations and the temporal discretizations. Here we present the methods of solving the time derivative, $\partial / \partial t$, in the Omega-0 shallow water equations. The spatial discretizations are presented in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document.
+The solution methods for a partial differential equation come in two categories: the spatial discretizations and the temporal discretizations. Here we present the methods of solving the time derivative, $\partial / \partial t$, in the Omega-0 shallow water equations. The spatial discretizations are presented in the {ref}`omega-design-shallow-water-omega0` design document.
 
 ## 2 Requirements
 
@@ -24,7 +24,7 @@ The scheme must be stable for reasonably long time steps compared to other schem
 
 ### 2.3 Requirement: Performance
 
-The time stepping scheme must follow the scaling and performance criteria outlined in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document. It will be tested with metrics for:
+The time stepping scheme must follow the scaling and performance criteria outlined in the {ref}`omega-design-shallow-water-omega0` design document. It will be tested with metrics for:
 
 1. Single CPU throughput
 1. Parallel CPU scalability to high node counts
@@ -50,7 +50,7 @@ For the manufactured solution and time-dependant forcing (winds, tides), the rig
 
 The primary time stepping scheme will be forward-backward. This scheme is commonly used in shallow water models and the barotropic mode of layered models. It suits the design requirements because it is second order, is stable for reasonably long time steps compared to competing schemes, and may be implemented in a performant manner.
 
-Given the shallow water equations introduced in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document, we may consolidate the right-hand-side tendency terms to express them as
+Given the shallow water equations introduced in the {ref}`omega-design-shallow-water-omega0` design document, we may consolidate the right-hand-side tendency terms to express them as
 
 $$
 \frac{\partial \boldsymbol{u}}{\partial t} = \mathcal{RHS}_u \left( \boldsymbol{u},h,t \right),
@@ -115,4 +115,4 @@ $$
 
 Where the initial conditions for $\boldsymbol{u}$ and $\phi$ are uniformly one, the tracer restoring value in this case is $\phi_0=0$, and the solution is simply exponential decay to zero.
 
-The timestepping is an intrinsic part of the Omega-0 model, so the verification and testing are identical to those in the [Omega V0: Shallow Water](OmegaV0ShallowWater.md) design document. The timestepping will be tested with convergence tests in time using the manufactured solution test case.
+The timestepping is an intrinsic part of the Omega-0 model, so the verification and testing are identical to those in the {ref}`omega-design-shallow-water-omega0` design document. The timestepping will be tested with convergence tests in time using the manufactured solution test case.
