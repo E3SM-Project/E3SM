@@ -48,6 +48,11 @@ void MAMDryDep::set_grids(
   const FieldLayout scalar3d_mid{{COL, LEV}, {ncol_, nlev_}};
   const FieldLayout scalar3d_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
+  // layout for 2D (ncol, pcnst)
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  const FieldLayout scalar2d_pcnct =
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
   auto make_layout = [](const std::vector<int> &extents,
@@ -198,11 +203,11 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------
   // FIXME: These are diagnostics, remove them from FM after initial evaluation
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar3d_mid,
+  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar2d_pcnct,
                       1 / m2 / s, grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_interstitial_aerosols", scalar3d_mid,
-                      1 / m2 / s, grid_name);
+  add_field<Computed>("deposition_flux_of_interstitial_aerosols",
+                      scalar2d_pcnct, 1 / m2 / s, grid_name);
 }  // set_grids
 
 // ================================================================
