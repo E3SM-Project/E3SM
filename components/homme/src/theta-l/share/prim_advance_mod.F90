@@ -1669,9 +1669,9 @@ endif
 
               !da
 #ifdef DA
-              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*(  v1/rheightm(i,j,k) &
                                                                                   + elem(ie)%fcorcosine(i,j) )
-              vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
+              vtens2(i,j,k) = vtens2(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*v2/rheightm(i,j,k)
 #endif
 
 #endif
