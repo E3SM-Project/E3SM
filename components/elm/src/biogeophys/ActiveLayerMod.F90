@@ -215,11 +215,11 @@ contains
             if (lun_pp%polygontype(col_pp%landunit(c)) .eq. ilowcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
-               ddep(c) = min(0.05_r8, max(0.15_r8 - 0.25_r8*subsidence(c), 0.15_r8))
+               ddep(c) = max(0.05_r8, 0.15_r8 - 0.25_r8*subsidence(c))
             elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. iflatcenpoly) then
-               rmax(c) = min(0.1_r8, max(0.4_r8, 0.1_r8 + 0.75_r8*subsidence(c)))
-               vexc(c) = min(0.05_r8, max(0.2_r8, 0.05_r8 + 0.375_r8*subsidence(c)))
-               ddep(c) = min(0.01_r8, max(0.05_r8, 0.01_r8 + 0.1_r8*subsidence(c)))
+               rmax(c) = min(0.4_r8, 0.1_r8 + 0.75_r8*subsidence(c))
+               vexc(c) = min(0.2_r8, 0.05_r8 + 0.375_r8*subsidence(c))
+               ddep(c) = min(0.05_r8, 0.01_r8 + 0.1_r8*subsidence(c))
             elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. ihighcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
