@@ -208,8 +208,8 @@ contains
 !  routine ocn_tracer_surface_flux_tend_subglacial_runoff
 !
 !> \brief   Computes tendency term for surface fluxes
-!> \author  Doug Jacobsen
-!> \date    12/17/12
+!> \author  Irena Vankova
+!> \date    July 2024
 !> \details
 !>  This routine computes the tendency for tracers based on surface fluxes.
 !

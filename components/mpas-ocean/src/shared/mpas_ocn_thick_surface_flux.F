@@ -276,8 +276,8 @@ contains
 !  routine ocn_thick_surface_flux_init
 !
 !> \brief   Initializes ocean horizontal thickness surface fluxes
-!> \author  Irena Vankova
-!> \date    July 2024
+!> \author  Doug Jacobsen
+!> \date    12/17/12
 !> \details
 !>  This routine initializes quantities related to thickness
 !>  surface fluxes in the ocean.
