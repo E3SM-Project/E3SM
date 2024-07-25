@@ -13,7 +13,8 @@ template <std::size_t FN>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &data_file, const std::array<std::string, FN> &,
+    const std::string &data_file,
+    const std::array<std::string, FN> &field_names,
     const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
@@ -57,26 +58,16 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
   const auto nondim    = ekat::units::Units::nondimensional();
 
-  Field agr(FieldIdentifier("AGR", layout_2d, nondim, tgt_grid->name()));
-  Field rco(FieldIdentifier("RCO", layout_2d, nondim, tgt_grid->name()));
-  Field shp(FieldIdentifier("SHP", layout_2d, nondim, tgt_grid->name()));
-  Field slv(FieldIdentifier("SLV", layout_2d, nondim, tgt_grid->name()));
-  Field tra(FieldIdentifier("TRA", layout_2d, nondim, tgt_grid->name()));
-  Field wst(FieldIdentifier("WST", layout_2d, nondim, tgt_grid->name()));
+  std::vector<Field> emiss_components;
 
-  agr.allocate_view();
-  rco.allocate_view();
-  shp.allocate_view();
-  slv.allocate_view();
-  tra.allocate_view();
-  wst.allocate_view();
-
-  remapper->register_field_from_tgt(agr);
-  remapper->register_field_from_tgt(rco);
-  remapper->register_field_from_tgt(shp);
-  remapper->register_field_from_tgt(slv);
-  remapper->register_field_from_tgt(tra);
-  remapper->register_field_from_tgt(wst);
+  for(int icomp = 0; icomp < FN; ++icomp) {
+    auto comp_name = field_names[icomp];
+    // set and allocate fields
+    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    f.allocate_view();
+    emiss_components.push_back(f);
+    remapper->register_field_from_tgt(f);
+  }
 
   remapper->registration_ends();
 
