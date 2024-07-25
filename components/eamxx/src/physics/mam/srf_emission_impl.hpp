@@ -9,10 +9,11 @@ namespace scream::mam_coupling {
 namespace {
 
 template <typename S, typename D>
+template <std::size_t FN>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &data_file, const std::array<std::string, 6> &,
+    const std::string &data_file, const std::array<std::string, FN> &,
     const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
