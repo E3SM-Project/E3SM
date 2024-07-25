@@ -413,6 +413,21 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
+  // Gather time and state information for interpolation
+  auto ts = timestamp() + dt;
+  // Update the srfEmissTimeState to reflect the current time, note the addition
+  // of dt
+  srfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      srfEmissDataReader_, ts, *srfEmissHorizInterp_, srfEmissTimeState_,
+      srfEmissData_start_, srfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  // const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();
+  // srfEmissFunc::srfEmiss_main(srfEmissTimeState_, srfEmissData_start,
+  // srfEmissData_end,m_buffer.srfEmiss_temp,srfEmissData_out);
+
   /* Rough notes:
 
   Here we should implement or port the chem_emissions subroutine in

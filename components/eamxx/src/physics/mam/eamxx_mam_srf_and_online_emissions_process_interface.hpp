@@ -133,6 +133,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // IO structure to read in data for standard grids
   std::shared_ptr<AtmosphereInput> srfEmissDataReader_;
 
+  srfEmissFunc::srfEmissTimeState srfEmissTimeState_;
+
   srfEmissFunc::srfEmissInput srfEmissData_start_;
   srfEmissFunc::srfEmissInput srfEmissData_end_;
   srfEmissFunc::srfEmissOutput srfEmissData_out_;

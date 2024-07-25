@@ -162,6 +162,40 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
 }  // END update_srfEmiss_data_from_file
 
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    AbstractRemapper &srfEmiss_horiz_interp, srfEmissTimeState &time_state,
+    srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
+  // Now we check if we have to update the data that changes monthly
+  // NOTE:  This means that srfEmiss assumes monthly data to update.  Not
+  //        any other frequency.
+  const auto month = ts.get_month() - 1;  // Make it 0-based
+  if(month != time_state.current_month) {
+    // Update the srfEmiss time state information
+    time_state.current_month = month;
+    time_state.t_beg_month =
+        util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
+            .frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
+
+    // Copy srfEmiss_end'data into srfEmiss_beg'data, and read in the new
+    // srfEmiss_end
+    std::swap(srfEmiss_beg, srfEmiss_end);
+
+    // Update the srfEmiss forcing data for this month and next month
+    // Start by copying next months data to this months data structure.
+    // NOTE: If the timestep is bigger than monthly this could cause the wrong
+    // values
+    //       to be assigned.  A timestep greater than a month is very unlikely
+    //       so we will proceed.
+    int next_month = (time_state.current_month + 1) % 12;
+    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month,
+                                   srfEmiss_horiz_interp, srfEmiss_end);
+  }
+
+}  // END updata_srfEmiss_timestate
+
 }  // namespace
 }  // namespace scream::mam_coupling
 
