@@ -2048,6 +2048,8 @@
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="LC_ALL">C.UTF-8</env>
+      <env name="LANG">C.UTF-8</env>
     </environment_variables>
 
     <resource_limits>
