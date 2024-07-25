@@ -275,8 +275,8 @@
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc-cmake-fix; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
@@ -2652,13 +2652,13 @@
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/intel/20.0.4; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/intel/20.0.4; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/gnu; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="gnu">
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/AlbanyBuilds/build-gcc-sfad12-e3sm/install; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/ac.jwatkins/LandIce/TrilinosBuilds/build-gcc-e3sm/install; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/gcc/9.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/gcc/9.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
