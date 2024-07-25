@@ -66,11 +66,11 @@ struct srfEmissFunctions {
   /* -------------------------------------------------------------------------------------------
    */
   // Surface emissions routines
-
   static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
       const std::shared_ptr<const AbstractGrid> &model_grid,
-      const std::string &srfEmiss_data_file, const std::string &map_file,
-      const bool use_iop = false);
+      const std::string &srfEmiss_data_file,
+      const std::array<std::string, 6> &field_names,
+      const std::string &map_file);
 
   static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,

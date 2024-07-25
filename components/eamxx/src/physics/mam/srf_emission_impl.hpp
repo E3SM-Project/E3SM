@@ -12,8 +12,8 @@ template <typename S, typename D>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &data_file, const std::string &map_file,
-    const bool use_iop) {
+    const std::string &data_file, const std::array<std::string, 6> &,
+    const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
   scorpio::register_file(data_file, scorpio::Read);
@@ -28,8 +28,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
-  if(ncols_data == ncols_model or
-     use_iop /*IOP class defines it's own remapper for file data*/) {
+  if(ncols_data == ncols_model) {
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {

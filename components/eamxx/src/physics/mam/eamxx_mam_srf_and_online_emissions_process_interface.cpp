@@ -121,13 +121,16 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // Reading so2 srf emiss data
 
+  std::string srf_map_file = "";
   std::string so2_data_file =
       "/compyfs/inputdata/atm/scream/mam4xx/emissions/test_DECK_ne30/"
       "cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc";
-  std::string srf_map_file = "";
+  std::array<std::string, 6> so2_fields = {"AGR", "RCO", "SHP",
+                                           "SLV", "TRA", "WST"};
+
   // Init horizontal remap
   srfEmissHorizInterp_ = srfEmissFunc::create_horiz_remapper(
-      grid_, so2_data_file, srf_map_file, m_iop != nullptr);
+      grid_, so2_data_file, so2_fields, srf_map_file);
 
   // 2. Initialize the size of the SPAData structures.
   srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_);
