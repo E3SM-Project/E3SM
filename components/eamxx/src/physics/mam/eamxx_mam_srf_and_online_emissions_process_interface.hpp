@@ -139,6 +139,9 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   srfEmissFunc::srfEmissInput srfEmissData_end_;
   srfEmissFunc::srfEmissOutput srfEmissData_out_;
 
+  // Used to store temporary data during srfEmiss_main
+  srfEmissFunc::srfEmissInput srfEmiss_temp_;
+
 };  // MAMSrfOnlineEmiss
 
 }  // namespace scream

@@ -95,7 +95,107 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
                                            io_fields, true);
-}
+}  // create_srfEmiss_data_reader
+
+template <typename S, typename D>
+template <typename ScalarX, typename ScalarT>
+KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(
+    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
+  return (1 - t) * x0 + t * x1;
+}  // linear_interp
+
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::perform_time_interpolation(
+    const srfEmissTimeState &time_state, const srfEmissInput &data_beg,
+    const srfEmissInput &data_end, const srfEmissOutput &data_out) {
+  // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
+  //       IF this ever ceases to be the case, you can interp those too.
+
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+
+  // Gather time stamp info
+  auto &t_now   = time_state.t_now;
+  auto &t_beg   = time_state.t_beg_month;
+  auto &delta_t = time_state.days_this_month;
+
+  // At this stage, begin/end must have the same dimensions
+  EKAT_REQUIRE(data_end.data.ncols == data_beg.data.ncols);
+
+  auto delta_t_fraction = (t_now - t_beg) / delta_t;
+
+  EKAT_REQUIRE_MSG(
+      delta_t_fraction >= 0 && delta_t_fraction <= 1,
+      "Error! Convex interpolation with coefficient out of [0,1].\n"
+      "  t_now  : " +
+          std::to_string(t_now) +
+          "\n"
+          "  t_beg  : " +
+          std::to_string(t_beg) +
+          "\n"
+          "  delta_t: " +
+          std::to_string(delta_t) + "\n");
+  using KT = ekat::KokkosTypes<DefaultDevice>;
+  const auto policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
+          data_beg.data.ncols, 1);
+
+  Kokkos::parallel_for(
+      "srfEmiss_time_interp_loop", policy,
+      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
+        const int icol = team.league_rank();
+
+        // We have only 2d vars, so we need to make one team member handle it.
+        Kokkos::single(Kokkos::PerTeam(team), [&] {
+          data_out.AGR(icol) =
+              linear_interp(data_beg.data.AGR(icol), data_end.data.AGR(icol),
+                            delta_t_fraction);
+          data_out.RCO(icol) =
+              linear_interp(data_beg.data.RCO(icol), data_end.data.RCO(icol),
+                            delta_t_fraction);
+          data_out.SHP(icol) =
+              linear_interp(data_beg.data.SHP(icol), data_end.data.SHP(icol),
+                            delta_t_fraction);
+          data_out.SLV(icol) =
+              linear_interp(data_beg.data.SLV(icol), data_end.data.SLV(icol),
+                            delta_t_fraction);
+          data_out.TRA(icol) =
+              linear_interp(data_beg.data.TRA(icol), data_end.data.TRA(icol),
+                            delta_t_fraction);
+          data_out.WST(icol) =
+              linear_interp(data_beg.data.WST(icol), data_end.data.WST(icol),
+                            delta_t_fraction);
+        });
+      });
+  Kokkos::fence();
+}  // perform_time_interpolation
+
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
+                                            const srfEmissInput &data_beg,
+                                            const srfEmissInput &data_end,
+                                            const srfEmissInput &data_tmp,
+                                            const srfEmissOutput &data_out) {
+  // Beg/End/Tmp month must have all sizes matching
+
+  EKAT_REQUIRE_MSG(
+      data_end.data.ncols == data_beg.data.ncols,
+      "Error! srfEmissInput data structs must have the same number of "
+      "columns/levels.\n");
+
+  // Horiz interpolation can be expensive, and does not depend on the particular
+  // time of the month, so it can be done ONCE per month, *outside*
+  // srfEmiss_main (when updating the beg/end states, reading them from file).
+  EKAT_REQUIRE_MSG(
+      data_end.data.ncols == data_out.ncols,
+      "Error! Horizontal interpolation is performed *before* "
+      "calling srfEmiss_main,\n"
+      "       srfEmissInput and srfEmissOutput data structs must have the "
+      "same number columns.\n");
+
+  // Step 1. Perform time interpolation
+  perform_time_interpolation(time_state, data_beg, data_end, data_out);
+}  // srfEmiss_main
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(

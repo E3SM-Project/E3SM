@@ -76,6 +76,12 @@ struct srfEmissFunctions {
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &srfEmiss_data_file);
 
+  static void srfEmiss_main(const srfEmissTimeState &time_state,
+                            const srfEmissInput &data_beg,
+                            const srfEmissInput &data_end,
+                            const srfEmissInput &data_tmp,  // Temporary
+                            const srfEmissOutput &data_out);
+
   static void update_srfEmiss_data_from_file(
       std::shared_ptr<AtmosphereInput> &scorpio_reader,
       const util::TimeStamp &ts,
@@ -86,6 +92,18 @@ struct srfEmissFunctions {
       const util::TimeStamp &ts, AbstractRemapper &srfEmiss_horiz_interp,
       srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg,
       srfEmissInput &srfEmiss_end);
+
+  // The following three are called during srfEmiss_main
+  static void perform_time_interpolation(const srfEmissTimeState &time_state,
+                                         const srfEmissInput &data_beg,
+                                         const srfEmissInput &data_end,
+                                         const srfEmissOutput &data_out);
+
+  // Performs convex interpolation of x0 and x1 at point t
+  template <typename ScalarX, typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarX linear_interp(const ScalarX &x0,
+                                                      const ScalarX &x1,
+                                                      const ScalarT &t);
 
 };  // struct srfEmissFunctions
 }  // namespace

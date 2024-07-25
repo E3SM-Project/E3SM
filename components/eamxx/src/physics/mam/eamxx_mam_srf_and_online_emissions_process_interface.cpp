@@ -132,7 +132,7 @@ void MAMSrfOnlineEmiss::set_grids(
   // 2. Initialize the size of the SPAData structures.
   srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_);
   srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_);
-  srfEmissData_out_.init(ncol_, false);
+  srfEmissData_out_.init(ncol_, true);  // FIXME: should it be true or false???
   // 3. Skip as we don't need vertical interpolation
   // 4. Create reader for srfEmiss data. The reader is an
   //    AtmosphereInput object
@@ -425,8 +425,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
   // Call the main srfEmiss routine to get interpolated aerosol forcings.
   // const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();
-  // srfEmissFunc::srfEmiss_main(srfEmissTimeState_, srfEmissData_start,
-  // srfEmissData_end,m_buffer.srfEmiss_temp,srfEmissData_out);
+  srfEmissFunc::srfEmiss_main(srfEmissTimeState_, srfEmissData_start_,
+                              srfEmissData_end_, srfEmiss_temp_,
+                              srfEmissData_out_);
 
   /* Rough notes:
 
