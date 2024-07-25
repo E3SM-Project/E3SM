@@ -844,13 +844,16 @@ contains
                     if (swc > iwp_microrel(c) - iwp_exclvol(c)) then
                         d = swc + iwp_exclvol(c)
                     else
-                        d = 0.0
+                        d = swc + iwp_exclvol(c)
                         do k=1,10
                             fd = (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**3_r8 &
                                  + (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))**2_r8 &
                                  - swc
                             dfdd = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
                                    + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
+                            if (dfdd < 1.0e-12_r8) then
+                              write(iulog,*) "careful! getting close to dividing by 0..."
+                            end if
                             d = d - fd/dfdd
                         enddo
                     endif
