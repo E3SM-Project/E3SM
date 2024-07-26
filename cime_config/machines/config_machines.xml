@@ -1712,6 +1712,51 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="singularity2">
+    <DESC>Singularity container 2.0</DESC>
+    <NODENAME_REGEX>singularity2</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/e3sm/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/e3sm/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/projects/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/local/packages/bin/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm-team</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -launcher fork -hosts localhost -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="E3SM_SRCROOT">$SRCROOT</env>
+    </environment_variables>
+    <environment_variables mpilib="mpi-serial">
+      <env name="NETCDF_PATH">/usr/local/packages</env>
+      <env name="PATH">/usr/local/packages/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/usr/local/packages/lib</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="NETCDF_PATH">/usr/local/packages</env>
+      <env name="PNETCDF_PATH">/usr/local/packages</env>
+      <env name="HDF5_ROOT">/usr/local/packages</env>
+      <env name="PATH">/usr/local/packages/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/usr/local/packages/lib</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
