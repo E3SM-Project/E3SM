@@ -42,17 +42,19 @@ void MAMSrfOnlineEmiss::set_grids(
   std::string so2_data_file =
       "/compyfs/inputdata/atm/scream/mam4xx/emissions/test_DECK_ne30/"
       "cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc";
-  std::array<std::string, 6> so2_fields = {"AGR", "RCO", "SHP",
-                                           "SLV", "TRA", "WST"};
+  static constexpr int num_sectors_so2                = 6;
+  std::array<std::string, num_sectors_so2> so2_fields = {"AGR", "RCO", "SHP",
+                                                         "SLV", "TRA", "WST"};
 
   // Init horizontal remap
   so2SrfEmissHorizInterp_ = srfEmissFunc::create_horiz_remapper(
       grid_, so2_data_file, so2_fields, srf_map_file);
 
   // 2. Initialize the size of the SPAData structures.
-  srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_);
-  srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_);
-  srfEmissData_out_.init(ncol_, true);  // FIXME: should it be true or false???
+  srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_, num_sectors_so2);
+  srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_, num_sectors_so2);
+  srfEmissData_out_.init(ncol_, num_sectors_so2,
+                         true);  // FIXME: should it be true or false???
 
   // 3. Create reader for srfEmiss data. The reader is an
   //    AtmosphereInput object
@@ -96,15 +98,15 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //       and srfEmiss_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month() - 1;  // 0-based
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI-bef:" << srfEmissData_end_.data.emiss_components[1](i)
+    std::cout << "BALLI-bef:" << srfEmissData_end_.data.emiss_sectors.at(1)(i)
               << std::endl;
   }
   srfEmissFunc::update_srfEmiss_data_from_file(
       srfEmissDataReader_, timestamp(), curr_month, *so2SrfEmissHorizInterp_,
       srfEmissData_end_);
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << srfEmissData_end_.data.emiss_components[2](i)
-              << ":" << i << std::endl;
+    std::cout << "BALLI:" << srfEmissData_end_.data.emiss_sectors[2](i) << ":"
+              << i << std::endl;
   }
 
 }  // end initialize_impl()
@@ -133,8 +135,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
                               srfEmissData_end_, srfEmiss_temp_,
                               srfEmissData_out_);
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << srfEmissData_out_.emiss_components[2](i) << ":"
-              << i << std::endl;
+    std::cout << "BALLI:" << srfEmissData_out_.emiss_sectors[2](i) << ":" << i
+              << std::endl;
   }
 
   /* Rough notes:

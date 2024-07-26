@@ -25,29 +25,37 @@ struct srfEmissFunctions {
 
   struct srfEmissData {
     srfEmissData() = default;
-    srfEmissData(const int ncol_) { init(ncol_, true); }
+    srfEmissData(const int ncol_, const int nsectors_) {
+      init(ncol_, nsectors_, true);
+    }
 
-    void init(const int ncol_, const bool allocate) {
-      ncols = ncol_;
+    void init(const int ncol_, const int nsectors_, const bool allocate) {
+      ncols    = ncol_;
+      nsectors = nsectors_;
 
       if(allocate) {
-        for(auto &component : emiss_components) {
-          component = view_1d("", ncols);
+        for(int i = 0; i < nsectors; ++i) {
+          auto sector = view_1d("", ncols);
+          emiss_sectors.push_back(sector);
         }
       }
     }  // srfEmissData init
 
     // Basic spatial dimensions of the data
-    int ncols;
-    std::array<view_1d, 6> emiss_components;
+    int ncols, nsectors;
+    std::vector<view_1d> emiss_sectors;
 
   };  // srfEmissData
 
   struct srfEmissInput {
     srfEmissInput() = default;
-    srfEmissInput(const int ncols_) { init(ncols_); }
+    srfEmissInput(const int ncols_, const int nsectors_) {
+      init(ncols_, nsectors_);
+    }
 
-    void init(const int ncols_) { data.init(ncols_, true); }
+    void init(const int ncols_, const int nsectors_) {
+      data.init(ncols_, nsectors_, true);
+    }
     srfEmissData data;  // All srfEmiss fields
   };                    // srfEmissInput
 

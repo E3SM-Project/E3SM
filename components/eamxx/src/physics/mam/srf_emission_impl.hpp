@@ -57,14 +57,14 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
   const auto nondim    = ekat::units::Units::nondimensional();
 
-  std::vector<Field> emiss_components;
+  std::vector<Field> emiss_sectors;
 
   for(int icomp = 0; icomp < FN; ++icomp) {
     auto comp_name = field_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
     f.allocate_view();
-    emiss_components.push_back(f);
+    emiss_sectors.push_back(f);
     remapper->register_field_from_tgt(f);
   }
 
@@ -78,13 +78,13 @@ std::shared_ptr<AtmosphereInput>
 srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &srfEmiss_data_file) {
-  std::vector<Field> emiss_components;
+  std::vector<Field> emiss_sectors;
   for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
-    emiss_components.push_back(horiz_remapper->get_src_field(i));
+    emiss_sectors.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
-                                           emiss_components, true);
+                                           emiss_sectors, true);
 }  // create_srfEmiss_data_reader
 
 template <typename S, typename D>
@@ -127,7 +127,7 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
           data_beg.data.ncols, 1);
-  for(int i = 0; i < 6; ++i) {
+  for(int i = 0; i < data_beg.data.nsectors; ++i) {
     Kokkos::parallel_for(
         "srfEmiss_time_interp_loop", policy,
         KOKKOS_LAMBDA(
@@ -135,9 +135,9 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
           const int icol = team.league_rank();
           // We have only 2d vars, so we need to make one team member handle it.
           Kokkos::single(Kokkos::PerTeam(team), [&] {
-            data_out.emiss_components[i](icol) = linear_interp(
-                data_beg.data.emiss_components[i](icol),
-                data_end.data.emiss_components[i](icol), delta_t_fraction);
+            data_out.emiss_sectors[i](icol) = linear_interp(
+                data_beg.data.emiss_sectors[i](icol),
+                data_end.data.emiss_sectors[i](icol), delta_t_fraction);
           });
         });
   }
@@ -207,9 +207,9 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   const int ncols = layout.dim(COL);
 
   // Read fields from the file
-  for(int i = 0; i < 6; ++i) {
+  for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
     auto aa = srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    Kokkos::deep_copy(srfEmiss_input.data.emiss_components[i], aa);
+    Kokkos::deep_copy(srfEmiss_input.data.emiss_sectors[i], aa);
   }
 
   Kokkos::fence();
