@@ -38,9 +38,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
-  // Structures to store the data used for interpolation
-  std::shared_ptr<AbstractRemapper> so2SrfEmissHorizInterp_;
-
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
 
@@ -122,13 +119,25 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   Preprocess preprocess_;
 
   // IO structure to read in data for standard grids
+
+  std::shared_ptr<AbstractRemapper> dmsSrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> dmsSrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState dmsSrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput dmsSrfEmissData_start_, dmsSrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput dmsSrfEmissData_out_;
+
+  // Structures to store the data used for interpolation
+  std::shared_ptr<AbstractRemapper> so2SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> so2SrfEmissDataReader_;
-
   srfEmissFunc::srfEmissTimeState so2SrfEmissTimeState_;
-
-  srfEmissFunc::srfEmissInput so2SrfEmissData_start_;
-  srfEmissFunc::srfEmissInput so2SrfEmissData_end_;
+  srfEmissFunc::srfEmissInput so2SrfEmissData_start_, so2SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput so2SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> bc_a4SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> bc_a4SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState bc_a4SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput bc_a4SrfEmissData_start_, bc_a4SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput bc_a4SrfEmissData_out_;
 
 };  // MAMSrfOnlineEmiss
 

@@ -30,6 +30,25 @@ void MAMSrfOnlineEmiss::set_grids(
   std::string srf_map_file = m_params.get<std::string>("srf_remap_file");
 
   //--------------------------------------------------------------------
+  // Init dms srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string dms_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_DMS");
+
+  // Number of sectors
+  static constexpr int dms_num_sectors = 1;
+
+  // Sector names in file
+  std::array<std::string, dms_num_sectors> dms_sectors = {"DMS"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, dms_num_sectors, grid_, dms_data_file, dms_sectors, srf_map_file,
+      // output
+      dmsSrfEmissHorizInterp_, dmsSrfEmissData_start_, dmsSrfEmissData_end_,
+      dmsSrfEmissData_out_, dmsSrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
   // Init so2 srf emiss data structures
   //--------------------------------------------------------------------
   // File name
@@ -48,6 +67,27 @@ void MAMSrfOnlineEmiss::set_grids(
       // output
       so2SrfEmissHorizInterp_, so2SrfEmissData_start_, so2SrfEmissData_end_,
       so2SrfEmissData_out_, so2SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init bc_a4 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string bc_a4_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_bc_a4");
+
+  // Number of sectors
+  static constexpr int bc_a4_num_sectors = 8;
+
+  // Sector names in file
+  std::array<std::string, bc_a4_num_sectors> bc_a4_sectors = {
+      "AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, bc_a4_num_sectors, grid_, bc_a4_data_file, bc_a4_sectors,
+      srf_map_file,
+      // output
+      bc_a4SrfEmissHorizInterp_, bc_a4SrfEmissData_start_,
+      bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_, bc_a4SrfEmissDataReader_);
 
 }  // set_grid
 
@@ -73,28 +113,39 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
       used_mem == requested_buffer_size_in_bytes(),
       "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
 }
-// =========================================================================================
-// // TODO: comments!
-// void MAMSrfOnlineEmiss::set_emissions_names() {} \\ end set_emissions_names()
-// =========================================================================================
-// inline void set_emissions_layouts() {
 
-// } // end set_emissions_layouts()
 // =========================================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
-  // Load the first month into srfEmiss_end.
-  // Note: At the first time step, the data will be moved into srfEmiss_beg,
-  //       and srfEmiss_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month() - 1;  // 0-based
-  for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI-bef:"
-              << so2SrfEmissData_end_.data.emiss_sectors.at(1)(i) << std::endl;
-  }
+
+  // Load the first month into srfEmiss_end.
+
+  // Note: At the first time step, the data will be moved into srfEmiss_beg,
+  // and srfEmiss_end will be reloaded from file with the new month.
+
+  //--------------------------------------------------------------------
+  // Update dms srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      dmsSrfEmissDataReader_, timestamp(), curr_month, *dmsSrfEmissHorizInterp_,
+      dmsSrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update so2 srf emiss from file
+  //--------------------------------------------------------------------
   srfEmissFunc::update_srfEmiss_data_from_file(
       so2SrfEmissDataReader_, timestamp(), curr_month, *so2SrfEmissHorizInterp_,
       so2SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update bc_a4 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      bc_a4SrfEmissDataReader_, timestamp(), curr_month,
+      *bc_a4SrfEmissHorizInterp_, bc_a4SrfEmissData_end_);
+
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << so2SrfEmissData_end_.data.emiss_sectors[2](i)
+    std::cout << "BALLI:" << bc_a4SrfEmissData_end_.data.emiss_sectors[7](i)
               << ":" << i << std::endl;
   }
 
@@ -111,9 +162,28 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
   // Gather time and state information for interpolation
   auto ts = timestamp() + dt;
-  // Update the srfEmissTimeState to reflect the current time, note the addition
-  // of dt
+
+  //--------------------------------------------------------------------
+  // Interpolate dms srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  dmsSrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      dmsSrfEmissDataReader_, ts, *dmsSrfEmissHorizInterp_,
+      dmsSrfEmissTimeState_, dmsSrfEmissData_start_, dmsSrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(dmsSrfEmissTimeState_, dmsSrfEmissData_start_,
+                              dmsSrfEmissData_end_, dmsSrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate so2 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
   so2SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
   // Update time state and if the month has changed, update the data.
   srfEmissFunc::update_srfEmiss_timestate(
       so2SrfEmissDataReader_, ts, *so2SrfEmissHorizInterp_,
@@ -122,8 +192,25 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Call the main srfEmiss routine to get interpolated aerosol forcings.
   srfEmissFunc::srfEmiss_main(so2SrfEmissTimeState_, so2SrfEmissData_start_,
                               so2SrfEmissData_end_, so2SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate bc_a4 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  bc_a4SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      bc_a4SrfEmissDataReader_, ts, *bc_a4SrfEmissHorizInterp_,
+      bc_a4SrfEmissTimeState_, bc_a4SrfEmissData_start_,
+      bc_a4SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(bc_a4SrfEmissTimeState_, bc_a4SrfEmissData_start_,
+                              bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_);
+
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << so2SrfEmissData_out_.emiss_sectors[0](i) << ":"
+    std::cout << "BALLI:" << dmsSrfEmissData_out_.emiss_sectors[0](i) << ":"
               << i << std::endl;
   }
 

@@ -129,6 +129,7 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
       accum +=
           linear_interp(data_beg.data.emiss_sectors[i](icol),
                         data_end.data.emiss_sectors[i](icol), delta_t_fraction);
+      if(icol == 19) std::cout << "accum:" << accum << std::endl;
     }
     data_out.emiss_sectors[0](icol) = accum;
   }
