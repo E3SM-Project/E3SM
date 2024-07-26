@@ -123,7 +123,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(so2SrfEmissTimeState_, so2SrfEmissData_start_,
                               so2SrfEmissData_end_, so2SrfEmissData_out_);
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << so2SrfEmissData_out_.emiss_sectors[2](i) << ":"
+    std::cout << "BALLI:" << so2SrfEmissData_out_.emiss_sectors[0](i) << ":"
               << i << std::endl;
   }
 

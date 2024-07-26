@@ -123,25 +123,40 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
                        std::to_string(t_beg) +
                        "\n  delta_t: " + std::to_string(delta_t) + "\n");
 
-  using KT = ekat::KokkosTypes<DefaultDevice>;
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
-          data_beg.data.ncols, 1);
-  for(int i = 0; i < data_beg.data.nsectors; ++i) {
-    Kokkos::parallel_for(
-        "srfEmiss_time_interp_loop", policy,
-        KOKKOS_LAMBDA(
-            const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
-          const int icol = team.league_rank();
-          // We have only 2d vars, so we need to make one team member handle it.
-          Kokkos::single(Kokkos::PerTeam(team), [&] {
-            data_out.emiss_sectors[i](icol) = linear_interp(
-                data_beg.data.emiss_sectors[i](icol),
-                data_end.data.emiss_sectors[i](icol), delta_t_fraction);
-          });
-        });
+  for(int icol = 0; icol < data_beg.data.ncols; ++icol) {
+    Real accum = 0;
+    for(int i = 0; i < data_beg.data.nsectors; ++i) {
+      accum +=
+          linear_interp(data_beg.data.emiss_sectors[i](icol),
+                        data_end.data.emiss_sectors[i](icol), delta_t_fraction);
+    }
+    data_out.emiss_sectors[0](icol) = accum;
   }
-  Kokkos::fence();
+
+  /*const auto policy = ESU::get_default_team_policy(data_beg.data.ncols, 1);
+
+  Kokkos::parallel_for(
+      "srfEmiss_time_interp_loop", policy,
+      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
+        const int icol = team.league_rank();
+        double result;
+
+    Kokkos::parallel_reduce("Loop1", N, KOKKOS_LAMBDA (const int& i, double&
+  lsum) { lsum += 1.0*i;
+    }, result);
+
+        Kokkos::parallel_reduce("srfEmiss_reduction_loop", N, KOKKOS_LAMBDA
+  (const int& i, double& lsum) { for(int i = 0; i < data_beg.data.nsectors; ++i)
+  { Kokkos::single(Kokkos::PerTeam(team), [&] { accum[icol] = accum[icol] +
+  linear_interp(data_beg.data.emiss_sectors[i](icol),
+                                    data_end.data.emiss_sectors[i](icol),
+                                    delta_t_fraction);
+
+          });
+        }
+        data_out.emiss_sectors[0](icol) = accum[icol];
+      });
+  Kokkos::fence();*/
 }  // perform_time_interpolation
 
 template <typename S, typename D>
@@ -271,7 +286,7 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   // Initialize the size of start/end/out data structures
   SrfEmissData_start = srfEmissInput(ncol, num_sectors);
   SrfEmissData_end   = srfEmissInput(ncol, num_sectors);
-  SrfEmissData_out.init(ncol, num_sectors, true);
+  SrfEmissData_out.init(ncol, 1, true);
 
   // Create reader (an AtmosphereInput object)
   SrfEmissDataReader =
