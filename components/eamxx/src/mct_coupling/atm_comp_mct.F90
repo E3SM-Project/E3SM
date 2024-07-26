@@ -25,7 +25,9 @@ module atm_comp_mct
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
   public :: atm_init_hip_mct
+#endif
   public :: atm_init_mct
   public :: atm_run_mct
   public :: atm_final_mct
@@ -47,6 +49,7 @@ module atm_comp_mct
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
   !===============================================================================
   subroutine atm_init_hip_mct()
     use scream_f2c_mod, only: scream_init_hip_atm
@@ -54,6 +57,7 @@ CONTAINS
     call scream_init_hip_atm()
 
   end subroutine atm_init_hip_mct
+#endif
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )

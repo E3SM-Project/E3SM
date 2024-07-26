@@ -21,7 +21,9 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
 
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
 #include <hip/hip_runtime.h>
+#endif
 
 // Anonymous namespace, for some utility functions
 namespace {
@@ -204,9 +206,11 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
   });
 }
 
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
 void scream_init_hip_atm () {
     hipInit(0);
 }
+#endif
 
 void scream_init_atm (const char* caseid,
                       const char* hostname,
