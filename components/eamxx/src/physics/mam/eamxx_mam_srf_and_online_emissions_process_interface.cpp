@@ -248,9 +248,17 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Note: At the first time step, the data will be moved into srfEmiss_beg,
   //       and srfEmiss_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month() - 1;  // 0-based
+  for(int i = 19; i < 30; ++i) {
+    std::cout << "BALLI-bef:" << srfEmissData_end_.data.emiss_components[1](i)
+              << std::endl;
+  }
   srfEmissFunc::update_srfEmiss_data_from_file(
       srfEmissDataReader_, timestamp(), curr_month, *srfEmissHorizInterp_,
       srfEmissData_end_);
+  for(int i = 19; i < 30; ++i) {
+    std::cout << "BALLI:" << srfEmissData_end_.data.emiss_components[1](i)
+              << ":" << i << std::endl;
+  }
 
   // set up our preprocess functor
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
@@ -427,10 +435,13 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
       srfEmissData_start_, srfEmissData_end_);
 
   // Call the main srfEmiss routine to get interpolated aerosol forcings.
-  // const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();
   srfEmissFunc::srfEmiss_main(srfEmissTimeState_, srfEmissData_start_,
                               srfEmissData_end_, srfEmiss_temp_,
                               srfEmissData_out_);
+  for(int i = 19; i < 30; ++i) {
+    std::cout << "BALLI:" << srfEmissData_out_.emiss_components[1](i) << ":"
+              << i << std::endl;
+  }
 
   /* Rough notes:
 

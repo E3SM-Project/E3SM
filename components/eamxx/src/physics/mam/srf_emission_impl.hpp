@@ -34,17 +34,16 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(
-        ncols_data <= ncols_model,
-        "Error! We do not allow to coarsen srfEmiss data to fit the "
-        "model. We only allow\n"
-        "       srfEmiss data to be at the same or coarser resolution "
-        "as the model.\n");
+    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
+                     "Error! We do not allow to coarsen srfEmiss data to fit "
+                     "the model. We only allow\n"
+                     "srfEmiss data to be at the same or coarser resolution as "
+                     "the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG(
         map_file != "",
         "ERROR: srfEmiss data is on a different grid than the model one,\n"
-        "       but srfEmiss_remap_file is missing from srfEmiss parameter "
+        "but srfEmiss_remap_file is missing from srfEmiss parameter "
         "list.");
 
     remapper =
@@ -79,13 +78,13 @@ std::shared_ptr<AtmosphereInput>
 srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &srfEmiss_data_file) {
-  std::vector<Field> io_fields;
+  std::vector<Field> emiss_components;
   for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
-    io_fields.push_back(horiz_remapper->get_src_field(i));
+    emiss_components.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
-                                           io_fields, true);
+                                           emiss_components, true);
 }  // create_srfEmiss_data_reader
 
 template <typename S, typename D>
@@ -138,7 +137,11 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
 
         // We have only 2d vars, so we need to make one team member handle it.
         Kokkos::single(Kokkos::PerTeam(team), [&] {
-          data_out.AGR(icol) =
+          data_out.emiss_components[1](icol) = linear_interp(
+              data_beg.data.emiss_components[1](icol),
+              data_end.data.emiss_components[1](icol), delta_t_fraction);
+
+          /*data_out.AGR(icol) =
               linear_interp(data_beg.data.AGR(icol), data_end.data.AGR(icol),
                             delta_t_fraction);
           data_out.RCO(icol) =
@@ -155,7 +158,7 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
                             delta_t_fraction);
           data_out.WST(icol) =
               linear_interp(data_beg.data.WST(icol), data_end.data.WST(icol),
-                            delta_t_fraction);
+                            delta_t_fraction);*/
         });
       });
   Kokkos::fence();
@@ -216,13 +219,14 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
 
-  auto agr = srfEmiss_horiz_interp.get_tgt_field(0).get_view<const Real *>();
-  auto rco = srfEmiss_horiz_interp.get_tgt_field(1).get_view<const Real *>();
-  auto shp = srfEmiss_horiz_interp.get_tgt_field(2).get_view<const Real *>();
-  auto slv = srfEmiss_horiz_interp.get_tgt_field(3).get_view<const Real *>();
-  auto tra = srfEmiss_horiz_interp.get_tgt_field(4).get_view<const Real *>();
-  auto wst = srfEmiss_horiz_interp.get_tgt_field(5).get_view<const Real *>();
-
+  // Get pointers for the srfEmiss_input
+  /*auto srfEmiss_data_agr = ekat::scalarize(srfEmiss_input.data.AGR);
+  auto srfEmiss_data_rco = ekat::scalarize(srfEmiss_input.data.RCO);
+  auto srfEmiss_data_shp = ekat::scalarize(srfEmiss_input.data.SHP);
+  auto srfEmiss_data_slv = ekat::scalarize(srfEmiss_input.data.SLV);
+  auto srfEmiss_data_tra = ekat::scalarize(srfEmiss_input.data.TRA);
+  auto srfEmiss_data_wst = ekat::scalarize(srfEmiss_input.data.WST);
+*/
   const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
                            .get_header()
                            .get_identifier()
@@ -230,12 +234,17 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
   const int ncols = layout.dim(COL);
 
-  auto srfEmiss_data_agr = ekat::scalarize(srfEmiss_input.data.AGR);
-  auto srfEmiss_data_rco = ekat::scalarize(srfEmiss_input.data.RCO);
-  auto srfEmiss_data_shp = ekat::scalarize(srfEmiss_input.data.SHP);
-  auto srfEmiss_data_slv = ekat::scalarize(srfEmiss_input.data.SLV);
-  auto srfEmiss_data_tra = ekat::scalarize(srfEmiss_input.data.TRA);
-  auto srfEmiss_data_wst = ekat::scalarize(srfEmiss_input.data.WST);
+  // Read fields from the file
+  for(int i = 0; i < 6; ++i) {
+    auto aa = srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
+    Kokkos::deep_copy(srfEmiss_input.data.emiss_components[i], aa);
+  }
+  /*auto agr = srfEmiss_horiz_interp.get_tgt_field(0).get_view<const Real *>();
+  auto rco = srfEmiss_horiz_interp.get_tgt_field(1).get_view<const Real *>();
+  auto shp = srfEmiss_horiz_interp.get_tgt_field(2).get_view<const Real *>();
+  auto slv = srfEmiss_horiz_interp.get_tgt_field(3).get_view<const Real *>();
+  auto tra = srfEmiss_horiz_interp.get_tgt_field(4).get_view<const Real *>();
+  auto wst = srfEmiss_horiz_interp.get_tgt_field(5).get_view<const Real *>();
 
   auto copy_and_pad = KOKKOS_LAMBDA(const Member &team) {
     int icol                = team.league_rank();
@@ -246,6 +255,9 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     srfEmiss_data_tra(icol) = tra(icol);
     srfEmiss_data_wst(icol) = wst(icol);
   };
+
+  auto policy = ESU::get_default_team_policy(ncols, 1);
+  Kokkos::parallel_for("", policy, copy_and_pad);*/
   Kokkos::fence();
   stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::copy_and_pad");
 

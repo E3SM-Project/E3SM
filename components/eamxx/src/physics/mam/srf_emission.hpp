@@ -31,24 +31,28 @@ struct srfEmissFunctions {
       ncols = ncol_;
 
       if(allocate) {
-        AGR = view_1d("", ncols);
+        /*AGR = view_1d("", ncols);
         RCO = view_1d("", ncols);
         SHP = view_1d("", ncols);
         SLV = view_1d("", ncols);
         TRA = view_1d("", ncols);
-        WST = view_1d("", ncols);
+        WST = view_1d("", ncols);*/
+        for(auto &component : emiss_components) {
+          component = view_1d("", ncols);
+        }
       }
-    }
+    }  // srfEmissData init
 
     // Basic spatial dimensions of the data
     int ncols;
+    std::array<view_1d, 6> emiss_components;
 
-    view_1d AGR;
+    /*view_1d AGR;
     view_1d RCO;
     view_1d SHP;
     view_1d SLV;
     view_1d TRA;
-    view_1d WST;
+    view_1d WST;*/
   };  // srfEmissData
 
   struct srfEmissInput {
