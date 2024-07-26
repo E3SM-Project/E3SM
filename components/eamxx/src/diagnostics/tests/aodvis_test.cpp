@@ -109,7 +109,6 @@ TEST_CASE("aodvis") {
 
     // Check result
     tau.sync_to_host();
-    sunlit.sync_to_host();
     diag->get_diagnostic().sync_to_host();
 
     const auto tau_h  = tau.get_view<const Real ***, Host>();
