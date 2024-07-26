@@ -139,6 +139,48 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   srfEmissFunc::srfEmissInput bc_a4SrfEmissData_start_, bc_a4SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput bc_a4SrfEmissData_out_;
 
+  std::shared_ptr<AbstractRemapper> num_a1SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> num_a1SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState num_a1SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput num_a1SrfEmissData_start_,
+      num_a1SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput num_a1SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> num_a2SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> num_a2SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState num_a2SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput num_a2SrfEmissData_start_,
+      num_a2SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput num_a2SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> num_a4SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> num_a4SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState num_a4SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput num_a4SrfEmissData_start_,
+      num_a4SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput num_a4SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> pom_a4SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> pom_a4SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState pom_a4SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput pom_a4SrfEmissData_start_,
+      pom_a4SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput pom_a4SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> so4_a1SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> so4_a1SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState so4_a1SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput so4_a1SrfEmissData_start_,
+      so4_a1SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput so4_a1SrfEmissData_out_;
+
+  std::shared_ptr<AbstractRemapper> so4_a2SrfEmissHorizInterp_;
+  std::shared_ptr<AtmosphereInput> so4_a2SrfEmissDataReader_;
+  srfEmissFunc::srfEmissTimeState so4_a2SrfEmissTimeState_;
+  srfEmissFunc::srfEmissInput so4_a2SrfEmissData_start_,
+      so4_a2SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput so4_a2SrfEmissData_out_;
+
 };  // MAMSrfOnlineEmiss
 
 }  // namespace scream

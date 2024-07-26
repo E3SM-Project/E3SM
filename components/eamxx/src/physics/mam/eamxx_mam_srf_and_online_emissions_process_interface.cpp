@@ -89,6 +89,140 @@ void MAMSrfOnlineEmiss::set_grids(
       bc_a4SrfEmissHorizInterp_, bc_a4SrfEmissData_start_,
       bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_, bc_a4SrfEmissDataReader_);
 
+  //--------------------------------------------------------------------
+  // Init num_a1 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string num_a1_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_num_a1");
+
+  // Number of sectors
+  static constexpr int num_a1_num_sectors = 4;
+
+  // Sector names in file
+  std::array<std::string, num_a1_num_sectors> num_a1_sectors = {
+      "num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV", "num_a1_SO4_WST"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, num_a1_num_sectors, grid_, num_a1_data_file, num_a1_sectors,
+      srf_map_file,
+      // output
+      num_a1SrfEmissHorizInterp_, num_a1SrfEmissData_start_,
+      num_a1SrfEmissData_end_, num_a1SrfEmissData_out_,
+      num_a1SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init num_a2 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string num_a2_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_num_a2");
+
+  // Number of sectors
+  static constexpr int num_a2_num_sectors = 2;
+
+  // Sector names in file
+  std::array<std::string, num_a2_num_sectors> num_a2_sectors = {
+      "num_a2_SO4_RCO", "num_a2_SO4_TRA"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, num_a2_num_sectors, grid_, num_a2_data_file, num_a2_sectors,
+      srf_map_file,
+      // output
+      num_a2SrfEmissHorizInterp_, num_a2SrfEmissData_start_,
+      num_a2SrfEmissData_end_, num_a2SrfEmissData_out_,
+      num_a2SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init num_a4 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string num_a4_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_num_a4");
+
+  // Number of sectors
+  static constexpr int num_a4_num_sectors = 16;
+
+  // Sector names in file
+  std::array<std::string, num_a4_num_sectors> num_a4_sectors = {
+      "num_a1_BC_AGR",  "num_a1_BC_ENE",  "num_a1_BC_IND",  "num_a1_BC_RCO",
+      "num_a1_BC_SHP",  "num_a1_BC_SLV",  "num_a1_BC_TRA",  "num_a1_BC_WST",
+      "num_a1_POM_AGR", "num_a1_POM_ENE", "num_a1_POM_IND", "num_a1_POM_RCO",
+      "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, num_a4_num_sectors, grid_, num_a4_data_file, num_a4_sectors,
+      srf_map_file,
+      // output
+      num_a4SrfEmissHorizInterp_, num_a4SrfEmissData_start_,
+      num_a4SrfEmissData_end_, num_a4SrfEmissData_out_,
+      num_a4SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init pom_a4 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string pom_a4_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_pom_a4");
+
+  // Number of sectors
+  static constexpr int pom_a4_num_sectors = 8;
+
+  // Sector names in file
+  std::array<std::string, pom_a4_num_sectors> pom_a4_sectors = {
+      "AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, pom_a4_num_sectors, grid_, pom_a4_data_file, pom_a4_sectors,
+      srf_map_file,
+      // output
+      pom_a4SrfEmissHorizInterp_, pom_a4SrfEmissData_start_,
+      pom_a4SrfEmissData_end_, pom_a4SrfEmissData_out_,
+      pom_a4SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init so4_a1 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string so4_a1_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_so4_a1");
+
+  // Number of sectors
+  static constexpr int so4_a1_num_sectors = 4;
+
+  // Sector names in file
+  std::array<std::string, so4_a1_num_sectors> so4_a1_sectors = {"AGR", "SHP",
+                                                                "SLV", "WST"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, so4_a1_num_sectors, grid_, so4_a1_data_file, so4_a1_sectors,
+      srf_map_file,
+      // output
+      so4_a1SrfEmissHorizInterp_, so4_a1SrfEmissData_start_,
+      so4_a1SrfEmissData_end_, so4_a1SrfEmissData_out_,
+      so4_a1SrfEmissDataReader_);
+
+  //--------------------------------------------------------------------
+  // Init so4_a2 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
+  std::string so4_a2_data_file =
+      m_params.get<std::string>("srf_emis_specifier_for_so4_a2");
+
+  // Number of sectors
+  static constexpr int so4_a2_num_sectors = 2;
+
+  // Sector names in file
+  std::array<std::string, so4_a2_num_sectors> so4_a2_sectors = {"RCO", "TRA"};
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, so4_a2_num_sectors, grid_, so4_a2_data_file, so4_a2_sectors,
+      srf_map_file,
+      // output
+      so4_a2SrfEmissHorizInterp_, so4_a2SrfEmissData_start_,
+      so4_a2SrfEmissData_end_, so4_a2SrfEmissData_out_,
+      so4_a2SrfEmissDataReader_);
+
 }  // set_grid
 
 // =========================================================================================
@@ -144,6 +278,47 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       bc_a4SrfEmissDataReader_, timestamp(), curr_month,
       *bc_a4SrfEmissHorizInterp_, bc_a4SrfEmissData_end_);
 
+  //--------------------------------------------------------------------
+  // Update num_a1 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      num_a1SrfEmissDataReader_, timestamp(), curr_month,
+      *num_a1SrfEmissHorizInterp_, num_a1SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update num_a2 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      num_a2SrfEmissDataReader_, timestamp(), curr_month,
+      *num_a2SrfEmissHorizInterp_, num_a2SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update num_a4 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      num_a4SrfEmissDataReader_, timestamp(), curr_month,
+      *num_a4SrfEmissHorizInterp_, num_a4SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update pom_a4 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      pom_a4SrfEmissDataReader_, timestamp(), curr_month,
+      *pom_a4SrfEmissHorizInterp_, pom_a4SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update so4_a1 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      so4_a1SrfEmissDataReader_, timestamp(), curr_month,
+      *so4_a1SrfEmissHorizInterp_, so4_a1SrfEmissData_end_);
+
+  //--------------------------------------------------------------------
+  // Update so4_a2 srf emiss from file
+  //--------------------------------------------------------------------
+  srfEmissFunc::update_srfEmiss_data_from_file(
+      so4_a2SrfEmissDataReader_, timestamp(), curr_month,
+      *so4_a2SrfEmissHorizInterp_, so4_a2SrfEmissData_end_);
   for(int i = 19; i < 30; ++i) {
     std::cout << "BALLI:" << bc_a4SrfEmissData_end_.data.emiss_sectors[7](i)
               << ":" << i << std::endl;
@@ -209,8 +384,110 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(bc_a4SrfEmissTimeState_, bc_a4SrfEmissData_start_,
                               bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_);
 
+  //--------------------------------------------------------------------
+  // Interpolate num_a1 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  num_a1SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      num_a1SrfEmissDataReader_, ts, *num_a1SrfEmissHorizInterp_,
+      num_a1SrfEmissTimeState_, num_a1SrfEmissData_start_,
+      num_a1SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(num_a1SrfEmissTimeState_,
+                              num_a1SrfEmissData_start_,
+                              num_a1SrfEmissData_end_, num_a1SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate num_a2 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  num_a2SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      num_a2SrfEmissDataReader_, ts, *num_a2SrfEmissHorizInterp_,
+      num_a2SrfEmissTimeState_, num_a2SrfEmissData_start_,
+      num_a2SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(num_a2SrfEmissTimeState_,
+                              num_a2SrfEmissData_start_,
+                              num_a2SrfEmissData_end_, num_a2SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate num_a4 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  num_a4SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      num_a4SrfEmissDataReader_, ts, *num_a4SrfEmissHorizInterp_,
+      num_a4SrfEmissTimeState_, num_a4SrfEmissData_start_,
+      num_a4SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(num_a4SrfEmissTimeState_,
+                              num_a4SrfEmissData_start_,
+                              num_a4SrfEmissData_end_, num_a4SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate pom_a4 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  pom_a4SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      pom_a4SrfEmissDataReader_, ts, *pom_a4SrfEmissHorizInterp_,
+      pom_a4SrfEmissTimeState_, pom_a4SrfEmissData_start_,
+      pom_a4SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(pom_a4SrfEmissTimeState_,
+                              pom_a4SrfEmissData_start_,
+                              pom_a4SrfEmissData_end_, pom_a4SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate so4_a1 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  so4_a1SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      so4_a1SrfEmissDataReader_, ts, *so4_a1SrfEmissHorizInterp_,
+      so4_a1SrfEmissTimeState_, so4_a1SrfEmissData_start_,
+      so4_a1SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(so4_a1SrfEmissTimeState_,
+                              so4_a1SrfEmissData_start_,
+                              so4_a1SrfEmissData_end_, so4_a1SrfEmissData_out_);
+
+  //--------------------------------------------------------------------
+  // Interpolate so4_a2 srf emiss data
+  //--------------------------------------------------------------------
+  // Update srfEmissTimeState, note the addition of dt
+  so4_a2SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  srfEmissFunc::update_srfEmiss_timestate(
+      so4_a2SrfEmissDataReader_, ts, *so4_a2SrfEmissHorizInterp_,
+      so4_a2SrfEmissTimeState_, so4_a2SrfEmissData_start_,
+      so4_a2SrfEmissData_end_);
+
+  // Call the main srfEmiss routine to get interpolated aerosol forcings.
+  srfEmissFunc::srfEmiss_main(so4_a2SrfEmissTimeState_,
+                              so4_a2SrfEmissData_start_,
+                              so4_a2SrfEmissData_end_, so4_a2SrfEmissData_out_);
+
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << dmsSrfEmissData_out_.emiss_sectors[0](i) << ":"
+    std::cout << "BALLI:" << so4_a2SrfEmissData_out_.emiss_sectors[0](i) << ":"
               << i << std::endl;
   }
 
