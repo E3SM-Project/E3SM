@@ -164,17 +164,35 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Creating a Linoz reader and setting Linoz parameters involves reading data from a file
   // and configuring the necessary parameters for the Linoz model.
   {
-  // std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
-  std::string linoz_file_name =
+    // std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
+    std::string linoz_file_name =
       m_params.get<std::string>("mam4_linoz_file_name");
+    std::string spa_map_file="";
+    std::vector<std::string> var_names{"o3_clim", "o3col_clim", "t_clim", "PmL_clim", "dPmL_dO3", "dPmL_dT", "dPmL_dO3col","cariolle_pscs"};
+    bool has_ps=false;
+    LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,linoz_file_name,spa_map_file, var_names, has_ps);
+    LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(LinozHorizInterp_,linoz_file_name);
+    linoz_data_out_.set_has_ps(has_ps);
+     if (has_ps) {
+       linoz_data_out_.set_hyam_n_hybm(LinozHorizInterp_,linoz_file_name);
+     }
+    linoz_data_beg_.set_has_ps(has_ps);
+    linoz_data_end_.set_has_ps(has_ps);
+
   }
   {
      std::string my_file="oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc";
      std::string spa_map_file="";
      std::vector<std::string> var_names{"O3","HO2","NO3","OH"};
-     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names);
+     bool has_ps=false;
+     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names, has_ps);
      TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,my_file);
-     tracer_data_out_.set_hyam_n_hybm(TracerHorizInterp_,my_file);
+     tracer_data_out_.set_has_ps(has_ps);
+     if (has_ps) {
+       tracer_data_out_.set_hyam_n_hybm(TracerHorizInterp_,my_file);
+     }
+     tracer_data_beg_.set_has_ps(has_ps);
+     tracer_data_end_.set_has_ps(has_ps);
   }
 
 
@@ -339,29 +357,59 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  const int nvars = 4;
-  const auto io_grid = TracerHorizInterp_->get_src_grid();
-  const int num_cols_io = io_grid->get_num_local_dofs(); // Number of columns on this rank
-  const int num_levs_io = io_grid->get_num_vertical_levels();  // Number of levels per column
 
-  tracer_data_end_.init(num_cols_io, num_levs_io, nvars);
-  scream::mam_coupling::update_tracer_data_from_file(TracerDataReader_,
-  timestamp(),curr_month, *TracerHorizInterp_, tracer_data_end_);
+  {
+    const int nvars = 4;
+    const auto io_grid = TracerHorizInterp_->get_src_grid();
+    const int num_cols_io = io_grid->get_num_local_dofs(); // Number of columns on this rank
+    const int num_levs_io = io_grid->get_num_vertical_levels();  // Number of levels per column
 
-  tracer_data_beg_.init(num_cols_io, num_levs_io, nvars);
-  tracer_data_beg_.allocate_data_views();
-  tracer_data_beg_.allocate_ps();
+    tracer_data_end_.init(num_cols_io, num_levs_io, nvars);
+    scream::mam_coupling::update_tracer_data_from_file(TracerDataReader_,
+    timestamp(),curr_month, *TracerHorizInterp_, tracer_data_end_);
 
-  tracer_data_out_.init(num_cols_io, num_levs_io, nvars);
-  tracer_data_out_.allocate_data_views();
-  tracer_data_out_.allocate_ps();
+    tracer_data_beg_.init(num_cols_io, num_levs_io, nvars);
+    tracer_data_beg_.allocate_data_views();
+    tracer_data_beg_.allocate_ps();
 
-  p_src_invariant_ = view_2d("pressure_src_invariant",num_cols_io, num_levs_io );
+    tracer_data_out_.init(num_cols_io, num_levs_io, nvars);
+    tracer_data_out_.allocate_data_views();
+    tracer_data_out_.allocate_ps();
 
-  for (int ivar = 0; ivar< nvars; ++ivar) {
-    cnst_offline_[ivar] = view_2d("cnst_offline_",ncol_, nlev_ );
+    p_src_invariant_ = view_2d("pressure_src_invariant",num_cols_io, num_levs_io );
+
+    for (int ivar = 0; ivar< nvars; ++ivar) {
+      cnst_offline_[ivar] = view_2d("cnst_offline_",ncol_, nlev_ );
+    }
   }
+#if 1
+  // linoz reader
+  {
+    const auto io_grid_linoz = LinozHorizInterp_->get_src_grid();
+    const int num_cols_io_linoz = io_grid_linoz->get_num_local_dofs(); // Number of columns on this rank
+    const int num_levs_io_linoz = io_grid_linoz->get_num_vertical_levels();  // Number of levels per column
+    const int nvars = 8;
+    linoz_data_end_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
+    scream::mam_coupling::update_tracer_data_from_file(LinozDataReader_,
+    timestamp(),curr_month, *LinozHorizInterp_, linoz_data_end_);
 
+    linoz_data_beg_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
+    linoz_data_beg_.allocate_data_views();
+    if (linoz_data_beg_.has_ps){
+      linoz_data_beg_.allocate_ps();
+    }
+
+
+    linoz_data_out_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
+    linoz_data_out_.allocate_data_views();
+    if (linoz_data_out_.has_ps)
+    {
+      linoz_data_out_.allocate_ps();
+    }
+
+    p_src_linoz_ = view_2d("pressure_src_invariant",num_cols_io_linoz, num_levs_io_linoz );
+  }
+#endif
 
 }
 
@@ -392,6 +440,18 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto linoz_dPmL_dO3col  = buffer_.scratch[6]; // sensitivity of P minus L to overhead O3 column [vmr/DU]
   auto linoz_cariolle_pscs = buffer_.scratch[7]; // Cariolle parameter for PSC loss of ozone [1/s]
 
+  view_2d linoz_output[8];
+  linoz_output[0] = linoz_o3_clim;
+  linoz_output[1] = linoz_o3col_clim;
+  linoz_output[2] = linoz_t_clim;
+  linoz_output[3] = linoz_PmL_clim;
+  linoz_output[4] = linoz_dPmL_dO3;
+  linoz_output[5] = linoz_dPmL_dT;
+  linoz_output[6] = linoz_dPmL_dO3col;
+  linoz_output[7] = linoz_cariolle_pscs;
+
+
+
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -416,6 +476,18 @@ void MAMMicrophysics::run_impl(const double dt) {
                       p_src_invariant_,
                       dry_atm_.p_mid,
                       cnst_offline_);
+
+   //
+   scream::mam_coupling::advance_tracer_data(LinozDataReader_,
+                      *LinozHorizInterp_,
+                      ts,
+                      linoz_time_state_,
+                      linoz_data_beg_,
+                      linoz_data_end_,
+                      linoz_data_out_,
+                      p_src_linoz_,
+                      dry_atm_.p_mid,
+                      linoz_output);
 
 
   const_view_1d &col_latitudes = col_latitudes_;

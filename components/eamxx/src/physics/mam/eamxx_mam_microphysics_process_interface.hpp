@@ -236,6 +236,7 @@ private_except_cuda:
   view_3d photo_rates_;
   view_2d lwc_;
 
+  // invariants members
   std::shared_ptr<AtmosphereInput>  TracerDataReader_;
   std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
   mam_coupling::TracerData tracer_data_end_;
@@ -243,6 +244,16 @@ private_except_cuda:
   mam_coupling::TracerData tracer_data_out_;
   view_2d p_src_invariant_;
   view_2d cnst_offline_[4];
+
+  // linoz reader
+  std::shared_ptr<AtmosphereInput>  LinozDataReader_;
+  std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
+  mam_coupling::TracerData linoz_data_end_;
+  mam_coupling::TracerData linoz_data_beg_;
+  mam_coupling::TracerData linoz_data_out_;
+  view_2d p_src_linoz_;
+
+
 
 
 

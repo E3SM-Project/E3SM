@@ -22,7 +22,7 @@ namespace scream::mam_coupling {
   using view_1d_host    = typename KT::view_1d<Real>::HostMirror;
 
   constexpr int NVARS_LINOZ=8;
-  constexpr int MAX_NVARS_TRACER=5;
+  constexpr int MAX_NVARS_TRACER=10;
   const std::vector<std::string>
   linoz_var_names={"o3_clim", "o3col_clim",
                    "t_clim", "PmL_clim", "dPmL_dO3",
@@ -87,6 +87,7 @@ namespace scream::mam_coupling {
     view_1d ps;
     const_view_1d hyam;
     const_view_1d hybm;
+    bool has_ps{false};
 
     void allocate_data_views()
     {
@@ -100,10 +101,18 @@ namespace scream::mam_coupling {
       }
     } //allocate_data_views
 
+    void set_has_ps(const bool has_ps_in)
+    {
+      has_ps=has_ps_in;
+    }
+
     void allocate_ps()
     {
       EKAT_REQUIRE_MSG (ncol_ != int(-1),
       "Error! ncols has not been set. \n");
+      EKAT_REQUIRE_MSG (has_ps,
+      "Error! file does have the PS variable. \n");
+
       ps = view_1d("ps",ncol_);
     }
 
@@ -118,12 +127,17 @@ namespace scream::mam_coupling {
 
     void set_data_ps(const view_1d& ps_in)
     {
+      EKAT_REQUIRE_MSG (has_ps,
+      "Error! file does have the PS variable. \n");
       ps = ps_in;
     }
 
     void set_hyam_n_hybm(const std::shared_ptr<AbstractRemapper>& horiz_remapper,
                               const std::string& tracer_file_name)
     {
+      std::cout << has_ps<<" has_ps" << "\n";
+      EKAT_REQUIRE_MSG (has_ps,
+      "Error! file does have the PS variable. \n");
 
       // Read in hyam/hybm in start/end data, and pad them
       auto nondim = ekat::units::Units::nondimensional();
@@ -609,7 +623,8 @@ create_horiz_remapper (
     const std::shared_ptr<const AbstractGrid>& model_grid,
     const std::string& trace_data_file,
     const std::string& map_file,
-    std::vector<std::string>& var_names
+    const std::vector<std::string>& var_names,
+    bool& has_ps
     )
 {
   using namespace ShortFieldTagsNames;
@@ -617,6 +632,7 @@ create_horiz_remapper (
   scorpio::register_file(trace_data_file,scorpio::Read);
   const int nlevs_data = scorpio::get_dimlen(trace_data_file,"lev");
   const int ncols_data = scorpio::get_dimlen(trace_data_file,"ncol");
+  has_ps = scorpio::has_var(trace_data_file,"PS");
   scorpio::release_file(trace_data_file);
 
   // We could use model_grid directly if using same num levels,
@@ -652,12 +668,15 @@ create_horiz_remapper (
     ifield.allocate_view();
     remapper->register_field_from_tgt (ifield);
   }
+  // zonal files do not have the PS variable.
+  if (has_ps)
+  {
+    Field ps (FieldIdentifier("PS",        layout_2d,  nondim,tgt_grid->name()));
+    ps.allocate_view();
+    remapper->register_field_from_tgt (ps);
 
-  Field ps (FieldIdentifier("PS",        layout_2d,  nondim,tgt_grid->name()));
-  ps.allocate_view();
-  remapper->register_field_from_tgt (ps);
+  }
   remapper->registration_ends();
-
   return remapper;
 
 } // create_horiz_remapper
@@ -666,8 +685,8 @@ inline
 std::shared_ptr<AtmosphereInput>
 create_tracer_data_reader
 (
-    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
-    const std::string& tracer_data_file)
+  const std::shared_ptr<AbstractRemapper>& horiz_remapper,
+  const std::string& tracer_data_file)
 {
   std::vector<Field> io_fields;
   for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
@@ -698,9 +717,11 @@ update_tracer_data_from_file(
   tracer_data.data[i] = tracer_horiz_interp.get_tgt_field (i).get_view< Real**>();
  }
 
-  // Recall, the fields are registered in the order: tracers, ps
- // 3. Copy from the tgt field of the remapper into the spa_data
- tracer_data.ps = tracer_horiz_interp.get_tgt_field(nvars).get_view< Real*>();
+ if (tracer_data.has_ps) {
+     // Recall, the fields are registered in the order: tracers, ps
+     // 3. Copy from the tgt field of the remapper into the spa_data
+     tracer_data.ps = tracer_horiz_interp.get_tgt_field(nvars).get_view< Real*>();
+ }
 
 } // update_tracer_data_from_file
 inline void
@@ -939,12 +960,16 @@ advance_tracer_data(std::shared_ptr<AtmosphereInput>& scorpio_reader,
   data_tracer_beg,
   data_tracer_end,
   data_tracer_out);
+  if (data_tracer_out.has_ps){
   // Step 2. Compute source pressure levels
   compute_source_pressure_levels(
     data_tracer_out.ps,
     p_src,
     data_tracer_out.hyam,
     data_tracer_out.hybm);
+
+  }
+
 
   // Step 3. Perform vertical interpolation
 
