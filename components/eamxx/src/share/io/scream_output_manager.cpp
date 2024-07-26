@@ -331,7 +331,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   EKAT_REQUIRE_MSG (timestamp<=m_output_control.next_write_ts,
       "Error! The input timestamp is past the next scheduled write timestamp.\n"
       "  - current time stamp   : " + timestamp.to_string() + "\n"
-      "  - next write time stamp: " + m_output_control.next_write_ts.to_stirng() + "\n"
+      "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
       "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
 
