@@ -21,6 +21,8 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
 
+#include <hip/hip_runtime.h>
+
 // Anonymous namespace, for some utility functions
 namespace {
 
@@ -200,6 +202,10 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
                                            names_out[0], export_cpl_indices, export_vector_components,
                                            export_constant_multiple, do_export_during_init);
   });
+}
+
+void scream_init_hip_atm () {
+    hipInit(0);
 }
 
 void scream_init_atm (const char* caseid,

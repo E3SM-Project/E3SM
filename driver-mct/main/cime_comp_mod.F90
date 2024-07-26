@@ -714,6 +714,7 @@ contains
   subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
+    use atm_comp_mct, only: atm_init_hip_mct
     !----------------------------------------------------------
     !| Initialize MCT and MPI communicators and IO
     !----------------------------------------------------------
@@ -736,6 +737,7 @@ contains
     
     beg_count = shr_sys_irtc(irtc_rate)
     
+    call atm_init_hip_mct()
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
 
