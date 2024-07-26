@@ -11,11 +11,14 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [mam4_aero_microphys]
   mam4_aero_microphys:
-   mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc
+   mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
+   mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc
    mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
    mam4_chlorine_loading_ymd : 20100101   
    mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/RSF_GT200nm_v3.0_c080811.nc
    mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/temp_prs_GT200nm_JPL10_c130206.nc
+   mam4_bc_a4_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240726_OD.nc 
+   mam4_so2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/physprops/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726_OD.nc    
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE

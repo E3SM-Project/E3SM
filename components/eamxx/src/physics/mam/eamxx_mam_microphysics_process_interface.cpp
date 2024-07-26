@@ -140,17 +140,35 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_tracer<Updated>("qc", grid_, kg/kg); // cloud liquid wet mixing ratio
   add_tracer<Updated>("nc", grid_, n_unit); // cloud liquid wet number mixing ratio
 
-  // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+    // NOT advected
+    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    add_field<Updated>(cld_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name);
+
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
         add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
       }
-    }
-  }
+
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+      // NOT advected
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
+      if (strlen(cld_mmr_field_name) > 0) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_layout_mid, kg/kg, grid_name);
+      }
+    } // end for loop for num species
+  }   // end for loop for num modes
 
   // aerosol-related gases: mass mixing ratios
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
@@ -165,36 +183,62 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // and configuring the necessary parameters for the Linoz model.
   {
     // std::string linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
-    std::string linoz_file_name =
+    linoz_file_name_ =
       m_params.get<std::string>("mam4_linoz_file_name");
     std::string spa_map_file="";
     std::vector<std::string> var_names{"o3_clim", "o3col_clim", "t_clim", "PmL_clim", "dPmL_dO3", "dPmL_dT", "dPmL_dO3col","cariolle_pscs"};
-    bool has_ps=false;
-    LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,linoz_file_name,spa_map_file, var_names, has_ps);
-    LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(LinozHorizInterp_,linoz_file_name);
-    linoz_data_out_.set_has_ps(has_ps);
-     if (has_ps) {
-       linoz_data_out_.set_hyam_n_hybm(LinozHorizInterp_,linoz_file_name);
+    TracerFileType tracer_file_type;
+    LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,linoz_file_name_,spa_map_file, var_names, tracer_file_type);
+    LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(LinozHorizInterp_,linoz_file_name_);
+    linoz_data_out_.set_file_type(tracer_file_type);
+     if (tracer_file_type == TracerFileType::FORMULA_PS) {
+       linoz_data_out_.set_hyam_n_hybm(LinozHorizInterp_,linoz_file_name_);
      }
-    linoz_data_beg_.set_has_ps(has_ps);
-    linoz_data_end_.set_has_ps(has_ps);
+    linoz_data_beg_.set_file_type(tracer_file_type);
+    linoz_data_end_.set_file_type(tracer_file_type);
 
   }
   {
-     std::string my_file="oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc";
+     oxid_file_name_ =
+      m_params.get<std::string>("mam4_oxid_file_name");
      std::string spa_map_file="";
      std::vector<std::string> var_names{"O3","HO2","NO3","OH"};
-     bool has_ps=false;
-     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,my_file,spa_map_file, var_names, has_ps);
-     TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,my_file);
-     tracer_data_out_.set_has_ps(has_ps);
-     if (has_ps) {
-       tracer_data_out_.set_hyam_n_hybm(TracerHorizInterp_,my_file);
+     TracerFileType tracer_file_type;
+     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(grid_,oxid_file_name_,
+     spa_map_file, var_names, tracer_file_type);
+     TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(TracerHorizInterp_,oxid_file_name_);
+     tracer_data_out_.set_file_type(tracer_file_type);
+     if (tracer_file_type == TracerFileType::FORMULA_PS) {
+       tracer_data_out_.set_hyam_n_hybm(TracerHorizInterp_,oxid_file_name_);
      }
-     tracer_data_beg_.set_has_ps(has_ps);
-     tracer_data_end_.set_has_ps(has_ps);
+     tracer_data_beg_.set_file_type(tracer_file_type);
+     tracer_data_end_.set_file_type(tracer_file_type);
   }
 
+  {
+    vert_emis_file_name_= "cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240726_OD.nc";
+    std::string spa_map_file="";
+    std::vector<std::string> var_names{"BB"};
+
+    for (auto file_name :vert_emis_file_name_)
+   {
+    TracerFileType tracer_file_type;
+    auto hor_rem = scream::mam_coupling::create_horiz_remapper(grid_,file_name,
+    spa_map_file, var_names, tracer_file_type);
+    auto file_reader = scream::mam_coupling::create_tracer_data_reader(hor_rem,
+    file_name);
+    scream::mam_coupling::TracerData data_out, data_beg, data_end;
+    data_out.set_file_type(tracer_file_type);
+    data_beg.set_file_type(tracer_file_type);
+    data_end.set_file_type(tracer_file_type);
+
+    VertEmissionsHorizInterp_.push_back(hor_rem);
+    VertEmissionsDataReader_.push_back(file_reader);
+    vert_emis_data_out_.push_back(data_out);
+    vert_emis_data_beg_.push_back(data_beg);
+    vert_emis_data_end_.push_back(data_end);
+   }
+  }
 
 }
 
@@ -265,16 +309,32 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   if (run_type==RunType::Initial) {
   }
 
-  // set wet/dry aerosol state data (interstitial aerosols only)
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
     dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    const char* cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
+    wet_aero_.cld_aero_nmr[m] = get_field_out(cld_nmr_field_name).get_view<Real **>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      const char* cld_mmr_field_name = mam_coupling::cld_aero_mmr_field_name(m, a);
+      if(strlen(cld_mmr_field_name) > 0) {
+        wet_aero_.cld_aero_mmr[m][a] = get_field_out(cld_mmr_field_name).get_view<Real **>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
@@ -343,8 +403,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
    chlorine_values_, chlorine_time_secs_ );
   }
 
-  const int photo_table_len = get_photo_table_work_len(photo_table_);
-  work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
+  // const int photo_table_len = get_photo_table_work_len(photo_table_);
+  // work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
 
     // here's where we store per-column photolysis rates
   photo_rates_ = view_3d("photo_rates", ncol_, nlev_, mam4::mo_photo::phtcnt);
@@ -382,7 +442,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       cnst_offline_[ivar] = view_2d("cnst_offline_",ncol_, nlev_ );
     }
   }
-#if 1
+
   // linoz reader
   {
     const auto io_grid_linoz = LinozHorizInterp_->get_src_grid();
@@ -395,21 +455,59 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
     linoz_data_beg_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
     linoz_data_beg_.allocate_data_views();
-    if (linoz_data_beg_.has_ps){
+    if (linoz_data_beg_.file_type == TracerFileType::FORMULA_PS){
       linoz_data_beg_.allocate_ps();
     }
 
-
     linoz_data_out_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
     linoz_data_out_.allocate_data_views();
-    if (linoz_data_out_.has_ps)
+    if (linoz_data_out_.file_type == TracerFileType::FORMULA_PS)
     {
       linoz_data_out_.allocate_ps();
     }
-
-    p_src_linoz_ = view_2d("pressure_src_invariant",num_cols_io_linoz, num_levs_io_linoz );
+    else if (linoz_data_out_.file_type == TracerFileType::ZONAL) {
+      // we use ncremap and python scripts to convert zonal files to ne4pn4 grids.
+      p_src_linoz_ = view_2d("pressure_src_invariant",ncol_, num_levs_io_linoz );
+      scream::mam_coupling::compute_p_src_zonal_files(linoz_file_name_,p_src_linoz_);
+     }
   }
-#endif
+
+  // vertical emissions
+  {
+    // FIXME: I am assuming 1 variable per file
+    const int nvars = 1;
+    for (size_t i = 0; i < vert_emis_file_name_.size(); ++i)
+    {
+      const auto io_grid_emis = VertEmissionsHorizInterp_[i]->get_src_grid();
+      const int num_cols_io_emis = io_grid_emis->get_num_local_dofs(); // Number of columns on this rank
+      const int num_levs_io_emis = io_grid_emis->get_num_vertical_levels();  // Number of levels per column
+      vert_emis_data_end_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
+      scream::mam_coupling::update_tracer_data_from_file(VertEmissionsDataReader_[i],
+      timestamp(),curr_month, *VertEmissionsHorizInterp_[i], vert_emis_data_end_[i]);
+
+      vert_emis_data_beg_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
+      vert_emis_data_beg_[i].allocate_data_views();
+      if (vert_emis_data_beg_[i].file_type == TracerFileType::FORMULA_PS){
+        vert_emis_data_beg_[i].allocate_ps();
+      }
+
+      vert_emis_data_out_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
+      vert_emis_data_out_[i].allocate_data_views();
+      if (vert_emis_data_out_[i].file_type == TracerFileType::FORMULA_PS)
+      {
+        vert_emis_data_out_[i].allocate_ps();
+      } else if (vert_emis_data_out_[i].file_type == TracerFileType::VERT_EMISSION)  {
+         auto zi_src = scream::mam_coupling::get_altitude_int(VertEmissionsHorizInterp_[i],
+                                 vert_emis_file_name_[i]);
+        vert_emis_altitude_int_.push_back(zi_src);
+      }
+
+       const auto emis_output = view_2d("vert_emis_output_",num_cols_io_emis, num_levs_io_emis );
+      vert_emis_output_.push_back(emis_output);
+
+
+    }// end i
+  }
 
 }
 
@@ -421,8 +519,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
-
-
 
   // reset internal WSM variables
   //workspace_mgr_.reset_internals();
@@ -464,8 +560,10 @@ void MAMMicrophysics::run_impl(const double dt) {
                            chlorine_time_secs_);
 
 
-  // /* Update the LinozTimeState to reflect the current time, note the addition of dt */
+  // /* Update the TracerTimeState to reflect the current time, note the addition of dt */
   linoz_time_state_.t_now = ts.frac_of_year_in_days();
+  // FIXME: we do not need altitude_int for invariant tracers and linoz fields.
+  view_1d dummy_altitude_int;
   scream::mam_coupling::advance_tracer_data(TracerDataReader_,
                       *TracerHorizInterp_,
                       ts,
@@ -475,9 +573,10 @@ void MAMMicrophysics::run_impl(const double dt) {
                       tracer_data_out_,
                       p_src_invariant_,
                       dry_atm_.p_mid,
+                      dummy_altitude_int,
+                      dry_atm_.z_iface,
                       cnst_offline_);
 
-   //
    scream::mam_coupling::advance_tracer_data(LinozDataReader_,
                       *LinozHorizInterp_,
                       ts,
@@ -487,9 +586,28 @@ void MAMMicrophysics::run_impl(const double dt) {
                       linoz_data_out_,
                       p_src_linoz_,
                       dry_atm_.p_mid,
+                      dummy_altitude_int,
+                      dry_atm_.z_iface,
                       linoz_output);
 
-
+    for (size_t i = 0; i < vert_emis_file_name_.size(); ++i)
+    {
+    // FIXME: Here I am assuming one output per file.
+    view_2d vert_emis_output[1];
+    vert_emis_output[0] = vert_emis_output_[i];
+    scream::mam_coupling::advance_tracer_data(VertEmissionsDataReader_[i],
+                      *VertEmissionsHorizInterp_[i],
+                      ts,
+                      linoz_time_state_,
+                      vert_emis_data_beg_[i],
+                      vert_emis_data_end_[i],
+                      vert_emis_data_out_[i],
+                      p_src_linoz_,
+                      dry_atm_.p_mid,
+                      vert_emis_altitude_int_[i],
+                      dry_atm_.z_iface,
+                      vert_emis_output);
+    }
   const_view_1d &col_latitudes = col_latitudes_;
   mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
   mam_coupling::AerosolState  &dry_aero = dry_aero_;
@@ -516,43 +634,46 @@ void MAMMicrophysics::run_impl(const double dt) {
     auto z_iface = ekat::subview(dry_atm.z_iface, icol);
     Real phis = dry_atm.phis(icol);
 
+    // liquid water cloud content
+    const auto& lwc_icol = ekat::subview(lwc, icol);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
+    lwc_icol(k) = atm.ice_mixing_ratio(k) + atm.liquid_mixing_ratio(k);
+     });
+     team.team_barrier();
+
     // set surface state data
     haero::Surface sfc{};
 
     // fetch column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero, icol);
+    mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero, icol);
 
     // set up diagnostics
     mam4::Diagnostics diags(nlev);
 
     // calculate o3 column densities (first component of col_dens in Fortran code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-<<<<<<< HEAD
-    //impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
-=======
     // impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
->>>>>>> microphysics - Adding photo table paths to input file.
 
     // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays_icol;
     // FIXME: set views here
-    const auto& work_photo_table_icol = ekat::subview(work_photo_table, icol);
+    // const auto& work_photo_table_icol = ekat::subview(work_photo_table, icol);
     // set work view using 1D photo_work_arrays_icol
 
-    mam4::mo_photo::set_photo_table_work_arrays(photo_table,
-                                                work_photo_table_icol,
-                                                photo_work_arrays_icol);
-
+    // mam4::mo_photo::set_photo_table_work_arrays(photo_table,
+    //                                             work_photo_table_icol,
+    //                                             photo_work_arrays_icol);
     // ... look up photolysis rates from our table
     // NOTE: the table interpolation operates on an entire column of data, so we
     // NOTE: must do it before dispatching to individual vertical levels
     Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
     Real surf_albedo = 0.0; // FIXME: surface albedo
     Real esfact = 0.0; // FIXME: earth-sun distance factor
+
     const auto& photo_rates_icol = ekat::subview(photo_rates, icol);
 #if 0
     mam4::mo_photo::table_photo(photo_rates_icol, atm.pressure, atm.hydrostatic_dp,
-     atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc_icol,
+     atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, atm.liquid_mixing_ratio,
      atm.cloud_fraction, esfact, photo_table, photo_work_arrays_icol);
 #endif
     // compute external forcings at time t(n+1) [molecules/cm^3/s]
@@ -577,18 +698,20 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real pblh    = atm.planetary_boundary_layer_height;
       Real qv      = atm.vapor_mixing_ratio(k);
       Real cldfrac = atm.cloud_fraction(k);
+      Real lwc     = atm.liquid_mixing_ratio(k);
+      Real cldnum  = atm.cloud_liquid_number_mixing_ratio(k);
 
       // extract aerosol state variables into "working arrays" (mass mixing ratios)
       // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
       //  mozart/mo_gas_phase_chemdr.F90)
       Real q[gas_pcnst] = {};
       Real qqcw[gas_pcnst] = {};
-      //mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
+      mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
 
       // convert mass mixing ratios to volume mixing ratios (VMR), equivalent
       // to tracer mixing ratios (TMR))
       Real vmr[gas_pcnst], vmrcw[gas_pcnst];
-      //mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
+      mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
 
       // aerosol/gas species tendencies (output)
       Real vmr_tendbb[gas_pcnst][nqtendbb] = {};
@@ -634,8 +757,7 @@ void MAMMicrophysics::run_impl(const double dt) {
                              // (taken from mam4xx setsox validation test)
       const Real mbar = haero::Constants::molec_weight_dry_air;
       constexpr int indexm = 0;  // FIXME: index of xhnm in invariants array (??)
-      Real cldnum = 0.0; // FIXME: droplet number concentration: where do we get this?
-      /*setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc(k),
+      /*mam4::mo_setsox::setsox_single_level(loffset, dt, pmid, pdel, temp, mbar, lwc,
         cldfrac, cldnum, invariants[indexm], config.setsox, vmrcw, vmr);*/
 
       // calculate aerosol water content using water uptake treatment
@@ -653,7 +775,7 @@ void MAMMicrophysics::run_impl(const double dt) {
                                      zm, pblh, qv, cldfrac, vmr, vmrcw, vmr_pregaschem,
                                      vmr_precldchem, vmrcw_precldchem, vmr_tendbb,
                                      vmrcw_tendbb, dgncur_a, dgncur_awet,
-                                     wetdens, qaerwat);*/
+                                     wetdens, qaerwat); */
 
       //-----------------
       // LINOZ chemistry
@@ -677,11 +799,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         o3col_du_diag, o3clim_linoz_diag, zenith_angle_degrees);
 #endif
       // update source terms above the ozone decay threshold
-      if (k > nlev - config.linoz.o3_lbl - 1) {
+      /*if (k > nlev - config.linoz.o3_lbl - 1) {
         Real do3_mass; // diagnostic, not needed
         mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel, vmr[o3_ndx], config.linoz.o3_sfc,
           config.linoz.o3_tau, do3_mass);
-      }
+      }*/
 
       // ... check for negative values and reset to zero
       for (int i = 0; i < gas_pcnst; ++i) {
@@ -697,7 +819,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
       // transfer updated prognostics from work arrays
       //mam_coupling::convert_work_arrays_to_mmr(vmr, vmrcw, q, qqcw);
-      //mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);*/
+      //mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);
     });
   });
 

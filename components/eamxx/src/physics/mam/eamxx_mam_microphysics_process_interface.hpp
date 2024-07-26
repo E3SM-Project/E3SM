@@ -52,6 +52,8 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
+  using TracerFileType = mam_coupling::TracerFileType;
+
 
 public:
 
@@ -229,7 +231,7 @@ private_except_cuda:
   // sets defaults for "namelist parameters"
   void set_defaults_();
 
-  mam_coupling::LinozTimeState linoz_time_state_;
+  mam_coupling::TracerTimeState linoz_time_state_;
   view_2d work_photo_table_;
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
@@ -243,6 +245,7 @@ private_except_cuda:
   mam_coupling::TracerData tracer_data_beg_;
   mam_coupling::TracerData tracer_data_out_;
   view_2d p_src_invariant_;
+  std::string oxid_file_name_;
   view_2d cnst_offline_[4];
 
   // linoz reader
@@ -252,6 +255,18 @@ private_except_cuda:
   mam_coupling::TracerData linoz_data_beg_;
   mam_coupling::TracerData linoz_data_out_;
   view_2d p_src_linoz_;
+  std::string linoz_file_name_;
+
+  // Vertical emission uses 9 files, here I am using std::vector to stote instance of each file.
+  std::vector<std::shared_ptr<AtmosphereInput>>  VertEmissionsDataReader_;
+  std::vector<std::shared_ptr<AbstractRemapper>> VertEmissionsHorizInterp_;
+  std::vector<mam_coupling::TracerData> vert_emis_data_end_;
+  std::vector<mam_coupling::TracerData> vert_emis_data_beg_;
+  std::vector<mam_coupling::TracerData> vert_emis_data_out_;
+  std::vector<std::string> vert_emis_file_name_;
+  std::vector<const_view_1d> vert_emis_altitude_int_;
+  std::vector<view_2d> vert_emis_output_;
+
 
 
 
