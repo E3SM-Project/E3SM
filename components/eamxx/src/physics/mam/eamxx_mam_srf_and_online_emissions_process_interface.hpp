@@ -48,7 +48,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   // Structures to store the data used for interpolation
-  std::shared_ptr<AbstractRemapper> srfEmissHorizInterp_;
+  std::shared_ptr<AbstractRemapper> so2SrfEmissHorizInterp_;
 
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;

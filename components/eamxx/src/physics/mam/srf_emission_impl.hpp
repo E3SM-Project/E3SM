@@ -114,53 +114,33 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
 
   auto delta_t_fraction = (t_now - t_beg) / delta_t;
 
-  EKAT_REQUIRE_MSG(
-      delta_t_fraction >= 0 && delta_t_fraction <= 1,
-      "Error! Convex interpolation with coefficient out of [0,1].\n"
-      "  t_now  : " +
-          std::to_string(t_now) +
-          "\n"
-          "  t_beg  : " +
-          std::to_string(t_beg) +
-          "\n"
-          "  delta_t: " +
-          std::to_string(delta_t) + "\n");
+  EKAT_REQUIRE_MSG(delta_t_fraction >= 0 && delta_t_fraction <= 1,
+                   "Error! Convex interpolation with coefficient out of "
+                   "[0,1].\n  t_now  : " +
+                       std::to_string(t_now) +
+                       "\n"
+                       "  t_beg  : " +
+                       std::to_string(t_beg) +
+                       "\n  delta_t: " + std::to_string(delta_t) + "\n");
+
   using KT = ekat::KokkosTypes<DefaultDevice>;
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
           data_beg.data.ncols, 1);
-
-  Kokkos::parallel_for(
-      "srfEmiss_time_interp_loop", policy,
-      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
-        const int icol = team.league_rank();
-
-        // We have only 2d vars, so we need to make one team member handle it.
-        Kokkos::single(Kokkos::PerTeam(team), [&] {
-          data_out.emiss_components[1](icol) = linear_interp(
-              data_beg.data.emiss_components[1](icol),
-              data_end.data.emiss_components[1](icol), delta_t_fraction);
-
-          /*data_out.AGR(icol) =
-              linear_interp(data_beg.data.AGR(icol), data_end.data.AGR(icol),
-                            delta_t_fraction);
-          data_out.RCO(icol) =
-              linear_interp(data_beg.data.RCO(icol), data_end.data.RCO(icol),
-                            delta_t_fraction);
-          data_out.SHP(icol) =
-              linear_interp(data_beg.data.SHP(icol), data_end.data.SHP(icol),
-                            delta_t_fraction);
-          data_out.SLV(icol) =
-              linear_interp(data_beg.data.SLV(icol), data_end.data.SLV(icol),
-                            delta_t_fraction);
-          data_out.TRA(icol) =
-              linear_interp(data_beg.data.TRA(icol), data_end.data.TRA(icol),
-                            delta_t_fraction);
-          data_out.WST(icol) =
-              linear_interp(data_beg.data.WST(icol), data_end.data.WST(icol),
-                            delta_t_fraction);*/
+  for(int i = 0; i < 6; ++i) {
+    Kokkos::parallel_for(
+        "srfEmiss_time_interp_loop", policy,
+        KOKKOS_LAMBDA(
+            const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
+          const int icol = team.league_rank();
+          // We have only 2d vars, so we need to make one team member handle it.
+          Kokkos::single(Kokkos::PerTeam(team), [&] {
+            data_out.emiss_components[i](icol) = linear_interp(
+                data_beg.data.emiss_components[i](icol),
+                data_end.data.emiss_components[i](icol), delta_t_fraction);
+          });
         });
-      });
+  }
   Kokkos::fence();
 }  // perform_time_interpolation
 
@@ -219,14 +199,6 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
 
-  // Get pointers for the srfEmiss_input
-  /*auto srfEmiss_data_agr = ekat::scalarize(srfEmiss_input.data.AGR);
-  auto srfEmiss_data_rco = ekat::scalarize(srfEmiss_input.data.RCO);
-  auto srfEmiss_data_shp = ekat::scalarize(srfEmiss_input.data.SHP);
-  auto srfEmiss_data_slv = ekat::scalarize(srfEmiss_input.data.SLV);
-  auto srfEmiss_data_tra = ekat::scalarize(srfEmiss_input.data.TRA);
-  auto srfEmiss_data_wst = ekat::scalarize(srfEmiss_input.data.WST);
-*/
   const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
                            .get_header()
                            .get_identifier()
@@ -239,25 +211,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     auto aa = srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
     Kokkos::deep_copy(srfEmiss_input.data.emiss_components[i], aa);
   }
-  /*auto agr = srfEmiss_horiz_interp.get_tgt_field(0).get_view<const Real *>();
-  auto rco = srfEmiss_horiz_interp.get_tgt_field(1).get_view<const Real *>();
-  auto shp = srfEmiss_horiz_interp.get_tgt_field(2).get_view<const Real *>();
-  auto slv = srfEmiss_horiz_interp.get_tgt_field(3).get_view<const Real *>();
-  auto tra = srfEmiss_horiz_interp.get_tgt_field(4).get_view<const Real *>();
-  auto wst = srfEmiss_horiz_interp.get_tgt_field(5).get_view<const Real *>();
 
-  auto copy_and_pad = KOKKOS_LAMBDA(const Member &team) {
-    int icol                = team.league_rank();
-    srfEmiss_data_agr(icol) = agr(icol);
-    srfEmiss_data_rco(icol) = rco(icol);
-    srfEmiss_data_shp(icol) = shp(icol);
-    srfEmiss_data_slv(icol) = slv(icol);
-    srfEmiss_data_tra(icol) = tra(icol);
-    srfEmiss_data_wst(icol) = wst(icol);
-  };
-
-  auto policy = ESU::get_default_team_policy(ncols, 1);
-  Kokkos::parallel_for("", policy, copy_and_pad);*/
   Kokkos::fence();
   stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::copy_and_pad");
 
