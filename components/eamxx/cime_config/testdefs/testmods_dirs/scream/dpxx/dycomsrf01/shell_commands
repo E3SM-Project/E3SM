@@ -1,0 +1,15 @@
+# Sets up DPxx case to test DYCOMSrf01 (marine stratocumulus)
+# case over ocean using prescribed surface fluxes
+
+./xmlchange RUN_STARTDATE="1999-07-10"
+./xmlchange PTS_LAT=31.5
+./xmlchange PTS_LON=238.5
+
+# Scripts location
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+
+$ATMCHANGE iop_file=${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc -b
+$ATMCHANGE target_latitude=31.5 -b
+$ATMCHANGE target_longitude=238.5 -b
+$ATMCHANGE iop_dosubsidence=true -b
+$ATMCHANGE iop_srf_prop=true -b

@@ -657,8 +657,8 @@ _TESTS = {
         "time"  : "01:00:00",
         # each test 225 phys cols, roughly size of ne2
         "tests" : (
-            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-General",
-            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-ARM97",
+            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-General.scream-dpxx-dycomsrf01",
+            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-General.scream-dpxx-arm97",
             "ERS_P16_Ln22.ne30_ne30.F2000-SCREAMv1-DP-RCE",
             )
     },

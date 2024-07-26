@@ -1,0 +1,15 @@
+# Sets up DPxx case to test ARM97 (continental deep convection)
+# case over land using prescribed surface fluxes and nudged winds
+
+./xmlchange RUN_STARTDATE="1997-06-23"
+./xmlchange PTS_LAT=36.605
+./xmlchange PTS_LON=262.515
+
+# Scripts location
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+
+$ATMCHANGE iop_file=${DIN_LOC_ROOT}/atm/cam/scam/iop/ARM97_iopfile_4scam.nc -b
+$ATMCHANGE target_latitude=36.605 -b
+$ATMCHANGE target_longitude=262.515 -b
+$ATMCHANGE iop_nudge_uv=true -b
+$ATMCHANGE iop_srf_prop=true -b
