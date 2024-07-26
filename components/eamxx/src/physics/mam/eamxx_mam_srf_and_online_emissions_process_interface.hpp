@@ -15,15 +15,6 @@
 // #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
 
-// TODO: determine when these may be necessary
-// #ifndef KOKKOS_ENABLE_CUDA
-// #define protected_except_cuda public
-// #define private_except_cuda public
-// #else
-// #define protected_except_cuda protected
-// #define private_except_cuda private
-// #endif
-
 namespace scream {
 
 // The process responsible for handling MAM4 surface and online emissions. The
@@ -131,16 +122,13 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   Preprocess preprocess_;
 
   // IO structure to read in data for standard grids
-  std::shared_ptr<AtmosphereInput> srfEmissDataReader_;
+  std::shared_ptr<AtmosphereInput> so2SrfEmissDataReader_;
 
-  srfEmissFunc::srfEmissTimeState srfEmissTimeState_;
+  srfEmissFunc::srfEmissTimeState so2SrfEmissTimeState_;
 
-  srfEmissFunc::srfEmissInput srfEmissData_start_;
-  srfEmissFunc::srfEmissInput srfEmissData_end_;
-  srfEmissFunc::srfEmissOutput srfEmissData_out_;
-
-  // Used to store temporary data during srfEmiss_main
-  srfEmissFunc::srfEmissInput srfEmiss_temp_;
+  srfEmissFunc::srfEmissInput so2SrfEmissData_start_;
+  srfEmissFunc::srfEmissInput so2SrfEmissData_end_;
+  srfEmissFunc::srfEmissOutput so2SrfEmissData_out_;
 
 };  // MAMSrfOnlineEmiss
 

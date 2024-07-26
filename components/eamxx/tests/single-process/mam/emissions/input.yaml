@@ -12,8 +12,9 @@ atmosphere_processes:
   atm_procs_list: [mam4_srf_online_emiss]
   mam4_srf_online_emiss:
     # MAM4xx-Surface-Emissions
+    srf_remap_file: ""
     srf_emis_specifier_for_DMS: ${SCREAM_DATA_DIR}/mam4xx/emissions/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc
-    srf_emis_specifier_for_SO2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc
+    srf_emis_specifier_for_SO2: ${SCREAM_DATA_DIR}/mam4xx/emissions/test_DECK_ne30/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc
     srf_emis_specifier_for_bc_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc
     srf_emis_specifier_for_num_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc
     srf_emis_specifier_for_num_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc

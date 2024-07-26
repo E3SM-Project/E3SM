@@ -1,18 +1,6 @@
 #include <ekat/ekat_assert.hpp>
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
-#include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
-
-// for SCREAM_CIME_BUILD
-#include "scream_config.h"
-
-/*
-Future work:
-Write comments
-write in/outs for all variables clearly
-*/
-
 namespace scream {
 
 // =========================================================================================
@@ -34,33 +22,34 @@ void MAMSrfOnlineEmiss::set_grids(
 
   using namespace ekat::units;
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
 
-  // Reading so2 srf emiss data
-  std::string srf_map_file = "";
+  // Surface emissions remapping file
+  std::string srf_map_file = m_params.get<std::string>("srf_remap_file");
+
+  //--------------------------------------------------------------------
+  // Init so2 srf emiss data structures
+  //--------------------------------------------------------------------
+  // File name
   std::string so2_data_file =
-      "/compyfs/inputdata/atm/scream/mam4xx/emissions/test_DECK_ne30/"
-      "cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc";
-  static constexpr int num_sectors_so2                = 6;
-  std::array<std::string, num_sectors_so2> so2_fields = {"AGR", "RCO", "SHP",
-                                                         "SLV", "TRA", "WST"};
+      m_params.get<std::string>("srf_emis_specifier_for_SO2");
 
-  // Init horizontal remap
-  so2SrfEmissHorizInterp_ = srfEmissFunc::create_horiz_remapper(
-      grid_, so2_data_file, so2_fields, srf_map_file);
+  // Number of sectors
+  static constexpr int so2_num_sectors = 6;
 
-  // 2. Initialize the size of the SPAData structures.
-  srfEmissData_start_ = srfEmissFunc::srfEmissInput(ncol_, num_sectors_so2);
-  srfEmissData_end_   = srfEmissFunc::srfEmissInput(ncol_, num_sectors_so2);
-  srfEmissData_out_.init(ncol_, num_sectors_so2,
-                         true);  // FIXME: should it be true or false???
+  // Sector names in file
+  std::array<std::string, so2_num_sectors> so2_sectors = {"AGR", "RCO", "SHP",
+                                                          "SLV", "TRA", "WST"};
 
-  // 3. Create reader for srfEmiss data. The reader is an
-  //    AtmosphereInput object
-  srfEmissDataReader_ = srfEmissFunc::create_srfEmiss_data_reader(
-      so2SrfEmissHorizInterp_, so2_data_file);
-}
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, so2_num_sectors, grid_, so2_data_file, so2_sectors, srf_map_file,
+      // output
+      so2SrfEmissHorizInterp_, so2SrfEmissData_start_, so2SrfEmissData_end_,
+      so2SrfEmissData_out_, so2SrfEmissDataReader_);
+
+}  // set_grid
 
 // =========================================================================================
 // ON HOST, returns the number of bytes of device memory needed by the above
@@ -98,15 +87,15 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //       and srfEmiss_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month() - 1;  // 0-based
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI-bef:" << srfEmissData_end_.data.emiss_sectors.at(1)(i)
-              << std::endl;
+    std::cout << "BALLI-bef:"
+              << so2SrfEmissData_end_.data.emiss_sectors.at(1)(i) << std::endl;
   }
   srfEmissFunc::update_srfEmiss_data_from_file(
-      srfEmissDataReader_, timestamp(), curr_month, *so2SrfEmissHorizInterp_,
-      srfEmissData_end_);
+      so2SrfEmissDataReader_, timestamp(), curr_month, *so2SrfEmissHorizInterp_,
+      so2SrfEmissData_end_);
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << srfEmissData_end_.data.emiss_sectors[2](i) << ":"
-              << i << std::endl;
+    std::cout << "BALLI:" << so2SrfEmissData_end_.data.emiss_sectors[2](i)
+              << ":" << i << std::endl;
   }
 
 }  // end initialize_impl()
@@ -124,19 +113,18 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   auto ts = timestamp() + dt;
   // Update the srfEmissTimeState to reflect the current time, note the addition
   // of dt
-  srfEmissTimeState_.t_now = ts.frac_of_year_in_days();
+  so2SrfEmissTimeState_.t_now = ts.frac_of_year_in_days();
   // Update time state and if the month has changed, update the data.
   srfEmissFunc::update_srfEmiss_timestate(
-      srfEmissDataReader_, ts, *so2SrfEmissHorizInterp_, srfEmissTimeState_,
-      srfEmissData_start_, srfEmissData_end_);
+      so2SrfEmissDataReader_, ts, *so2SrfEmissHorizInterp_,
+      so2SrfEmissTimeState_, so2SrfEmissData_start_, so2SrfEmissData_end_);
 
   // Call the main srfEmiss routine to get interpolated aerosol forcings.
-  srfEmissFunc::srfEmiss_main(srfEmissTimeState_, srfEmissData_start_,
-                              srfEmissData_end_, srfEmiss_temp_,
-                              srfEmissData_out_);
+  srfEmissFunc::srfEmiss_main(so2SrfEmissTimeState_, so2SrfEmissData_start_,
+                              so2SrfEmissData_end_, so2SrfEmissData_out_);
   for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << srfEmissData_out_.emiss_sectors[2](i) << ":" << i
-              << std::endl;
+    std::cout << "BALLI:" << so2SrfEmissData_out_.emiss_sectors[2](i) << ":"
+              << i << std::endl;
   }
 
   /* Rough notes:

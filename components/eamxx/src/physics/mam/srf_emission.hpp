@@ -80,7 +80,6 @@ struct srfEmissFunctions {
   static void srfEmiss_main(const srfEmissTimeState &time_state,
                             const srfEmissInput &data_beg,
                             const srfEmissInput &data_end,
-                            const srfEmissInput &data_tmp,  // Temporary
                             const srfEmissOutput &data_out);
 
   static void update_srfEmiss_data_from_file(
@@ -105,6 +104,17 @@ struct srfEmissFunctions {
   KOKKOS_INLINE_FUNCTION static ScalarX linear_interp(const ScalarX &x0,
                                                       const ScalarX &x1,
                                                       const ScalarT &t);
+  template <std::size_t FN>
+  static void init_srf_emiss_objects(
+      const int ncol, const int num_sectors,
+      const std::shared_ptr<const AbstractGrid> &grid,
+      const std::string &data_file, const std::array<std::string, FN> &sectors,
+      const std::string &srf_map_file,
+      // output
+      std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+      srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+      srfEmissOutput &SrfEmissData_out,
+      std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
 
 };  // struct srfEmissFunctions
 }  // namespace

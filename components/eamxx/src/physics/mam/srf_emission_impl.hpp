@@ -14,7 +14,7 @@ std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
     const std::string &data_file,
-    const std::array<std::string, FN> &field_names,
+    const std::array<std::string, FN> &sector_names,
     const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
@@ -60,7 +60,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   std::vector<Field> emiss_sectors;
 
   for(int icomp = 0; icomp < FN; ++icomp) {
-    auto comp_name = field_names[icomp];
+    auto comp_name = sector_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
     f.allocate_view();
@@ -148,7 +148,6 @@ template <typename S, typename D>
 void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
                                             const srfEmissInput &data_beg,
                                             const srfEmissInput &data_end,
-                                            const srfEmissInput &data_tmp,
                                             const srfEmissOutput &data_out) {
   // Beg/End/Tmp month must have all sizes matching
 
@@ -252,6 +251,32 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
   }
 
 }  // END updata_srfEmiss_timestate
+
+template <typename S, typename D>
+template <std::size_t FN>
+void srfEmissFunctions<S, D>::init_srf_emiss_objects(
+    const int ncol, const int num_sectors,
+    const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::array<std::string, FN> &sectors,
+    const std::string &srf_map_file,
+    // output
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+    srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+    srfEmissOutput &SrfEmissData_out,
+    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+  // Init horizontal remap
+  SrfEmissHorizInterp =
+      create_horiz_remapper(grid, data_file, sectors, srf_map_file);
+
+  // Initialize the size of start/end/out data structures
+  SrfEmissData_start = srfEmissInput(ncol, num_sectors);
+  SrfEmissData_end   = srfEmissInput(ncol, num_sectors);
+  SrfEmissData_out.init(ncol, num_sectors, true);
+
+  // Create reader (an AtmosphereInput object)
+  SrfEmissDataReader =
+      create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
+}  // init_srf_emiss_objects
 
 }  // namespace
 }  // namespace scream::mam_coupling
