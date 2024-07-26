@@ -175,21 +175,40 @@ using hview_t = Kokkos::View<T, LayoutT, HostDevice>;
 
 using pool_t = conv::MemPoolSingleton<RealT, DeviceT>;
 
+using real1dk = view_t<RealT*>;
+using real2dk = view_t<RealT**>;
+using real3dk = view_t<RealT***>;
+using creal1dk = view_t<const RealT*>;
+using creal2dk = view_t<const RealT**>;
+using creal3dk = view_t<const RealT***>;
+using int1dk  = view_t<int*>;
+using int3dk  = view_t<int***>;
+
+using gas_optics_t   = GasOpticsRRTMGPK<RealT, LayoutT, DeviceT>;
+using cloud_optics_t = CloudOpticsK<RealT, LayoutT, DeviceT>;
+using gas_concs_t    = GasConcsK<RealT, LayoutT, DeviceT>;
+using fluxes_t       = FluxesBybandK<RealT, LayoutT, DeviceT>;
+using fluxes_broadband_t = FluxesBroadbandK<RealT, LayoutT, DeviceT>;
+using optical_props_t = OpticalPropsK<RealT, LayoutT, DeviceT>;
+using optical_props1_t = OpticalProps1sclK<RealT, LayoutT, DeviceT>;
+using optical_props2_t = OpticalProps2strK<RealT, LayoutT, DeviceT>;
+using source_func_t = SourceFuncLWK<RealT, LayoutT, DeviceT>;
+
 /*
  * Objects containing k-distribution information need to be initialized
  * once and then persist throughout the life of the program, so we
  * declare them here within the rrtmgp namespace.
  */
-static inline GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> k_dist_sw_k;
-static inline GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> k_dist_lw_k;
+static inline gas_optics_t k_dist_sw_k;
+static inline gas_optics_t k_dist_lw_k;
 
 /*
  * Objects containing cloud optical property look-up table information.
  * We want to initialize these once and use throughout the life of the
  * program, so declare here and read data in during rrtmgp_initialize().
  */
-static inline CloudOpticsK<RealT, LayoutT, DeviceT> cloud_optics_sw_k;
-static inline CloudOpticsK<RealT, LayoutT, DeviceT> cloud_optics_lw_k;
+static inline cloud_optics_t cloud_optics_sw_k;
+static inline cloud_optics_t cloud_optics_lw_k;
 
 /*
  * Flag to indicate whether or not we have initialized RRTMGP
@@ -200,7 +219,7 @@ static inline bool initialized_k = false;
  * Initialize data for RRTMGP driver
  */
 static void rrtmgp_initialize(
-  GasConcsK<RealT, LayoutT, DeviceT> &gas_concs,
+  const gas_concs_t &gas_concs,
   const std::string& coefficients_file_sw, const std::string& coefficients_file_lw,
   const std::string& cloud_optics_file_sw, const std::string& cloud_optics_file_lw,
   const std::shared_ptr<spdlog::logger>& logger)
@@ -238,13 +257,11 @@ static void rrtmgp_initialize(
 /*
  * Compute band-by-band surface albedos from broadband albedos.
  */
-template <typename SfcAlbDirVisT, typename SfcAlbDirNirT, typename SfcAlbDifVisT,
-          typename SfcAlbDifNirT, typename SfcAlbDirT, typename SfcAlbDifT>
 static void compute_band_by_band_surface_albedos(
   const int ncol, const int nswbands,
-  SfcAlbDirVisT &sfc_alb_dir_vis, SfcAlbDirNirT &sfc_alb_dir_nir,
-  SfcAlbDifVisT &sfc_alb_dif_vis, SfcAlbDifNirT &sfc_alb_dif_nir,
-  SfcAlbDirT    &sfc_alb_dir,     SfcAlbDifT    &sfc_alb_dif)
+  const creal1dk &sfc_alb_dir_vis, const creal1dk &sfc_alb_dir_nir,
+  const creal1dk &sfc_alb_dif_vis, const creal1dk &sfc_alb_dif_nir,
+  const real2dk &sfc_alb_dir,     const real2dk &sfc_alb_dif)
 {
   EKAT_ASSERT_MSG(initialized_k, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
   auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
@@ -289,13 +306,11 @@ static void compute_band_by_band_surface_albedos(
 /*
  * Compute broadband visible/UV and near-infrared surface fluxes.
  */
-template <typename SwBndFluxDirT, typename SwBndFluxDifT, typename SfcFluxDirVisT,
-          typename SfcFluxDirNirT, typename SfcFluxDifVisT, typename SfcFluxDifNirT>
 static void compute_broadband_surface_fluxes(
   const int ncol, const int ktop, const int nswbands,
-  SwBndFluxDirT &sw_bnd_flux_dir , SwBndFluxDifT &sw_bnd_flux_dif ,
-  SfcFluxDirVisT &sfc_flux_dir_vis, SfcFluxDirNirT &sfc_flux_dir_nir,
-  SfcFluxDifVisT &sfc_flux_dif_vis, SfcFluxDifNirT &sfc_flux_dif_nir)
+  const real3dk &sw_bnd_flux_dir , const real3dk &sw_bnd_flux_dif ,
+  const real1dk &sfc_flux_dir_vis, const real1dk &sfc_flux_dir_nir,
+  const real1dk &sfc_flux_dif_vis, const real1dk &sfc_flux_dif_nir)
 {
   // Band 10 straddles the near-IR and visible, so divide contributions from band 10 between both broadband sums
   // TODO: Hard-coding these band indices is really bad practice. If the bands ever were to change (like when
@@ -349,42 +364,26 @@ static void compute_broadband_surface_fluxes(
  * The input logger is in charge of outputing info to
  * screen and/or to file (or neither), depending on how it was set up.
  */
-template <typename PlayT, typename TlayT, typename PlevT, typename TlevT,
-          typename SfcAlbDirT, typename SfcAlbDifT, typename Mu0T,
-          typename LwpT, typename IwpT, typename RelT, typename ReiT, typename CldfracT,
-          typename AerTauSwT, typename AerSsaSwT, typename AerAsmSwT, typename AerTauLwT,
-          typename CldTauSwBndT, typename CldTauLwBndT,
-          typename CldTauSwGptT, typename CldTauLwGptT,
-          typename SwFluxUpT, typename SwFluxDnT, typename SwFluxDnDirT,
-          typename LwFluxUpT, typename LwFluxDnT,
-          typename SwClnclrskyFluxUpT, typename SwClnclrskyFluxDnT, typename SwClnclrskyFluxDnDirT,
-          typename SwClrskyFluxUpT, typename SwClrskyFluxDnT, typename SwClrskyFluxDnDirT,
-          typename SwClnskyFluxUpT, typename SwClnskyFluxDnT, typename SwClnskyFluxDnDirT,
-          typename LwClnclrskyFluxUpT, typename LwClnclrskyFluxDnT,
-          typename LwClrskyFluxUpT, typename LwClrskyFluxDnT,
-          typename LwClnskyFluxUpT, typename LwClnskyFluxDnT,
-          typename SwBndFluxUpT, typename SwBndFluxDnT, typename SwBndFluxDnDirT,
-          typename LwBndFluxUpT, typename LwBndFluxDnT>
 static void rrtmgp_main(
   const int ncol, const int nlay,
-  PlayT &p_lay, TlayT &t_lay, PlevT &p_lev, TlevT &t_lev,
-  GasConcsK<RealT, LayoutT, DeviceT> &gas_concs,
-  SfcAlbDirT &sfc_alb_dir, SfcAlbDifT &sfc_alb_dif, Mu0T &mu0,
-  LwpT &lwp, IwpT &iwp, RelT &rel, ReiT &rei, CldfracT &cldfrac,
-  AerTauSwT &aer_tau_sw, AerSsaSwT &aer_ssa_sw, AerAsmSwT &aer_asm_sw, AerTauLwT &aer_tau_lw,
-  CldTauSwBndT &cld_tau_sw_bnd, CldTauLwBndT &cld_tau_lw_bnd,
-  CldTauSwGptT &cld_tau_sw_gpt, CldTauLwGptT &cld_tau_lw_gpt,
-  SwFluxUpT &sw_flux_up, SwFluxDnT &sw_flux_dn, SwFluxDnDirT &sw_flux_dn_dir,
-  LwFluxUpT &lw_flux_up, LwFluxDnT &lw_flux_dn,
-  SwClnclrskyFluxUpT &sw_clnclrsky_flux_up, SwClnclrskyFluxDnT &sw_clnclrsky_flux_dn, SwClnclrskyFluxDnDirT &sw_clnclrsky_flux_dn_dir,
-  SwClrskyFluxUpT &sw_clrsky_flux_up, SwClrskyFluxDnT &sw_clrsky_flux_dn, SwClrskyFluxDnDirT &sw_clrsky_flux_dn_dir,
-  SwClnskyFluxUpT &sw_clnsky_flux_up, SwClnskyFluxDnT &sw_clnsky_flux_dn, SwClnskyFluxDnDirT &sw_clnsky_flux_dn_dir,
-  LwClnclrskyFluxUpT &lw_clnclrsky_flux_up, LwClnclrskyFluxDnT &lw_clnclrsky_flux_dn,
-  LwClrskyFluxUpT &lw_clrsky_flux_up, LwClrskyFluxDnT &lw_clrsky_flux_dn,
-  LwClnskyFluxUpT &lw_clnsky_flux_up, LwClnskyFluxDnT &lw_clnsky_flux_dn,
-  SwBndFluxUpT &sw_bnd_flux_up, SwBndFluxDnT &sw_bnd_flux_dn, SwBndFluxDnDirT &sw_bnd_flux_dn_dir,
-  LwBndFluxUpT &lw_bnd_flux_up, LwBndFluxDnT &lw_bnd_flux_dn,
-  const RealT tsi_scaling,
+  const creal2dk &p_lay, const creal2dk &t_lay, const creal2dk &p_lev, const creal2dk &t_lev,
+  gas_concs_t &gas_concs,
+  const creal2dk &sfc_alb_dir, const creal2dk &sfc_alb_dif, const real1dk &mu0,
+  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei, const real2dk &cldfrac,
+  const real3dk &aer_tau_sw, const real3dk &aer_ssa_sw, const real3dk &aer_asm_sw, const real3dk &aer_tau_lw,
+  const real3dk &cld_tau_sw_bnd, const real3dk &cld_tau_lw_bnd,
+  const real3dk &cld_tau_sw_gpt, const real3dk &cld_tau_lw_gpt,
+  const real2dk &sw_flux_up, const real2dk &sw_flux_dn, const real2dk &sw_flux_dn_dir,
+  const real2dk &lw_flux_up, const real2dk &lw_flux_dn,
+  const real2dk &sw_clnclrsky_flux_up, const real2dk &sw_clnclrsky_flux_dn, const real2dk &sw_clnclrsky_flux_dn_dir,
+  const real2dk &sw_clrsky_flux_up, const real2dk &sw_clrsky_flux_dn, const real2dk &sw_clrsky_flux_dn_dir,
+  const real2dk &sw_clnsky_flux_up, const real2dk &sw_clnsky_flux_dn, const real2dk &sw_clnsky_flux_dn_dir,
+  const real2dk &lw_clnclrsky_flux_up, const real2dk &lw_clnclrsky_flux_dn,
+  const real2dk &lw_clrsky_flux_up, const real2dk &lw_clrsky_flux_dn,
+  const real2dk &lw_clnsky_flux_up, const real2dk &lw_clnsky_flux_dn,
+  const real3dk &sw_bnd_flux_up, const real3dk &sw_bnd_flux_dn, const real3dk &sw_bnd_flux_dn_dir,
+  const real3dk &lw_bnd_flux_up, const real3dk &lw_bnd_flux_dn,
+  const Real tsi_scaling,
   const std::shared_ptr<spdlog::logger>& logger,
   const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false)
 {
@@ -404,7 +403,7 @@ static void rrtmgp_main(
 #endif
 
   // Setup pointers to RRTMGP SW fluxes
-  FluxesBybandK<RealT, LayoutT, DeviceT> fluxes_sw;
+  fluxes_t fluxes_sw;
   fluxes_sw.flux_up = sw_flux_up;
   fluxes_sw.flux_dn = sw_flux_dn;
   fluxes_sw.flux_dn_dir = sw_flux_dn_dir;
@@ -412,37 +411,37 @@ static void rrtmgp_main(
   fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
   fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
   // Clean-clear-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clnclrsky_fluxes_sw;
+  fluxes_broadband_t clnclrsky_fluxes_sw;
   clnclrsky_fluxes_sw.flux_up = sw_clnclrsky_flux_up;
   clnclrsky_fluxes_sw.flux_dn = sw_clnclrsky_flux_dn;
   clnclrsky_fluxes_sw.flux_dn_dir = sw_clnclrsky_flux_dn_dir;
   // Clear-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clrsky_fluxes_sw;
+  fluxes_broadband_t clrsky_fluxes_sw;
   clrsky_fluxes_sw.flux_up = sw_clrsky_flux_up;
   clrsky_fluxes_sw.flux_dn = sw_clrsky_flux_dn;
   clrsky_fluxes_sw.flux_dn_dir = sw_clrsky_flux_dn_dir;
   // Clean-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clnsky_fluxes_sw;
+  fluxes_broadband_t clnsky_fluxes_sw;
   clnsky_fluxes_sw.flux_up = sw_clnsky_flux_up;
   clnsky_fluxes_sw.flux_dn = sw_clnsky_flux_dn;
   clnsky_fluxes_sw.flux_dn_dir = sw_clnsky_flux_dn_dir;
 
   // Setup pointers to RRTMGP LW fluxes
-  FluxesBybandK<RealT, LayoutT, DeviceT> fluxes_lw;
+  fluxes_t fluxes_lw;
   fluxes_lw.flux_up = lw_flux_up;
   fluxes_lw.flux_dn = lw_flux_dn;
   fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
   fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
   // Clean-clear-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clnclrsky_fluxes_lw;
+  fluxes_broadband_t clnclrsky_fluxes_lw;
   clnclrsky_fluxes_lw.flux_up = lw_clnclrsky_flux_up;
   clnclrsky_fluxes_lw.flux_dn = lw_clnclrsky_flux_dn;
   // Clear-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clrsky_fluxes_lw;
+  fluxes_broadband_t clrsky_fluxes_lw;
   clrsky_fluxes_lw.flux_up = lw_clrsky_flux_up;
   clrsky_fluxes_lw.flux_dn = lw_clrsky_flux_dn;
   // Clean-sky
-  FluxesBroadbandK<RealT, LayoutT, DeviceT> clnsky_fluxes_lw;
+  fluxes_broadband_t clnsky_fluxes_lw;
   clnsky_fluxes_lw.flux_up = lw_clnsky_flux_up;
   clnsky_fluxes_lw.flux_dn = lw_clnsky_flux_dn;
 
@@ -450,8 +449,8 @@ static void rrtmgp_main(
   auto nlwbands = k_dist_lw_k.get_nband();
 
   // Setup aerosol optical properties
-  OpticalProps2strK<RealT, LayoutT, DeviceT> aerosol_sw;
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> aerosol_lw;
+  optical_props2_t aerosol_sw;
+  optical_props1_t aerosol_lw;
   aerosol_sw.init(k_dist_sw_k.get_band_lims_wavenumber());
   aerosol_sw.alloc_2str(ncol, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({nswbands,nlay,ncol}) , KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
@@ -476,8 +475,8 @@ static void rrtmgp_main(
 #endif
 
   // Convert cloud physical properties to optical properties for input to RRTMGP
-  OpticalProps2strK<RealT, LayoutT, DeviceT> clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei);
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei);
+  optical_props2_t clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei);
+  optical_props1_t clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei);
   Kokkos::deep_copy(cld_tau_sw_bnd, clouds_sw.tau);
   Kokkos::deep_copy(cld_tau_lw_bnd, clouds_lw.tau);
 
@@ -549,17 +548,15 @@ static void rrtmgp_finalize()
 /*
  * Shortwave driver (called by rrtmgp_main)
  */
-template <typename PlayT, typename TlayT, typename PlevT, typename TlevT,
-          typename SfcAlbDirT, typename SfcAlbDifT, typename Mu0T>
 static void rrtmgp_sw(
   const int ncol, const int nlay,
-  GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &k_dist,
-  PlayT &p_lay, TlayT &t_lay, PlevT &p_lev, TlevT &t_lev,
-  GasConcsK<RealT, LayoutT, DeviceT> &gas_concs,
-  SfcAlbDirT &sfc_alb_dir, SfcAlbDifT &sfc_alb_dif, Mu0T &mu0,
-  OpticalProps2strK<RealT, LayoutT, DeviceT> &aerosol, OpticalProps2strK<RealT, LayoutT, DeviceT> &clouds,
-  FluxesBybandK<RealT, LayoutT, DeviceT> &fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clnclrsky_fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clrsky_fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clnsky_fluxes,
-  const RealT tsi_scaling,
+  gas_optics_t &k_dist,
+  const creal2dk &p_lay, const creal2dk &t_lay, const creal2dk &p_lev, const creal2dk &t_lev,
+  gas_concs_t &gas_concs,
+  const creal2dk &sfc_alb_dir, const creal2dk &sfc_alb_dif, const real1dk &mu0,
+  optical_props2_t &aerosol, optical_props2_t &clouds,
+  fluxes_t &fluxes, fluxes_broadband_t &clnclrsky_fluxes, fluxes_broadband_t &clrsky_fluxes, fluxes_broadband_t &clnsky_fluxes,
+  const Real tsi_scaling,
   const std::shared_ptr<spdlog::logger>& logger,
   const bool extra_clnclrsky_diag, const bool extra_clnsky_diag)
 {
@@ -647,7 +644,7 @@ static void rrtmgp_sw(
 
   // Subset gases
   auto gas_names = gas_concs.get_gas_names();
-  GasConcsK<RealT, LayoutT, DeviceT> gas_concs_day;
+  gas_concs_t gas_concs_day;
   gas_concs_day.init(gas_names, nday, nlay);
   for (int igas = 0; igas < ngas; igas++) {
     auto vmr_day = view_t<RealT**>("vmr_day", nday, nlay);
@@ -660,7 +657,7 @@ static void rrtmgp_sw(
   }
 
   // Subset aerosol optics
-  OpticalProps2strK<RealT, LayoutT, DeviceT> aerosol_day;
+  optical_props2_t aerosol_day;
   aerosol_day.init(k_dist.get_band_lims_wavenumber());
   aerosol_day.alloc_2str(nday, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,nday}), KOKKOS_LAMBDA(int ibnd, int ilay, int iday) {
@@ -671,7 +668,7 @@ static void rrtmgp_sw(
 
   // Subset cloud optics
   // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
-  OpticalProps2strK<RealT, LayoutT, DeviceT> clouds_day;
+  optical_props2_t clouds_day;
   clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
   clouds_day.alloc_2str(nday, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,nday}), KOKKOS_LAMBDA(int igpt, int ilay, int iday) {
@@ -697,7 +694,7 @@ static void rrtmgp_sw(
   auto bnd_flux_up_day = view_t<RealT***>("bnd_flux_up_day", nday, nlay+1, nbnd);
   auto bnd_flux_dn_day = view_t<RealT***>("bnd_flux_dn_day", nday, nlay+1, nbnd);
   auto bnd_flux_dn_dir_day = view_t<RealT***>("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
-  FluxesBybandK<RealT, LayoutT, DeviceT> fluxes_day;
+  fluxes_t fluxes_day;
   fluxes_day.flux_up         = flux_up_day;
   fluxes_day.flux_dn         = flux_dn_day;
   fluxes_day.flux_dn_dir     = flux_dn_dir_day;
@@ -706,10 +703,10 @@ static void rrtmgp_sw(
   fluxes_day.bnd_flux_dn_dir = bnd_flux_dn_dir_day;
 
   // Allocate space for optical properties
-  OpticalProps2strK<RealT, LayoutT, DeviceT> optics;
+  optical_props2_t optics;
   optics.alloc_2str(nday, nlay, k_dist);
 
-  OpticalProps2strK<RealT, LayoutT, DeviceT> optics_no_aerosols;
+  optical_props2_t optics_no_aerosols;
   if (extra_clnsky_diag) {
     // Allocate space for optical properties (no aerosols)
     optics_no_aerosols.alloc_2str(nday, nlay, k_dist);
@@ -811,14 +808,13 @@ static void rrtmgp_sw(
 /*
  * Longwave driver (called by rrtmgp_main)
  */
-template <typename PlayT, typename TlayT, typename PlevT, typename TlevT>
 static void rrtmgp_lw(
   const int ncol, const int nlay,
-  GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &k_dist,
-  PlayT &p_lay, TlayT &t_lay, PlevT &p_lev, TlevT &t_lev,
-  GasConcsK<RealT, LayoutT, DeviceT> &gas_concs,
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> &aerosol, OpticalProps1sclK<RealT, LayoutT, DeviceT> &clouds,
-  FluxesBybandK<RealT, LayoutT, DeviceT> &fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clnclrsky_fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clrsky_fluxes, FluxesBroadbandK<RealT, LayoutT, DeviceT> &clnsky_fluxes,
+  gas_optics_t &k_dist,
+  const creal2dk &p_lay, const creal2dk &t_lay, const creal2dk &p_lev, const creal2dk &t_lev,
+  gas_concs_t &gas_concs,
+  optical_props1_t &aerosol, optical_props1_t &clouds,
+  fluxes_t &fluxes, fluxes_broadband_t &clnclrsky_fluxes, fluxes_broadband_t &clrsky_fluxes, fluxes_broadband_t &clnsky_fluxes,
   const bool extra_clnclrsky_diag, const bool extra_clnsky_diag)
 {
   // Problem size
@@ -856,16 +852,16 @@ static void rrtmgp_lw(
     });
 
   // Allocate space for optical properties
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> optics;
+  optical_props1_t optics;
   optics.alloc_1scl(ncol, nlay, k_dist);
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> optics_no_aerosols;
+  optical_props1_t optics_no_aerosols;
   if (extra_clnsky_diag) {
     // Allocate space for optical properties (no aerosols)
     optics_no_aerosols.alloc_1scl(ncol, nlay, k_dist);
   }
 
   // Boundary conditions
-  SourceFuncLWK<RealT, LayoutT, DeviceT> lw_sources;
+  source_func_t lw_sources;
   lw_sources.alloc(ncol, nlay, k_dist);
   view_t<RealT*> t_sfc   ("t_sfc"        ,ncol);
   view_t<RealT**> emis_sfc("emis_sfc",nbnd,ncol);
@@ -950,12 +946,10 @@ static void rrtmgp_lw(
 /*
  * Return a subcolumn mask consistent with a specified overlap assumption
  */
-template <typename CldfT, typename SeedsT>
-static view_t<int***> get_subcolumn_mask(const int ncol, const int nlay, const int ngpt,
-                                         CldfT &cldf, const int overlap_option, SeedsT &seeds)
+static int3dk get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, const real2dk &cldf, const int overlap_option, int1dk &seeds)
 {
   // Routine will return subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
-  auto subcolumn_mask = view_t<int***>("subcolumn_mask", ncol, nlay, ngpt);
+  int3dk subcolumn_mask = int3dk("subcolumn_mask", ncol, nlay, ngpt);
 
   // Subcolumn generators are a means for producing a variable x(i,j,k), where
   //
@@ -1029,10 +1023,9 @@ static view_t<int***> get_subcolumn_mask(const int ncol, const int nlay, const i
 /*
  * Compute cloud area from 3d subcol cloud property
  */
-template <typename PmidT, typename CldTauGptT, typename CldAreaT>
 static void compute_cloud_area(
-  int ncol, int nlay, int ngpt, RealT pmin, RealT pmax,
-  const PmidT& pmid, const CldTauGptT& cld_tau_gpt, CldAreaT& cld_area)
+  int ncol, int nlay, int ngpt, Real pmin, Real pmax,
+  const creal2dk& pmid, const real3dk& cld_tau_gpt, const real1dk& cld_area)
 {
   // Subcolumn binary cld mask; if any layers with pressure between pmin and pmax are cloudy
   // then 2d subcol mask is 1, otherwise it is 0
@@ -1058,20 +1051,15 @@ static void compute_cloud_area(
 /*
  * Return select cloud-top diagnostics following AeroCom recommendation
  */
-template <typename TmidT, typename PmidT, typename PdelT, typename ZdelT, typename QcT,
-          typename QiT, typename RelT, typename ReiT, typename CldfracTotT, typename NcT,
-          typename TmidAtCldtopT, typename PmidAtCldtopT, typename CldfracIceAtCldtopT,
-          typename CldfracLiqAtCldtopT, typename CldfracTotAtCldtopT, typename CdncAtCldtopT,
-          typename EffRadiusQcAtCldtopT, typename EffRadiusQiAtCldTopT>
 static void compute_aerocom_cloudtop(
-  int ncol, int nlay, const TmidT &tmid, const PmidT &pmid,
-  const PdelT &p_del, const ZdelT &z_del, const QcT &qc,
-  const QiT &qi, const RelT &rel, const ReiT &rei,
-  const CldfracTotT &cldfrac_tot, const NcT &nc,
-  TmidAtCldtopT &T_mid_at_cldtop, PmidAtCldtopT &p_mid_at_cldtop,
-  CldfracIceAtCldtopT &cldfrac_ice_at_cldtop, CldfracLiqAtCldtopT &cldfrac_liq_at_cldtop,
-  CldfracTotAtCldtopT &cldfrac_tot_at_cldtop, CdncAtCldtopT &cdnc_at_cldtop,
-  EffRadiusQcAtCldtopT &eff_radius_qc_at_cldtop, EffRadiusQiAtCldTopT &eff_radius_qi_at_cldtop)
+  int ncol, int nlay, const creal2dk &tmid, const creal2dk &pmid,
+  const creal2dk &p_del, const real2dk &z_del, const creal2dk &qc,
+  const creal2dk &qi, const creal2dk &rel, const creal2dk &rei,
+  const real2dk &cldfrac_tot, const creal2dk &nc,
+  const real1dk &T_mid_at_cldtop, const real1dk &p_mid_at_cldtop,
+  const real1dk &cldfrac_ice_at_cldtop, const real1dk &cldfrac_liq_at_cldtop,
+  const real1dk &cldfrac_tot_at_cldtop, const real1dk &cdnc_at_cldtop,
+  const real1dk &eff_radius_qc_at_cldtop, const real1dk &eff_radius_qi_at_cldtop)
 {
   /* The goal of this routine is to calculate properties at cloud top
    * based on the AeroCom recommendation. See reference for routine
@@ -1217,7 +1205,7 @@ static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, O
 }
 
 
-static int get_wavelength_index(OpticalPropsK<RealT, LayoutT, DeviceT> &kdist, RealT wavelength)
+static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
 {
   // Get wavelength bounds for all wavelength bands
   auto wavelength_bounds = kdist.get_band_lims_wavelength();
@@ -1251,14 +1239,13 @@ static inline int get_wavelength_index_lw_k(RealT wavelength)
   return get_wavelength_index(k_dist_lw_k, wavelength);
 }
 
-template <typename LwpT, typename IwpT, typename RelT, typename ReiT>
-static OpticalProps2strK<RealT, LayoutT, DeviceT> get_cloud_optics_sw(
+static optical_props2_t get_cloud_optics_sw(
   const int ncol, const int nlay,
-  CloudOpticsK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist,
-  LwpT &lwp, IwpT &iwp, RelT &rel, ReiT &rei) {
+  cloud_optics_t &cloud_optics, gas_optics_t &kdist,
+  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei) {
 
   // Initialize optics
-  OpticalProps2strK<RealT, LayoutT, DeviceT> clouds;
+  optical_props2_t clouds;
   clouds.init(kdist.get_band_lims_wavenumber());
   clouds.alloc_2str(ncol, nlay);
 
@@ -1278,14 +1265,13 @@ static OpticalProps2strK<RealT, LayoutT, DeviceT> get_cloud_optics_sw(
   return clouds;
 }
 
-template <typename LwpT, typename IwpT, typename RelT, typename ReiT>
-static OpticalProps1sclK<RealT, LayoutT, DeviceT> get_cloud_optics_lw(
+static optical_props1_t get_cloud_optics_lw(
   const int ncol, const int nlay,
-  CloudOpticsK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist,
-  LwpT &lwp, IwpT &iwp, RelT &rel, ReiT &rei) {
+  cloud_optics_t &cloud_optics, gas_optics_t &kdist,
+  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei) {
 
   // Initialize optics
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> clouds;
+  optical_props1_t clouds;
   clouds.init(kdist.get_band_lims_wavenumber());
   clouds.alloc_1scl(ncol, nlay);  // this is dumb, why do we need to init and alloc separately?!
 
@@ -1305,12 +1291,11 @@ static OpticalProps1sclK<RealT, LayoutT, DeviceT> get_cloud_optics_lw(
   return clouds;
 }
 
-template <typename CldT, typename PlayT>
-static OpticalProps2strK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
+static optical_props2_t get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
-  OpticalProps2strK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist, CldT &cld, PlayT &p_lay) {
+  optical_props2_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay) {
   // Initialized subsampled optics
-  OpticalProps2strK<RealT, LayoutT, DeviceT> subsampled_optics;
+  optical_props2_t subsampled_optics;
   subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
   subsampled_optics.alloc_2str(ncol, nlay);
   // Check that we do not have clouds with no optical properties; this would get corrected
@@ -1356,13 +1341,12 @@ static OpticalProps2strK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
   return subsampled_optics;
 }
 
-template <typename CldT, typename PlayT>
-static OpticalProps1sclK<RealT, LayoutT, DeviceT> get_subsampled_clouds(
+static optical_props1_t get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> &cloud_optics, GasOpticsRRTMGPK<RealT, LayoutT, DeviceT> &kdist,
-  CldT &cld, PlayT &p_lay) {
+  optical_props1_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay) {
+
   // Initialized subsampled optics
-  OpticalProps1sclK<RealT, LayoutT, DeviceT> subsampled_optics;
+  optical_props1_t subsampled_optics;
   subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
   subsampled_optics.alloc_1scl(ncol, nlay);
   // Check that we do not have clouds with no optical properties; this would get corrected
