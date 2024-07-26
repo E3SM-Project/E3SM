@@ -1717,7 +1717,7 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/podpm</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/podpm/pod00</CIME_OUTPUT_ROOT> <!-- pod00 string here temporarily -->
     <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
