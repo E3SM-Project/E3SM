@@ -526,10 +526,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end do
     deallocate(tptr)
 
-    do lchnk=begchunk,endchunk
-       cam_out(lchnk)%tbot(:) = posinf
-    end do
-
     !
     ! 3-D fields
     !

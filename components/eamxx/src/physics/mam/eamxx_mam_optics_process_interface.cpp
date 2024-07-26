@@ -140,7 +140,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  wet_atm_.omega = get_field_in("omega").get_view<const Real **>();
+  
 
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
@@ -153,6 +153,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
                          .get_view<const Real **>();  // FIXME: tot or liq?
   dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
+  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
   dry_atm_.z_mid     = buffer_.z_mid;
   dry_atm_.dz        = buffer_.dz;

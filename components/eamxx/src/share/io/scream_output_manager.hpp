@@ -68,7 +68,7 @@ public:
 
   // Constructor(s) & Destructor
   OutputManager () = default;
-  virtual ~OutputManager () = default;
+  virtual ~OutputManager ();
 
   // Set up the manager, creating all output streams. Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options

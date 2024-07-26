@@ -19,7 +19,7 @@ endif()
 
 string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero -f free")
 
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64 -L/opt/gcc/12.2.0/snos/lib64")
 string(APPEND CMAKE_CXX_FLAGS " -I$ENV{ROCM_PATH}/include")
 
 # Crusher: this resolves a crash in mct in docn init
@@ -34,5 +34,5 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 set(PIO_FILESYSTEM_HINTS "lustre")
 
-string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_VEGA90A=On -DCMAKE_CXX_FLAGS='-std=gnu++14'")
+string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_VEGA90A=On -DCMAKE_CXX_FLAGS='-std=gnu++14' -DKokkos_ENABLE_OPENMP=OFF")
 set(USE_HIP "TRUE")

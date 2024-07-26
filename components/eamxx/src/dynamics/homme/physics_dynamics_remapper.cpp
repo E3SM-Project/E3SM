@@ -413,7 +413,7 @@ do_remap_fwd()
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
-  const auto concurrency = KT::ExeSpace::concurrency();
+  const auto concurrency = KT::ExeSpace().concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
 #ifdef KOKKOS_ENABLE_DEBUG
   const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
@@ -450,7 +450,7 @@ do_remap_bwd()
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
-  const auto concurrency = KT::ExeSpace::concurrency();
+  const auto concurrency = KT::ExeSpace().concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
   const int num_levs  = m_phys_grid->get_num_vertical_levels();
   const int team_size = std::min(128,32*(int)ceil(((Real)num_levs)/32));

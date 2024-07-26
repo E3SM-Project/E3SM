@@ -129,6 +129,7 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '160929'
         grid_prefix = 'cice.QU240wLI'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.oQU240wLI.20240404.nc'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -306,6 +307,16 @@ def buildnml(case, caseroot, compname):
             else:
                 grid_date = '20231121'
                 grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-chrysalis'
+
+    elif ice_grid == 'IcosXISC30E3r7':
+        grid_date = '20240314'
+        grid_prefix = 'mpassi.IcosXISC30E3r7'
+        decomp_date = '20240314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcosXISC30E3r7.20240314.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20240314'
+            grid_prefix = 'mpassi.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
@@ -614,6 +625,7 @@ def buildnml(case, caseroot, compname):
             if iceberg_mode == 'data':
                 lines.append('<stream name="dataIcebergForcing"')
                 lines.append('                  type="input"')
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
                 lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
                 lines.append('                  filename_interval="none"')
                 lines.append('                  input_interval="none" >')

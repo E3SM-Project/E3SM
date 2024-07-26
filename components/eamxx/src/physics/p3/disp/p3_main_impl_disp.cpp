@@ -162,8 +162,8 @@ Int Functions<Real,DefaultDevice>
       qtend_ignore("qtend_ignore", nj, nk_pack), ntend_ignore("ntend_ignore", nj, nk_pack),
 
       // Variables still used in F90 but removed from C++ interface
-      mu_c("mu_c", nj, nk_pack), lamc("lamc", nj, nk_pack), precip_total_tend("precip_total_tend", nj, nk_pack),
-      nevapr("nevapr", nj, nk_pack), qr_evap_tend("qr_evap_tend", nj, nk_pack),
+      mu_c("mu_c", nj, nk_pack), lamc("lamc", nj, nk_pack),
+      qr_evap_tend("qr_evap_tend", nj, nk_pack),
 
       // cloud sedimentation
       v_qc("v_qc", nj, nk_pack), v_nc("v_nc", nj, nk_pack), flux_qx("flux_qx", nj, nk_pack), flux_nx("flux_nx", nj, nk_pack),
@@ -205,6 +205,8 @@ Int Functions<Real,DefaultDevice>
   auto rho_qi             = diagnostic_outputs.rho_qi;
   auto precip_liq_flux    = diagnostic_outputs.precip_liq_flux;
   auto precip_ice_flux    = diagnostic_outputs.precip_ice_flux;
+  auto precip_total_tend  = diagnostic_outputs.precip_total_tend;
+  auto nevapr             = diagnostic_outputs.nevapr;
   auto qv_prev            = diagnostic_inputs.qv_prev;
   auto t_prev             = diagnostic_inputs.t_prev;
   auto liq_ice_exchange   = history_only.liq_ice_exchange;

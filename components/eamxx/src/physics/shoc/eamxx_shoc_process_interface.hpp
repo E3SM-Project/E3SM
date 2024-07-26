@@ -85,6 +85,9 @@ public:
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
 
+        
+        cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
+
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
 
@@ -200,6 +203,8 @@ public:
     view_2d        thlm;
     view_2d        qw;
     view_2d        cloud_frac;
+    view_2d        cldfrac_liq;
+    view_2d        cldfrac_liq_prev;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -215,7 +220,8 @@ public:
                        const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
-                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
+                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
+                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -256,6 +262,8 @@ public:
       inv_exner = inv_exner_;
       thlm = thlm_;
       qw = qw_;
+      cldfrac_liq=cldfrac_liq_;
+      cldfrac_liq_prev=cldfrac_liq_prev_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -380,14 +388,14 @@ public:
 #ifndef SCREAM_SMALL_KERNELS
     static constexpr int num_1d_scalar_ncol = 4;
 #else
-    static constexpr int num_1d_scalar_ncol = 17;
+    static constexpr int num_1d_scalar_ncol = 15;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SMALL_KERNELS
     static constexpr int num_2d_vector_mid  = 18;
     static constexpr int num_2d_vector_int  = 12;
 #else
-    static constexpr int num_2d_vector_mid  = 23;
+    static constexpr int num_2d_vector_mid  = 22;
     static constexpr int num_2d_vector_int  = 13;
 #endif
     static constexpr int num_2d_vector_tr   = 1;
@@ -405,9 +413,7 @@ public:
     uview_1d<Real> ke_a;
     uview_1d<Real> wv_a;
     uview_1d<Real> wl_a;
-    uview_1d<Real> ustar;
     uview_1d<Real> kbfs;
-    uview_1d<Real> obklen;
     uview_1d<Real> ustar2;
     uview_1d<Real> wstar;
 #endif

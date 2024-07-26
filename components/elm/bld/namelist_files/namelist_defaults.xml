@@ -46,7 +46,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- twowayirrigation default -->
 <tw_irr>.false.</tw_irr>
-
 <!-- extra gw pumping for irrigation default -->
 <extra_gw_irr>.false.</extra_gw_irr>
 
@@ -115,7 +114,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
 <!-- Do downscaling to topounit -->
-<use_atm_downscaling_to_topunit>.false.</use_atm_downscaling_to_topunit>
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->
 <use_lake_wat_storage>.false.</use_lake_wat_storage>
@@ -130,6 +128,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <paramfile nu_com="ECA" use_cn=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
 <paramfile use_crop=".false." use_fates=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
+
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
@@ -310,6 +310,8 @@ lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
 <fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024np4_simyr2010_c220523.nc</fsurdat>
+<fsurdat hgrid="r025"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
@@ -442,10 +444,14 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false."  use_atm_downscaling_to_topunit =".true.">
+lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1950_c210924.nc</fsurdat>
+<fsurdat hgrid="r025"    sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr1850_c240125_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
@@ -597,22 +603,10 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="0.9x1.25" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_0.9x1.25_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="ne30np4" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_ne30np4_GIS_AIS_171002.nc</fglcmask>
 
-
-<fglcmask hgrid="48x96"    glc_grid="gland20" >glc/cism/griddata/glcmaskdata_48x96_Gland20km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland10" >glc/cism/griddata/glcmaskdata_48x96_Gland10km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland20" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland20km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland10" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland10km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland20" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland20km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland10" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland10km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<!-- MALI grids that could be used if the glc_grid logic was working. -->
+<!-- MALI grids -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
+<fglcmask hgrid="r05"      glc_grid="mpas.gis20km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r0125"    glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r0125_GIS_AIS.210407.nc</fglcmask>
 <fglcmask hgrid="ne30np4.pg2"  glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_ne30pg2_GIS_AIS.210407.nc</fglcmask>
@@ -930,6 +924,8 @@ this mask will have smb calculated over the entire global land surface
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." tw_irr=".true." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." use_hydrstress=".true."  >.true.</create_crop_landunit>
 
 <!-- =========================================  -->
 <!-- Performance issues                         -->
@@ -2081,6 +2077,39 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_GSDTG2000_to_0.125x0.125_nomask_aave_da_c190725.nc</map>
 
 <!-- mapping files for r0125xr0125 END -->
+
+<map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_AVHRR_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="MODIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.9x1.25"    frm_lmask="GRDC"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.9x1.25_GRDC_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="IGBPmergeICESatGIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_10x10min_IGBPmergeICESatGIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_10x10min_nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="360x720cru"    frm_lmask="cruncep"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_360x720cru_cruncep_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="GLOBE-Gardner-mergeGIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_GLOBE-Gardner-mergeGIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="GLOBE-Gardner"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_GLOBE-Gardner_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="LandScan2004"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_LandScan2004_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="MODIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="USGS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_USGS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="IGBP-GSDP"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_IGBP-GSDP_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="ISRIC-WISE"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_ISRIC-WISE_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_GSDTG2000_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
 
 <map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_AVHRR_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>

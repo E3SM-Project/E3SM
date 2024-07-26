@@ -142,9 +142,9 @@ Int Functions<S,D>
       qtend_ignore, ntend_ignore,
 
       // Variables still used in F90 but removed from C++ interface
-      mu_c, lamc, precip_total_tend, nevapr, qr_evap_tend;
+      mu_c, lamc, qr_evap_tend;
 
-    workspace.template take_many_and_reset<46>(
+    workspace.template take_many_and_reset<44>(
       {
         "mu_r", "T_atm", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_cld_frac_i", "inv_cld_frac_l", "inv_cld_frac_r", "qc_incld", "qr_incld", "qi_incld", "qm_incld",
@@ -153,7 +153,7 @@ Int Functions<S,D>
         "rhofacr", "rhofaci", "acn", "qv_sat_l", "qv_sat_i", "sup", "qv_supersat_i",
         "tmparr1", "exner", "diag_equiv_reflectivity", "diag_vm_qi", "diag_diam_qi",
         "pratot", "prctot", "qtend_ignore", "ntend_ignore",
-        "mu_c", "lamc", "precip_total_tend", "nevapr", "qr_evap_tend"
+        "mu_c", "lamc", "qr_evap_tend"
       },
       {
         &mu_r, &T_atm, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
@@ -163,7 +163,7 @@ Int Functions<S,D>
         &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
         &tmparr1, &exner, &diag_equiv_reflectivity, &diag_vm_qi, &diag_diam_qi,
         &pratot, &prctot, &qtend_ignore, &ntend_ignore, 
-        &mu_c, &lamc, &precip_total_tend, &nevapr, &qr_evap_tend
+        &mu_c, &lamc, &qr_evap_tend
       });
       
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
@@ -197,6 +197,8 @@ Int Functions<S,D>
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
+    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
+    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
     const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
     const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
@@ -216,7 +218,7 @@ Int Functions<S,D>
       &nc_incld, &nr_incld, &ni_incld, &bm_incld,
       &inv_rho, &prec, &rho, &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
       &tmparr1, &qtend_ignore, &ntend_ignore,
-      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &precip_total_tend, &nevapr, &oprecip_liq_flux, &oprecip_ice_flux
+      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &oprecip_total_tend, &onevapr, &oprecip_liq_flux, &oprecip_ice_flux
     };
 
     // initialize
@@ -252,7 +254,7 @@ Int Functions<S,D>
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
       olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
-      mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
+      mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       pratot, prctot, hydrometeorsPresent, nk, p3constants);
 

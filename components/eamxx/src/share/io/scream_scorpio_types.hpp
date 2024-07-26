@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 namespace scream {
 namespace scorpio {

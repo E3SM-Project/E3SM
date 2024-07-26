@@ -61,7 +61,9 @@ target_include_directories(scream_share PUBLIC
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
-endif ()
+else()
+  target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
+endif()
 
 target_link_libraries(scream_share PUBLIC ekat pioc)
 target_compile_options(scream_share PUBLIC

@@ -159,8 +159,14 @@ struct Functions
 
     // planetary boundary layer depth [m]
     view_1d<Scalar> pblh;
+    // surface friction velocity [m/s]
+    view_1d<Scalar> ustar;
+    // Monin Obukhov length [m]
+    view_1d<Scalar> obklen;
     // cloud liquid mixing ratio variance [kg^2/kg^2]
     view_2d<Spack>  shoc_ql2;
+    // eddy coefficient for heat [m2/s]
+    view_2d<Spack>  tkh;
   };
 
   // This struct stores output views for SHOC diagnostics for shoc_main.
@@ -209,9 +215,7 @@ struct Functions
     view_1d<Scalar> ke_a;
     view_1d<Scalar> wv_a;
     view_1d<Scalar> wl_a;
-    view_1d<Scalar> ustar;
     view_1d<Scalar> kbfs;
-    view_1d<Scalar> obklen;
     view_1d<Scalar> ustar2;
     view_1d<Scalar> wstar;
 
@@ -887,7 +891,10 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql,
     // Output Variables
     Scalar&                      pblh,
+    Scalar&                      ustar,
+    Scalar&                      obklen,
     const uview_1d<Spack>&       shoc_ql2,
+    const uview_1d<Spack>&       tkh,
     // Diagnostic Output Variables
     const uview_1d<Spack>&       shoc_mix,
     const uview_1d<Spack>&       w_sec,
@@ -958,7 +965,10 @@ struct Functions
     const view_2d<Spack>&       shoc_ql,
     // Output Variables
     const view_1d<Scalar>&      pblh,
+    const view_1d<Scalar>&      ustar,
+    const view_1d<Scalar>&      obklen,
     const view_2d<Spack>&       shoc_ql2,
+    const view_2d<Spack>&       tkh,
     // Diagnostic Output Variables
     const view_2d<Spack>&       shoc_mix,
     const view_2d<Spack>&       w_sec,
@@ -983,17 +993,14 @@ struct Functions
     const view_1d<Scalar>& ke_a,
     const view_1d<Scalar>& wv_a,
     const view_1d<Scalar>& wl_a,
-    const view_1d<Scalar>& ustar,
     const view_1d<Scalar>& kbfs,
-    const view_1d<Scalar>& obklen,
     const view_1d<Scalar>& ustar2,
     const view_1d<Scalar>& wstar,
     const view_2d<Spack>& rho_zt,
     const view_2d<Spack>& shoc_qv,
     const view_2d<Spack>& tabs,
     const view_2d<Spack>& dz_zt,
-    const view_2d<Spack>& dz_zi,
-    const view_2d<Spack>& tkh);
+    const view_2d<Spack>& dz_zi);
 #endif
 
   // Return microseconds elapsed

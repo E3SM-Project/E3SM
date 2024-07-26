@@ -1,7 +1,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 #include "share/iop/intensive_observation_period.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
@@ -248,13 +248,15 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
 
-  const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
-  m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
-  scorpio::read_var(iop_file,"tsec",m_time_info.iop_file_times_in_sec.data());
-
-  // From now on, when we read vars, "time" must be treated as unlimited, to avoid issues
+  // When we read vars, "time" must be treated as unlimited, to avoid issues
   if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
     scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+  }
+
+  const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
+  m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
+  for (int t=0; t<ntimes; ++t) {
+    scorpio::read_var(iop_file,"tsec",&m_time_info.iop_file_times_in_sec(t),t);
   }
 
   // Check that lat/lon from iop file match the targets in parameters. Note that
@@ -268,9 +270,9 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   scorpio::read_var(iop_file,"lon",&iop_file_lon);
 
   const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude"))/
-                             m_params.get<Real>("target_latitude");
+                             std::max(m_params.get<Real>("target_latitude"),(Real)0.1);
   const Real rel_lon_err = std::fabs(std::fmod(iop_file_lon + 360.0, 360.0)-m_params.get<Real>("target_longitude"))/
-                             m_params.get<Real>("target_longitude");
+                             std::max(m_params.get<Real>("target_longitude"),(Real)0.1);
   EKAT_REQUIRE_MSG(rel_lat_err < std::numeric_limits<float>::epsilon(),
                    "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
   EKAT_REQUIRE_MSG(rel_lon_err < std::numeric_limits<float>::epsilon(),
@@ -540,6 +542,14 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
     scorpio::read_var(iop_file,"Ps",ps_data,iop_file_time_idx);
     surface_pressure.sync_to_dev();
+
+    // Read in IOP lev data
+    auto data = iop_file_pressure.get_view<Real*, Host>().data();
+    scorpio::read_var(iop_file,"lev",data);
+
+    // Convert to pressure to millibar (file gives pressure in Pa)
+    for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
+    iop_file_pressure.sync_to_dev();
 
     // Pre-process file pressures, store number of file levels
     // where the last level is the first level equal to surface pressure.
