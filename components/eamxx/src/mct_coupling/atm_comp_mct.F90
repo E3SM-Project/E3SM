@@ -57,8 +57,8 @@ module atm_comp_mct
 #ifdef HAVE_MOAB
   ! to store all fields to be set in moab 
   integer , private :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
-  real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
-  real(r8) , allocatable, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
+  real(r8) , allocatable, target, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
+  real(r8) , allocatable, target, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
 #ifdef MOABCOMP
   integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
@@ -101,6 +101,7 @@ CONTAINS
     use shr_sys_mod,        only: shr_sys_abort
 #ifdef HAVE_MOAB
     use shr_kind_mod     ,  only: cxx=>shr_kind_cxx
+    use mct_mod,            only: mct_avect_nRattr
     use iMOAB,              only: iMOAB_SetDoubleTagStorage
 #ifdef MOABDEBUG
     use iMOAB,              only: iMOAB_WriteMesh

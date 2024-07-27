@@ -116,6 +116,9 @@ protected:
   int m_num_scream_fields;
 
   view_2d<HostDevice, Real> m_field_data;
+#ifdef HAVE_MOAB
+  view_2d<HostDevice, Real> m_field_data_moab; 
+#endif
   name_t*                   m_field_names;
   view_1d<HostDevice, int>  m_field_cpl_indices;
   view_1d<HostDevice, int>  m_field_vector_components;

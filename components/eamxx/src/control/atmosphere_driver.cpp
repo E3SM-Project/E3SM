@@ -300,6 +300,9 @@ void AtmosphereDriver::create_grids()
 void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                                            const int num_cpl_fields, const int num_scream_fields,
                                                            const int field_size, Real* data_ptr,
+#ifdef HAVE_MOAB
+                                                           Real* data_ptr_moab,
+#endif
                                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
 {
@@ -318,6 +321,9 @@ void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransf
   } else EKAT_ERROR_MSG("Error! Unexpected SurfaceCouplingTransferType.");
 
   sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
+#ifdef HAVE_MOAB
+                               data_ptr_moab,
+#endif
                                names_ptr, cpl_indices_ptr, vec_comps_ptr,
                                constant_multiple_ptr, do_transfer_during_init_ptr);
 }
