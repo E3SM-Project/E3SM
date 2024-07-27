@@ -213,7 +213,7 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Export,
                                            num_cpl_exports, num_scream_exports, export_field_size, a2x_ptr,
 #ifdef HAVE_MOAB
-                                           x2a_moab_ptr,
+                                           a2x_moab_ptr,
 #endif                                             
                                            names_out[0], export_cpl_indices, export_vector_components,
                                            export_constant_multiple, do_export_during_init);
