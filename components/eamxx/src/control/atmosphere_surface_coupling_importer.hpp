@@ -55,12 +55,24 @@ public:
   // which are not needed during initialization.
   void do_import(const bool called_during_initialization=false);
 
+#ifdef HAVE_MOAB
+  // Function which performes the import from moab coupler to scream fields.
+  // If calling in initialize_impl(), set
+  // called_during_initialization=true to avoid importing to fields
+  // which are not needed during initialization.
+  void do_import_from_moab(const bool called_during_initialization=false);
+#endif
+
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
   // Overwrite imports for IOP cases with IOP file surface data
   void overwrite_iop_imports (const bool called_during_initialization);
 
+#ifdef HAVE_MOAB
+  // Overwrite imports for IOP cases with IOP file surface data
+  void overwrite_iop_imports_from_moab (const bool called_during_initialization);
+#endif
 protected:
 
   // The three main overrides for the subcomponent
@@ -82,6 +94,14 @@ protected:
   // pointer to the whole x2a array from Fortran)
   view_2d <DefaultDevice, Real> m_cpl_imports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_imports_view_h;
+
+#ifdef HAVE_MOAB
+  // Views storing a 2d array with dims (num_fields,num_cols) for import data.
+  // The colums index strides faster, since that's what moab does (so we can "view" the
+  // pointer to the whole x2a_am(:,:) array from Fortran)
+  view_2d <DefaultDevice, Real> m_moab_cpl_imports_view_d;
+  uview_2d<HostDevice,    Real> m_moab_cpl_imports_view_h;
+#endif
 
   // Array storing the field names for imports
   name_t* m_import_field_names;
