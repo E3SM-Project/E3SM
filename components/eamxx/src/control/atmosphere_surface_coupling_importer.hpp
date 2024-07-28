@@ -55,24 +55,12 @@ public:
   // which are not needed during initialization.
   void do_import(const bool called_during_initialization=false);
 
-#ifdef HAVE_MOAB
-  // Function which performes the import from moab coupler to scream fields.
-  // If calling in initialize_impl(), set
-  // called_during_initialization=true to avoid importing to fields
-  // which are not needed during initialization.
-  void do_import_from_moab(const bool called_during_initialization=false);
-#endif
-
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
   // Overwrite imports for IOP cases with IOP file surface data
   void overwrite_iop_imports (const bool called_during_initialization);
 
-#ifdef HAVE_MOAB
-  // Overwrite imports for IOP cases with IOP file surface data
-  void overwrite_iop_imports_from_moab (const bool called_during_initialization);
-#endif
 protected:
 
   // The three main overrides for the subcomponent
