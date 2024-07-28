@@ -2952,6 +2952,8 @@ contains
      block_ptr => block_ptr % next
    end do
 
+   errorCode = 0
+
 !-----------------------------------------------------------------------
 !EOC
 
@@ -3935,7 +3937,6 @@ contains
       if ( iceFluxDMSPField % isActive ) then
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
-   endif
    endif
 
 !-----------------------------------------------------------------------
