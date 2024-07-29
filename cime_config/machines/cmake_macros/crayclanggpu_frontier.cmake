@@ -1,5 +1,5 @@
 set(MPICC "cc")
-set(MPICXX "hipcc")
+set(MPICXX "mpicxx")
 set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "hipcc")
@@ -53,9 +53,11 @@ string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
 string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
-string(APPEND CMAKE_CXX_FLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
-string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
+string(APPEND CMAKE_CXX_FLAGS " --offload-arch=gfx90a")
+string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
+
+# May not needed
+#string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 

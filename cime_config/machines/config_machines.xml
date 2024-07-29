@@ -1021,45 +1021,42 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="crayclang.*">
+      <modules compiler="cray.*">
         <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/15.0.1</command>
-        <!-- craype module to address tcmalloc runtime errors at startup -->
-        <!-- tcmalloc.cc:647 Attempt to free invalid pointer -->
-        <command name="switch">craype craype/2.7.20</command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.5.0</command>
+        <command name="switch">cce cce/17.0.0</command>
+        <command name="switch">craype craype/2.7.31</command>
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.0</command>
+        <command name="load">rocm/5.7.1</command>
       </modules>
-      <modules compiler="amdclang.*">
+      <modules compiler="amd.*">
         <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-        <command name="switch">amd amd/5.4.0</command>
+        <command name="switch">PrgEnv-cray PrgEnv-amd/8.5.0</command>
+        <command name="switch">amd amd/5.7.1</command>
       </modules>
       <modules compiler="amdclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
       </modules>
       <modules compiler="gnu.*">
         <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-        <!-- TODO: gcc/12.2.0 is default, need to check -->
-        <command name="switch">gcc gcc/11.2.0</command>
+        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.5.0</command>
+        <command name="switch">gcc-native gcc-native/12.3</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.0</command>
+        <command name="load">rocm/5.7.1</command>
       </modules>
       <modules>
-        <command name="load">cray-python/3.9.13.1</command>
+        <command name="load">cray-python/3.11.5</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake/3.23.2</command>
         <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1068,13 +1065,11 @@
     <TEST_MEMLEAK_TOLERANCE>0.25</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
+      <env name="PKG_CONFIG_PATH">$ENV{CRAY_LIBSCI_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="NTASKS_PER_GPU"> </env>
       <env name="GPU_BIND_ARGS"> </env>
-    </environment_variables>
-    <environment_variables compiler="amdclang">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
       <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
@@ -1092,6 +1087,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+<!--
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
@@ -1101,6 +1097,7 @@
     <environment_variables compiler="amdclang.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+-->
   </machine>
 
   <machine MACH="crusher">
