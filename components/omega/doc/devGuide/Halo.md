@@ -29,9 +29,9 @@ Once initialized, a pointer to the default Halo can be retrieved with:
 OMEGA::Halo *DefHalo = OMEGA::Halo::getDefault();
 ```
 Additional Halo objects can be constructed for defined MachEnv and Decomp
-objects by calling the Halo constructor with a supplied `std::string` Name:
+objects by calling the Halo create method with a supplied `std::string` Name:
 ```c++
-OMEGA::Halo NewHalo(Name, NewEnv, NewDecomp);
+OMEGA::Halo::create(Name, NewEnv, NewDecomp);
 ```
 A pointer to each constructed Halo is stored in a `std::map` container, which
 can be retrieved by supplying the Name to `OMEGA::Halo::get(Name)`.
