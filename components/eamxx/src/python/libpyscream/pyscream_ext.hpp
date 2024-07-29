@@ -1,5 +1,5 @@
-#ifndef PYEAMXX_HPP
-#define PYEAMXX_HPP
+#ifndef PYSCREAM_HPP
+#define PYSCREAM_HPP
 
 #include "physics/register_physics.hpp"
 #include "diagnostics/register_diagnostics.hpp"
@@ -27,4 +27,4 @@ private:
 
 } // namespace scream
 
-#endif // PYEAMXX_HPP
+#endif // PYSCREAM_HPP

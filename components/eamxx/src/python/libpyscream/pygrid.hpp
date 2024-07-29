@@ -3,7 +3,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
-#include "pyeamxx.hpp"
+#include "pyscream_ext.hpp"
 
 #include <pybind11/pybind11.h>
 
@@ -14,7 +14,7 @@ namespace scream {
 inline void create_grids_manager (int ncols, int nlevs, const std::string& latlon_nc_file)
 {
   EKAT_REQUIRE_MSG (PySession::get().inited,
-      "Error! You did not initialize pyeamxx, or you already finalized it!\n");
+      "Error! You did not initialize pyscream, or you already finalized it!\n");
   auto& comm = PySession::get().comm;
   ekat::ParameterList gm_params;
   std::vector<std::string> grids_names = {"Physics"};
@@ -23,8 +23,10 @@ inline void create_grids_manager (int ncols, int nlevs, const std::string& latlo
   pl.set("number_of_global_columns",ncols);
   pl.set("number_of_vertical_levels",nlevs);
   gm_params.set("grids_names",grids_names);
+  gm_params.set("geo_data_source",std::string("CREATE_EMPTY_DATA"));
 
   if (latlon_nc_file!="") {
+    gm_params.set("geo_data_source",std::string("IC_FILE"));
     gm_params.set("ic_filename",latlon_nc_file);
   }
 
