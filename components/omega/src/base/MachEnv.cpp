@@ -363,7 +363,7 @@ MachEnv *MachEnv::getDefault() { return MachEnv::DefaultEnv; }
 
 //------------------------------------------------------------------------------
 // Get environment by name
-MachEnv *MachEnv::getEnv(const std::string Name ///< [in] Name of environment
+MachEnv *MachEnv::get(const std::string Name ///< [in] Name of environment
 ) {
 
    // look for an instance of this name
@@ -380,7 +380,7 @@ MachEnv *MachEnv::getEnv(const std::string Name ///< [in] Name of environment
       return nullptr;
    }
 
-} // end getEnv
+} // end get
 
 //------------------------------------------------------------------------------
 // Get communicator for an environment

@@ -136,7 +136,7 @@ class MachEnv {
       auto *NewEnv = new MachEnv(Name, std::forward<ArgTypes>(Args)...);
       AllEnvs.emplace(Name, NewEnv);
 
-      return getEnv(Name);
+      return get(Name);
    }
 
    /// Initializes the Machine Environment and creates the default
@@ -161,7 +161,7 @@ class MachEnv {
    static MachEnv *getDefault();
 
    /// Retrieve any other environment by name
-   static MachEnv *getEnv(const std::string Name ///< [in] name of environment
+   static MachEnv *get(const std::string Name ///< [in] name of environment
    );
 
    /// Get communicator for an environment
