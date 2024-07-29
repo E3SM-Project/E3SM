@@ -849,6 +849,15 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
 #endif
 
 #ifdef RRTMGP_ENABLE_KOKKOS
+using interface_t = scream::rrtmgp::rrtmgp_interface<>;
+using real1dk = interface_t::view_t<scream::Real*>;
+using real2dk = interface_t::view_t<scream::Real**>;
+using real3dk = interface_t::view_t<scream::Real***>;
+using int1dk = interface_t::view_t<int*>;
+using int2dk = interface_t::view_t<int**>;
+using int3dk = interface_t::view_t<int***>;
+using MDRP = interface_t::MDRP;
+
 TEST_CASE("rrtmgp_test_heating_k") {
   // Initialize Kokkos
   scream::init_kls();
@@ -921,7 +930,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     cloud_fraction(0,0) = 1.0;
   });
   auto cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Test with no cloud
@@ -931,7 +940,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     cloud_fraction(0,0) = 0.0;
   });
   cloud_mass_ref = 0.0;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Test with empty clouds (cloud fraction but with no associated mixing ratio)
@@ -943,7 +952,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     cloud_fraction(0,0) = 0.1;
   });
   cloud_mass_ref = 0.0;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Test with cell half filled with cloud
@@ -953,7 +962,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     cloud_fraction(0,0) = 0.5;
   });
   cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Clean up
@@ -977,14 +986,14 @@ TEST_CASE("rrtmgp_test_limit_to_bounds_k") {
   });
 
   // Limit to bounds that contain the data; should be no change in values
-  scream::rrtmgp::limit_to_bounds(arr, 0.0, 5.0, arr_limited);
+  interface_t::limit_to_bounds_k(arr, 0.0, 5.0, arr_limited);
   REQUIRE(chc(arr)(0,0) == chc(arr_limited)(0,0));
   REQUIRE(chc(arr)(0,1) == chc(arr_limited)(0,1));
   REQUIRE(chc(arr)(1,0) == chc(arr_limited)(1,0));
   REQUIRE(chc(arr)(1,1) == chc(arr_limited)(1,1));
 
   // Limit to bounds that do not completely contain the data; should be a change in values!
-  scream::rrtmgp::limit_to_bounds(arr, 1.5, 3.5, arr_limited);
+  interface_t::limit_to_bounds_k(arr, 1.5, 3.5, arr_limited);
   REQUIRE(chc(arr_limited)(0,0) == 1.5);
   REQUIRE(chc(arr_limited)(0,1) == 2.0);
   REQUIRE(chc(arr_limited)(1,0) == 3.0);
@@ -1074,11 +1083,11 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // Need to initialize RRTMGP with dummy gases
   logger->info("Init gases...\n");
-  GasConcsK gas_concs;
+  GasConcsK<scream::Real, Kokkos::LayoutRight, DefaultDevice> gas_concs;
   string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
   gas_concs.init(gas_names,ncol,nlay);
   logger->info("Init RRTMGP...\n");
-  scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
   // Create simple test cases; We expect, given the input data, that band 10
   // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
@@ -1092,7 +1101,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   auto sw_bnd_flux_dir = real3dk("sw_bnd_flux_dir", ncol, nlay+1, nbnd);
   auto sw_bnd_flux_dif = real3dk("sw_bnd_flux_dif", ncol, nlay+1, nbnd);
   logger->info("Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
@@ -1106,7 +1115,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  scream::rrtmgp::compute_broadband_surface_fluxes(
+  interface_t::compute_broadband_surface_fluxes(
     ncol, kbot, nbnd,
     sw_bnd_flux_dir, sw_bnd_flux_dif,
     sfc_flux_dir_vis, sfc_flux_dir_nir,
@@ -1124,7 +1133,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in NIR bands
   logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
@@ -1138,7 +1147,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  scream::rrtmgp::compute_broadband_surface_fluxes(
+  interface_t::compute_broadband_surface_fluxes(
     ncol, kbot, nbnd,
     sw_bnd_flux_dir, sw_bnd_flux_dif,
     sfc_flux_dir_vis, sfc_flux_dir_nir,
@@ -1155,7 +1164,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in VIS bands
   logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
@@ -1169,7 +1178,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  scream::rrtmgp::compute_broadband_surface_fluxes(
+  interface_t::compute_broadband_surface_fluxes(
     ncol, kbot, nbnd,
     sw_bnd_flux_dir, sw_bnd_flux_dif,
     sfc_flux_dir_vis, sfc_flux_dir_nir,
@@ -1186,7 +1195,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   // ---------------------------------
   // Test case, only flux in all bands
   logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
-  Kokkos::parallel_for(conv::get_mdrp<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
     if (ibnd < 9) {
       sw_bnd_flux_dir(icol,ilay,ibnd) = 1.0;
       sw_bnd_flux_dif(icol,ilay,ibnd) = 2.0;
@@ -1200,7 +1209,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  scream::rrtmgp::compute_broadband_surface_fluxes(
+  interface_t::compute_broadband_surface_fluxes(
     ncol, kbot, nbnd,
     sw_bnd_flux_dir, sw_bnd_flux_dif,
     sfc_flux_dir_vis, sfc_flux_dir_nir,
@@ -1216,7 +1225,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // Finalize YAKL
   logger->info("Free memory...\n");
-  scream::rrtmgp::rrtmgp_finalize();
+  interface_t::rrtmgp_finalize();
   gas_concs.reset();
   scream::finalize_kls();
 }
@@ -1282,16 +1291,16 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
     // Check answers by computing new cldfrac from mask
     Kokkos::deep_copy(cldfrac_from_mask, 0.0);
-    Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+    Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
       for (int igpt = 0; igpt < ngpt; ++igpt) {
         real cldmask_real = cldmask(icol,ilay,igpt);
         cldfrac_from_mask(icol,ilay) += cldmask_real;
       }
     });
-    Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+    Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
       cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
     });
     // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be sure
@@ -1316,7 +1325,7 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
     auto cldmask_h = chc(cldmask);
     for (int igpt = 0; igpt < ngpt; igpt++) {
       if (cldmask_h(0,0,igpt) == 1) {
@@ -1359,7 +1368,7 @@ TEST_CASE("rrtmgp_cloud_area_k") {
     cldtau(0,1,1) = 0;
     cldtau(0,1,2) = 0;
   });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 0.0);
 
   // Case:
@@ -1376,7 +1385,7 @@ TEST_CASE("rrtmgp_cloud_area_k") {
     cldtau(0,1,1) = 1;
     cldtau(0,1,2) = 1;
   });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0);
 
   // Case:
@@ -1393,11 +1402,11 @@ TEST_CASE("rrtmgp_cloud_area_k") {
       cldtau(0,1,1) = 0;
       cldtau(0,1,2) = 1.0;
   });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0 / 3.0);
 
   // Case:
@@ -1414,11 +1423,11 @@ TEST_CASE("rrtmgp_cloud_area_k") {
     cldtau(0,1,1) = 0;
     cldtau(0,1,2) = 1;
   });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 0.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
   scream::finalize_kls();
 }
@@ -1463,7 +1472,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   Kokkos::deep_copy(rel, 10.0);
   Kokkos::deep_copy(rei, 10.0);
   // Call the function
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1481,7 +1490,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
 
   // Case 2: if all clouds, everything goes to 1 * its value
   Kokkos::deep_copy(cldfrac_tot, 1.0);
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1504,7 +1513,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
     cldfrac_tot(0, 3) = 0.3;
     cldfrac_tot(0, 4) = 0.2;
   });
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1520,7 +1529,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
     cldfrac_tot(0, 5) = 0.4;
     cldfrac_tot(0, 6) = 0.2;
   });
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1534,7 +1543,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
     cldfrac_tot(0, 4) = 0.0;
     cldfrac_tot(0, 5) = 0.1;
   });
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1550,7 +1559,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   });
   Kokkos::deep_copy(qc, 1.0);
   Kokkos::deep_copy(qi, 0.0);
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1568,7 +1577,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   });
   Kokkos::deep_copy(qc, 0.0);
   Kokkos::deep_copy(qi, 1.0);
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1604,7 +1613,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
     qc(0, 6) = 50;
     qc(0, 7) = 10;
   });
-  scream::rrtmgp::compute_aerocom_cloudtop(
+  interface_t::compute_aerocom_cloudtop(
     ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
     tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
     cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
