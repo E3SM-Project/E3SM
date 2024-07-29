@@ -40,10 +40,10 @@ class MAMWetscav : public scream::AtmosphereProcess {
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name() const { return "mam4_wetscav"; }
+  std::string name() const override { return "mam4_wetscav"; }
 
   // Set the grid and input output variables
   void set_grids(
@@ -52,7 +52,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
-  size_t requested_buffer_size_in_bytes() const {
+  size_t requested_buffer_size_in_bytes() const override {
     return mam_coupling::buffer_size(ncol_, nlev_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -64,7 +64,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() override {/*Do nothing*/};
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
@@ -167,6 +167,34 @@ class MAMWetscav : public scream::AtmosphereProcess {
 
   // Work arrays
   view_2d work_;
+
+  // TODO: Following variables are from convective parameterization (not
+  // implemented yet in EAMxx), so should be zero for now
+      
+  view_2d sh_frac_;
+
+  // Deep convective cloud fraction [fraction]
+  view_2d dp_frac_;
+
+  // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
+  view_2d evapcsh_;
+
+  view_2d evapcdp_;
+
+  // Rain production, shallow convection [kg/kg/s]
+  view_2d rprdsh_;
+
+  // Rain production, deep convection [kg/kg/s]
+  view_2d rprddp_;
+
+  // In cloud water mixing ratio, deep convection
+  view_2d icwmrdp_;
+
+  // In cloud water mixing ratio, shallow convection
+  view_2d icwmrsh_;
+
+  // Detraining cld H20 from deep convection [kg/kg/s]
+  view_2d dlf_;
 
   // Aerosol states
   mam_coupling::AerosolState wet_aero_, dry_aero_, dry_aero_tends_;

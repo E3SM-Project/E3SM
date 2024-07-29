@@ -29,7 +29,6 @@ void MAMWetscav::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto q_unit    = kg / kg;
-  auto dqdt_unit = kg / kg / s;
   auto n_unit    = 1 / kg;  // units of number mixing ratios of tracers
 
   m_grid                = grids_manager->get_grid("Physics");
@@ -206,7 +205,7 @@ void MAMWetscav::set_grids(
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
-  static constexpr auto m3 = m2 * m;
+  static constexpr auto m3 = m * m * m;
 
   // Aerosol dry particle diameter [m]
   add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
@@ -357,6 +356,44 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d("work", ncol_, work_len);
 
+  // TODO: Following variables are from convective parameterization (not
+  // implemented yet in EAMxx), so should be zero for now
+
+  sh_frac_ = view_2d("sh_frac", ncol_, nlev_);
+  Kokkos::deep_copy(sh_frac_, 0);
+
+  // Deep convective cloud fraction [fraction]
+  dp_frac_ = view_2d("dp_frac", ncol_, nlev_);
+  Kokkos::deep_copy(dp_frac_, 0);
+
+  // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
+  evapcsh_ = view_2d("evapcsh", ncol_, nlev_);
+  Kokkos::deep_copy(evapcsh_, 0);
+
+  // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
+  evapcdp_ = view_2d("evapcdp", ncol_, nlev_);
+  Kokkos::deep_copy(evapcdp_, 0);
+
+  // Rain production, shallow convection [kg/kg/s]
+  rprdsh_ = view_2d("rprdsh", ncol_, nlev_);
+  Kokkos::deep_copy(rprdsh_, 0);
+
+  // Rain production, deep convection [kg/kg/s]
+  rprddp_ = view_2d("rprddp", ncol_, nlev_);
+  Kokkos::deep_copy(rprddp_, 0);
+
+  // In cloud water mixing ratio, deep convection
+  icwmrdp_ = view_2d("icwmrdp", ncol_, nlev_);
+  Kokkos::deep_copy(icwmrdp_, 0);
+
+  // In cloud water mixing ratio, shallow convection
+  icwmrsh_ = view_2d("icwmrsh", ncol_, nlev_);
+  Kokkos::deep_copy(icwmrsh_, 0);
+
+  // Detraining cld H20 from deep convection [kg/kg/s]
+  dlf_ = view_2d("dlf", ncol_, nlev_);
+  Kokkos::deep_copy(dlf_, 0);
+
   //---------------------------------------------------------------------------------
   // Setup preprocessing and post processing
   //---------------------------------------------------------------------------------
@@ -394,40 +431,31 @@ void MAMWetscav::run_impl(const double dt) {
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
 
-  auto sh_frac = view_2d("sh_frac", ncol_, nlev_);
-  Kokkos::deep_copy(sh_frac, 0);
+  auto sh_frac = sh_frac_;
 
   // Deep convective cloud fraction [fraction]
-  auto dp_frac = view_2d("dp_frac", ncol_, nlev_);
-  Kokkos::deep_copy(dp_frac, 0);
+  auto dp_frac = dp_frac_;
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
-  auto evapcsh = view_2d("evapcsh", ncol_, nlev_);
-  Kokkos::deep_copy(evapcsh, 0);
+  auto evapcsh = evapcsh_;
 
   // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  auto evapcdp = view_2d("evapcdp", ncol_, nlev_);
-  Kokkos::deep_copy(evapcdp, 0);
+  auto evapcdp = evapcdp_;
 
   // Rain production, shallow convection [kg/kg/s]
-  auto rprdsh = view_2d("rprdsh", ncol_, nlev_);
-  Kokkos::deep_copy(rprdsh, 0);
+  auto rprdsh = rprdsh_;
 
   // Rain production, deep convection [kg/kg/s]
-  auto rprddp = view_2d("rprddp", ncol_, nlev_);
-  Kokkos::deep_copy(rprddp, 0);
+  auto rprddp = rprddp_;
 
   // In cloud water mixing ratio, deep convection
-  auto icwmrdp = view_2d("icwmrdp", ncol_, nlev_);
-  Kokkos::deep_copy(icwmrdp, 0);
+  auto icwmrdp = icwmrdp_;
 
   // In cloud water mixing ratio, shallow convection
-  auto icwmrsh = view_2d("icwmrsh", ncol_, nlev_);
-  Kokkos::deep_copy(icwmrsh, 0);
+  auto icwmrsh = icwmrsh_;
 
   // Detraining cld H20 from deep convection [kg/kg/s]
-  auto dlf = view_2d("dlf", ncol_, nlev_);
-  Kokkos::deep_copy(dlf, 0);
+  auto dlf = dlf_;
 
   //----------- Variables from macrophysics scheme -------------
   // Total cloud fraction
