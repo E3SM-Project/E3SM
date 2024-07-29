@@ -10,14 +10,6 @@
 // For component name
 #include <string>
 
-#ifndef KOKKOS_ENABLE_CUDA
-#define protected_except_cuda public
-#define private_except_cuda public
-#else
-#define protected_except_cuda protected
-#define private_except_cuda private
-#endif
-
 namespace scream {
 
 /*
