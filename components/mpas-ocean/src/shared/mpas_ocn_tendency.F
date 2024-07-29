@@ -830,13 +830,15 @@ contains
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFluxRunoff)
 
-         ! Get surface flux due to subglacial runoff array
-         ! only active tracers have subglacial runoff flux for now,
-         ! but we still need to associate for ALL tracers
-         modifiedGroupName = groupName // "SurfaceFluxSubglacialRunoff"
-         call mpas_pool_get_array(tracersSurfaceFluxPool, &
-                                  modifiedGroupName, &
-                                  tracerGroupSurfaceFluxSubglacialRunoff)
+         if (trim(config_subglacial_runoff_mode) == 'data') then
+             ! Get surface flux due to subglacial runoff array
+             ! only active tracers have subglacial runoff flux for now,
+             ! but we still need to associate for ALL tracers
+             modifiedGroupName = groupName // "SurfaceFluxSubglacialRunoff"
+             call mpas_pool_get_array(tracersSurfaceFluxPool, &
+                                      modifiedGroupName, &
+                                      tracerGroupSurfaceFluxSubglacialRunoff)
+         end if
 
          ! Get surface flux removed array to keep track of how much
          ! flux is ignored
