@@ -158,7 +158,7 @@ class MachEnv {
    // Retrieval functions
 
    /// Retrieve the default environment
-   static MachEnv *getDefaultEnv();
+   static MachEnv *getDefault();
 
    /// Retrieve any other environment by name
    static MachEnv *getEnv(const std::string Name ///< [in] name of environment

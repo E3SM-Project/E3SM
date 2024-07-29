@@ -30,7 +30,7 @@ int initIOTest() {
    // the default MachEnv. Then retrieve the default environment and
    // some needed data members.
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
    MPI_Comm DefComm       = DefEnv->getComm();
 
    // Initialize the Logging system
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
          LOG_CRITICAL("IOTest: Error initializing");
 
       // Get MPI vars if needed
-      OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+      OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
       MPI_Comm Comm          = DefEnv->getComm();
       OMEGA::I4 MyTask       = DefEnv->getMyTask();
       OMEGA::I4 NumTasks     = DefEnv->getNumTasks();

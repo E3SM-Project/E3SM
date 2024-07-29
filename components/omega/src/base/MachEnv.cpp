@@ -359,7 +359,7 @@ void MachEnv::removeAll() {
 // Retrieval functions
 //------------------------------------------------------------------------------
 // Get default environment
-MachEnv *MachEnv::getDefaultEnv() { return MachEnv::DefaultEnv; }
+MachEnv *MachEnv::getDefault() { return MachEnv::DefaultEnv; }
 
 //------------------------------------------------------------------------------
 // Get environment by name

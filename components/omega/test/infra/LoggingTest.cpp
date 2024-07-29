@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
    MPI_Init(&argc, &argv);
 
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
    OMEGA::I4 TaskId       = DefEnv->getMyTask();
 
    std::string TasksStr = _OMEGA_TOSTRING(OMEGA_LOG_TASKS);

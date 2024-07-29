@@ -4340,7 +4340,7 @@ int main(int argc, char *argv[]) {
 
    // Initialize the Machine Environment and retrieve the default environment
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);

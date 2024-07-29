@@ -13,7 +13,7 @@ On model initiation, the initialization routine `OMEGA::MachEnv::init()`
 is called to set up the default MachEnv, which can be retrieved at
 any time using:
 ```c++
-OMEGA::MachEnv DefEnv = OMEGA::MachEnv::getDefaultEnv();
+OMEGA::MachEnv DefEnv = OMEGA::MachEnv::getDefault();
 ```
 that returns a pointer to the default environment.
 Once an environment has been retrieved, the individual data members

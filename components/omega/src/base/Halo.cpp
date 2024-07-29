@@ -115,7 +115,7 @@ int Halo::init() {
 
    I4 IErr{0}; // error code
 
-   MachEnv *DefEnv   = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv   = MachEnv::getDefault();
    Decomp *DefDecomp = Decomp::getDefault();
 
    Halo::DefaultHalo = create("Default", DefEnv, DefDecomp);

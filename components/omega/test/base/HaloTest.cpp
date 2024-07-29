@@ -103,7 +103,7 @@ int initHaloTest() {
    // Initialize the machine environment and fetch the default environment
    // pointer and the MPI communicator
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
    MPI_Comm DefComm       = DefEnv->getComm();
 
    // Initialize the logging system

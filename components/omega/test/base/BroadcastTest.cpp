@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
 
    // Get the Default environment
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    // I4 Broadcast tests
    TestBroadcast<OMEGA::I4>(DefEnv, "I4", &RetVal);

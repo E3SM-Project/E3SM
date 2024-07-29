@@ -30,7 +30,7 @@ void InitMachEnvs() {
 
    // Initialize several environments in reverse order that they
    // are tested.  Use the default environment as the parent
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
    // Verify retrieved values of the Default environment match the
    // expected reference values
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    int MyTask = DefEnv->getMyTask();
    if (MyTask == WorldTask)

@@ -332,7 +332,7 @@ int Decomp::init(const std::string &MeshFileName) {
    PartMethod Method        = getPartMethodFromStr(DecompMethod);
 
    // Retrieve the default machine environment
-   MachEnv *DefEnv = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv = MachEnv::getDefault();
 
    // Use one partition per MPI task as the default
    I4 NParts = DefEnv->getNumTasks();
