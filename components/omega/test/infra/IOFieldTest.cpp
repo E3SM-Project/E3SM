@@ -12,6 +12,7 @@
 #include "IOField.h"
 #include "DataTypes.h"
 #include "Logging.h"
+#include "MachEnv.h"
 #include "MetaData.h"
 #include "OmegaKokkos.h"
 #include "mpi.h"

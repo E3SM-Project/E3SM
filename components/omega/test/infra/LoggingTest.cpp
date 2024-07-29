@@ -16,6 +16,7 @@
 #define _OMEGA_TOSTRING(x)  _OMEGA_STRINGIFY(x)
 
 #include "Logging.h"
+#include "MachEnv.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ringbuffer_sink.h"

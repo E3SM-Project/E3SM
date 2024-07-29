@@ -19,12 +19,9 @@
 
 #include "mpi.h"
 
+#include "Logging.h"
 #include <map>
 #include <memory>
-#include <string>
-// Note that we should replace iostream and std::cerr with the logging
-// capability once that is enabled.
-#include <iostream>
 
 namespace OMEGA {
 
@@ -126,8 +123,9 @@ class MachEnv {
       // Check to see if an environment of the same name already exists and
       // if so, exit with an error
       if (AllEnvs.find(Name) != AllEnvs.end()) {
-         std::cerr << "Attempted to create a MachEnv with name " << Name
-                   << " but an Env of that name already exists ";
+         LOG_ERROR("Attempted to create a MachEnv with name {} but an Env of "
+                   "that name already exists",
+                   Name);
          return nullptr;
       }
 

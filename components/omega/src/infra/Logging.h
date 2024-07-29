@@ -18,7 +18,6 @@
 #endif
 
 #include "LogFormatters.h"
-#include "MachEnv.h"
 #include <spdlog/spdlog.h>
 #include <string>
 
@@ -73,6 +72,8 @@
 #endif
 
 namespace OMEGA {
+
+class MachEnv;
 
 const std::string OmegaDefaultLogfile = "omega.log";
 

@@ -14,6 +14,7 @@
 #include "TimeMgr.h"
 #include "DataTypes.h"
 #include "Logging.h"
+#include "MachEnv.h"
 #include "mpi.h"
 
 //------------------------------------------------------------------------------

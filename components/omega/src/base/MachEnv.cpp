@@ -74,8 +74,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
 ) {
    // Check for valid master task input
    if (InMasterTask < 0 || InMasterTask >= NewSize) {
-      std::cerr << "Invalid MasterTask " << InMasterTask
-                << " sent to constructor: must be [0,NewSize-1]" << std::endl;
+      LOG_ERROR(
+          "Invalid MasterTask {} sent to constructor: must be [0,NewSize-1]",
+          InMasterTask);
       return;
    }
 
@@ -86,9 +87,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    int OldSize;
    MPI_Comm_size(InComm, &OldSize);
    if (NewSize > OldSize) {
-      std::cerr << "Invalid NewSize in MachEnv constructor "
-                << "NewSize = " << NewSize << " is larger than old size"
-                << OldSize << std::endl;
+      LOG_ERROR("Invalid NewSize in MachEnv constructor NewSize = {} is larger "
+                "than old size {}",
+                NewSize, OldSize);
       return;
    }
 
@@ -108,8 +109,7 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    // Create the communicator for the new group
    int Err = MPI_Comm_create(InComm, NewGroup, &Comm);
    if (Err != MPI_SUCCESS) {
-      std::cerr << "Error creating new communicator in MachEnv constructor"
-                << std::endl;
+      LOG_ERROR("Error creating new communicator in MachEnv constructor");
       return;
    }
 
@@ -163,8 +163,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
 ) {
    // Check for valid master task input
    if (InMasterTask < 0 || InMasterTask >= NewSize) {
-      std::cerr << "Invalid MasterTask " << InMasterTask
-                << " sent to constructor: must be [0,NewSize-1]" << std::endl;
+      LOG_ERROR(
+          "Invalid MasterTask {} sent to constructor: must be [0,NewSize-1]",
+          InMasterTask);
       return;
    }
 
@@ -183,9 +184,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    int OldSize;
    MPI_Comm_size(InComm, &OldSize);
    if (LastTask >= OldSize) {
-      std::cerr << "Invalid range in strided MachEnv constructor "
-                << "LastTask = " << LastTask << " is larger than old size"
-                << OldSize << std::endl;
+      LOG_ERROR("Invalid range in strided MachEnv constructor LastTask = {} is "
+                "larger than old size {}",
+                LastTask, OldSize);
       return;
    }
 
@@ -196,8 +197,7 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    // Create the communicator for the new group
    int Err = MPI_Comm_create(InComm, NewGroup, &Comm);
    if (Err != MPI_SUCCESS) {
-      std::cerr << "Error creating new communicator in MachEnv constructor"
-                << std::endl;
+      LOG_ERROR("Error creating new communicator in MachEnv constructor");
       return;
    }
 
@@ -253,8 +253,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
 
    // Check for valid master task input
    if (InMasterTask < 0 || InMasterTask >= NewSize) {
-      std::cerr << "Invalid MasterTask " << InMasterTask
-                << " sent to constructor: must be [0,NewSize-1]" << std::endl;
+      LOG_ERROR(
+          "Invalid MasterTask {} sent to constructor: must be [0,NewSize-1]",
+          InMasterTask);
       return;
    }
 
@@ -265,9 +266,9 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    for (int i = 0; i < NewSize; ++i) {
       int ThisTask = Tasks[i];
       if (ThisTask < 0 || ThisTask >= OldSize) {
-         std::cerr << "Invalid task in MachEnv constructor "
-                   << "task = " << ThisTask << " is < 0 or larger than old size"
-                   << OldSize << std::endl;
+         LOG_ERROR("Invalid task in MachEnv constructor task = {} is < 0 or "
+                   "larger than old size {}",
+                   ThisTask, OldSize);
          return;
       }
    }
@@ -283,8 +284,7 @@ MachEnv::MachEnv(const std::string Name, // [in] name of environment
    // Create the communicator for the new group
    int Err = MPI_Comm_create(InComm, NewGroup, &Comm);
    if (Err != MPI_SUCCESS) {
-      std::cerr << "Error creating new communicator in MachEnv constructor"
-                << std::endl;
+      LOG_ERROR("Error creating new communicator in MachEnv constructor");
       return;
    }
 
@@ -375,8 +375,9 @@ MachEnv *MachEnv::get(const std::string Name ///< [in] Name of environment
 
       // otherwise print an error and return a null pointer
    } else {
-      std::cerr << "Attempt to retrieve a non-existent MachEnv " << Name
-                << " has not been defined or has been removed";
+      LOG_ERROR("Attempt to retrieve a non-existent MachEnv {} has not been "
+                "defined or has been removed",
+                Name);
       return nullptr;
    }
 
@@ -428,8 +429,8 @@ int MachEnv::setMasterTask(const int TaskID) {
          MasterTaskFlag = false;
       }
    } else {
-      std::cerr << "Error: invalid TaskID sent to MachEnv.setMasterTask "
-                << TaskID << std::endl;
+      LOG_ERROR("Error: invalid TaskID sent to MachEnv.setMasterTask {}",
+                TaskID);
       Err = -1;
    }
    return Err;
