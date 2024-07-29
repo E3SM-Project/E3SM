@@ -3003,7 +3003,7 @@
     <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
@@ -3059,7 +3059,7 @@
     <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>224</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
