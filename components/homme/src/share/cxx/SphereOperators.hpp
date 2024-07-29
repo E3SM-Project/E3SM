@@ -1180,7 +1180,13 @@ using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
 using Team = TeamPolicy::member_type;
 
 static constexpr int NPNP = NP * NP;
+#if defined(KOKKOS_ENABLE_HIP)
 static constexpr int WARP_SIZE = warpSize;
+#elif defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL)
+static constexpr int WARP_SIZE = 32;
+#else
+static constexpr int WARP_SIZE = 1;
+#endif
 
 static constexpr int SPHERE_BLOCK_LEV = WARP_SIZE;
 static constexpr int SPHERE_BLOCKS_PER_COL = (NUM_PHYSICAL_LEV - 1) / SPHERE_BLOCK_LEV + 1;
