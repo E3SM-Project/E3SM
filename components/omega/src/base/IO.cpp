@@ -185,37 +185,6 @@ IfExists IfExistsFromString(
 
 } // End IfExistsFromString
 
-//------------------------------------------------------------------------------
-// Converts string choice for floating point precision to an enum
-Precision PrecisionFromString(
-    const std::string &InPrecision // [in] choice of floating point precision
-) {
-   // Set default return value
-   Precision ReturnPrec = Precision::Double;
-
-   // Convert input string to lowercase for easier comparison
-   std::string PrecComp = InPrecision;
-   std::transform(PrecComp.begin(), PrecComp.end(), PrecComp.begin(),
-                  [](unsigned char c) { return std::tolower(c); });
-
-   // Determine the appropriate enum to use based on the string name
-
-   // Maintain full double precision
-   if (PrecComp == "double") {
-      ReturnPrec = Precision::Double;
-
-      // Write reduced (single) precision
-   } else if (PrecComp == "single") {
-      ReturnPrec = Precision::Single;
-
-   } else {
-      ReturnPrec = Precision::Double;
-   }
-
-   return ReturnPrec;
-
-} // End PrecisionFromString
-
 // Methods
 //------------------------------------------------------------------------------
 // Initializes the IO system based on configuration inputs and
@@ -259,8 +228,7 @@ int openFile(
     const std::string &Filename, // [in] name (incl path) of file to open
     Mode InMode,                 // [in] mode (read or write)
     FileFmt InFormat,            // [in] (optional) file format
-    IfExists InIfExists,         // [in] (for writes) behavior if file exists
-    Precision InPrecision        // [in] (for writes) precision of floats
+    IfExists InIfExists          // [in] (for writes) behavior if file exists
 ) {
 
    int Err    = 0;        // default success return code
@@ -337,36 +305,38 @@ int closeFile(int &FileID /// [in] ID of the file to be closed
 
 //------------------------------------------------------------------------------
 // Retrieves a dimension length from an input file, given the name
-// of the dimension. Returns the length if exists, but returns a negative
-// value if a dimension of that length is not found in the file.
-int getDimLength(int FileID, // [in] ID of the file containing dim
-                 const std::string &DimName // [in] name of dimension
+// of the dimension. Returns both the assigned dimension ID and the dimension
+// length if exists, but returns negative values if a dimension of that name
+// is not found in the file.
+int getDimFromFile(int FileID, // [in] ID of the file containing dim
+                   const std::string &DimName, // [in] name of dimension
+                   int &DimID,    // [out] ID assigned to this dimension
+                   int &DimLength // [out] global length of the dimension
 ) {
 
-   int Err = 0; // Local error code
+   int Err   = 0;  // Local error code
+   DimID     = -1; // default (undefined) dimension ID
+   DimLength = -1; // default (undefined) global length
 
    // First get the dimension ID
-   int DimID = 0;
-   Err       = PIOc_inq_dimid(FileID, DimName.c_str(), &DimID);
+   Err = PIOc_inq_dimid(FileID, DimName.c_str(), &DimID);
    if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::getDimLength: PIO error while retrieving dimensionID for "
-                "dimension {}",
-                DimName);
-      return -1;
+      LOG_ERROR("PIO error while reading dimension {} ", DimName);
+      return Err;
    }
 
    // Now retrieve the length and return
-   PIO_Offset Length = -1;
-   Err               = PIOc_inq_dimlen(FileID, DimID, &Length);
-   if (Err != PIO_NOERR) {
-      LOG_ERROR("IO::getDimLength: PIO error while retrieving dimension length "
-                "for dimension {}",
-                DimName);
-      return -1;
+   PIO_Offset InLength;
+   Err = PIOc_inq_dimlen(FileID, DimID, &InLength);
+   if (Err == PIO_NOERR) {
+      DimLength = InLength;
+   } else {
+      LOG_ERROR("PIO error while retrieving length for dimension {}", DimName);
+      return Err;
    }
-   return Length;
+   return Err;
 
-} // End getDimLength
+} // End getDimFromFile
 
 //------------------------------------------------------------------------------
 // Defines a dimension for an output file. Returns a dimension id to
