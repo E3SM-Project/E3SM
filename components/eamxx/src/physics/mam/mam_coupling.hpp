@@ -606,6 +606,7 @@ void compute_vertical_layer_heights(const Team& team,
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
             dz);//output
   team.team_barrier();
+  // NOTE: we are not currently allowing surface topography:
   EKAT_KERNEL_ASSERT_MSG(dry_atm.z_surf == 0, "dry_atm.z_surf must be zero");
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
    z_iface); //output

@@ -41,28 +41,22 @@ void MAMDryDep::set_grids(
   using namespace ShortFieldTagsNames;
 
   // Layout for 2D (2d horiz) variable
-  const FieldLayout scalar2d{{COL}, {ncol_}};
+  const FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid{{COL, LEV}, {ncol_, nlev_}};
-  const FieldLayout scalar3d_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
   // layout for 2D (ncol, pcnst)
   constexpr int pcnst = mam4::aero_model::pcnst;
-  const FieldLayout scalar2d_pcnct =
+  const FieldLayout vector2d_pcnst =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  auto make_layout = [](const std::vector<int> &extents,
-                        const std::vector<std::string> &names) {
-    std::vector<FieldTag> tags(extents.size(), CMP);
-    return FieldLayout(tags, extents, names);
-  };
   const int num_aero_modes = mam_coupling::num_aero_modes();
-  FieldLayout scalar4d_mid =
-      make_layout({ncol_, num_aero_modes, nlev_}, {"COL", "num_modes", "lev"});
+  const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(true, num_aero_modes, "num_modes"); 
 
   using namespace ekat::units;
 
@@ -150,10 +144,10 @@ void MAMDryDep::set_grids(
 
   //----------- Variables from other mam4xx processes ------------
   // Geometric mean wet diameter for number distribution [m]
-  add_field<Required>("dgnumwet", scalar4d_mid, m, grid_name);
+  add_field<Required>("dgnumwet", vector3d_mid, m, grid_name);
 
   // Wet density of interstitial aerosol [kg/m3]
-  add_field<Required>("wetdens", scalar4d_mid, kg / m3, grid_name);
+  add_field<Required>("wetdens", vector3d_mid, kg / m3, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -203,11 +197,11 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------
   // FIXME: These are diagnostics, remove them from FM after initial evaluation
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", scalar2d_pcnct,
+  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", vector2d_pcnst,
                       1 / m2 / s, grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols",
-                      scalar2d_pcnct, 1 / m2 / s, grid_name);
+                      vector2d_pcnst, 1 / m2 / s, grid_name);
 }  // set_grids
 
 // ================================================================
