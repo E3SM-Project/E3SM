@@ -30,6 +30,7 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 
+#include <algorithm>
 #include <assert.h>
 
 namespace Homme {
@@ -186,7 +187,7 @@ struct CaarFunctorImpl {
 
   int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
-    const int nslots = m_tu.get_num_ws_slots();
+    const int nslots = std::max(m_tu.get_num_ws_slots(), m_num_elems);
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
     int num_scalar_int_buf = Buffers::num_3d_scalar_int_buf;
@@ -222,7 +223,7 @@ struct CaarFunctorImpl {
     Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-    const int nslots = m_tu.get_num_ws_slots();
+    const int nslots = std::max(m_tu.get_num_ws_slots(), m_num_elems);
 
     // Midpoints scalars
     m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nslots);

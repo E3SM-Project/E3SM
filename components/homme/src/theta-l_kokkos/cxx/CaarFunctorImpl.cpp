@@ -25,7 +25,7 @@ void CaarFunctorImpl::epoch1_blockOps()
   auto state_vtheta_dp= viewAsReal(m_state.m_vtheta_dp);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereBlockOps::policy(m_num_elems, 4),
     KOKKOS_LAMBDA(const Team &team) {
 
@@ -98,7 +98,7 @@ void CaarFunctorImpl::epoch2_scanOps()
   auto state_dp3d = viewAsReal(m_state.m_dp3d);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereScanOps::policy(m_num_elems),
     KOKKOS_LAMBDA(const Team &team) {
 
@@ -157,7 +157,7 @@ void CaarFunctorImpl::epoch3_blockOps()
   auto state_w_i = viewAsReal(m_state.m_w_i);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereBlockOps::policy(m_num_elems, 1),
     KOKKOS_LAMBDA(const Team &team) {
 
@@ -234,7 +234,7 @@ void CaarFunctorImpl::epoch4_scanOps()
   auto state_phinh_i = viewAsReal(m_state.m_phinh_i);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereScanOps::policy(m_num_elems),
     KOKKOS_LAMBDA(const Team &team) {
       const SphereScanOps s(team);
@@ -285,7 +285,7 @@ void CaarFunctorImpl::epoch5_colOps()
   auto state_w_i = viewAsReal(m_state.m_w_i);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereColOps::policy(m_num_elems, NUM_INTERFACE_LEV),
     KOKKOS_LAMBDA(const Team &team) {
 
@@ -502,7 +502,7 @@ void CaarFunctorImpl::epoch7_col()
   auto state_w_i = viewAsReal(m_state.m_w_i);
 
   Kokkos::parallel_for(
-    "__PRETTY_FUNCTION__",
+    __PRETTY_FUNCTION__,
     SphereCol::policy(m_num_elems, NUM_PHYSICAL_LEV),
     KOKKOS_LAMBDA(const Team &team) {
 
