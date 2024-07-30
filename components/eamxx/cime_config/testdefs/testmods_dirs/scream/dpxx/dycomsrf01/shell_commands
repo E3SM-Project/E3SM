@@ -8,7 +8,7 @@
 # Scripts location
 ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 
-$ATMCHANGE iop_file=${DIN_LOC_ROOT}/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc -b
+$ATMCHANGE iop_file='${DIN_LOC_ROOT}'/atm/cam/scam/iop/DYCOMSrf01_iopfile_4scam.nc -b
 $ATMCHANGE target_latitude=31.5 -b
 $ATMCHANGE target_longitude=238.5 -b
 $ATMCHANGE iop_dosubsidence=true -b
