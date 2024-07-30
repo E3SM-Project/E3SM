@@ -90,10 +90,6 @@ Field Names:
   - num_c4
   - aerdepwetis
   - aerdepwetcw
-  - dgnumwet
-  - dgncur_a
-  - wetdens
-  - qaerwat
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
