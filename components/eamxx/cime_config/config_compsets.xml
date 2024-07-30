@@ -75,7 +75,7 @@
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DP-General</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts for all cases.  For testing purposes set to DYCOMSrf01 case -->
+      <alias>F2010-SCREAMv1-DP-General</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts for all cases other than RCE. -->
       <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%General</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
