@@ -47,6 +47,10 @@ void MAMWetscav::set_grids(
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
 
+  // layout for 3D (ncol, nmodes, nlevs)
+  FieldLayout scalar3d_mid_nmodes =
+      m_grid->get_3d_vector_layout(true, nmodes, "nmodes");
+
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst =
       m_grid->get_2d_vector_layout(pcnst, "num_phys_constants");
@@ -201,6 +205,22 @@ void MAMWetscav::set_grids(
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
+  static constexpr auto m3 = m * m * m;
+
+  // Aerosol dry particle diameter [m]
+  add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
+
+  // Wet aerosol density [kg/m3]
+  add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
+
+  // Aerosol water [kg/kg]
+  add_field<Computed>("qaerwat", scalar3d_mid_nmodes, kg / kg, grid_name);
+
+  // Wet aerosol diameter [m]
+  add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
+
+  // Fraction of transported species that are insoluble [fraction]
+  add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
 
   // Aerosol wet deposition (interstitial) [kg/m2/s]
   add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s, grid_name);
@@ -332,14 +352,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
-  const int nmodes = mam4::AeroConfig::num_modes();  
-
-  // Aerosol dry particle diameter [m]
-  dgncur_a_ = view_3d("dgncur_a", ncol_, nmodes, nlev_);
-  wetdens_  = view_3d("wetdens", ncol_, nmodes, nlev_);
-  qaerwat_  = view_3d("qaerwat", ncol_, nmodes, nlev_);
-  dgnumwet_ = view_3d("dgnumwet", ncol_, nmodes, nlev_);
-
   // Allocate work array
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d("work", ncol_, work_len);
@@ -463,10 +475,12 @@ void MAMWetscav::run_impl(const double dt) {
   const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
 
-  const auto wet_geometric_mean_diameter_i = dgnumwet_;
-  const auto dry_geometric_mean_diameter_i = dgncur_a_;
-  const auto qaerwat = qaerwat_;
-  const auto wetdens = wetdens_;
+  const auto wet_geometric_mean_diameter_i =
+      get_field_out("dgnumwet").get_view<Real ***>();
+  const auto dry_geometric_mean_diameter_i =
+      get_field_out("dgncur_a").get_view<Real ***>();
+  const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
+  const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);

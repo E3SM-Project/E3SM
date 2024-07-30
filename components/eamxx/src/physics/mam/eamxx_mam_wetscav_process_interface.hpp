@@ -23,7 +23,6 @@ namespace scream {
 class MAMWetscav : public scream::AtmosphereProcess {
   using KT      = ekat::KokkosTypes<DefaultDevice>;
   using view_2d = typename KT::template view_2d<Real>;
-  using view_3d = typename KT::template view_3d<Real>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
@@ -161,18 +160,9 @@ class MAMWetscav : public scream::AtmosphereProcess {
   // Work arrays
   view_2d work_;
 
-  // Aerosol dry particle diameter [m]
-  // Dimensions: [cols, modes, levels]
-  view_3d dgncur_a_;
-  // Wet aerosol density [kg/m3]
-  view_3d wetdens_;
-  // Aerosol water [kg/kg]
-  view_3d qaerwat_;
-  // Wet aerosol diameter [m]
-  view_3d dgnumwet_;
-
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
+      
   view_2d sh_frac_;
 
   // Deep convective cloud fraction [fraction]
