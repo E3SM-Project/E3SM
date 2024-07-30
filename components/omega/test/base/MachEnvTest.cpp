@@ -30,7 +30,7 @@ void InitMachEnvs() {
 
    // Initialize several environments in reverse order that they
    // are tested.  Use the default environment as the parent
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);
@@ -38,16 +38,16 @@ void InitMachEnvs() {
    // Initialize general subset environment
    int InclSize     = 4;
    int InclTasks[4] = {1, 2, 5, 7};
-   OMEGA::MachEnv tmpEnv1("Subset", DefEnv, InclSize, InclTasks);
+   OMEGA::MachEnv::create("Subset", DefEnv, InclSize, InclTasks);
 
    // Initialize strided environment
-   OMEGA::MachEnv tmpEnv2("Stride", DefEnv, 4, 1, 2);
+   OMEGA::MachEnv::create("Stride", DefEnv, 4, 1, 2);
 
    // Initialize contiguous subset environment
-   OMEGA::MachEnv tmpEnv3("Contig", DefEnv, 4);
+   OMEGA::MachEnv::create("Contig", DefEnv, 4);
 
    // Initialize contiguous subset environment but different master task
-   OMEGA::MachEnv tmpEnv4("Contig2", DefEnv, 4, 2);
+   OMEGA::MachEnv::create("Contig2", DefEnv, 4, 2);
 
 } // end of InitMachEnvs
 
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
    // Verify retrieved values of the Default environment match the
    // expected reference values
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    int MyTask = DefEnv->getMyTask();
    if (MyTask == WorldTask)
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
    // Test contiguous subset environment (first four tasks of default)
 
    // Test retrieval of the contiguous environment
-   OMEGA::MachEnv *ContigEnv = OMEGA::MachEnv::getEnv("Contig");
+   OMEGA::MachEnv *ContigEnv = OMEGA::MachEnv::get("Contig");
 
    // Check membership in the new communicator
    if (MyTask < 4) {
@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
    // in which the master task has been initialized to task 2
 
    // Test retrieval of the contiguous environment
-   OMEGA::MachEnv *Contig2Env = OMEGA::MachEnv::getEnv("Contig2");
+   OMEGA::MachEnv *Contig2Env = OMEGA::MachEnv::get("Contig2");
 
    // Check membership in the new communicator
    if (MyTask < 4) {
@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
    // Test the strided constructor with only odd-numbered tasks
 
    // Test retrieval
-   OMEGA::MachEnv *StrideEnv = OMEGA::MachEnv::getEnv("Stride");
+   OMEGA::MachEnv *StrideEnv = OMEGA::MachEnv::get("Stride");
 
    // Check membership in the new communicator
    if (MyTask % 2 == 1) {
@@ -399,7 +399,7 @@ int main(int argc, char *argv[]) {
    int InclTasks[4] = {1, 2, 5, 7};
 
    // Test retrieval
-   OMEGA::MachEnv *SubsetEnv = OMEGA::MachEnv::getEnv("Subset");
+   OMEGA::MachEnv *SubsetEnv = OMEGA::MachEnv::get("Subset");
 
    // Check membership in the new communicator
    MyTask          = SubsetEnv->getMyTask();

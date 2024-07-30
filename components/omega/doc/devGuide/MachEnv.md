@@ -13,7 +13,7 @@ On model initiation, the initialization routine `OMEGA::MachEnv::init()`
 is called to set up the default MachEnv, which can be retrieved at
 any time using:
 ```c++
-OMEGA::MachEnv DefEnv = OMEGA::MachEnv::getDefaultEnv();
+OMEGA::MachEnv DefEnv = OMEGA::MachEnv::getDefault();
 ```
 that returns a pointer to the default environment.
 Once an environment has been retrieved, the individual data members
@@ -53,7 +53,7 @@ environment from a strided set of tasks starting at the `Begin` Task
 (eg all odd tasks would have Begin=1 and Stride=2). The final
 interface creates a subset containing the selected tasks stored in
 a vector `Tasks`. Each new environment is given a `Name` and can be
-retrieved by name using `OMEGA::MachEnv::getEnv(Name)`. Once retrieved,
+retrieved by name using `OMEGA::MachEnv::get(Name)`. Once retrieved,
 the other get functions listed above are used to get each data member.
 Because the new environments are subsets of the default environment, one
 additional function `OMEGA::MachEnv::isMember()` is provided so that

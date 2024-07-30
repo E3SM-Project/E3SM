@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
       MPI_Comm Comm;
       int MyTask, MySize, err;
       MachEnv::init(MPI_COMM_WORLD);
-      MachEnv *DefEnv = MachEnv::getDefaultEnv();
+      MachEnv *DefEnv = MachEnv::getDefault();
       Comm            = DefEnv->getComm();
       MyTask          = DefEnv->getMyTask();
       MySize          = DefEnv->getNumTasks();

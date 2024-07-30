@@ -21,7 +21,7 @@ namespace OMEGA {
 
 // create the static class members
 HorzMesh *HorzMesh::DefaultHorzMesh = nullptr;
-std::map<std::string, HorzMesh> HorzMesh::AllHorzMeshes;
+std::map<std::string, std::unique_ptr<HorzMesh>> HorzMesh::AllHorzMeshes;
 
 //------------------------------------------------------------------------------
 // Initialize the mesh. Assumes that Decomp has already been initialized.
@@ -33,11 +33,8 @@ int HorzMesh::init() {
    // Retrieve the default decomposition
    Decomp *DefDecomp = Decomp::getDefault();
 
-   // Create the default mesh
-   HorzMesh DefHorzMesh("Default", DefDecomp);
-
-   // Retrieve this mesh and set pointer to DefaultHorzMesh
-   HorzMesh::DefaultHorzMesh = HorzMesh::get("Default");
+   // Create the default mesh and set pointer to it
+   HorzMesh::DefaultHorzMesh = create("Default", DefDecomp);
    return Err;
 }
 
@@ -132,10 +129,29 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    // set mesh scaling coefficients
    setMeshScaling();
 
-   // Associate this instance with a name
-   AllHorzMeshes.emplace(Name, *this);
-
 } // end horizontal mesh constructor
+
+/// Creates a new mesh by calling the constructor and puts it in the
+/// AllHorzMeshes map
+HorzMesh *HorzMesh::create(const std::string &Name, //< [in] Name for new mesh
+                           Decomp *MeshDecomp //< [in] Decomp for the new mesh
+) {
+   // Check to see if a mesh of the same name already exists and
+   // if so, exit with an error
+   if (AllHorzMeshes.find(Name) != AllHorzMeshes.end()) {
+      LOG_ERROR("Attempted to create a HorzMesh with name {} but a HorzMesh of "
+                "that name already exists",
+                Name);
+      return nullptr;
+   }
+
+   // create a new mesh on the heap and put it in a map of
+   // unique_ptrs, which will manage its lifetime
+   auto *NewHorzMesh = new HorzMesh(Name, MeshDecomp);
+   AllHorzMeshes.emplace(Name, NewHorzMesh);
+
+   return NewHorzMesh;
+}
 
 //------------------------------------------------------------------------------
 // Destroys a local mesh and deallocates all arrays
@@ -640,7 +656,7 @@ HorzMesh *HorzMesh::get(const std::string Name ///< [in] Name of mesh
 
    // if found, return the mesh pointer
    if (it != AllHorzMeshes.end()) {
-      return &(it->second);
+      return it->second.get();
 
       // otherwise print error and return null pointer
    } else {

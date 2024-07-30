@@ -44,7 +44,7 @@ Config::Config(const std::string &InName // [in] name of config, node
 
    if (NotInitialized) {
       // Determine MPI variables
-      MachEnv *DefEnv = MachEnv::getDefaultEnv();
+      MachEnv *DefEnv = MachEnv::getDefault();
       I4 NumTasks     = DefEnv->getNumTasks();
       I4 MyTask       = DefEnv->getMyTask();
       ConfigComm      = DefEnv->getComm();
@@ -1083,7 +1083,7 @@ int Config::write(std::string FileName /// name of file for config
 ) {
    int Err = 0;
 
-   MachEnv *DefEnv = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv = MachEnv::getDefault();
    if (DefEnv->isMasterTask()) {
       std::ofstream Outfile(FileName);
       if (Outfile.good()) {

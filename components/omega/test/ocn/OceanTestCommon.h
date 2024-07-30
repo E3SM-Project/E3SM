@@ -344,7 +344,7 @@ inline int computeErrors(ErrorMeasures &ErrorMeasures,
    const Real LInfScaleLoc = maxVal(LInfScaleElement);
    const Real L2ScaleLoc   = sum(L2ScaleElement);
 
-   MPI_Comm Comm = MachEnv::getDefaultEnv()->getComm();
+   MPI_Comm Comm = MachEnv::getDefault()->getComm();
    Real LInfError, LInfScale;
    Err +=
        MPI_Allreduce(&LInfErrorLoc, &LInfError, 1, MPI_RealKind, MPI_MAX, Comm);

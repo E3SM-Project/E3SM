@@ -50,7 +50,7 @@ OMEGA::I4 MyVal      = 1;
 const int RootTask   = 1;
 
 // Get a specific Omega Machine Environment
-OMEGA::MachEnv *SubsetEnv = OMEGA::MachEnv::getEnv("Subset");
+OMEGA::MachEnv *SubsetEnv = OMEGA::MachEnv::get("Subset");
 
 // broadcast from the master task of SubsetEnv environment
 OMEGA::Broadcast(MyVal, SubsetEnv);

@@ -24,6 +24,7 @@
 #include "mpi.h"
 #include "parmetis.h"
 
+#include <memory>
 #include <string>
 
 namespace OMEGA {
@@ -61,7 +62,7 @@ class Decomp {
 
    /// All decompositions are tracked/stored within the class as a
    /// map paired with a name for later retrieval.
-   static std::map<std::string, Decomp> AllDecomps;
+   static std::map<std::string, std::unique_ptr<Decomp>> AllDecomps;
 
    /// Partition cells by calling the METIS/ParMETIS KWay routine
    /// It starts with the CellsOnCell array from the input mesh file
@@ -129,6 +130,20 @@ class Decomp {
        const std::vector<I4> &CellsOnVertexInit, ///< [in] cells at each vertex
        const std::vector<I4> &EdgesOnVertexInit  ///< [in] edges at each vertex
    );
+
+   /// Construct a new decomposition across an input MachEnv with
+   /// NPart partitions of a mesh that is read from a mesh file.
+   Decomp(const std::string &Name, ///< [in] Name for new decomposition
+          const MachEnv *InEnv,    ///< [in] MachEnv for the new partition
+          I4 NParts,               ///< [in] num of partitions for new decomp
+          PartMethod Method,       ///< [in] method for partitioning
+          I4 InHaloWidth,          ///< [in] width of halo in new decomp
+          const std::string &MeshFileName_ ///< [in] name of file with mesh info
+   );
+
+   // forbid copy and move construction
+   Decomp(const Decomp &) = delete;
+   Decomp(Decomp &&)      = delete;
 
  public:
    // Variables
@@ -221,14 +236,15 @@ class Decomp {
    /// options.
    static int init(const std::string &MeshFileName = "OmegaMesh.nc");
 
-   /// Construct a new decomposition across an input MachEnv with
-   /// NPart partitions of a mesh that is read from a mesh file.
-   Decomp(const std::string &Name, ///< [in] Name for new decomposition
-          const MachEnv *InEnv,    ///< [in] MachEnv for the new partition
+   // Creates a new decomposition using the constructor and puts it in the
+   // AllDecomps map
+   static Decomp *
+   create(const std::string &Name, ///< [in] Name for new decomposition
+          const MachEnv *Env,      ///< [in] MachEnv for the new partition
           I4 NParts,               ///< [in] num of partitions for new decomp
           PartMethod Method,       ///< [in] method for partitioning
-          I4 InHaloWidth,          ///< [in] width of halo in new decomp
-          const std::string &MeshFileName_ ///< [in] name of file with mesh info
+          I4 HaloWidth,            ///< [in] width of halo in new decomp
+          const std::string &MeshFileName ///< [in] name of file with mesh info
    );
 
    /// Destructor - deallocates all memory and deletes a Decomp.

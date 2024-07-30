@@ -22,7 +22,7 @@ namespace OMEGA {
 
 // create the static class members
 Halo *Halo::DefaultHalo = nullptr;
-std::map<std::string, Halo> Halo::AllHalos;
+std::map<std::string, std::unique_ptr<Halo>> Halo::AllHalos;
 
 //------------------------------------------------------------------------------
 // Local routine that searches a std::vector<I4> for a particular entry and
@@ -115,12 +115,10 @@ int Halo::init() {
 
    I4 IErr{0}; // error code
 
-   MachEnv *DefEnv   = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv   = MachEnv::getDefault();
    Decomp *DefDecomp = Decomp::getDefault();
 
-   Halo DefHalo("Default", DefEnv, DefDecomp);
-
-   Halo::DefaultHalo = Halo::get("Default");
+   Halo::DefaultHalo = create("Default", DefEnv, DefDecomp);
 
    return IErr;
 
@@ -181,10 +179,28 @@ Halo::Halo(const std::string &Name, const MachEnv *InEnv,
                                    NeighborList[INghbr]));
    }
 
-   // Associate this instance with the input name
-   AllHalos.emplace(Name, *this);
-
 } // end Halo constructor
+
+/// Creates a new halo by calling the constructor and puts it in the AllHalos
+/// map
+Halo *Halo::create(const std::string &Name, const MachEnv *Env,
+                   const Decomp *Decomp) {
+   // Check to see if a halo of the same name already exists and
+   // if so, exit with an error
+   if (AllHalos.find(Name) != AllHalos.end()) {
+      LOG_ERROR("Attempted to create a Halo with name {} but a Halo of "
+                "that name already exists",
+                Name);
+      return nullptr;
+   }
+
+   // create a new halo on the heap and put it in a map of
+   // unique_ptrs, which will manage its lifetime
+   auto *NewHalo = new Halo(Name, Env, Decomp);
+   AllHalos.emplace(Name, NewHalo);
+
+   return NewHalo;
+} // end Halo create
 
 // Destructor
 //------------------------------------------------------------------------------
@@ -234,7 +250,7 @@ Halo *Halo::get(const std::string Name // name of Halo to retrieve
 
    // if found, return the Halo pointer
    if (it != AllHalos.end()) {
-      return &(it->second);
+      return it->second.get();
    } else {
       // otherwise print an error and retrun a null pointer
       LOG_ERROR("Halo::get: Attempt to retrieve non-existent Halo:");

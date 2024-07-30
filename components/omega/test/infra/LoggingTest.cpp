@@ -16,6 +16,7 @@
 #define _OMEGA_TOSTRING(x)  _OMEGA_STRINGIFY(x)
 
 #include "Logging.h"
+#include "MachEnv.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/ringbuffer_sink.h"
@@ -141,7 +142,7 @@ int main(int argc, char **argv) {
    MPI_Init(&argc, &argv);
 
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
    OMEGA::I4 TaskId       = DefEnv->getMyTask();
 
    std::string TasksStr = _OMEGA_TOSTRING(OMEGA_LOG_TASKS);

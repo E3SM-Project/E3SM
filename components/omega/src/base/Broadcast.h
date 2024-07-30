@@ -17,55 +17,54 @@
 namespace OMEGA {
 
 // blocking broadcast scalar
-int Broadcast(I4 &Value, const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+int Broadcast(I4 &Value, const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast = -1);
 int Broadcast(I4 &Value, const int RankBcast);
 
-int Broadcast(I8 &Value, const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+int Broadcast(I8 &Value, const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast = -1);
 int Broadcast(I8 &Value, const int RankBcast);
 
-int Broadcast(R4 &Value, const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+int Broadcast(R4 &Value, const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast = -1);
 int Broadcast(R4 &Value, const int RankBcast);
 
-int Broadcast(R8 &Value, const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+int Broadcast(R8 &Value, const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast = -1);
 int Broadcast(R8 &Value, const int RankBcast);
 
-int Broadcast(bool &Value, const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+int Broadcast(bool &Value, const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast = -1);
 int Broadcast(bool &Value, const int RankBcast);
 
-int Broadcast(std::string &Value,
-              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
-              const int RankBcast  = -1);
+int Broadcast(std::string &Value, const MachEnv *InEnv = MachEnv::getDefault(),
+              const int RankBcast = -1);
 int Broadcast(std::string &Value, const int RankBcast);
 
 // blocking broadcast array
 int Broadcast(std::vector<I4> &Value,
-              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+              const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast  = -1);
 int Broadcast(std::vector<I4> &Value, const int RankBcast);
 
 int Broadcast(std::vector<I8> &Value,
-              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+              const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast  = -1);
 int Broadcast(std::vector<I8> &Value, const int RankBcast);
 
 int Broadcast(std::vector<R4> &Value,
-              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+              const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast  = -1);
 int Broadcast(std::vector<R4> &Value, const int RankBcast);
 
 int Broadcast(std::vector<R8> &Value,
-              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+              const MachEnv *InEnv = MachEnv::getDefault(),
               const int RankBcast  = -1);
 int Broadcast(std::vector<R8> &Value, const int RankBcast);
 
 // NOTE: Elements of vector<bool> seem to be non-addressable
 // int Broadcast(std::vector<bool> &Value,
-//              const MachEnv *InEnv = MachEnv::getDefaultEnv(),
+//              const MachEnv *InEnv = MachEnv::getDefault(),
 //              const int RankBcast = -1);
 // int Broadcast(std::vector<bool> &Value, const int RankBcast);
 

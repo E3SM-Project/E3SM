@@ -616,7 +616,7 @@ int initAuxVarsTest(const std::string &mesh) {
    int Err = 0;
 
    MachEnv::init(MPI_COMM_WORLD);
-   MachEnv *DefEnv  = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
 
    // initialize logging

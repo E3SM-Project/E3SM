@@ -26,7 +26,7 @@ int Broadcast(I4 &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast for I4 data type
 
 int Broadcast(I4 &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast for I4 data type
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ int Broadcast(I8 &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast for I8 data type
 
 int Broadcast(I8 &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast for I8 data type
 
 //------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ int Broadcast(R4 &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast
 
 int Broadcast(R4 &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ int Broadcast(R8 &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast
 
 int Broadcast(R8 &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ int Broadcast(bool &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast
 
 int Broadcast(bool &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ int Broadcast(std::string &Value, const MachEnv *InEnv, const int RankBcast) {
 } // end Broadcast
 
 int Broadcast(std::string &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ int Broadcast(std::vector<I4> &Value, const MachEnv *InEnv,
 } // end Broadcast
 
 int Broadcast(std::vector<I4> &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ int Broadcast(std::vector<I8> &Value, const MachEnv *InEnv,
 } // end Broadcast
 
 int Broadcast(std::vector<I8> &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ int Broadcast(std::vector<R4> &Value, const MachEnv *InEnv,
 } // end Broadcast
 
 int Broadcast(std::vector<R4> &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 } // end Broadcast
 
 //------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ int Broadcast(std::vector<R8> &Value, const MachEnv *InEnv,
 } // end Broadcast
 
 int Broadcast(std::vector<R8> &Value, const int RankBcast) {
-   return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+   return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 }
 
 //------------------------------------------------------------------------------
@@ -198,7 +198,7 @@ int Broadcast(std::vector<R8> &Value, const int RankBcast) {
 //
 // int Broadcast(std::vector<bool> &Value, const int RankBcast
 //) {
-//    return Broadcast(Value, MachEnv::getDefaultEnv(), RankBcast);
+//    return Broadcast(Value, MachEnv::getDefault(), RankBcast);
 //}
 
 } // namespace OMEGA

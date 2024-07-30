@@ -32,7 +32,7 @@ namespace OMEGA {
 
 // create the static class members
 Decomp *Decomp::DefaultDecomp = nullptr;
-std::map<std::string, Decomp> Decomp::AllDecomps;
+std::map<std::string, std::unique_ptr<Decomp>> Decomp::AllDecomps;
 
 // Some useful local utility routines
 //------------------------------------------------------------------------------
@@ -339,17 +339,14 @@ int Decomp::init(const std::string &MeshFileName) {
    PartMethod Method        = getPartMethodFromStr(DecompMethod);
 
    // Retrieve the default machine environment
-   MachEnv *DefEnv = MachEnv::getDefaultEnv();
+   MachEnv *DefEnv = MachEnv::getDefault();
 
    // Use one partition per MPI task as the default
    I4 NParts = DefEnv->getNumTasks();
 
-   // Create the default decomposition
-   Decomp DefDecomp("Default", DefEnv, NParts, Method, InHaloWidth,
-                    MeshFileName);
-
-   // Retrieve this environment and set pointer to DefaultDecomp
-   Decomp::DefaultDecomp = Decomp::get("Default");
+   // Create the default decomposition and set pointer to it
+   Decomp::DefaultDecomp = Decomp::create("Default", DefEnv, NParts, Method,
+                                          InHaloWidth, MeshFileName);
 
    return Err;
 
@@ -659,11 +656,36 @@ Decomp::Decomp(
 
    CellsOnVertex = createDeviceMirrorCopy(CellsOnVertexH);
    EdgesOnVertex = createDeviceMirrorCopy(EdgesOnVertexH);
-
-   // Assign this as the default decomposition
-   AllDecomps.emplace(Name, *this);
-
 } // end decomposition constructor
+
+// Creates a new decomposition using the constructor and puts it in the
+// AllDecomps map
+Decomp *Decomp::create(
+    const std::string &Name,        //< [in] Name for new decomposition
+    const MachEnv *Env,             //< [in] MachEnv for the new partition
+    I4 NParts,                      //< [in] num of partitions for new decomp
+    PartMethod Method,              //< [in] method for partitioning
+    I4 HaloWidth,                   //< [in] width of halo in new decomp
+    const std::string &MeshFileName //< [in] name of file with mesh info
+) {
+
+   // Check to see if a decomposition of the same name already exists and
+   // if so, exit with an error
+   if (AllDecomps.find(Name) != AllDecomps.end()) {
+      LOG_ERROR("Attempted to create a Decomp with name {} but a Decomp of "
+                "that name already exists",
+                Name);
+      return nullptr;
+   }
+
+   // create a new decomp on the heap and put it in a map of
+   // unique_ptrs, which will manage its lifetime
+   auto *NewDecomp =
+       new Decomp(Name, Env, NParts, Method, HaloWidth, MeshFileName);
+   AllDecomps.emplace(Name, NewDecomp);
+
+   return NewDecomp;
+} // end Decomp create
 
 // Destructor
 //------------------------------------------------------------------------------
@@ -711,7 +733,7 @@ Decomp *Decomp::get(const std::string Name ///< [in] Name of environment
 
    // if found, return the decomposition pointer
    if (it != AllDecomps.end()) {
-      return &(it->second);
+      return it->second.get();
 
       // otherwise print an error and return a null pointer
    } else {

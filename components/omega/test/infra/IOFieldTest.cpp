@@ -12,6 +12,7 @@
 #include "IOField.h"
 #include "DataTypes.h"
 #include "Logging.h"
+#include "MachEnv.h"
 #include "MetaData.h"
 #include "OmegaKokkos.h"
 #include "mpi.h"
@@ -26,7 +27,7 @@ int initIOFieldTest() {
 
    // Initialize the Machine Environment and retrieve the default environment
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
-   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefaultEnv();
+   OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);
