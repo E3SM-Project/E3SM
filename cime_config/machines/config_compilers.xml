@@ -2209,7 +2209,7 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
-<compiler MACH="quartz" COMPILER="intel">
+<compiler MACH="dane" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
