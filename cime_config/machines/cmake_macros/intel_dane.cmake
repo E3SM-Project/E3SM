@@ -1,0 +1,25 @@
+#string(APPEND CPPDEFS " -DNO_SHR_VMATH -DCNL")
+#if (DEBUG)
+#  string(APPEND FFLAGS " -check all -ftrapuv")
+#endif()
+#string(APPEND SLIBS " -llapack -lblas")
+#set(MPI_LIB_NAME "mpich")
+#set(MPI_PATH "/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/")
+#set(NETCDF_PATH "/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/")
+#execute_process(COMMAND /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+#string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+
+string(APPEND CPPDEFS " -DNO_SHR_VMATH -DCNL")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check all -ftrapuv")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/")
+set(KOKKOS_OPTIONS "--with-serial --ldflags='-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/'")
+
+
+string(APPEND SLIBS " -llapack -lblas")
+set(MPI_LIB_NAME "mpich")
+set(MPI_PATH "/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0-magic/")
+set(NETCDF_PATH "/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/")
+set(PNETCDF_PATH "/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/")
+execute_process(COMMAND /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+
