@@ -442,14 +442,13 @@ int MachEnv::setMasterTask(const int TaskID) {
 
 void MachEnv::print() const {
 
-   std::cout << "  Comm           = " << Comm << std::endl;
-   std::cout << "  MyTask         = " << MyTask << std::endl;
-   std::cout << "  NumTasks       = " << NumTasks << std::endl;
-   std::cout << "  MasterTask     = " << MasterTask << std::endl;
-   std::cout << "  MasterTaskFlag = " << MasterTaskFlag << std::endl;
-   std::cout << "  MemberFlag     = " << MemberFlag << std::endl;
-   std::cout << "  NumThreads     = " << NumThreads << std::endl;
-   std::cout << "  VecLength      = " << VecLength << std::endl;
+   LOG_INFO("  MyTask         = {}", MyTask);
+   LOG_INFO("  NumTasks       = {}", NumTasks);
+   LOG_INFO("  MasterTask     = {}", MasterTask);
+   LOG_INFO("  MasterTaskFlag = {}", MasterTaskFlag);
+   LOG_INFO("  MemberFlag     = {}", MemberFlag);
+   LOG_INFO("  NumThreads     = {}", NumThreads);
+   LOG_INFO("  VecLength      = {}", VecLength);
 
 } // end print
 
