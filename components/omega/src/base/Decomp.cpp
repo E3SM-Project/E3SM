@@ -131,20 +131,27 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
 
    // Read in mesh size information - these are dimension lengths in
    // the input mesh file
-   NCellsGlobal = IO::getDimLength(MeshFileID, "nCells");
-   if (NCellsGlobal <= 0)
+   I4 NCellsID;
+   Err = IO::getDimFromFile(MeshFileID, "nCells", NCellsID, NCellsGlobal);
+   if (Err != 0 or NCellsGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading nCells");
-   NEdgesGlobal = IO::getDimLength(MeshFileID, "nEdges");
-   if (NEdgesGlobal <= 0)
+   I4 NEdgesID;
+   Err = IO::getDimFromFile(MeshFileID, "nEdges", NEdgesID, NEdgesGlobal);
+   if (Err != 0 or NEdgesGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading NEdges");
-   NVerticesGlobal = IO::getDimLength(MeshFileID, "nVertices");
-   if (NVerticesGlobal <= 0)
+   I4 NVerticesID;
+   Err = IO::getDimFromFile(MeshFileID, "nVertices", NVerticesID,
+                            NVerticesGlobal);
+   if (Err != 0 or NVerticesGlobal <= 0)
       LOG_CRITICAL("Decomp: error reading NVertices");
-   MaxEdges = IO::getDimLength(MeshFileID, "maxEdges");
-   if (MaxEdges <= 0)
+   I4 MaxEdgesID;
+   Err = IO::getDimFromFile(MeshFileID, "maxEdges", MaxEdgesID, MaxEdges);
+   if (Err != 0 or MaxEdges <= 0)
       LOG_CRITICAL("Decomp: error reading MaxEdges");
-   VertexDegree = IO::getDimLength(MeshFileID, "vertexDegree");
-   if (VertexDegree <= 0)
+   I4 VertexDegreeID;
+   Err = IO::getDimFromFile(MeshFileID, "vertexDegree", VertexDegreeID,
+                            VertexDegree);
+   if (Err != 0 or VertexDegree <= 0)
       LOG_CRITICAL("Decomp: error reading VertexDegree");
    MaxCellsOnEdge    = 2;            // currently always 2
    I4 MaxEdgesOnEdge = 2 * MaxEdges; // 2*MaxCellsOnEdge

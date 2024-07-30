@@ -49,7 +49,7 @@ files for reading/writing, use:
 ```
 or
 ```c++
-   int Err = IO::openFile(FileID, Filename, Mode, Format, IfExists, Precision);
+   int Err = IO::openFile(FileID, Filename, Mode, Format, IfExists);
    Err = IO::closeFile(FileID);
 ```
 In both case, an integer FileID is assigned to the open file which is then
@@ -79,18 +79,11 @@ enum class IfExists {
    Append,  /// Append to the existing file
 };
 
-/// Floating point precision to allow reduced precision to save space
-enum class Precision {
-   Double, /// Maintain full double precision (64-bit) for reals
-   Single, /// Reduce all floating point variables to 32-bit reals
-};
 ```
-with the defaults for each being ``IO::FmtDefault``, ``IO::IfExists::Fail``,
-and ``IO::Precision::Double``. The E3SM standard format is currently
+with the defaults for each being ``IO::FmtDefault``, and
+``IO::IfExists::Fail``. The E3SM standard format is currently
 NetCDF4. Earlier NetCDF formats should be avoided, but are provided in
-case an input file is in an earlier format. The Precision argument is
-for output files only and determines whether double-precision (R8) variables
-should be reduced to single precision during output.
+case an input file is in an earlier format.
 
 Once the file is open, data is read/written using:
 ```c++
@@ -117,12 +110,12 @@ where FileID is the ID of an open file, the DimName is a ``std::string``
 with the dimension name (eg NCells, NEdges, NVertices, NVertLevels or
 NTracers), length is the length of the full global array and DimID is
 the ID assigned to this dimension. Note that for reading a file, we
-do have a function:
+supply the function:
 ```c++
-   int Length = IO::getDimLength(FileID, DimName);
+   int Err = IO::getDimFromFile(FileID, DimName, DimID, DimLength);
 ```
-that can be used to inquire about the dimension length and check for
-consistency, but the full dimension must still be defined.
+that can be used to inquire about the dimension length and retrieve the
+dimension ID from the file.
 
 Once the dimensions are defined, the decomposition of an array must
 be defined using:

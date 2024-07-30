@@ -85,12 +85,6 @@ enum class IfExists {
    Append,  /// Append to the existing file
 };
 
-/// Floating point precision to allow reduced precision to save space
-enum class Precision {
-   Double, /// Maintain full double precision (64-bit) for reals
-   Single, /// Reduce all floating point variables to 32-bit reals
-};
-
 /// Data types for PIO corresponding to Omega types
 enum IODataType {
    IOTypeI4      = PIO_INT,    /// 32-bit integer
@@ -131,10 +125,6 @@ Mode ModeFromString(
 IfExists IfExistsFromString(
     const std::string &IfExists ///< [in] choice of behavior on file existence
 );
-/// Converts string choice for floating point precision to an enum
-Precision PrecisionFromString(
-    const std::string &Precision ///< [in] choice of floating point precision
-);
 
 // Methods
 
@@ -152,12 +142,11 @@ int init(const MPI_Comm &InComm ///< [in] MPI communicator to use
 /// used if the file already exists, and the precision of any floating point
 /// variables. Returns an error code.
 int openFile(
-    int &FileID,                      ///< [out] returned fileID for this file
-    const std::string &Filename,      ///< [in] name (incl path) of file to open
-    Mode Mode,                        ///< [in] mode (read or write)
-    FileFmt Format      = FmtDefault, ///< [in] (optional) file format
-    IfExists IfExists   = IfExists::Fail,   ///< [in] behavior if file exists
-    Precision Precision = Precision::Double ///< [in] precision of floats
+    int &FileID,                    ///< [out] returned fileID for this file
+    const std::string &Filename,    ///< [in] name (incl path) of file to open
+    Mode Mode,                      ///< [in] mode (read or write)
+    FileFmt Format    = FmtDefault, ///< [in] (optional) file format
+    IfExists IfExists = IfExists::Fail ///< [in] behavior if file exists
 );
 
 /// Closes an open file using the fileID, returns an error code
@@ -167,8 +156,10 @@ int closeFile(int &FileID /// [in] ID of the file to be closed
 /// Retrieves a dimension length from an input file, given the name
 /// of the dimension. Returns the length if exists, but returns a negative
 /// value if a dimension of that length is not found in the file.
-int getDimLength(int FileID, ///< [in] ID of the file containing dim
-                 const std::string &DimName ///< [in] name of dimension
+int getDimFromFile(int FileID, ///< [in] ID of the file containing dim
+                   const std::string &DimName, ///< [in] name of dimension
+                   int &DimID,    ///< [out] ID assigned to this dimension
+                   int &DimLength ///< [out] global length of the dimension
 );
 
 /// Defines a dimension for an output file. Returns a dimension id to

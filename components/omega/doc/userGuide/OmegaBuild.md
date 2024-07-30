@@ -30,7 +30,7 @@ file (`config_machines.xml`), employ the `OMEGA_CIME_COMPILER` CMake variable,
 as illustrated below. In some cases, you may also want to add `OMEGA_CIME_MACHINE`
 to specify which system you intend to use. On systems where there is not a
 default `PROJECT` defined, you can use `OMEGA_CIME_PROJECT` to specify an
-account to use as a placeholder during the Omega build. 
+account to use as a placeholder during the Omega build.
 The values of `OMEGA_CIME_COMPILER` and `OMEGA_CIME_MACHINE` are defined in
 "${E3SM}/cime\_config/machines/config\_machines.xml".
 OMEGA requires some external libraries. Many of these are built automatically

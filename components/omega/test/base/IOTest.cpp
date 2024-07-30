@@ -264,9 +264,9 @@ int main(int argc, char *argv[]) {
 
       // Open a file for output
       int OutFileID;
-      Err = OMEGA::IO::openFile(
-          OutFileID, "IOTest.nc", OMEGA::IO::ModeWrite, OMEGA::IO::FmtDefault,
-          OMEGA::IO::IfExists::Replace, OMEGA::IO::Precision::Double);
+      Err = OMEGA::IO::openFile(OutFileID, "IOTest.nc", OMEGA::IO::ModeWrite,
+                                OMEGA::IO::FmtDefault,
+                                OMEGA::IO::IfExists::Replace);
       if (Err != 0) {
          RetVal += 1;
          LOG_ERROR("IOTest: error opening file for output FAIL");
@@ -584,33 +584,44 @@ int main(int argc, char *argv[]) {
       }
 
       // Get dimension lengths to verify read/write of dimension info
-      OMEGA::I4 NVertLevelsNew =
-          OMEGA::IO::getDimLength(InFileID, "NVertLevels");
-      if (NVertLevelsNew == NVertLevels) {
+      OMEGA::I4 NVertLevelsID;
+      OMEGA::I4 NVertLevelsNew;
+      Err = OMEGA::IO::getDimFromFile(InFileID, "NVertLevels", NVertLevelsID,
+                                      NVertLevelsNew);
+      if (Err == 0 and NVertLevelsNew == NVertLevels) {
          LOG_INFO("IOTest: read/write vert dimension test PASS");
       } else {
          RetVal += 1;
          LOG_INFO("IOTest: read/write vert dimension test FAIL");
       }
 
-      OMEGA::I4 NCellsNew = OMEGA::IO::getDimLength(InFileID, "NCells");
-      if (NCellsNew == NCellsGlobal) {
+      OMEGA::I4 NCellsNewID;
+      OMEGA::I4 NCellsNew;
+      Err =
+          OMEGA::IO::getDimFromFile(InFileID, "NCells", NCellsNewID, NCellsNew);
+      if (Err == 0 and NCellsNew == NCellsGlobal) {
          LOG_INFO("IOTest: read/write cell dimension test PASS");
       } else {
          RetVal += 1;
          LOG_INFO("IOTest: read/write cell dimension test FAIL");
       }
 
-      OMEGA::I4 NEdgesNew = OMEGA::IO::getDimLength(InFileID, "NEdges");
-      if (NEdgesNew == NEdgesGlobal) {
+      OMEGA::I4 NEdgesNewID;
+      OMEGA::I4 NEdgesNew;
+      Err =
+          OMEGA::IO::getDimFromFile(InFileID, "NEdges", NEdgesNewID, NEdgesNew);
+      if (Err == 0 and NEdgesNew == NEdgesGlobal) {
          LOG_INFO("IOTest: read/write edge dimension test PASS");
       } else {
          RetVal += 1;
          LOG_INFO("IOTest: read/write edge dimension test FAIL");
       }
 
-      OMEGA::I4 NVerticesNew = OMEGA::IO::getDimLength(InFileID, "NVertices");
-      if (NVerticesNew == NVerticesGlobal) {
+      OMEGA::I4 NVerticesNewID;
+      OMEGA::I4 NVerticesNew;
+      Err = OMEGA::IO::getDimFromFile(InFileID, "NVertices", NVerticesNewID,
+                                      NVerticesNew);
+      if (Err == 0 and NVerticesNew == NVerticesGlobal) {
          LOG_INFO("IOTest: read/write vertex dimension test PASS");
       } else {
          RetVal += 1;
