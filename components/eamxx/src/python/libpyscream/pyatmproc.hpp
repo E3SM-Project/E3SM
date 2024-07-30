@@ -131,12 +131,32 @@ struct PyAtmProc {
     return pybind11::cast(missing);
   }
 
-  pybind11::list dump_fields() {
-    std::vector<std::string> all_fields;
-    for (auto it : fields) {
-      all_fields.push_back(it.first);
+  pybind11::list list_fields(std::string ftype) {
+    std::vector<std::string> fields_list;
+    for (const auto& field_pair : fields) {
+      const auto& field_identifier = field_pair.second.f.get_header().get_identifier();
+
+      if (ftype == "required" && ap->has_required_field(field_identifier)) {
+        fields_list.push_back(field_pair.first);
+      } else if (ftype == "computed" && ap->has_computed_field(field_identifier)) {
+        fields_list.push_back(field_pair.first);
+      } else if (ftype == "all") {
+        fields_list.push_back(field_pair.first);
+      }
     }
-    return pybind11::cast(all_fields);
+  return pybind11::cast(fields_list);
+  }
+
+  pybind11::list list_all_fields() {
+    return list_fields("all");
+  }
+
+  pybind11::list list_required_fields() {
+    return list_fields("required");
+  }
+
+  pybind11::list list_computed_fields() {
+    return list_fields("computed");
   }
 
   void setup_output (const std::string& yaml_file) {
@@ -184,7 +204,9 @@ inline void pybind_pyatmproc(pybind11::module& m)
     .def("setup_output",&PyAtmProc::setup_output)
     .def("run",&PyAtmProc::run)
     .def("read_ic",&PyAtmProc::read_ic)
-    .def("dump_fields",&PyAtmProc::dump_fields);
+    .def("list_all_fields",&PyAtmProc::list_all_fields)
+    .def("list_required_fields",&PyAtmProc::list_required_fields)
+    .def("list_computed_fields",&PyAtmProc::list_computed_fields);
 }
 } // namespace scream
 
