@@ -328,6 +328,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     return;
   }
 
+  // Ensure we did not go past the scheduled write time without hitting it
+  EKAT_REQUIRE_MSG (
+      (m_output_control.frequency_units=="nsteps"
+          ? timestamp.get_num_steps()<=m_output_control.next_write_ts.get_num_steps()
+          : timestamp<=m_output_control.next_write_ts),
+      "Error! The input timestamp is past the next scheduled write timestamp.\n"
+      "  - current time stamp   : " + timestamp.to_string() + "\n"
+      "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
+      "The most likely cause is an output frequency that is faster than the atm timestep.\n"
+      "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
+
   // Update counters
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;
