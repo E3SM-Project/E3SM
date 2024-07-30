@@ -312,10 +312,10 @@ CONTAINS
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
 #ifdef HAVE_MOAB   
-    integer        :: ent_type
+    integer        :: ent_type, ierr
     character(CXX) :: tagname ! will store all seq_flds_a2x_fields , seq_flds_x2a_fields
 #ifdef MOABDEBUG
-    integer                          :: cur_atm_stepno, ierr
+    integer                          :: cur_atm_stepno
     character*100                    :: outfile, wopts, lnum
 #endif
 #endif
