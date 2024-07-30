@@ -562,6 +562,34 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
   return progs;
 }
 
+
+// Given an AerosolState with views for dry aerosol quantities, creates a
+// mam4::Tendencies object for the column with the given index with
+// ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
+// mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Tendencies interstitial_aerosols_tendencies_for_column(const AerosolState& dry_aero,
+                                                   const int column_index) {
+  constexpr int nlev = mam4::nlev;
+  mam4::Tendencies tends(nlev);
+  for (int m = 0; m < num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.int_aero_nmr[m].data(),
+      "int_aero_nmr not defined for dry aerosol state!");
+    tends.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
+    for (int a = 0; a < num_aero_species(); ++a) {
+      if (dry_aero.int_aero_mmr[m][a].data()) {
+        tends.q_aero_i[m][a] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  for (int g = 0; g < num_aero_gases(); ++g) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.gas_mmr[g].data(),
+      "gas_mmr not defined for dry aerosol state!");
+    tends.q_gas[g] = ekat::subview(dry_aero.gas_mmr[g], column_index);
+  }
+  return tends;
+}
+
 // Given a dry aerosol state, creates a mam4::Prognostics object for the column
 // with the given index with interstitial and cloudborne aerosol views defined.
 // This object can be provided to mam4xx for the column.
@@ -581,7 +609,25 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
   }
   return progs;
 }
-
+// Given a dry aerosol state tendencies, creates a mam4::Tendencies object for the column
+// with the given index with interstitial and cloudborne aerosol views defined.
+// This object can be provided to mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Tendencies aerosols_tendencies_for_column(const AerosolState& dry_aero,
+                                      const int column_index) {
+  auto tends = interstitial_aerosols_tendencies_for_column(dry_aero, column_index);
+  for (int m = 0; m < num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
+      "Tendencies : dry_cld_aero_nmr not defined for aerosol state!");
+    tends.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
+    for (int a = 0; a < num_aero_species(); ++a) {
+      if (dry_aero.cld_aero_mmr[m][a].data()) {
+        tends.q_aero_c[m][a] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  return tends;
+}
 // Given a thread team and a dry atmosphere state, dispatches threads from the
 // team to compute vertical layer heights and interfaces for the column with
 // the given index.

@@ -1,7 +1,9 @@
 
-#Default scream has 10 tracers, MAM4xx adds another 31 making a total of 41 tracer
-#Set total number of tracers to 41. We are using append here as last entry wins while parsing xml options
-./xmlchange --append SCREAM_CMAKE_OPTIONS="SCREAM_NUM_TRACERS 41"
+#------------------------------------------------------
+# MAM4xx adds additionaltracers to the simulation
+# Increase number of tracers for MAM4xx simulations
+#------------------------------------------------------
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh
 
 #modify initial condition file to get aerosol species ICs
 $CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
