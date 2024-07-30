@@ -10,6 +10,20 @@ namespace scream {
 namespace shoc {
 
 /*
+Add some functions to avoid cuda compilation warnings
+TODO: move this to ekat or something
+*/
+#ifdef KOKKOS_ENABLE_CUDA
+KOKKOS_INLINE_FUNCTION constexpr Real safe_min() {
+  return Kokkos::Experimental::norm_min_v<Real>;
+}
+#else
+KOKKOS_INLINE_FUNCTION constexpr Real safe_min() {
+  return std::numeric_limits<Real>::min();
+}
+#endif
+
+/*
  * Implementation of shoc shoc_assumed_pdf. Clients should NOT
  * #include this file, but include shoc_functions.hpp instead.
  *
@@ -317,7 +331,7 @@ void Functions<S,D>::shoc_assumed_pdf(
         std_s1 = ekat::sqrt(ekat::max(0,
                                       ekat::square(cthl1)*thl2_1
                                       + ekat::square(cqt1)*qw2_1 - 2*cthl1*sqrtthl2_1*cqt1*sqrtqw2_1*r_qwthl_1));
-        const auto std_s1_not_small = std_s1 > std::sqrt(std::numeric_limits<Scalar>::min()) * 100;
+        const auto std_s1_not_small = std_s1 > std::sqrt(safe_min()) * 100;
         s1 = qw1_1-qs1*((1 + beta1*qw1_1)/(1 + beta1*qs1));
         if (std_s1_not_small.any()) {
           C1.set(std_s1_not_small, sp(0.5)*(1 + ekat::erf(s1/(sqrt2*std_s1))));
@@ -357,7 +371,7 @@ void Functions<S,D>::shoc_assumed_pdf(
                                           ekat::square(cthl2)*thl2_2
                                           + ekat::square(cqt2)*qw2_2 - 2*cthl2*sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1)));
           s2.set(nequal, qw1_2-qs2*((1 + beta2*qw1_2)/(1 + beta2*qs2)));
-          const auto std_s2_not_small = std_s2 > std::sqrt(std::numeric_limits<Scalar>::min()) * 100;
+          const auto std_s2_not_small = std_s2 > std::sqrt(safe_min()) * 100;
           const auto nequal_std_s2_not_small = nequal && std_s2_not_small;
           if (nequal_std_s2_not_small.any()) {
             C2.set(nequal_std_s2_not_small, sp(0.5)*(1 + ekat::erf(s2/(sqrt2*std_s2))));
