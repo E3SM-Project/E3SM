@@ -1306,6 +1306,7 @@ real(r8)                 :: pe,ke
 
 !=====Jinbo Xie=====
 integer :: wdir_add_xjb(mdir,its:ite)
+real(r8):: ncleff  !!tunable parameter
 !=====Jinbo Xie=====
 
 
@@ -1699,9 +1700,10 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
 !==============Jinbo Xie=============================================
+       !!tune the times of drag
+       ncleff    = 3.!
        !cleff    = 3._r8 * max(dxmeter(i),cleff)!turned dxmeter to array
-        cleff    = 3._r8 * max(dxmax_ls,cleff)
-        !cleff    = 2._r8 * max(dxmax_ls,cleff)
+        cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
 !==============Jinbo Xie=============================================
        coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
        xlinv(i) = coefm(i) / cleff
@@ -1941,7 +1943,7 @@ enddo
         if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
           if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
             temv = 1.0_r8 / velco(i,k)
-            tem1 = coefm(i)/dxy(i)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
 
