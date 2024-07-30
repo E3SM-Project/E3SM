@@ -1,0 +1,5 @@
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/FortranCInterface/CMakeFiles/rebuild_cache.dir
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/FortranCInterface/CMakeFiles/FortranCInterface.dir
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/FortranCInterface/CMakeFiles/symbols.dir
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/FortranCInterface/CMakeFiles/edit_cache.dir
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/FortranCInterface/CMakeFiles/myfort.dir

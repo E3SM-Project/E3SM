@@ -1,0 +1,170 @@
+Traceback (most recent call last):
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/test/tool/../../../../cime/CIME/Tools/get_case_env", line 116, in <module>
+    _main_func(__doc__)
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/test/tool/../../../../cime/CIME/Tools/get_case_env", line 61, in _main_func
+    casename = parse_command_line(sys.argv, description)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/test/tool/../../../../cime/CIME/Tools/get_case_env", line 53, in parse_command_line
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(raw_args, parser)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/cime/CIME/utils.py", line 1687, in parse_args_and_handle_standard_logging_options
+    _check_for_invalid_args(args[1:])
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/cime/CIME/utils.py", line 2478, in _check_for_invalid_args
+    if get_model() != "e3sm":
+       ^^^^^^^^^^^
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/cime/CIME/utils.py", line 530, in get_model
+    cime_config = get_cime_config()
+                  ^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/cime/CIME/utils.py", line 304, in get_cime_config
+    _CIMECONFIG = _read_cime_config_file()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/x/xie7/ls4p/new/E3SM/cime/CIME/utils.py", line 265, in _read_cime_config_file
+    cime_config = configparser.SafeConfigParser()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'configparser' has no attribute 'SafeConfigParser'. Did you mean: 'RawConfigParser'?
+loading initial cache file /pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/test/tool/../../cmake/machineFiles/cori-knl.cmake
+CMake Deprecation Warning at CMakeLists.txt:5 (CMAKE_MINIMUM_REQUIRED):
+  Compatibility with CMake < 2.8.12 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+-- The sha of the last commit is d2ec49bd059355131679652011ad8f9c9745cd3c
+-- Option BUILD_HOMMEXX_BENCHMARK_NOFORCING is OFF
+-- Quadruple-precision supported enabling
+-- This configuration of HOMME requires a C++ compiler
+-- CMAKE_Fortran_COMPILER_ID = GNU
+
+ ********************************** WARNING ********************************** 
+  Cuda was found, but the backend C++ compiler is not nvcc_wrapper.
+  If you are using mpicxx from OpenMPI, you must set the OMPI_CXX
+  env variable to point to the nvcc_wrapper in your kokkos installation.
+  If you are using mpicxx from MPICH, you must set the MPICH_CXX
+  env variable to point to the nvcc_wrapper in your kokkos installation.
+  If you are building kokkos inside E3SM, that is:
+
+/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/../../externals/kokkos/bin/nvcc_wrapper
+
+
+  If you set HOMMEXX_EXEC_SPACE=Cuda, or if you are using Kokkos
+  default device and that happens to be Cuda, this build may not compile,
+  or give wrong results.
+  For the record, this was the command used:
+
+/opt/cray/pe/mpich/8.1.28/ofi/gnu/12.3/bin/mpicxx --version
+
+  And this was the output:
+
+g++ (SUSE Linux) 12.3.0
+Copyright (C) 2022 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+ ***************************************************************************** 
+
+-- HOMME_FIND_BLASLAPACK=TRUE
+-- Fortran Flags =  -w -fallow-argument-mismatch -ffree-line-length-none -O3 -g -fbacktrace
+-- C Flags =  -O2 -g 
+-- CXX Flags =  -g -std=c++14 -O3 -DNDEBUG -g 
+-- Linker Flags =    
+** Configuring SCORPIO with:
+-- NetCDF_PATH = /usr/local
+-- PnetCDF_PATH = 
+-- NetCDF_Fortran_PATH = 
+-- NetCDF_C_PATH = 
+-- PnetCDF_Fortran_PATH = 
+-- PnetCDF_C_PATH = 
+-- ===== Configuring SCORPIO... =====
+CMake Deprecation Warning at utils/externals/scorpio/CMakeLists.txt:68 (message):
+  Using NETCDF_DIR to specify the install path to NetCDF is deprecated.  Use
+  NetCDF_PATH instead
+
+
+CMake Deprecation Warning at utils/externals/scorpio/CMakeLists.txt:75 (message):
+  Using PNETCDF_DIR to specify the install path to PnetCDF is deprecated.
+  Use PnetCDF_PATH instead
+
+
+-- Enabling SCORPIO I/O performance statistics collection (default)
+-- Using BGET to allocate memory for caching data in SCORPIO
+-- Disabling debug logging in SCORPIO (default)
+-- Disabling use/check of the MPI serial library (default)
+-- Disabling saving I/O decompositions (default)
+-- No limit on the number of cached I/O regions (default)
+-- Limiting the number of Lustre OSTs used to PIO_MAX_LUSTRE_OSTS = 72 (default for Perlmutter)
+-- Using filesystem striping unit, PIO_STRIPING_UNIT = 1048576 (default for Cori/Perlmutter/Theta)
+-- Using PnetCDF independent data mode to read variables in SCORPIO (default)
+-- Reserving some extra space in the header when creating NetCDF files, requested bytes = 10240 (default)
+-- Configurable parameters used by ADIOS type are not applicable (default)
+-- Disabling code coverage... (use -DPIO_ENABLE_COVERAGE:BOOL=ON to enable coverage, only GNU is supported for now)
+CMake Warning (dev) at /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (GPTL_C)
+  does not match the name of the calling package (GPTL).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  utils/externals/scorpio/cmake/LibFind.cmake:302 (find_package_handle_standard_args)
+  utils/externals/scorpio/cmake/FindGPTL.cmake:67 (find_package_component)
+  utils/externals/scorpio/src/CMakeLists.txt:7 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args`
+  (GPTL_Fortran_Perf) does not match the name of the calling package (GPTL).
+  This can lead to problems in calling code that expects `find_package`
+  result variables (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  utils/externals/scorpio/cmake/LibFind.cmake:302 (find_package_handle_standard_args)
+  utils/externals/scorpio/cmake/FindGPTL.cmake:67 (find_package_component)
+  utils/externals/scorpio/src/CMakeLists.txt:8 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could not find external GPTL library, using the internal GPTL library instead
+-- ===== Configuring GPTL library... =====
+-- Found MPI: TRUE (found version "3.1") found components: C Fortran 
+-- Found symbol 'MPI_Comm_f2c' in mpi.h
+-- MPI Fortran module verified and enabled.
+-- ===== Configuring SCORPIO C library... =====
+-- Found MPI: TRUE (found version "3.1") found components: C 
+CMake Warning (dev) at /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (GPTL_C)
+  does not match the name of the calling package (GPTL).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  utils/externals/scorpio/cmake/LibFind.cmake:302 (find_package_handle_standard_args)
+  utils/externals/scorpio/cmake/FindGPTL.cmake:64 (find_package_component)
+  utils/externals/scorpio/src/clib/CMakeLists.txt:37 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could NOT find GPTL_C (missing: GPTL_C_LIBRARY GPTL_C_INCLUDE_DIR) 
+-- Using internal GPTL C library for timing
+CMake Warning (dev) at /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (NetCDF_C)
+  does not match the name of the calling package (NetCDF).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  utils/externals/scorpio/cmake/LibFind.cmake:302 (find_package_handle_standard_args)
+  utils/externals/scorpio/cmake/FindNetCDF.cmake:51 (find_package_component)
+  utils/externals/scorpio/src/clib/CMakeLists.txt:59 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could NOT find NetCDF_C (missing: NetCDF_C_LIBRARY NetCDF_C_INCLUDE_DIR) 
+-- Could not find NetCDF C library, disabling support for NetCDF
+-- Disabling support for PnetCDF
+-- Disabling support for ADIOS (default)
+-- Disabling support for HDF5
+CMake Error at utils/externals/scorpio/src/clib/CMakeLists.txt:164 (message):
+  Could not find PnetCDF and NetCDF libraries.  SCORPIO requires PnetCDF
+  and/or NetCDF C libraries
+
+
+-- Configuring incomplete, errors occurred!
+See also "/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/CMakeOutput.log".
+See also "/pscratch/sd/x/xie7/ls4p/new/E3SM/components/homme/CMakeFiles/CMakeError.log".
+make: *** No rule to make target 'homme_tool'.  Stop.
+Error compiling homme_tool. Ensure cmake configured properly.

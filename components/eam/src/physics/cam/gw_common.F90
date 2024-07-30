@@ -1306,7 +1306,8 @@ real(r8)                 :: pe,ke
 
 !=====Jinbo Xie=====
 integer :: wdir_add_xjb(mdir,its:ite)
-real(r8):: ncleff  !!tunable parameter
+real(r8):: ncleff  !!tunable parameter for gwd
+real(r8):: ncd  !!tunable parameter for fbd
 !=====Jinbo Xie=====
 
 
@@ -2050,6 +2051,9 @@ zblk_col(i)=zblk
           cd = max(2.0_r8-1.0_r8/od(i),0.0_r8)
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
                          * olp(i) * zblk * ulow(i)**2
+
+cd=ncd*cd
+
 !Jinbo Xie for base flux
 taufb_xjb(i)=taufb(i,kts)
 !Jinbo Xie for base flux
