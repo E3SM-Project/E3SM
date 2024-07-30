@@ -717,6 +717,30 @@ std::string get_time_name (const std::string& filename)
   return pf.file->time_dim->name;
 }
 
+void reset_unlimited_dim_len(const std::string& filename, const int new_length)
+{
+  auto& f = impl::get_file(filename,"scorpio::reset_unlimited_dim_len");
+
+  // Reset dim length
+  EKAT_REQUIRE_MSG (f.time_dim!=nullptr,
+      "Error! Cannot reset unlimited dim length. No unlimited dim stored.\n"
+      "  - file name: " + filename + "\n");
+  EKAT_REQUIRE_MSG (new_length<f.time_dim->length,
+      "Error! New time dimension length must be shorter than the current one.\n"
+      "  - file name: " + filename + "\n"
+      "  - curr len : " + std::to_string(f.time_dim->length) + "\n"
+      "  - new len  : " + std::to_string(new_length) + "\n");
+  f.time_dim->length = new_length;
+
+  // Reset number of records counter for each time dep var
+  for (auto it : f.vars) {
+    auto& v = *it.second;
+    if (v.time_dep) {
+      v.num_records = new_length;
+    }
+  }
+}
+
 // =================== Decompositions operations ==================== //
 
 // NOTES:
