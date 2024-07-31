@@ -318,24 +318,39 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Allocate memory
   //-----------------------------------------------------------------
   const int pcnst = mam4::aero_model::pcnst;
-  // FIXME: comment what they are and units.....
-  qtracers_ = view_3d("qtracers_", ncol_, nlev_, pcnst);
 
-  rho_     = view_2d("rho", ncol_, nlev_);
+  // Output of the the mixing ratio tendencies [kg/kg/s or 1/kg/s]
   ptend_q_ = view_3d("ptend_q_", ncol_, nlev_, pcnst);
 
-  vlc_dry_ = view_4d("vlc_dry_", mam4::AeroConfig::num_modes(),
-                     aerosol_categories_, ncol_, nlev_);
-  vlc_grv_ = view_4d("vlc_grv_", mam4::AeroConfig::num_modes(),
-                     aerosol_categories_, ncol_, nlev_);
+  // Deposition velocity of turbulent dry deposition [m/s]
   vlc_trb_ = view_3d("vlc_trb_", mam4::AeroConfig::num_modes(),
                      aerosol_categories_, ncol_);
+  // Deposition velocity of gravitational settling [m/s]
+  vlc_grv_ = view_4d("vlc_grv_", mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
+  // Deposition velocity, [m/s]
+  // Fraction landuse weighted sum of vlc_grv and vlc_trb
+  vlc_dry_ = view_4d("vlc_dry_", mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
 
-  qqcw_     = view_3d("qqcw_", pcnst, ncol_, nlev_);
+  // Work array to hold the mixing ratios [kg/kg or 1/kg]
+  // Packs AerosolState::int_aero_nmr and AerosolState::int_aero_nmr
+  // into one array.
+  qtracers_ = view_3d("qtracers_", ncol_, nlev_, pcnst);
+
+  // Work array to hold the air density [kg/m3]
+  rho_ = view_2d("rho", ncol_, nlev_);
+
+  // Work array to hold cloud borne aerosols mixing ratios [kg/kg or 1/kg]
+  // Filled with Prognostics::n_mode_c and Prognostics::q_aero_c
+  qqcw_ = view_3d("qqcw_", pcnst, ncol_, nlev_);
+
+  // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
 
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
   // FIXME: This should come from a file reading
+  // The fraction of land use for the column. [non-dimentional]
   fraction_landuse_ = view_2d("fraction_landuse_", n_land_type, ncol_);
 
   //-----------------------------------------------------------------

@@ -45,19 +45,70 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
-  view_3d qtracers_;
+
+  /* Note on mam4::DryDeposition::aerosol_categories = 4
+     used in deposition velocity dimension defined below. These
+     correspond to the two attachment states and two moments:
+     0 - interstitial aerosol, 0th moment (i.e., number)
+     1 - interstitial aerosol, 3rd moment (i.e., volume/mass)
+     2 - cloud-borne aerosol,  0th moment (i.e., number)
+     3 - cloud-borne aerosol,  3rd moment (i.e., volume/mass)
+     see comments in the DryDeposition class in mam4xx.
+  */
+  // Output deposition velocity of turbulent dry deposition [m/s]
+  // Dimensions
+  //    [numer of modes, aerosol_categories_, num columns]
+  view_3d vlc_trb_;
+
+  // Output deposition velocity of gravitational settling [m/s]
+  // Dimensions
+  //   [num_modes, aerosol_categories_, num columns, num levels]
+  view_4d vlc_grv_;
+    
+  // Output deposition velocity, [m/s]
+  // fraction landuse weighted sum of vlc_grv and vlc_trb 
+  // Dimensions
+  //   [num_modes, aerosol_categories_, num columns, num levels]
+  view_4d vlc_dry_;
+
+
+  // Output of the the mixing ratio tendencies [kg/kg/s or 1/kg/s]
+  // Dimensions
+  //   [num columns, num levels, mam4::aero_model::pcnst]
+  // Packed the same way qtracers_ is layed out.
   view_3d ptend_q_;
 
-  // inputs
-  // FIXME: collect all inputs and outputs together
-  view_2d fraction_landuse_;
-  view_3d vlc_trb_;
-  view_2d rho_;
+  // Work array to hold the mixing ratios [kg/kg or 1/kg]
+  // Dimensions
+  //   [num columns, num levels, mam4::aero_model::pcnst]
+  // Packs AerosolState::int_aero_nmr 
+  // and   AerosolState::int_aero_nmr
+  // into one array, hence is mixed kg/kg and 1/kg.
+  view_3d qtracers_;
 
-  view_4d vlc_dry_;
-  view_4d vlc_grv_;
+  // Work array to hold the fraction [non-dimentional]
+  // of land use for column. 
+  // Dimensions
+  //   [MAMDryDep::n_land_type, num columns]
+  // Values should sum to 1. 
+  view_2d fraction_landuse_;
+
+  // Work array to hold the air density [kg/m3]
+  // Dimensions
+  //   [num columns, num levels]
+  // Calculated from air pressure at layer midpoint,
+  // Constants::r_gas_dry_air and air temperture.
+  view_2d rho_;
+    
+  // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
+  // Dimensions
+  //   [mam4::aero_model::pcnst, num column, num level]
   view_3d dqdt_tmp_;
 
+  // Work array to hold cloud borne aerosols mixing ratios [kg/kg or 1/kg]
+  // Dimensions
+  //   [mam4::aero_model::pcnst, num column, num level]
+  // Filled with Prognostics::n_mode_c and Prognostics::q_aero_c
   view_3d qqcw_;
 
  public:
