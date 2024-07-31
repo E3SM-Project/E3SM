@@ -315,12 +315,14 @@ module seaice_core_interface
 
      call MPAS_pool_get_config(configPool, "config_use_column_physics", config_use_column_physics)
      call MPAS_pool_get_config(configPool, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnPackageActive", pkgColumnPackageActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
 
      pkgColumnPackageActive         = config_use_column_physics
-     pkgColumnBiogeochemistryActive = (config_use_column_biogeochemistry .and. config_use_column_physics)
+     pkgColumnBiogeochemistryActive = ((config_use_column_biogeochemistry .or. config_use_zaerosols) &
+                                    .and. config_use_column_physics)
 
      !pkgColumnPackageActive         = .true.
      !pkgColumnBiogeochemistryActive = .true.
@@ -384,7 +386,6 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_humics", config_use_humics)
      call MPAS_pool_get_config(configPool, "config_use_DON", config_use_DON)
      call MPAS_pool_get_config(configPool, "config_use_iron", config_use_iron)
-     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
      call MPAS_pool_get_config(configPool, "config_use_effective_snow_density", config_use_effective_snow_density)
      call MPAS_pool_get_config(configPool, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
@@ -494,8 +495,6 @@ module seaice_core_interface
      endif
 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_physics) then
-        pkgTracerBrineActive                = .false.
-        pkgTracerMobileFractionActive       = .false.
         pkgTracerSkeletalAlgaeActive        = .false.
         pkgTracerSkeletalNitrateActive      = .false.
         pkgTracerSkeletalCarbonActive       = .false.
@@ -516,7 +515,6 @@ module seaice_core_interface
         pkgTracerVerticalHumicsActive       = .false.
         pkgTracerVerticalDONActive          = .false.
         pkgTracerVerticalIronActive         = .false.
-        pkgTracerZAerosolsActive            = .false.
         pkgTracerZSalinityActive            = .false.
      endif
 
@@ -601,6 +599,9 @@ module seaice_core_interface
      logical, pointer :: &
           config_use_forcing, &
           config_use_data_icebergs, &
+          config_use_zaerosols, &
+          config_use_iron_solubility_file, &
+          config_use_atm_dust_file, &
           config_testing_system_test, &
           config_use_snicar_ad, &
           config_use_prescribed_ice, &
@@ -615,17 +616,28 @@ module seaice_core_interface
           pkgPrescribedActive, &
           pkgSpecialBoundariesActive
 
+     logical :: &
+          config_use_dust_file
+
      ierr = 0
 
      ! pkgForcing
 
      call MPAS_pool_get_config(configPool, "config_use_forcing", config_use_forcing)
      call MPAS_pool_get_config(configPool, "config_use_data_icebergs", config_use_data_icebergs)
+     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
+     call MPAS_pool_get_config(configPool, "config_use_atm_dust_file", config_use_atm_dust_file)
+     call MPAS_pool_get_config(configPool, "config_use_iron_solubility_file", config_use_iron_solubility_file)
 
      call MPAS_pool_get_package(packagePool, "pkgForcingActive", pkgForcingActive)
 
+     config_use_dust_file = .false.
+     if (config_use_zaerosols .and. (config_use_iron_solubility_file .or. &
+         config_use_atm_dust_file) ) config_use_dust_file = .true.
+
      ! see if we are using the forcing system
-     if (config_use_forcing .or. config_use_data_icebergs) then
+     if (config_use_forcing .or. config_use_data_icebergs .or. &
+         config_use_dust_file) then
 
         pkgForcingActive = .true.
 
