@@ -62,7 +62,7 @@ void MAMSrfOnlineEmiss::set_grids(
   std::array<std::string, dms_num_sectors> dms_sectors = {"DMS"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, dms_num_sectors, grid_, dms_data_file, dms_sectors, srf_map_file,
+      ncol_, grid_, dms_data_file, dms_sectors, srf_map_file,
       // output
       dmsSrfEmissHorizInterp_, dmsSrfEmissData_start_, dmsSrfEmissData_end_,
       dmsSrfEmissData_out_, dmsSrfEmissDataReader_);
@@ -82,7 +82,7 @@ void MAMSrfOnlineEmiss::set_grids(
                                                           "SLV", "TRA", "WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, so2_num_sectors, grid_, so2_data_file, so2_sectors, srf_map_file,
+      ncol_, grid_, so2_data_file, so2_sectors, srf_map_file,
       // output
       so2SrfEmissHorizInterp_, so2SrfEmissData_start_, so2SrfEmissData_end_,
       so2SrfEmissData_out_, so2SrfEmissDataReader_);
@@ -102,8 +102,7 @@ void MAMSrfOnlineEmiss::set_grids(
       "AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, bc_a4_num_sectors, grid_, bc_a4_data_file, bc_a4_sectors,
-      srf_map_file,
+      ncol_, grid_, bc_a4_data_file, bc_a4_sectors, srf_map_file,
       // output
       bc_a4SrfEmissHorizInterp_, bc_a4SrfEmissData_start_,
       bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_, bc_a4SrfEmissDataReader_);
@@ -123,8 +122,7 @@ void MAMSrfOnlineEmiss::set_grids(
       "num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV", "num_a1_SO4_WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, num_a1_num_sectors, grid_, num_a1_data_file, num_a1_sectors,
-      srf_map_file,
+      ncol_, grid_, num_a1_data_file, num_a1_sectors, srf_map_file,
       // output
       num_a1SrfEmissHorizInterp_, num_a1SrfEmissData_start_,
       num_a1SrfEmissData_end_, num_a1SrfEmissData_out_,
@@ -145,8 +143,7 @@ void MAMSrfOnlineEmiss::set_grids(
       "num_a2_SO4_RCO", "num_a2_SO4_TRA"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, num_a2_num_sectors, grid_, num_a2_data_file, num_a2_sectors,
-      srf_map_file,
+      ncol_, grid_, num_a2_data_file, num_a2_sectors, srf_map_file,
       // output
       num_a2SrfEmissHorizInterp_, num_a2SrfEmissData_start_,
       num_a2SrfEmissData_end_, num_a2SrfEmissData_out_,
@@ -170,8 +167,7 @@ void MAMSrfOnlineEmiss::set_grids(
       "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, num_a4_num_sectors, grid_, num_a4_data_file, num_a4_sectors,
-      srf_map_file,
+      ncol_, grid_, num_a4_data_file, num_a4_sectors, srf_map_file,
       // output
       num_a4SrfEmissHorizInterp_, num_a4SrfEmissData_start_,
       num_a4SrfEmissData_end_, num_a4SrfEmissData_out_,
@@ -192,8 +188,7 @@ void MAMSrfOnlineEmiss::set_grids(
       "AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, pom_a4_num_sectors, grid_, pom_a4_data_file, pom_a4_sectors,
-      srf_map_file,
+      ncol_, grid_, pom_a4_data_file, pom_a4_sectors, srf_map_file,
       // output
       pom_a4SrfEmissHorizInterp_, pom_a4SrfEmissData_start_,
       pom_a4SrfEmissData_end_, pom_a4SrfEmissData_out_,
@@ -214,8 +209,7 @@ void MAMSrfOnlineEmiss::set_grids(
                                                                 "SLV", "WST"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, so4_a1_num_sectors, grid_, so4_a1_data_file, so4_a1_sectors,
-      srf_map_file,
+      ncol_, grid_, so4_a1_data_file, so4_a1_sectors, srf_map_file,
       // output
       so4_a1SrfEmissHorizInterp_, so4_a1SrfEmissData_start_,
       so4_a1SrfEmissData_end_, so4_a1SrfEmissData_out_,
@@ -235,8 +229,7 @@ void MAMSrfOnlineEmiss::set_grids(
   std::array<std::string, so4_a2_num_sectors> so4_a2_sectors = {"RCO", "TRA"};
 
   srfEmissFunc::init_srf_emiss_objects(
-      ncol_, so4_a2_num_sectors, grid_, so4_a2_data_file, so4_a2_sectors,
-      srf_map_file,
+      ncol_, grid_, so4_a2_data_file, so4_a2_sectors, srf_map_file,
       // output
       so4_a2SrfEmissHorizInterp_, so4_a2SrfEmissData_start_,
       so4_a2SrfEmissData_end_, so4_a2SrfEmissData_out_,
@@ -392,8 +385,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
                               dmsSrfEmissData_end_, dmsSrfEmissData_out_);
 
   // update flux
-  auto constituent_fluxes_DMS = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::DMS));
+  auto constituent_fluxes_DMS =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::DMS));
   Kokkos::deep_copy(constituent_fluxes_DMS,
                     dmsSrfEmissData_out_.emiss_sectors[0]);
 
@@ -412,8 +406,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(so2SrfEmissTimeState_, so2SrfEmissData_start_,
                               so2SrfEmissData_end_, so2SrfEmissData_out_);
   // update flux
-  auto constituent_fluxes_SO2 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::SO2));
+  auto constituent_fluxes_SO2 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::SO2));
   Kokkos::deep_copy(constituent_fluxes_SO2,
                     so2SrfEmissData_out_.emiss_sectors[0]);
 
@@ -432,12 +427,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Call the main srfEmiss routine to get interpolated aerosol forcings.
   srfEmissFunc::srfEmiss_main(bc_a4SrfEmissTimeState_, bc_a4SrfEmissData_start_,
                               bc_a4SrfEmissData_end_, bc_a4SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_bc_a4 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::bc_a4));
+  // update flux
+  auto constituent_fluxes_bc_a4 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::bc_a4));
   Kokkos::deep_copy(constituent_fluxes_bc_a4,
                     bc_a4SrfEmissData_out_.emiss_sectors[0]);
-
 
   //--------------------------------------------------------------------
   // Interpolate num_a1 srf emiss data
@@ -455,11 +450,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(num_a1SrfEmissTimeState_,
                               num_a1SrfEmissData_start_,
                               num_a1SrfEmissData_end_, num_a1SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_num_a1 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::num_a1));
+  // update flux
+  auto constituent_fluxes_num_a1 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::num_a1));
   Kokkos::deep_copy(constituent_fluxes_num_a1,
-                    num_a1SrfEmissData_out_.emiss_sectors[0]);                              
+                    num_a1SrfEmissData_out_.emiss_sectors[0]);
 
   //--------------------------------------------------------------------
   // Interpolate num_a2 srf emiss data
@@ -477,11 +473,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(num_a2SrfEmissTimeState_,
                               num_a2SrfEmissData_start_,
                               num_a2SrfEmissData_end_, num_a2SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_num_a2 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::num_a2));
+  // update flux
+  auto constituent_fluxes_num_a2 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::num_a2));
   Kokkos::deep_copy(constituent_fluxes_num_a2,
-                    num_a2SrfEmissData_out_.emiss_sectors[0]);                              
+                    num_a2SrfEmissData_out_.emiss_sectors[0]);
 
   //--------------------------------------------------------------------
   // Interpolate num_a4 srf emiss data
@@ -499,9 +496,10 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(num_a4SrfEmissTimeState_,
                               num_a4SrfEmissData_start_,
                               num_a4SrfEmissData_end_, num_a4SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_num_a4 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::num_a4));
+  // update flux
+  auto constituent_fluxes_num_a4 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::num_a4));
   Kokkos::deep_copy(constituent_fluxes_num_a4,
                     num_a4SrfEmissData_out_.emiss_sectors[0]);
 
@@ -521,9 +519,10 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(pom_a4SrfEmissTimeState_,
                               pom_a4SrfEmissData_start_,
                               pom_a4SrfEmissData_end_, pom_a4SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_pom_a4 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::pom_a4));
+  // update flux
+  auto constituent_fluxes_pom_a4 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::pom_a4));
   Kokkos::deep_copy(constituent_fluxes_pom_a4,
                     pom_a4SrfEmissData_out_.emiss_sectors[0]);
 
@@ -543,9 +542,10 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(so4_a1SrfEmissTimeState_,
                               so4_a1SrfEmissData_start_,
                               so4_a1SrfEmissData_end_, so4_a1SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_so4_a1 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::so4_a1));
+  // update flux
+  auto constituent_fluxes_so4_a1 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::so4_a1));
   Kokkos::deep_copy(constituent_fluxes_so4_a1,
                     so4_a1SrfEmissData_out_.emiss_sectors[0]);
 
@@ -565,15 +565,17 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   srfEmissFunc::srfEmiss_main(so4_a2SrfEmissTimeState_,
                               so4_a2SrfEmissData_start_,
                               so4_a2SrfEmissData_end_, so4_a2SrfEmissData_out_);
-// update flux
-  auto constituent_fluxes_so4_a2 = Kokkos::subview(
-      constituent_fluxes_, Kokkos::ALL(), static_cast<int>(spcIndex_in_pcnst::so4_a2));
+  // update flux
+  auto constituent_fluxes_so4_a2 =
+      Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                      static_cast<int>(spcIndex_in_pcnst::so4_a2));
   Kokkos::deep_copy(constituent_fluxes_so4_a2,
                     so4_a2SrfEmissData_out_.emiss_sectors[0]);
 
   for(int i = 19; i < 30; ++i) {
     std::cout << "BALLI:" << so4_a2SrfEmissData_out_.emiss_sectors[0](i) << ":"
-              << i <<":"<<mam4::gas_chemistry::adv_mass[21-offset_]<< std::endl;
+              << i << ":" << mam4::gas_chemistry::adv_mass[21 - offset_]
+              << std::endl;
   }
 
   /* Rough notes:

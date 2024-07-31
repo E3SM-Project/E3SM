@@ -1,23 +1,20 @@
 #ifndef SRF_EMISSION_IMPL_HPP
 #define SRF_EMISSION_IMPL_HPP
 
+#include <ekat/ekat_pack_kokkos.hpp>
+#include <ekat/ekat_pack_utils.hpp>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <ekat/util/ekat_lin_interp.hpp>
+
+#include "physics/share/physics_constants.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/grid/remap/coarsening_remapper.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/grid/remap/identity_remapper.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
 #include "share/scream_types.hpp"
-
-#include <ekat/kokkos/ekat_subview_utils.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_lin_interp.hpp>
-#include <ekat/ekat_pack_utils.hpp>
-#include <ekat/ekat_pack_kokkos.hpp>
+#include "share/util/scream_timing.hpp"
 
 namespace scream::mam_coupling {
 namespace {
@@ -285,8 +282,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
 template <typename S, typename D>
 template <std::size_t FN>
 void srfEmissFunctions<S, D>::init_srf_emiss_objects(
-    const int ncol, const int num_sectors,
-    const std::shared_ptr<const AbstractGrid> &grid,
+    const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
     const std::string &data_file, const std::array<std::string, FN> &sectors,
     const std::string &srf_map_file,
     // output
@@ -299,8 +295,8 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
       create_horiz_remapper(grid, data_file, sectors, srf_map_file);
 
   // Initialize the size of start/end/out data structures
-  SrfEmissData_start = srfEmissInput(ncol, num_sectors);
-  SrfEmissData_end   = srfEmissInput(ncol, num_sectors);
+  SrfEmissData_start = srfEmissInput(ncol, FN);
+  SrfEmissData_end   = srfEmissInput(ncol, FN);
   SrfEmissData_out.init(ncol, 1, true);
 
   // Create reader (an AtmosphereInput object)

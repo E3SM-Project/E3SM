@@ -4,6 +4,7 @@
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
+
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
 // For MAM4 aerosol configuration
@@ -123,8 +124,9 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     num_a4 = 39,
   };
 
-  //offset for converting pcnst index to gas_pcnst index
-  static constexpr int offset_ = mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+  // offset for converting pcnst index to gas_pcnst index
+  static constexpr int offset_ =
+      mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
 
   // Data structures to read DMS data file
   std::shared_ptr<AbstractRemapper> dmsSrfEmissHorizInterp_;

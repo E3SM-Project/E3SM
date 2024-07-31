@@ -106,8 +106,7 @@ struct srfEmissFunctions {
                                                       const ScalarT &t);
   template <std::size_t FN>
   static void init_srf_emiss_objects(
-      const int ncol, const int num_sectors,
-      const std::shared_ptr<const AbstractGrid> &grid,
+      const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
       const std::string &data_file, const std::array<std::string, FN> &sectors,
       const std::string &srf_map_file,
       // output
