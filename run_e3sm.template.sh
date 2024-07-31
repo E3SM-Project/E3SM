@@ -5,9 +5,6 @@
 # Bash coding style inspired by:
 # http://kfirlavi.herokuapp.com/blog/2012/11/14/defensive-bash-programming
 
-# TO DO:
-# - custom pelayout
-
 main() {
 
 # For debugging, uncomment line below
@@ -46,8 +43,8 @@ readonly GET_REFCASE=TRUE
 #readonly RUN_REFDATE=""   # same as MODEL_START_DATE for 'branch', can be different for 'hybrid'
 
 # Set paths
-readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"
-readonly CASE_ROOT="/pscratch/sd/r/${USER}/e3sm-scratch/${CASE_NAME}"
+readonly CODE_ROOT="/pscratch/sd/${USER:0:1}/${USER}/e3sm-scratch/${MACHINE}/your_casename/code/${CHECKOUT}"
+readonly CASE_ROOT="/pscratch/sd/${USER:0:1}/${USER}/e3sm-scratch/${MACHINE}/${CASE_NAME}"
 
 # Sub-directories
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
@@ -56,6 +53,7 @@ readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 # Define type of run
 #  short tests: 'XS_2x5_ndays', 'XS_1x10_ndays', 'S_1x10_ndays',
 #               'M_1x10_ndays', 'M2_1x10_ndays', 'M80_1x10_ndays', 'L_1x10_ndays'
+#               * can replace XS, M, etc with custom-XY with XY being the node count
 #  or 'production' for full simulation
 readonly run='XS_2x5_ndays'
 if [ "${run}" != "production" ]; then
@@ -117,6 +115,9 @@ fetch_code
 
 # Create case
 create_newcase
+
+# Custom PE layout
+custom_pelayout
 
 # Setup
 case_setup
@@ -322,6 +323,14 @@ create_newcase() {
 
     echo $'\n----- Starting create_newcase -----\n'
 
+
+    if [[ ${PELAYOUT} == custom-* ]];
+    then
+        layout="M" # temporary placeholder for create_newcase
+    else
+        layout=${PELAYOUT}
+    fi
+
 	if [[ -z "$CASE_GROUP" ]]; then
 		${CODE_ROOT}/cime/scripts/create_newcase \
 			--case ${CASE_NAME} \
@@ -333,7 +342,7 @@ create_newcase() {
 			--machine ${MACHINE} \
 			--project ${PROJECT} \
 			--walltime ${WALLTIME} \
-			--pecount ${PELAYOUT}
+			--pecount ${layout}
 	else
 		${CODE_ROOT}/cime/scripts/create_newcase \
 			--case ${CASE_NAME} \
@@ -346,7 +355,7 @@ create_newcase() {
 			--machine ${MACHINE} \
 			--project ${PROJECT} \
 			--walltime ${WALLTIME} \
-			--pecount ${PELAYOUT}
+			--pecount ${layout}
 	fi
 	
 
@@ -396,6 +405,37 @@ case_setup() {
     ./case.setup --reset
 
     popd
+}
+
+#-----------------------------------------------------
+custom_pelayout() {
+
+if [[ ${PELAYOUT} == custom-* ]];
+then
+    echo $'\n CUSTOMIZE PROCESSOR CONFIGURATION:'
+
+    # Number of cores per node (machine specific)
+    if [ "${MACHINE}" == "pm-cpu" ]; then
+        ncore=128
+    else
+        echo 'ERROR: MACHINE = '${MACHINE}' is not supported for custom PE layout.' 
+        exit 400
+    fi
+
+    # Extract number of nodes
+    tmp=($(echo ${PELAYOUT} | tr "-" " "))
+    nnodes=${tmp[1]}
+
+    # Customize
+    pushd ${CASE_SCRIPTS_DIR}
+    ./xmlchange NTASKS=$(( $nnodes * $ncore ))
+    ./xmlchange NTHRDS=1
+    ./xmlchange MAX_MPITASKS_PER_NODE=$ncore
+    ./xmlchange MAX_TASKS_PER_NODE=$ncore
+    popd
+
+fi
+
 }
 
 #-----------------------------------------------------
@@ -534,9 +574,10 @@ copy_script() {
 
     local script_provenance_dir=${CASE_SCRIPTS_DIR}/run_script_provenance
     mkdir -p ${script_provenance_dir}
-    local this_script_name=`basename $0`
+    local this_script_name=$( basename -- "$0"; )
+    local this_script_dir=$( dirname -- "$0"; )
     local script_provenance_name=${this_script_name}.`date +%Y%m%d-%H%M%S`
-    cp -vp ${this_script_name} ${script_provenance_dir}/${script_provenance_name}
+    cp -vp "${this_script_dir}/${this_script_name}" ${script_provenance_dir}/${script_provenance_name}
 
 }
 
