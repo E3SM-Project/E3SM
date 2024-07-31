@@ -97,8 +97,6 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
 // Create a non-default auxiliary state
 AuxiliaryState *AuxiliaryState::create(const std::string &Name,
                                        const HorzMesh *Mesh, int NVertLevels) {
-   auto *NewAuxState = new AuxiliaryState(Name, Mesh, NVertLevels);
-
    if (AllAuxStates.find(Name) != AllAuxStates.end()) {
       LOG_ERROR("Attempted to create a new AuxiliaryState with name {} but it "
                 "already exists",
@@ -106,6 +104,7 @@ AuxiliaryState *AuxiliaryState::create(const std::string &Name,
       return nullptr;
    }
 
+   auto *NewAuxState = new AuxiliaryState(Name, Mesh, NVertLevels);
    AllAuxStates.emplace(Name, NewAuxState);
 
    return NewAuxState;
