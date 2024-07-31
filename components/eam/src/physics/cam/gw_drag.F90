@@ -1034,18 +1034,18 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
 
      ! Determine the orographic wave source
-     !call gw_oro_src(ncol, &
-     !     u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
-     !     src_level, tend_level, tau, ubm, ubi, xv, yv, c)
+     call gw_oro_src(ncol, &
+          u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
+          src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
-     !do_latitude_taper = .false.
+     do_latitude_taper = .false.
 
      ! Solve for the drag profile with orographic sources.
-     !call gw_drag_prof(ncol, 0, src_level, tend_level, do_latitude_taper, dt, &
-     !     state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
-     !     piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
-     !     effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-     !     ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
+     call gw_drag_prof(ncol, 0, src_level, tend_level, do_latitude_taper, dt, &
+          state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
+          piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
+          effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
+          ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
 
 
 
@@ -1116,9 +1116,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         !      Jinbo Xie            
         !=====================
         !Initialize
-        utgw=0._r8
-        vtgw=0._r8
-        ttgw=0._r8
+        !utgw=0._r8
+        !vtgw=0._r8
+        !ttgw=0._r8
         !!
         !state%ribulk=0.0_r8!!bulk is used only for gwd_ss, set as 0 for now.
         !!
@@ -1147,7 +1147,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-        gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
+        gwd_ls=0,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
 	! z and dz all above surface and sea level, no need to add a new layer
 	! (just need an empty),gwd_opt(no need in my, take out 33 option))
 	!(itimestep just needs an empty, number of timestep,0)
@@ -1236,10 +1236,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
-     tau0x=dusfc_ls+dusfc_bl
-     tau0y=dvsfc_ls+dvsfc_bl
+     !tau0x=dusfc_ls+dusfc_bl
+     !tau0y=dvsfc_ls+dvsfc_bl
         !tau0x = tau(:,0,pver) * xv * effgw_oro
         !tau0y = tau(:,0,pver) * yv * effgw_oro
+     tau0x=dusfc_bl+tau(:,0,pver) * xv * effgw_oro
+     tau0y=dvsfc_bl+tau(:,0,pver) * yv * effgw_oro
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
      call outfld('SGH   ',   sgh,pcols, lchnk)
