@@ -43,8 +43,8 @@ readonly GET_REFCASE=TRUE
 #readonly RUN_REFDATE=""   # same as MODEL_START_DATE for 'branch', can be different for 'hybrid'
 
 # Set paths
-readonly CODE_ROOT="/pscratch/sd/${USER:0:1}/${USER}/e3sm-scratch/${MACHINE}/your_casename/code/${CHECKOUT}"
-readonly CASE_ROOT="/pscratch/sd/${USER:0:1}/${USER}/e3sm-scratch/${MACHINE}/${CASE_NAME}"
+readonly CASE_ROOT="${PSCRATCH}/e3sm-scratch/${MACHINE}/${CASE_NAME}"
+readonly CODE_ROOT="${PSCRATCH}/e3sm-scratch/${MACHINE}/${CASE_NAME}/code/${CHECKOUT}"
 
 # Sub-directories
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
