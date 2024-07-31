@@ -1,5 +1,5 @@
 # Sets up DPxx case to test DYCOMSrf01 (marine stratocumulus)
-# case over ocean using prescribed surface fluxes
+# case over ocean using prescribed surface fluxes and compute tendencies of large scale subsidence from prescribed omega
 
 ./xmlchange RUN_STARTDATE="1999-07-10"
 ./xmlchange PTS_LAT=31.5
