@@ -4,6 +4,20 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "physics/share/physics_constants.hpp"
+#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/grid/remap/identity_remapper.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/scream_timing.hpp"
+#include "share/scream_types.hpp"
+
+#include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat/util/ekat_lin_interp.hpp>
+#include <ekat/ekat_pack_utils.hpp>
+#include <ekat/ekat_pack_kokkos.hpp>
 
 namespace scream::mam_coupling {
 namespace {

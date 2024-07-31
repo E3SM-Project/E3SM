@@ -4,7 +4,8 @@
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
-#include <physics/mam/mam_emissions_utils.hpp>
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/io/scorpio_input.hpp"
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 #include <physics/mam/srf_emission.hpp>
@@ -20,7 +21,8 @@ namespace scream {
 // The process responsible for handling MAM4 surface and online emissions. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
-  using KT = ekat::KokkosTypes<DefaultDevice>;
+  using KT      = ekat::KokkosTypes<DefaultDevice>;
+  using view_2d = typename KT::template view_2d<Real>;
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
@@ -37,6 +39,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
+
+  view_2d constituent_fluxes_;
 
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
@@ -79,66 +83,71 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::AerosolState &wet_aero,
-                    const mam_coupling::DryAtmosphere &dry_atm,
-                    const mam_coupling::AerosolState &dry_aero) {
-      ncol_pre_     = ncol;
-      nlev_pre_     = nlev;
-      wet_atm_pre_  = wet_atm;
-      wet_aero_pre_ = wet_aero;
-      dry_atm_pre_  = dry_atm;
-      dry_aero_pre_ = dry_aero;
+    void initialize(const view_2d &constituent_fluxes) {
+      constituent_fluxes_pre_ = constituent_fluxes;
     }
 
     KOKKOS_INLINE_FUNCTION
     void operator()(
         const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
       const int i = team.league_rank();  // column index
-
-      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
-      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
-                                dry_aero_pre_, i);
+      // zero-out the constituent surface fluxes for all gas and aerosol
+      // species.
+      for(auto icnst = mam4::utils::gasses_start_ind();
+          icnst < mam4::aero_model::pcnst; ++icnst) {
+        constituent_fluxes_pre_(i, icnst) = 0;
+      }
       team.team_barrier();
 
     }  // operator()
 
     // local variables for preprocess struct
-    // number of horizontal columns and vertical levels
-    int ncol_pre_, nlev_pre_;
+    view_2d constituent_fluxes_pre_;
 
-    // local atmospheric and aerosol state data
-    mam_coupling::WetAtmosphere wet_atm_pre_;
-    mam_coupling::DryAtmosphere dry_atm_pre_;
-    mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
-  };  // MAMAci::Preprocess
+  };  // MAMSrfOnlineEmiss::Preprocess
 
  private:
   // preprocessing scratch pad
   Preprocess preprocess_;
 
-  // IO structure to read in data for standard grids
+  // Species index in tracer array with "pcnst" indices
+  enum class spcIndex_in_pcnst : int {
+    SO2    = 12,
+    DMS    = 13,
+    so4_a1 = 15,
+    num_a1 = 22,
+    so4_a2 = 23,
+    num_a2 = 27,
+    pom_a4 = 36,
+    bc_a4  = 37,
+    num_a4 = 39,
+  };
 
+  //offset for converting pcnst index to gas_pcnst index
+  static constexpr int offset_ = mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+
+  // Data structures to read DMS data file
   std::shared_ptr<AbstractRemapper> dmsSrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> dmsSrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState dmsSrfEmissTimeState_;
   srfEmissFunc::srfEmissInput dmsSrfEmissData_start_, dmsSrfEmissData_end_;
   srfEmissFunc::srfEmissOutput dmsSrfEmissData_out_;
 
-  // Structures to store the data used for interpolation
+  // Data structures to read so2 data file
   std::shared_ptr<AbstractRemapper> so2SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> so2SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState so2SrfEmissTimeState_;
   srfEmissFunc::srfEmissInput so2SrfEmissData_start_, so2SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput so2SrfEmissData_out_;
 
+  // Data structures to read bc_a4 data file
   std::shared_ptr<AbstractRemapper> bc_a4SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> bc_a4SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState bc_a4SrfEmissTimeState_;
   srfEmissFunc::srfEmissInput bc_a4SrfEmissData_start_, bc_a4SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput bc_a4SrfEmissData_out_;
 
+  // Data structures to read num_a1 data file
   std::shared_ptr<AbstractRemapper> num_a1SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> num_a1SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState num_a1SrfEmissTimeState_;
@@ -146,6 +155,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       num_a1SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput num_a1SrfEmissData_out_;
 
+  // Data structures to read num_a2 data file
   std::shared_ptr<AbstractRemapper> num_a2SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> num_a2SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState num_a2SrfEmissTimeState_;
@@ -153,6 +163,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       num_a2SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput num_a2SrfEmissData_out_;
 
+  // Data structures to read num_a4 data file
   std::shared_ptr<AbstractRemapper> num_a4SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> num_a4SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState num_a4SrfEmissTimeState_;
@@ -160,6 +171,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       num_a4SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput num_a4SrfEmissData_out_;
 
+  // Data structures to read pom_a4 data file
   std::shared_ptr<AbstractRemapper> pom_a4SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> pom_a4SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState pom_a4SrfEmissTimeState_;
@@ -167,6 +179,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       pom_a4SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput pom_a4SrfEmissData_out_;
 
+  // Data structures to read so4_a1 data file
   std::shared_ptr<AbstractRemapper> so4_a1SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> so4_a1SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState so4_a1SrfEmissTimeState_;
@@ -174,6 +187,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       so4_a1SrfEmissData_end_;
   srfEmissFunc::srfEmissOutput so4_a1SrfEmissData_out_;
 
+  // Data structures to read so4_a2 data file
   std::shared_ptr<AbstractRemapper> so4_a2SrfEmissHorizInterp_;
   std::shared_ptr<AtmosphereInput> so4_a2SrfEmissDataReader_;
   srfEmissFunc::srfEmissTimeState so4_a2SrfEmissTimeState_;
