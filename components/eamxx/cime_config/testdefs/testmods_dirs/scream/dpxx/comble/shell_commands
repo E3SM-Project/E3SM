@@ -3,7 +3,7 @@
 
 ./xmlchange RUN_STARTDATE="2020-03-12"
 ./xmlchange PTS_LAT=74.5
-./xmlchange PTS_LON=10.0
+./xmlchange PTS_LON=9.9
 
 ./xmlchange SSTICE_DATA_FILENAME='$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_HadOIBl_bc_1x1_clim_c101029_COMBLE.nc'
 ./xmlchange SSTICE_YEAR_ALIGN=2020
@@ -15,6 +15,6 @@ ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
 
 $ATMCHANGE iop_file='${DIN_LOC_ROOT}'/atm/cam/scam/iop/COMBLE_iopfile_4scam.nc -b
 $ATMCHANGE target_latitude=74.5 -b
-$ATMCHANGE target_longitude=10.0 -b
+$ATMCHANGE target_longitude=9.9 -b
 $ATMCHANGE iop_coriolis=true -b
 
