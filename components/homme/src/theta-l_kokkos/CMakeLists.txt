@@ -141,6 +141,7 @@ MACRO(THETAL_KOKKOS_SETUP)
   )
 
   SET(THETAL_DEPS_CXX
+    ${TARGET_DIR}/cxx/CaarFunctorImpl.cpp
     ${TARGET_DIR}/cxx/CamForcing.cpp
     ${TARGET_DIR}/cxx/Diagnostics.cpp
     ${TARGET_DIR}/cxx/ElementsForcing.cpp
