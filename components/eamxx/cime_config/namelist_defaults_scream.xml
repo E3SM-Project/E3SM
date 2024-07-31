@@ -265,6 +265,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_mom_physical_properties_file type="file" doc="File containing optical properties for marine organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/poly_rrtmg_c20240206.nc</mam4_mom_physical_properties_file>
     </mam4_optics>
 
+    <!-- MAM4xx-Wetscav -->
+    <mam4_wetscav inherit="atm_proc_base">
+    </mam4_wetscav>
+
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
       <nudging_filenames_patterns type="array(string)"/>
@@ -521,6 +525,15 @@ be lost if SCREAM_HACK_XML is not enabled.
     <num_c2 type="real">0.0</num_c2>
     <num_c3 type="real">0.0</num_c3>
     <num_c4 type="real">0.0</num_c4>
+    <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
+    <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
+    <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
+    <wetdep_hydrophilic_oc type="real">1e-5</wetdep_hydrophilic_oc>
+    <drydep_hydrophilic_oc type="real">1e-5</drydep_hydrophilic_oc>
+    <wetdep_dust_bin1 type="real">1e-5</wetdep_dust_bin1>
+    <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
+    <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
+    <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
