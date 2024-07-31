@@ -20,12 +20,12 @@ namespace scream::mam_coupling {
 namespace {
 
 template <typename S, typename D>
-template <std::size_t FN>
+template <std::size_t numSectors>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
     const std::string &data_file,
-    const std::array<std::string, FN> &sector_names,
+    const std::array<std::string, numSectors> &sector_names,
     const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
@@ -70,7 +70,70 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 
   std::vector<Field> emiss_sectors;
 
-  for(int icomp = 0; icomp < FN; ++icomp) {
+  for(int icomp = 0; icomp < numSectors; ++icomp) {
+    auto comp_name = sector_names[icomp];
+    // set and allocate fields
+    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    f.allocate_view();
+    emiss_sectors.push_back(f);
+    remapper->register_field_from_tgt(f);
+  }
+
+  remapper->registration_ends();
+
+  return remapper;
+}  // create_horiz_remapper
+
+template <typename S, typename D>
+std::shared_ptr<AbstractRemapper>
+srfEmissFunctions<S, D>::create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &data_file, const std::vector<std::string> &sector_names,
+    const std::string &map_file) {
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(data_file, scorpio::Read);
+  const int ncols_data = scorpio::get_dimlen(data_file, "ncol");
+  scorpio::release_file(data_file);
+
+  // We could use model_grid directly if using same num levels,
+  // but since shallow clones are cheap, we may as well do it (less lines of
+  // code)
+  auto horiz_interp_tgt_grid =
+      model_grid->clone("srf_emiss_horiz_interp_tgt_grid", true);
+
+  const int ncols_model = model_grid->get_num_global_dofs();
+  std::shared_ptr<AbstractRemapper> remapper;
+  if(ncols_data == ncols_model) {
+    remapper = std::make_shared<IdentityRemapper>(
+        horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
+  } else {
+    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
+                     "Error! We do not allow to coarsen srfEmiss data to fit "
+                     "the model. We only allow\n"
+                     "srfEmiss data to be at the same or coarser resolution as "
+                     "the model.\n");
+    // We must have a valid map file
+    EKAT_REQUIRE_MSG(
+        map_file != "",
+        "ERROR: srfEmiss data is on a different grid than the model one,\n"
+        "but srfEmiss_remap_file is missing from srfEmiss parameter "
+        "list.");
+
+    remapper =
+        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
+  }
+
+  remapper->registration_begins();
+
+  const auto tgt_grid = remapper->get_tgt_grid();
+
+  const auto layout_2d = tgt_grid->get_2d_scalar_layout();
+  const auto nondim    = ekat::units::Units::nondimensional();
+
+  std::vector<Field> emiss_sectors;
+
+  for(int icomp = 0; icomp < sector_names.size(); ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
@@ -280,10 +343,11 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
 }  // END updata_srfEmiss_timestate
 
 template <typename S, typename D>
-template <std::size_t FN>
+template <std::size_t numSectors>
 void srfEmissFunctions<S, D>::init_srf_emiss_objects(
     const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
-    const std::string &data_file, const std::array<std::string, FN> &sectors,
+    const std::string &data_file,
+    const std::array<std::string, numSectors> &sectors,
     const std::string &srf_map_file,
     // output
     std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
@@ -295,8 +359,32 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
       create_horiz_remapper(grid, data_file, sectors, srf_map_file);
 
   // Initialize the size of start/end/out data structures
-  SrfEmissData_start = srfEmissInput(ncol, FN);
-  SrfEmissData_end   = srfEmissInput(ncol, FN);
+  SrfEmissData_start = srfEmissInput(ncol, numSectors);
+  SrfEmissData_end   = srfEmissInput(ncol, numSectors);
+  SrfEmissData_out.init(ncol, 1, true);
+
+  // Create reader (an AtmosphereInput object)
+  SrfEmissDataReader =
+      create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
+}  // init_srf_emiss_objects
+
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::init_srf_emiss_objects(
+    const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::vector<std::string> &sectors,
+    const std::string &srf_map_file,
+    // output
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+    srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+    srfEmissOutput &SrfEmissData_out,
+    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+  // Init horizontal remap
+  SrfEmissHorizInterp =
+      create_horiz_remapper(grid, data_file, sectors, srf_map_file);
+
+  // Initialize the size of start/end/out data structures
+  SrfEmissData_start = srfEmissInput(ncol, sectors.size());
+  SrfEmissData_end   = srfEmissInput(ncol, sectors.size());
   SrfEmissData_out.init(ncol, 1, true);
 
   // Create reader (an AtmosphereInput object)

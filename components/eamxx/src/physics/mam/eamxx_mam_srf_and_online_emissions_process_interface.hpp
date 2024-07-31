@@ -16,6 +16,7 @@
 #include <share/atm_process/atmosphere_process.hpp>
 // #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
+#include <variant>
 
 namespace scream {
 
@@ -122,6 +123,29 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     pom_a4 = 36,
     bc_a4  = 37,
     num_a4 = 39,
+  };
+
+  // A struct carrying all the fields needed to read
+  // surface emissions of a species
+  // template <std::size_t numSectors>
+  struct srf_emiss {
+    // srf_emiss(int n){numSectors=n;}
+    //  data file name
+    std::string data_file;
+    // static int numSectors;
+    //  Sector names in file
+    std::vector<std::string> sectors;
+
+    std::shared_ptr<AbstractRemapper> HorizInterp_;
+    std::shared_ptr<AtmosphereInput> DataReader_;
+    srfEmissFunc::srfEmissTimeState TimeState_;
+    srfEmissFunc::srfEmissInput Data_start_, Data_end_;
+    srfEmissFunc::srfEmissOutput Data_out_;
+
+    /*srfEmissFunc::init_srf_emiss_objects(
+        // output
+        dmsSrfEmissHorizInterp_, dmsSrfEmissData_start_, dmsSrfEmissData_end_,
+        dmsSrfEmissData_out_, dmsSrfEmissDataReader_);*/
   };
 
   // offset for converting pcnst index to gas_pcnst index

@@ -66,12 +66,17 @@ struct srfEmissFunctions {
   /* -------------------------------------------------------------------------------------------
    */
   // Surface emissions routines
-  template <std::size_t FN>
+  template <std::size_t numSectors>
   static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
       const std::shared_ptr<const AbstractGrid> &model_grid,
       const std::string &srfEmiss_data_file,
-      const std::array<std::string, FN> &field_names,
+      const std::array<std::string, numSectors> &field_names,
       const std::string &map_file);
+
+  static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
+      const std::shared_ptr<const AbstractGrid> &model_grid,
+      const std::string &srfEmiss_data_file,
+      const std::vector<std::string> &field_names, const std::string &map_file);
 
   static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
@@ -104,10 +109,21 @@ struct srfEmissFunctions {
   KOKKOS_INLINE_FUNCTION static ScalarX linear_interp(const ScalarX &x0,
                                                       const ScalarX &x1,
                                                       const ScalarT &t);
-  template <std::size_t FN>
+  template <std::size_t numSectors>
   static void init_srf_emiss_objects(
       const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
-      const std::string &data_file, const std::array<std::string, FN> &sectors,
+      const std::string &data_file,
+      const std::array<std::string, numSectors> &sectors,
+      const std::string &srf_map_file,
+      // output
+      std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+      srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+      srfEmissOutput &SrfEmissData_out,
+      std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
+
+  static void init_srf_emiss_objects(
+      const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
+      const std::string &data_file, const std::vector<std::string> &sectors,
       const std::string &srf_map_file,
       // output
       std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,

@@ -48,6 +48,41 @@ void MAMSrfOnlineEmiss::set_grids(
   // Surface emissions remapping file
   std::string srf_map_file = m_params.get<std::string>("srf_remap_file");
 
+  // EXPERIMENTAL
+  /*using srf_emission_variant =
+      std::variant<srf_emiss<1>, srf_emiss<2>, srf_emiss<4>, srf_emiss<6>,
+                   srf_emiss<8>, srf_emiss<16>>;
+
+  std::vector<srf_emission_variant> srfballivec;
+
+  static constexpr int dms_num_sectors1 = 1;
+  srf_emiss<dms_num_sectors1> dms1;
+  dms1.data_file = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms1.sectors   = {"DMS"};
+
+  srfballivec.push_back(dms1);
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, grid_, srfballivec[0].data_file , srfballivec[0].sectors,
+     srf_map_file,
+      // output
+      srfballivec[0].HorizInterp_, srfballivec[0].EmissData_start_,
+     srfballivec[0].EmissData_end_, srfballivec[0].EmissData_out_,
+     srfballivec[0].EmissDataReader_);*/
+
+  std::vector<srf_emiss> srfballivec;
+  srf_emiss dms1;
+  dms1.data_file = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms1.sectors   = {"DMS"};
+  srfballivec.push_back(dms1);
+
+  srfEmissFunc::init_srf_emiss_objects(
+      ncol_, grid_, srfballivec[0].data_file, srfballivec[0].sectors,
+      srf_map_file,
+      // output
+      srfballivec[0].HorizInterp_, srfballivec[0].Data_start_,
+      srfballivec[0].Data_end_, srfballivec[0].Data_out_,
+      srfballivec[0].DataReader_);
+
   //--------------------------------------------------------------------
   // Init dms srf emiss data structures
   //--------------------------------------------------------------------
