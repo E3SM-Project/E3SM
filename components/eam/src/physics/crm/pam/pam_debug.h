@@ -134,7 +134,9 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
       const auto is_neg_t_atm = temp(k,j,i,iens)<0;
       const auto is_neg_d_atm = rhod(k,j,i,iens)<0;
       const auto is_neg_q_atm = rhov(k,j,i,iens)<0;
-      if ( is_neg_t_atm || is_neg_q_atm || is_neg_d_atm ) {
+      const auto is_neg_c_atm = rhoc(k,j,i,iens)<0;
+      const auto is_neg_i_atm = rhoi(k,j,i,iens)<0;
+      if ( is_neg_t_atm || is_neg_q_atm || is_neg_d_atm || is_neg_c_atm || is_neg_i_atm ) {
         auto phis = input_phis(iens)/grav;
         printf("PAM-DEBUG neg-found - st:%3.3d id:%2.2d k:%3.3d i:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g -- t:%8.2g rd:%8.2g rv:%8.2g rc:%8.2g ri:%8.2g u:%8.2g w:%8.2g \n",
           nstep,id,k,i,iens,lat(iens),lon(iens),phis,
