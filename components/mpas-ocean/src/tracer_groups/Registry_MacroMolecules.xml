@@ -107,6 +107,18 @@
 					description="Lipids Surface Flux Due to Runoff"
 				/>
 			</var_array>
+			<var_array name="MacroMoleculesTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="PROTSurfaceFluxSubglacialRunoff" array_group="MacroMoleculesSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Proteins Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="POLYSurfaceFluxSubglacialRunoff" array_group="MacroMoleculesSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Polysaccharides Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="LIPSurfaceFluxSubglacialRunoff" array_group="MacroMoleculesSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Lipids Surface Flux Due to Subglacial Runoff"
+				/>
+			</var_array>
 			<var_array name="MacroMoleculesTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="PROTSurfaceFluxRemoved" array_group="MacroMoleculesSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"

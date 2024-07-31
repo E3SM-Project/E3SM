@@ -702,6 +702,39 @@
 					description="The length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_subglacial_runoff_mode" type="character" default_value="off"
+					description="Selects the mode in which subglacial runoff fluxes are implemented."
+					possible_values="'off', 'data'"
+		/>
+		<nml_option name="config_flux_attenuation_coefficient_subglacial_runoff" type="real" default_value="0.001" units="m"
+					description="The length scale of exponential decay of subglacial runoff, used when config_sgr_flux_vertical_location is 'top' or 'bottom'. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_sgr_flux_vertical_location" type="character" default_value="bottom"
+					description="Selects the vertical location where subglacial runoff is fluxed."
+					possible_values="'top','uniform', 'bottom'"
+		/>
+		<nml_option name="config_use_sgr_opt_kpp" type="logical" default_value=".true."
+					description="If true, include subglacial runoff (sgr) contribution in kpp calculation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_sgr_opt_temp_prescribed" type="logical" default_value=".false."
+					description="If true, subglacial runoff temperature is set to config_sgr_temperature_prescribed. If false, the temperature is set to local freezing point."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_sgr_opt_salt_prescribed" type="logical" default_value=".false."
+					description="If true, subglacial runoff salinity is set to config_sgr_salinity_prescribed. If false, the salinity is set to 0 PSU."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_sgr_temperature_prescribed" type="real" default_value="0.0" units="C"
+			        description="Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true."
+					possible_values="Any real number."
+		/>
+		<nml_option name="config_sgr_salinity_prescribed" type="real" default_value="0.0" units="1.e-3"
+					description="Prescribed subglacial runoff salinity value, applied when config_use_sgr_opt_salt_prescribed = .true."
+					possible_values="Any positive real number"
+		/>
+
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
 		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false."
@@ -1665,6 +1698,7 @@
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
+		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
@@ -2233,6 +2267,7 @@
 			<var name="seaIceFreshWaterFlux"/>
 			<var name="icebergFreshWaterFlux"/>
 			<var name="riverRunoffFlux"/>
+			<var name="subglacialRunoffFlux"/>
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
@@ -3351,6 +3386,10 @@
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
+		<var name="surfaceFluxAttenuationCoefficientSubglacialRunoff" type="real" dimensions="nCells Time" units="m"
+			description="The spatially-dependent length scale of exponential decay of subglacial runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+			packages="dataSubglacialRunoffFluxPKG"
+		/>
 		<var name="topo_rinv" type="real" dimensions="nEdges" units="unitless"
 			description="wave drag coefficient or 1/(rinv) where rinv is the e-folding time used in HyCOM"
 			packages="topographicWaveDragPKG"
@@ -3650,6 +3689,10 @@
 			 description="Flux of mass through the ocean surface due to river runoff. Positive into ocean."
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="surfaceThicknessFluxSubglacialRunoff" type="real" dimensions="nCells Time" units="m s^-1"
+			 description="Flux of mass through the ocean surface due to subglacial runoff. Positive into ocean."
+			 packages="dataSubglacialRunoffFluxPKG"
+		/>
 
 		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^-2"
 			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
@@ -3696,6 +3739,10 @@
 		<var name="fractionAbsorbedRunoff" type="real" dimensions="nVertLevels nCells Time" units="fractional"
 			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are applied only to river runoff."
 			 packages="forwardMode;analysisMode"
+		/>
+		<var name="fractionAbsorbedSubglacialRunoff" type="real" dimensions="nVertLevels nCells Time" units="fractional"
+			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are applied only to subglacial runoff."
+			 packages="dataSubglacialRunoffFluxPKG"
 		/>
 
 		<!-- Input fields for coupling -->
@@ -3763,6 +3810,10 @@
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
+		/>
+		<var name="subglacialRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			 description="Fresh water flux from subglacial runoff at cell centers from ice sheet model. Positive into the ocean."
+			 packages="dataSubglacialRunoffFluxPKG"
 		/>
 		<var name="removedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_ais_river_runoff option. Positive into the ocean."

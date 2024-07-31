@@ -49,7 +49,10 @@ module ocn_surface_bulk_forcing
    public :: ocn_surface_bulk_forcing_tracers, &
              ocn_surface_bulk_forcing_vel, &
              ocn_surface_bulk_forcing_thick, &
-             ocn_surface_bulk_forcing_init
+             ocn_surface_bulk_forcing_init, &
+             ocn_surface_bulk_forcing_tracers_subglacial_runoff, &
+             ocn_surface_bulk_forcing_thick_subglacial_runoff
+
 
    !--------------------------------------------------------------------
    !
@@ -127,6 +130,63 @@ contains
       call mpas_timer_stop("bulk_" // trim(groupName))
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_tracers_subglacial_runoff
+!
+!> \brief   Determines the tracers forcing array used for the bulk forcing.
+!> \author  Irena Vankova
+!> \date    July 2024
+!> \details
+!>  This routine computes the tracers forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_tracers_subglacial_runoff(meshPool, groupName, forcingPool,   &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      character (len=*) :: groupName !< Input: Name of tracer group
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:,:), intent(inout) ::   &
+         tracersSurfaceFluxSubglacialRunoff !< Input/Output: Surface flux for tracer group due to subglacial runoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+      call mpas_timer_start("bulk_" // trim(groupName))
+      if ( trim(groupName) == 'activeTracers' ) then
+         call ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
+            tracersSurfaceFluxSubglacialRunoff, err)
+      end if
+      call mpas_timer_stop("bulk_" // trim(groupName))
+
+   end subroutine ocn_surface_bulk_forcing_tracers_subglacial_runoff!}}}
 
 !***********************************************************************
 !
@@ -333,8 +393,10 @@ contains
       !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
 
       !$acc parallel loop &
-      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, evaporationFlux, snowFlux, &
-      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     evaporationFlux, snowFlux, &
+      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, &
+      !$acc     iceRunoffFlux, rainFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -357,6 +419,85 @@ contains
       call mpas_timer_stop("bulk_thick")
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_thick_subglacial_runoff
+!
+!> \brief   Determines the thickness forcing array used for the bulk forcing.
+!> \author  Irena Vankova
+!> \date    July 2024
+!> \details
+!>  This routine computes the thickness forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_thick_subglacial_runoff(forcingPool, surfaceThicknessFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:), intent(inout) ::  &
+         surfaceThicknessFluxSubglacialRunoff !< Input/Output: Array for surface thickness flux due to subglacial runoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+
+      err = 0
+
+      if (bulkThicknessFluxOff) return
+
+      call mpas_timer_start("bulk_thick", .false.)
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      nCells = nCellsHalo( 2 )
+
+      ! Build surface fluxes at cell centers
+
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(subglacialRunoffFlux)
+
+      !$acc parallel loop &
+      !$acc     present(surfaceThicknessFluxSubglacialRunoff, subglacialRunoffFlux)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+          do iCell = 1, nCells
+            surfaceThicknessFluxSubglacialRunoff(iCell) = subglacialRunoffFlux(iCell) / rho_sw
+          end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(subglacialRunoffFlux)
+#endif
+
+      call mpas_timer_stop("bulk_thick")
+
+   end subroutine ocn_surface_bulk_forcing_thick_subglacial_runoff!}}}
+
 
 !***********************************************************************
 !
@@ -470,6 +611,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
                                                   seaIceTemperatureFlux, icebergTemperatureFlux, &
                                                   totalFreshWaterTemperatureFlux
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure
       real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff
 
       err = 0
@@ -504,6 +646,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
       call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
@@ -565,7 +709,7 @@ contains
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
-! mrp performance note: should call ocn_freezing_temperature just once here 
+! mrp performance note: should call ocn_freezing_temperature just once here
            seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
@@ -579,7 +723,7 @@ contains
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
               + surfaceTemperatureFluxWithoutRunoff
 
-           ! add runoff contribution for sending through coupler
+           ! add river runoff contribution for sending through coupler
            totalFreshWaterTemperatureFlux(iCell) = surfaceTemperatureFluxWithoutRunoff &
               + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
 
@@ -602,6 +746,125 @@ contains
       !$omp end parallel
 
    end subroutine ocn_surface_bulk_forcing_active_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff
+!
+!> \brief   Determines the active tracers forcing array used for the bulk forcing.
+!> \author  Irena Vankova
+!> \date    July 2024
+!> \details
+!>  This routine computes the active tracers forcing arrays used later in MPAS.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxSubglacialRunoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+      integer, pointer :: index_temperature_fluxPtr, index_salinity_fluxPtr
+      integer :: index_temperature_flux, index_salinity_flux
+      integer, dimension(:), pointer :: nCellsArray
+
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: totalFreshWaterTemperatureFlux
+      real (kind=RKIND), dimension(:), pointer :: landIcePressure
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_temperatureSurfaceFlux', &
+                                   index_temperature_fluxPtr)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_salinitySurfaceFlux', &
+                                   index_salinity_fluxPtr)
+      index_temperature_flux = index_temperature_fluxPtr
+      index_salinity_flux    = index_salinity_fluxPtr
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+
+      call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
+
+      nCells = nCellsArray( 3 )
+
+      ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
+      ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
+      ! Assume surface fluxes of water have zero salinity. So the RHS forcing is zero for salinity.
+      ! Only include this heat forcing when bulk thickness is turned on
+      ! indices on tracerGroup are (iTracer, iLevel, iCell)
+      if (.not. bulkThicknessFluxOff) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+
+           if ( config_use_sgr_opt_temp_prescribed ) then
+               !sgr with fixed prescribed temperature
+               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   config_sgr_temperature_prescribed / rho_sw
+           else
+               !sgr with temperature equal to the local freezing point of freshwater
+               tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   ocn_freezing_temperature(salinity=0.0_RKIND, pressure=landIcePressure(iCell), &
+                                             inLandIceCavity=.true.) / rho_sw
+           end if
+
+           if ( config_use_sgr_opt_salt_prescribed ) then
+               !sgr with fixed prescribed temperature
+               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = subglacialRunoffFlux(iCell) * &
+                   config_sgr_salinity_prescribed / rho_sw
+           else
+               !sgr with temperature equal to the local freezing point of freshwater
+               tracersSurfaceFluxSubglacialRunoff(index_salinity_flux,iCell) = 0.0_RKIND
+           end if
+
+           ! add subglacial runoff contribution for sending through coupler
+           totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
+              + tracersSurfaceFluxSubglacialRunoff(index_temperature_flux,iCell)
+
+         end do
+         !$omp end do
+         !$omp end parallel
+      endif ! bulkThicknessFluxOn
+
+   end subroutine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff!}}}
 
 end module ocn_surface_bulk_forcing
 

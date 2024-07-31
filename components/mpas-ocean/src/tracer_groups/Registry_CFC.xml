@@ -95,6 +95,15 @@
 					description="CFC12 Surface Flux Due to Runoff"
 				/>
 			</var_array>
+			<var_array name="CFCTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="CFCTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="CFCSurfaceFluxSubglacialRunoff" array_group="CFCSurfaceFluxSubglacialRunoffGRP" units="mol m^{-3} m s^{-1}"
+					description="CFC11 Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="CFC12SurfaceFluxSubglacialRunoff" array_group="CFCSurfaceFluxSubglacialRunoffGRP" units="mol m^{-3} m s^{-1}"
+					description="CFC12 Surface Flux Due to Subglacial Runoff"
+				/>
+			</var_array>
 			<var_array name="CFCTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="CFCTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="CFCSurfaceFluxRemoved" array_group="CFCSurfaceFluxRemovedGRP" units="mol m^{-3} m s^{-1}"

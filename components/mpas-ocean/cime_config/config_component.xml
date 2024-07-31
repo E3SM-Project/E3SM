@@ -39,6 +39,19 @@
         <desc>Option to describe the MPASO prescribed tidal mixing</desc>
   </entry>
 
+  <entry id="MPASO_SGR">
+        <type>char</type>
+        <valid_values>none,data</valid_values>
+        <default_value>none</default_value>
+        <values>
+           <value compset="MPASO_">none</value>
+           <value compset="_MPASO%.*DSGR">data</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe how MPASO will handle subglacial runoff fluxes</desc>
+  </entry>
+
   <entry id="MPASO_ICEBERG">
         <type>char</type>
         <valid_values>false,true</valid_values>

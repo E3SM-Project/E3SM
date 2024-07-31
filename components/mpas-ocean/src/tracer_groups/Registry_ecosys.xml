@@ -410,7 +410,7 @@
 				<var name="NH4SurfaceFluxRunoff" array_group="ecosysSurfaceFluxRunoffGRP" units="mmol N m^{-3} m s^{-1}"
 					description="Dissolved Ammonia Surface Flux Due to Runoff"
 				/>
-				<var name="FeSurfaceFluxRunoff" array_group="ecosysSurfaceFluxRunoffSurfaceFluxRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
+				<var name="FeSurfaceFluxRunoff" array_group="ecosysSurfaceFluxRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
 					description="Dissolved Inorganic Iron Surface Flux Due to Runoff"
 				/>
 				<var name="LigSurfaceFluxRunoff" array_group="ecosysSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
@@ -493,6 +493,105 @@
 				/>
 				<var name="diazPSurfaceFluxRunoff" array_group="ecosysSurfaceFluxRunoffGRP" units="mmol P m^{-3} m s^{-1}"
 					description="Diazotroph Phosphorus Surface Flux Due to Runoff"
+				/>
+			</var_array>
+			<var_array name="ecosysTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="ecosysTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="PO4SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Phosphate Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="NO3SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol N m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Nitrate Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="SiO3SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Si m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Silicate Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="NH4SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol N m^{-3} m s^{-1}"
+					description="Dissolved Ammonia Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="FeSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Iron Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="LigSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Ligand Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="O2SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol O2 m^{-3} m s^{-1}"
+					description="Dissolved Oxygen Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DICSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DIC_ALT_CO2SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Dissolved Inorganic Carbon, Alternative CO2 Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="ALKSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="meq m^{-3} m s^{-1}"
+					description="Alkalinity Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="ALK_ALT_CO2SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="meq m^{-3} m s^{-1}"
+					description="Alkalinity Surface Flux Due to Subglacial Runoff, Alternative CO2"
+				/>
+				<var name="DOCSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Dissolved Organic Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DONSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol N m^{-3} m s^{-1}"
+					description="Dissolved Organic Nitrogen Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DOPSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Dissolved Organic Phosphorus Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DOPrSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Refractory DOP Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DONrSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol N m^{-3} m s^{-1}"
+					description="Refractory DON Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DOCrSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Zooplankton Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="zooCSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Zooplankton Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="spChlSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mg m^{-3} m s^{-1}"
+					description="Small Phytoplankton Chlorophyll Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="spCSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Small Phytoplankton Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="spFeSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
+					description="Small Phytoplankton Iron Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="spPSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Small Phytoplankton Phosphorus Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="spCaCO3SurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Small Phytoplankton Calcium Carbonate Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diatChlSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mg m^{-3} m s^{-1}"
+					description="Diatom Chlorophyll Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diatCSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Diatom Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diatFeSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
+					description="Diatom Iron Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diatPSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Diatom Phosphorus Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diatSiSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Si m^{-3} m s^{-1}"
+					description="Diatom Silicate Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diazChlSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mg m^{-3} m s^{-1}"
+					description="Diazotroph Chlorophyll Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diazCSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol C m^{-3} m s^{-1}"
+					description="Diazotroph Carbon Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diazFeSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol Fe m^{-3} m s^{-1}"
+					description="Diazotroph Iron Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="diazPSurfaceFluxSubglacialRunoff" array_group="ecosysSurfaceFluxSubglacialRunoffGRP" units="mmol P m^{-3} m s^{-1}"
+					description="Diazotroph Phosphorus Surface Flux Due to Subglacial Runoff"
 				/>
 			</var_array>
 			<var_array name="ecosysTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="ecosysTracersPKG">
@@ -665,6 +764,33 @@
 			/>
 			<var name="riverFluxALK" type="real" dimensions="nCells Time" units="meq m^{-3} m s^{-1}"
 				description="River Runoff Flux of ALK"
+			/>
+			<var name="subglacialFluxNO3" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of NO3"
+			/>
+			<var name="subglacialFluxPO4" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of PO4"
+			/>
+			<var name="subglacialFluxSiO3" type="real" dimensions="nCells Time" units="mmol Si m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of SiO3"
+			/>
+			<var name="subglacialFluxFe" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of Fe"
+			/>
+			<var name="subglacialFluxDOC" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of DOC"
+			/>
+			<var name="subglacialFluxDON" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of DON"
+			/>
+			<var name="subglacialFluxDOP" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of DOP"
+			/>
+			<var name="subglacialFluxDIC" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of DIC"
+			/>
+			<var name="subglacialFluxALK" type="real" dimensions="nCells Time" units="meq m^{-3} m s^{-1}"
+				description="Subglacial Runoff Flux of ALK"
 			/>
 			<var name="CO2_gas_flux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CO2 Gas Flux"
