@@ -185,33 +185,60 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
-      integer :: iEdge
+      integer :: iEdge, k
       integer :: cell1, cell2
       real (kind=RKIND) :: sshMean
       real(kind=RKIND):: eps = 1.0e-10_RKIND
+      logical, save:: first = .true. ; 
 
       do iEdge = 1, nEdgesAll
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         if (normalVelocity(1,iEdge) > 0.0_RKIND) then
-            call ocn_subgrid_layer_thickness_lookup(ssh(cell1), &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
-         elseif (normalVelocity(1,iEdge) < 0.0_RKIND) then
-            call ocn_subgrid_layer_thickness_lookup(ssh(cell2), &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
+
+         if ( abs( subgridSshEdgeTableRange(2,iEdge) + 1.0e10 ) < 1.0e-9 ) then
+           ! in non-subgrid zone !
+           cell1 = cellsOnEdge(1,iEdge)
+           cell2 = cellsOnEdge(2,iEdge)
+          
+           do k = 1,1
+              if (normalVelocity(k,iEdge) > 0.0_RKIND) then
+                 layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
+              elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
+                 layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
+              else
+                 layerThickEdgeFlux(k,iEdge) = &
+                                     max(layerThickness(k,cell1), &
+                                         layerThickness(k,cell2))
+              end if
+           end do
+ 
+           if ( first ) then
+              write(*,*), "Info: use regular Layer Edge thickness " ;  
+              first = .false. ;
+           end if
          else
-            sshMean = 0.5_RKIND*(ssh(cell1) + ssh(cell2))
-            call ocn_subgrid_layer_thickness_lookup(sshMean, &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
+           ! in subgrid zone !     
+           cell1 = cellsOnEdge(1,iEdge)
+           cell2 = cellsOnEdge(2,iEdge)
+           if (normalVelocity(1,iEdge) > 0.0_RKIND) then
+              call ocn_subgrid_layer_thickness_lookup(ssh(cell1), &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           elseif (normalVelocity(1,iEdge) < 0.0_RKIND) then
+              call ocn_subgrid_layer_thickness_lookup(ssh(cell2), &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           else
+              sshMean = 0.5_RKIND*(ssh(cell1) + ssh(cell2))
+              call ocn_subgrid_layer_thickness_lookup(sshMean, &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           end if
+           !
          end if
 
          if ( layerThickEdgeFlux(1,iEdge) < eps ) then
