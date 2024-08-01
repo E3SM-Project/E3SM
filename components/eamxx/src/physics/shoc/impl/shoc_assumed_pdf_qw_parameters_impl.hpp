@@ -16,7 +16,7 @@ namespace shoc {
  */
 
 template<typename S, typename D>
-KOKKOS_FUNCTION
+KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_qw_parameters(
   const Spack& wqwsec,
   const Spack& sqrtw2,

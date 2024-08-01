@@ -14,7 +14,7 @@ namespace shoc {
  */
 
 template<typename S, typename D>
-KOKKOS_FUNCTION
+KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_compute_sgs_liquid(
   const Spack& a,
   const Spack& ql1,
