@@ -187,7 +187,7 @@ int testDivergence(Real RTol) {
    Array2DReal ExactDivCell("ExactDivCell", Mesh->NCellsOwned, NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactDivVec(X, Y); },
-       ExactDivCell, Geom, Mesh, OnCell, NVertLevels, false);
+       ExactDivCell, Geom, Mesh, OnCell, NVertLevels, ExchangeHalos::No);
 
    // Compute numerical result
    Array2DReal NumDivCell("NumDivCell", Mesh->NCellsOwned, NVertLevels);
@@ -234,7 +234,8 @@ int testGradient(Real RTol) {
           VecField[0] = Setup.exactGradScalarX(X, Y);
           VecField[1] = Setup.exactGradScalarY(X, Y);
        },
-       ExactGradEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
+       ExactGradEdge, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
+       ExchangeHalos::No);
 
    // Compute numerical result
    GradientOnEdge GradientEdge(Mesh);
@@ -279,7 +280,7 @@ int testCurl(Real RTol) {
                                NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.exactCurlVec(X, Y); },
-       ExactCurlVertex, Geom, Mesh, OnVertex, NVertLevels, false);
+       ExactCurlVertex, Geom, Mesh, OnVertex, NVertLevels, ExchangeHalos::No);
 
    // Compute numerical result
    Array2DReal NumCurlVertex("NumCurlVertex", Mesh->NVerticesOwned,
@@ -330,7 +331,7 @@ int testRecon(Real RTol) {
           VecField[1] = Setup.exactVecY(X, Y);
        },
        ExactReconEdge, EdgeComponent::Tangential, Geom, Mesh, NVertLevels,
-       false);
+       ExchangeHalos::No);
 
    // Compute numerical result
    Array2DReal NumReconEdge("NumReconEdge", Mesh->NEdgesOwned, NVertLevels);

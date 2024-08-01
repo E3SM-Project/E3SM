@@ -15,10 +15,8 @@ class VelocityDel2AuxVars {
    Array2DReal Del2DivCell;
    Array2DReal Del2RelVortVertex;
 
-   VelocityDel2AuxVars(const HorzMesh *Mesh, int NVertLevels);
-
-   void addMetaData() const;
-   void defineIOFields() const;
+   VelocityDel2AuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
+                       int NVertLevels);
 
    KOKKOS_FUNCTION void
    computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &VelocityDivCell,
@@ -90,6 +88,9 @@ class VelocityDel2AuxVars {
       }
    }
 
+   void registerFields(const std::string &AuxGroupName) const;
+   void unregisterFields() const;
+
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
@@ -104,10 +105,8 @@ class VelocityDel2AuxVars {
    Array1DR8 AreaTriangle;
    I4 VertexDegree;
 
-   // names used in defining MetaData and IOFields
-   static const std::string Del2EdgeName;
-   static const std::string Del2DivCellName;
-   static const std::string Del2RelVortVertexName;
+   void addMetaData(const std::string &AuxGroupName) const;
+   void defineIOFields() const;
 };
 
 } // namespace OMEGA

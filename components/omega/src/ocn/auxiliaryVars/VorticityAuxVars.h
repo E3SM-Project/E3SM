@@ -18,10 +18,8 @@ class VorticityAuxVars {
    Array2DReal NormRelVortEdge;
    Array2DReal NormPlanetVortEdge;
 
-   VorticityAuxVars(const HorzMesh *Mesh, int NVertLevels);
-
-   void addMetaData() const;
-   void defineIOFields() const;
+   VorticityAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
+                    int NVertLevels);
 
    KOKKOS_FUNCTION void
    computeVarsOnVertex(int IVertex, int KChunk,
@@ -77,6 +75,9 @@ class VorticityAuxVars {
       }
    }
 
+   void registerFields(const std::string &AuxGroupName) const;
+   void unregisterFields() const;
+
  private:
    I4 VertexDegree;
    Array2DI4 CellsOnVertex;
@@ -88,12 +89,8 @@ class VorticityAuxVars {
    Array2DI4 VerticesOnEdge;
    Array1DR8 FVertex;
 
-   // names used in defining MetaData and IOFields
-   static const std::string RelVortVertexName;
-   static const std::string NormRelVortVertexName;
-   static const std::string NormPlanetVortVertexName;
-   static const std::string NormRelVortEdgeName;
-   static const std::string NormPlanetVortEdgeName;
+   void addMetaData(const std::string &AuxGroupName) const;
+   void defineIOFields() const;
 };
 
 } // namespace OMEGA

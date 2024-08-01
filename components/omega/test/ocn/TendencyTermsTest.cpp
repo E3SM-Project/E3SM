@@ -204,7 +204,7 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.divergence(X, Y); },
-       ExactThickFluxDiv, Geom, Mesh, OnCell, NVertLevels, false);
+       ExactThickFluxDiv, Geom, Mesh, OnCell, NVertLevels, ExchangeHalos::No);
 
    // Set input array
    Array2DR8 ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
@@ -269,7 +269,7 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
                         Setup.layerThick(X, Y) * Setup.vectorY(X, Y);
        },
        ExactPotVortHAdv, EdgeComponent::Tangential, Geom, Mesh, NVertLevels,
-       false);
+       ExchangeHalos::No);
 
    // Set input arrays
    Array2DR8 NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize, NVertLevels);
@@ -349,7 +349,8 @@ int testKEGrad(int NVertLevels, Real RTol) {
           VecField[0] = -Setup.gradX(X, Y);
           VecField[1] = -Setup.gradY(X, Y);
        },
-       ExactKEGrad, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
+       ExactKEGrad, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
+       ExchangeHalos::No);
 
    // Set input array
    Array2DReal KECell("KECell", Mesh->NCellsSize, NVertLevels);
@@ -407,7 +408,8 @@ int testSSHGrad(int NVertLevels, Real RTol) {
           VecField[0] = -9.80665_Real * Setup.gradX(X, Y);
           VecField[1] = -9.80665_Real * Setup.gradY(X, Y);
        },
-       ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
+       ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
+       ExchangeHalos::No);
 
    // Set input array
    Array2DReal SSHCell("SSHCell", Mesh->NCellsSize, NVertLevels);
@@ -468,7 +470,8 @@ int testVelDiff(int NVertLevels, Real RTol) {
           VecField[0] = Setup.laplaceVecX(X, Y);
           VecField[1] = Setup.laplaceVecY(X, Y);
        },
-       ExactVelDiff, EdgeComponent::Normal, Geom, Mesh, NVertLevels, false);
+       ExactVelDiff, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
+       ExchangeHalos::No);
 
    // Set input arrays
    Array2DReal DivCell("DivCell", Mesh->NCellsSize, NVertLevels);
@@ -537,7 +540,7 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
           VecField[1] = -Setup.laplaceVecY(X, Y);
        },
        ExactVelHyperDiff, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
-       false);
+       ExchangeHalos::No);
 
    // Set input arrays
    Array2DReal DivCell("DivCell", Mesh->NCellsSize, NVertLevels);

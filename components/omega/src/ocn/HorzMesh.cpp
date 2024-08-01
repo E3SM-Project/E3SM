@@ -49,16 +49,22 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    MeshFileName = MeshDecomp->MeshFileName;
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
+   NCellsHalo  = MeshDecomp->NCellsHalo;
+   NCellsHaloH = MeshDecomp->NCellsHaloH;
    NCellsOwned = MeshDecomp->NCellsOwned;
    NCellsAll   = MeshDecomp->NCellsAll;
    NCellsSize  = MeshDecomp->NCellsSize;
 
+   NEdgesHalo     = MeshDecomp->NEdgesHalo;
+   NEdgesHaloH    = MeshDecomp->NEdgesHaloH;
    NEdgesOwned    = MeshDecomp->NEdgesOwned;
    NEdgesAll      = MeshDecomp->NEdgesAll;
    NEdgesSize     = MeshDecomp->NEdgesSize;
    MaxCellsOnEdge = MeshDecomp->MaxCellsOnEdge;
    MaxEdges       = MeshDecomp->MaxEdges;
 
+   NVerticesHalo  = MeshDecomp->NVerticesHalo;
+   NVerticesHaloH = MeshDecomp->NVerticesHaloH;
    NVerticesOwned = MeshDecomp->NVerticesOwned;
    NVerticesAll   = MeshDecomp->NVerticesAll;
    NVerticesSize  = MeshDecomp->NVerticesSize;

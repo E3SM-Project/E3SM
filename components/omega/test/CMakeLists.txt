@@ -168,6 +168,16 @@ target_compile_definitions(
   AUXVARS_TEST_SPHERE
 )
 
+# AuxState test
+################
+
+add_omega_test(
+  AUXSTATE_TEST
+    testAuxiliaryState.exe
+    ocn/AuxiliaryStateTest.cpp
+    "-n;8"
+)
+
 #############
 # IO test
 #############

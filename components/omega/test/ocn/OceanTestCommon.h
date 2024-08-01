@@ -58,13 +58,15 @@ KOKKOS_INLINE_FUNCTION void tangentVector(Real (&TanVec)[3],
 
 enum class EdgeComponent { Normal, Tangential };
 enum class Geometry { Planar, Spherical };
+enum class ExchangeHalos { Yes, No };
 
 // set scalar field on chosen elements (cells/vertices/edges) based on
 // analytical formula and optionally exchange halos
 template <class Functor>
 int setScalar(const Functor &Fun, const Array2DReal &ScalarElement,
               Geometry Geom, const HorzMesh *Mesh, MeshElement Element,
-              int NVertLevels, bool ExchangeHalos = true) {
+              int NVertLevels,
+              ExchangeHalos ExchangeHalosOpt = ExchangeHalos::Yes) {
 
    int Err = 0;
 
@@ -113,7 +115,7 @@ int setScalar(const Functor &Fun, const Array2DReal &ScalarElement,
           }
        });
 
-   if (ExchangeHalos) {
+   if (ExchangeHalosOpt == ExchangeHalos::Yes) {
       auto MyHalo         = Halo::getDefault();
       auto ScalarElementH = createHostMirrorCopy(ScalarElement);
       Err = MyHalo->exchangeFullArrayHalo(ScalarElementH, Element);
@@ -124,12 +126,16 @@ int setScalar(const Functor &Fun, const Array2DReal &ScalarElement,
    return Err;
 }
 
+enum class CartProjection { Yes, No };
+
 // set vector field on edges based on analytical formula and optionally
 // exchange halos
 template <class Functor>
 int setVectorEdge(const Functor &Fun, const Array2DReal &VectorFieldEdge,
                   EdgeComponent EdgeComp, Geometry Geom, const HorzMesh *Mesh,
-                  int NVertLevels, bool ExchangeHalos = true) {
+                  int NVertLevels,
+                  ExchangeHalos ExchangeHalosOpt   = ExchangeHalos::Yes,
+                  CartProjection CartProjectionOpt = CartProjection::Yes) {
 
    int Err = 0;
 
@@ -182,9 +188,7 @@ int setVectorEdge(const Functor &Fun, const Array2DReal &VectorFieldEdge,
              Real VecField[2];
              Fun(VecField, LonE, LatE);
 
-             bool UseCartesianProjection = true;
-
-             if (UseCartesianProjection) {
+             if (CartProjectionOpt == CartProjection::Yes) {
                 Real VecFieldCart[3];
                 sphereToCartVec(VecFieldCart, VecField, LonE, LatE);
 
@@ -233,7 +237,7 @@ int setVectorEdge(const Functor &Fun, const Array2DReal &VectorFieldEdge,
           VectorFieldEdge(IEdge, K) = VecFieldEdge;
        });
 
-   if (ExchangeHalos) {
+   if (ExchangeHalosOpt == ExchangeHalos::Yes) {
       auto MyHalo           = Halo::getDefault();
       auto VectorFieldEdgeH = createHostMirrorCopy(VectorFieldEdge);
       Err = MyHalo->exchangeFullArrayHalo(VectorFieldEdgeH, OnEdge);
@@ -257,14 +261,22 @@ inline Real maxVal(const Array2DReal &Arr) {
    return MaxVal;
 }
 
-inline Real sum(const Array2DReal &Arr) {
+inline Real sum(const Array2DReal &Arr, int Extent0, int Extent1) {
    Real Sum;
 
    parallelReduce(
-       {Arr.extent_int(0), Arr.extent_int(1)},
+       {Extent0, Extent1},
        KOKKOS_LAMBDA(int I, int J, Real &Accum) { Accum += Arr(I, J); }, Sum);
 
    return Sum;
+}
+
+inline Real sum(const Array2DReal &Arr) {
+   return sum(Arr, Arr.extent_int(0), Arr.extent_int(1));
+}
+
+inline Real sum(const Array2DReal &Arr, int Extent0) {
+   return sum(Arr, Extent0, Arr.extent_int(1));
 }
 
 struct ErrorMeasures {
