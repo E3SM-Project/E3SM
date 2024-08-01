@@ -24,6 +24,7 @@ namespace scream {
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   using KT      = ekat::KokkosTypes<DefaultDevice>;
+  using view_1d = typename KT::template view_1d<Real>;
   using view_2d = typename KT::template view_2d<Real>;
 
   // number of horizontal columns and vertical levels
@@ -43,6 +44,12 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   view_2d constituent_fluxes_;
+
+  // work array to store fluxes after unit conversions to kg/m2/s
+  view_1d fluxes_in_mks_units_;
+
+  // Unified atomic mass unit used for unit conversion (BAD constant)
+  static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
@@ -112,109 +119,37 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // preprocessing scratch pad
   Preprocess preprocess_;
 
-  // Species index in tracer array with "pcnst" indices
-  enum class spcIndex_in_pcnst : int {
-    SO2    = 12,
-    DMS    = 13,
-    so4_a1 = 15,
-    num_a1 = 22,
-    so4_a2 = 23,
-    num_a2 = 27,
-    pom_a4 = 36,
-    bc_a4  = 37,
-    num_a4 = 39,
-  };
+  // Species index (zero-based) in tracer array with "pcnst" dimension
+  // FIXME: Remove the hardwired indices and use a function
+  // to find them from an array.
+  const std::map<std::string, int> spcIndex_in_pcnst_ = {
+      {"so2", 12},    {"dms", 13},    {"so4_a1", 15},
+      {"num_a1", 22}, {"so4_a2", 23}, {"num_a2", 27},
+      {"pom_a4", 36}, {"bc_a4", 37},  {"num_a4", 39}};
 
   // A struct carrying all the fields needed to read
   // surface emissions of a species
-  struct srf_emiss {
+  struct srf_emiss_ {
+    // species name
+    std::string species_name;
     // Data file name
     std::string data_file;
     // Sector names in file
     std::vector<std::string> sectors;
     // Data structure for reading interpolation
-    std::shared_ptr<AbstractRemapper> HorizInterp_;
-    std::shared_ptr<AtmosphereInput> DataReader_;
-    srfEmissFunc::srfEmissTimeState TimeState_;
-    srfEmissFunc::srfEmissInput Data_start_, Data_end_;
-    srfEmissFunc::srfEmissOutput Data_out_;
+    std::shared_ptr<AbstractRemapper> horizInterp_;
+    std::shared_ptr<AtmosphereInput> dataReader_;
+    srfEmissFunc::srfEmissTimeState timeState_;
+    srfEmissFunc::srfEmissInput data_start_, data_end_;
+    srfEmissFunc::srfEmissOutput data_out_;
   };
 
   // A vector for carrying emissions for all the species
-  std::vector<srf_emiss> srf_emiss_species_;
+  std::vector<srf_emiss_> srf_emiss_species_;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
-
-  // Data structures to read DMS data file
-  std::shared_ptr<AbstractRemapper> dmsSrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> dmsSrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState dmsSrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput dmsSrfEmissData_start_, dmsSrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput dmsSrfEmissData_out_;
-
-  // Data structures to read so2 data file
-  std::shared_ptr<AbstractRemapper> so2SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> so2SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState so2SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput so2SrfEmissData_start_, so2SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput so2SrfEmissData_out_;
-
-  // Data structures to read bc_a4 data file
-  std::shared_ptr<AbstractRemapper> bc_a4SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> bc_a4SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState bc_a4SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput bc_a4SrfEmissData_start_, bc_a4SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput bc_a4SrfEmissData_out_;
-
-  // Data structures to read num_a1 data file
-  std::shared_ptr<AbstractRemapper> num_a1SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> num_a1SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState num_a1SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput num_a1SrfEmissData_start_,
-      num_a1SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput num_a1SrfEmissData_out_;
-
-  // Data structures to read num_a2 data file
-  std::shared_ptr<AbstractRemapper> num_a2SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> num_a2SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState num_a2SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput num_a2SrfEmissData_start_,
-      num_a2SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput num_a2SrfEmissData_out_;
-
-  // Data structures to read num_a4 data file
-  std::shared_ptr<AbstractRemapper> num_a4SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> num_a4SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState num_a4SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput num_a4SrfEmissData_start_,
-      num_a4SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput num_a4SrfEmissData_out_;
-
-  // Data structures to read pom_a4 data file
-  std::shared_ptr<AbstractRemapper> pom_a4SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> pom_a4SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState pom_a4SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput pom_a4SrfEmissData_start_,
-      pom_a4SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput pom_a4SrfEmissData_out_;
-
-  // Data structures to read so4_a1 data file
-  std::shared_ptr<AbstractRemapper> so4_a1SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> so4_a1SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState so4_a1SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput so4_a1SrfEmissData_start_,
-      so4_a1SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput so4_a1SrfEmissData_out_;
-
-  // Data structures to read so4_a2 data file
-  std::shared_ptr<AbstractRemapper> so4_a2SrfEmissHorizInterp_;
-  std::shared_ptr<AtmosphereInput> so4_a2SrfEmissDataReader_;
-  srfEmissFunc::srfEmissTimeState so4_a2SrfEmissTimeState_;
-  srfEmissFunc::srfEmissInput so4_a2SrfEmissData_start_,
-      so4_a2SrfEmissData_end_;
-  srfEmissFunc::srfEmissOutput so4_a2SrfEmissData_out_;
 
 };  // MAMSrfOnlineEmiss
 
