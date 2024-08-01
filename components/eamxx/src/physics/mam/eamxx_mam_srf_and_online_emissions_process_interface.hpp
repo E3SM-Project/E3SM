@@ -127,26 +127,21 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
   // A struct carrying all the fields needed to read
   // surface emissions of a species
-  // template <std::size_t numSectors>
   struct srf_emiss {
-    // srf_emiss(int n){numSectors=n;}
-    //  data file name
+    // Data file name
     std::string data_file;
-    // static int numSectors;
-    //  Sector names in file
+    // Sector names in file
     std::vector<std::string> sectors;
-
+    // Data structure for reading interpolation
     std::shared_ptr<AbstractRemapper> HorizInterp_;
     std::shared_ptr<AtmosphereInput> DataReader_;
     srfEmissFunc::srfEmissTimeState TimeState_;
     srfEmissFunc::srfEmissInput Data_start_, Data_end_;
     srfEmissFunc::srfEmissOutput Data_out_;
-
-    /*srfEmissFunc::init_srf_emiss_objects(
-        // output
-        dmsSrfEmissHorizInterp_, dmsSrfEmissData_start_, dmsSrfEmissData_end_,
-        dmsSrfEmissData_out_, dmsSrfEmissDataReader_);*/
   };
+
+  // A vector for carrying emissions for all the species
+  std::vector<srf_emiss> srf_emiss_species_;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
