@@ -1978,7 +1978,7 @@ end subroutine clubb_init_cnst
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
         t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
-        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver:1:-1),&
+        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver+1:1:-1),&
         pi3d=state%exner(:,pver:1:-1),z=zbot,&
         rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
         rthblten=ttgw(:,pver:1:-1),&
