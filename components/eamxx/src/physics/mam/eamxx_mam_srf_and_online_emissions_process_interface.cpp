@@ -137,8 +137,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   // Init data structures to read and interpolate
   //--------------------------------------------------------------------
-
-  for(const sr_emiss &ispec_srf : srf_emiss_species_) {
+  for(srf_emiss &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::init_srf_emiss_objects(
         ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
         // output
@@ -239,9 +238,11 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     srfEmissFunc::srfEmiss_main(ispec_srf.TimeState_, ispec_srf.Data_start_,
                                 ispec_srf.Data_end_, ispec_srf.Data_out_);
     // update flux
-    auto clfx = Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
-                                static_cast<int>(spcIndex_in_pcnst::DMS));
-    Kokkos::deep_copy(cflx, dmsSrfEmissData_out_.emiss_sectors[0]);
+    /*auto clfx =
+        Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
+                        static_cast<int>(spcIndex_in_pcnst::DMS));
+    Kokkos::deep_copy(cflx,
+                      dmsSrfEmissData_out_.emiss_sectors[0]);*/
   }
   /*
 // update flux
