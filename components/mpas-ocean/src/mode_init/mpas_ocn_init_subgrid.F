@@ -326,7 +326,7 @@ contains
 !                                           bottomDepth(iCell),&
 !                                           LayerThickness(1,iCell))
 
-        call ocn_subgrid_ssh_lookup( config_drying_min_cell_height, & 
+       call ocn_subgrid_ssh_lookup( config_drying_min_cell_height, & 
                                      subgridWetVolumeCellTable(:,iCell), &
                                      subgridSshCellTableRange(:,iCell),&
                                      bottomDepth(iCell),&
@@ -339,20 +339,6 @@ contains
 
 !          LayerThickness(1,iCell) = config_drying_min_cell_height ; 
        end if 
-
-!       if ( abs(xCell(iCell) - 4.992257790080783) < 1.0e-7 .and. &
-!          abs(yCell(iCEll) - 0.720595704772604) < 1.0e-7 ) then
-!          write(*,*) "iCell = ", iCell
-!          write(*,*) ssh(iCell), LayerThickness(1,iCell) ;
-!
-!          call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
-!                                    subgridWetVolumeCellTable(:,iCell),&
-!                                    subgridSshCellTableRange(:,iCell),&
-!                                    bottomDepth(iCell),&
-!                                    subgridCellBathymetryMin(iCell),&
-!                                    ssh(iCell))
-!          write(*,*) ssh(iCell) ;
-!       endif
 
     end do
 
