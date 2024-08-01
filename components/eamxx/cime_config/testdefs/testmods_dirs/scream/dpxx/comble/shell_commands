@@ -2,6 +2,7 @@
 # lagrangian case over ocean with interactive surface fluxes and coriolis forcing applied to winds
 
 ./xmlchange RUN_STARTDATE="2020-03-12"
+./xmlchange START_TOD=79200
 ./xmlchange PTS_LAT=74.5
 ./xmlchange PTS_LON=9.9
 
