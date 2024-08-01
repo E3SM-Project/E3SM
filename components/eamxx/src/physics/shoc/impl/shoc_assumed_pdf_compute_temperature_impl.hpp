@@ -20,7 +20,10 @@ void Functions<S,D>::shoc_assumed_pdf_compute_temperature(
   const Spack& pval,
   Spack&       Tl1)
 {
-  Tl1 = thl1/(ekat::pow(C::P0/pval,(C::Rair/C::CP)));
+  constexpr Scalar basepres = C::P0;
+  constexpr Scalar rair = C::Rair;
+  constexpr Scalar cp = C::CP;
+  Tl1 = thl1/(ekat::pow(basepres/pval,(rair/cp)));
 }
 
 } // namespace shoc
