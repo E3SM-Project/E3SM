@@ -84,6 +84,7 @@ void MAMConstituentFluxes::set_grids(
   // Surface geopotential [m2/s2] (Require only for building DS)
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
+  // Constituent fluxes at the surface (gasses and aerosols)
   add_field<Required>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
                       grid_name);
 
@@ -91,7 +92,8 @@ void MAMConstituentFluxes::set_grids(
   // These variables are "Updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
   // NOTE: Cloud borne aerosols are not updated in this process but are included
-  // to create datastructures.
+  // to create data structures.
+
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
@@ -191,6 +193,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
   dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
   dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
+  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
 
   // store fields converted to dry mmr from wet mmr in dry_atm_
   dry_atm_.z_mid     = buffer_.z_mid;
@@ -204,9 +207,9 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   dry_atm_.w_updraft = buffer_.w_updraft;
   dry_atm_.z_surf    = 0.0;  // FIXME: for now
 
+  // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]
   constituent_fluxes_ =
       get_field_in("constituent_fluxes").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -249,12 +252,13 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Allocate memory
   //-----------------------------------------------------------------
-
+  // Inverse of pseudo_density (1/Pa or or N/m2 or kg/m/s2)
   rpdel_ = view_2d("rpdel_", ncol_, nlev_);
+
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
-  // preprocess_.initialize(constituent_fluxes_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
 
 }  // end initialize_impl()
 
@@ -265,29 +269,39 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
-  // preprocess input -- needs a scan for the calculation of atm height
-  // Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
-  // Kokkos::fence();
+  // -------------------------------------------------------------------
+  // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
+  // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
+  // mixing ratios), so we are *not* doing any wet to dry conversions in the
+  // "preprocess" . We are simply updating the MAM4xx tracers using the
+  // "constituent fluxes".
+  // We are converting wet atm to dry atm. Since we do not use or update
+  // any of the water constituents (qc, qv, qi etc.), we should be okay
+  // to do this conversion. We need to do this conversion as our function
+  // are build following HAERO data structures.
+  // -------------------------------------------------------------------
 
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
+
+  // policy
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+
   using C                      = physics::Constants<Real>;
   static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
 
+  // compute inverse of pseudo_density
   mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del,
                                                  nlev_,
                                                  // output
                                                  rpdel_);
-  // -------------------------------------------------------------------
-  // NOTES: The following code is an adaptation of cflx.F90 code in E3SM
-  // In EAMxx, all constituents are considered "wet" (or have wet mixing
-  // ratios), so we are *not* doing any wet to dry conversions here. We
-  // are simply updating the MAM4xx tracers using the "constituent
-  // fluxes"
-  // -------------------------------------------------------------------
+  std::cout << "BEFORE:::" << wet_aero_.gas_mmr[4](1, 1) << std::endl;
+  // Loop through all columns to update tracer mixing rations
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        /////////dddd
+
         // To construct state_q, we need fields from Prognostics (aerosols)
         //  and Atmosphere (water species such as qv, qc etc.)
 
@@ -298,10 +312,9 @@ void MAMConstituentFluxes::run_impl(const double dt) {
         // get atmospheric quantities
         haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm_, icol);
 
-        // Construct state_q (interstitial) and qqcw (cloud borne) arrays
-        constexpr auto pver = mam4::ndrop::pver;
+        // Construct state_q (interstitial) array
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, pver), [&](int klev) {
+            Kokkos::TeamVectorRange(team, nlev_), [&](int klev) {
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
               // get state_q at a grid cell (col,lev)
@@ -312,16 +325,15 @@ void MAMConstituentFluxes::run_impl(const double dt) {
 
               // get the start index for gas species in the state_q array
               int istart = mam4::utils::gasses_start_ind();
-              std::cout << "istart:" << mam4::utils::gasses_start_ind()
-                        << std::endl;
-              // kg/m2/s to kg/kg/
+
+              // Factor to convert units from kg/m2/s to kg/kg
               Real unit_factor = dt * gravit * rpdel_(icol, klev);
+
               // Update state with the constituent fluxes (modified
               // units)
               for(int icnst = istart; icnst < mam4::aero_model::pcnst;
                   ++icnst) {
-                state_q_at_lev_col[icnst] =
-                    state_q_at_lev_col[icnst] +
+                state_q_at_lev_col[icnst] +=
                     constituent_fluxes_(icol, icnst) * unit_factor;
               }
               mam4::utils::inject_stateq_to_prognostics(state_q_at_lev_col,
@@ -329,65 +341,8 @@ void MAMConstituentFluxes::run_impl(const double dt) {
             });
       });
 
-  /* ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
-   tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)*/
-
-  /*FORTRAN CODE:
-    What we need:
-    1. ncol
-    2. all tracers
-    3. timestep (verify what is rztodt??)
-    4. gravit, rpdel
-    5. cflx
-    6. Ensure dry/et-wet/dry isconsistent....comment on that!!
-
-
-    ncol = state%ncol
-
-    !-------------------------------------------------------
-    ! Assume 'wet' mixing ratios in surface diffusion code.
-
-    cnst_type_loc(:) = cnst_type(:)
-    call set_dry_to_wet(state, cnst_type_loc)
-
-    !-------------------------------------------------------
-    ! Initialize ptend
-
-    lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
-
-    !-------------------------------------------------------
-    ! Calculate tracer mixing ratio tendencies from cflx
-
-    rztodt                 = 1._r8/ztodt
-    ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
-    tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)
-
-    do m = 2, pcnst
-      ptend%q(:ncol,pver,m) = ptend%q(:ncol,pver,m) + tmp1(:ncol) *
-    cam_in%cflx(:ncol,m) enddo
-
-    ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) *
-    rztodt
-
-    ! Convert tendencies of dry constituents to dry basis.
-    do m = 1,pcnst
-       if (cnst_type(m).eq.'dry') then
-          ptend%q(:ncol,:pver,m) =
-    ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
-       endif
-    end do
-
-    !-------------------------------------------------------
-    ! convert wet mmr back to dry before conservation check
-    ! avoid converting co2 tracers again
-
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_wet_to_dry(state, cnst_type_loc)
-
-  */
-}
+  std::cout << wet_aero_.gas_mmr[4](1, 1) << std::endl;
+}  // run_impl ends
 
 // =============================================================================
 }  // namespace scream

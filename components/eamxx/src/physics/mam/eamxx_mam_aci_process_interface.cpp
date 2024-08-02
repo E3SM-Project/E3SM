@@ -597,7 +597,7 @@ void MAMAci::run_impl(const double dt) {
                               // output
                               cloud_frac_, cloud_frac_prev_);
 
-  compute_recipical_pseudo_density(team_policy, dry_atm_.p_del, nlev_,
+  mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del, nlev_,
                                    // output
                                    rpdel_);
 

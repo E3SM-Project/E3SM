@@ -198,23 +198,6 @@ void store_liquid_cloud_fraction(
       });
 }
 
-void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
-                                      MAMAci::const_view_2d pdel,
-                                      const int nlev,
-                                      // output
-                                      MAMAci::view_2d rpdel) {
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
-              EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
-                                     "Error: pdel should be > 0.\n");
-              rpdel(icol, kk) = 1 / pdel(icol, kk);
-            });
-      });
-}
-
 void call_function_dropmixnuc(
     haero::ThreadTeamPolicy team_policy, const Real dt,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
