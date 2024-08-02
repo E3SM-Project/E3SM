@@ -13,7 +13,8 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
                          Mesh->NEdgesSize, NVertLevels),
       MeanLayerThickEdge("MeanLayerThickEdge" + AuxStateSuffix,
                          Mesh->NEdgesSize, NVertLevels),
-      CellsOnEdge(Mesh->CellsOnEdge) {}
+      SshCell("SshCell" + AuxStateSuffix, Mesh->NCellsSize, NVertLevels),
+      CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth) {}
 
 void LayerThicknessAuxVars::registerFields(
     const std::string &AuxGroupName) const {
@@ -24,12 +25,15 @@ void LayerThicknessAuxVars::registerFields(
 void LayerThicknessAuxVars::unregisterFields() const {
    IOField::erase(FluxLayerThickEdge.label());
    IOField::erase(MeanLayerThickEdge.label());
+   IOField::erase(SshCell.label());
    MetaData::destroy(FluxLayerThickEdge.label());
    MetaData::destroy(MeanLayerThickEdge.label());
+   MetaData::destroy(SshCell.label());
 }
 
 void LayerThicknessAuxVars::addMetaData(const std::string &AuxGroupName) const {
    auto EdgeDim      = MetaDim::get("NEdges");
+   auto CellDim      = MetaDim::get("NCells");
    auto VertDim      = MetaDim::get("NVertLevels");
    auto AuxMetaGroup = MetaGroup::get(AuxGroupName);
 
@@ -64,6 +68,20 @@ void LayerThicknessAuxVars::addMetaData(const std::string &AuxGroupName) const {
        {EdgeDim, VertDim}                /// dim pointers
    );
    AuxMetaGroup->addField(MeanLayerThickEdge.label());
+
+   // Sea surface height
+   auto SshCellMeta = ArrayMetaData::create(
+       SshCell.label(),
+       "sea surface height at cell center", /// long Name or description
+       "m",                                 /// units
+       "",                                  /// CF standard Name
+       0,                                   /// min valid value
+       std::numeric_limits<Real>::max(),    /// max valid value
+       FillValue,         /// scalar used for undefined entries
+       2,                 /// number of dimensions
+       {CellDim, VertDim} /// dim pointers
+   );
+   AuxMetaGroup->addField(SshCell.label());
 }
 
 void LayerThicknessAuxVars::defineIOFields() const {
@@ -76,6 +94,10 @@ void LayerThicknessAuxVars::defineIOFields() const {
    // Mean layer thickness on edges
    Err = IOField::define(MeanLayerThickEdge.label());
    Err = IOField::attachData(MeanLayerThickEdge.label(), MeanLayerThickEdge);
+
+   // Sea surface height
+   Err = IOField::define(SshCell.label());
+   Err = IOField::attachData(SshCell.label(), SshCell);
 }
 
 } // namespace OMEGA

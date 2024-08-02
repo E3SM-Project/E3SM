@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "TendencyTerms.h"
+#include "AuxiliaryState.h"
 #include "Config.h"
 #include "DataTypes.h"
 #include "HorzMesh.h"
@@ -114,7 +115,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 // Compute tendencies for layer thickness equation
 // TODO Add AuxilaryState as argument
 void Tendencies::computeThicknessTendencies(
-    OceanState *State ///< [in] State variables
+    OceanState *State,       ///< [in] State variables
+    AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
@@ -123,20 +125,21 @@ void Tendencies::computeThicknessTendencies(
    OMEGA_SCOPE(LocThicknessFluxDiv, ThicknessFluxDiv);
 
    // Compute thickness flux divergence
-   Array2DReal ThickFluxEdge;
+   const Array2DReal &ThickFluxEdge =
+       AuxState->LayerThicknessAux.FluxLayerThickEdge;
    parallelFor(
        {LocNCellsOwned, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
                               ThickFluxEdge);
        });
 
-} // end thickness tehndency compute
+} // end thickness tendency compute
 
 //------------------------------------------------------------------------------
 // Compute tendencies for normal velocity equation
-// TODO Add AuxilaryState as argument
 void Tendencies::computeVelocityTendencies(
-    OceanState *State ///< [in] State variables
+    OceanState *State,       ///< [in] State variables
+    AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
@@ -149,34 +152,35 @@ void Tendencies::computeVelocityTendencies(
    OMEGA_SCOPE(LocVelocityHyperDiff, VelocityHyperDiff);
 
    // Compute potential vorticity horizontal advection
-   Array2DReal FluxLayerThickEdge; // TODO get variables from AuxState
-   Array2DReal NormRVortEdge;      // TODO get variables from AuxState
-   Array2DReal NormFEdge;          // TODO get variables from AuxState
-   Array2DReal TangentVelEdge;     // TODO get variables from AuxState
+   const Array2DReal &FluxLayerThickEdge =
+       AuxState->LayerThicknessAux.FluxLayerThickEdge;
+   const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
+   const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
+   const Array2DReal &NormVelEdge   = State->NormalVelocity[0];
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
                                 NormRVortEdge, NormFEdge, FluxLayerThickEdge,
-                                TangentVelEdge);
+                                NormVelEdge);
        });
 
    // Compute kinetic energy gradient
-   Array2DReal KECell; // TODO get variables from AuxState
+   const Array2DReal &KECell = AuxState->KineticAux.KineticEnergyCell;
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocKEGrad(LocNormalVelocityTend, IEdge, KChunk, KECell);
        });
 
    // Compute sea surface height gradient
-   Array2DReal SSH; // TODO get variables from AuxState
+   const Array2DReal &SSHCell = AuxState->LayerThicknessAux.SshCell;
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocSHHGrad(LocNormalVelocityTend, IEdge, KChunk, SSH);
+          LocSHHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
        });
 
    // Compute del2 horizontal diffusion
-   Array2DReal DivCell;     // TODO get variables from AuxState
-   Array2DReal RVortVertex; // TODO get variables from AuxState
+   const Array2DReal &DivCell     = AuxState->KineticAux.VelocityDivCell;
+   const Array2DReal &RVortVertex = AuxState->VorticityAux.RelVortVertex;
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocVelocityDiffusion(LocNormalVelocityTend, IEdge, KChunk, DivCell,
@@ -184,8 +188,9 @@ void Tendencies::computeVelocityTendencies(
        });
 
    // Compute del4 horizontal diffusion
-   Array2DReal Del2DivCell;     // TODO get variables from AuxState
-   Array2DReal Del2RVortVertex; // TODO get variables from AuxState
+   const Array2DReal &Del2DivCell = AuxState->VelocityDel2Aux.Del2DivCell;
+   const Array2DReal &Del2RVortVertex =
+       AuxState->VelocityDel2Aux.Del2RelVortVertex;
    parallelFor(
        {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
@@ -196,13 +201,13 @@ void Tendencies::computeVelocityTendencies(
 
 //------------------------------------------------------------------------------
 // Compute both layer thickness and normal velocity tendencies
-// TODO Add AuxilaryState as argument
 void Tendencies::computeAllTendencies(
-    OceanState *State ///< [in] State variables
+    OceanState *State,       ///< [in] State variables
+    AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
-   computeThicknessTendencies(State);
-   computeVelocityTendencies(State);
+   computeThicknessTendencies(State, AuxState);
+   computeVelocityTendencies(State, AuxState);
 
 } // end all tendency compute
 

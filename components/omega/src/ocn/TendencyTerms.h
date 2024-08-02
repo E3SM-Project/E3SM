@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "AuxiliaryState.h"
 #include "Config.h"
 #include "HorzMesh.h"
 #include "MachEnv.h"
@@ -70,13 +71,13 @@ class PotentialVortHAdvOnEdge {
 
    /// The functor takes edge index, vertical chunk index, and arrays for
    /// normalized relative vorticity, normalized planetary vorticity, layer
-   /// thickness on edges, and tangential velocity on edges as inputs,
+   /// thickness on edges, and normal velocity on edges as inputs,
    /// outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DR8 &NormRVortEdge,
                                    const Array2DR8 &NormFEdge,
                                    const Array2DR8 &FluxLayerThickEdge,
-                                   const Array2DR8 &TangentVelEdge) const {
+                                   const Array2DR8 &NormVelEdge) const {
 
       const I4 KStart         = KChunk * VecLength;
       Real VortTmp[VecLength] = {0};
@@ -91,7 +92,7 @@ class PotentialVortHAdvOnEdge {
 
             VortTmp[KVec] += WeightsOnEdge(IEdge, J) *
                              FluxLayerThickEdge(JEdge, K) *
-                             TangentVelEdge(JEdge, K) * NormVort;
+                             NormVelEdge(JEdge, K) * NormVort;
          }
       }
 
@@ -148,7 +149,7 @@ class SSHGradOnEdge {
    /// The functor takes edge index, vertical chunk index, and array of
    /// layer thickness/SSH, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &HCell) const {
+                                   const Array2DReal &SshCell) const {
 
       const I4 KStart      = KChunk * VecLength;
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
@@ -158,7 +159,7 @@ class SSHGradOnEdge {
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
          Tend(IEdge, K) -=
-             Grav * (HCell(ICell1, K) - HCell(ICell0, K)) * InvDcEdge;
+             Grav * (SshCell(ICell1, K) - SshCell(ICell0, K)) * InvDcEdge;
       }
    }
 
@@ -280,9 +281,9 @@ class Tendencies {
 
    // Methods to compute tendency groups
    // TODO Add AuxilaryState as calling argument
-   void computeThicknessTendencies(OceanState *State);
-   void computeVelocityTendencies(OceanState *State);
-   void computeAllTendencies(OceanState *State);
+   void computeThicknessTendencies(OceanState *State, AuxiliaryState *AuxState);
+   void computeVelocityTendencies(OceanState *State, AuxiliaryState *AuxState);
+   void computeAllTendencies(OceanState *State, AuxiliaryState *AuxState);
 
    // Construct a new tendency object
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
