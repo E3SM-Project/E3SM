@@ -1,20 +1,9 @@
 #ifndef SRF_EMISSION_IMPL_HPP
 #define SRF_EMISSION_IMPL_HPP
 
-#include <ekat/ekat_pack_kokkos.hpp>
-#include <ekat/ekat_pack_utils.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/kokkos/ekat_subview_utils.hpp>
-#include <ekat/util/ekat_lin_interp.hpp>
-
-#include "physics/share/physics_constants.hpp"
-#include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_timing.hpp"
 
 namespace scream::mam_coupling {
 namespace {
@@ -297,8 +286,9 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
   // Read fields from the file
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
-    auto aa = srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    Kokkos::deep_copy(srfEmiss_input.data.emiss_sectors[i], aa);
+    auto sector =
+        srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
+    Kokkos::deep_copy(srfEmiss_input.data.emiss_sectors[i], sector);
   }
 
   Kokkos::fence();

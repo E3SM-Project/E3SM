@@ -26,10 +26,8 @@ void MAMSrfOnlineEmiss::set_grids(
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
   static constexpr int pcnst = mam4::aero_model::pcnst;
-
   const FieldLayout scalar2d_pcnct =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
@@ -149,7 +147,7 @@ void MAMSrfOnlineEmiss::set_grids(
         ispec_srf.data_out_, ispec_srf.dataReader_);
   }
 
-}  // set_grid
+}  // set_grid ends
 
 // ================================================================
 //  REQUEST_BUFFER_SIZE_IN_BYTES
@@ -192,16 +190,16 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Allocate memory for local and work arrays
   // ---------------------------------------------------------------
 
-  // work array to store fluxes after unit conversions to kg/m2/s
+  // Work array to store fluxes after unit conversions to kg/m2/s
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units_", ncol_);
 
   // Current month ( 0-based)
   const int curr_month = timestamp().get_month() - 1;
 
-  // Load the first month into srfEmiss_end.
+  // Load the first month into data_end.
 
-  // Note: At the first time step, the data will be moved into srfEmiss_beg,
-  // and srfEmiss_end will be reloaded from file with the new month.
+  // Note: At the first time step, the data will be moved into data_beg,
+  // and data_end will be reloaded from file with the new month.
 
   //--------------------------------------------------------------------
   // Update surface emissions from file
@@ -209,7 +207,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
         ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
-        ispec_srf.data_end_);
+        ispec_srf.data_end_);  // output
   }
 
   //-----------------------------------------------------------------
@@ -242,12 +240,13 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    // Update srfEmissTimeState, note the addition of dt
+    // Update TimeState, note the addition of dt
     ispec_srf.timeState_.t_now = ts.frac_of_year_in_days();
 
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(
         ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        // output
         ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 
     // Call the main srfEmiss routine to get interpolated aerosol forcings.
@@ -280,51 +279,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // update flux in constituent_fluxes_ view
     Kokkos::deep_copy(flux_1d_view, fluxes_in_mks_units_);
-  }
-
-  for(int i = 19; i < 30; ++i) {
-    std::cout << "BALLI:" << srf_emiss_species_[8].data_out_.emiss_sectors[0](i)
-              << ":" << i << ":" << constituent_fluxes_(i, 37) << std::endl;
-  }
-
-  /* Rough notes:
-
-  Here we should implement or port the chem_emissions subroutine in
-  chemistry.F90. Basically call two subroutines, aero_model_emissions
-  and set_srf_emissions.
-
-  Here is the code:
-
-    ! initialize chemistry constituent surface fluxes to zero
-    do m = 2,pcnst
-       n = map2chm(m)
-       if (n>0) cam_in%cflx(:,m) = 0._r8
-    enddo
-
-    ! aerosol emissions ...
-    call aero_model_emissions( state, & ! in
-                               cam_in ) ! out
-
-    ! prescribed emissions from file ...
-
-    !-----------------------------------------------------------------------
-    !        ... Set surface emissions
-    !-----------------------------------------------------------------------
-    call set_srf_emissions( lchnk, ncol, sflx(:,:) )
-
-    do m = 1,pcnst
-       n = map2chm(m)
-       if ( n /= h2o_ndx .and. n > 0 ) then
-          cam_in%cflx(:ncol,m) = cam_in%cflx(:ncol,m) + sflx(:ncol,n)
-          call outfld( sflxnam(m), cam_in%cflx(:ncol,m), ncol,lchnk )
-       endif
-    enddo
-
-
-  */
-
-  std::cout << "End of surface emissions run" << std::endl;
-}
+  }  // for loop for species
+}  // run_imple ends
 
 // =============================================================================
 }  // namespace scream
