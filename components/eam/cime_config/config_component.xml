@@ -6,7 +6,7 @@
   <!ENTITY eamv2_phys_defaults "-nlev 72 -clubb_sgs -microphys mg2">
   <!ENTITY eamv2_chem_defaults "-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero">
   <!ENTITY eamv3_phys_defaults "-nlev 80 -clubb_sgs -microphys p3">
-  <!ENTITY eamv3_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -vbs">
+  <!ENTITY eamv3_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero">
   <!ENTITY scream_phys_defaults "-shoc_sgs -microphys p3 -chem spa -rad rrtmgp">
 ]>
 
