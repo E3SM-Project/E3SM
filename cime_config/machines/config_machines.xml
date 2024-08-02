@@ -1397,80 +1397,23 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="syrah">
-    <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Slurm</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--Aaron-->
-    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS> <!--Aaron-->
-    <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lscratchh/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/p/lscratchh/$CCSMUSER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="mpi-serial">
-      <executable/>
-    </mpirun>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <modules compiler="intel">
-        <command name="load">python</command>
-        <command name="load">git</command>
-        <command name="load">intel/19.0.4</command>
-        <command name="load">mvapich2/2.3</command>
-        <!--default: <command name="load">cmake/3.14.5</command>, use 3.18.0 follow scream-->
-        <command name="load">cmake/3.18.0</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">pnetcdf/1.9.0</command>
-      </modules>
-    </module_system>
-    <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
-    <environment_variables compiler="intel">
-      <!--use 19.0.4-mvapich2-2.3 follow scream-->
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
-    </environment_variables>
-  </machine>
-
-<!--(zhang73) ruby: copy from SCREAM_update's config-->
   <machine MACH="ruby">
     <DESC>LLNL Linux Cluster, Linux (pgi), 56 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
-    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--PACE: Aaron 164b2babca4fb1e8701c268189a789fd1bb9dd65-->
+    <SAVE_TIMING_DIR>/usr/workspace/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/ruby</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/workspace/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
@@ -1495,39 +1438,41 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="load">netcdf-fortran-parallel/4.6.0</command>
-        <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="use">/usr/workspace/e3sm/install/quartz/modulefiles</command>
+        <command name="load">hdf5/1.12.2</command>
+        <command name="load">netcdf-c/4.9.0</command>
+        <command name="load">netcdf-fortran/4.6.0</command>
         <command name="load">parallel-netcdf/1.12.3</command>
+        <command name="load">screamML-venv/0.0.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>    
-      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      </environment_variables>
+      <env name="NETCDF_PATH">/usr/workspace/e3sm/install/quartz/netcdf-fortran/</env>
+      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
+    </environment_variables>
   </machine>
 
-  <machine MACH="quartz">
+  <machine MACH="dane">
     <DESC>LLNL Linux Cluster, Linux (pgi), 36 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
-    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--Aaron-->
-    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS> <!--Aaron-->
+    <SAVE_TIMING_DIR>/usr/workspace/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/quartz</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/workspace/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>224</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="mpi-serial">
       <executable/>
     </mpirun>
@@ -1550,17 +1495,19 @@
         <command name="load">intel-classic/2021.6.0-magic</command>
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="load">netcdf-fortran-parallel/4.6.0</command>
-        <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="use">/usr/workspace/e3sm/install/quartz/modulefiles</command>
+        <command name="load">hdf5/1.12.2</command>
+        <command name="load">netcdf-c/4.9.0</command>
+        <command name="load">netcdf-fortran/4.6.0</command>
         <command name="load">parallel-netcdf/1.12.3</command>
+        <command name="load">screamML-venv/0.0.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
-      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
+      <env name="NETCDF_PATH">/usr/workspace/e3sm/install/quartz/netcdf-fortran/</env>
+      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
 
