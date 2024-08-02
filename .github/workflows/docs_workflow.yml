@@ -67,7 +67,7 @@ jobs:
           # Create `.nojekyll` (if it doesn't already exist) for proper GH Pages configuration.
           touch .nojekyll
           # Create an omega directory to store the documentation
-          mkdir omega
+          mkdir -p omega
           # Add `index.html` to point to the `main` branch automatically.
           printf '<meta http-equiv="refresh" content="0; url=./develop/index.html" />' > omega/index.html
           # Replace `develop` docs with latest changes
