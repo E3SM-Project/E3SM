@@ -144,6 +144,7 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
         // Assign the accumulated value to the output
         data_out.emiss_sectors[0](icol) = accum;
       });
+  Kokkos::fence();
 }  // perform_time_interpolation
 
 template <typename S, typename D>
