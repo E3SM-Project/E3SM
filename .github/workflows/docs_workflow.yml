@@ -66,12 +66,14 @@ jobs:
           cd gh-pages
           # Create `.nojekyll` (if it doesn't already exist) for proper GH Pages configuration.
           touch .nojekyll
+          # Create an omega directory to store the documentation
+          mkdir omega
           # Add `index.html` to point to the `main` branch automatically.
-          printf '<meta http-equiv="refresh" content="0; url=./develop/index.html" />' > index.html
+          printf '<meta http-equiv="refresh" content="0; url=./develop/index.html" />' > omega/index.html
           # Replace `develop` docs with latest changes
-          rm -rf develop
-          mkdir develop
-          cp -r ../_build/html/* develop/
+          rm -rf omega/develop
+          mkdir omega/develop
+          cp -r ../_build/html/* omega/develop/
           # Configure git using GitHub Actions credentials.
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
