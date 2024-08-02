@@ -69,6 +69,7 @@ module ocn_comp_mct
    use ocn_config
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
+   use ocn_scaled_dismf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -815,6 +816,9 @@ contains
           call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
+
+       ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
+       call ocn_init_scaled_dismf(domain)
     end if
 
 !-----------------------------------------------------------------------
@@ -860,6 +864,9 @@ contains
           call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
+
+      ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
+       call ocn_init_scaled_dismf(domain)
     end if
 
     call t_stopf ('mpaso_mct_init')
@@ -1250,6 +1257,11 @@ contains
          call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
          block_ptr => block_ptr % next
       end do
+
+      ! update scaled data ice-shelf melt fluxes based on remove ice runoff
+      ! this only happens once per coupling interval because it is based on
+      ! an input field from the coupler
+      call ocn_update_scaled_dismf(domain)
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
