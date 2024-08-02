@@ -215,13 +215,11 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] =
         get_field_out(int_nmr_field_name).get_view<Real **>();
-    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
     wet_aero_.cld_aero_nmr[m] =
         get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
@@ -231,7 +229,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
       if(strlen(int_mmr_field_name) > 0) {
         wet_aero_.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
-        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
@@ -240,7 +237,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
       if(strlen(cld_mmr_field_name) > 0) {
         wet_aero_.cld_aero_mmr[m][a] =
             get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
       }
     }
   }
@@ -248,7 +244,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     wet_aero_.gas_mmr[g] =
         get_field_out(gas_mmr_field_name).get_view<Real **>();
-    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
   //-----------------------------------------------------------------
@@ -289,9 +284,6 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   // are simply updating the MAM4xx tracers using the "constituent
   // fluxes"
   // -------------------------------------------------------------------
-
-  Real rztodt = 1.0 / dt;
-
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -301,33 +293,41 @@ void MAMConstituentFluxes::run_impl(const double dt) {
 
         // get prognostics
         mam4::Prognostics progs_at_col =
-            mam_coupling::aerosols_for_column(dry_aero_, icol);
+            mam_coupling::aerosols_for_column(wet_aero_, icol);
 
         // get atmospheric quantities
         haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm_, icol);
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
-        /*constexpr auto pver = mam4::ndrop::pver;
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&](int klev)
-        { Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
+        constexpr auto pver = mam4::ndrop::pver;
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, pver), [&](int klev) {
+              Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
-          // get state_q at a grid cell (col,lev)
-          // NOTE: The order of species in state_q_at_lev_col
-          // is the same as in E3SM state%q array
-          mam4::utils::extract_stateq_from_prognostics(progs_at_col, haero_atm,
-                                                       state_q_at_lev_col,
-        klev);
+              // get state_q at a grid cell (col,lev)
+              // NOTE: The order of species in state_q_at_lev_col
+              // is the same as in E3SM state%q array
+              mam4::utils::extract_stateq_from_prognostics(
+                  progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
-          // get the start index for aerosols species in the state_q array
-          int istart = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
-
-          // create colum views of state_q
-          for(int icnst = istart; icnst < mam4::aero_model::pcnst; ++icnst) {
-            state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
-          }
-        });*/
+              // get the start index for gas species in the state_q array
+              int istart = mam4::utils::gasses_start_ind();
+              std::cout << "istart:" << mam4::utils::gasses_start_ind()
+                        << std::endl;
+              // kg/m2/s to kg/kg/
+              Real unit_factor = dt * gravit * rpdel_(icol, klev);
+              // Update state with the constituent fluxes (modified
+              // units)
+              for(int icnst = istart; icnst < mam4::aero_model::pcnst;
+                  ++icnst) {
+                state_q_at_lev_col[icnst] =
+                    state_q_at_lev_col[icnst] +
+                    constituent_fluxes_(icol, icnst) * unit_factor;
+              }
+              mam4::utils::inject_stateq_to_prognostics(state_q_at_lev_col,
+                                                        progs_at_col, klev);
+            });
       });
-  ////////dddd
 
   /* ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
    tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)*/

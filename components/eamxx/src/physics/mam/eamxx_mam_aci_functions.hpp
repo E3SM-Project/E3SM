@@ -397,7 +397,7 @@ void call_function_dropmixnuc(
                   progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
               // get the start index for aerosols species in the state_q array
-              int istart = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
+              int istart = mam4::utils::aero_start_ind();
 
               // create colum views of state_q
               for(int icnst = istart; icnst < mam4::aero_model::pcnst;
