@@ -8,6 +8,11 @@ namespace {
 
 template <typename ScalarType, typename DeviceType>
 struct srfEmissFunctions {
+  using Device = DeviceType;
+
+  using KT         = KokkosTypes<Device>;
+  using MemberType = typename KT::MemberType;
+
   struct srfEmissTimeState {
     srfEmissTimeState() = default;
     // Whether the timestate has been initialized.

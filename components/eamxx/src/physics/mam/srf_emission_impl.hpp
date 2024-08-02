@@ -9,71 +9,6 @@ namespace scream::mam_coupling {
 namespace {
 
 template <typename S, typename D>
-template <std::size_t numSectors>
-std::shared_ptr<AbstractRemapper>
-srfEmissFunctions<S, D>::create_horiz_remapper(
-    const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &data_file,
-    const std::array<std::string, numSectors> &sector_names,
-    const std::string &map_file) {
-  using namespace ShortFieldTagsNames;
-
-  scorpio::register_file(data_file, scorpio::Read);
-  const int ncols_data = scorpio::get_dimlen(data_file, "ncol");
-  scorpio::release_file(data_file);
-
-  // We could use model_grid directly if using same num levels,
-  // but since shallow clones are cheap, we may as well do it (less lines of
-  // code)
-  auto horiz_interp_tgt_grid =
-      model_grid->clone("srf_emiss_horiz_interp_tgt_grid", true);
-
-  const int ncols_model = model_grid->get_num_global_dofs();
-  std::shared_ptr<AbstractRemapper> remapper;
-  if(ncols_data == ncols_model) {
-    remapper = std::make_shared<IdentityRemapper>(
-        horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
-  } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
-                     "Error! We do not allow to coarsen srfEmiss data to fit "
-                     "the model. We only allow\n"
-                     "srfEmiss data to be at the same or coarser resolution as "
-                     "the model.\n");
-    // We must have a valid map file
-    EKAT_REQUIRE_MSG(
-        map_file != "",
-        "ERROR: srfEmiss data is on a different grid than the model one,\n"
-        "but srfEmiss_remap_file is missing from srfEmiss parameter "
-        "list.");
-
-    remapper =
-        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
-  }
-
-  remapper->registration_begins();
-
-  const auto tgt_grid = remapper->get_tgt_grid();
-
-  const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
-
-  std::vector<Field> emiss_sectors;
-
-  for(int icomp = 0; icomp < numSectors; ++icomp) {
-    auto comp_name = sector_names[icomp];
-    // set and allocate fields
-    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
-    f.allocate_view();
-    emiss_sectors.push_back(f);
-    remapper->register_field_from_tgt(f);
-  }
-
-  remapper->registration_ends();
-
-  return remapper;
-}  // create_horiz_remapper
-
-template <typename S, typename D>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
@@ -186,41 +121,29 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
                        std::to_string(t_beg) +
                        "\n  delta_t: " + std::to_string(delta_t) + "\n");
 
-  for(int icol = 0; icol < data_beg.data.ncols; ++icol) {
-    Real accum = 0;
-    for(int i = 0; i < data_beg.data.nsectors; ++i) {
-      accum +=
-          linear_interp(data_beg.data.emiss_sectors[i](icol),
-                        data_end.data.emiss_sectors[i](icol), delta_t_fraction);
-      if(icol == 19) std::cout << "accum:" << accum << std::endl;
-    }
-    data_out.emiss_sectors[0](icol) = accum;
-  }
-
-  /*const auto policy = ESU::get_default_team_policy(data_beg.data.ncols, 1);
+  const int nsectors = data_beg.data.nsectors;
+  const int ncols    = data_beg.data.ncols;
+  using ExeSpace     = typename KT::ExeSpace;
+  using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
+  const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
 
   Kokkos::parallel_for(
-      "srfEmiss_time_interp_loop", policy,
-      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
-        const int icol = team.league_rank();
-        double result;
-
-    Kokkos::parallel_reduce("Loop1", N, KOKKOS_LAMBDA (const int& i, double&
-  lsum) { lsum += 1.0*i;
-    }, result);
-
-        Kokkos::parallel_reduce("srfEmiss_reduction_loop", N, KOKKOS_LAMBDA
-  (const int& i, double& lsum) { for(int i = 0; i < data_beg.data.nsectors; ++i)
-  { Kokkos::single(Kokkos::PerTeam(team), [&] { accum[icol] = accum[icol] +
-  linear_interp(data_beg.data.emiss_sectors[i](icol),
-                                    data_end.data.emiss_sectors[i](icol),
-                                    delta_t_fraction);
-
-          });
-        }
-        data_out.emiss_sectors[0](icol) = accum[icol];
+      policy, KOKKOS_LAMBDA(const MemberType &team) {
+        const int icol = team.league_rank();  // column index
+        Real accum     = 0;
+        // Parallel reduction over sectors
+        // FIXME: Do we need to use Kokkos::Single for each team here???
+        Kokkos::parallel_reduce(
+            Kokkos::TeamThreadRange(team, nsectors),
+            [&](const int i, Real &update) {
+              const auto beg = data_beg.data.emiss_sectors[i](icol);
+              const auto end = data_end.data.emiss_sectors[i](icol);
+              update += linear_interp(beg, end, delta_t_fraction);
+            },
+            accum);
+        // Assign the accumulated value to the output
+        data_out.emiss_sectors[0](icol) = accum;
       });
-  Kokkos::fence();*/
 }  // perform_time_interpolation
 
 template <typename S, typename D>
@@ -331,32 +254,6 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
   }
 
 }  // END updata_srfEmiss_timestate
-
-template <typename S, typename D>
-template <std::size_t numSectors>
-void srfEmissFunctions<S, D>::init_srf_emiss_objects(
-    const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
-    const std::string &data_file,
-    const std::array<std::string, numSectors> &sectors,
-    const std::string &srf_map_file,
-    // output
-    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
-    srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
-    srfEmissOutput &SrfEmissData_out,
-    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
-  // Init horizontal remap
-  SrfEmissHorizInterp =
-      create_horiz_remapper(grid, data_file, sectors, srf_map_file);
-
-  // Initialize the size of start/end/out data structures
-  SrfEmissData_start = srfEmissInput(ncol, numSectors);
-  SrfEmissData_end   = srfEmissInput(ncol, numSectors);
-  SrfEmissData_out.init(ncol, 1, true);
-
-  // Create reader (an AtmosphereInput object)
-  SrfEmissDataReader =
-      create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
-}  // init_srf_emiss_objects
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::init_srf_emiss_objects(
