@@ -3149,7 +3149,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
     }
 }
 
-if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'chemuci_linozv3_mam5_vbs') {
+if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'chemuci_linozv3_mam5_vbs' || $chem eq 'chemuci_linozv3_mam5_soag') {
 
     # Surface emission datasets:
     my %species;
