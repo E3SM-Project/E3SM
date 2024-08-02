@@ -4,6 +4,7 @@
 // For declaring contituent fluxes class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
+
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 #include <string>

@@ -5,7 +5,7 @@ Averaging Type: Instant
 Fields:
   Physics:
     Field Names:
-      - T_mid
+      - constituent_fluxes
 output_control:
   Frequency: 1
   frequency_units: nsteps

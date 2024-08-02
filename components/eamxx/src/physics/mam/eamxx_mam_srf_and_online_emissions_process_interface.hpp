@@ -1,22 +1,19 @@
 #ifndef EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
-#include <ekat/ekat_parameter_list.hpp>
-#include <ekat/ekat_workspace.hpp>
-#include <mam4xx/mam4.hpp>
-
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
+
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 #include <physics/mam/srf_emission.hpp>
-#include <share/atm_process/ATMBufferManager.hpp>
+
 // For declaring surface and online emission class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
+
 // #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
-#include <variant>
 
 namespace scream {
 
@@ -30,22 +27,16 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // Wet and dry states of atmosphere
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
+  // Constituent fluxes of species in [kg/m2/s]
   view_2d constituent_fluxes_;
 
-  // work array to store fluxes after unit conversions to kg/m2/s
+  // Work array to store fluxes after unit conversions to kg/m2/s
   view_1d fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
@@ -53,9 +44,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-
-  template <typename ScalarT>
-  using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -132,10 +120,13 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   struct srf_emiss_ {
     // species name
     std::string species_name;
+
     // Data file name
     std::string data_file;
+
     // Sector names in file
     std::vector<std::string> sectors;
+
     // Data structure for reading interpolation
     std::shared_ptr<AbstractRemapper> horizInterp_;
     std::shared_ptr<AtmosphereInput> dataReader_;

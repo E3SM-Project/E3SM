@@ -1,4 +1,4 @@
-#include <ekat/ekat_assert.hpp>
+//#include <ekat/ekat_assert.hpp>
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
 namespace scream {
@@ -10,7 +10,7 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   /* Anything that can be initialized without grid information can be
-   * initialized here. Like universal constants, mam wetscav options.
+   * initialized here. Like universal constants.
    */
 }
 
@@ -22,7 +22,8 @@ void MAMSrfOnlineEmiss::set_grids(
   grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
-  ncol_ = grid_->get_num_local_dofs();  // Number of columns on this rank
+  ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
@@ -32,16 +33,11 @@ void MAMSrfOnlineEmiss::set_grids(
   const FieldLayout scalar2d_pcnct =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
-  // --------------------------------------------------------------------------
-  // These variables are "Required" or pure inputs for the process
-  // --------------------------------------------------------------------------
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
-
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
   // -------------------------------------------------------------
   static constexpr Units m2(m * m, "m2");
+  // Constituent fluxes of species in [kg/m2/s]
   add_field<Computed>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
                       grid_name);
 
@@ -189,6 +185,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Output fields
   // ---------------------------------------------------------------
+  // Constituent fluxes of species in [kg/m2/s]
   constituent_fluxes_ = get_field_out("constituent_fluxes").get_view<Real **>();
 
   // ---------------------------------------------------------------
@@ -227,7 +224,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, 1);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
