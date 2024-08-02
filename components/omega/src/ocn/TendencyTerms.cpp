@@ -206,6 +206,7 @@ void Tendencies::computeAllTendencies(
     AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
+   AuxState->computeAll(State, 0);
    computeThicknessTendencies(State, AuxState);
    computeVelocityTendencies(State, AuxState);
 
