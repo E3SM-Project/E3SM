@@ -370,7 +370,8 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag').or. &
        cam_chempkg_is('superfast_mam4_resus_mom_soag').or. &
-       cam_chempkg_is('chemuci_linozv3_mam5_vbs')) then 
+       cam_chempkg_is('chemuci_linozv3_mam5_vbs').or. &
+       cam_chempkg_is('chemuci_linozv3_mam5_soag')) then 
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)

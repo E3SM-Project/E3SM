@@ -525,6 +525,7 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('chemuci_linozv3_mam5_vbs') &
+                      .or. cam_chempkg_is('chemuci_linozv3_mam5_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
