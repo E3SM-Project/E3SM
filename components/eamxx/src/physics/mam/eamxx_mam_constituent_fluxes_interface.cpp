@@ -266,6 +266,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
+
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -286,7 +287,8 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   Kokkos::fence();
 
   // policy
-  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  //haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  haero::ThreadTeamPolicy team_policy(1, Kokkos::AUTO);
 
   using C                      = physics::Constants<Real>;
   static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
@@ -296,7 +298,17 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                                                  nlev_,
                                                  // output
                                                  rpdel_);
-  std::cout << "BEFORE:::" << wet_aero_.gas_mmr[4](1, 1) << std::endl;
+  auto wet_aero = wet_aero_;
+  auto dry_atm = dry_atm_;
+  auto nlev = nlev_;
+  auto rpdel = rpdel_;
+  auto constituent_fluxes = constituent_fluxes_;
+
+
+  //auto aa = wet_aero.gas_mmr[4](1, 1);
+  auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[4]);
+
+  printf("BEFORE:::%e\n",host_view(0,0));
   // Loop through all columns to update tracer mixing rations
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
@@ -307,14 +319,15 @@ void MAMConstituentFluxes::run_impl(const double dt) {
 
         // get prognostics
         mam4::Prognostics progs_at_col =
-            mam_coupling::aerosols_for_column(wet_aero_, icol);
+            mam_coupling::aerosols_for_column(wet_aero, icol);
+        //printf("in-loop-wetaero:,%e,%e\n", wet_aero.gas_mmr[4](0,0), progs_at_col.q_gas[4](0));
 
         // get atmospheric quantities
-        haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm_, icol);
+        haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm, icol);
 
         // Construct state_q (interstitial) array
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, nlev_), [&](int klev) {
+            Kokkos::TeamVectorRange(team, nlev), [&](int klev) {
               Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
 
               // get state_q at a grid cell (col,lev)
@@ -323,25 +336,35 @@ void MAMConstituentFluxes::run_impl(const double dt) {
               mam4::utils::extract_stateq_from_prognostics(
                   progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
+
               // get the start index for gas species in the state_q array
               int istart = mam4::utils::gasses_start_ind();
 
               // Factor to convert units from kg/m2/s to kg/kg
-              Real unit_factor = dt * gravit * rpdel_(icol, klev);
+              Real unit_factor = dt * gravit * rpdel(icol, klev);
 
               // Update state with the constituent fluxes (modified
               // units)
+              printf("in-loop-klev:,%e\n", progs_at_col.q_gas[4](icol));
               for(int icnst = istart; icnst < mam4::aero_model::pcnst;
                   ++icnst) {
                 state_q_at_lev_col[icnst] +=
-                    constituent_fluxes_(icol, icnst) * unit_factor;
+                  constituent_fluxes(icol, icnst) * unit_factor;
+                //printf("in-loop-update:,%e,%e, %i\n", progs_at_col.q_gas[icnst](icol), state_q_at_lev_col[icnst], icnst);
+                printf("INLOOP:::%e, %i\n",state_q_at_lev_col[icnst], icnst);
               }
               mam4::utils::inject_stateq_to_prognostics(state_q_at_lev_col,
                                                         progs_at_col, klev);
+
             });
       });
-
-  std::cout << wet_aero_.gas_mmr[4](1, 1) << std::endl;
+    auto aa1 = wet_aero.gas_mmr;
+  auto bb1 = aa1[4];
+  auto host_view1 = Kokkos::create_mirror_view(bb1);
+  auto cc1 = host_view1(1,1);
+  printf("AFTER:::%e\n",cc1);
+  printf("Scientific notation:");//, wet_aero.gas_mmr[4](1, 1));
+  //std::cout << wet_aero_.gas_mmr[4](1, 1) << std::endl;
 }  // run_impl ends
 
 // =============================================================================
