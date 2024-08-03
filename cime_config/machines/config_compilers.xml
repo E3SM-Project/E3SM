@@ -1953,7 +1953,6 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<!--(zhang73) ruby: copy from SCREAM_update's intel_ruby.cmake-->
 <compiler MACH="ruby" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1963,22 +1962,24 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
-    <!--<append DEBUG="TRUE"> -check all -ftrapuv </append>-->
+    <append DEBUG="TRUE"> -check all -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <CXXFLAGS>
+    <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
+  </CXXFLAGS>
   <LDFLAGS>
     <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
   </LDFLAGS>
   <KOKKOS_OPTIONS> --with-serial --ldflags='-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
+  <NETCDF_PATH>/usr/workspace/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
   <PNETCDF_PATH>/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/workspace/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -1991,21 +1992,24 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <append DEBUG="TRUE"> -check all -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <CXXFLAGS>
+    <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
+  </CXXFLAGS>
   <LDFLAGS>
     <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
   </LDFLAGS>
   <KOKKOS_OPTIONS> --with-serial --ldflags='-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
+  <NETCDF_PATH>/usr/workspace/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
   <PNETCDF_PATH>/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/workspace/e3sm/install/quartz/netcdf-fortran/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
