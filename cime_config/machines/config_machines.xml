@@ -1434,10 +1434,10 @@
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <modules compiler="crayclang-scream">
         <command name="reset"></command>
-        <command name="load">PrgEnv-cray</command>
+        <command name="load">cpe/22.12</command>
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.4.0</command>
-        <command name="load">libunwind/1.5.0</command>
+        <command name="load">libunwind/1.6.2</command>
       </modules>
       <modules>
         <command name="load">cce/15.0.1</command>
