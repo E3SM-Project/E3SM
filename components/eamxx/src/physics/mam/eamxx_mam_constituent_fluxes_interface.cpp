@@ -250,12 +250,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   }
 
   //-----------------------------------------------------------------
-  // Allocate memory
-  //-----------------------------------------------------------------
-  // Inverse of pseudo_density (1/Pa or or N/m2 or kg/m/s2)
-  rpdel_ = view_2d("rpdel_", ncol_, nlev_);
-
-  //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
   preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
@@ -266,7 +260,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
-
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -287,84 +280,59 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   Kokkos::fence();
 
   // policy
-  //haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  // haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
   haero::ThreadTeamPolicy team_policy(1, Kokkos::AUTO);
 
   using C                      = physics::Constants<Real>;
   static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
 
-  // compute inverse of pseudo_density
-  mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del,
-                                                 nlev_,
-                                                 // output
-                                                 rpdel_);
-  auto wet_aero = wet_aero_;
-  auto dry_atm = dry_atm_;
-  auto nlev = nlev_;
-  auto rpdel = rpdel_;
+  auto wet_aero           = wet_aero_;
+  auto dry_atm            = dry_atm_;
+  const int surface_lev   = nlev_ - 1;
   auto constituent_fluxes = constituent_fluxes_;
+  // get the start index for gas species in the state_q array
+  int istart = mam4::utils::gasses_start_ind();
 
-
-  //auto aa = wet_aero.gas_mmr[4](1, 1);
+  // auto aa = wet_aero.gas_mmr[4](1, 1);
   auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[4]);
 
-  printf("BEFORE:::%e\n",host_view(0,0));
+  for(int icnst = 0; icnst < 5; ++icnst) {
+    printf("BEFORE:::%e,%e\n", host_view(icnst, 71),
+           wet_aero_.gas_mmr[4](icnst, 71));
+  }
+
+  const auto policy_pcnst =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
+          ncol_, mam4::aero_model::pcnst);
   // Loop through all columns to update tracer mixing rations
   Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      policy_pcnst, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
 
-        // To construct state_q, we need fields from Prognostics (aerosols)
-        //  and Atmosphere (water species such as qv, qc etc.)
+        EKAT_REQUIRE_MSG(dry_atm.p_del(icol, surface_lev) != 0,
+                         "Error! dry_atm.pdel must not be zero!");
+        const Real rpdel = 1.0 / dry_atm.p_del(icol, surface_lev);
 
-        // get prognostics
         mam4::Prognostics progs_at_col =
             mam_coupling::aerosols_for_column(wet_aero, icol);
-        //printf("in-loop-wetaero:,%e,%e\n", wet_aero.gas_mmr[4](0,0), progs_at_col.q_gas[4](0));
 
         // get atmospheric quantities
         haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm, icol);
+        Real state_q_at_surf_lev[mam4::aero_model::pcnst] = {};
+        mam4::utils::extract_stateq_from_prognostics(
+            progs_at_col, haero_atm, state_q_at_surf_lev, surface_lev);
 
-        // Construct state_q (interstitial) array
+        const Real unit_factor = dt * gravit * rpdel;
+
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, nlev), [&](int klev) {
-              Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
-
-              // get state_q at a grid cell (col,lev)
-              // NOTE: The order of species in state_q_at_lev_col
-              // is the same as in E3SM state%q array
-              mam4::utils::extract_stateq_from_prognostics(
-                  progs_at_col, haero_atm, state_q_at_lev_col, klev);
-
-
-              // get the start index for gas species in the state_q array
-              int istart = mam4::utils::gasses_start_ind();
-
-              // Factor to convert units from kg/m2/s to kg/kg
-              Real unit_factor = dt * gravit * rpdel(icol, klev);
-
-              // Update state with the constituent fluxes (modified
-              // units)
-              printf("in-loop-klev:,%e\n", progs_at_col.q_gas[4](icol));
-              for(int icnst = istart; icnst < mam4::aero_model::pcnst;
-                  ++icnst) {
-                state_q_at_lev_col[icnst] +=
+            Kokkos::TeamVectorRange(team, istart, mam4::aero_model::pcnst),
+            [&](int icnst) {
+              state_q_at_surf_lev[icnst] +=
                   constituent_fluxes(icol, icnst) * unit_factor;
-                //printf("in-loop-update:,%e,%e, %i\n", progs_at_col.q_gas[icnst](icol), state_q_at_lev_col[icnst], icnst);
-                printf("INLOOP:::%e, %i\n",state_q_at_lev_col[icnst], icnst);
-              }
-              mam4::utils::inject_stateq_to_prognostics(state_q_at_lev_col,
-                                                        progs_at_col, klev);
-
             });
+        mam4::utils::inject_stateq_to_prognostics(state_q_at_surf_lev,
+                                                  progs_at_col, surface_lev);
       });
-    auto aa1 = wet_aero.gas_mmr;
-  auto bb1 = aa1[4];
-  auto host_view1 = Kokkos::create_mirror_view(bb1);
-  auto cc1 = host_view1(1,1);
-  printf("AFTER:::%e\n",cc1);
-  printf("Scientific notation:");//, wet_aero.gas_mmr[4](1, 1));
-  //std::cout << wet_aero_.gas_mmr[4](1, 1) << std::endl;
 }  // run_impl ends
 
 // =============================================================================

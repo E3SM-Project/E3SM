@@ -15,7 +15,6 @@ namespace scream {
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMConstituentFluxes final : public scream::AtmosphereProcess {
   using KT            = ekat::KokkosTypes<DefaultDevice>;
-  using view_2d       = Field::view_dev_t<Real **>;
   using const_view_2d = Field::view_dev_t<const Real **>;
 
   // number of horizontal columns
@@ -35,8 +34,6 @@ class MAMConstituentFluxes final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
 
   const_view_2d constituent_fluxes_;
-
-  view_2d rpdel_;  // Inverse of pdel_ or pseudo_density
 
  public:
   // Constructor
