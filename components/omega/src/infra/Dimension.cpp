@@ -1,4 +1,5 @@
-//===-- infra/Dimension.cpp - OMEGA dimension implementation -----*- C++ -*-===//
+//===-- infra/Dimension.cpp - OMEGA dimension implementation -----*- C++
+//-*-===//
 //
 // Implementation of the field dimension class used by the multi-dimensional
 // Field class
@@ -11,8 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "DataTypes.h"
 #include "Dimension.h"
+#include "DataTypes.h"
 #include "Logging.h"
 #include "OmegaKokkos.h"
 #include <map>
@@ -33,10 +34,10 @@ std::map<std::string, std::shared_ptr<Dimension>> Dimension::AllDims;
 // If a dimension has already been defined for a dimension of the same
 // name and global/local length, the existing dimension will be returned.
 std::shared_ptr<Dimension> Dimension::create(
-      const std::string &Name,  // [in] name of dimension
-      const I4 GlobalLength,    // [in] global (unpartitioned) size of dim
-      const I4 LocalLength,     // [in] size of dim in local partition
-      HostArray1DI4 Offset      // [in] glob indx offset for each local indx  
+    const std::string &Name, // [in] name of dimension
+    const I4 GlobalLength,   // [in] global (unpartitioned) size of dim
+    const I4 LocalLength,    // [in] size of dim in local partition
+    HostArray1DI4 Offset     // [in] glob indx offset for each local indx
 ) {
 
    auto Dim = std::make_shared<Dimension>(); // create empty dim
@@ -58,12 +59,12 @@ std::shared_ptr<Dimension> Dimension::create(
 
    } else { // a new dimension, fill data members
 
-      Dim->DimName       = Name;
-      Dim->GlobalLength  = GlobalLength;
-      Dim->LocalLength   = LocalLength;
-      Dim->Offset        = Offset;
-      Dim->Distributed   = true;
-      AllDims[Name] = Dim; // add to list of dims
+      Dim->DimName      = Name;
+      Dim->GlobalLength = GlobalLength;
+      Dim->LocalLength  = LocalLength;
+      Dim->Offset       = Offset;
+      Dim->Distributed  = true;
+      AllDims[Name]     = Dim; // add to list of dims
    }
 
    return Dim;
@@ -72,9 +73,9 @@ std::shared_ptr<Dimension> Dimension::create(
 
 //------------------------------------------------------------------------------
 // Creates a non-distributed dimension given a name and length
-std::shared_ptr<Dimension> Dimension::create(
-      const std::string Name,  // [in] name of dimension
-      const I4 GlobalLength    // [in] length of dimension
+std::shared_ptr<Dimension>
+Dimension::create(const std::string Name, // [in] name of dimension
+                  const I4 GlobalLength   // [in] length of dimension
 ) {
    auto Dim = std::make_shared<Dimension>(); // create empty dim
 
@@ -95,16 +96,16 @@ std::shared_ptr<Dimension> Dimension::create(
 
    } else { // a new dimension, fill data members
 
-      Dim->DimName       = Name;
-      Dim->GlobalLength  = GlobalLength;
-      Dim->LocalLength   = GlobalLength;
-      Dim->Distributed   = false;
+      Dim->DimName           = Name;
+      Dim->GlobalLength      = GlobalLength;
+      Dim->LocalLength       = GlobalLength;
+      Dim->Distributed       = false;
       std::string OffsetName = Name + "Offset";
       HostArray1DI4 NewOffset(OffsetName, GlobalLength);
       for (int I = 0; I < GlobalLength; ++I) {
          NewOffset(I) = I;
       }
-      Dim->Offset = NewOffset;
+      Dim->Offset   = NewOffset;
       AllDims[Name] = Dim; // add to list of dims
    }
 
@@ -115,7 +116,7 @@ std::shared_ptr<Dimension> Dimension::create(
 //------------------------------------------------------------------------------
 // Checks to see if a dim of this name exists
 bool Dimension::exists(
-         const std::string &Name // [in] name of dimension to check
+    const std::string &Name // [in] name of dimension to check
 ) {
    return (AllDims.find(Name) != AllDims.end());
 } // end exists
@@ -123,7 +124,7 @@ bool Dimension::exists(
 //------------------------------------------------------------------------------
 // Destroys a dimension
 void Dimension::destroy(
-         const std::string Name // [in] name of dimension to destroy
+    const std::string Name // [in] name of dimension to destroy
 ) {
    if (exists(Name)) {
       AllDims.erase(Name);
@@ -137,7 +138,10 @@ void Dimension::destroy(
 
 //------------------------------------------------------------------------------
 // Destroys all defined dimensions
-void Dimension::clear() { AllDims.clear(); Kokkos::fence(); }
+void Dimension::clear() {
+   AllDims.clear();
+   Kokkos::fence();
+}
 
 //----------------------------------------------------------------------------//
 // Retrieves full dimension instance by name
@@ -166,7 +170,7 @@ bool Dimension::isDistributed() { return Distributed; }
 //------------------------------------------------------------------------------
 // Check whether dimension is distributed by dimension name
 bool Dimension::isDistributedDim(
-         const std::string &Name // [in] name of dimension
+    const std::string &Name // [in] name of dimension
 ) {
    // Make sure dimension exists
    if (exists(Name)) {
@@ -179,7 +183,6 @@ bool Dimension::isDistributedDim(
                 Name);
       return false;
    }
-
 }
 
 //------------------------------------------------------------------------------
@@ -189,14 +192,14 @@ I4 Dimension::getLengthGlobal() { return GlobalLength; }
 //------------------------------------------------------------------------------
 // Get global dimension length by name
 I4 Dimension::getDimLengthGlobal(
-         const std::string &Name // [in] name of dimension
+    const std::string &Name // [in] name of dimension
 ) {
    I4 Length;
 
    // Make sure dimension exists
    if (exists(Name)) {
       std::shared_ptr<Dimension> ThisDim = AllDims[Name];
-      Length                            = ThisDim->GlobalLength;
+      Length                             = ThisDim->GlobalLength;
 
    } else {
       LOG_ERROR("Cannot get global length of dimension {}: "
@@ -216,14 +219,14 @@ I4 Dimension::getLengthLocal() { return LocalLength; }
 //------------------------------------------------------------------------------
 // Get length dimension in local partition by name
 I4 Dimension::getDimLengthLocal(
-         const std::string &Name // [in] name of dimension
+    const std::string &Name // [in] name of dimension
 ) {
    I4 Length;
 
    // Make sure dimension exists
    if (exists(Name)) {
       std::shared_ptr<Dimension> ThisDim = AllDims[Name];
-      Length                            = ThisDim->LocalLength;
+      Length                             = ThisDim->LocalLength;
 
    } else {
       LOG_ERROR("Cannot get local length of dimension {}: "
@@ -242,8 +245,8 @@ HostArray1DI4 Dimension::getOffset() { return Offset; }
 
 //------------------------------------------------------------------------------
 // Get global offset for each local address given a dim name
-HostArray1DI4 Dimension::getDimOffset(
-         const std::string &Name // [in] name of dimension
+HostArray1DI4
+Dimension::getDimOffset(const std::string &Name // [in] name of dimension
 ) {
 
    // Make sure dimension exists

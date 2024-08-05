@@ -1,6 +1,7 @@
 #ifndef OMEGA_DIMENSION_H
 #define OMEGA_DIMENSION_H
-//===-- infra/Dimension.h - OMEGA dimension class ----------------*- C++ -*-===//
+//===-- infra/Dimension.h - OMEGA dimension class ----------------*- C++
+//-*-===//
 //
 /// \file
 /// \brief Defines a dimension class used by the multi-dimensional Field class
@@ -35,7 +36,7 @@ class Dimension {
    /// Flag to identify whether this is a distributed dimension or not
    bool Distributed;
 
-   /// Global length (length of full unpartitioned dimension) 
+   /// Global length (length of full unpartitioned dimension)
    I4 GlobalLength;
 
    /// Local length (size of local partition for this dim)
@@ -47,7 +48,6 @@ class Dimension {
    HostArray1DI4 Offset;
 
  public:
-
    //---------------------------------------------------------------------------
    /// Creates a distributed dimension given a name, global (unpartitioned)
    /// length, size of local partition (including ghost cells and padding),
@@ -57,30 +57,29 @@ class Dimension {
    /// If a dimension has already been defined for a dimension of the same
    /// name and global/local length, the existing dimension will be returned.
    static std::shared_ptr<Dimension>
-   create(
-      const std::string &Name,  ///< [in] name of dimension
-      const I4 GlobalLength,    ///< [in] global (unpartitioned) size of dim
-      const I4 LocalLength,     ///< [in] size of dim in local partition
-      HostArray1DI4 Offset      ///< [in] glob indx offset for each local pt  
+   create(const std::string &Name, ///< [in] name of dimension
+          const I4 GlobalLength,   ///< [in] global (unpartitioned) size of dim
+          const I4 LocalLength,    ///< [in] size of dim in local partition
+          HostArray1DI4 Offset     ///< [in] glob indx offset for each local pt
    );
 
    //---------------------------------------------------------------------------
    /// Creates a non-distributed dimension given a name and length
    static std::shared_ptr<Dimension>
-   create(const std::string Name,  ///< [in] name of dimension
-          const I4 GlobalLength    ///< [in] length of dimension
+   create(const std::string Name, ///< [in] name of dimension
+          const I4 GlobalLength   ///< [in] length of dimension
    );
 
    //---------------------------------------------------------------------------
    // Checks to see if a dim of this name exists
-   static bool exists(
-         const std::string &Name ///< [in] name of dimension to check
+   static bool
+   exists(const std::string &Name ///< [in] name of dimension to check
    );
 
    //---------------------------------------------------------------------------
    // Destroys a dimension
-   static void destroy(
-         const std::string Name ///< [in] name of dimension to destroy
+   static void
+   destroy(const std::string Name ///< [in] name of dimension to destroy
    );
 
    //---------------------------------------------------------------------------
@@ -89,8 +88,8 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    // Retrieves full dimension instance by name
-   static std::shared_ptr<Dimension> get(
-         const std::string Name // [in] Name of dimension
+   static std::shared_ptr<Dimension>
+   get(const std::string Name // [in] Name of dimension
    );
 
    //---------------------------------------------------------------------------
@@ -103,8 +102,8 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Check distributed property of dimension given its name
-   static bool isDistributedDim(
-         const std::string &Name ///< [in] name of dimension
+   static bool
+   isDistributedDim(const std::string &Name ///< [in] name of dimension
    );
 
    //---------------------------------------------------------------------------
@@ -113,8 +112,8 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get global dimension length by name
-   static I4 getDimLengthGlobal(
-         const std::string &Name ///< [in] name of dimension
+   static I4
+   getDimLengthGlobal(const std::string &Name ///< [in] name of dimension
    );
 
    //---------------------------------------------------------------------------
@@ -123,8 +122,8 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get length of dimension in local partition by name
-   static I4 getDimLengthLocal(
-         const std::string &Name ///< [in] name of dimension
+   static I4
+   getDimLengthLocal(const std::string &Name ///< [in] name of dimension
    );
 
    //---------------------------------------------------------------------------
@@ -133,8 +132,8 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get global offset for each local address given a dim name
-   static HostArray1DI4 getDimOffset(
-         const std::string &Name ///< [in] name of dimension
+   static HostArray1DI4
+   getDimOffset(const std::string &Name ///< [in] name of dimension
    );
 
    //----------------------------------------------------------------------------//
@@ -144,7 +143,7 @@ class Dimension {
    //---------------------------------------------------------------------------
    /// An iterator can be used to loop through all defined dimensions
    using Iter =
-      std::map<std::string, std::shared_ptr<Dimension>>::const_iterator;
+       std::map<std::string, std::shared_ptr<Dimension>>::const_iterator;
 
    /// Returns an iterator to the first dimension stored in AllDims
    static Iter begin();

@@ -1,4 +1,5 @@
-//===-- Test driver for OMEGA Dimension class ---------------------*- C++ -*-===/
+//===-- Test driver for OMEGA Dimension class ---------------------*- C++
+//-*-===/
 //
 /// \file
 /// \brief Test driver for OMEGA Dimension class
@@ -8,17 +9,17 @@
 //
 //===-----------------------------------------------------------------------===/
 
+#include "Dimension.h"
 #include "DataTypes.h"
 #include "Decomp.h"
-#include "Dimension.h"
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 #include "mpi.h"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 using namespace OMEGA;
 
@@ -33,7 +34,7 @@ int initDimensionTest() {
    MachEnv *DefEnv = MachEnv::getDefault();
    initLogging(DefEnv);
    MPI_Comm DefComm = DefEnv->getComm();
-   Err = IO::init(DefComm);
+   Err              = IO::init(DefComm);
    if (Err != 0) {
       LOG_ERROR("IO initialization failed");
       return Err;
@@ -58,23 +59,23 @@ int initDimensionTest() {
       } else {
          CellOffset(N) = -1; // Denotes cells that are not to be used
       }
-   } 
+   }
    for (int N = 0; N < NEdgesSize; ++N) {
       if (N < NEdgesOwned) {
          EdgeOffset(N) = DefDecomp->EdgeIDH(N) - 1; // Offset must be zero-based
       } else {
          EdgeOffset(N) = -1; // Denotes edges that are not to be used
       }
-   } 
+   }
 
    // Define dimensions
    std::shared_ptr<Dimension> CellDim =
-      Dimension::create("NCells", NCellsGlobal, NCellsSize, CellOffset);
+       Dimension::create("NCells", NCellsGlobal, NCellsSize, CellOffset);
    std::shared_ptr<Dimension> EdgeDim =
-      Dimension::create("NEdges", NEdgesGlobal, NEdgesSize, EdgeOffset);
+       Dimension::create("NEdges", NEdgesGlobal, NEdgesSize, EdgeOffset);
    I4 NVertLevels = 100;
    std::shared_ptr<Dimension> VertDim =
-      Dimension::create("NVertLevels", NVertLevels);
+       Dimension::create("NVertLevels", NVertLevels);
 
    return Err;
 
@@ -85,7 +86,7 @@ int initDimensionTest() {
 
 int main(int argc, char **argv) {
 
-   int Err  = 0;
+   int Err = 0;
 
    // Initialize the global MPI environment
    // We do not actually use message passing but need to test the
@@ -107,15 +108,15 @@ int main(int argc, char **argv) {
 
       I4 NCellsLocRef = DefDecomp->NCellsSize;
       I4 NCellsGlbRef = DefDecomp->NCellsGlobal;
-      I4 NCellsOwned  = DefDecomp->NCellsOwned ;
+      I4 NCellsOwned  = DefDecomp->NCellsOwned;
       I4 NEdgesLocRef = DefDecomp->NEdgesSize;
       I4 NEdgesGlbRef = DefDecomp->NEdgesGlobal;
-      I4 NEdgesOwned  = DefDecomp->NEdgesOwned ;
+      I4 NEdgesOwned  = DefDecomp->NEdgesOwned;
       I4 NVertLvlsRef = 100;
 
       // Retrieve the number of defined dimensions
       I4 NDimsRef = 3;
-      I4 NDims = Dimension::getNumDefinedDims();
+      I4 NDims    = Dimension::getNumDefinedDims();
       if (NDims == NDimsRef) {
          LOG_INFO("Retrieve number of dimensions: PASS");
       } else {
@@ -123,7 +124,8 @@ int main(int argc, char **argv) {
          ++Err;
       }
 
-      // Check to see if expected dimensions exist (and a non-existent one doesn't)
+      // Check to see if expected dimensions exist (and a non-existent one
+      // doesn't)
       if (Dimension::exists("NCells") and Dimension::exists("NEdges") and
           Dimension::exists("NVertLevels") and !Dimension::exists("Garbage")) {
          LOG_INFO("Test dimension existence function: PASS");
@@ -131,7 +133,7 @@ int main(int argc, char **argv) {
          LOG_ERROR("Test dimension existence function: FAIL");
       }
 
-      // Test length retrieval by name 
+      // Test length retrieval by name
 
       I4 NCellsGlb = Dimension::getDimLengthGlobal("NCells");
       I4 NCellsLoc = Dimension::getDimLengthLocal("NCells");
@@ -163,7 +165,7 @@ int main(int argc, char **argv) {
       // Test distributed property by name
       if (Dimension::isDistributedDim("NCells") and
           Dimension::isDistributedDim("NEdges") and
-         !Dimension::isDistributedDim("NVertLevels")) {
+          !Dimension::isDistributedDim("NVertLevels")) {
          LOG_INFO("Test distributed property by name: PASS");
       } else {
          LOG_ERROR("Test distributed property by name: FAIL");
@@ -174,24 +176,29 @@ int main(int argc, char **argv) {
       HostArray1DI4 OffsetCell = Dimension::getDimOffset("NCells");
       HostArray1DI4 OffsetEdge = Dimension::getDimOffset("NEdges");
       HostArray1DI4 OffsetVert = Dimension::getDimOffset("NVertLevels");
-      I4 Count = 0;
+      I4 Count                 = 0;
       for (int N = 0; N < NCellsLocRef; ++N) {
          if (N < NCellsOwned) {
-            if (OffsetCell(N) != DefDecomp->CellIDH(N) - 1) ++Count;
+            if (OffsetCell(N) != DefDecomp->CellIDH(N) - 1)
+               ++Count;
          } else {
-            if (OffsetCell(N) != -1) ++Count;
+            if (OffsetCell(N) != -1)
+               ++Count;
          }
-      } 
+      }
       for (int N = 0; N < NEdgesLocRef; ++N) {
          if (N < NEdgesOwned) {
-            if (OffsetEdge(N) != DefDecomp->EdgeIDH(N) - 1) ++Count;
+            if (OffsetEdge(N) != DefDecomp->EdgeIDH(N) - 1)
+               ++Count;
          } else {
-            if (OffsetEdge(N) != -1) ++Count;
+            if (OffsetEdge(N) != -1)
+               ++Count;
          }
-      } 
+      }
       for (int N = 0; N < NVertLvlsRef; ++N) {
-         if (OffsetVert(N) != N) ++Count;
-      } 
+         if (OffsetVert(N) != N)
+            ++Count;
+      }
       if (Count == 0) {
          LOG_INFO("Offset retrieval by name: PASS");
       } else {
@@ -201,48 +208,59 @@ int main(int argc, char **argv) {
 
       // Test iterators and also retrieval by instance
       for (auto Iter = Dimension::begin(); Iter != Dimension::end(); ++Iter) {
-         std::string ThisName = Iter->first;
+         std::string ThisName               = Iter->first;
          std::shared_ptr<Dimension> ThisDim = Iter->second;
-         std::string MyName = ThisDim->getName();
-         I4 LengthLoc = ThisDim->getLengthLocal();
-         I4 LengthGlb = ThisDim->getLengthGlobal();
-         bool Distrib = ThisDim->isDistributed();
-         HostArray1DI4 OffsetTest = ThisDim->getOffset();
+         std::string MyName                 = ThisDim->getName();
+         I4 LengthLoc                       = ThisDim->getLengthLocal();
+         I4 LengthGlb                       = ThisDim->getLengthGlobal();
+         bool Distrib                       = ThisDim->isDistributed();
+         HostArray1DI4 OffsetTest           = ThisDim->getOffset();
 
          bool ScalarPass = false;
          bool OffsetPass = false;
          if (MyName == "NCells") {
             if (LengthLoc == NCellsLocRef and LengthGlb == NCellsGlbRef and
-                Distrib) ScalarPass = true;
+                Distrib)
+               ScalarPass = true;
             Count = 0;
             for (int N = 0; N < NCellsLocRef; ++N) {
                if (N < NCellsOwned) {
-                  if (OffsetTest(N) != DefDecomp->CellIDH(N) - 1) ++Count;
+                  if (OffsetTest(N) != DefDecomp->CellIDH(N) - 1)
+                     ++Count;
                } else {
-                  if (OffsetTest(N) != -1) ++Count;
+                  if (OffsetTest(N) != -1)
+                     ++Count;
                }
-            } 
-            if (Count == 0) OffsetPass = true;
+            }
+            if (Count == 0)
+               OffsetPass = true;
          } else if (MyName == "NEdges") {
             if (LengthLoc == NEdgesLocRef and LengthGlb == NEdgesGlbRef and
-                Distrib) ScalarPass = true;
+                Distrib)
+               ScalarPass = true;
             Count = 0;
             for (int N = 0; N < NEdgesLocRef; ++N) {
                if (N < NEdgesOwned) {
-                  if (OffsetTest(N) != DefDecomp->EdgeIDH(N) - 1) ++Count;
+                  if (OffsetTest(N) != DefDecomp->EdgeIDH(N) - 1)
+                     ++Count;
                } else {
-                  if (OffsetTest(N) != -1) ++Count;
+                  if (OffsetTest(N) != -1)
+                     ++Count;
                }
-            } 
-            if (Count == 0) OffsetPass = true;
+            }
+            if (Count == 0)
+               OffsetPass = true;
          } else if (MyName == "NVertLevels") {
             if (LengthLoc == NVertLvlsRef and LengthGlb == NVertLvlsRef and
-                !Distrib) ScalarPass = true;
+                !Distrib)
+               ScalarPass = true;
             Count = 0;
             for (int N = 0; N < NVertLvlsRef; ++N) {
-               if (OffsetTest(N) != N) ++Count;
-            } 
-            if (Count == 0) OffsetPass = true;
+               if (OffsetTest(N) != N)
+                  ++Count;
+            }
+            if (Count == 0)
+               OffsetPass = true;
          } else {
             LOG_ERROR("Unknown dimension name in iteration loop: FAIL");
             ++Err;
@@ -258,8 +276,8 @@ int main(int argc, char **argv) {
       // Check retrieval of full dimension by name - just check scalars since
       // other tests should have picked up offset errors
       std::shared_ptr<Dimension> TestDim = Dimension::get("NCells");
-      NCellsGlb = TestDim->getLengthGlobal();
-      NCellsLoc = TestDim->getLengthLocal();
+      NCellsGlb                          = TestDim->getLengthGlobal();
+      NCellsLoc                          = TestDim->getLengthLocal();
       if (NCellsGlb == NCellsGlbRef and NCellsLoc == NCellsLocRef and
           TestDim->isDistributed()) {
          LOG_INFO("Retrieval of full dim: PASS");
@@ -276,7 +294,7 @@ int main(int argc, char **argv) {
       } else {
          LOG_INFO("Dimension destroy test: PASS");
       }
-   
+
       // Test removal of all dims
       Dimension::clear();
       NDims = Dimension::getNumDefinedDims();
@@ -298,6 +316,6 @@ int main(int argc, char **argv) {
 
    // End of testing
    return Err;
-
 }
-//===--- End test driver for Dimension --------------------------------------===/
+//===--- End test driver for Dimension
+//--------------------------------------===/
