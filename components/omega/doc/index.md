@@ -28,6 +28,7 @@ userGuide/Config
 userGuide/Broadcast
 userGuide/Logging
 userGuide/Decomp
+userGuide/Dimension
 userGuide/MetaData
 userGuide/IO
 userGuide/IOField
@@ -58,6 +59,7 @@ devGuide/Broadcast
 devGuide/CMakeBuild
 devGuide/Logging
 devGuide/Decomp
+devGuide/Dimension
 devGuide/MetaData
 devGuide/IO
 devGuide/IOField

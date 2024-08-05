@@ -102,6 +102,17 @@ add_omega_test(
     "-n;8"
 )
 
+##################
+# Dimension test
+##################
+
+add_omega_test(
+    DIMENSION_TEST
+    testDimension.exe
+    infra/DimensionTest.cpp
+    "-n;8"
+)
+
 ################
 # HorzMesh test
 ################
@@ -168,6 +179,7 @@ target_compile_definitions(
   AUXVARS_TEST_SPHERE
 )
 
+################
 # AuxState test
 ################
 
