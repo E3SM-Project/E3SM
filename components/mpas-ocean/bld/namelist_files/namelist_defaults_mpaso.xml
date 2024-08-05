@@ -365,7 +365,7 @@
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
 <config_scale_dismf_by_removed_ice_runoff>.false.</config_scale_dismf_by_removed_ice_runoff>
-<config_ais_ice_runoff_running_mean_days>7300</config_ais_ice_runoff_running_mean_days>
+<config_ais_ice_runoff_history_days>7301</config_ais_ice_runoff_history_days>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>

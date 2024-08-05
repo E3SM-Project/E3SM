@@ -1279,9 +1279,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_ais_ice_runoff_running_mean_days" type="integer"
+<entry id="config_ais_ice_runoff_history_days" type="integer"
 	category="coupling" group="coupling">
-The number of days over which a running mean of the AIS ice runoff is computed.  The default is 7300 days (20 years)
+The number of days over for which the history of removed AIS runoff is stored. The default is 7301 days (20 years + 1 day).
 
 Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
