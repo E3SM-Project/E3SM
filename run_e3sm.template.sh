@@ -3,7 +3,7 @@
 # E3SM Coupled Model Group run_e3sm script template.
 #
 # Bash coding style inspired by:
-# http://kfirlavi.herokuapp.com/blog/2012/11/14/defensive-bash-programming
+# https://web.archive.org/web/20200620202413/http://kfirlavi.herokuapp.com/blog/2012/11/14/defensive-bash-programming
 
 main() {
 
@@ -44,7 +44,7 @@ readonly GET_REFCASE=TRUE
 
 # Set paths
 readonly CASE_ROOT="${PSCRATCH}/e3sm-scratch/${MACHINE}/${CASE_NAME}"
-readonly CODE_ROOT="${PSCRATCH}/e3sm-scratch/${MACHINE}/${CASE_NAME}/code/${CHECKOUT}"
+readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"
 
 # Sub-directories
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
