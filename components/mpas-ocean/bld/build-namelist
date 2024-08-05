@@ -741,7 +741,7 @@ if (($OCN_ISMF ne 'none') && ($OCN_FORCING ne 'active_atm')) {
 	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
 }
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
-add_default($nl, 'config_ais_ice_runoff_running_mean_days');
+add_default($nl, 'config_ais_ice_runoff_history_days');
 
 ######################################
 # Namelist group: shortwaveRadiation #

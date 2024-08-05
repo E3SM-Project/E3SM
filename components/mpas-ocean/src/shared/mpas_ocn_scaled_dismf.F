@@ -26,8 +26,11 @@ module ocn_scaled_dismf
     use mpas_global_sum_mod
     use mpas_timekeeping
     use mpas_timer
+
     use ocn_config
     use ocn_mesh
+
+    use shr_const_mod
 
     implicit none
     private
@@ -247,15 +250,53 @@ contains
         type (block_type), pointer :: block_ptr
         type (mpas_pool_type), pointer :: forcingPool
 
-        real (kind=RKIND), pointer :: avgRemovedIceRunoff
-        integer, pointer :: nAccumulated
+        real (kind=RKIND), pointer :: avgRemovedIceRunoff, runningMeanRemovedIceRunoff
+        real (kind=RKIND), dimension(:), pointer :: totalRemovedIceRunoffHistory
+        integer, pointer :: nValidHistory, nAccumulated
+
+        real (kind=RKIND), dimension(:), allocatable :: tmpHistory
+
+        real (kind=RKIND) :: previousTotal, timeInterval
+        integer :: nHistory
 
         block_ptr => domain % blocklist
-
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
-        call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoff', avgRemovedIceRunoff)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedRemovedIceRunoff', nAccumulated)
+        call mpas_pool_get_array(forcingPool, 'nValidTotalRemovedIceRunoffHistory', nValidHistory)
+        call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoff', avgRemovedIceRunoff)
+        call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffHistory', totalRemovedIceRunoffHistory)
+        call mpas_pool_get_array(forcingPool, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
+
+        nHistory = config_ais_ice_runoff_history_days
+
+        if (nValidHistory == 0) then
+            previousTotal = 0.0_RKIND
+        else
+            previousTotal = totalRemovedIceRunoffHistory(nValidHistory)
+        end if
+
+        if (nValidHistory == nHistory) then
+            ! we need to shift the history, since it's full
+            allocate(tmpHistory(nHistory))
+            tmpHistory(:) = totalRemovedIceRunoffHistory(:)
+            totalRemovedIceRunoffHistory(1:nHistory - 1) = tmpHistory(2:nHistory)
+        else
+            ! the history isn't full yet, so we just add to the end
+            nValidHistory = nValidHistory + 1
+        end if
+
+        ! add the new total, the previous total plus the new daily average
+        totalRemovedIceRunoffHistory(nValidHistory) = previousTotal + SHR_CONST_CDAY * avgRemovedIceRunoff
+
+        if (nValidHistory > 1) then
+            timeInterval = SHR_CONST_CDAY * (nValidHistory - 1)
+            ! the running mean is the difference between the newest and oldest
+            ! totals divided by the time between them
+            runningMeanRemovedIceRunoff = &
+                (totalRemovedIceRunoffHistory(nValidHistory) - totalRemovedIceRunoffHistory(1)) &
+                / timeInterval
+        end if
 
         ! reset daily averaging of the removed runoff
         nAccumulated = 0
