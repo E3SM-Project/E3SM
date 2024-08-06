@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
       Real MyReal = 5.000001;
 
       // test SUM for scalars
-      err       = globalSum(&MyInt4, Comm, &MyResI4);
-      I4 expI4  = MyInt4 * MySize;
-      char *res = "FAIL";
+      err             = globalSum(&MyInt4, Comm, &MyResI4);
+      I4 expI4        = MyInt4 * MySize;
+      char const *res = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
       else
@@ -97,49 +97,49 @@ int main(int argc, char *argv[]) {
       I4 NumCells = 10, NumVertLvls = 10, c = 0;
       HostArray1DI4 HostArr1DI4("HostArrD1", NumCells);
       HostArray2DI4 HostArr2DI4("HostArrD2", NumCells, NumVertLvls);
-      I8 Sum1D = 0, Sum2D = 0;
+      I4 Sum1DI4 = 0, Sum2DI4 = 0;
       for (i = 0; i < NumCells; i++) {
          HostArr1DI4(i) = i;
-         Sum1D += i;
+         Sum1DI4 += i;
          for (j = 0; j < NumVertLvls; j++) {
             HostArr2DI4(i, j) = c;
-            Sum2D += c;
+            Sum2DI4 += c;
             c++;
          }
       }
       err   = globalSum(HostArr1DI4, Comm, &MyResI4);
-      expI4 = Sum1D * MySize;
+      expI4 = Sum1DI4 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
       else
          RetVal += 1;
-      printf("Global sum A1DI4: %s (exp,act=%ld,%d)\n", res, expI4, MyResI4);
+      printf("Global sum A1DI4: %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
 
       err   = globalSum(HostArr2DI4, Comm, &MyResI4);
-      expI4 = Sum2D * MySize;
+      expI4 = Sum2DI4 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
       else
          RetVal += 1;
-      printf("Global sum A2DI4: %s (exp,act=%ld,%d)\n", res, expI4, MyResI4);
+      printf("Global sum A2DI4: %s (exp,act=%d,%d)\n", res, expI4, MyResI4);
 
       // test SUM of I8 arrays
       HostArray1DI8 HostArr1DI8("HostArrD1I8", NumCells);
       HostArray2DI8 HostArr2DI8("HostArrD2I8", NumCells, NumVertLvls);
-      Sum1D = 0, Sum2D = 0, c = 0;
+      I8 Sum1DI8 = 0, Sum2DI8 = 0, c8 = 0;
       for (i = 0; i < NumCells; i++) {
          HostArr1DI8(i) = i;
-         Sum1D += i;
+         Sum1DI8 += i;
          for (j = 0; j < NumVertLvls; j++) {
-            HostArr2DI8(i, j) = c;
-            Sum2D += c;
-            c++;
+            HostArr2DI8(i, j) = c8;
+            Sum2DI8 += c8;
+            c8++;
          }
       }
       err   = globalSum(HostArr1DI8, Comm, &MyResI8);
-      expI8 = Sum1D * MySize;
+      expI8 = Sum1DI8 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI8 == expI8)
          res = "PASS";
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
       printf("Global sum A1DI8: %s (exp,act=%ld,%ld)\n", res, expI8, MyResI8);
 
       err   = globalSum(HostArr2DI8, Comm, &MyResI8);
-      expI8 = Sum2D * MySize;
+      expI8 = Sum2DI8 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI8 == expI8)
          res = "PASS";
@@ -333,23 +333,23 @@ int main(int argc, char *argv[]) {
       Kokkos::fence();
 
       err   = globalSum(DevArr1DI4, Comm, &MyResI4);
-      expI4 = Sum1D * MySize;
+      expI4 = Sum1DI4 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
       else
          RetVal += 1;
-      printf("Global sum device A1DI4: %s (exp,act=%ld,%d)\n", res, expI4,
+      printf("Global sum device A1DI4: %s (exp,act=%d,%d)\n", res, expI4,
              MyResI4);
 
       err   = globalSum(DevArr2DI4, Comm, &MyResI4);
-      expI4 = Sum2D * MySize;
+      expI4 = Sum2DI4 * MySize;
       res   = "FAIL";
       if (err == 0 && MyResI4 == expI4)
          res = "PASS";
       else
          RetVal += 1;
-      printf("Global sum device A2DI4: %s (exp,act=%ld,%d)\n", res, expI4,
+      printf("Global sum device A2DI4: %s (exp,act=%d,%d)\n", res, expI4,
              MyResI4);
 
       // test SUM of R4 arrays on device
