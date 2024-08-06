@@ -93,7 +93,7 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, IT *GlobalSum,
           const std::vector<I4> *IndxRange = nullptr) {
    IT LocalSum = 0;
    int dim     = arr.rank;
-   int i, imin, imax;
+   int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
       imax = arr.size();
@@ -111,7 +111,12 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm, IT *GlobalSum,
           {imax}, KOKKOS_LAMBDA(int i, IT &Accum) { Accum += arr.data()[i]; },
           LocalSum);
    }
-   return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+   if (typeid(IT) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT32_T, MPI_SUM, Comm);
+   } else {
+      ierr = MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+   }
+   return ierr;
 }
 
 // R4 array
@@ -198,7 +203,7 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
           const std::vector<I4> *IndxRange = nullptr) {
    T LocalSum = 0;
    int dim    = arr.rank;
-   int i, imin, imax;
+   int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
       imin = 0;
       imax = arr.size();
@@ -219,7 +224,12 @@ globalSum(const Kokkos::View<T, ML, MS> arr, const Kokkos::View<T, ML, MS> arr2,
           },
           LocalSum);
    }
-   return MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+   if (typeid(IT) == typeid(I4)) {
+      ierr = MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT32_T, MPI_SUM, Comm);
+   } else {
+      ierr = MPI_Allreduce(&LocalSum, GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+   }
+   return ierr;
 }
 
 // R4 array
