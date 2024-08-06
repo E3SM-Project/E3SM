@@ -635,7 +635,7 @@ globalSum(const std::vector<Kokkos::View<T, ML, MS>> arrays,
 template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
 globalMinVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
-             IT GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
+             IT *GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -653,16 +653,16 @@ globalMinVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
    }
 
    if (typeid(IT) == typeid(I4)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(I8)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(R4)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(R8)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
                            Comm);
    }
    return ierr;
@@ -673,7 +673,7 @@ template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
 globalMinVal(const Kokkos::View<T, ML, MS> arr,
              const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
-             IT GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
+             IT *GlobalMinVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -692,16 +692,16 @@ globalMinVal(const Kokkos::View<T, ML, MS> arr,
    }
 
    if (typeid(IT) == typeid(I4)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT32_T, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(I8)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_INT64_T, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(R4)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_FLOAT, MPI_MIN,
                            Comm);
    } else if (typeid(IT) == typeid(R8)) {
-      ierr = MPI_Allreduce(&LocalMinVal, &GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
+      ierr = MPI_Allreduce(&LocalMinVal, GlobalMinVal, 1, MPI_DOUBLE, MPI_MIN,
                            Comm);
    }
    return ierr;
@@ -755,7 +755,7 @@ globalMinVal(const std::vector<Kokkos::View<T, ML, MS>> arrays,
 template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
 globalMaxVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
-             IT GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
+             IT *GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -773,16 +773,16 @@ globalMaxVal(const Kokkos::View<T, ML, MS> arr, const MPI_Comm Comm,
    }
 
    if (typeid(IT) == typeid(I4)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(I8)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(R4)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(R8)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
                            Comm);
    }
    return ierr;
@@ -793,7 +793,7 @@ template <typename T, typename IT, typename ML, typename MS>
 std::enable_if_t<std::is_same_v<IT, typename Kokkos::View<T>::value_type>, int>
 globalMaxVal(const Kokkos::View<T, ML, MS> arr,
              const Kokkos::View<T, ML, MS> arr2, const MPI_Comm Comm,
-             IT GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
+             IT *GlobalMaxVal, const std::vector<I4> *IndxRange = nullptr) {
    int dim = arr.rank;
    int i, imin, imax, ierr;
    if (IndxRange == nullptr) {
@@ -812,16 +812,16 @@ globalMaxVal(const Kokkos::View<T, ML, MS> arr,
    }
 
    if (typeid(IT) == typeid(I4)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT32_T, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(I8)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_INT64_T, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(R4)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_FLOAT, MPI_MAX,
                            Comm);
    } else if (typeid(IT) == typeid(R8)) {
-      ierr = MPI_Allreduce(&LocalMaxVal, &GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
+      ierr = MPI_Allreduce(&LocalMaxVal, GlobalMaxVal, 1, MPI_DOUBLE, MPI_MAX,
                            Comm);
    }
    return ierr;
