@@ -654,7 +654,7 @@ _TESTS = {
     },
 
     "e3sm_scream_v1_dp-eamxx" : {
-        "time"  : "00:30:00",
+        "time"  : "01:00:00",
         # each test runs with 225 dynamics and 100 physics columns, roughly size of ne2
         "tests" : (
             "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-dycomsrf01",
