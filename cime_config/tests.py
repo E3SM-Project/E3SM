@@ -655,12 +655,12 @@ _TESTS = {
 
     "e3sm_scream_v1_dp-eamxx" : {
         "time"  : "01:00:00",
-        # each test 225 phys cols, roughly size of ne2
+        # each test runs with 225 dynamics and 100 physics columns, roughly size of ne2
         "tests" : (
-            "ERS_P16_Ln22.ne30_ne30.FIOP-SCREAMv1-DP.scream-dpxx-dycomsrf01",
-            "ERS_P16_Ln22.ne30_ne30.FIOP-SCREAMv1-DP.scream-dpxx-arm97",
-            "ERS_P16_Ln22.ne30_ne30.FIOP-SCREAMv1-DP.scream-dpxx-comble",
-            "ERS_P16_Ln22.ne30_ne30.FRCE-SCREAMv1-DP",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-dycomsrf01",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-comble",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FRCE-SCREAMv1-DP",
             )
     },
 

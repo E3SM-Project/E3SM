@@ -117,7 +117,7 @@
 
     <entry id="PTS_NX">
       <values>
-        <value  compset=".*DP-EAMxx">225</value>
+        <value  compset=".*DP-EAMxx">100</value>
       </values>
     </entry>
 
@@ -129,7 +129,7 @@
 
     <entry id="ICE_NX">
       <values>
-        <value  compset=".*DP-EAMxx">225</value>
+        <value  compset=".*DP-EAMxx">100</value>
       </values>
     </entry>
 
