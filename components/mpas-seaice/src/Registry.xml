@@ -2723,6 +2723,7 @@
 
 		<!-- iceberg packages -->
 		<package name="pkgBergs" description=""/>
+		<package name="pkgScaledDIB" description="fields used when scaling data iceberg fluxes by removed Antarctic ice runoff"/>
 
 		<!-- testing system test -->
 		<package name="pkgTestingSystemTest" description=""/>
@@ -4956,12 +4957,22 @@
 	</var_struct>
 
 	<!-- fluxes from data icebergs -->
-	<var_struct name="berg_forcing" time_levs="1" packages="pkgBergs">
+	<var_struct name="berg_forcing" time_levs="1">
 		<var name="bergFreshwaterFluxData"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+		     packages="pkgBergs"
 		/>
+		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"
+		     type="real"
+			 dimensions="Time"
+			 units="kg s-1"
+			 packages="pkgScaledDIB"
+			 description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
+		/>
+
+
 	</var_struct>
 
 	<!-- fluxes from icebergs to ocean -->
