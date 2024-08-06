@@ -1,3 +1,4 @@
+#include <physics/mam/eamxx_mam_constituent_fluxes_functions.hpp>
 #include <physics/mam/eamxx_mam_constituent_fluxes_interface.hpp>
 namespace scream {
 
@@ -260,8 +261,12 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
+  // const auto scan_policy = ekat::ExeSpaceUtils<
+  //     KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_,
+  //     nlev_);
+
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(1, nlev_);
 
   // -------------------------------------------------------------------
   // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
@@ -279,63 +284,16 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  // policy
-  // haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
-  haero::ThreadTeamPolicy team_policy(1, Kokkos::AUTO);
+  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
+                                         constituent_fluxes_,
+                                         // output
+                                         wet_aero_);
 
-  using C                      = physics::Constants<Real>;
-  static constexpr auto gravit = C::gravit;  // Gravity [m/s2]
-  const int ncol = ncol_;
-  auto wet_aero           = wet_aero_;
-  auto dry_atm            = dry_atm_;
-  const int surface_lev   = nlev_ - 1;
-  static constexpr int pcnst = mam4::aero_model::pcnst;
-  auto constituent_fluxes = constituent_fluxes_;
-  // get the start index for gas species in the state_q array
-  int istart = mam4::utils::gasses_start_ind();
+  for(int icnst = 0; icnst < 6; ++icnst) {
+    auto host_view1 = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
+    printf("END:::%e, %i\n", host_view1(0, 71), icnst + 9);
+  }
 
-  // auto aa = wet_aero.gas_mmr[4](1, 1);
-  auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[4]);
-
-  for(int icnst = 0; icnst < 5; ++icnst) {
-    printf("BEFORE:::%e\n", host_view(icnst, 71));
-           }
-
-  const auto policy_pcnst =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
-          ncol, pcnst);
-  // Loop through all columns to update tracer mixing rations
-  Kokkos::parallel_for(
-      policy_pcnst, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-
-        EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0,
-                               "Error! dry_atm.pdel must not be zero!\n");
-        const Real rpdel = 1.0 / dry_atm.p_del(icol, surface_lev);
-
-        mam4::Prognostics progs_at_col =
-            mam_coupling::aerosols_for_column(wet_aero, icol);
-
-        // get atmospheric quantities
-        haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm, icol);
-        Real state_q_at_surf_lev[pcnst] = {};
-        mam4::utils::extract_stateq_from_prognostics(
-            progs_at_col, haero_atm, state_q_at_surf_lev, surface_lev);
-
-        const Real unit_factor = dt * gravit * rpdel;
-        auto pcnst1 = pcnst;
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, istart, pcnst1),
-            [&](int icnst) {
-              state_q_at_surf_lev[icnst] +=
-                  constituent_fluxes(icol, icnst) * unit_factor;
-            });
-        mam4::utils::inject_stateq_to_prognostics(state_q_at_surf_lev,
-        progs_at_col, surface_lev);
-      });
-    for(int icnst = 0; icnst < 5; ++icnst) {
-      printf("AFTER:::%e\n", host_view(icnst, 71));
-           }
 }  // run_impl ends
 
 // =============================================================================

@@ -14,9 +14,11 @@ namespace scream {
 // The process responsible for applying MAM4 constituent fluxes. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMConstituentFluxes final : public scream::AtmosphereProcess {
+ public:
   using KT            = ekat::KokkosTypes<DefaultDevice>;
   using const_view_2d = Field::view_dev_t<const Real **>;
 
+ private:
   // number of horizontal columns
   int ncol_, nlev_;
 
