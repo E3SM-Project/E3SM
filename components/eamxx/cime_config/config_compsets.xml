@@ -75,13 +75,13 @@
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DP-General</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts for all cases other than RCE. -->
-      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%General</lname>
+      <alias>FIOP-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts forced from IOPs for all cases other than RCE. -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%IOP</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
-      <alias>F2000-SCREAMv1-DP-RCE</alias> <!-- RCE compset for DP-EAMxx -->
+      <alias>FRCE-SCREAMv1-DP</alias> <!-- RCE compset for DP-EAMxx -->
       <lname>2000_SCREAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
