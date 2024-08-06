@@ -4056,6 +4056,10 @@
 			description="Flux of heat into the ocean at land ice-ocean interface, as read in from a forcing file. Positive into ocean."
 			packages="dataLandIceFluxesPKG"
 		/>
+		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"  type="real" dimensions="Time" units="kg s^-1"
+			description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
+			packages="scaledDISMFPKG"
+		/>
 
 		<!-- Input fields for forcing due to tides -->
 		<var name="tidalInputMask" type="real" dimensions="nCells"
