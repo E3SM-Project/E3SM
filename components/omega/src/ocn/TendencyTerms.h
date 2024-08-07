@@ -281,12 +281,12 @@ class Tendencies {
 
    // Methods to compute tendency groups
    // TODO Add AuxilaryState as calling argument
-   void computeThicknessTendencies(const OceanState *State,
-                                   const AuxiliaryState *AuxState);
-   void computeVelocityTendencies(const OceanState *State,
-                                  const AuxiliaryState *AuxState);
-   void computeAllTendencies(const OceanState *State,
-                             const AuxiliaryState *AuxState);
+   void computeThicknessTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                                   int TimeLevel, Real Time);
+   void computeVelocityTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                                  int TimeLevel, Real Time);
+   void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                             int TimeLevel, Real Time);
 
    // Create a non-default tendencies
    static Tendencies *

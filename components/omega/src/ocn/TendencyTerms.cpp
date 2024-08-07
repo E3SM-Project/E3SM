@@ -130,7 +130,9 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 // Compute tendencies for layer thickness equation
 void Tendencies::computeThicknessTendencies(
     const OceanState *State,       ///< [in] State variables
-    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int TimeLevel,            ///< [in] Time level
+    Real Time                 ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
@@ -158,7 +160,9 @@ void Tendencies::computeThicknessTendencies(
 // Compute tendencies for normal velocity equation
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,       ///< [in] State variables
-    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int TimeLevel,            ///< [in] Time level
+    Real Time                 ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
@@ -177,7 +181,7 @@ void Tendencies::computeVelocityTendencies(
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
-   const Array2DReal &NormVelEdge   = State->NormalVelocity[0];
+   const Array2DReal &NormVelEdge   = State->NormalVelocity[TimeLevel];
    if (LocPotientialVortHAdv.Enabled) {
       parallelFor(
           {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
@@ -234,12 +238,14 @@ void Tendencies::computeVelocityTendencies(
 // Compute both layer thickness and normal velocity tendencies
 void Tendencies::computeAllTendencies(
     const OceanState *State,       ///< [in] State variables
-    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int TimeLevel,            ///< [in] Time level
+    Real Time                 ///< [in] Time
 ) {
 
-   AuxState->computeAll(State, 0);
-   computeThicknessTendencies(State, AuxState);
-   computeVelocityTendencies(State, AuxState);
+   AuxState->computeAll(State, TimeLevel);
+   computeThicknessTendencies(State, AuxState, TimeLevel, Time);
+   computeVelocityTendencies(State, AuxState, TimeLevel, Time);
 
 } // end all tendency compute
 
