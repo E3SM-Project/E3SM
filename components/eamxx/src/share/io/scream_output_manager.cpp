@@ -393,7 +393,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       snapshot_start = m_case_t0;
       snapshot_start += m_time_bnds[0];
     }
-    if (not filespecs.storage.snapshot_fits(snapshot_start)) {
+    if (filespecs.is_open and not filespecs.storage.snapshot_fits(snapshot_start)) {
       release_file(filespecs.filename);
       filespecs.close();
     }
@@ -496,7 +496,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
           scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
 
-          int nsnaps = scorpio::get_dimlen(m_output_file_specs.filename,"time");
+          int nsnaps = m_output_file_specs.is_open
+                     ? scorpio::get_dimlen(m_output_file_specs.filename,"time") : 0;
           scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",nsnaps);
         }
         // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
