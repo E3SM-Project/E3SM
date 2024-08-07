@@ -114,9 +114,9 @@ int main(int argc, char *argv[]) {
             OMEGA::OceanState *DefOceanState = OMEGA::OceanState::getDefault();
 
          } else {
-
-            OMEGA::OceanState::create("Default", DefHorzMesh, DefDecomp,
-                                      DefHalo, NVertLevels, NTimeLevels);
+            OMEGA::OceanState *DefState = OMEGA::OceanState::create(
+                "Default", DefHorzMesh, DefHalo, NVertLevels, NTimeLevels);
+            DefState->loadStateFromFile(DefHorzMesh->MeshFileName, DefDecomp);
          }
 
          // Test retrieval of the default state
@@ -129,16 +129,20 @@ int main(int argc, char *argv[]) {
          }
 
          // Create "test" state
-         OMEGA::OceanState::create("Test", DefHorzMesh, DefDecomp, DefHalo,
-                                   NVertLevels, NTimeLevels);
+         OMEGA::OceanState::create("Test", DefHorzMesh, DefHalo, NVertLevels,
+                                   NTimeLevels);
 
          OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
+
          if (TestState) { // true if non-null ptr
             LOG_INFO("State: Test state retrieval PASS");
          } else {
             RetVal += 1;
             LOG_INFO("State: Test state retrieval FAIL");
          }
+
+         // Initially fill test state with the same values as the default state
+         TestState->loadStateFromFile(DefHorzMesh->MeshFileName, DefDecomp);
 
          // Test that reasonable values have been read in for LayerThickness
          int count = 0;

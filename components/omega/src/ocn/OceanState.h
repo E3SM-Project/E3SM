@@ -28,16 +28,14 @@ namespace OMEGA {
 class OceanState {
 
  private:
-   void initParallelIO(Decomp *MeshDecomp);
+   void initParallelIO(I4 &CellDecompR8, I4 &EdgeDecompR8, Decomp *MeshDecomp);
 
-   void finalizeParallelIO();
+   void finalizeParallelIO(I4 CellDecompR8, I4 EdgeDecompR8);
 
-   void read();
+   void read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8);
 
    void defineFields();
 
-   I4 CellDecompR8;
-   I4 EdgeDecompR8;
    Halo *MeshHalo;
 
    static OceanState *DefaultOceanState;
@@ -47,7 +45,6 @@ class OceanState {
    /// Construct a new local state for a given decomposition
    OceanState(const std::string &Name, ///< [in] Name for mesh
               HorzMesh *Mesh,          ///< [in] Horizontal mesh
-              Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
               Halo *MeshHalo_,         ///< [in] Halo for Mesh
               const int NVertLevels_,  ///< [in] Number of vertical levels
               const int NTimeLevels_   ///< [in] Number of time levels
@@ -62,9 +59,7 @@ class OceanState {
    // Since these are used frequently, we make them public to reduce the
    // number of retrievals required.
 
-   std::string StateFileName;
    std::string Name;
-   int StateFileID;
 
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
@@ -114,11 +109,13 @@ class OceanState {
    static OceanState *
    create(const std::string &Name, ///< [in] Name for mesh
           HorzMesh *Mesh,          ///< [in] Horizontal mesh
-          Decomp *MeshDecomp,      ///< [in] Decomp for Mesh
           Halo *MeshHalo,          ///< [in] Halo for Mesh
           const int NVertLevels,   ///< [in] Number of vertical levels
           const int NTimeLevels    ///< [in] Number of time levels
    );
+
+   /// load state from file
+   void loadStateFromFile(const std::string &StateFileName, Decomp *MeshDecomp);
 
    /// Swap time levels to update state arrays
    void updateTimeLevels();
