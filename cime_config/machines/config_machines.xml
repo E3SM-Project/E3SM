@@ -980,7 +980,7 @@
     <DESC>Frontier exascale supercomputer at ORNL. 9408 nodes, Node: 4 AMD MI250X GPUs (2 GCDs) ~ 8 GPUs, 512 GB HDB2E, AMD EPYC 64 cores, 512GB DDR4 </DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
+    <COMPILERS>gnu,amdclang,crayclang,gnugpu,amdclanggpu,crayclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/frontier</SAVE_TIMING_DIR>
@@ -1042,8 +1042,7 @@
       <modules compiler="gnu.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-        <!-- TODO: gcc/12.2.0 is default, need to check -->
-        <command name="switch">gcc gcc/11.2.0</command>
+        <command name="switch">gcc gcc/12.2.0</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">craype-accel-amd-gfx90a</command>
@@ -1051,6 +1050,7 @@
       </modules>
       <modules>
         <command name="load">cray-python/3.9.13.1</command>
+        <command name="load">cray-libsci</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
         <command name="load">cmake/3.21.3</command>
@@ -1066,13 +1066,11 @@
     <TEST_MEMLEAK_TOLERANCE>0.25</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
+      <env name="PKG_CONFIG_PATH">$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="NTASKS_PER_GPU"> </env>
       <env name="GPU_BIND_ARGS"> </env>
-    </environment_variables>
-    <environment_variables compiler="amdclang">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
       <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
@@ -1090,6 +1088,9 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+<!--
+commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" issue is resolved.
+
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
@@ -1099,6 +1100,7 @@
     <environment_variables compiler="amdclang.*" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+-->
   </machine>
 
   <machine MACH="crusher">
