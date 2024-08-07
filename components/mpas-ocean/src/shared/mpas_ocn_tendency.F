@@ -1243,12 +1243,12 @@ contains
          !
          ! Compute tracer tendency due to non-local flux computed in KPP
          !
-         if (config_use_cvmix_kpp) then
-            call mpas_timer_start("non-local flux from KPP")
-            if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
-               call ocn_compute_KPP_input_fields(statePool, forcingPool,&
+         if (config_use_cvmix_kpp .or. config_use_gotm) then
+            call ocn_compute_KPP_input_fields(statePool, forcingPool,&
                                                  meshPool, timeLevel)
 
+            if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
+               call mpas_timer_start("non-local flux from KPP")
                if (computeBudgets) then
                   !$omp parallel
                   !$omp do schedule(runtime) private(k,n)
@@ -1291,8 +1291,8 @@ contains
                   !$omp end do
                   !$omp end parallel
                endif ! compute budgets
+               call mpas_timer_stop("non-local flux from KPP")
             end if ! not non-local with implicit mix
-            call mpas_timer_stop("non-local flux from KPP")
          end if ! KPP
 
          ! Compute tracer tendency due to production/destruction of
