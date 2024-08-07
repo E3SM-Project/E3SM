@@ -292,6 +292,13 @@ class Tendencies {
                                   int TimeLevel, Real Time);
    void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
                              int TimeLevel, Real Time);
+   
+   void computeThicknessTendenciesOnly(const OceanState *State,
+                                       const AuxiliaryState *AuxState, int TimeLevel,
+                                       Real Time);
+   void computeVelocityTendenciesOnly(const OceanState *State,
+                                      const AuxiliaryState *AuxState, int TimeLevel,
+                                      Real Time);
 
    // Create a non-default group of tendencies
    template <class... ArgTypes>

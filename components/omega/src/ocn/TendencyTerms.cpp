@@ -125,8 +125,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
-void Tendencies::computeThicknessTendencies(
-    const OceanState *State,       ///< [in] State variables
+void Tendencies::computeThicknessTendenciesOnly(
+    const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int TimeLevel,            ///< [in] Time level
     Real Time                 ///< [in] Time
@@ -161,8 +161,8 @@ void Tendencies::computeThicknessTendencies(
 
 //------------------------------------------------------------------------------
 // Compute tendencies for normal velocity equation
-void Tendencies::computeVelocityTendencies(
-    const OceanState *State,       ///< [in] State variables
+void Tendencies::computeVelocityTendenciesOnly(
+    const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int TimeLevel,            ///< [in] Time level
     Real Time                 ///< [in] Time
@@ -242,6 +242,37 @@ void Tendencies::computeVelocityTendencies(
 
 } // end velocity tendency compute
 
+void Tendencies::computeThicknessTendencies(
+    OceanState *State,        ///< [in] State variables
+    AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int TimeLevel,            ///< [in] Time level
+    Real Time                 ///< [in] Time
+) {
+   // only need LayerThicknessAux on edge
+   OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
+   OMEGA_SCOPE(LayerThickCell, State->LayerThickness[TimeLevel]);
+   OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[TimeLevel]);
+
+   parallelFor(
+       "computeLayerThickAux", {NEdgesOwned, NChunks},
+       KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          LayerThicknessAux.computeVarsOnEdge(IEdge, KChunk, LayerThickCell,
+                                              NormalVelEdge);
+       });
+
+   computeThicknessTendenciesOnly(State, AuxState, TimeLevel, Time);
+}
+
+void Tendencies::computeVelocityTendencies(
+    OceanState *State,        ///< [in] State variables
+    AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int TimeLevel,            ///< [in] Time level
+    Real Time                 ///< [in] Time
+) {
+   AuxState->computeAll(State, TimeLevel);
+   computeVelocityTendenciesOnly(State, AuxState, TimeLevel, Time);
+}
+
 //------------------------------------------------------------------------------
 // Compute both layer thickness and normal velocity tendencies
 void Tendencies::computeAllTendencies(
@@ -252,8 +283,8 @@ void Tendencies::computeAllTendencies(
 ) {
 
    AuxState->computeAll(State, TimeLevel);
-   computeThicknessTendencies(State, AuxState, TimeLevel, Time);
-   computeVelocityTendencies(State, AuxState, TimeLevel, Time);
+   computeThicknessTendenciesOnly(State, AuxState, TimeLevel, Time);
+   computeVelocityTendenciesOnly(State, AuxState, TimeLevel, Time);
 
 } // end all tendency compute
 
