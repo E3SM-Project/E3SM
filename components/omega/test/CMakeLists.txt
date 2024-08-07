@@ -295,6 +295,17 @@ add_omega_test(
     "-n;2;--cpu-bind=cores"
 )
 
+###################
+# Time Stepper test
+###################
+
+add_omega_test(
+  TIMESTEPPER_TEST
+  testTimeStepper.exe
+  timestepping/TimeStepperTest.cpp
+    "-n;2"
+)
+
 ##################
 # Kokkos test
 ##################
