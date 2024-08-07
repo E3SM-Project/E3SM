@@ -14,7 +14,7 @@ module NitrogenStateUpdate2Mod
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_nf
-  use pftvarcon           , only : npcropmin
+  use pftvarcon           , only : iscft
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
   !
@@ -172,7 +172,7 @@ contains
          veg_ns%retransn(p)   = veg_ns%retransn(p)   - veg_nf%hrv_retransn_to_litter(p)   * dt
          veg_ns%npool(p)      = veg_ns%npool(p)      - veg_nf%hrv_npool_to_litter(p)     * dt
 
-       if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+       if (iscft(ivt(p))) then ! skip 2 generic crops
            veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
            veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
            veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt

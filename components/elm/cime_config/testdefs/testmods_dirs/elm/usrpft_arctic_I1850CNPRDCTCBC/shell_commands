@@ -1,0 +1,11 @@
+./xmlchange LND_DOMAIN_FILE=domain.lnd.6x1pt_kougarok-NGEE_TransA_navy.nc
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.6x1pt_kougarok-NGEE_TransA_navy.nc
+./xmlchange LND_DOMAIN_PATH="$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ELM_USRDAT_NAME=6x1pt_kougarok-NGEE_TransA
+./xmlchange ELM_BLDNML_OPTS=" -maxpft 12 -bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane "
+./xmlchange DATM_MODE=CLMGSWP3v1
+./xmlchange DATM_CLMNCEP_YR_START=1901
+./xmlchange DATM_CLMNCEP_YR_END=1920
+./xmlchange NTASKS=1
+./xmlchange NTHRDS=1

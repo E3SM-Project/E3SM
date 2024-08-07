@@ -87,7 +87,7 @@ contains
     ! !USES:
     !$acc routine seq
     use elm_varcon       , only: secspday
-    use pftvarcon        , only: npcropmin
+    use pftvarcon        , only: iscft
     use elm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
@@ -110,7 +110,6 @@ contains
 
     associate(                                                       &
          ivt                                 =>    veg_pp%itype    , & ! Input:  [integer  (:) ]  pft vegetation type
-         woody                               =>    veg_vp%woody    , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform
          croplive                            =>    crop_vars%croplive_patch & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
          )
 
@@ -143,7 +142,7 @@ contains
          ! displayed pools
            veg_cf%m_leafc_to_litter(p)     = 0._r8 
            veg_cf%m_livestemc_to_litter(p) = 0._r8 
-         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
            veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
          end if
@@ -182,7 +181,7 @@ contains
          ! displayed pools
          veg_nf%m_leafn_to_litter(p) = 0._r8 
          veg_nf%m_livestemn_to_litter(p) = 0._r8 
-         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_nf%m_leafn_to_litter(p)               = veg_ns%leafn(p)               * m
            veg_nf%m_livestemn_to_litter(p)           = veg_ns%livestemn(p)           * m
          end if
@@ -191,7 +190,7 @@ contains
          veg_nf%m_livecrootn_to_litter(p)          = veg_ns%livecrootn(p)          * m
          veg_nf%m_deadcrootn_to_litter(p)          = veg_ns%deadcrootn(p)          * m
          veg_nf%m_retransn_to_litter(p) = 0._r8
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(ivt(p))) then
             veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m
          end if
          veg_nf%m_npool_to_litter(p)               = veg_ns%npool(p)               * m
@@ -226,7 +225,7 @@ contains
          ! displayed pools
          veg_pf%m_leafp_to_litter(p)     = 0._r8 
          veg_pf%m_livestemp_to_litter(p) = 0._r8 
-         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+         if((.not. iscft(ivt(p))) .or. (iscft(ivt(p)) .and. croplive(p))) then
            veg_pf%m_leafp_to_litter(p)               = veg_ps%leafp(p)               * m
            veg_pf%m_livestemp_to_litter(p)           = veg_ps%livestemp(p)           * m
          endif
@@ -236,7 +235,7 @@ contains
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m
          
          veg_pf%m_retransp_to_litter(p)            = 0._r8 
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(ivt(p))) then
             veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
          end if
          veg_pf%m_ppool_to_litter(p)               = veg_ps%ppool(p)               * m
@@ -564,7 +563,7 @@ contains
 
     ! USES
       !$acc routine seq
-    use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
+    use pftvarcon       , only: woody, needleleaf, climatezone
     use soilorder_varcon, only: r_mort_soilorder
 
     !
@@ -586,7 +585,10 @@ contains
        do fp = 1,num_soilp
           p = filter_soilp(fp)
           c = veg_pp%column(p)
-               if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+               ! broadleaf tropical trees
+               if( woody(veg_pp%itype(p)) == 1.0_r8 .and. &
+                   needleleaf(veg_pp%itype(p)) == 0 .and. &
+                   climatezone(veg_pp%itype(p)) == 1 )then
                    r_mort_cal(p) = r_mort_soilorder( isoilorder(c) )
                else
                    r_mort_cal(p) = 0.02_r8                 ! Default mortality rate

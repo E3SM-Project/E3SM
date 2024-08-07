@@ -126,8 +126,8 @@ contains
     use elm_varcon           , only: secspday, spval
     use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
-    use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
-    use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
+    use pftvarcon            , only: noveg, woody, graminoid, iscft, crop
+    use pftvarcon            , only: climatezone, needleleaf, evergreen
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -305,11 +305,12 @@ contains
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop veg types
-              if( veg_pp%itype(p) > nc4_grass )then
+              if( crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p)))then
                  cropf_col(c) = cropf_col(c) + veg_pp%wtcol(p)
               end if
               ! For natural vegetation (non-crop and non-bare-soil)
-              if( veg_pp%itype(p) >= ndllf_evr_tmp_tree .and. veg_pp%itype(p) <= nc4_grass )then
+              if( veg_pp%itype(p) /= noveg .and. &
+                  (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) )then
                  lfwt(c) = lfwt(c) + veg_pp%wtcol(p)
               end if
            end if
@@ -331,7 +332,8 @@ contains
               ! column-level litter carbon
               ! is available, so we use leaf carbon to estimate the
               ! litter carbon for crop PFTs
-              if( veg_pp%itype(p) > nc4_grass .and. veg_pp%wtcol(p) > 0._r8 .and. leafc_col(c) > 0._r8 )then
+              if( (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p))) .and. &
+                  veg_pp%wtcol(p) > 0._r8 .and. leafc_col(c) > 0._r8 )then
                  fuelc_crop(c)=fuelc_crop(c) + (leafc(p) + leafc_storage(p) + &
                       leafc_xfer(p))*veg_pp%wtcol(p)/cropf_col(c)     + &
                       totlitc(c)*leafc(p)/leafc_col(c)*veg_pp%wtcol(p)/cropf_col(c)
@@ -368,21 +370,35 @@ contains
               p = col_pp%pfti(c) + pi - 1
 
               ! For non-crop -- natural vegetation and bare-soil
-              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+              if( (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) .and. &
+                  cropf_col(c)  <  1.0_r8 ) then
                  if( btran2(p) .ne. spval) then
                     if (btran2(p)  <=  1._r8 ) then
                        btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
                        wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)
                     end if
                  end if
-                 if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
+                 ! broadleaf evergreen tropical tree
+                 if( (needleleaf(veg_pp%itype(p)) == 0 .and. &
+                      evergreen(veg_pp%itype(p)) == 1 .and. &
+                      climatezone(veg_pp%itype(p)) == 1 .and. &
+                      woody(veg_pp%itype(p)) == 1.0_r8) .and. &
+                     veg_pp%wtcol(p)  >  0._r8 )then
                     trotr1_col(c)=trotr1_col(c)+veg_pp%wtcol(p)*col_pp%wttopounit(c)
                  end if
-                 if( veg_pp%itype(p) == nbrdlf_dcd_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
+                 ! broadleaf deciduous tropical tree
+                 if( (needleleaf(veg_pp%itype(p)) == 0 .and. &
+                      evergreen(veg_pp%itype(p)) == 0 .and. &
+                      climatezone(veg_pp%itype(p)) == 1 .and. &
+                      woody(veg_pp%itype(p)) == 1.0_r8) .and. &
+                     veg_pp%wtcol(p)  >  0._r8 ) then
                     trotr2_col(c)=trotr2_col(c)+veg_pp%wtcol(p)*col_pp%wttopounit(c)
                  end if
                  if (transient_landcover) then    !true when landuse data is used
-                    if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
+                    ! broadleaf tropical tree
+                    if(needleleaf(veg_pp%itype(p)) == 0 .and. &
+                       climatezone(veg_pp%itype(p)) == 1 .and. &
+                       woody(veg_pp%itype(p)) == 1.0_r8)then
                        if(lfpftd(p) > 0._r8)then
                           dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wttopounit(c)
                        end if
@@ -405,7 +421,8 @@ contains
                        ! For NOT bare-soil
                        if( veg_pp%itype(p)  /=  noveg )then
                           ! For shrub and grass (crop already excluded above)
-                          if( veg_pp%itype(p)  >=  nbrdlf_evr_shrub )then      !for shurb and grass
+                          if( woody(veg_pp%itype(p)) == 2.0_r8 .or. &
+                              graminoid(veg_pp%itype(p)) == 1 )then      !for shurb and grass
                              lgdp_col(c)  = lgdp_col(c) + (0.1_r8 + 0.9_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
                                   (gdp_lf(c)/8._r8)**0.5_r8))*veg_pp%wtcol(p) &
@@ -416,7 +433,7 @@ contains
                              lpop_col(c)  = lpop_col(c) + (0.2_r8 + 0.8_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
                                   (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/lfwt(c)
-                          else   ! for trees
+                          else if (woody(veg_pp%itype(p)) == 1.0_r8) then  ! for trees
                              if( gdp_lf(c)  >  20._r8 )then
                                 lgdp_col(c)  =lgdp_col(c)+0.39_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                              else
@@ -491,7 +508,8 @@ contains
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop
-              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
+              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. &
+                  (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p))) .and.  &
                    kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
@@ -661,7 +679,8 @@ contains
    ! !USES:
       !$acc routine seq
    use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
-   use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
+   use pftvarcon            , only: lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
+   use pftvarcon            , only: iscft, crop
    use elm_varpar           , only: max_patch_per_col
    use elm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
@@ -705,8 +724,6 @@ contains
    associate(                                                                                                   &
         is_cwd                              =>    decomp_cascade_con%is_cwd            , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool
         is_litter                           =>    decomp_cascade_con%is_litter         , & ! Input:  [logical  (:)     ]  TRUE => pool is a litter pool
-
-        woody                               =>    veg_vp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)
 
         cropf_col                           =>    cnstate_vars%cropf_col               , & ! Input:  [real(r8) (:)     ]  cropland fraction in veg column
         croot_prof                          =>    cnstate_vars%croot_prof_patch        , & ! Input:  [real(r8) (:,:)   ]  (1/m) profile of coarse roots
@@ -965,7 +982,8 @@ contains
         c = veg_pp%column(p)
 
         itype = veg_pp%itype(p)
-        if( itype < nc3crop .and. cropf_col(c) < 1.0_r8)then
+        if( (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) .and. &
+            cropf_col(c) < 1.0_r8)then
            ! For non-crop (bare-soil and natural vegetation)
            if (transient_landcover) then    !true when landuse data is used
               f = (fbac(c)-baf_crop(c))/(1.0_r8-cropf_col(c))

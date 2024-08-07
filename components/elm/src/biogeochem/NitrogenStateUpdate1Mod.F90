@@ -9,7 +9,7 @@ module NitrogenStateUpdate1Mod
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog
   use elm_varcon             , only : nitrif_n2o_loss_frac
-  use pftvarcon              , only : npcropmin, nc3crop
+  use pftvarcon              , only : iscft
   use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
@@ -286,7 +286,7 @@ contains
               veg_ns%frootn(p)      = veg_ns%frootn(p)      + veg_nf%frootn_xfer_to_frootn(p)*dt
               veg_ns%frootn_xfer(p) = veg_ns%frootn_xfer(p) - veg_nf%frootn_xfer_to_frootn(p)*dt
 
-              if (woody(ivt(p)) == 1.0_r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn(p)       = veg_ns%livestemn(p)       + veg_nf%livestemn_xfer_to_livestemn(p)*dt
                   veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%livestemn_xfer_to_livestemn(p)*dt
                   veg_ns%deadstemn(p)       = veg_ns%deadstemn(p)       + veg_nf%deadstemn_xfer_to_deadstemn(p)*dt
@@ -297,7 +297,7 @@ contains
                   veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%deadcrootn_xfer_to_deadcrootn(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ns%livestemn(p)       = veg_ns%livestemn(p)      + veg_nf%livestemn_xfer_to_livestemn(p)*dt
                   veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p) - veg_nf%livestemn_xfer_to_livestemn(p)*dt
@@ -312,7 +312,7 @@ contains
               veg_ns%retransn(p) = veg_ns%retransn(p) + veg_nf%leafn_to_retransn(p)*dt
 
               ! live wood turnover and retranslocation fluxes
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_deadstemn(p)*dt
                   veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  + veg_nf%livestemn_to_deadstemn(p)*dt
                   veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_retransn(p)*dt
@@ -322,7 +322,7 @@ contains
                   veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%livecrootn_to_retransn(p)*dt
                   veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livecrootn_to_retransn(p)*dt
               end if
-              if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
+              if (iscft(ivt(p))) then ! Beth adds retrans from froot
                   veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%frootn_to_retransn(p)*dt
                   veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%frootn_to_retransn(p)*dt
                   veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_litter(p)*dt
@@ -354,7 +354,7 @@ contains
               veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_frootn_storage(p)*dt
               veg_ns%frootn_storage(p)  = veg_ns%frootn_storage(p) + veg_nf%npool_to_frootn_storage(p)*dt
 
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%livestemn(p)          = veg_ns%livestemn(p)          + veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn_storage(p)*dt
@@ -373,7 +373,7 @@ contains
                   veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) + veg_nf%npool_to_deadcrootn_storage(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%livestemn(p)          = veg_ns%livestemn(p)          + veg_nf%npool_to_livestemn(p)*dt
                   veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn_storage(p)*dt
@@ -390,7 +390,7 @@ contains
               veg_ns%frootn_storage(p) = veg_ns%frootn_storage(p) - veg_nf%frootn_storage_to_xfer(p)*dt
               veg_ns%frootn_xfer(p)    = veg_ns%frootn_xfer(p)    + veg_nf%frootn_storage_to_xfer(p)*dt
 
-              if (woody(ivt(p)) == 1._r8) then
+              if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%livestemn_storage_to_xfer(p)*dt
                   veg_ns%livestemn_xfer(p)     = veg_ns%livestemn_xfer(p)     + veg_nf%livestemn_storage_to_xfer(p)*dt
                   veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%deadstemn_storage_to_xfer(p)*dt
@@ -401,7 +401,7 @@ contains
                   veg_ns%deadcrootn_xfer(p)    = veg_ns%deadcrootn_xfer(p)    + veg_nf%deadcrootn_storage_to_xfer(p)*dt
               end if
 
-              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+              if (iscft(ivt(p))) then ! skip 2 generic crops
                   ! lines here for consistency; the transfer terms are zero
                   veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p) - veg_nf%livestemn_storage_to_xfer(p)*dt
                   veg_ns%livestemn_xfer(p)     = veg_ns%livestemn_xfer(p)    + veg_nf%livestemn_storage_to_xfer(p)*dt

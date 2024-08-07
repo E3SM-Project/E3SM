@@ -1552,13 +1552,19 @@ sub setup_cmdl_maxpft {
   $nl_flags->{'maxpft'} = $val;
 
   if ( ($nl_flags->{'bgc_mode'} ne "sp") && ($nl_flags->{'maxpft'} != $maxpatchpft{$nl_flags->{'use_crop'}}) ) {
-    fatal_error("** For CN or BGC mode you MUST set max patch PFT's to $maxpatchpft{$nl_flags->{'use_crop'}}\n" .
-    "**\n" .
-    "** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}\n" .
-    "** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:\n" .
-    "** * by the command-line options -bgc, -crop and -maxpft\n" .
-    "** * by a default configuration file, specified by -defaults\n" .
-    "**\n");
+    if ($opts->{$var} eq "default") {
+      fatal_error("** For CN or BGC mode you MUST set max patch PFT $val to $maxpatchpft{$nl_flags->{'use_crop'}}\n" .
+      "**\n" .
+      "** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}\n" .
+      "** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:\n" .
+      "** * by the command-line options -bgc, -crop and -maxpft\n" .
+      "** * by a default configuration file, specified by -defaults\n" .
+      "**\n");
+    } else {
+         message("running with maxpft NOT equal to $maxpatchpft{$nl_flags->{'use_crop'}} is " .
+              "NOT validated / scientifically supported.\n");
+      	
+      }
   }
   if ( $nl_flags->{'maxpft'} > $maxpatchpft{$nl_flags->{'use_crop'}} ) {
     fatal_error("** Max patch PFT's can NOT exceed $maxpatchpft{$nl_flags->{'use_crop'}}\n" .

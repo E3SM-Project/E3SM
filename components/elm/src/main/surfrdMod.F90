@@ -1105,6 +1105,8 @@ contains
     end if
     fert_p_cft = 0.0_r8
 
+    wt_nat_patch(begg:endg, :, :) = 0.0_r8
+    wt_cft(begg:endg, :, :) = 0.0_r8
     if (.not. create_crop_landunit) then
        call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
             dim1name=grlnd, readvar=readvar)
@@ -1263,6 +1265,8 @@ contains
 
        do nl = begg,endg
           do t = 1, max_topounits
+            ! (TODO) the following assumes that rainfed/irrigated crop are ordered side by side
+            ! indexing is fixed
             wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
             wt_cft(nl,t,nc3irrig)      = 0._r8
             wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)

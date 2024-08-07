@@ -33,6 +33,11 @@ module VegetationType
   !   24 => irrigated soybean
   ! --------------------------------------------------------
   !
+  
+  ! ----------------------user-defined parameter file ---------------------------------------------------------------------
+  ! NOTE: if user provides own parameter file, with different 'pft_name' or order,
+  !       the above ilist of default PFTs will be replaced, and arrays of sizes as below will be changed as well.
+
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use elm_varcon     , only : ispval, spval
 
