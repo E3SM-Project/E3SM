@@ -30,7 +30,8 @@ class ThicknessFluxDivOnCell {
    /// The functor takes cell index, vertical chunk index, and thickness flux
    /// array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 ICell, I4 KChunk,
-                                   const Array2DR8 &ThicknessFlux) const {
+                                   const Array2DR8 &ThicknessFlux,
+                                   const Array2DReal &NormalVelEdge) const {
 
       const I4 KStart        = KChunk * VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
@@ -42,7 +43,8 @@ class ThicknessFluxDivOnCell {
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const I4 K = KStart + KVec;
             DivTmp[KVec] -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
-                            ThicknessFlux(JEdge, K) * InvAreaCell;
+                            ThicknessFlux(JEdge, K) * NormalVelEdge(JEdge, K) *
+                            InvAreaCell;
          }
       }
 
