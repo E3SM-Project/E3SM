@@ -84,34 +84,21 @@ Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 } // end get tendencies
 
 //------------------------------------------------------------------------------
-// Create a non-default group of tendencies
-Tendencies *Tendencies::create(const std::string &Name, const HorzMesh *Mesh,
-                               int NVertLevels, Config *Options) {
-
-   if (AllTendencies.find(Name) != AllTendencies.end()) {
-      LOG_ERROR("Attempted to create a new Tendencies with name {} but it "
-                "already exists",
-                Name);
-      return nullptr;
-   }
-
-   auto *NewTendencies = new Tendencies(Name, Mesh, NVertLevels, Options);
-   AllTendencies.emplace(Name, NewTendencies);
-
-   return NewTendencies;
-
-} // end create tendencies
-
-//------------------------------------------------------------------------------
 // Construct a new group of tendencies
-Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
-                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       int NVertLevels, ///< [in] Number of vertical levels
-                       Config *Options  ///< [in] Configuration options
-                       )
+Tendencies::Tendencies(
+    const std::string &Name, ///< [in] Name for tendencies
+    const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+    int NVertLevels,         ///< [in] Number of vertical levels
+    Config *Options,         ///< [in] Configuration options
+    std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
+        InCustomThicknessTend,
+    std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
+        InCustomVelocityTend)
     : ThicknessFluxDiv(Mesh, Options), PotientialVortHAdv(Mesh, Options),
       KEGrad(Mesh, Options), SSHGrad(Mesh, Options),
-      VelocityDiffusion(Mesh, Options), VelocityHyperDiff(Mesh, Options) {
+      VelocityDiffusion(Mesh, Options), VelocityHyperDiff(Mesh, Options),
+      CustomThicknessTend(InCustomThicknessTend),
+      CustomVelocityTend(InCustomVelocityTend) {
 
    // Tendency arrays
    LayerThicknessTend =
@@ -125,6 +112,16 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
    NChunks     = NVertLevels / VecLength;
 
 } // end constructor
+
+Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                       int NVertLevels, ///< [in] Number of vertical levels
+                       Config *Options) ///< [in] Configuration options
+    : Tendencies(Name, Mesh, NVertLevels, Options,
+                 std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
+                                    int, Real)>{},
+                 std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
+                                    int, Real)>{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
@@ -153,6 +150,11 @@ void Tendencies::computeThicknessTendencies(
              LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
                                  ThickFluxEdge, NormalVelEdge);
           });
+   }
+
+   if (CustomThicknessTend) {
+      CustomThicknessTend(LocLayerThicknessTend, State, AuxState, TimeLevel,
+                          Time);
    }
 
 } // end thickness tendency compute
@@ -231,6 +233,11 @@ void Tendencies::computeVelocityTendencies(
              LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
                                   Del2DivCell, Del2RVortVertex);
           });
+   }
+
+   if (CustomVelocityTend) {
+      CustomVelocityTend(LocNormalVelocityTend, State, AuxState, TimeLevel,
+                         Time);
    }
 
 } // end velocity tendency compute
