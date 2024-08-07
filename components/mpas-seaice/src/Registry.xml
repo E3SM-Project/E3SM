@@ -1879,6 +1879,10 @@
 			description="Use data iceberg meltwater forcing"
 			possible_values="true or false"
 		/>
+		<nml_option name="config_scale_dib_by_removed_ice_runoff" type="logical" default_value="false"
+			description="Whether to scale data iceberg fluxes by the running mean of removed ice runoff"
+			possible_values="true or false"
+		/>
 		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
 			description="Type of salt flux to ocean method"
 			possible_values="'constant' or 'prognostic'"
@@ -2102,6 +2106,7 @@
 			<var name="testArrayRestartability"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart"
@@ -4971,8 +4976,13 @@
 			 packages="pkgScaledDIB"
 			 description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
 		/>
-
-
+		<var name="runningMeanRemovedIceRunoff"
+		     type="real"
+			 dimensions="Time"
+			 units="kg s-1"
+			 packages="pkgScaledDIB"
+			 description="The running mean of removed Antarctic ice runoff, computed in MPAS-Ocean"
+		/>
 	</var_struct>
 
 	<!-- fluxes from icebergs to ocean -->

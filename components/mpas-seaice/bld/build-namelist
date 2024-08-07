@@ -946,6 +946,7 @@ if ($iceberg_mode eq 'data') {
 } else {
     add_default($nl, 'config_use_data_icebergs', 'val'=>"false");
 }
+add_default($nl, 'config_scale_dib_by_removed_ice_runoff');
 add_default($nl, 'config_salt_flux_coupling_type');
 add_default($nl, 'config_ice_ocean_drag_coefficient');
 
