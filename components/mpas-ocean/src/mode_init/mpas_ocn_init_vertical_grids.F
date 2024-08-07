@@ -1480,6 +1480,7 @@ contains
           call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
           call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
           call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
           ! Fill bathymetry holes, i.e. single cells that are deeper than all neighbors.
           ! These cells can collect tracer extrema and are not able to use
@@ -1497,6 +1498,9 @@ contains
 
              if (maxLevelCell(iCell) > maxLevelNeighbors) then
                 maxLevelCell(iCell) = maxLevelNeighbors
+                if (smoothingMask(iCell) == 0) then
+                   bottomDepth(iCell) = refBottomDepth(maxLevelNeighbors)
+                end if
              end if
           end do
 
