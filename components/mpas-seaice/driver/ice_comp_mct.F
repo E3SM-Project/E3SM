@@ -194,7 +194,9 @@ contains
     type (MPAS_TimeInterval_Type) :: alarmTimeStep
     type (block_type), pointer :: block
 
-    type (MPAS_Pool_Type), pointer :: shortwave
+    type (MPAS_Pool_Type), pointer :: &
+         shortwave, &
+         berg_forcing
 
     logical :: exists
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
@@ -244,12 +246,15 @@ contains
 #endif
 
 #endif
-    logical, pointer :: tempLogicalConfig
+    logical, pointer :: &
+         tempLogicalConfig, &
+         config_scale_dib_by_removed_ice_runoff
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
 
     real(kind=RKIND), pointer :: &
-         dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+         dayOfNextShortwaveCalculation, & ! needed for CESM like coupled simulations
+         runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -505,6 +510,9 @@ contains
 
     end if
 
+    call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
+                              config_scale_dib_by_removed_ice_runoff)
+
     ! Setup MPASSI simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
@@ -635,6 +643,15 @@ contains
 
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
+
+    if (config_scale_dib_by_removed_ice_runoff) then
+       ! independent of space so should be no need to loop over blocks
+       block => domain % blocklist
+       call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+       call MPAS_pool_get_array(berg_forcing, "runningMeanRemovedIceRunoff", &
+                                runningMeanRemovedIceRunoff)
+       call seq_infodata_GetData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff )
+    end if
 
     ! Determine time of next atmospheric shortwave calculation
     block => domain % blocklist
@@ -1151,7 +1168,8 @@ contains
 ! Variable related to MPASSI
       type (block_type), pointer :: block
       type (MPAS_Pool_type), pointer :: &
-            shortwave
+            shortwave, &
+            berg_forcing
 
       real (kind=RKIND) :: current_wallclock_time
       type (MPAS_Time_Type) :: currTime
@@ -1159,13 +1177,16 @@ contains
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
       logical :: streamActive, debugOn
-      logical, pointer :: config_write_output_on_startup
+      logical, pointer :: &
+            config_write_output_on_startup, &
+            config_scale_dib_by_removed_ice_runoff
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: &
             config_restart_timestamp_name, &
             config_column_physics_type
       real(kind=RKIND), pointer :: &
-            dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+            dayOfNextShortwaveCalculation, & ! needed for CESM like coupled simulations
+            runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
 #ifdef MOABCOMP
       real(r8)                 :: difference
@@ -1187,8 +1208,10 @@ contains
       mpas_log_info => domain % logInfo
       if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
 
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call MPAS_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+      call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
+                                config_scale_dib_by_removed_ice_runoff)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -1225,6 +1248,15 @@ contains
 
       ! Post coupling calls
       block => domain % blocklist
+
+      if (config_scale_dib_by_removed_ice_runoff) then
+         ! independent of space so should be no need to loop over blocks
+         call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+         call MPAS_pool_get_array(berg_forcing, "runningMeanRemovedIceRunoff", &
+                                  runningMeanRemovedIceRunoff)
+         call seq_infodata_GetData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff )
+      end if
+
       do while (associated(block))
 
          ! Determine time of next atmospheric shortwave calculation
