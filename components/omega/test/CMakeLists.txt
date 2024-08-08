@@ -302,7 +302,7 @@ add_omega_test(
 add_omega_test(
   TIMESTEPPER_TEST
   testTimeStepper.exe
-  timestepping/TimeStepperTest.cpp
+  timeStepping/TimeStepperTest.cpp
     "-n;2"
 )
 
