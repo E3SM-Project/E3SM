@@ -107,9 +107,9 @@ Tendencies::Tendencies(
        Array2DReal("NormalVelocityTend", Mesh->NEdgesSize, NVertLevels);
 
    // Array dimension lengths
-   NCellsOwned = Mesh->NCellsOwned;
-   NEdgesOwned = Mesh->NEdgesOwned;
-   NChunks     = NVertLevels / VecLength;
+   NCellsAll = Mesh->NCellsAll;
+   NEdgesAll = Mesh->NEdgesAll;
+   NChunks   = NVertLevels / VecLength;
 
 } // end constructor
 
@@ -133,7 +133,7 @@ void Tendencies::computeThicknessTendenciesOnly(
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
-   OMEGA_SCOPE(LocNCellsOwned, NCellsOwned);
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
    OMEGA_SCOPE(LocNChunks, NChunks);
    OMEGA_SCOPE(LocThicknessFluxDiv, ThicknessFluxDiv);
    const Array2DReal &NormalVelEdge = State->NormalVelocity[TimeLevel];
@@ -146,7 +146,7 @@ void Tendencies::computeThicknessTendenciesOnly(
 
    if (LocThicknessFluxDiv.Enabled) {
       parallelFor(
-          {LocNCellsOwned, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
+          {LocNCellsAll, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
              LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
                                  ThickFluxEdge, NormalVelEdge);
           });
@@ -169,7 +169,7 @@ void Tendencies::computeVelocityTendenciesOnly(
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
-   OMEGA_SCOPE(LocNEdgesOwned, NEdgesOwned);
+   OMEGA_SCOPE(LocNEdgesAll, NEdgesAll);
    OMEGA_SCOPE(LocNChunks, NChunks);
    OMEGA_SCOPE(LocPotientialVortHAdv, PotientialVortHAdv);
    OMEGA_SCOPE(LocKEGrad, KEGrad);
@@ -187,7 +187,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &NormVelEdge   = State->NormalVelocity[TimeLevel];
    if (LocPotientialVortHAdv.Enabled) {
       parallelFor(
-          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          {LocNEdgesAll, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
              LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
                                    NormRVortEdge, NormFEdge, FluxLayerThickEdge,
                                    NormVelEdge);
@@ -198,7 +198,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &KECell = AuxState->KineticAux.KineticEnergyCell;
    if (LocKEGrad.Enabled) {
       parallelFor(
-          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          {LocNEdgesAll, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
              LocKEGrad(LocNormalVelocityTend, IEdge, KChunk, KECell);
           });
    }
@@ -207,7 +207,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &SSHCell = AuxState->LayerThicknessAux.SshCell;
    if (LocSSHGrad.Enabled) {
       parallelFor(
-          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          {LocNEdgesAll, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
              LocSSHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
           });
    }
@@ -217,7 +217,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &RVortVertex = AuxState->VorticityAux.RelVortVertex;
    if (LocVelocityDiffusion.Enabled) {
       parallelFor(
-          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          {LocNEdgesAll, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
              LocVelocityDiffusion(LocNormalVelocityTend, IEdge, KChunk, DivCell,
                                   RVortVertex);
           });
@@ -229,7 +229,7 @@ void Tendencies::computeVelocityTendenciesOnly(
        AuxState->VelocityDel2Aux.Del2RelVortVertex;
    if (LocVelocityHyperDiff.Enabled) {
       parallelFor(
-          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+          {LocNEdgesAll, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
              LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
                                   Del2DivCell, Del2RVortVertex);
           });
@@ -254,7 +254,7 @@ void Tendencies::computeThicknessTendencies(
    OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[TimeLevel]);
 
    parallelFor(
-       "computeLayerThickAux", {NEdgesOwned, NChunks},
+       "computeLayerThickAux", {NEdgesAll, NChunks},
        KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LayerThicknessAux.computeVarsOnEdge(IEdge, KChunk, LayerThickCell,
                                               NormalVelEdge);

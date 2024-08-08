@@ -59,14 +59,14 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
    OMEGA_SCOPE(LocVelocityDel2Aux, VelocityDel2Aux);
 
    parallelFor(
-       "vertexAuxState1", {Mesh->NVerticesHaloH(2), NChunks},
+       "vertexAuxState1", {Mesh->NVerticesAll, NChunks},
        KOKKOS_LAMBDA(int IVertex, int KChunk) {
           LocVorticityAux.computeVarsOnVertex(IVertex, KChunk, LayerThickCell,
                                               NormalVelEdge);
        });
 
    parallelFor(
-       "cellAuxState1", {Mesh->NCellsHaloH(2), NChunks},
+       "cellAuxState1", {Mesh->NCellsAll, NChunks},
        KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocKineticAux.computeVarsOnCell(ICell, KChunk, NormalVelEdge);
        });
@@ -75,7 +75,7 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
    const auto &RelVortVertex   = VorticityAux.RelVortVertex;
 
    parallelFor(
-       "edgeAuxState1", {Mesh->NEdgesHaloH(1), NChunks},
+       "edgeAuxState1", {Mesh->NEdgesAll, NChunks},
        KOKKOS_LAMBDA(int IEdge, int KChunk) {
           LocVorticityAux.computeVarsOnEdge(IEdge, KChunk);
           LocLayerThicknessAux.computeVarsOnEdge(IEdge, KChunk, LayerThickCell,
@@ -85,19 +85,19 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
        });
 
    parallelFor(
-       "vertexAuxState2", {Mesh->NVerticesHaloH(0), NChunks},
+       "vertexAuxState2", {Mesh->NVerticesAll, NChunks},
        KOKKOS_LAMBDA(int IVertex, int KChunk) {
           LocVelocityDel2Aux.computeVarsOnVertex(IVertex, KChunk);
        });
 
    parallelFor(
-       "cellAuxState2", {Mesh->NCellsHaloH(0), NChunks},
+       "cellAuxState2", {Mesh->NCellsAll, NChunks},
        KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocVelocityDel2Aux.computeVarsOnCell(ICell, KChunk);
        });
 
    parallelFor(
-       "cellAuxState3", {Mesh->NCellsHaloH(1), NChunks},
+       "cellAuxState3", {Mesh->NCellsAll, NChunks},
        KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
                                                   LayerThickCell);
