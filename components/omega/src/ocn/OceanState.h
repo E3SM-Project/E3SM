@@ -117,6 +117,9 @@ class OceanState {
    /// load state from file
    void loadStateFromFile(const std::string &StateFileName, Decomp *MeshDecomp);
 
+   /// Exchange halo
+   void exchangeHalo(int TimeLevel);
+
    /// Swap time levels to update state arrays
    void updateTimeLevels();
 

@@ -364,6 +364,15 @@ void OceanState::copyToHost(int TimeLevel) {
 } // end copyToHost
 
 //------------------------------------------------------------------------------
+// Perform state halo exchange
+void OceanState::exchangeHalo(int TimeLevel) {
+   copyToHost(TimeLevel);
+   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[TimeLevel], OnCell);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[TimeLevel], OnEdge);
+   copyToDevice(TimeLevel);
+} // end exchangeHalo
+
+//------------------------------------------------------------------------------
 // Perform time level update
 void OceanState::updateTimeLevels() {
 
