@@ -2778,7 +2778,7 @@
       <file grid="atm|lnd" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_ECwISC30to60E2r1.201007.nc</file>
       <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_IcoswISC30E3r5.231121.nc</file>
       <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_RRSwISC6to18E3r5.240328.nc</file>
-      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_SOwISC12to30E3r3.240723.nc</file>
+      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_SOwISC12to30E3r3.240808.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
@@ -2837,8 +2837,8 @@
       <file grid="ice|ocn" mask="IcosXISC30E3r7">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_IcosXISC30E3r7.240326.nc</file>
       <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_RRSwISC6to18E3r5.240328.nc</file>
       <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_RRSwISC6to18E3r5.240328.nc</file>
-      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_SOwISC12to30E3r3.240723.nc</file>
-      <file grid="ice|ocn" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_SOwISC12to30E3r3.240723.nc</file>
+      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_SOwISC12to30E3r3.240808.nc</file>
+      <file grid="ice|ocn" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_SOwISC12to30E3r3.240808.nc</file>
       <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oRRS18to6v3.220124.nc</file>
       <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oRRS18to6v3.220124.nc</file>
       <desc>TL319 is JRA lat/lon grid:</desc>
@@ -2952,8 +2952,8 @@
       <file grid="ice|ocn" mask="IcosXISC30E3r7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_IcosXISC30E3r7.240326.nc</file>
       <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_RRSwISC6to18E3r5.240328.nc</file>
       <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_RRSwISC6to18E3r5.240328.nc</file>
-      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_SOwISC12to30E3r3.240723.nc</file>
-      <file grid="ice|ocn" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_SOwISC12to30E3r3.240723.nc</file>
+      <file grid="atm|lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_SOwISC12to30E3r3.240808.nc</file>
+      <file grid="ice|ocn" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_SOwISC12to30E3r3.240808.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_gx1v6.190806.nc</file>
       <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_gx1v6.190806.nc</file>
       <desc>ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:</desc>
@@ -3275,7 +3275,7 @@
     <domain name="SOwISC12to30E3r3">
       <nx>807630</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.SOwISC12to30E3r3.240723.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.SOwISC12to30E3r3.240808.nc</file>
       <desc>SOwISC12to30E3r3 is a MPAS ocean grid generated with the jigsaw/compass process using XXXXX. Additionally, it has ocean in ice-shelf cavities:</desc>
     </domain>
 
@@ -3315,8 +3315,8 @@
       <file grid="lnd" mask="IcosXISC30E3r7">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_IcosXISC30E3r7.240326.nc</file>
       <file grid="atm" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_RRSwISC6to18E3r5.240328.nc</file>
       <file grid="lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_RRSwISC6to18E3r5.240328.nc</file>
-      <file grid="atm" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240723.nc</file>
-      <file grid="lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240723.nc</file>
+      <file grid="atm" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240808.nc</file>
+      <file grid="lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240808.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_gx1v6.191014.nc</file>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
@@ -3832,13 +3832,13 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="SOwISC12to30E3r3">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_traave.20240723.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trbilin.20240723.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3-nomask_trbilin.20240723.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_ne30pg2_traave.20240723.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_ne30pg2_traave.20240723.nc</map>
-      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trfvnp2.20240723.nc</map>
-      <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trfvnp2.20240723.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_traave.20240808.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trbilin.20240808.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3-nomask_trbilin.20240808.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_ne30pg2_traave.20240808.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_ne30pg2_traave.20240808.nc</map>
+      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trfvnp2.20240808.nc</map>
+      <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/ne30pg2/map_ne30pg2_to_SOwISC12to30E3r3_trfvnp2.20240808.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg3" ocn_grid="oEC60to30v3">
@@ -4630,11 +4630,11 @@
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="SOwISC12to30E3r3">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3_traave.20240723.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3-nomask_trbilin.20240723.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3_esmfpatch.20240723.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_T62_traave.20240723.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_T62_traave.20240723.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3_traave.20240808.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3-nomask_trbilin.20240808.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to30E3r3_esmfpatch.20240808.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_T62_traave.20240808.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_T62_traave.20240808.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="oQU240wLI">
@@ -4790,11 +4790,11 @@
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="SOwISC12to30E3r3">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3_traave.20240723.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3-nomask_trbilin.20240723.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3_esmfpatch.20240723.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_TL319_traave.20240723.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_TL319_traave.20240723.nc</map>
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3_traave.20240808.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3-nomask_trbilin.20240808.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_SOwISC12to30E3r3_esmfpatch.20240808.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_TL319_traave.20240808.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_TL319_traave.20240808.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="oRRS18to6v3">
@@ -5182,7 +5182,7 @@
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="SOwISC12to30E3r3">
-      <map name="OCN2ROF_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_r05_traave.20240723.nc</map>
+      <map name="OCN2ROF_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r3/map_SOwISC12to30E3r3_to_r05_traave.20240808.nc</map>
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="EC30to60E2r2">
@@ -5301,8 +5301,8 @@
     </gridmap>
 
     <gridmap ocn_grid="SOwISC12to30E3r3" rof_grid="rx1">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oQU240wLI" rof_grid="JRA025">
@@ -5401,8 +5401,8 @@
     </gridmap>
 
     <gridmap ocn_grid="SOwISC12to30E3r3" rof_grid="JRA025">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_JRA025_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_JRA025_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oRRS18to6v3" rof_grid="JRA025">
@@ -5501,8 +5501,8 @@
     </gridmap>
 
     <gridmap ocn_grid="SOwISC12to30E3r3" rof_grid="r05">
-      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_SOwISC12to30E3r3_cstmnn.r150e300.20240723.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_SOwISC12to30E3r3_cstmnn.r150e300.20240808.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="IcoswISC30E3r5" rof_grid="r025">
