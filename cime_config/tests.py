@@ -269,6 +269,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-upwind_advection",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
             )
         },
 
