@@ -766,6 +766,10 @@ This option enables more realistic
 snowpack conditions on glaciers and ice sheets, including a semi-empirical
 firn densification model. uses the same physics as use_extrasnowlayers but
 uses the original 5 snow layer scheme
+
+<entry id="use_T_rho_dependent_snowthk" type="logical" category="physics"
+	group="elm_inparm" valid_values="" value=".false.">
+Toggle to use new snow thermal conductivity that relies on snow temperature and density. 
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
