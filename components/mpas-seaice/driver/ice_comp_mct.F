@@ -241,7 +241,7 @@ contains
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
-#endif 
+#endif
 
 #endif
     logical, pointer :: tempLogicalConfig
@@ -730,7 +730,7 @@ contains
     allocate (x2i_im(lsize, nrecv) )
     i2x_im = 0._r8
     x2i_im = 0._r8
-    ! define tags according to the seq_flds_i2x_fields 
+    ! define tags according to the seq_flds_i2x_fields
     ! also zero them out
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
@@ -763,7 +763,7 @@ contains
     endif
 
 #endif
-    
+
 
 !-----------------------------------------------------------------------
 !
@@ -827,10 +827,10 @@ contains
     else if (trim(tempCharConfig) == "column_package") then
       call seaice_column_coupling_prep(domain)
     endif ! config_column_physics_type
-    
+
     call MPAS_pool_get_config(domain % configs, "config_use_floe_size_distribution", tempLogicalConfig)
     if (tempLogicalConfig) then
-      call mpas_log_write('FloeSizeDistribution coming online soon. Turn FSD off for now.', MPAS_LOG_CRIT)    
+      call mpas_log_write('FloeSizeDistribution coming online soon. Turn FSD off for now.', MPAS_LOG_CRIT)
     endif
 !-----------------------------------------------------------------------
 !
@@ -854,7 +854,7 @@ contains
 !
 !   get intial state from driver
 !
-    call ice_import_mct(x2i_i, errorCode)  
+    call ice_import_mct(x2i_i, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
@@ -862,7 +862,7 @@ contains
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
-    mpicom_moab = mpicom_i ! save it for run method 
+    mpicom_moab = mpicom_i ! save it for run method
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
@@ -879,8 +879,8 @@ contains
 #endif
 
     call ice_import_moab(Eclock)
-#endif 
-    
+#endif
+
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -1173,7 +1173,7 @@ contains
       integer :: size_list, index_list, ent_type
       type(mct_string)    :: mctOStr  !
       character(CXX) :: mct_field, modelStr, tagname
-#endif 
+#endif
 
 
       iam = domain % dminfo % my_proc_id
@@ -2998,8 +2998,8 @@ contains
       qi0new,          &
       vi0new
 
-   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)             
-   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)             
+   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
    if (freezingPotential > 0.0_RKIND) then
 
@@ -3479,15 +3479,15 @@ contains
 !    o  dhdx     -- ocn surface slope, zonal
 !    o  dhdy     -- ocn surface slope, meridional
 !    o  lwdn     -- downward lw heat flux
-!    o  rain     -- prec: liquid 
-!    o  snow     -- prec: frozen 
+!    o  rain     -- prec: liquid
+!    o  snow     -- prec: frozen
 !    o  swndr    -- sw: nir direct  downward
 !    o  swvdr    -- sw: vis direct  downward
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
 !    o  q        -- ocn frazil heat flux(+) / melt potential(-)
-!    o  frazil   -- ocn frazil mass flux 
+!    o  frazil   -- ocn frazil mass flux
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -3502,10 +3502,10 @@ contains
 !    o  dstdry2  -- Size 2 dust -- dry deposition flux
 !    o  dstdry3  -- Size 3 dust -- dry deposition flux
 !    o  dstdry4  -- Size 4 dust -- dry deposition flux
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  algae1   --
 !    o  algae2   --
 !    o  algae3   --
@@ -3530,7 +3530,7 @@ contains
 !    o  zaer4    --
 !    o  zaer5    --
 !    o  zaer6    --
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -3550,7 +3550,7 @@ contains
    character (len=StrKIND) :: &
       label,                  &
       message
- 
+
    integer ::  &
       i,n
 
@@ -3687,10 +3687,10 @@ contains
     if (ierr > 0 )  then
        write(iceLogUnit,*) 'Fail to write ice state '
     endif
-#endif   
-!----------------------------------------------------------------------- 
+#endif
+!-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
 
