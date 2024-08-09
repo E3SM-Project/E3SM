@@ -172,6 +172,34 @@
     </directives>
   </batch_system>
 
+  <batch_system type="pbspro" >
+    <batch_query args="-f">qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_cancel>qdel</batch_cancel>
+    <batch_env>-v</batch_env>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\S+)$</jobid_pattern>
+    <depend_string>-W depend=afterok:jobid</depend_string>
+    <depend_allow_string>-W depend=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>-M</batch_mail_flag>
+    <batch_mail_type_flag>-m</batch_mail_type_flag>
+    <batch_mail_type>, bea, b, e, a</batch_mail_type>
+    <submit_args>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
+    </submit_args>
+    <directives>
+      <directive> -N {{ job_id }}</directive>
+      <directive> -l select={{ num_nodes }} </directive>
+      <directive default="n"> -r {{ rerunnable }} </directive>
+      <directive> -j oe </directive>
+      <directive> -V </directive>
+    </directives>
+  </batch_system>
+
   <batch_system type="moab">
     <batch_query>pjstat</batch_query>
     <batch_submit>pjsub</batch_submit>
@@ -341,6 +369,16 @@
         <queue walltimemax="01:00:00" nodemax="512">knl</queue>
       </queues>
     </batch_system>
+
+  <batch_system MACH="improv" type="pbspro">
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" jobmin="1" jobmax="8" strict="true" default="true">debug</queue>
+      <queue walltimemax="00:30:00" jobmin="9" jobmax="737" strict="true">compute</queue>
+    </queues>
+  </batch_system>
 
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
