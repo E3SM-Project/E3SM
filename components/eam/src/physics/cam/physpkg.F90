@@ -176,6 +176,7 @@ subroutine phys_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
     use mo_chm_diags,       only: chm_diags_inti_ac
+    use modal_aer_opt,      only: modal_aer_opt_coords
 
     !---------------------------Local variables-----------------------------
     !
@@ -362,6 +363,9 @@ subroutine phys_register
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call vd_register()
 
        if (do_aerocom_ind3) call output_aerocom_aie_register()
+
+       ! add new coords to modal_aer_opt
+       call modal_aer_opt_coords
     
     end if
 
