@@ -535,10 +535,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <qc hgrid="ne256np4|ne1024np4">0.0</qc>
-    <qi hgrid="ne256np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne1024np4">0.0</nc>
-    <ni hgrid="ne256np4|ne1024np4">0.0</ni>
+    <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
+    <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
+    <nc hgrid="ne256np4|ne512np4|ne1024np4">0.0</nc>
+    <ni hgrid="ne256np4|ne512np4|ne1024np4">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->

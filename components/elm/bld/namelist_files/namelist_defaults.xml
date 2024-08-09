@@ -306,6 +306,8 @@ lnd/clm2/surfdata_map/surfdata_ne120pg2_simyr2010_c230119.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr1850_c240131.nc</fsurdat>
 <fsurdat hgrid="ne256np4.pg2" sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc</fsurdat>
+<fsurdat hgrid="ne512np4.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne512pg2_simyr2010_c240522.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
 <fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
