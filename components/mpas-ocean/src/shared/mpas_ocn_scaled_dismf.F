@@ -273,10 +273,11 @@ contains
 
         nHistory = config_ais_ice_runoff_history_days
 
+        previousTotal = totalRemovedIceRunoffHistory(nValidHistory)
+
         if (nValidHistory == 0) then
-            previousTotal = 0.0_RKIND
-        else
-            previousTotal = totalRemovedIceRunoffHistory(nValidHistory)
+            ! we keep zero as the first entry in totalRemovedIceRunoffHistory
+            nValidHistory = 1
         end if
 
         if (nValidHistory == nHistory) then
@@ -292,14 +293,12 @@ contains
         ! add the new total, the previous total plus the new daily average
         totalRemovedIceRunoffHistory(nValidHistory) = previousTotal + SHR_CONST_CDAY * avgRemovedIceRunoff
 
-        if (nValidHistory > 1) then
-            timeInterval = SHR_CONST_CDAY * (nValidHistory - 1)
-            ! the running mean is the difference between the newest and oldest
-            ! totals divided by the time between them
-            runningMeanRemovedIceRunoff = &
-                (totalRemovedIceRunoffHistory(nValidHistory) - totalRemovedIceRunoffHistory(1)) &
-                / timeInterval
-        end if
+        timeInterval = SHR_CONST_CDAY * (nValidHistory - 1)
+        ! the running mean is the difference between the newest and oldest
+        ! totals divided by the time between them
+        runningMeanRemovedIceRunoff = &
+            (totalRemovedIceRunoffHistory(nValidHistory) - totalRemovedIceRunoffHistory(1)) &
+            / timeInterval
 
         ! reset daily averaging of the removed runoff
         nAccumulated = 0
