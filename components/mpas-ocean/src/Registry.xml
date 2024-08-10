@@ -3852,6 +3852,10 @@
 			 description="The daily mean, area integrated value of removedIceRunoffFlux."
 			 packages="scaledDISMFPKG"
 		/>
+		<var name="dailyAvgRemovedIceRunoff" type="real" dimensions="Time" units="kg s^-1"
+			 description="The daily mean, area integrated value of removedIceRunoffFlux."
+			 packages="scaledDISMFPKG"
+		/>
 		<var name="totalRemovedIceRunoffHistory" type="real" dimensions="nRemovedIceRunoffHistory Time" units="kg"
 			 description="The history of avgRemovedIceRunoff, used to compute a running mean."
 			 packages="scaledDISMFPKG"
