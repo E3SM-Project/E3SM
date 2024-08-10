@@ -141,7 +141,12 @@ contains
             return
         end if
 
-       ! Compute pgf additions due to self-attraction and loading
+        ! since the current clock time is for the end of the accumulation
+        ! intereval, first, accumulate the daily mean
+        call accumulate_mean_removed_ice_runoff(domain)
+
+       ! then, compute update the history and running mean if we are at the
+       ! end of a day
        if(mpas_is_alarm_ringing(domain % clock, alarmID, ierr=err_tmp)) then
 #ifdef MPAS_DEBUG
             call mpas_log_write('       Computing Scaled DISMF')
@@ -149,8 +154,6 @@ contains
             call update_scaled_dismf(domain)
             call mpas_reset_clock_alarm(domain % clock, alarmID, ierr=err_tmp)
         endif
-
-        call accumulate_mean_removed_ice_runoff(domain)
 
     end subroutine ocn_update_scaled_dismf!}}}
 
