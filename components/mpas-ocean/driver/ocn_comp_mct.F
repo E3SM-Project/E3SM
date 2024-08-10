@@ -1222,6 +1222,9 @@ contains
             block_ptr => block_ptr % next
          end do
 
+        ! update scaled data ice-shelf melt fluxes based on remove ice runoff
+        call ocn_update_scaled_dismf(domain)
+
          if (debugOn) call mpas_log_write('   Computing analysis members')
          call ocn_analysis_compute(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
@@ -1275,11 +1278,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
          block_ptr => block_ptr % next
       end do
-
-      ! update scaled data ice-shelf melt fluxes based on remove ice runoff
-      ! this only happens once per coupling interval because it is based on
-      ! an input field from the coupler
-      call ocn_update_scaled_dismf(domain)
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
