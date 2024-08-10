@@ -777,7 +777,7 @@ void compute_wet_mixing_ratios(const Team& team,
 }
 
 // Computes the reciprocal of pseudo density for a column
-KOKKOS_INLINE_FUNCTION
+inline
 void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
                                       const_view_2d pdel,
                                       const int nlev,

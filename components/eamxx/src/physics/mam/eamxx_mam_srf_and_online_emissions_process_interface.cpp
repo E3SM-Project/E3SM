@@ -191,7 +191,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
 
   // Work array to store fluxes after unit conversions to kg/m2/s
-  fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units_", ncol_);
+  fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
   // Current month ( 0-based)
   const int curr_month = timestamp().get_month() - 1;
@@ -221,16 +221,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, 1);
 
-  // preprocess input -- needs a scan for the calculation of atm height
-  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
-  Kokkos::fence();
-
-  // policy to loop over columns only
-  const auto ncol_only_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, 1);
+  // Zero output 
+  Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
   // Gather time and state information for interpolation
   auto ts = timestamp() + dt;
@@ -261,25 +254,18 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
 
     // modify units from molecules/cm2/s to kg/m2/s
+    auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
+    auto constituent_fluxes = this->constituent_fluxes_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
     // Parallel loop over all the columns to update units
-    Kokkos::parallel_for(
-        ncol_only_policy,
-        KOKKOS_LAMBDA(const MAMSrfOnlineEmiss::KT::MemberType &team) {
-          const int icol = team.league_rank();
-          fluxes_in_mks_units_(icol) =
-              ispec_srf.data_out_.emiss_sectors[0](icol) * mfactor;
-        });
+    Kokkos::parallel_for("fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+        fluxes_in_mks_units(icol) = ispec_srf.data_out_.emiss_sectors(0,icol) * mfactor;
+        constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
+    });
 
-    // Get subview
-    auto flux_1d_view =
-        Kokkos::subview(constituent_fluxes_, Kokkos::ALL(),
-                        spcIndex_in_pcnst_.at(ispec_srf.species_name));
-
-    // update flux in constituent_fluxes_ view
-    Kokkos::deep_copy(flux_1d_view, fluxes_in_mks_units_);
   }  // for loop for species
+  Kokkos::fence();
 }  // run_imple ends
 
 // =============================================================================

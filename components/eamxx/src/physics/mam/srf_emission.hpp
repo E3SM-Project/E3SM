@@ -30,26 +30,23 @@ struct srfEmissFunctions {
 
   struct srfEmissData {
     srfEmissData() = default;
-    srfEmissData(const int ncol_, const int nsectors_) {
-      init(ncol_, nsectors_, true);
+    srfEmissData(const int ncol_, const int nsectors_) : 
+      ncols(ncol_),
+      nsectors(nsectors_)
+    {
+      init(ncols, nsectors, true);
     }
 
-    void init(const int ncol_, const int nsectors_, const bool allocate) {
-      ncols    = ncol_;
-      nsectors = nsectors_;
-
-      if(allocate) {
-        for(int i = 0; i < nsectors; ++i) {
-          auto sector = view_1d("", ncols);
-          emiss_sectors.push_back(sector);
-        }
-      }
+    void init(const int ncol, const int nsector, const bool allocate) {
+      ncols = ncol;
+      nsectors = nsector;
+      if(allocate) 
+        emiss_sectors = view_2d("AllSectors", nsectors, ncols);
     }  // srfEmissData init
 
     // Basic spatial dimensions of the data
     int ncols, nsectors;
-    std::vector<view_1d> emiss_sectors;
-
+    view_2d emiss_sectors;
   };  // srfEmissData
 
   struct srfEmissInput {

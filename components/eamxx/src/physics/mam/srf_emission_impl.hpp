@@ -55,14 +55,14 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
   const auto nondim    = ekat::units::Units::nondimensional();
 
-  std::vector<Field> emiss_sectors;
+  std::vector<Field> field_emiss_sectors;
 
   for(int icomp = 0; icomp < sector_names.size(); ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
     f.allocate_view();
-    emiss_sectors.push_back(f);
+    field_emiss_sectors.push_back(f);
     remapper->register_field_from_tgt(f);
   }
 
@@ -76,18 +76,18 @@ std::shared_ptr<AtmosphereInput>
 srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &srfEmiss_data_file) {
-  std::vector<Field> emiss_sectors;
+  std::vector<Field> field_emiss_sectors;
   for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
-    emiss_sectors.push_back(horiz_remapper->get_src_field(i));
+    field_emiss_sectors.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
-                                           emiss_sectors, true);
+                                           field_emiss_sectors, true);
 }  // create_srfEmiss_data_reader
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(
+ScalarX srfEmissFunctions<S, D>::linear_interp(
     const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
@@ -136,13 +136,13 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
         Kokkos::parallel_reduce(
             Kokkos::TeamThreadRange(team, nsectors),
             [&](const int i, Real &update) {
-              const auto beg = data_beg.data.emiss_sectors[i](icol);
-              const auto end = data_end.data.emiss_sectors[i](icol);
+              const auto beg = data_beg.data.emiss_sectors(i, icol);
+              const auto end = data_end.data.emiss_sectors(i, icol);
               update += linear_interp(beg, end, delta_t_fraction);
             },
             accum);
         // Assign the accumulated value to the output
-        data_out.emiss_sectors[0](icol) = accum;
+        data_out.emiss_sectors(0, icol) = accum;
       });
   Kokkos::fence();
 }  // perform_time_interpolation
@@ -212,7 +212,8 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
     auto sector =
         srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    Kokkos::deep_copy(srfEmiss_input.data.emiss_sectors[i], sector);
+    const auto emiss = Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
+    Kokkos::deep_copy(emiss, sector);
   }
 
   Kokkos::fence();

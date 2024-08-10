@@ -83,24 +83,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     void initialize(const view_2d &constituent_fluxes) {
       constituent_fluxes_pre_ = constituent_fluxes;
     }
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(
-        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
-      // zero-out the constituent surface fluxes for all gas and aerosol
-      // species.
-      for(auto icnst = mam4::utils::gasses_start_ind();
-          icnst < mam4::aero_model::pcnst; ++icnst) {
-        constituent_fluxes_pre_(i, icnst) = 0;
-      }
-      team.team_barrier();
-
-    }  // operator()
-
     // local variables for preprocess struct
     view_2d constituent_fluxes_pre_;
-
   };  // MAMSrfOnlineEmiss::Preprocess
 
  private:
