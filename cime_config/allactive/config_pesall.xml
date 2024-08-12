@@ -631,9 +631,9 @@
           <ntasks_lnd>72</ntasks_lnd>
           <ntasks_rof>72</ntasks_rof>
           <ntasks_ice>1296</ntasks_ice>
-          <ntasks_ocn>216</ntasks_ocn>
+          <ntasks_ocn>180</ntasks_ocn>
           <ntasks_cpl>1368</ntasks_cpl>
-          <ntasks_wav>288</ntasks_wav>
+          <ntasks_wav>252</ntasks_wav>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
@@ -642,7 +642,7 @@
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>1368</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_wav>1584</rootpe_wav>
+          <rootpe_wav>1548</rootpe_wav>
         </rootpe>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -678,22 +678,22 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+WW3." pesize="any">
         <comment>chrysalis --compset WCYCL+ww3 --res ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2 </comment>
         <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>72</ntasks_lnd>
-          <ntasks_rof>72</ntasks_rof>
-          <ntasks_ice>1296</ntasks_ice>
-          <ntasks_cpl>1296</ntasks_cpl>
-          <ntasks_ocn>216</ntasks_ocn>
-          <ntasks_wav>612</ntasks_wav>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_lnd>384</ntasks_lnd>
+          <ntasks_rof>384</ntasks_rof>
+          <ntasks_ice>640</ntasks_ice>
+          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_ocn>256</ntasks_ocn>
+          <ntasks_wav>640</ntasks_wav>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1080</rootpe_lnd>
-          <rootpe_rof>1080</rootpe_rof>
+          <rootpe_lnd>640</rootpe_lnd>
+          <rootpe_rof>640</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>1368</rootpe_ocn>
+          <rootpe_ocn>1024</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_wav>1728</rootpe_wav>
+          <rootpe_wav>1280</rootpe_wav>
         </rootpe>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
