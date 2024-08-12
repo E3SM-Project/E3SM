@@ -66,7 +66,7 @@ class Dimension {
    //---------------------------------------------------------------------------
    /// Creates a non-distributed dimension given a name and length
    static std::shared_ptr<Dimension>
-   create(const std::string Name, ///< [in] name of dimension
+   create(const std::string &Name, ///< [in] name of dimension
           const I4 GlobalLength   ///< [in] length of dimension
    );
 
@@ -79,7 +79,7 @@ class Dimension {
    //---------------------------------------------------------------------------
    // Destroys a dimension
    static void
-   destroy(const std::string Name ///< [in] name of dimension to destroy
+   destroy(const std::string &Name ///< [in] name of dimension to destroy
    );
 
    //---------------------------------------------------------------------------
@@ -89,16 +89,16 @@ class Dimension {
    //---------------------------------------------------------------------------
    // Retrieves full dimension instance by name
    static std::shared_ptr<Dimension>
-   get(const std::string Name // [in] Name of dimension
+   get(const std::string &Name // [in] Name of dimension
    );
 
    //---------------------------------------------------------------------------
    /// Get name of dimension from instance (iterator)
-   std::string getName();
+   std::string getName() const;
 
    //---------------------------------------------------------------------------
    /// Check distributed property of a dimension from instance
-   bool isDistributed();
+   bool isDistributed() const;
 
    //---------------------------------------------------------------------------
    /// Check distributed property of dimension given its name
@@ -108,7 +108,7 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get global dimension from instance
-   I4 getLengthGlobal();
+   I4 getLengthGlobal() const;
 
    //---------------------------------------------------------------------------
    /// Get global dimension length by name
@@ -118,7 +118,7 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get length of dimension in local partition from instance
-   I4 getLengthLocal();
+   I4 getLengthLocal() const;
 
    //---------------------------------------------------------------------------
    /// Get length of dimension in local partition by name
@@ -128,7 +128,7 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// Get global offset for each local address from dim instance
-   HostArray1DI4 getOffset();
+   HostArray1DI4 getOffset() const;
 
    //---------------------------------------------------------------------------
    /// Get global offset for each local address given a dim name
@@ -143,7 +143,7 @@ class Dimension {
    //---------------------------------------------------------------------------
    /// An iterator can be used to loop through all defined dimensions
    using Iter =
-       std::map<std::string, std::shared_ptr<Dimension>>::const_iterator;
+       std::map<std::string, std::shared_ptr<Dimension>>::iterator;
 
    /// Returns an iterator to the first dimension stored in AllDims
    static Iter begin();

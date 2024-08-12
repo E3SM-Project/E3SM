@@ -74,7 +74,7 @@ std::shared_ptr<Dimension> Dimension::create(
 //------------------------------------------------------------------------------
 // Creates a non-distributed dimension given a name and length
 std::shared_ptr<Dimension>
-Dimension::create(const std::string Name, // [in] name of dimension
+Dimension::create(const std::string &Name, // [in] name of dimension
                   const I4 GlobalLength   // [in] length of dimension
 ) {
    auto Dim = std::make_shared<Dimension>(); // create empty dim
@@ -124,7 +124,7 @@ bool Dimension::exists(
 //------------------------------------------------------------------------------
 // Destroys a dimension
 void Dimension::destroy(
-    const std::string Name // [in] name of dimension to destroy
+    const std::string &Name // [in] name of dimension to destroy
 ) {
    if (exists(Name)) {
       AllDims.erase(Name);
@@ -146,7 +146,7 @@ void Dimension::clear() {
 //----------------------------------------------------------------------------//
 // Retrieves full dimension instance by name
 std::shared_ptr<Dimension>
-Dimension::get(const std::string Name // [in] Name of dimension
+Dimension::get(const std::string &Name // [in] Name of dimension
 ) {
    if (exists(Name)) {
       return AllDims[Name];
@@ -161,11 +161,11 @@ Dimension::get(const std::string Name // [in] Name of dimension
 
 //------------------------------------------------------------------------------
 // Get name of dimension from instance (iterator)
-std::string Dimension::getName() { return DimName; }
+std::string Dimension::getName() const { return DimName; }
 
 //------------------------------------------------------------------------------
 // Check whether dimension is distributed
-bool Dimension::isDistributed() { return Distributed; }
+bool Dimension::isDistributed() const { return Distributed; }
 
 //------------------------------------------------------------------------------
 // Check whether dimension is distributed by dimension name
@@ -187,7 +187,7 @@ bool Dimension::isDistributedDim(
 
 //------------------------------------------------------------------------------
 // Get global dimension from instance
-I4 Dimension::getLengthGlobal() { return GlobalLength; }
+I4 Dimension::getLengthGlobal() const { return GlobalLength; }
 
 //------------------------------------------------------------------------------
 // Get global dimension length by name
@@ -214,7 +214,7 @@ I4 Dimension::getDimLengthGlobal(
 
 //------------------------------------------------------------------------------
 // Get length dimension in local partition from instance
-I4 Dimension::getLengthLocal() { return LocalLength; }
+I4 Dimension::getLengthLocal() const { return LocalLength; }
 
 //------------------------------------------------------------------------------
 // Get length dimension in local partition by name
@@ -241,7 +241,7 @@ I4 Dimension::getDimLengthLocal(
 
 //------------------------------------------------------------------------------
 // Get global offset for each local address from dim instance
-HostArray1DI4 Dimension::getOffset() { return Offset; }
+HostArray1DI4 Dimension::getOffset() const { return Offset; }
 
 //------------------------------------------------------------------------------
 // Get global offset for each local address given a dim name
