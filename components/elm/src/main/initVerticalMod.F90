@@ -22,8 +22,9 @@ module initVerticalMod
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil
-  use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
+  use ColumnDataType , only : col_ws
   use SnowHydrologyMod, only : InitSnowLayers
   use ncdio_pio
   use topounit_varcon  , only : max_topounits
@@ -584,6 +585,7 @@ contains
             g = col_pp%gridcell(c)
             col_pp%meangradz(c) = gradz(g)
          end do
+         deallocate(gradz)
       end if
 
       allocate(std(bounds%begg:bounds%endg))

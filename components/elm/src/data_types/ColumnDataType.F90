@@ -169,6 +169,11 @@ module ColumnDataType
     real(r8), pointer :: vsfm_soilp_col_1d  (:)   => null() ! 1D soil liquid pressure from VSFM [Pa]
     real(r8), pointer :: h2orof             (:)   => null() ! floodplain inundation volume received from rof (mm)
     real(r8), pointer :: frac_h2orof        (:)   => null() ! floodplain inundation fraction received from rof (-)
+   ! polygonal tundra
+    real(r8), pointer :: iwp_microrel  (:) => null() ! ice wedge polygon microtopographic relief (m)
+    real(r8), pointer :: iwp_exclvol   (:) => null() ! ice wedge polygon excluded volume (m)
+    real(r8), pointer :: iwp_ddep      (:) => null() ! ice wedge polygon depression depth (m)
+    real(r8), pointer :: iwp_subsidence(:) => null() ! ice wedge polygon ground subsidence (m)
 
   contains
     procedure, public :: Init    => col_ws_init
@@ -1458,6 +1463,11 @@ contains
     allocate(this%vsfm_soilp_col_1d  (ncells))                        ; this%vsfm_soilp_col_1d  (:)   = spval
     allocate(this%h2orof             (begc:endc))                     ; this%h2orof             (:)   = spval
     allocate(this%frac_h2orof        (begc:endc))                     ; this%frac_h2orof        (:)   = spval
+    ! polygonal tundra/ice wedge polygons:
+    allocate(this%iwp_microrel       (begc:endc))                   ; this%iwp_microrel  (:) = spval
+    allocate(this%iwp_exclvol        (begc:endc))                   ; this%iwp_exclvol   (:) = spval
+    allocate(this%iwp_ddep           (begc:endc))                   ; this%iwp_ddep      (:) = spval
+    allocate(this%iwp_subsidence     (begc:endc))                   ; this%iwp_subsidence(:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ws
@@ -1493,12 +1503,30 @@ contains
          avgflag='A', long_name='soil ice (ice landunits only)', &
          ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
 
+    ! RPF - polygonal tundra vars
     this%excess_ice(begc:endc, :) = spval
     if (use_polygonal_tundra) then
       call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
            avgflag='A', long_name='Excess ground ice (0 to 1)', &
            ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
     end if
+
+    this%iwp_subsidence(begc:endc) = spval
+    this%iwp_ddep(begc:endc)       = spval
+    this%iwp_exclvol(begc:endc)    = spval
+    this%iwp_microrel(begc:endc)   = spval
+    if (use_polygonal_tundra) then
+      call hist_addfld1d (fname="SUBSIDENCE", units='m', avgflag='A', &
+            long_name='ground subsidence (m)', ptr_col=this%iwp_subsidence)
+      call hist_addfld1d (fname="DEPRESS_DEPTH", units='m', avgflag='A', &
+            long_name='microtopographic depression depth (m)', ptr_col=this%iwp_ddep)
+      call hist_addfld1d (fname="EXCLUDED_VOL", units='m', avgflag='A', &
+            long_name='volume of soil above lowest point on IWP surface, normalized by polygon area', &
+            ptr_col=this%iwp_ddep)
+      call hist_addfld1d (fname="MICROREL", units='m', avgflag='A', &
+            long_name='microtopographic relief (m)', ptr_col=this%iwp_ddep)
+    endif
+    !/polygonal tundra
 
     this%h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='H2OSFC',  units='mm',  &
@@ -1893,6 +1921,22 @@ contains
            dim1name='column', dim2name='levgrnd', switchdim=.true., &
            long_name='excess ground ice (0 to 1)', units='1', &
            interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
+      call restartvar(ncid=ncid, flag=flag, varname='SUBSIDENCE', xtype=ncd_double, &
+           dim1name='column', &
+           long_name='ground subsidence', units='m', &
+           interpinic_flag='interp', readvar=readvar, data=this%iwp_subsidence)
+      call restartvar(ncid=ncid, flag=flag, varname='DEPRESS_DEPTH', xtype=ncd_double, &
+           dim1name='column', &
+           long_name='microtopographic depression depth', units='m', &
+           interpinic_flag='interp', readvar=readvar, data=this%iwp_ddep)
+      call restartvar(ncid=ncid, flag=flag, varname='EXCLUDED_VOL', xtype=ncd_double, &
+           dim1name='column', &
+           long_name='volume of soil above lowest point on IWP surface, normalized by polygon area', units='m3', &
+           interpinic_flag='interp', readvar=readvar, data=this%iwp_exclvol)
+      call restartvar(ncid=ncid, flag=flag, varname='MICROREL', xtype=ncd_double, &
+           dim1name='column', &
+           long_name='microtopographic relief', units='m', &
+           interpinic_flag='interp', readvar=readvar, data=this%iwp_microrel)
     end if
 
     call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &

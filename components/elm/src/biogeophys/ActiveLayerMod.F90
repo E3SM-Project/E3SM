@@ -88,10 +88,10 @@ contains
          altmax_1989_indx     =>    canopystate_vars%altmax_1989_indx_col,      & ! Output:  [integer  (:)   ]  index of maximum ALT in 1989
          altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col,      & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
          excess_ice           =>    col_ws%excess_ice                    ,      & ! Input:   [real(r8) (:,:) ]  depth variable excess ice content in soil column (-)
-         rmax                 =>    col_pp%iwp_microrel                  ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
-         vexc                 =>    col_pp%iwp_exclvol                   ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
-         ddep                 =>    col_pp%iwp_ddep                      ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
-         subsidence           =>    col_pp%iwp_subsidence                       & ! Input/output:[real(r8) (:)   ]  ice wedge polygon subsidence (m)
+         rmax                 =>    col_ws%iwp_microrel                  ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
+         vexc                 =>    col_ws%iwp_exclvol                   ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
+         ddep                 =>    col_ws%iwp_ddep                      ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
+         subsidence           =>    col_ws%iwp_subsidence                       & ! Input/output:[real(r8) (:)   ]  ice wedge polygon subsidence (m)
          )
 
       ! on a set annual timestep, update annual maxima

@@ -804,9 +804,9 @@ contains
      associate(                                 &
           micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
 
-          iwp_microrel => col_pp%iwp_microrel , & ! Input:  [real(r8) (:)   ] ice wedge polygon microtopographic relief (m)
-          iwp_exclvol  => col_pp%iwp_exclvol  , & ! Input:  [real(r8) (:)   ] ice wedge polygon excluded volume (m)
-          iwp_ddep     => col_pp%iwp_ddep     , & ! Input:  [real(r8) (:)   ] ice wedge polygon depression depth (m)
+          iwp_microrel => col_ws%iwp_microrel , & ! Input:  [real(r8) (:)   ] ice wedge polygon microtopographic relief (m)
+          iwp_exclvol  => col_ws%iwp_exclvol  , & ! Input:  [real(r8) (:)   ] ice wedge polygon excluded volume (m)
+          iwp_ddep     => col_ws%iwp_ddep     , & ! Input:  [real(r8) (:)   ] ice wedge polygon depression depth (m)
 
           h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
 

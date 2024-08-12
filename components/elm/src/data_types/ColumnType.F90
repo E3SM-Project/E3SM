@@ -57,10 +57,6 @@ module ColumnType
      real(r8), pointer :: hslp_p10      (:,:) => null() ! hillslope slope percentiles (unitless)
      integer, pointer  :: nlevbed       (:) => null() ! number of layers to bedrock
      real(r8), pointer :: zibed         (:) => null() ! bedrock depth in model (interface level at nlevbed)
-     real(r8), pointer :: iwp_microrel  (:) => null() ! ice wedge polygon microtopographic relief (m)
-     real(r8), pointer :: iwp_exclvol   (:) => null() ! ice wedge polygon excluded volume (m)
-     real(r8), pointer :: iwp_ddep      (:) => null() ! ice wedge polygon depression depth (m)
-     real(r8), pointer :: iwp_subsidence(:) => null() ! ice wedge polygon ground subsidence (m)
      real(r8), pointer :: meangradz     (:) => null() ! mean topographic gradient at the column level
 
      ! vertical levels
@@ -136,12 +132,7 @@ contains
     allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = spval
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
     allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = spval
-    ! polygonal tundra/ice wedge polygons:
-    allocate(this%iwp_microrel  (begc:endc))                   ; this%iwp_microrel  (:) = spval
-    allocate(this%iwp_exclvol   (begc:endc))                   ; this%iwp_exclvol   (:) = spval
-    allocate(this%iwp_ddep      (begc:endc))                   ; this%iwp_ddep      (:) = spval
-    allocate(this%iwp_subsidence(begc:endc))                   ; this%iwp_subsidence(:) = spval
-    allocate(this%meangradz     (begc:endc))                   ; this%meangradz     (:) = spval
+    allocate(this%meangradz   (begc:endc))                     ; this%meangradz   (:)   = spval
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 
@@ -184,10 +175,11 @@ contains
     deallocate(this%hslp_p10   )
     deallocate(this%nlevbed    )
     deallocate(this%zibed      )
-    deallocate(this%iwp_microrel)
-    deallocate(this%iwp_exclvol )
-    deallocate(this%iwp_ddep    )
-    deallocate(this%iwp_subsidence)
+    ! RPF note: moving these to col_ws, but col_ws never seems to be deallocated?
+    !deallocate(this%iwp_microrel)
+    !deallocate(this%iwp_exclvol )
+    !deallocate(this%iwp_ddep    )
+    !deallocate(this%iwp_subsidence)
     deallocate(this%meangradz     )
     deallocate(this%hydrologically_active)
     deallocate(this%is_fates)
