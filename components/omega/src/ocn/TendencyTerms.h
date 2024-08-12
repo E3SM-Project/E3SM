@@ -272,6 +272,8 @@ class VelocityHyperDiffOnEdge {
 /// velocity tendencies within the timestepping algorithm.
 class Tendencies {
  public:
+   using CustomTendencyType = std::function<void(Array2DReal, OceanState *,
+                                                 AuxiliaryState *, int, Real)>;
    // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
@@ -348,12 +350,8 @@ class Tendencies {
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
               int NVertLevels,         ///< [in] Number of vertical levels
               Config *Options,         ///< [in] Configuration options
-              std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
-                                 int, Real)>
-                  InCustomThicknessTend,
-              std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
-                                 int, Real)>
-                  InCustomVelocityTend);
+              CustomTendencyType InCustomThicknessTend,
+              CustomTendencyType InCustomVelocityTend);
 
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
@@ -383,10 +381,8 @@ class Tendencies {
    // Map of all tendency objects
    static std::map<std::string, std::unique_ptr<Tendencies>> AllTendencies;
 
-   std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
-       CustomThicknessTend;
-   std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
-       CustomVelocityTend;
+   CustomTendencyType CustomThicknessTend;
+   CustomTendencyType CustomVelocityTend;
 
 }; // end class Tendencies
 

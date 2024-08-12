@@ -85,15 +85,12 @@ Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 
 //------------------------------------------------------------------------------
 // Construct a new group of tendencies
-Tendencies::Tendencies(
-    const std::string &Name, ///< [in] Name for tendencies
-    const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-    int NVertLevels,         ///< [in] Number of vertical levels
-    Config *Options,         ///< [in] Configuration options
-    std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
-        InCustomThicknessTend,
-    std::function<void(Array2DReal, OceanState *, AuxiliaryState *, int, Real)>
-        InCustomVelocityTend)
+Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                       int NVertLevels, ///< [in] Number of vertical levels
+                       Config *Options, ///< [in] Configuration options
+                       CustomTendencyType InCustomThicknessTend,
+                       CustomTendencyType InCustomVelocityTend)
     : ThicknessFluxDiv(Mesh, Options), PotientialVortHAdv(Mesh, Options),
       KEGrad(Mesh, Options), SSHGrad(Mesh, Options),
       VelocityDiffusion(Mesh, Options), VelocityHyperDiff(Mesh, Options),
@@ -117,11 +114,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        int NVertLevels, ///< [in] Number of vertical levels
                        Config *Options) ///< [in] Configuration options
-    : Tendencies(Name, Mesh, NVertLevels, Options,
-                 std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
-                                    int, Real)>{},
-                 std::function<void(Array2DReal, OceanState *, AuxiliaryState *,
-                                    int, Real)>{}) {}
+    : Tendencies(Name, Mesh, NVertLevels, Options, CustomTendencyType{},
+                 CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
