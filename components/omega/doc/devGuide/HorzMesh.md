@@ -2,7 +2,7 @@
 
 ## Horizontal Mesh
 
-The OMEGA horizontal mesh uses the [MPAS Mesh
+The Omega horizontal mesh uses the [MPAS Mesh
 Specification](https://mpas-dev.github.io/files/documents/MPAS-MeshSpec.pdf).
 A mesh object is created by the `init` method, which assumes that `Decomp` has
 already been initialized.

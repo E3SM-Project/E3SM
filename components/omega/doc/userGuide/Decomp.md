@@ -2,7 +2,7 @@
 
 ## Domain Decomposition (Decomp)
 
-OMEGA is designed to be run in parallel across multiple nodes and cores
+Omega is designed to be run in parallel across multiple nodes and cores
 in a clustered architecture. As in many Earth System Models, we decompose
 the horizontal domain into subdomains that are distributed across the
 system. Communication between the domains is accomplished using the

@@ -26,7 +26,7 @@ int globalSum(const ArrayTTDD array,
               TT *Result,
               const std::vector<I4> *indexRange = nullptr)
 ```
-`ArrayTTDD` is either a host or device OMEGA array of type I4, I8, R4 or R8
+`ArrayTTDD` is either a host or device Omega array of type I4, I8, R4 or R8
 and dimension DD ranging from 1D to 5D. The `indexRange` vector is of length
 2x the number of array dimensions: e.g. for a 2D array the min and
 max indexes for a local sum might be

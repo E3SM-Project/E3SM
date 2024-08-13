@@ -2,7 +2,7 @@
 
 ## Parallel IO (IO)
 
-For input and output of data needed for OMEGA, we use the Software for
+For input and output of data needed for Omega, we use the Software for
 Caching Output and Reads for Parallel I/O
 ([SCORPIO](https://github.com/E3SM-Project/scorpio)) library. This
 library supports parallel reading and writing of distributed arrays in various
@@ -18,7 +18,7 @@ match underlying hardware like the network interfaces (NICs) on a node.
 Users and developers will generally access IO via
 [IOStreams](#omega-user-iostreams)
 and other interfaces. The base IO layer described here only provides
-an OMEGA-aware wrapper around SCORPIO calls.
+an Omega-aware wrapper around SCORPIO calls.
 
 The base interfaces provide functions for file operations (open/close),
 reading and writing of metadata, and reading and writing of data arrays.
@@ -26,7 +26,7 @@ Interfaces at this level utilize raw pointers to data and assume
 contiguous storage for arrays. SCORPIO utilizes integer handles
 to various files and data types so these must often be defined or
 retrieved for many operations. Although there is no IO class, we encapsulate
-the IO routines within the OMEGA and IO namespaces.
+the IO routines within the Omega and IO namespaces.
 
 Before using any IO functions, the parallel IO system must be initialized
 using:
@@ -34,7 +34,7 @@ using:
    int Err = IO::init(Comm);
 ```
 where Comm is an MPI communicator and should in most cases be the communicator
-from the OMEGA default MachEnv (see [MachEnv](#omega-dev-mach-env)). This
+from the Omega default MachEnv (see [MachEnv](#omega-dev-mach-env)). This
 function also extracts the user-defined variables from the model configuration,
 include the number of IO tasks, the IO task stride, the default data
 rearranger method, and the default file format
@@ -133,7 +133,7 @@ when the IO system was initialized, but can also be set explicitly to
 ``OMEGA::IO::RearrBox`` or ``OMEGA::IO::RearrSubset``. The box rearranger
 is generally preferred (see [UserGuide](#omega-user-IO)). The GlobalIndx
 array describes the global location (as a zero-based offset) of each
-local array entry. This can be computed from the OMEGA Default Decomp
+local array entry. This can be computed from the Omega Default Decomp
 arrays. For example, an array dimensioned (NCellsAll,NVertLevels) would
 have an offset computed using:
 ```c++
@@ -147,7 +147,7 @@ have an offset computed using:
    }
 ```
 Note that we exclude Halo layers by assigning an offset of -1. Finally,
-the data type of the array must be supplied. To map the standard OMEGA
+the data type of the array must be supplied. To map the standard Omega
 data types to the data types used in the IO subsystem, we define:
 ```c++
 enum IODataType {
@@ -160,7 +160,7 @@ enum IODataType {
 };
 ```
 so that in the above interface, we would supply for example ``IO::IOTypeI4``
-for an OMEGA I4 data type.
+for an Omega I4 data type.
 
 Now that dimensions and decompositions have been defined, a variable can
 be defined (this is required for writing only) using:
@@ -184,7 +184,7 @@ itself. To read/write metadata, use:
    int Err = IO::readMeta (MetaName, MetaValue, FileID, VarID);
 ```
 where MetaName is a ``std::string`` holding the name of the metadata and
-the MetaValue is the value of the MetaData. All supported OMEGA data types are
+the MetaValue is the value of the MetaData. All supported Omega data types are
 allowed except boolean which must be converted to an integer type. The FileID
 is once again the ID of the open data file and VarID is the variable to which
 this metadata is attached. For global file and simulation metadata not attached

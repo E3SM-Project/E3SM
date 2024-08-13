@@ -30,7 +30,7 @@ the master task is defined as task 0 in the environment, but if
 the master task is overloaded, there is a `setMasterTask` that can
 redefine any other task in the group as the master.
 
-If OMEGA has been built with OpenMP threading, a `getNumThreads`
+If Omega has been built with OpenMP threading, a `getNumThreads`
 function is available; it returns 1 if threading is not on.
 The MachEnv also has a public parameter `OMEGA::VecLength` that can
 be used to tune the vector length for CPU architectures. For

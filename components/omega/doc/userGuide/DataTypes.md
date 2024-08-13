@@ -2,7 +2,7 @@
 
 ## Data Types and Precision
 
-OMEGA supports all standard data types and uses some specific defined
+Omega supports all standard data types and uses some specific defined
 types to guarantee a specific level of precision. There is only one
 user-configurable option for precision. When a specific floating point
 precision is not required, we use a Real data type that is, by default,

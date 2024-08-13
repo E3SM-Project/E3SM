@@ -11,7 +11,7 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = "OMEGA"
+project = "Omega"
 copyright = f"{date.today().year}, Energy Exascale Earth System Model Project"
 author = "E3SM Development Team"
 

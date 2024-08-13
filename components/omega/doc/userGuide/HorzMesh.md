@@ -2,7 +2,7 @@
 
 ## Horizontal Mesh
 
-OMEGA uses the MPAS mesh specification found
+Omega uses the MPAS mesh specification found
 [here](https://mpas-dev.github.io/files/documents/MPAS-MeshSpec.pdf). The names
 of the mesh variables have been retained, with the caveat that they now begin
 with a capital letter.
