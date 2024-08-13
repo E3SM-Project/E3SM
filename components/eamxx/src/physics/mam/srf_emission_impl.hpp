@@ -58,8 +58,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   std::vector<Field> field_emiss_sectors;
 
   const int sector_size = sector_names.size();
-  for(int icomp = 0;
-      icomp < sector_size; ++icomp) {
+  for(int icomp = 0; icomp < sector_size; ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
