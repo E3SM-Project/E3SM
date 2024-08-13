@@ -1,11 +1,11 @@
 include (ScreamUtils)
 
-set (TEST_BASE_NAME mam4_aci_standalone)
+set (TEST_BASE_NAME mam4_drydep_standalone)
 set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
-  LABELS mam4_aci physics
+  LABELS mam4_drydep physics
   LIBS mam
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
@@ -33,7 +33,7 @@ CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS mam4_aci physics
+  LABELS mam4_drydep physics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
 
@@ -43,3 +43,4 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME}) 
 endif()
+

@@ -729,6 +729,7 @@ _TESTS = {
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-aci",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-wetscav",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-drydep",
         )
     },
 

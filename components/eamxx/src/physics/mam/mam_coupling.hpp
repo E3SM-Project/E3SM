@@ -638,21 +638,27 @@ void compute_vertical_layer_heights(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  //outputs
   const auto dz = ekat::subview(dry_atm.dz, column_index);
   const auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
   const auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
+  //inputs
   const auto qv = ekat::subview(dry_atm.qv, column_index);
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+  
   // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
             dz);//output
   team.team_barrier();
+  // NOTE: we are not currently allowing surface topography:
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.z_surf == 0, "dry_atm.z_surf must be zero");
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
    z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date
-  PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
+  PF::calculate_z_mid(team, mam4::nlev, z_iface, //input
+   z_mid); //output
 }
 
 // Given a thread team and wet and dry atmospheres, dispatches threads from the

@@ -241,6 +241,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" nlev="128" >0</top_level_mam4xx>
     </mam4_aci>
 
+    <!-- MAM4xx-Dry Deposition -->
+    <mam4_drydep inherit="atm_proc_base">
+    </mam4_drydep>
+
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
@@ -498,7 +502,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="real" doc="Dry aerosol particles diameter in meters">2.6e-08</dgnum>
+    <dgnum type="real" doc="Dry aerosol particles diameter [m]">2.6e-08</dgnum>
+    <dgnumwet type="real" doc="Wet aerosol particles diameter [m]">0.41417721820867320E-007</dgnumwet>
+    <wetdens type="real" doc="Wet density of interstitial aerosol [kg/m3]">0.15100083211582764E+004</wetdens>
     <bc_c1 type="real">0.0</bc_c1>
     <bc_c3 type="real">0.0</bc_c3>
     <bc_c4 type="real">0.0</bc_c4>
