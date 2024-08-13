@@ -57,7 +57,8 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 
   std::vector<Field> field_emiss_sectors;
 
-  for(std::vector<std::string >::size_type icomp = 0; icomp < sector_names.size(); ++icomp) {
+  for(std::vector<std::string>::size_type icomp = 0;
+      icomp < sector_names.size(); ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
     Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
@@ -87,8 +88,9 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-ScalarX srfEmissFunctions<S, D>::linear_interp(
-    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
+ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0,
+                                               const ScalarX &x1,
+                                               const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
 
@@ -212,7 +214,8 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
     auto sector =
         srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    const auto emiss = Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
+    const auto emiss =
+        Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
     Kokkos::deep_copy(emiss, sector);
   }
 

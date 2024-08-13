@@ -221,8 +221,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-
-  // Zero output 
+  // Zero output
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
   // Gather time and state information for interpolation
@@ -255,14 +254,16 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    auto constituent_fluxes = this->constituent_fluxes_;
+    auto constituent_fluxes  = this->constituent_fluxes_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
     // Parallel loop over all the columns to update units
-    Kokkos::parallel_for("fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        fluxes_in_mks_units(icol) = ispec_srf.data_out_.emiss_sectors(0,icol) * mfactor;
-        constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
-    });
+    Kokkos::parallel_for(
+        "fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+          fluxes_in_mks_units(icol) =
+              ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
+          constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
+        });
 
   }  // for loop for species
   Kokkos::fence();

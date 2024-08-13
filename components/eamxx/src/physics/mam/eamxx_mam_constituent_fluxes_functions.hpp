@@ -27,57 +27,56 @@ void update_gas_aerosols_using_constituents(
   // get the start index for gas species in the state_q array
   int istart = mam4::utils::gasses_start_ind();
 
-  // number of constituents to update (currently updating only MAM4xx constituents)
+  // number of constituents to update (currently updating only MAM4xx
+  // constituents)
   const int nconstituents = pcnst - istart;
 
   // Create a policy to loop over columns annd number of constituents
   // to update
-    const auto policy =
-       ekat::ExeSpaceUtils<MAMConstituentFluxes::KT::ExeSpace>::get_default_team_policy(ncol,
-       nconstituents);
+  const auto policy = ekat::ExeSpaceUtils<MAMConstituentFluxes::KT::ExeSpace>::
+      get_default_team_policy(ncol, nconstituents);
 
   // Loop through all columns to update tracer mixing rations
   Kokkos::parallel_for(
-                       policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-                         const int icol = team.league_rank();
+      policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
 
-                         //----------------------------------------------------------------------
-                         // To form EAM like state%q array, we need prognostics (gas and aerosol
-                         // mmrs) atmosphere (qv, qc, nc, ni, etc.)
-                         //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // To form EAM like state%q array, we need prognostics (gas and aerosol
+        // mmrs) atmosphere (qv, qc, nc, ni, etc.)
+        //----------------------------------------------------------------------
 
-                         // Get prognostics
-                         mam4::Prognostics progs_at_col =
-                           mam_coupling::aerosols_for_column(wet_aero,  // output
-                                                             icol);     // input
-                         // Get atmospheric quantities
-                         const haero::Atmosphere haero_atm =
-                           atmosphere_for_column(dry_atm,  // output
-                                                 icol);    // input
+        // Get prognostics
+        mam4::Prognostics progs_at_col =
+            mam_coupling::aerosols_for_column(wet_aero,  // output
+                                              icol);     // input
+        // Get atmospheric quantities
+        const haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atm,  // output
+                                  icol);    // input
 
-                         // Form state%q like array
-                         Real state_q_at_surf_lev[pcnst] = {};
-                         mam4::utils::extract_stateq_from_prognostics(
-                                                                      progs_at_col, haero_atm,  // input
-                                                                      state_q_at_surf_lev,      // output
-                                                                      surface_lev);             // input
+        // Form state%q like array
+        Real state_q_at_surf_lev[pcnst] = {};
+        mam4::utils::extract_stateq_from_prognostics(
+            progs_at_col, haero_atm,  // input
+            state_q_at_surf_lev,      // output
+            surface_lev);             // input
 
-                         // Compute the units conversion factor (kg/m2/s to kg/kg)
-                         EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0,
-                                                "Error! dry_atm.pdel must be non-zero!\n");
-                         const Real rpdel       = 1.0 / dry_atm.p_del(icol, surface_lev);
-                         const Real unit_factor = dt * gravit * rpdel;
+        // Compute the units conversion factor (kg/m2/s to kg/kg)
+        EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0,
+                               "Error! dry_atm.pdel must be non-zero!\n");
+        const Real rpdel       = 1.0 / dry_atm.p_del(icol, surface_lev);
+        const Real unit_factor = dt * gravit * rpdel;
 
-                         // Update state vector with constituent fluxes
-                         for (int icnst = istart; icnst<pcnst; ++icnst){
-                           state_q_at_surf_lev[icnst] +=
-                             constituent_fluxes(icol, icnst) * unit_factor;
-                         }
-                         mam4::utils::inject_stateq_to_prognostics(state_q_at_surf_lev,  // input
-                                                                   progs_at_col,  // output
-                                                                   surface_lev);  // input
-
-                       });  // icol loop
+        // Update state vector with constituent fluxes
+        for(int icnst = istart; icnst < pcnst; ++icnst) {
+          state_q_at_surf_lev[icnst] +=
+              constituent_fluxes(icol, icnst) * unit_factor;
+        }
+        mam4::utils::inject_stateq_to_prognostics(state_q_at_surf_lev,  // input
+                                                  progs_at_col,  // output
+                                                  surface_lev);  // input
+      });                                                        // icol loop
 }
 
 }  // namespace

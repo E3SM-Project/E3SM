@@ -261,50 +261,50 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 // ================================================================
 //  RUN_IMPL
 // ================================================================
-  void MAMConstituentFluxes::run_impl(const double dt) {
-    const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_,
-                                                                nlev_);
+void MAMConstituentFluxes::run_impl(const double dt) {
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
-    // -------------------------------------------------------------------
-    // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
-    // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
-    // mixing ratios), so we are *not* doing any wet to dry conversions in the
-    // "preprocess" . We are simply updating the MAM4xx tracers using the
-    // "constituent fluxes".
-    // We are converting wet atm to dry atm. Since we do not use or update
-    // any of the water constituents (qc, qv, qi etc.), we should be okay
-    // to do this conversion. We need to do this conversion as our function
-    // are build following HAERO data structures.
-    // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
+  // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
+  // mixing ratios), so we are *not* doing any wet to dry conversions in the
+  // "preprocess" . We are simply updating the MAM4xx tracers using the
+  // "constituent fluxes".
+  // We are converting wet atm to dry atm. Since we do not use or update
+  // any of the water constituents (qc, qv, qi etc.), we should be okay
+  // to do this conversion. We need to do this conversion as our function
+  // are build following HAERO data structures.
+  // -------------------------------------------------------------------
 
-    // preprocess input -- needs a scan for the calculation of dry_atm_, wet_aero_ etc.
-    Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
-    Kokkos::fence();
+  // preprocess input -- needs a scan for the calculation of dry_atm_, wet_aero_
+  // etc.
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
 
-    for(int icnst = 0; icnst < 6; ++icnst) {
-      auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
-      Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
-      printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
-    }
-    auto start = std::chrono::steady_clock::now();
-    update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
-                                           constituent_fluxes_,
-                                           // output
-                                           wet_aero_);
-    auto stop = std::chrono::steady_clock::now();
-    auto duration = (stop - start);
+  for(int icnst = 0; icnst < 6; ++icnst) {
+    auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
+    Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
+    printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
+  }
+  auto start = std::chrono::steady_clock::now();
+  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
+                                         constituent_fluxes_,
+                                         // output
+                                         wet_aero_);
+  auto stop     = std::chrono::steady_clock::now();
+  auto duration = (stop - start);
 
+  // To get the value of duration use the count()
+  // member function on the duration object
+  printf("TIME:%e\n",
+         std::chrono::duration<double, std::milli>(duration).count());
 
-    // To get the value of duration use the count()
-    // member function on the duration object
-    printf("TIME:%e\n", std::chrono::duration<double, std::milli>(duration).count());
-
-    for(int icnst = 0; icnst < 6; ++icnst) {
-      auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
-      Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
-      printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
-    }
+  for(int icnst = 0; icnst < 6; ++icnst) {
+    auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
+    Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
+    printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
+  }
 
 }  // run_impl ends
 
