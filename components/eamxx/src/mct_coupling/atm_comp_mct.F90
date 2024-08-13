@@ -301,7 +301,7 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef MOABCOMP
-    use mct_mod, only: mct_list, mct_string, mct_list_nitem, mct_string_toChar
+    use mct_mod
     use seq_comm_mct,     only : num_moab_exports
 
     real(r8)                 :: difference
