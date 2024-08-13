@@ -67,7 +67,7 @@ class Dimension {
    /// Creates a non-distributed dimension given a name and length
    static std::shared_ptr<Dimension>
    create(const std::string &Name, ///< [in] name of dimension
-          const I4 GlobalLength   ///< [in] length of dimension
+          const I4 GlobalLength    ///< [in] length of dimension
    );
 
    //---------------------------------------------------------------------------
@@ -142,8 +142,7 @@ class Dimension {
 
    //---------------------------------------------------------------------------
    /// An iterator can be used to loop through all defined dimensions
-   using Iter =
-       std::map<std::string, std::shared_ptr<Dimension>>::iterator;
+   using Iter = std::map<std::string, std::shared_ptr<Dimension>>::iterator;
 
    /// Returns an iterator to the first dimension stored in AllDims
    static Iter begin();

@@ -75,7 +75,7 @@ std::shared_ptr<Dimension> Dimension::create(
 // Creates a non-distributed dimension given a name and length
 std::shared_ptr<Dimension>
 Dimension::create(const std::string &Name, // [in] name of dimension
-                  const I4 GlobalLength   // [in] length of dimension
+                  const I4 GlobalLength    // [in] length of dimension
 ) {
    auto Dim = std::make_shared<Dimension>(); // create empty dim
 
@@ -138,10 +138,7 @@ void Dimension::destroy(
 
 //------------------------------------------------------------------------------
 // Destroys all defined dimensions
-void Dimension::clear() {
-   AllDims.clear();
-   Kokkos::fence();
-}
+void Dimension::clear() { AllDims.clear(); }
 
 //----------------------------------------------------------------------------//
 // Retrieves full dimension instance by name
