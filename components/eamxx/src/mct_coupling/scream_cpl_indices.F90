@@ -111,8 +111,8 @@ module scream_cpl_indices
     import_cpl_indices(15) = mct_avect_indexra(x2a,'Sf_ofrac')
     import_cpl_indices(16) = mct_avect_indexra(x2a,'Sf_lfrac')
     import_cpl_indices(17) = mct_avect_indexra(x2a,'Sf_ifrac') 
-    import_cpl_indices(19) = mct_avect_indexra(x2a,'Sl_fv')
-    import_cpl_indices(18) = mct_avect_indexra(x2a,'Sl_ram1')
+    import_cpl_indices(18) = mct_avect_indexra(x2a,'Sl_fv')
+    import_cpl_indices(19) = mct_avect_indexra(x2a,'Sl_ram1')
 
     ! Vector components
     import_vector_components(11) = 0
