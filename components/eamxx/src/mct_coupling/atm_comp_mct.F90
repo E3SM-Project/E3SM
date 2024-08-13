@@ -211,6 +211,10 @@ CONTAINS
 
 #ifdef HAVE_MOAB
     call moab_atm_phys_scream() 
+#ifdef MOABCOMP
+    mpicom_atm_moab = mpicom_atm ! just to store it to be used later in MOABCOMP
+    rank2 = my_task ! again, just to use it for MOABCOMP output
+#endif
 #endif
 
     ! Init import/export mct attribute vectors
@@ -296,6 +300,16 @@ CONTAINS
 #ifdef MOABDEBUG
     use iMOAB, only: iMOAB_WriteMesh
 #endif
+#ifdef MOABCOMP
+    use mct_mod, only: mct_list, mct_string, mct_list_nitem, mct_string_toChar
+    use seq_comm_mct,     only : num_moab_exports
+
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) :: mct_field, modelStr
+#endif 
 #endif
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -312,7 +326,7 @@ CONTAINS
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
 #ifdef HAVE_MOAB   
-    integer        :: ent_type, ierr
+    integer        :: ierr
     character(CXX) :: tagname ! will store all seq_flds_a2x_fields , seq_flds_x2a_fields
 #ifdef MOABDEBUG
     integer                          :: cur_atm_stepno
@@ -329,6 +343,24 @@ CONTAINS
     ! Get time step info
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
 #ifdef HAVE_MOAB
+
+#ifdef MOABCOMP
+    ! loop over all fields in seq_flds_x2a_fields
+    call mct_list_init(temp_list ,seq_flds_x2a_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    modelStr ='atm run'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a, mct_field,  mphaid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+
+
     ! import data from moab data structures
     tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
