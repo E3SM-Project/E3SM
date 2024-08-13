@@ -360,7 +360,7 @@ contains
           !(zhang73) update cam_in%lhf,shf,cflx.. here
           if ( trim(fld_names(i)) == 'lhf' )then
               cam_in(c)%lhf(:ncol) = cam_in(c)%lhf(:ncol) + fields(i)%data(:ncol,1,c)
-              cam_in(c)%cflx(:ncol,1) = cam_in(c)%cflx(:ncol,1) + cam_in(c)%lhf(:ncol)/latvap
+              cam_in(c)%cflx(:ncol,1) = cam_in(c)%cflx(:ncol,1) + fields(i)%data(:ncol,1,c)/latvap
               call outfld( 'lhf_tot', cam_in(c)%lhf(:ncol), ncol, state(c)%lchnk )
           end if
           if ( trim(fld_names(i)) == 'shf' )then
