@@ -88,6 +88,9 @@ void TimeStepper::erase(const std::string &Name) {
 // Remove all time steppers
 void TimeStepper::clear() { AllTimeSteppers.clear(); }
 
+std::string TimeStepper::getName() const { return Name; }
+TimeStepperType TimeStepper::getType() const { return Type; }
+
 void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
                                         Real Coeff) const {
