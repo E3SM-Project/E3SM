@@ -44,8 +44,8 @@
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
 <config_restore_calving_front_prevent_retreat>.true.</config_restore_calving_front_prevent_retreat>
-<config_remove_icebergs>.false.</config_remove_icebergs>
-<config_remove_small_islands>.false.</config_remove_small_islands>
+<config_remove_icebergs>.true.</config_remove_icebergs>
+<config_remove_small_islands>.true.</config_remove_small_islands>
 <config_calving_speed_limit>100.0</config_calving_speed_limit>
 <config_grounded_von_Mises_threshold_stress>1.0e6</config_grounded_von_Mises_threshold_stress>
 <config_floating_von_Mises_threshold_stress>1.0e6</config_floating_von_Mises_threshold_stress>
@@ -67,7 +67,7 @@
 <config_update_velocity_before_calving>.false.</config_update_velocity_before_calving>
 
 <!-- thermal_solver -->
-<config_thermal_solver>'none'</config_thermal_solver>
+<config_thermal_solver>'temperature'</config_thermal_solver>
 <config_thermal_calculate_bmb>.true.</config_thermal_calculate_bmb>
 <config_temperature_init>'file'</config_temperature_init>
 <config_thermal_thickness>0.0</config_thermal_thickness>
