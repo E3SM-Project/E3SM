@@ -18,7 +18,7 @@
 namespace OMEGA {
 
 Tendencies *Tendencies::DefaultTendencies = nullptr;
-std::map<std::string, Tendencies> Tendencies::AllTendencies;
+std::map<std::string, std::unique_ptr<Tendencies>> Tendencies::AllTendencies;
 
 //------------------------------------------------------------------------------
 // Initialize the tendencies. Assumes that HorzMesh as alread been initialized.
@@ -30,9 +30,8 @@ int Tendencies::init() {
 
    int NVertLevels = 60;
 
-   Tendencies DefTendencies("Default", DefHorzMesh, NVertLevels, TendConfig);
-
-   Tendencies::DefaultTendencies = get("Default");
+   Tendencies::DefaultTendencies = Tendencies::create("Default", DefHorzMesh,
+                                                      NVertLevels, TendConfig);
 
    return Err;
 
@@ -52,7 +51,7 @@ void Tendencies::clear() { AllTendencies.clear(); } // end clear
 
 //------------------------------------------------------------------------------
 // Removes tendencies from list by name
-void Tendencies::erase(const std::string Name) {
+void Tendencies::erase(const std::string &Name) {
 
    AllTendencies.erase(Name);
 
@@ -68,13 +67,13 @@ Tendencies *Tendencies::getDefault() {
 
 //------------------------------------------------------------------------------
 // Get tendencies by name
-Tendencies *Tendencies::get(const std::string Name ///< [in] Name of tendencies
+Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 ) {
 
    auto it = AllTendencies.find(Name);
 
    if (it != AllTendencies.end()) {
-      return &(it->second);
+      return it->second.get();
    } else {
       LOG_ERROR(
           "Tendencies::get: Attempt to retrieve non-existent tendencies:");
@@ -83,6 +82,27 @@ Tendencies *Tendencies::get(const std::string Name ///< [in] Name of tendencies
    }
 
 } // end get tendencies
+
+//------------------------------------------------------------------------------
+// Create a non-default group of tendencies
+Tendencies *Tendencies::create(const std::string &Name,
+                               const HorzMesh *Mesh,
+                               int NVertLevels,
+                               Config *Options
+                               ) {
+
+   if (AllTendencies.find(Name) != AllTendencies.end()) {
+     LOG_ERROR("Attempted to create a new Tendencies with name {} but it "
+               "already exists", Name);
+     return nullptr;
+   }
+
+   auto *NewTendencies = new Tendencies(Name, Mesh, NVertLevels, Options);
+   AllTendencies.emplace(Name, NewTendencies);
+
+   return NewTendencies;
+
+} // end create tendencies
 
 //------------------------------------------------------------------------------
 // Construct a new group of tendencies
@@ -101,13 +121,10 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
    NormalVelocityTend =
        Array2DReal("NormalVelocityTend", Mesh->NEdgesSize, NVertLevels);
 
-   //
+   // Array dimension lengths
    NCellsOwned = Mesh->NCellsOwned;
    NEdgesOwned = Mesh->NEdgesOwned;
    NChunks     = NVertLevels / VecLength;
-
-   // Associate this instance with a name
-   AllTendencies.emplace(Name, *this);
 
 } // end constructor
 
@@ -115,8 +132,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 // Compute tendencies for layer thickness equation
 // TODO Add AuxilaryState as argument
 void Tendencies::computeThicknessTendencies(
-    OceanState *State,       ///< [in] State variables
-    AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const OceanState *State,       ///< [in] State variables
+    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
@@ -138,8 +155,8 @@ void Tendencies::computeThicknessTendencies(
 //------------------------------------------------------------------------------
 // Compute tendencies for normal velocity equation
 void Tendencies::computeVelocityTendencies(
-    OceanState *State,       ///< [in] State variables
-    AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const OceanState *State,       ///< [in] State variables
+    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
@@ -202,8 +219,8 @@ void Tendencies::computeVelocityTendencies(
 //------------------------------------------------------------------------------
 // Compute both layer thickness and normal velocity tendencies
 void Tendencies::computeAllTendencies(
-    OceanState *State,       ///< [in] State variables
-    AuxiliaryState *AuxState ///< [in] Auxilary state variables
+    const OceanState *State,       ///< [in] State variables
+    const AuxiliaryState *AuxState ///< [in] Auxilary state variables
 ) {
 
    AuxState->computeAll(State, 0);

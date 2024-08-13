@@ -281,15 +281,18 @@ class Tendencies {
 
    // Methods to compute tendency groups
    // TODO Add AuxilaryState as calling argument
-   void computeThicknessTendencies(OceanState *State, AuxiliaryState *AuxState);
-   void computeVelocityTendencies(OceanState *State, AuxiliaryState *AuxState);
-   void computeAllTendencies(OceanState *State, AuxiliaryState *AuxState);
+   void computeThicknessTendencies(const OceanState *State,
+                                   const AuxiliaryState *AuxState);
+   void computeVelocityTendencies(const OceanState *State,
+                                  const AuxiliaryState *AuxState);
+   void computeAllTendencies(const OceanState *State,
+                             const AuxiliaryState *AuxState);
 
-   // Construct a new tendency object
-   Tendencies(const std::string &Name, ///< [in] Name for tendencies
-              const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              int NVertLevels,         ///< [in] Number of vertical levels
-              Config *Options          ///< [in] Configuration options
+   // Create a non-default tendencies
+   static Tendencies *create(const std::string &Name, ///< [in] Name for tendencies
+                             const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                             int NVertLevels,         ///< [in] Number of vertical levels
+                             Config *Options          ///< [in] Configuration options
    );
 
    // Destructor
@@ -302,14 +305,14 @@ class Tendencies {
    static void clear();
 
    // Remove tendencies object by name
-   static void erase(std::string InName ///< [in]
+   static void erase(const std::string &Name ///< [in]
    );
 
    // get default tendencies
    static Tendencies *getDefault();
 
    // get tendencies by name
-   static Tendencies *get(std::string name ///< [in]
+   static Tendencies *get(const std::string &Name ///< [in]
    );
 
  private:
@@ -318,11 +321,18 @@ class Tendencies {
    I4 NEdgesOwned; ///< Number of edges owned by this task
    I4 NChunks;     ///< Number of vertical level chunks
 
+   // Construct a new tendency object
+   Tendencies(const std::string &Name, ///< [in] Name for tendencies
+              const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+              int NVertLevels,         ///< [in] Number of vertical levels
+              Config *Options          ///< [in] Configuration options
+   );
+
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;
 
    // Map of all tendency objects
-   static std::map<std::string, Tendencies> AllTendencies;
+   static std::map<std::string, std::unique_ptr<Tendencies>> AllTendencies;
 
 }; // end class Tendencies
 
