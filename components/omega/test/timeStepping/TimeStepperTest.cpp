@@ -277,6 +277,11 @@ int timeStepperTest(const std::string &MeshFile = "OmegaMesh.nc") {
    Err += testTimeStepper("ForwardBackward", TimeStepperType::ForwardBackward,
                           ExpectedOrder, ATol);
 
+   ExpectedOrder = 2;
+   ATol          = 0.1;
+   Err += testTimeStepper("RungeKutta2", TimeStepperType::RungeKutta2,
+                          ExpectedOrder, ATol);
+
    if (Err == 0) {
       LOG_INFO("TimeStepperTest: Successful completion");
    }

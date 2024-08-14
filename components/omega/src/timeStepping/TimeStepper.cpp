@@ -1,6 +1,7 @@
 #include "TimeStepper.h"
 #include "ForwardBackwardStepper.h"
 #include "RungeKutta4Stepper.h"
+#include "RungeKutta2Stepper.h"
 
 namespace OMEGA {
 
@@ -36,6 +37,10 @@ TimeStepper *TimeStepper::create(const std::string &Name, TimeStepperType Type,
    case TimeStepperType::RungeKutta4:
       NewTimeStepper =
           new RungeKutta4Stepper(Name, Tend, AuxState, Mesh, MeshHalo);
+      break;
+   case TimeStepperType::RungeKutta2:
+      NewTimeStepper =
+          new RungeKutta2Stepper(Name, Tend, AuxState, Mesh, MeshHalo);
       break;
    }
 

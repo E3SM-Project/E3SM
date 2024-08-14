@@ -14,7 +14,7 @@
 
 namespace OMEGA {
 
-enum class TimeStepperType { ForwardBackward, RungeKutta4 };
+enum class TimeStepperType { ForwardBackward, RungeKutta4, RungeKutta2 };
 
 class TimeStepper {
  public:
