@@ -11,7 +11,6 @@ class RungeKutta2Stepper : public TimeStepper {
                       AuxiliaryState *AuxState, HorzMesh *Mesh, Halo *MeshHalo);
 
    void doStep(OceanState *State, Real Time, Real TimeStep) const override;
-
 };
 
 } // namespace OMEGA

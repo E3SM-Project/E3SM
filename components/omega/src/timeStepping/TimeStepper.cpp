@@ -1,7 +1,7 @@
 #include "TimeStepper.h"
 #include "ForwardBackwardStepper.h"
-#include "RungeKutta4Stepper.h"
 #include "RungeKutta2Stepper.h"
+#include "RungeKutta4Stepper.h"
 
 namespace OMEGA {
 
