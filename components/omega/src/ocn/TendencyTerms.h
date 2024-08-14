@@ -275,7 +275,7 @@ class Tendencies {
    ThicknessFluxDivOnCell ThicknessFluxDiv;
    PotentialVortHAdvOnEdge PotientialVortHAdv;
    KEGradOnEdge KEGrad;
-   SSHGradOnEdge SHHGrad;
+   SSHGradOnEdge SSHGrad;
    VelocityDiffusionOnEdge VelocityDiffusion;
    VelocityHyperDiffOnEdge VelocityHyperDiff;
 

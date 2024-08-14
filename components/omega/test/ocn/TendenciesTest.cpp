@@ -135,7 +135,7 @@ int testTendencies() {
    DefTendencies->ThicknessFluxDiv.Enabled   = true;
    DefTendencies->PotientialVortHAdv.Enabled = true;
    DefTendencies->KEGrad.Enabled             = true;
-   DefTendencies->SHHGrad.Enabled            = true;
+   DefTendencies->SSHGrad.Enabled            = true;
 
    // TODO need to get visc values from config
    DefTendencies->VelocityDiffusion.Enabled = false;

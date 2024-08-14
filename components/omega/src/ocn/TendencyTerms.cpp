@@ -110,7 +110,7 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        Config *Options  ///< [in] Configuration options
                        )
     : ThicknessFluxDiv(Mesh, Options), PotientialVortHAdv(Mesh, Options),
-      KEGrad(Mesh, Options), SHHGrad(Mesh, Options),
+      KEGrad(Mesh, Options), SSHGrad(Mesh, Options),
       VelocityDiffusion(Mesh, Options), VelocityHyperDiff(Mesh, Options) {
 
    // Tendency arrays
@@ -166,7 +166,7 @@ void Tendencies::computeVelocityTendencies(
    OMEGA_SCOPE(LocNChunks, NChunks);
    OMEGA_SCOPE(LocPotientialVortHAdv, PotientialVortHAdv);
    OMEGA_SCOPE(LocKEGrad, KEGrad);
-   OMEGA_SCOPE(LocSHHGrad, SHHGrad);
+   OMEGA_SCOPE(LocSSHGrad, SSHGrad);
    OMEGA_SCOPE(LocVelocityDiffusion, VelocityDiffusion);
    OMEGA_SCOPE(LocVelocityHyperDiff, VelocityHyperDiff);
 
@@ -198,10 +198,10 @@ void Tendencies::computeVelocityTendencies(
 
    // Compute sea surface height gradient
    const Array2DReal &SSHCell = AuxState->LayerThicknessAux.SshCell;
-   if (LocSHHGrad.Enabled) {
+   if (LocSSHGrad.Enabled) {
       parallelFor(
           {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-             LocSHHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
+             LocSSHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
           });
    }
 
