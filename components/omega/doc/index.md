@@ -94,6 +94,7 @@ design/Reductions
 design/ShallowWaterOmega0
 design/State
 design/Tendency
+design/Tendencies
 design/AuxiliaryVariables
 design/AuxiliaryState
 design/TimeMgr
