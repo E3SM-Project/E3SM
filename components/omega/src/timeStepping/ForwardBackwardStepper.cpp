@@ -17,11 +17,10 @@ void ForwardBackwardStepper::doStep(OceanState *State, Real Time,
 
    Tend->computeThicknessTendencies(State, AuxState, CurLevel, Time);
    updateThicknessByTend(State, NextLevel, State, CurLevel, TimeStep);
-   // TODO(mwarusz): this copy could be avoided with a more flexible interface
-   deepCopy(State->NormalVelocity[NextLevel], State->NormalVelocity[CurLevel]);
 
-   Tend->computeVelocityTendencies(State, AuxState, NextLevel, Time + TimeStep);
-   updateVelocityByTend(State, NextLevel, TimeStep);
+   Tend->computeVelocityTendencies(State, AuxState, NextLevel, CurLevel,
+                                   Time + TimeStep);
+   updateVelocityByTend(State, NextLevel, State, CurLevel, TimeStep);
 
    State->updateTimeLevels();
 }

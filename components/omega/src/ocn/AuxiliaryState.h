@@ -58,6 +58,8 @@ class AuxiliaryState {
 
    /// Compute all auxiliary variables based on an ocean state at a given time
    /// level
+   void computeAll(const OceanState *State, int ThickTimeLevel,
+                   int VelTimeLevel) const;
    void computeAll(const OceanState *State, int TimeLevel) const;
 
  private:

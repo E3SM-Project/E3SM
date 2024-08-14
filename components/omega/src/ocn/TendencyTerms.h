@@ -272,8 +272,8 @@ class VelocityHyperDiffOnEdge {
 /// velocity tendencies within the timestepping algorithm.
 class Tendencies {
  public:
-   using CustomTendencyType = std::function<void(Array2DReal, OceanState *,
-                                                 AuxiliaryState *, int, Real)>;
+   using CustomTendencyType = std::function<void(
+       Array2DReal, OceanState *, AuxiliaryState *, int, int, Real)>;
    // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
@@ -287,19 +287,29 @@ class Tendencies {
    VelocityHyperDiffOnEdge VelocityHyperDiff;
 
    // Methods to compute tendency groups
-   // TODO Add AuxilaryState as calling argument
+   void computeThicknessTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                                   int ThickTimeLevel, int VelTimeLevel,
+                                   Real Time);
+   void computeVelocityTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                                  int ThickTimeLevel, int VelTimeLevel,
+                                  Real Time);
+   void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+                             int ThickTimeLevel, int VelTimeLevel, Real Time);
+
    void computeThicknessTendencies(const OceanState *State, const AuxiliaryState *AuxState,
                                    int TimeLevel, Real Time);
    void computeVelocityTendencies(const OceanState *State, const AuxiliaryState *AuxState,
                                   int TimeLevel, Real Time);
    void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
                              int TimeLevel, Real Time);
-   
+
    void computeThicknessTendenciesOnly(const OceanState *State,
-                                       const AuxiliaryState *AuxState, int TimeLevel,
+                                       const AuxiliaryState *AuxState,
+                                       int ThickTimeLevel, int VelTimeLevel,
                                        Real Time);
    void computeVelocityTendenciesOnly(const OceanState *State,
-                                      const AuxiliaryState *AuxState, int TimeLevel,
+                                      const AuxiliaryState *AuxState,
+                                      int ThickTimeLevel, int VelTimeLevel,
                                       Real Time);
 
    // Create a non-default group of tendencies

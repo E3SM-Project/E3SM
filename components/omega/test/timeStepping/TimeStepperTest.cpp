@@ -26,7 +26,8 @@ constexpr int NVertLevels = 1;
 
 struct DecayThicknessTendency {
    void operator()(Array2DReal ThicknessTend, OceanState *State,
-                   AuxiliaryState *AuxState, int TimeLevel, Real Time) const {}
+                   AuxiliaryState *AuxState, int ThickTimeLevel,
+                   int VelTimeLevel, Real Time) const {}
 };
 
 struct DecayVelocityTendency {
@@ -35,11 +36,12 @@ struct DecayVelocityTendency {
    Real exactSolution(Real Time) { return std::exp(-Coeff * Time); }
 
    void operator()(Array2DReal NormalVelTend, OceanState *State,
-                   AuxiliaryState *AuxState, int TimeLevel, Real Time) const {
+                   AuxiliaryState *AuxState, int ThickTimeLevel,
+                   int VelTimeLevel, Real Time) const {
 
       auto *Mesh                = HorzMesh::getDefault();
       auto NVertLevels          = NormalVelTend.extent_int(1);
-      const auto &NormalVelEdge = State->NormalVelocity[TimeLevel];
+      const auto &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
 
       OMEGA_SCOPE(LocCoeff, Coeff);
 

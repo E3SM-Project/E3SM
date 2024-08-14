@@ -46,9 +46,10 @@ AuxiliaryState::~AuxiliaryState() {
 }
 
 // Compute the auxiliary variables
-void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
-   const Array2DReal &LayerThickCell = State->LayerThickness[TimeLevel];
-   const Array2DReal &NormalVelEdge  = State->NormalVelocity[TimeLevel];
+void AuxiliaryState::computeAll(const OceanState *State, int ThickTimeLevel,
+                                int VelTimeLevel) const {
+   const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
+   const Array2DReal &NormalVelEdge  = State->NormalVelocity[VelTimeLevel];
 
    const int NVertLevels = LayerThickCell.extent_int(1);
    const int NChunks     = NVertLevels / VecLength;
@@ -102,6 +103,10 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
           LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
                                                   LayerThickCell);
        });
+}
+
+void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
+   computeAll(State, TimeLevel, TimeLevel);
 }
 
 // Create a non-default auxiliary state
