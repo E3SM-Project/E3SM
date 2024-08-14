@@ -289,10 +289,11 @@ class Tendencies {
                              const AuxiliaryState *AuxState);
 
    // Create a non-default tendencies
-   static Tendencies *create(const std::string &Name, ///< [in] Name for tendencies
-                             const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                             int NVertLevels,         ///< [in] Number of vertical levels
-                             Config *Options          ///< [in] Configuration options
+   static Tendencies *
+   create(const std::string &Name, ///< [in] Name for tendencies
+          const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+          int NVertLevels,         ///< [in] Number of vertical levels
+          Config *Options          ///< [in] Configuration options
    );
 
    // Destructor

@@ -30,8 +30,8 @@ int Tendencies::init() {
 
    int NVertLevels = 60;
 
-   Tendencies::DefaultTendencies = Tendencies::create("Default", DefHorzMesh,
-                                                      NVertLevels, TendConfig);
+   Tendencies::DefaultTendencies =
+       Tendencies::create("Default", DefHorzMesh, NVertLevels, TendConfig);
 
    return Err;
 
@@ -85,16 +85,14 @@ Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 
 //------------------------------------------------------------------------------
 // Create a non-default group of tendencies
-Tendencies *Tendencies::create(const std::string &Name,
-                               const HorzMesh *Mesh,
-                               int NVertLevels,
-                               Config *Options
-                               ) {
+Tendencies *Tendencies::create(const std::string &Name, const HorzMesh *Mesh,
+                               int NVertLevels, Config *Options) {
 
    if (AllTendencies.find(Name) != AllTendencies.end()) {
-     LOG_ERROR("Attempted to create a new Tendencies with name {} but it "
-               "already exists", Name);
-     return nullptr;
+      LOG_ERROR("Attempted to create a new Tendencies with name {} but it "
+                "already exists",
+                Name);
+      return nullptr;
    }
 
    auto *NewTendencies = new Tendencies(Name, Mesh, NVertLevels, Options);
@@ -130,7 +128,6 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
-// TODO Add AuxilaryState as argument
 void Tendencies::computeThicknessTendencies(
     const OceanState *State,       ///< [in] State variables
     const AuxiliaryState *AuxState ///< [in] Auxilary state variables
