@@ -117,7 +117,7 @@ void Tendencies::clear();
 
 ## 5 Verification and Testing
 
-### 5.1 Test multiple tendencies instances 
+### 5.1 Test multiple tendencies instances
 
 There will be a test checking that multiple tendencies objects can be
 created and that removing them works properly.

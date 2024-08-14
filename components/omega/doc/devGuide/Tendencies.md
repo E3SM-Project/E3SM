@@ -3,7 +3,7 @@
 # Tendencies
 
 The `Tendencies` class groups together all of the OMEGA [tendency terms](#omega-dev-tend-terms).
-It is responsible for managing their lifetime and providing functions that compute the 
+It is responsible for managing their lifetime and providing functions that compute the
 tendency terms and the [auxiliary state](#omega-dev-aux-state).
 It is possible to have multiple `Tendencies` instances in OMEGA. Every instance has a name
 and is tracked in a static C++ map called `AllTendencies`.
