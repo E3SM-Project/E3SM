@@ -40,7 +40,7 @@ void MAMSrfOnlineEmiss::set_grids(
                       grid_name);
 
   // Surface emissions remapping file
-  std::string srf_map_file = m_params.get<std::string>("srf_remap_file");
+  auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
 
   //--------------------------------------------------------------------
   // Init dms srf emiss data structures

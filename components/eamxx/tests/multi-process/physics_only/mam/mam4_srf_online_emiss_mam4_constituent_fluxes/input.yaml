@@ -39,6 +39,8 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
+  pbl_height: 0.0
+
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]
