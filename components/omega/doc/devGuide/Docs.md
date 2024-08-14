@@ -2,7 +2,7 @@
 
 # Documentation
 
-The OMEGA documentation is generated using the
+The Omega documentation is generated using the
 [Sphinx](https://www.sphinx-doc.org/en/master/) package and is written in
 [MyST](https://myst-parser.readthedocs.io/en/latest/syntax/syntax.html)
 format.  We recommend these
@@ -14,7 +14,7 @@ code for the documentation:
 
 <https://github.com/E3SM-Project/Omega/tree/develop/components/omega/doc>
 
-Each time you add new features to OMEGA, the corresponding documentation must
+Each time you add new features to Omega, the corresponding documentation must
 be included with the pull request to add the code.  This includes documentation
 for both the User's Guide and the Developer's Guide. We will add some examples
 as the documentation gets fleshed out.
@@ -31,7 +31,7 @@ headings within the page whenever you think internal linking might be useful
 ...
 ```
 
-This is in anticipation of a future time when the OMEGA documentation might
+This is in anticipation of a future time when the Omega documentation might
 be combined with other components of E3SM.
 
 In the Developer's Guide, anchors should start with `omega-dev-`:
@@ -43,15 +43,15 @@ In the Developer's Guide, anchors should start with `omega-dev-`:
 ...
 ```
 
-Documentation for an OMEGA feature in the User's Guide should contain
-information that is needed for users who set up and run OMEGA, including:
+Documentation for an Omega feature in the User's Guide should contain
+information that is needed for users who set up and run Omega, including:
 
 - Background information on the feature (though not as much as in Developer's
   Guide and not referencing code) that gives the user an understanding of
   the configurable parameters.
 - Config options related to the feature that users can modify in a YAML file.
 - Flags related to the feature that a user can (or must) set when building
-  OMEGA.
+  Omega.
 
 The Developer's Guide should also serve as a reference manual.  Among other
 things, the documentation in the Developer's Guide needs to provide an easy way

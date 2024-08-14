@@ -19,7 +19,7 @@ The minimum version of CMake is 3.21.
 
 ## Standalone Build
 
-CMake and OMEGA prefer an out-of-source build. This enables a user to build
+CMake and Omega prefer an out-of-source build. This enables a user to build
 and maintain multiple executables from the same source directory.
 The standard practice is for a user to create a separate directory where
 the build should take place and the commands below should be launched from
@@ -33,7 +33,7 @@ default `PROJECT` defined, you can use `OMEGA_CIME_PROJECT` to specify an
 account to use as a placeholder during the Omega build.
 The values of `OMEGA_CIME_COMPILER` and `OMEGA_CIME_MACHINE` are defined in
 "${E3SM}/cime\_config/machines/config\_machines.xml".
-OMEGA requires some external libraries. Many of these are built automatically
+Omega requires some external libraries. Many of these are built automatically
 from the E3SM distribution. However, the METIS, ParMETIS, and, optionally,
 GKlib libraries must be built separately and the path must be supplied during
 the cmake invocation as shown below. If a `OMEGA_METIS_ROOT` is not supplied,

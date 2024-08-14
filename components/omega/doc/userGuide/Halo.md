@@ -2,7 +2,7 @@
 
 # Halo Exchanges (Halo)
 
-When OMEGA is run in a parallel machine environment, the computaional domain
+When Omega is run in a parallel machine environment, the computaional domain
 is broken into subdomains that are distrubted among the computational nodes
 of the machine. It is necessary to regularly exchange data that is located
 at or near the interfaces of adjacent subdomains, these regions are called

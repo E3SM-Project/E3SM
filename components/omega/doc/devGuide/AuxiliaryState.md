@@ -2,11 +2,11 @@
 
 # Auxiliary State
 
-The `AuxiliaryState` class groups together all of OMEGA [auxiliary
+The `AuxiliaryState` class groups together all of Omega [auxiliary
 variables](#omega-dev-aux-vars). It is responsible for managing their lifetime,
 registering them with IOStreams, and providing functions that compute them,
 to be used in the tendency evaluation. It is possible
-to have multiple `AuxiliaryState` instances in OMEGA. Every instance has a name
+to have multiple `AuxiliaryState` instances in Omega. Every instance has a name
 and is tracked in a static C++ map called `AllAuxStates`.
 
 ## Initialization

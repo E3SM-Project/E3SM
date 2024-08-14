@@ -2,7 +2,7 @@
 
 ## IO Fields (IOField)
 
-Within OMEGA, each module registers which fields are available for
+Within Omega, each module registers which fields are available for
 input and output.  The user then selects which fields they wish to
 include via the streams section of the input configuration. This is
 described further in the [IOStreams](#omega-user-iostreams) section.

@@ -2,10 +2,10 @@
 
 ## Dimension
 
-When performing IO for fields in OMEGA, some metadata associated with each
+When performing IO for fields in Omega, some metadata associated with each
 dimension of multi-dimensional arrays are required. The Dimension class is
 a container that stores this dimension information and a Dimension instance
-must be created for each dimension in OMEGA. Most of these will be created
+must be created for each dimension in Omega. Most of these will be created
 by the Mesh or Decomposition classes, but if developers introduce a new
 dimension, the dimension must be created.
 
@@ -49,7 +49,7 @@ Each Dimension stores the global and local length of the dimension as well
 as the offset array. It also stores a flag to denote whether the dimension
 is distributed or not. This information is used primarily by the IOStreams
 class to write dimension metadata and define offsets for parallel IO. It is
-not expected to be used elsewhere in OMEGA.
+not expected to be used elsewhere in Omega.
 
 Dimension information is available through retrieval functions. These can be
 retrieved by dimension name as in:
@@ -82,7 +82,7 @@ As in other classes, a Dimension can be removed using:
 ```c++
    Dimension::destroy("MyDimName");
 ```
-and all dimensions should be removed during OMEGA finalization before exiting
+and all dimensions should be removed during Omega finalization before exiting
 the Kokkos environment using:
 ```c++
    Dimension::clear();

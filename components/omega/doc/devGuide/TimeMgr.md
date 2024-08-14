@@ -2,7 +2,7 @@
 
 # Time Manager (TimeMgr)
 
-The OMEGA Time Manager module tracks simulation time during a run and manages
+The Omega Time Manager module tracks simulation time during a run and manages
 alarms for triggering events at specified times This is handled by six
 interacting defined classes, each of which have a number of methods defined for
 accessing, comparing, and manipulating the class members.

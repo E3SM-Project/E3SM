@@ -2,7 +2,7 @@
 
 # Halo Exchanges (Halo)
 
-OMEGA utilizes domain-based parallelism, where the domain is divided into
+Omega utilizes domain-based parallelism, where the domain is divided into
 partitions that run in parallel as separate tasks distributed across the
 resources of the machine. Arrays representing physical quantities that are
 defined throughout the domain are divided into overlapping chunks and
@@ -11,7 +11,7 @@ arrays are updated. Array elements that are needed by a task to evolve the
 model forward in time, but are defined on and updated by a neighboring task
 are halo elements. It is necessary for each parallel task to regularly send
 locally defined array elements that belong to the halos of neighboring tasks
-and to receive local halo elements owned by neighboring tasks. In OMEGA, these
+and to receive local halo elements owned by neighboring tasks. In Omega, these
 halo exchanges are perfromed using the Halo class which, once constructed,
 contains lists of indices to send to and receive from neighboring tasks, and
 methods to conduct the exchanges. The halo exchanges are carried out using

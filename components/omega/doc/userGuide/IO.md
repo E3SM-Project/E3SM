@@ -2,7 +2,7 @@
 
 ## Parallel IO (IO)
 
-For input and output of data needed for OMEGA, we use the Software for
+For input and output of data needed for Omega, we use the Software for
 Caching Output and Reads for Parallel I/O
 ([SCORPIO](https://github.com/E3SM-Project/scorpio)) library. This
 library supports parallel reading and writing of distributed arrays in various
@@ -17,7 +17,7 @@ for computation. For example, the user could specify the number of IO tasks to
 match underlying hardware like the network interfaces (NICs) on a node.
 Users will generally access IO via the [IOStreams](#omega-user-iostreams)
 and other interfaces and the base IO layer described here only provides
-an OMEGA-aware wrapper around SCORPIO calls.
+an Omega-aware wrapper around SCORPIO calls.
 
 There are some general parameters that must be set for IO performance and
 formatting via the input configuration file. These are:
@@ -53,11 +53,11 @@ See SCORPIO documentation for details.
 Finally, the user can specify the file format. The SCORPIO library
 supports all the various NetCDF formats, though the use of older
 NetCDF formats is strongly discouraged. NetCDF-4 is currently the E3SM
-default and is the default for OMEGA. In addition, SCORPIO supports
+default and is the default for Omega. In addition, SCORPIO supports
 native HDF5 files (note that the latest NetCDF formats are all implemented
 with HDF5 and are mostly compatible with HDF5) The ADIOS format is different
 since ADIOS writes each chunk of data to a separate file and these files must
 be combined later. E3SM provides the necessary tools to combine/convert
-ADIOS files to netcdf as part of pre/post-processing. For standalone OMEGA,
+ADIOS files to netcdf as part of pre/post-processing. For standalone Omega,
 users would need to become familiar with these tools if they wish to use
 ADIOS.

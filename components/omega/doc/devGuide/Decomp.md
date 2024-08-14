@@ -2,19 +2,19 @@
 
 ## Domain Decomposition (Decomp)
 
-In order to run across nodes in a parallel computer, OMEGA subdivides the
+In order to run across nodes in a parallel computer, Omega subdivides the
 horizontal domain into subdomains that are distributed across the machine
 and communicate using message passing via the Message Passing Interface (MPI).
 To decompose the domain, we utilize the
 [METIS](http://glaros.dtc.umn.edu/gkhome/metis/metis/overview) library.
-An OMEGA mesh is fully described by the
+An Omega mesh is fully described by the
 [MPAS Mesh Specification](https://mpas-dev.github.io/files/documents/MPAS-MeshSpec.pdf)
 which we will reproduce here eventually. The Decomp class decomposes
 the domain based on the index space and number of MPI tasks (currently
 one subdomain per task). Once decomposed, the Decomp class holds all
 of the index space information as described below.
 
-Within OMEGA, a default decomposition of the mesh is first created
+Within Omega, a default decomposition of the mesh is first created
 with the call:
 ```c++
  Decomp::init();

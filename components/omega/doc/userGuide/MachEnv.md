@@ -2,7 +2,7 @@
 
 ## Machine Environment (MachEnv)
 
-Within OMEGA, many aspects of the machine environment are stored
+Within Omega, many aspects of the machine environment are stored
 in a class called MachEnv. These include message-passing parameters
 like MPI communicators and task information, number of threads
 if threaded, vector length for CPUs, GPU and node information as

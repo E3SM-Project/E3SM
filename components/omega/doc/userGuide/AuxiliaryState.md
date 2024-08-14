@@ -2,6 +2,6 @@
 
 ## Auxiliary State
 
-The `AuxiliaryState` class provides a container for the [auxiliary variables](#omega-user-aux-vars) in OMEGA.
+The `AuxiliaryState` class provides a container for the [auxiliary variables](#omega-user-aux-vars) in Omega.
 Upon creation of an `AuxiliaryState` instance, these variables are allocated and registered with the IO infrastructure.
 There are no user-configurable options.
