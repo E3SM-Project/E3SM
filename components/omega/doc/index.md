@@ -37,6 +37,7 @@ userGuide/HorzOperators
 userGuide/AuxiliaryVariables
 userGuide/AuxiliaryState
 userGuide/TendencyTerms
+userGuide/Tendencies
 userGuide/OceanState
 userGuide/TimeMgr
 userGuide/Reductions
@@ -67,6 +68,7 @@ devGuide/HorzOperators
 devGuide/AuxiliaryVariables
 devGuide/AuxiliaryState
 devGuide/TendencyTerms
+devGuide/Tendencies
 devGuide/OceanState
 devGuide/TimeMgr
 devGuide/Reductions
