@@ -795,15 +795,15 @@ contains
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_fuel_emis_at_layer ', k, frcing_vertical_plume_new(k)
                                   endif
-                                  if (surface_flux_flag ) then ! water flux for plume-height 5 layers height 
-                                     v_air = burnedarea_memory(icol)*wt_end_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
-                                     m_vapor = v_air*air_density(icol,pver)*qh2o(icol,pver) ! The mass of water vapor (kg/s) 
-                                     f_vapor = m_vapor/area(icol)*1000.0_r8/10000.0_r8 ! g/cm2/s 
-                                     f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
-                                     f_vapor = f_vapor/18.0_r8*avogadro !moleculer/cm3/s (H2O)  
-                                     frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor*detrainment_para  
+                                  !if (surface_flux_flag ) then ! water flux for plume-height 5 layers height 
+                                  !   v_air = burnedarea_memory(icol)*wt_end_e3sm_out(icol,pver) !(m3/s) The volume at the bottom per second
+                                  !   m_vapor = v_air*air_density(icol,pver)*qh2o(icol,pver) ! The mass of water vapor (kg/s) 
+                                  !   f_vapor = m_vapor/area(icol)*1000.0_r8/10000.0_r8 ! g/cm2/s 
+                                  !   f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
+                                  !   f_vapor = f_vapor/18.0_r8*avogadro !moleculer/cm3/s (H2O)  
+                                  !   frcing_vertical_plume_new(k) = frcing_vertical_plume_new(k) + f_vapor*detrainment_para  
                                       
-                                  endif
+                                  !endif
                                   if (diag_run_plumerise) then
                                      write(iulog,*) 'kzm_H2O_flux_emis_at_layer ', k, detrainment_para, frcing_vertical_plume_new(k)
                                   endif
@@ -827,9 +827,9 @@ contains
                                frcing_vertical_plume_new(k) =  0.0_r8
                                m_vapor = max(qmass_1,0.0_r8)*qratio(k)*detrainment_para
                                ! phasing out h2o transport as burned area increase
-                               phase_out = 1.0_r8 - sind(90.0_r8*burnedarea_memory(icol)/area(icol)) 
-                               phase_out = max(phase_out,0.0_r8)
-                               m_vapor = m_vapor*phase_out
+                               !phase_out = 1.0_r8 - sind(90.0_r8*burnedarea_memory(icol)/area(icol)) 
+                               !phase_out = max(phase_out,0.0_r8)
+                               !m_vapor = m_vapor*phase_out
                                !m_vapor = max(qmass(k),0.0_r8)*detrainment_para
                                f_vapor = m_vapor*1000.0_r8/10000.0_r8/area(icol) ! g/cm2/s
                                f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
