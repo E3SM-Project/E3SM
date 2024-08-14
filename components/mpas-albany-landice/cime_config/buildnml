@@ -300,7 +300,11 @@ def buildnml(case, caseroot, compname):
         if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
             safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
         else:
-            safe_copy("{}/components/mpas-albany-landice/bld/namelist_files/{}".format(srcroot, albany_input_name), os.path.join(rundir, albany_input_name))
+            # Each supported grid should have a corresponding albany_input.yaml file in
+            # components/mpas-albany-landice/bld/namelist_files/
+            # Naming convention is albany_input.GRID_PREFIX.yaml
+            albany_input_name_grid = f"albany_input.{grid_prefix}.yaml"
+            safe_copy(f"{srcroot}/components/mpas-albany-landice/bld/namelist_files/{albany_input_name_grid}", os.path.join(rundir, albany_input_name))
 
 ###############################################################################
 def _main_func():
