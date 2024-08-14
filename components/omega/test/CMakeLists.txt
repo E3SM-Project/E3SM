@@ -250,6 +250,16 @@ target_compile_definitions(
   TENDENCYTERMS_TEST_SPHERE
 )
 
+#################
+# Tendencies test
+#################
+
+add_omega_test(
+    TENDENCIES_TEST
+    testTendencies.exe
+    ocn/TendenciesTest.cpp
+    "-n;8"
+)
 
 ##################
 # State test
