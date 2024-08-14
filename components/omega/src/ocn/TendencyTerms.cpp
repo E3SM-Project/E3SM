@@ -146,11 +146,14 @@ void Tendencies::computeThicknessTendencies(
    // Compute thickness flux divergence
    const Array2DReal &ThickFluxEdge =
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
-   parallelFor(
-       {LocNCellsOwned, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
-          LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
-                              ThickFluxEdge);
-       });
+
+   if (LocThicknessFluxDiv.Enabled) {
+      parallelFor(
+          {LocNCellsOwned, LocNChunks}, KOKKOS_LAMBDA(int ICell, int KChunk) {
+             LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
+                                 ThickFluxEdge);
+          });
+   }
 
 } // end thickness tendency compute
 
@@ -178,45 +181,55 @@ void Tendencies::computeVelocityTendencies(
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
    const Array2DReal &NormVelEdge   = State->NormalVelocity[0];
-   parallelFor(
-       {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
-                                NormRVortEdge, NormFEdge, FluxLayerThickEdge,
-                                NormVelEdge);
-       });
+   if (LocPotientialVortHAdv.Enabled) {
+      parallelFor(
+          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+             LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
+                                   NormRVortEdge, NormFEdge, FluxLayerThickEdge,
+                                   NormVelEdge);
+          });
+   }
 
    // Compute kinetic energy gradient
    const Array2DReal &KECell = AuxState->KineticAux.KineticEnergyCell;
-   parallelFor(
-       {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocKEGrad(LocNormalVelocityTend, IEdge, KChunk, KECell);
-       });
+   if (LocKEGrad.Enabled) {
+      parallelFor(
+          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+             LocKEGrad(LocNormalVelocityTend, IEdge, KChunk, KECell);
+          });
+   }
 
    // Compute sea surface height gradient
    const Array2DReal &SSHCell = AuxState->LayerThicknessAux.SshCell;
-   parallelFor(
-       {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocSHHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
-       });
+   if (LocSHHGrad.Enabled) {
+      parallelFor(
+          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+             LocSHHGrad(LocNormalVelocityTend, IEdge, KChunk, SSHCell);
+          });
+   }
 
    // Compute del2 horizontal diffusion
    const Array2DReal &DivCell     = AuxState->KineticAux.VelocityDivCell;
    const Array2DReal &RVortVertex = AuxState->VorticityAux.RelVortVertex;
-   parallelFor(
-       {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocVelocityDiffusion(LocNormalVelocityTend, IEdge, KChunk, DivCell,
-                               RVortVertex);
-       });
+   if (LocVelocityDiffusion.Enabled) {
+      parallelFor(
+          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+             LocVelocityDiffusion(LocNormalVelocityTend, IEdge, KChunk, DivCell,
+                                  RVortVertex);
+          });
+   }
 
    // Compute del4 horizontal diffusion
    const Array2DReal &Del2DivCell = AuxState->VelocityDel2Aux.Del2DivCell;
    const Array2DReal &Del2RVortVertex =
        AuxState->VelocityDel2Aux.Del2RelVortVertex;
-   parallelFor(
-       {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
-          LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
-                               Del2DivCell, Del2RVortVertex);
-       });
+   if (LocVelocityHyperDiff.Enabled) {
+      parallelFor(
+          {LocNEdgesOwned, LocNChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
+             LocVelocityHyperDiff(LocNormalVelocityTend, IEdge, KChunk,
+                                  Del2DivCell, Del2RVortVertex);
+          });
+   }
 
 } // end velocity tendency compute
 
