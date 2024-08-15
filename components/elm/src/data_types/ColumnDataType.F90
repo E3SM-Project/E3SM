@@ -1522,9 +1522,9 @@ contains
             long_name='microtopographic depression depth (m)', ptr_col=this%iwp_ddep)
       call hist_addfld1d (fname="EXCLUDED_VOL", units='m', avgflag='A', &
             long_name='volume of soil above lowest point on IWP surface, normalized by polygon area', &
-            ptr_col=this%iwp_ddep)
+            ptr_col=this%iwp_exclvol)
       call hist_addfld1d (fname="MICROREL", units='m', avgflag='A', &
-            long_name='microtopographic relief (m)', ptr_col=this%iwp_ddep)
+            long_name='microtopographic relief (m)', ptr_col=this%iwp_microrel)
     endif
     !/polygonal tundra
 
@@ -1687,6 +1687,7 @@ contains
        this%frac_h2osfc_act(c)        = 0._r8
        this%h2orof(c)                 = 0._r8
        this%frac_h2orof(c)            = 0._r8
+       this%iwp_subsidence(c)         = 0._r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)

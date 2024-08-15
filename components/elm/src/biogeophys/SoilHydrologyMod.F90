@@ -572,7 +572,7 @@ contains
                    else
                       k_wet = 24.925_r8 * (710.3_r8*meangradz(c)**2 - 28.736_r8*meangradz(c) + 12.74_r8)
                    endif
-                   qflx_h2osfc_surf(c) = k_wet * (swc - vdep)
+                   qflx_h2osfc_surf(c) = k_wet * (swc - vdep) / 86400_r8 ! coefficients estimated for mm/day; convert from mm/day -> mm/s
                    qflx_h2osfc_surf(c) = min(qflx_h2osfc_surf(c), (swc - vdep)*1000_r8/dtime)
                 else
                    qflx_h2osfc_surf(c) = 0._r8
