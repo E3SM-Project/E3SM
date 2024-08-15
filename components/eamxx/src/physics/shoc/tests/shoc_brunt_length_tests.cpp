@@ -90,8 +90,11 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
       }
     }
 
-    // Call the fortran implementation
-    compute_brunt_shoc_length(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    compute_brunt_shoc_length_f(SDS.nlev,SDS.nlevi,SDS.shcol,SDS.dz_zt,SDS.thv,SDS.thv_zi,SDS.brunt);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {

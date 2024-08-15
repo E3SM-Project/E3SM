@@ -86,8 +86,10 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
       }
     }
 
-    // Call the fortran implementation
-    compute_tmpi(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_tmpi_f(SDS.nlevi, SDS.shcol, SDS.dtime, SDS.rho_zi, SDS.dz_zi, SDS.tmpi);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Verify result
     for(Int s = 0; s < shcol; ++s) {

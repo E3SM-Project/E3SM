@@ -83,8 +83,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
       REQUIRE( (SDS.qv_sfc[s] > 0 && SDS.qv_sfc[s] < 0.1) );
     }
 
-    // Call the fortran implementation
-    shoc_diag_obklen(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_diag_obklen_f(SDS.shcol, SDS.uw_sfc, SDS.vw_sfc, SDS.wthl_sfc, SDS.wqw_sfc,
+                       SDS.thl_sfc, SDS.cldliq_sfc, SDS.qv_sfc, SDS.ustar, SDS.kbfs,
+                       SDS.obklen);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result
 
@@ -148,8 +153,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
               SDS.wthl_sfc[s]+SDS.wqw_sfc[s]);
     }
 
-    // Call the fortran implementation
-    shoc_diag_obklen(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_diag_obklen_f(SDS.shcol, SDS.uw_sfc, SDS.vw_sfc, SDS.wthl_sfc, SDS.wqw_sfc,
+                       SDS.thl_sfc, SDS.cldliq_sfc, SDS.qv_sfc, SDS.ustar, SDS.kbfs,
+                       SDS.obklen);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify that DIMENSIONLESS obukhov length decreases as columns
     //   increases due to the increasing surface fluxes

@@ -153,8 +153,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }
 
-    // Call the fortran implementation
-    shoc_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    shoc_tke_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.wthv_sec, SDS.shoc_mix, SDS.dz_zi, SDS.dz_zt,
+               SDS.pres, SDS.tabs, SDS.u_wind, SDS.v_wind, SDS.brunt, SDS.zt_grid, SDS.zi_grid, SDS.pblh,
+               SDS.tke, SDS.tk, SDS.tkh, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     // Make sure that TKE has increased everwhere relative
@@ -226,8 +230,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }
 
-    // Call the fortran implementation
-    shoc_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    shoc_tke_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.wthv_sec, SDS.shoc_mix, SDS.dz_zi, SDS.dz_zt,
+               SDS.pres, SDS.tabs, SDS.u_wind, SDS.v_wind, SDS.brunt, SDS.zt_grid, SDS.zi_grid, SDS.pblh,
+               SDS.tke, SDS.tk, SDS.tkh, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
 

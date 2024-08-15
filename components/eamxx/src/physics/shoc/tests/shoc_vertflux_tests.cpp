@@ -95,8 +95,11 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
       }
     }
 
-    // Call the fortran implementation
-    calc_shoc_vertflux(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    calc_shoc_vertflux_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.tkh_zi, SDS.dz_zi, SDS.invar, SDS.vertflux);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {

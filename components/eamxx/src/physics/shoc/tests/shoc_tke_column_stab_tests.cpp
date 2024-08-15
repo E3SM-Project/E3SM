@@ -75,8 +75,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
       }
     }
 
-    // Call the fortran implementation
-    integ_column_stability(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    integ_column_stability_f(SDS.nlev, SDS.shcol, SDS.dz_zt, SDS.pres, SDS.brunt, SDS.brunt_int);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     //  Verify that output is zero
@@ -107,8 +109,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
       }
     }
 
-    // Call the fortran implementation
-    integ_column_stability(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    integ_column_stability_f(SDS.nlev, SDS.shcol, SDS.dz_zt, SDS.pres, SDS.brunt, SDS.brunt_int);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     //  Verify that output is negative

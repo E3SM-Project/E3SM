@@ -75,8 +75,11 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
       REQUIRE(SDS.host_dy[s] > 0);
     }
 
-    // Call the fortran implementation
-    check_length_scale_shoc_length(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    check_length_scale_shoc_length_f(SDS.nlev,SDS.shcol,SDS.host_dx,SDS.host_dy,SDS.shoc_mix);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {

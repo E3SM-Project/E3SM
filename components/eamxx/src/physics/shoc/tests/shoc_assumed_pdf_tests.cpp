@@ -102,8 +102,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Check that the inputs make sense
-
-    // Load input data
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
@@ -142,8 +140,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // For this test we want exactly two columns
     REQUIRE(SDS.shcol == 2);
 
-    // Call the fortran implementation
-    shoc_assumed_pdf(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
+                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
+                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
+                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify the result
     // Make sure cloud fraction is either 1 or 0 and all
@@ -182,8 +186,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       }
     }
 
-    // Call the fortran implementation
-    shoc_assumed_pdf(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
+                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
+                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
+                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify the result
     // Make sure cloud fraction is either 1 or 0 and all
@@ -240,8 +250,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       }
     }
 
-    // Call the fortran implementation
-    shoc_assumed_pdf(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
+                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
+                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
+                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result
 
@@ -324,8 +340,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       }
     }
 
-    // Call the fortran implementation
-    shoc_assumed_pdf(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
+                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
+                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
+                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result
 

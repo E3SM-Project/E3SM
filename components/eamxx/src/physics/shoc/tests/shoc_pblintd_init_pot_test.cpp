@@ -76,8 +76,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       }
     }
 
-    // call the fortran implementation
-    pblintd_init_pot(SDS);
+    // call the C++ implementation
+    shoc_pblintd_init_pot_f(SDS.shcol, SDS.nlev, SDS.thl, SDS.ql, SDS.q, SDS.thv);
 
     // Check the result.
     // Verify that virtual potential temperature is idential
@@ -125,8 +125,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       }
     }
 
-    // Call the fortran implementation
-    pblintd_init_pot(SDS);
+    // Call the C++ implementation
+    shoc_pblintd_init_pot_f(SDS.shcol, SDS.nlev, SDS.thl, SDS.ql, SDS.q, SDS.thv);
 
     // Check test
     // Verify that column with condensate loading

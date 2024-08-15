@@ -142,8 +142,14 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       }
     }
 
-    // Call the fortran implementation
-    diag_third_shoc_moments(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    diag_third_shoc_moments_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
+                              SDS.wthl_sec,SDS.isotropy,SDS.brunt,SDS.thetal,
+                              SDS.tke,SDS.dz_zt,SDS.dz_zi,SDS.zt_grid,SDS.zi_grid,
+                              SDS.w3);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check to make sure there is at least one
     //  positive w3 value for convective boundary layer
@@ -186,8 +192,14 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       }
     }
 
-    // Call the fortran implementation
-    diag_third_shoc_moments(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    diag_third_shoc_moments_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
+                              SDS.wthl_sec,SDS.isotropy,SDS.brunt,SDS.thetal,
+                              SDS.tke,SDS.dz_zt,SDS.dz_zi,SDS.zt_grid,SDS.zi_grid,
+                              SDS.w3);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify that new result is greater or equal in magnitude
     //  that the result from test one

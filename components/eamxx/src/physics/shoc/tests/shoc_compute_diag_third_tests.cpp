@@ -145,8 +145,15 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
       }
     }
 
-    // Call the fortran implementation
-    compute_diag_third_shoc_moment(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    compute_diag_third_shoc_moment_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
+                                     SDS.wthl_sec,SDS.tke,SDS.dz_zt,
+                                     SDS.dz_zi,SDS.isotropy_zi,
+                                     SDS.brunt_zi,SDS.w_sec_zi,SDS.thetal_zi,
+                                     SDS.w3);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result
 
