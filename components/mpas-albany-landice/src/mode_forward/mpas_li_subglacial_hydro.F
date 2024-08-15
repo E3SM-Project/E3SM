@@ -219,7 +219,7 @@ module li_subglacial_hydro
          where ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
             hydropotential = rho_water * gravity * bedTopography
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography < config_sea_level))
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
             hydropotential = 0.0_RKIND
          end where
@@ -1642,7 +1642,7 @@ module li_subglacial_hydro
                    rho_water * gravity * deltatSGH / porosity + waterPressureOld
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography < config_sea_level))
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
@@ -1652,7 +1652,7 @@ module li_subglacial_hydro
             waterPressure = rhoi * gravity * iceThicknessHydro
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography < config_sea_level))
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
@@ -1760,7 +1760,7 @@ module li_subglacial_hydro
       end where
       
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
-      where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography < config_sea_level)) 
+      where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography <= config_sea_level)) 
          hydropotentialBase = 0.0_RKIND !zero hydropotential in ocean
       elsewhere ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography > config_sea_level))
          hydropotentialBase = rho_water * gravity * bedTopography ! for completeness, but won't matter with one-side slope calculations on terrestrial boundaries
@@ -1901,7 +1901,7 @@ module li_subglacial_hydro
          channelDischarge = 0.0_RKIND
       end where
 
-      ! Similar to waterFlux, shut of channelDischarge if no water upstream. Prevents self-sustaining channels in the absence of distributed water
+      ! Similar to waterFlux, shut off channelDischarge if no water upstream. Prevents self-sustaining channels in the absence of distributed water
       where (waterThicknessEdgeUpwind == 0.0_RKIND)
          channelArea = 0.0_RKIND
          channelDischarge = 0.0_RKIND
