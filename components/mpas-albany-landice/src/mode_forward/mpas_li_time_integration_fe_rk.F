@@ -289,7 +289,7 @@ module li_time_integration_fe_rk
             err = 1
             call mpas_log_write(                                 &
                'Error encountered during fct tracer advection shared init', &
-               MPAS_LOG_ERR, masterOnly=.true.)
+               MPAS_LOG_ERR)
          endif
       endif
 

@@ -1161,11 +1161,9 @@ module li_advection
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
 
-      integer :: iCell, iTracer, k, err, err1, err2
+      integer :: iCell, iTracer, k, err
 
       err  = 0
-      err1 = 0
-      err2 = 0
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -1294,13 +1292,12 @@ module li_advection
       !       May need to increase maxTracers in the Registry.
       if ( (trim(config_tracer_advection) == 'fct') .or. &
            (trim(config_thickness_advection) == 'fct') ) then
-         call li_tracer_advection_fct_init(err2)
+         call li_tracer_advection_fct_init(err)
 
-         if (err1 /= 0 .or. err2 /= 0) then
-            err = 1
+         if (err /= 0) then
             call mpas_log_write(                                 &
                'Error encountered during fct tracer advection init', &
-               MPAS_LOG_ERR, masterOnly=.true.)
+               MPAS_LOG_ERR)
          endif
       endif
 
