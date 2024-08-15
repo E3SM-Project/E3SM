@@ -40,7 +40,6 @@ set (TEST_INPUT_FILES
   scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/poly_rrtmg_c20240206.nc
-  # scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
 )
 
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
