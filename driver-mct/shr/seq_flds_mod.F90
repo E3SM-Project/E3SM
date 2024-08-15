@@ -390,7 +390,7 @@ contains
 
     ! set these here because the cplflds namelist is not the right place
     !    this namelist is called only under special circumstances
-    integer :: iac_npft = 17
+    integer :: iac_npft = 51
     integer :: iac_nharvest = 5
 
     namelist /seq_cplflds_inparm/  &

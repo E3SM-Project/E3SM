@@ -8,6 +8,7 @@ module elm_cpl_indices
   ! !USES:
   
   use shr_sys_mod,    only : shr_sys_abort
+  use elm_varpar,     only : mxpft
   implicit none
 
   SAVE
@@ -355,7 +356,7 @@ contains
     ! avd - this is called before the pft number is set
     ! and these are indexed from zero on this elm side 
     ! KVC: this has a different value than in iac. Need to align. Doing manually now
-    iac_npft = 17
+    iac_npft = mxpft
     ! avd - hardcode this for now, but should be able to get it from namelist like
     ! in the iac
     iac_nharvest = 5
