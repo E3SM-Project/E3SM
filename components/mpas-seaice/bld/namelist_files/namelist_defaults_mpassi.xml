@@ -221,6 +221,7 @@
 <config_use_floe_size_distribution>false</config_use_floe_size_distribution>
 
 <!-- biogeochemistry -->
+<config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_brine>false</config_use_brine>
 <config_use_vertical_zsalinity>false</config_use_vertical_zsalinity>
 <config_use_vertical_biochemistry>false</config_use_vertical_biochemistry>
@@ -240,6 +241,8 @@
 <config_use_iron>false</config_use_iron>
 <config_use_modal_aerosols>false</config_use_modal_aerosols>
 <config_use_zaerosols>false</config_use_zaerosols>
+<config_use_atm_dust_file>false</config_use_atm_dust_file>
+<config_use_iron_solubility_file>false</config_use_iron_solubility_file>
 <config_skeletal_bgc_flux_type>'Jin2006'</config_skeletal_bgc_flux_type>
 <config_scale_initial_vertical_bgc>false</config_scale_initial_vertical_bgc>
 <config_biogrid_bottom_molecular_sublayer>0.006</config_biogrid_bottom_molecular_sublayer>
@@ -349,12 +352,12 @@
 <config_mobility_type_proteins>0.0</config_mobility_type_proteins>
 <config_mobility_type_dissolved_iron>0.0</config_mobility_type_dissolved_iron>
 <config_mobility_type_particulate_iron>0.5</config_mobility_type_particulate_iron>
-<config_mobility_type_black_carbon1>0.0</config_mobility_type_black_carbon1>
-<config_mobility_type_black_carbon2>0.0</config_mobility_type_black_carbon2>
-<config_mobility_type_dust1>0.0</config_mobility_type_dust1>
-<config_mobility_type_dust2>0.0</config_mobility_type_dust2>
-<config_mobility_type_dust3>0.0</config_mobility_type_dust3>
-<config_mobility_type_dust4>0.0</config_mobility_type_dust4>
+<config_mobility_type_black_carbon1>-1.0</config_mobility_type_black_carbon1>
+<config_mobility_type_black_carbon2>-1.0</config_mobility_type_black_carbon2>
+<config_mobility_type_dust1>-1.0</config_mobility_type_dust1>
+<config_mobility_type_dust2>-1.0</config_mobility_type_dust2>
+<config_mobility_type_dust3>-1.0</config_mobility_type_dust3>
+<config_mobility_type_dust4>-1.0</config_mobility_type_dust4>
 <config_ratio_C_to_N_diatoms>7.0</config_ratio_C_to_N_diatoms>
 <config_ratio_C_to_N_small_plankton>7.0</config_ratio_C_to_N_small_plankton>
 <config_ratio_C_to_N_phaeocystis>7.0</config_ratio_C_to_N_phaeocystis>

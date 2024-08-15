@@ -122,7 +122,7 @@
       <value compset="_ELM%[^_]*SP"        >-bgc sp</value>
       <value compset="_ELM%[^_]*TOP"       >-solar_rad_scheme top</value>
       <value compset="_ELM%[^_]*SPBC"      >-bgc sp</value>
-      <value compset="_EAM%CMIP6_ELM%[^_]*SPBC" >-bgc sp -solar_rad_scheme top</value>
+      <value compset="_EAM%CMIP6_ELM%[^_]*SPBC" >-bgc sp</value>
       <value compset="_ELM%[^_]*CN"        >-bgc cn</value>
       <value compset="_ELM%[^_]*BGC"       >-bgc bgc</value>
       <value compset="_ELM%[^_]*CN-CROP"   >-bgc cn -crop</value>
