@@ -860,7 +860,13 @@ contains
     real(r8), parameter :: rho_ice     = 917._r8
     real(r8) :: k_snw_vals(5)
     real(r8) :: k_snw_tmps(5)
-    data k_snw_tmps(:) /223.0, 248.0, 263.0, 268.0, 273.0/
+    real(r8) :: k_snw_coe1(5)
+    real(r8) :: k_snw_coe2(5)
+    real(r8) :: k_snw_coe3(5)
+    data k_snw_tmps(:) /223.0_r8, 248.0_r8, 263.0_r8, 268.0_r8, 273.0_r8/
+    data k_snw_coe1(:) /2.564_r8,2.172_r8,1.985_r8,1.883_r8,1.776_r8/
+    data k_snw_coe2(:) /-0.059_r8, 0.015_r8, 0.073_r8, 0.107_r8, 0.147_r8/
+    data k_snw_coe3(:) /0.0205_r8, 0.0252_r8, 0.0336_r8, 0.0386_r8, 0.0455_r8/
     !-----------------------------------------------------------------------
     event = 'SoilThermProp'
     call t_start_lnd( event )
@@ -949,27 +955,17 @@ contains
                endif
             endif
             
-            if (use_T_rho_dependent_snowthk) then ! chose which snow thermal conductivity to use 
+            if (use_T_rho_dependent_snowthk) then ! choose which snow thermal conductivity to use 
                if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
-                    bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
+                    bw(c,j) = (h2osoi_ice(c,j) + h2osoi_liq(c,j)) / (frac_sno(c) * dz(c,j))
 
                        do i = 1, 5
-                        if (i == 1) then
-                            k_snw_vals(i) = 2.564 * (bw(c,j)/ rho_ice)**2 - 0.059 * (bw(c,j)/ rho_ice) + 0.0205
-                        else if (i == 2) then
-                            k_snw_vals(i) = 2.172 * (bw(c,j)/ rho_ice)**2 + 0.015 * (bw(c,j)/ rho_ice) + 0.0252
-                        else if (i == 3) then
-                            k_snw_vals(i) = 1.985 * (bw(c,j)/ rho_ice)**2 + 0.073 * (bw(c,j)/ rho_ice) + 0.0336
-                        else if (i == 4) then
-                            k_snw_vals(i) = 1.883 * (bw(c,j)/ rho_ice)**2 + 0.107 * (bw(c,j)/ rho_ice) + 0.0386
-                        else if (i == 5) then
-                            k_snw_vals(i) = 1.776 * (bw(c,j)/ rho_ice)**2 + 0.147 * (bw(c,j)/ rho_ice) + 0.0455
-                        end if
+                            k_snw_vals(i) = k_snw_coe1(i) * (bw(c,j) / rho_ice)**2 - k_snw_coe2(i) * (bw(c,j) / rho_ice) + k_snw_coe3(i)
                        end do
 
                        do i = 1, size(k_snw_tmps) - 1
                         if (k_snw_tmps(i) <= t_soisno(c,j) .and. t_soisno(c,j) <= k_snw_tmps(i + 1)) then
-                            thk(c,j) = k_snw_vals(i) + (t_soisno(c,j) - k_snw_tmps(i))*(k_snw_vals(i + 1)-k_snw_vals(i))/(k_snw_tmps(i + 1)-k_snw_tmps(i))
+                            thk(c,j) = k_snw_vals(i) + (t_soisno(c,j) - k_snw_tmps(i)) * (k_snw_vals(i + 1)-k_snw_vals(i)) / (k_snw_tmps(i + 1) - k_snw_tmps(i))
                         end if
                        end do
 
