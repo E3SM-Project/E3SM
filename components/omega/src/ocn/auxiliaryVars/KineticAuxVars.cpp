@@ -1,6 +1,6 @@
 #include "KineticAuxVars.h"
-#include "IOField.h"
-#include "MetaData.h"
+#include "DataTypes.h"
+#include "Field.h"
 
 #include <limits>
 
@@ -16,65 +16,80 @@ KineticAuxVars::KineticAuxVars(const std::string &AuxStateSuffix,
       EdgeSignOnCell(Mesh->EdgeSignOnCell), DcEdge(Mesh->DcEdge),
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
 
-void KineticAuxVars::registerFields(const std::string &AuxGroupName) const {
-   addMetaData(AuxGroupName);
-   defineIOFields();
+void KineticAuxVars::registerFields(
+    const std::string &AuxGroupName, // name of Auxiliary field group
+    const std::string &MeshName      // name of horizontal mesh
+) const {
+
+   int Err = 0; // error flag for some calls
+
+   // Create fields
+   const Real FillValue = -9.99e30;
+   int NDims            = 2;
+   std::vector<std::string> DimNames(NDims);
+   std::string DimSuffix;
+   if (MeshName == "Default") {
+      DimSuffix = "";
+   } else {
+      DimSuffix = MeshName;
+   }
+
+   // Kinetic energy on cells
+   DimNames[0]                 = "NCells" + DimSuffix;
+   DimNames[1]                 = "NVertLevels";
+   auto KineticEnergyCellField = Field::create(
+       KineticEnergyCell.label(),                        // field name
+       "kinetic energy of horizontal velocity on cells", // long name/describe
+       "m^2 s^-2",                                       // units
+       "specific_kinetic_energy_of_sea_water",           // CF standard Name
+       0,                                                // min valid value
+       std::numeric_limits<Real>::max(),                 // max valid value
+       FillValue, // scalar for undefined entries
+       2,         // number of dimensions
+       DimNames   // dim names
+   );
+
+   // Velocity divergence on cells
+   auto VelocityDivCellField = Field::create(
+       VelocityDivCell.label(),             // field name
+       "divergence of horizontal velocity", // long Name or description
+       "s^-1",                              // units
+       "",                                  // CF standard Name
+       std::numeric_limits<Real>::min(),    // min valid value
+       std::numeric_limits<Real>::max(),    // max valid value
+       FillValue,                           // scalar used for undefined entries
+       NDims,                               // number of dimensions
+       DimNames                             // dimension names
+   );
+
+   // Add fields to FieldGroup
+   Err = FieldGroup::addFieldToGroup(KineticEnergyCell.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", KineticEnergyCell.label(),
+                AuxGroupName);
+   Err = FieldGroup::addFieldToGroup(VelocityDivCell.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", VelocityDivCell.label(),
+                AuxGroupName);
+
+   // Attach data
+   Err = KineticEnergyCellField->attachData<Array2DReal>(KineticEnergyCell);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", KineticEnergyCell.label());
+
+   Err = VelocityDivCellField->attachData<Array2DReal>(VelocityDivCell);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", VelocityDivCell.label());
 }
 
 void KineticAuxVars::unregisterFields() const {
-   IOField::erase(KineticEnergyCell.label());
-   IOField::erase(VelocityDivCell.label());
-   MetaData::destroy(KineticEnergyCell.label());
-   MetaData::destroy(VelocityDivCell.label());
-}
-
-void KineticAuxVars::addMetaData(const std::string &AuxGroupName) const {
-   auto CellDim      = MetaDim::get("NCells");
-   auto VertDim      = MetaDim::get("NVertLevels");
-   auto AuxMetaGroup = MetaGroup::get(AuxGroupName);
-
-   const Real FillValue = -9.99e30;
-
-   // Kinetic energy on cells
-   auto KineticEnergyCellMeta = ArrayMetaData::create(
-       KineticEnergyCell.label(),
-       "kinetic energy of horizontal velocity on cells", /// long Name or
-                                                         /// description
-       "m^2 s^-2",                                       /// units
-       "",                                               /// CF standard Name
-       0,                                                /// min valid value
-       std::numeric_limits<Real>::max(),                 /// max valid value
-       FillValue,         /// scalar used for undefined entries
-       2,                 /// number of dimensions
-       {CellDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(KineticEnergyCell.label());
-
-   // Velocity divergence on cells
-   auto VelocityDivCellMeta = ArrayMetaData::create(
-       VelocityDivCell.label(),
-       "divergence of horizontal velocity", /// long Name or description
-       "s^-1",                              /// units
-       "",                                  /// CF standard Name
-       std::numeric_limits<Real>::min(),    /// min valid value
-       std::numeric_limits<Real>::max(),    /// max valid value
-       FillValue,         /// scalar used for undefined entries
-       2,                 /// number of dimensions
-       {CellDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(VelocityDivCell.label());
-}
-
-void KineticAuxVars::defineIOFields() const {
-   int Err;
-
-   // Kinetic energy on cells
-   Err = IOField::define(KineticEnergyCell.label());
-   Err = IOField::attachData(KineticEnergyCell.label(), KineticEnergyCell);
-
-   // Velocity divergence on cells
-   Err = IOField::define(VelocityDivCell.label());
-   Err = IOField::attachData(VelocityDivCell.label(), VelocityDivCell);
+   int Err = 0;
+   Err     = Field::destroy(KineticEnergyCell.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", KineticEnergyCell.label());
+   Err = Field::destroy(VelocityDivCell.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", VelocityDivCell.label());
 }
 
 } // namespace OMEGA

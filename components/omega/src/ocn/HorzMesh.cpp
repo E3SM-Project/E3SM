@@ -12,6 +12,7 @@
 #include "HorzMesh.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
 #include "IO.h"
 #include "Logging.h"
 #include "MachEnv.h"
@@ -44,6 +45,8 @@ int HorzMesh::init() {
 HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
                    Decomp *MeshDecomp       //< [in] Decomp for the new mesh
 ) {
+
+   MeshName = Name;
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
@@ -99,6 +102,10 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    if (Err != 0)
       LOG_CRITICAL("HorzMesh: error opening mesh file");
 
+   // Create Omega Dimensions associated with this mesh
+   createDimensions(MeshDecomp);
+
+   // Temporary - remove when IOStreams implemented
    // Create the parallel IO decompositions required to read in mesh variables
    initParallelIO(MeshDecomp);
 
@@ -184,6 +191,82 @@ void HorzMesh::clear() {
                           // the porcess, calls the destructors for each
 
 } // end clear
+
+//------------------------------------------------------------------------------
+// Create Dimension instances for all dimensions associated with the mesh
+void HorzMesh::createDimensions(Decomp *MeshDecomp) {
+
+   // Create non-distributed dimensions
+   // If these have already been created (eg not the default mesh), skip
+   if (!Dimension::exists("MaxCellsOnEdge"))
+      auto MaxCellsOnEdgeDim =
+          Dimension::create("MaxCellsOnEdge", MaxCellsOnEdge);
+   if (!Dimension::exists("MaxEdges"))
+      auto MaxEdgesDim = Dimension::create("MaxEdges", MaxEdges);
+   if (!Dimension::exists("VertexDegree"))
+      auto VertexDegreeDim = Dimension::create("VertexDegree", VertexDegree);
+
+   // For distributed dimensions we need to compute offsets along each
+   // dimension (the global offset at each local point with -1 for non-owned
+   // points)
+
+   // Distinguish these dimensions by name if this is not the default mesh
+   std::string NameSuffix;
+   if (MeshName == "Default") {
+      NameSuffix = "";
+   } else {
+      NameSuffix = "MeshName";
+   }
+
+   // Create the offset and Dimension for NCells
+   std::string DimName = "NCells" + NameSuffix;
+   HostArray1DI4 CellOffset("CellOffSet", NCellsSize);
+   I4 NCellsGlobal = MeshDecomp->NCellsGlobal;
+   // NCellsOwned, NCellsSize already set
+   for (int Cell = 0; Cell < NCellsSize; ++Cell) {
+      if (Cell < NCellsOwned) {
+         CellOffset(Cell) = MeshDecomp->CellIDH(Cell) - 1;
+      } else {
+         CellOffset(Cell) = -1;
+      }
+   }
+   // Create the distributed dimension
+   auto NCellsDim =
+       Dimension::create(DimName, NCellsGlobal, NCellsSize, CellOffset);
+
+   // Create the offset and Dimension for NEdges
+   DimName = "NEdges" + NameSuffix;
+   HostArray1DI4 EdgeOffset("EdgeOffSet", NEdgesSize);
+   I4 NEdgesGlobal = MeshDecomp->NEdgesGlobal;
+   // NEdgesOwned, NEdgesSize already set
+   for (int Edge = 0; Edge < NEdgesSize; ++Edge) {
+      if (Edge < NEdgesOwned) {
+         EdgeOffset(Edge) = MeshDecomp->EdgeIDH(Edge) - 1;
+      } else {
+         EdgeOffset(Edge) = -1;
+      }
+   }
+   // Create the distributed dimension
+   auto NEdgesDim =
+       Dimension::create(DimName, NEdgesGlobal, NEdgesSize, EdgeOffset);
+
+   // Create the offset and Dimension for NVertices
+   DimName = "NVertices" + NameSuffix;
+   HostArray1DI4 VrtxOffset("VertexOffSet", NVerticesSize);
+   I4 NVerticesGlobal = MeshDecomp->NVerticesGlobal;
+   // NVerticesOwned, NVerticesSize already set
+   for (int Vrtx = 0; Vrtx < NVerticesSize; ++Vrtx) {
+      if (Vrtx < NVerticesOwned) {
+         VrtxOffset(Vrtx) = MeshDecomp->VertexIDH(Vrtx) - 1;
+      } else {
+         VrtxOffset(Vrtx) = -1;
+      }
+   }
+   // Create the distributed dimension
+   auto NVerticesDim =
+       Dimension::create(DimName, NVerticesGlobal, NVerticesSize, VrtxOffset);
+
+} // end createDimensions
 
 //------------------------------------------------------------------------------
 // Initialize the parallel IO decompositions for the mesh variables

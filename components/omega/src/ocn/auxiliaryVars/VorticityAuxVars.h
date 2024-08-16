@@ -75,7 +75,8 @@ class VorticityAuxVars {
       }
    }
 
-   void registerFields(const std::string &AuxGroupName) const;
+   void registerFields(const std::string &AuxGroupName,
+                       const std::string &MeshName) const;
    void unregisterFields() const;
 
  private:
@@ -88,9 +89,6 @@ class VorticityAuxVars {
    Array1DR8 AreaTriangle;
    Array2DI4 VerticesOnEdge;
    Array1DR8 FVertex;
-
-   void addMetaData(const std::string &AuxGroupName) const;
-   void defineIOFields() const;
 };
 
 } // namespace OMEGA

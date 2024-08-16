@@ -46,7 +46,8 @@ class KineticAuxVars {
       }
    }
 
-   void registerFields(const std::string &AuxGroupName) const;
+   void registerFields(const std::string &AuxGroupName,
+                       const std::string &MeshName) const;
    void unregisterFields() const;
 
  private:
@@ -56,9 +57,6 @@ class KineticAuxVars {
    Array1DR8 DcEdge;
    Array1DR8 DvEdge;
    Array1DR8 AreaCell;
-
-   void addMetaData(const std::string &AuxGroupName) const;
-   void defineIOFields() const;
 };
 
 } // namespace OMEGA

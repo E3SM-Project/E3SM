@@ -1,7 +1,6 @@
 #ifndef OMEGA_DIMENSION_H
 #define OMEGA_DIMENSION_H
-//===-- infra/Dimension.h - OMEGA dimension class ----------------*- C++
-//-*-===//
+//===-- infra/Dimension.h - OMEGA dimension class ---------------*- C++ -*-===//
 //
 /// \file
 /// \brief Defines a dimension class used by the multi-dimensional Field class

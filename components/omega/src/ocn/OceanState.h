@@ -34,7 +34,7 @@ class OceanState {
 
    void read();
 
-   void defineIOFields();
+   void defineFields();
 
    I4 CellDecompR8;
    I4 EdgeDecompR8;
@@ -98,10 +98,10 @@ class OceanState {
    Kokkos::Array<HostArray2DReal, MaxTimeLevels>
        NormalVelocityH; ///< Host NormalVelocity array
 
-   // IOField names
+   // Field names
    // These are appended with the State name for non-Default state instances
-   std::string LayerThicknessIOName; ///< IOField name for LayerThickness
-   std::string NormalVelocityIOName; ///< IOField name for NormalVelocity
+   std::string LayerThicknessFldName; ///< Field name for LayerThickness
+   std::string NormalVelocityFldName; ///< Field name for NormalVelocity
    std::string StateGroupName;
 
    // Methods

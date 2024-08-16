@@ -17,6 +17,7 @@
 #include "TendencyTerms.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -630,6 +631,7 @@ int initTendTest(const std::string &mesh) {
 void finalizeTendTest() {
 
    HorzMesh::clear();
+   Dimension::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();

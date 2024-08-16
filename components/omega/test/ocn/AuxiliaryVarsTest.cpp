@@ -1,9 +1,10 @@
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
+#include "Field.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
-#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
@@ -659,7 +660,8 @@ int initAuxVarsTest(const std::string &mesh) {
 }
 
 void finalizeAuxVarsTest() {
-   IOField::clear();
+   Field::clear();
+   Dimension::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();

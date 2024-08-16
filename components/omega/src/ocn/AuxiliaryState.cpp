@@ -1,6 +1,6 @@
 #include "AuxiliaryState.h"
+#include "Field.h"
 #include "Logging.h"
-#include "MetaData.h"
 
 namespace OMEGA {
 
@@ -22,24 +22,27 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
    if (Name != "Default") {
       GroupName.append(Name);
    }
+   std::string AuxMeshName = Mesh->MeshName;
 
-   MetaGroup::create(GroupName);
+   auto AuxGroup = FieldGroup::create(GroupName);
 
-   KineticAux.registerFields(GroupName);
-   LayerThicknessAux.registerFields(GroupName);
-   VorticityAux.registerFields(GroupName);
-   VelocityDel2Aux.registerFields(GroupName);
+   KineticAux.registerFields(GroupName, AuxMeshName);
+   LayerThicknessAux.registerFields(GroupName, AuxMeshName);
+   VorticityAux.registerFields(GroupName, AuxMeshName);
+   VelocityDel2Aux.registerFields(GroupName, AuxMeshName);
 }
 
 // Destructor. Unregisters the fields with IOStreams and destroys this auxiliary
-// state meta group.
+// state field group.
 AuxiliaryState::~AuxiliaryState() {
    KineticAux.unregisterFields();
    LayerThicknessAux.unregisterFields();
    VorticityAux.unregisterFields();
    VelocityDel2Aux.unregisterFields();
 
-   MetaGroup::destroy(GroupName);
+   int Err = FieldGroup::destroy(GroupName);
+   if (Err != 0)
+      LOG_ERROR("Error destroying FieldGroup {}", GroupName);
 }
 
 // Compute the auxiliary variables

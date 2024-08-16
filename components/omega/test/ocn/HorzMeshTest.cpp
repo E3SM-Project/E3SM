@@ -11,6 +11,7 @@
 #include "HorzMesh.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
 #include "Halo.h"
 #include "IO.h"
 #include "Logging.h"
@@ -764,6 +765,7 @@ int main(int argc, char *argv[]) {
       }
       // Finalize Omega objects
       OMEGA::HorzMesh::clear();
+      OMEGA::Dimension::clear();
       OMEGA::Decomp::clear();
       OMEGA::MachEnv::removeAll();
 
