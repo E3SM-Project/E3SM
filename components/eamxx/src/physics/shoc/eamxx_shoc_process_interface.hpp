@@ -88,13 +88,10 @@ public:
         
         cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
 
-        const auto range = ekat::range<IntSmallPack>(k*Spack::n);
-        const Smask in_nlev_range = (range < nlev);
-
-        // Inverse of Exner. Assert that exner != 0 when in range before computing.
+        // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
         const Spack exner = PF::exner_function(p_mid(i,k));
         const Smask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
+        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Spack::n) < nlev);).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(mintke, tke(i,k));
