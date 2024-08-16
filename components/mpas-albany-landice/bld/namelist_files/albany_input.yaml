@@ -17,6 +17,7 @@ ANONYMOUS:
           Zero Effective Pressure On Floating Ice At Nodes: true
           Zero Beta On Floating Ice: false
           Use Pressurized Bed Above Sea Level: false
+
 # Discretization Description
   Discretization:
     #Exodus Output File Name: albany_output.exo
