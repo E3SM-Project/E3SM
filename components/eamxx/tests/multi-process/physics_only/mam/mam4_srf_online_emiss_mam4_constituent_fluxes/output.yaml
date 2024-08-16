@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_mam4_drydep_output
+filename_prefix: mam4_srf_online_emiss_mam4_constituent_fluxes_output
 Averaging Type: Instant
 Field Names:
   - bc_a1

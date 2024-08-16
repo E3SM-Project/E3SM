@@ -253,7 +253,7 @@ void MAMAci::set_grids(
                       frz_unit, grid_name);
 
   // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
-  add_field<Computed>("hetfrz_depostion_nucleation_tend", scalar3d_layout_mid,
+  add_field<Computed>("hetfrz_deposition_nucleation_tend", scalar3d_layout_mid,
                       frz_unit, grid_name);
 }  // function set_grids ends
 
@@ -390,8 +390,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
       get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
   hetfrz_contact_nucleation_tend_ =
       get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
-  hetfrz_depostion_nucleation_tend_ =
-      get_field_out("hetfrz_depostion_nucleation_tend").get_view<Real **>();
+  hetfrz_deposition_nucleation_tend_ =
+      get_field_out("hetfrz_deposition_nucleation_tend").get_view<Real **>();
 
   //---------------------------------------------------------------------------------
   // Allocate memory for the class members
@@ -642,7 +642,7 @@ void MAMAci::run_impl(const double dt) {
       team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // ## output to be used by the other processes ##
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
-      hetfrz_depostion_nucleation_tend_,
+      hetfrz_deposition_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
 
