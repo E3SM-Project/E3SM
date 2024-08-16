@@ -8,7 +8,7 @@ endif()
 #adding -g here leads to linker internal errors
 string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2 -g -gline-tables-only")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2 -fpscomp logicals -g -gline-tables-only")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2 -g -gline-tables-only")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -g -gline-tables-only")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -fpscomp logicals -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
