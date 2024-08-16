@@ -91,7 +91,7 @@ public:
         // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
         const Spack exner = PF::exner_function(p_mid(i,k));
         const Smask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Spack::n) < nlev);).all());
+        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Spack::n) < nlev)).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(mintke, tke(i,k));
