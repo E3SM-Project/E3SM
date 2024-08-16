@@ -279,6 +279,24 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_pom_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_pom_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_pom_a4>
       <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a1>
       <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a2>
+      <!-- For ne30pg2 grid -->
+      <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same."/>
+      <srf_emis_specifier_for_DMS    hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_DMS>
+      <srf_emis_specifier_for_SO2    hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_SO2>
+      <srf_emis_specifier_for_bc_a4  hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_bc_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_bc_a4>
+      <srf_emis_specifier_for_num_a1 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a1>
+      <srf_emis_specifier_for_num_a2 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a2>
+      <srf_emis_specifier_for_num_a4 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a4>
+      <srf_emis_specifier_for_pom_a4 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_pom_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_pom_a4>
+      <srf_emis_specifier_for_so4_a1 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a1>
+      <srf_emis_specifier_for_so4_a2 hgrid="ne30np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a2>
+
+      <!-- Mapping Files for finer resolutions -->
+      <srf_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</srf_remap_file>
+      <srf_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</srf_remap_file>
+      <srf_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</srf_remap_file>
+      <srf_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</srf_remap_file>
+      <srf_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</srf_remap_file>
     </mam4_srf_online_emiss>
 
     <!-- MAM4xx-constituent fluxes -->
