@@ -7,11 +7,11 @@
 
 #include <ekat/mpi/ekat_comm.hpp>
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
 #include <mpi.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
 namespace scream {
 
@@ -33,7 +33,7 @@ void initialize (MPI_Comm mpi_comm) {
 void initialize () {
   initialize(MPI_COMM_WORLD);
 }
-void initialize (pybind11::object py_comm) {
+void initialize (nb::object py_comm) {
   initialize(get_c_comm(py_comm));
 }
 void finalize () {
@@ -45,20 +45,20 @@ void finalize () {
   finalize_scream_session();
 }
 
-PYBIND11_MODULE (pyscream_ext,m) {
+NB_MODULE (pyscream_ext,m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 
   // Scream Session
-  m.def("init",py::overload_cast<>(&initialize));
-  m.def("init",py::overload_cast<pybind11::object>(&initialize));
+  m.def("init",nb::overload_cast<>(&initialize));
+  m.def("init",nb::overload_cast<nb::object>(&initialize));
   m.def("finalize",&finalize);
 
   // Call all other headers' registration routines
-  pybind_pyparamlist(m);
-  pybind_pyfield(m);
-  pybind_pygrid(m);
-  pybind_pyatmproc(m);
+  nb_pyparamlist(m);
+  nb_pyfield(m);
+  nb_pygrid(m);
+  nb_pyatmproc(m);
 }
 
 } // namespace scream
