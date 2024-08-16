@@ -75,7 +75,7 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
     add_subdirectory(multi-process)
   endif()
   
-  if (EAMXX_ENABLE_PYBIND)
+  if (EAMXX_ENABLE_PYSCREAM)
     add_subdirectory(python)
   endif()
 endif()
