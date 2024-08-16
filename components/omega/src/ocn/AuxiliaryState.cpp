@@ -92,6 +92,13 @@ void AuxiliaryState::computeAll(const OceanState *State, int TimeLevel) const {
        KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocVelocityDel2Aux.computeVarsOnCell(ICell, KChunk);
        });
+
+   parallelFor(
+       "cellAuxState3", {Mesh->NCellsHaloH(1), NChunks},
+       KOKKOS_LAMBDA(int ICell, int KChunk) {
+          LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
+                                                  LayerThickCell);
+       });
 }
 
 // Create a non-default auxiliary state

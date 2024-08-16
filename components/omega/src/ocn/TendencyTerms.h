@@ -10,9 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "AuxiliaryState.h"
 #include "Config.h"
 #include "HorzMesh.h"
 #include "MachEnv.h"
+#include "OceanState.h"
 
 namespace OMEGA {
 
@@ -69,13 +71,13 @@ class PotentialVortHAdvOnEdge {
 
    /// The functor takes edge index, vertical chunk index, and arrays for
    /// normalized relative vorticity, normalized planetary vorticity, layer
-   /// thickness on edges, and tangential velocity on edges as inputs,
+   /// thickness on edges, and normal velocity on edges as inputs,
    /// outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DR8 &NormRVortEdge,
                                    const Array2DR8 &NormFEdge,
                                    const Array2DR8 &FluxLayerThickEdge,
-                                   const Array2DR8 &TangentVelEdge) const {
+                                   const Array2DR8 &NormVelEdge) const {
 
       const I4 KStart         = KChunk * VecLength;
       Real VortTmp[VecLength] = {0};
@@ -90,7 +92,7 @@ class PotentialVortHAdvOnEdge {
 
             VortTmp[KVec] += WeightsOnEdge(IEdge, J) *
                              FluxLayerThickEdge(JEdge, K) *
-                             TangentVelEdge(JEdge, K) * NormVort;
+                             NormVelEdge(JEdge, K) * NormVort;
          }
       }
 
@@ -147,7 +149,7 @@ class SSHGradOnEdge {
    /// The functor takes edge index, vertical chunk index, and array of
    /// layer thickness/SSH, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &HCell) const {
+                                   const Array2DReal &SshCell) const {
 
       const I4 KStart      = KChunk * VecLength;
       const I4 ICell0      = CellsOnEdge(IEdge, 0);
@@ -157,7 +159,7 @@ class SSHGradOnEdge {
       for (int KVec = 0; KVec < VecLength; ++KVec) {
          const I4 K = KStart + KVec;
          Tend(IEdge, K) -=
-             Grav * (HCell(ICell1, K) - HCell(ICell0, K)) * InvDcEdge;
+             Grav * (SshCell(ICell1, K) - SshCell(ICell0, K)) * InvDcEdge;
       }
    }
 
@@ -260,6 +262,80 @@ class VelocityHyperDiffOnEdge {
    Array1DR8 MeshScalingDel4;
    Array2DR8 EdgeMask;
 };
+
+/// A class that can be used to calculate the thickness and
+/// velocity tendencies within the timestepping algorithm.
+class Tendencies {
+ public:
+   // Arrays for accumulating tendencies
+   Array2DReal LayerThicknessTend;
+   Array2DReal NormalVelocityTend;
+
+   // Instances of tendency terms
+   ThicknessFluxDivOnCell ThicknessFluxDiv;
+   PotentialVortHAdvOnEdge PotientialVortHAdv;
+   KEGradOnEdge KEGrad;
+   SSHGradOnEdge SSHGrad;
+   VelocityDiffusionOnEdge VelocityDiffusion;
+   VelocityHyperDiffOnEdge VelocityHyperDiff;
+
+   // Methods to compute tendency groups
+   // TODO Add AuxilaryState as calling argument
+   void computeThicknessTendencies(const OceanState *State,
+                                   const AuxiliaryState *AuxState);
+   void computeVelocityTendencies(const OceanState *State,
+                                  const AuxiliaryState *AuxState);
+   void computeAllTendencies(const OceanState *State,
+                             const AuxiliaryState *AuxState);
+
+   // Create a non-default tendencies
+   static Tendencies *
+   create(const std::string &Name, ///< [in] Name for tendencies
+          const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+          int NVertLevels,         ///< [in] Number of vertical levels
+          Config *Options          ///< [in] Configuration options
+   );
+
+   // Destructor
+   ~Tendencies();
+
+   // Initialize Omega tendencies
+   static int init();
+
+   // Deallocates arrays
+   static void clear();
+
+   // Remove tendencies object by name
+   static void erase(const std::string &Name ///< [in]
+   );
+
+   // get default tendencies
+   static Tendencies *getDefault();
+
+   // get tendencies by name
+   static Tendencies *get(const std::string &Name ///< [in]
+   );
+
+ private:
+   // Mesh sizes
+   I4 NCellsOwned; ///< Number of cells owned by this task
+   I4 NEdgesOwned; ///< Number of edges owned by this task
+   I4 NChunks;     ///< Number of vertical level chunks
+
+   // Construct a new tendency object
+   Tendencies(const std::string &Name, ///< [in] Name for tendencies
+              const HorzMesh *Mesh,    ///< [in] Horizontal mesh
+              int NVertLevels,         ///< [in] Number of vertical levels
+              Config *Options          ///< [in] Configuration options
+   );
+
+   // Pointer to default tendencies
+   static Tendencies *DefaultTendencies;
+
+   // Map of all tendency objects
+   static std::map<std::string, std::unique_ptr<Tendencies>> AllTendencies;
+
+}; // end class Tendencies
 
 } // namespace OMEGA
 #endif

@@ -38,6 +38,7 @@ userGuide/HorzOperators
 userGuide/AuxiliaryVariables
 userGuide/AuxiliaryState
 userGuide/TendencyTerms
+userGuide/Tendencies
 userGuide/OceanState
 userGuide/TimeMgr
 userGuide/Reductions
@@ -69,6 +70,7 @@ devGuide/HorzOperators
 devGuide/AuxiliaryVariables
 devGuide/AuxiliaryState
 devGuide/TendencyTerms
+devGuide/Tendencies
 devGuide/OceanState
 devGuide/TimeMgr
 devGuide/Reductions
@@ -94,6 +96,7 @@ design/Reductions
 design/ShallowWaterOmega0
 design/State
 design/Tendency
+design/Tendencies
 design/AuxiliaryVariables
 design/AuxiliaryState
 design/TimeMgr

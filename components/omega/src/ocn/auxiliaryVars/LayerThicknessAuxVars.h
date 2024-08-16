@@ -15,6 +15,7 @@ class LayerThicknessAuxVars {
  public:
    Array2DReal FluxLayerThickEdge;
    Array2DReal MeanLayerThickEdge;
+   Array2DReal SshCell;
 
    // TODO(mwarusz): get this from config
    FluxThickEdgeOption FluxThickEdgeChoice = Center;
@@ -60,11 +61,33 @@ class LayerThicknessAuxVars {
       }
    }
 
+   KOKKOS_FUNCTION void
+   computeVarsOnCells(int ICell, int KChunk,
+                      const Array2DReal &LayerThickCell) const {
+
+      // Temporary for stacked shallow water
+      const int KStart = KChunk * VecLength;
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const int K       = KStart + KVec;
+         SshCell(ICell, K) = LayerThickCell(ICell, K) - BottomDepth(ICell);
+      }
+
+      /*
+      Real TotalThickness = 0.0;
+      for (int K = 0; K < NVertLevels; K++) {
+         TotalThickness += LayerThickCell(ICell, K);
+      }
+
+      SshCell(ICell) = TotalThickness - BottomDepth(ICell);
+      */
+   }
+
    void registerFields(const std::string &AuxGroupName) const;
    void unregisterFields() const;
 
  private:
    Array2DI4 CellsOnEdge;
+   Array1DReal BottomDepth;
 
    void addMetaData(const std::string &AuxGroupName) const;
    void defineIOFields() const;
