@@ -1,0 +1,6 @@
+
+$CIMEROOT/../components/eamxx/scripts/atmchange transport_alg=0 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange hypervis_subcycle_q=1 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange dt_tracer_factor=2 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange tstep_type=9 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange theta_hydrostatic_mode=False -b
