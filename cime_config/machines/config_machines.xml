@@ -3413,13 +3413,9 @@
        <cmd_path lang="csh">module</cmd_path>
        <cmd_path lang="python">/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
        <modules>
-          <command name="purge"></command>
-          <command name="use">/soft/modulefiles</command>
-          <command name="load">spack cmake/3.26.3-gcc-11.2.0-vnn7ncx</command>
-          <command name="load">prepend-deps/default</command>
+          <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="unload">gcc</command>
           <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
         </modules>
         <modules compiler="gnu">
