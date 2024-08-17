@@ -210,28 +210,19 @@ void scream_init_atm (const char* caseid,
   using namespace scream::control;
 
   fpe_guard_wrapper([&](){
-
-		  std::cout << "OG s 1 \n" << std::flush;
-
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
-		  std::cout << "OG s 2 \n" << std::flush;
 
     // Set provenance info in the driver (will be added to the output files)
     ad.set_provenance_data (caseid,hostname,username);
-		  std::cout << "OG s 3 \n" << std::flush;
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
-		  std::cout << "OG s 4 \n" << std::flush;
     ad.initialize_atm_procs ();
-		  std::cout << "OG s 5 \n" << std::flush;
     // Do this before init-ing the output managers,
     // so the fields are valid if outputing at t=0
     ad.reset_accumulated_fields();
-		  std::cout << "OG s 6 \n" << std::flush;
     ad.initialize_output_managers ();
-		  std::cout << "OG s 7 \n" << std::flush;
   });
 }
 
