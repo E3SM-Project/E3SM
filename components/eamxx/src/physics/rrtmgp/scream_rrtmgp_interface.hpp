@@ -1190,14 +1190,14 @@ static void mixing_ratio_to_cloud_mass(
  * property look-up tables, but could be used to limit other
  * fields as well.
  */
-template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 1>::type* = nullptr>
+template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 1>::type* dummy = nullptr>
 static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
   Kokkos::parallel_for(arr_out.size(), KOKKOS_LAMBDA(int i) {
     arr_out(i) = std::min(std::max(arr_in(i), lower), upper);
   });
 }
 
-template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 2>::type* = nullptr>
+template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 2>::type* dummy = nullptr>
 static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
   Kokkos::parallel_for(MDRP::template get<2>({arr_out.extent(0), arr_out.extent(1)}), KOKKOS_LAMBDA(int i, int j) {
     arr_out(i, j) = std::min(std::max(arr_in(i, j), lower), upper);
