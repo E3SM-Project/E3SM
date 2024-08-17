@@ -45,9 +45,7 @@ void runtime_abort(const std::string& message, int code) {
   } else {
     std::cerr << message << std::endl << "Exiting..." << std::endl;
     finalize_hommexx_session();
-#ifndef TESTER_NOMPI
     MPI_Abort(MPI_COMM_WORLD, code);
-#endif
   }
 }
 
