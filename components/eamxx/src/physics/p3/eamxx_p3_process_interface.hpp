@@ -203,17 +203,8 @@ public:
   struct p3_postamble {
     p3_postamble() = default;
     // Functor for Kokkos loop to pre-process every run step
-
-    //Kokkos::printf("OG postamble start");
-
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
-
-//Kokkos::printf("OG postamble P################3\n");
-
-#if 1
-#if 1
-
       for (int ipack=0;ipack<m_npack;ipack++) {
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
@@ -229,8 +220,6 @@ public:
         }
         T_prev(icol,ipack) = T_atm(icol,ipack);
 
-    //Kokkos::printf("OG postamble 2\n");
-    //printf("OG postamble 2 \n");
         /*----------------------------------------------------------------------------------------------------------------------
          *DRY-TO-WET MMRs:
          *-----------------
@@ -250,15 +239,11 @@ public:
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
         qv_prev(icol,ipack) = qv(icol,ipack);
 
-	//Kokkos::printf("OG postamble 3\n");
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
         diag_eff_radius_qr(icol,ipack) *= 1e6;
-      } // for ipack loop
-#endif
-
-#if 1
+      } // for ipack
 
     //Kokkos::printf("OG postamble 4\n");
       // Microphysics can be subcycled together during a single physics timestep,
@@ -272,22 +257,12 @@ public:
       // Unlike above, these fluxes do not need to be accumulated
       // since the conservation checks are run after each
       // Microphysics step.
-
-#endif
-
-      //Kokkos::printf("OG -- before compute_mass_and_energy_fluxes\n");
-#if 1
       if (compute_mass_and_energy_fluxes) {
         vapor_flux(icol) = 0.0;
         water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
         ice_flux(icol)   = precip_ice_surf_flux(icol);
         heat_flux(icol)  = 0.0;
       }
-#endif
-
-      //Kokkos::printf("OG -- AFTER compute_mass_and_energy_fluxes\n");
-
-#endif
     } // operator()
 
     // Local variables
