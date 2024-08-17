@@ -267,13 +267,13 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   // -------------------------------------------------------------------
   // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
   // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
-  // mixing ratios), so we are *not* doing any wet to dry conversions in the
-  // "preprocess" . We are simply updating the MAM4xx tracers using the
-  // "constituent fluxes".
+  // mixing ratios), we are *not* doing any wet to dry conversions in the
+  // "preprocess" for this process. We are simply updating the MAM4xx
+  // tracers using the "constituent fluxes".
   // We are converting wet atm to dry atm. Since we do not use or update
   // any of the water constituents (qc, qv, qi etc.), we should be okay
   // to do this conversion. We need to do this conversion as our function
-  // are build following HAERO data structures.
+  // are built following HAERO data structures.
   // -------------------------------------------------------------------
 
   // preprocess input -- needs a scan for the calculation of dry_atm_, wet_aero_

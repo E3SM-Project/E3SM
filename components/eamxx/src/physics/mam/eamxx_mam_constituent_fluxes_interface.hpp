@@ -27,7 +27,7 @@ class MAMConstituentFluxes final : public scream::AtmosphereProcess {
   mam_coupling::DryAtmosphere dry_atm_;
 
   // aerosol state variables
-  mam_coupling::AerosolState wet_aero_;  //, dry_aero_;
+  mam_coupling::AerosolState wet_aero_;
 
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;

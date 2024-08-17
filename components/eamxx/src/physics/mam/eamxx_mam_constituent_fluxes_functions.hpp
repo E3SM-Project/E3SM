@@ -33,6 +33,9 @@ void update_gas_aerosols_using_constituents(
 
   // Create a policy to loop over columns annd number of constituents
   // to update
+  // FIXME: TODO:We don't need a team for "nconstituents", so we can make the
+  // kookos_for
+  // simple by using just ncols
   const auto policy = ekat::ExeSpaceUtils<MAMConstituentFluxes::KT::ExeSpace>::
       get_default_team_policy(ncol, nconstituents);
 

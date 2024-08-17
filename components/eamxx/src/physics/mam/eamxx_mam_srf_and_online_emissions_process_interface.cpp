@@ -42,6 +42,8 @@ void MAMSrfOnlineEmiss::set_grids(
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
 
+  // FIXME: We can extract the following info about each species
+  // in a separate hpp file
   //--------------------------------------------------------------------
   // Init dms srf emiss data structures
   //--------------------------------------------------------------------
@@ -221,7 +223,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  // Zero output
+  // Zero-out output
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
   // Gather time and state information for interpolation

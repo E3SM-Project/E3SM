@@ -28,6 +28,8 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
+  // if the file's grid is same as model's native grid, we identity remapper
+  //  (i.e., no interpolation)
   if(ncols_data == ncols_model) {
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
