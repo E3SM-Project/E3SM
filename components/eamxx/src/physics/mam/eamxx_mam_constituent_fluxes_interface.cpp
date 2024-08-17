@@ -1,4 +1,3 @@
-#include <chrono>
 #include <physics/mam/eamxx_mam_constituent_fluxes_functions.hpp>
 #include <physics/mam/eamxx_mam_constituent_fluxes_interface.hpp>
 namespace scream {
@@ -282,30 +281,10 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  for(int icnst = 0; icnst < 6; ++icnst) {
-    auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
-    Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
-    printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
-  }
-  auto start = std::chrono::steady_clock::now();
   update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
                                          constituent_fluxes_,
                                          // output
                                          wet_aero_);
-  auto stop     = std::chrono::steady_clock::now();
-  auto duration = (stop - start);
-
-  // To get the value of duration use the count()
-  // member function on the duration object
-  printf("TIME:%e\n",
-         std::chrono::duration<double, std::milli>(duration).count());
-
-  for(int icnst = 0; icnst < 6; ++icnst) {
-    auto host_view = Kokkos::create_mirror_view(wet_aero_.gas_mmr[icnst]);
-    Kokkos::deep_copy(host_view, wet_aero_.gas_mmr[icnst]);
-    printf("BEFORE:::%e, %i\n", host_view(0, 71), icnst + 9);
-  }
-
 }  // run_impl ends
 
 // =============================================================================
