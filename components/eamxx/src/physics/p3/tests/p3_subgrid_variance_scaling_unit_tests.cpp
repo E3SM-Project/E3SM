@@ -91,7 +91,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     Spack c_scaling = Functions::subgrid_variance_scaling(relvars,1.0);
 
     if ( std::abs(c_scaling[0] -  1) > tol ){
-      printf("subgrid_variance_scaling should be 1 for expon=1, but is %e. "
+	    Kokkos::printf("subgrid_variance_scaling should be 1 for expon=1, but is %e. "
 	     "Diff = %e, Tol = %e\n",c_scaling[0],c_scaling[0]-1, tol);
 	errors++;}
   }
@@ -109,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     Real fact = std::tgamma(5.0); //factorial(n) = gamma(n+1)
 
     if ( std::abs(c_scaling[0] -  fact) > tol ){
-      printf("subgrid_variance_scaling should be factorial(expon) when relvar=1. "
+	    Kokkos::printf("subgrid_variance_scaling should be factorial(expon) when relvar=1. "
 	     "For expon=4, should be %f but is=%f\n Diff = %e, Tol = %e\n",
 	     fact,c_scaling[0], c_scaling[0] -  fact, tol);
       errors++;}
@@ -142,7 +142,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     const Real max_tol = tol*cond_num;
 
     if ( std::abs(targ - c_scaling[0]) > max_tol * targ ){
-      printf("When expon=3, subgrid_variance_scaling doesn't match analytic expectation. "
+	    Kokkos::printf("When expon=3, subgrid_variance_scaling doesn't match analytic expectation. "
 	     "Val = %e, expected = %e, rel diff = %e, tol = %e\n",
 	     c_scaling[0],targ, (targ-c_scaling[0]), max_tol*targ );
       errors++;
