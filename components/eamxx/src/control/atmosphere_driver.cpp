@@ -103,7 +103,6 @@ AtmosphereDriver(const ekat::Comm& atm_comm,
 
 AtmosphereDriver::~AtmosphereDriver ()
 {
-//	std::cout << "OG   ------------------ I AM CALLING FINALIZE \n" << std::flush;
   finalize();
 }
 
@@ -206,7 +205,6 @@ setup_iop ()
 
 void AtmosphereDriver::create_atm_processes()
 {
-
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_atm_processes");
@@ -1515,7 +1513,6 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
-
   m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
   m_memory_buffer->allocate();
   m_atm_process_group->init_buffers(*m_memory_buffer);
@@ -1605,7 +1602,7 @@ void AtmosphereDriver::run (const int dt) {
   //       very expensive operation, so it's not worth the effort of the
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
-  
+ 
   // Tell the output managers that we're starting a timestep. This is usually
   // a no-op, but some diags *may* require to do something. E.g., a diag that
   // computes tendency of an arbitrary quantity may want to store a copy of
@@ -1636,13 +1633,11 @@ void AtmosphereDriver::run (const int dt) {
   // Update current time stamps
   m_current_ts += dt;
 
-#if 1
   // Update output streams
   m_atm_logger->debug("[EAMxx::run] running output managers...");
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-#endif
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
