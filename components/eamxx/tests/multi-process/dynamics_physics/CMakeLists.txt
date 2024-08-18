@@ -13,7 +13,8 @@ if (SCREAM_DOUBLE_PRECISION)
       # initial conditions.
       #add_subdirectory(homme_mam4xx_pg2)
       add_subdirectory(mam/homme_shoc_cld_p3_mam_optics_rrtmgp)
+      add_subdirectory(mam/homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep)
+      add_subdirectory(mam/homme_shoc_cld_spa_p3_rrtmgp_mam4_wetscav)
     endif()
   endif()
 endif()
-

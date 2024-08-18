@@ -1017,6 +1017,23 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             print ("  - setting skip_t0_output=true\n")
             print ("  - setting freq and freq_units to HIST_N and HIST_OPTION respectively\n")
 
+        # If frequency_units is not nsteps, verify that we don't request
+        # a frequency faster than the model timestep
+        if content['output_control']['frequency_units'] in ['nsecs','nmins','nhours']:
+            freq  = content['output_control']['Frequency']
+            units = content['output_control']['frequency_units']
+            dt_out = 1 if units=="nsecs" else 60 if units=="nmins" else 3600
+            dt_out = dt_out*int(freq)
+
+            dt_atm = 86400 / case.get_value("ATM_NCPL")
+            expect (dt_atm<=dt_out,
+                   "Cannot have output frequency faster than atm timestep.\n"
+                   f"   yaml file: {fn.strip()}\n"
+                   f"   Frequency: {freq}\n"
+                   f"   frequency_units: {units}\n"
+                   f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
+                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'Frequency' and/or 'frequency_units'\n")
+
         ordered_dump(content, open(dst_yaml, "w"))
 
         output_yaml_files.append(dst_yaml)

@@ -21,6 +21,8 @@ if (SCREAM_ENABLE_MAM)
   # initial conditions.
   add_subdirectory(mam/optics)
   add_subdirectory(mam/aci)
+  add_subdirectory(mam/drydep)
+  add_subdirectory(mam/wet_scav)
 endif()
 if (SCREAM_TEST_LEVEL GREATER_EQUAL SCREAM_TEST_LEVEL_EXPERIMENTAL)
   add_subdirectory(zm)

@@ -52,6 +52,11 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
   add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
   add_field<Computed>("landfrac",         scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("icefrac",          scalar2d_layout, nondim,  grid_name);
+  // Friction velocity [m/s]
+  add_field<Computed>("fv",               scalar2d_layout, m/s,     grid_name);
+  // Aerodynamical resistance
+  add_field<Computed>("ram1",             scalar2d_layout, s/m,     grid_name);
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)

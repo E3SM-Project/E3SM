@@ -8,12 +8,15 @@
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 #include "pyparamlist.hpp"
-#include "pyeamxx.hpp"
+#include "pyscream_ext.hpp"
 
 #include <ekat/io/ekat_yaml.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/list.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 namespace scream {
 
@@ -26,7 +29,7 @@ struct PyAtmProc {
 
   std::shared_ptr<OutputManager> output_mgr;
 
-  PyAtmProc (const pybind11::dict& d, const std::string& name)
+  PyAtmProc (const nb::dict& d, const std::string& name)
   {
     PyParamList params(d,name);
 
@@ -102,7 +105,7 @@ struct PyAtmProc {
     ap->initialize(t0,RunType::Initial);
   }
 
-  pybind11::list read_ic (const std::string& ic_filename) {
+  std::vector<std::string> read_ic (const std::string& ic_filename) {
     // Get input fields, and read them from file (if present).
     // If field is not in the IC, user is responsible for setting
     // it to an initial value
@@ -128,7 +131,35 @@ struct PyAtmProc {
     }
     scorpio::release_file(ic_filename);
 
-    return pybind11::cast(missing);
+    return missing;
+  }
+
+  std::vector<std::string> list_fields(std::string ftype) {
+    std::vector<std::string> fields_list;
+    for (const auto& field_pair : fields) {
+      const auto& field_identifier = field_pair.second.f.get_header().get_identifier();
+
+      if (ftype == "required" && ap->has_required_field(field_identifier)) {
+        fields_list.push_back(field_pair.first);
+      } else if (ftype == "computed" && ap->has_computed_field(field_identifier)) {
+        fields_list.push_back(field_pair.first);
+      } else if (ftype == "all") {
+        fields_list.push_back(field_pair.first);
+      }
+    }
+  return fields_list;
+  }
+
+  std::vector<std::string> list_all_fields() {
+    return list_fields("all");
+  }
+
+  std::vector<std::string> list_required_fields() {
+    return list_fields("required");
+  }
+
+  std::vector<std::string> list_computed_fields() {
+    return list_fields("computed");
   }
 
   void setup_output (const std::string& yaml_file) {
@@ -166,16 +197,19 @@ struct PyAtmProc {
 };
 
 // Register type in the py module
-inline void pybind_pyatmproc(pybind11::module& m)
+inline void nb_pyatmproc(nb::module_& m)
 {
-  pybind11::class_<PyAtmProc>(m,"AtmProc")
-    .def(pybind11::init<const pybind11::dict&,const std::string&>())
+  nb::class_<PyAtmProc>(m,"AtmProc")
+    .def(nb::init<const nb::dict&,const std::string&>())
     .def("get_field",&PyAtmProc::get_field)
     .def("initialize",&PyAtmProc::initialize)
     .def("get_params",&PyAtmProc::get_params)
     .def("setup_output",&PyAtmProc::setup_output)
     .def("run",&PyAtmProc::run)
-    .def("read_ic",&PyAtmProc::read_ic);
+    .def("read_ic",&PyAtmProc::read_ic)
+    .def("list_all_fields",&PyAtmProc::list_all_fields)
+    .def("list_required_fields",&PyAtmProc::list_required_fields)
+    .def("list_computed_fields",&PyAtmProc::list_computed_fields);
 }
 } // namespace scream
 

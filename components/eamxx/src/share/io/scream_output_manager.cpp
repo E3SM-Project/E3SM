@@ -242,17 +242,18 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
       if (m_resume_output_file) {
-        scorpio::register_file(last_output_filename,scorpio::Read,m_output_file_specs.iotype);
-        int num_snaps = scorpio::get_dimlen(last_output_filename,"time");
-        scorpio::release_file(last_output_filename);
+        int num_snaps = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
         m_output_file_specs.filename = last_output_filename;
         m_output_file_specs.is_open = true;
         m_output_file_specs.storage.num_snapshots_in_file = num_snaps;
-        // The setup_file call will not register any new variable (the file is in Append mode,
-        // so all dims/vars must already be in the file). However, it will register decompositions,
-        // since those are a property of the run, not of the file.
-        setup_file(m_output_file_specs,m_output_control);
+
+        if (m_output_file_specs.storage.snapshot_fits(m_output_control.next_write_ts)) {
+          // The setup_file call will not register any new variable (the file is in Append mode,
+          // so all dims/vars must already be in the file). However, it will register decompositions,
+          // since those are a property of the run, not of the file.
+          setup_file(m_output_file_specs,m_output_control);
+        }
       }
       scorpio::release_file(rhist_file);
     }
@@ -328,6 +329,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     return;
   }
 
+  // Ensure we did not go past the scheduled write time without hitting it
+  EKAT_REQUIRE_MSG (
+      (m_output_control.frequency_units=="nsteps"
+          ? timestamp.get_num_steps()<=m_output_control.next_write_ts.get_num_steps()
+          : timestamp<=m_output_control.next_write_ts),
+      "Error! The input timestamp is past the next scheduled write timestamp.\n"
+      "  - current time stamp   : " + timestamp.to_string() + "\n"
+      "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
+      "The most likely cause is an output frequency that is faster than the atm timestep.\n"
+      "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
+
   // Update counters
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;
@@ -381,7 +393,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       snapshot_start = m_case_t0;
       snapshot_start += m_time_bnds[0];
     }
-    if (not filespecs.storage.snapshot_fits(snapshot_start)) {
+    if (filespecs.is_open and not filespecs.storage.snapshot_fits(snapshot_start)) {
       release_file(filespecs.filename);
       filespecs.close();
     }
@@ -483,6 +495,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
           write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
+
+          int nsnaps = m_output_file_specs.is_open
+                     ? scorpio::get_dimlen(m_output_file_specs.filename,"time") : 0;
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",nsnaps);
         }
         // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
         // output, and the latter b/c we want to make sure these params don't change across restarts
@@ -778,6 +794,24 @@ setup_file (      IOFileSpecs& filespecs,
   auto mode = m_resume_output_file ? scorpio::Append : scorpio::Write;
   scorpio::register_file(filename,mode,filespecs.iotype);
   if (m_resume_output_file) {
+    // We may have resumed an output file that contains extra snapshots *after* the restart time.
+    // E.g., if we output every step and the run crashed a few steps after writing the restart.
+    // In that case, we need to reset the time dimension in the output file, so that the extra
+    // snapshots will be overwritten.
+    const auto all_times = scorpio::get_all_times(filename);
+    int ntimes = all_times.size();
+    int ngood  = 0;
+    for (const auto& t : all_times) {
+      auto keep = t<=m_output_control.last_write_ts.days_from(m_case_t0);
+      if (keep) {
+        ++ngood;
+      } else {
+        break;
+      }
+    }
+    if (ngood<ntimes) {
+      scorpio::reset_unlimited_dim_len(filename,ngood);
+    }
     scorpio::redef(filename);
   } else {
     // Register time (and possibly time_bnds) var(s)

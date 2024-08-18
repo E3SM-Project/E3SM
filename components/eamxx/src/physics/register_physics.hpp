@@ -26,7 +26,9 @@
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 #include "physics/mam/eamxx_mam_optics_process_interface.hpp"
+#include "physics/mam/eamxx_mam_dry_deposition_process_interface.hpp"
 #include "physics/mam/eamxx_mam_aci_process_interface.hpp"
+#include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_COSP
 #include "physics/cosp/eamxx_cosp.hpp"
@@ -63,7 +65,9 @@ inline void register_physics () {
 #ifdef EAMXX_HAS_MAM
   proc_factory.register_product("mam4_micro",&create_atmosphere_process<MAMMicrophysics>);
   proc_factory.register_product("mam4_optics",&create_atmosphere_process<MAMOptics>);
+  proc_factory.register_product("mam4_drydep",&create_atmosphere_process<MAMDryDep>);
   proc_factory.register_product("mam4_aci",&create_atmosphere_process<MAMAci>);
+  proc_factory.register_product("mam4_wetscav",&create_atmosphere_process<MAMWetscav>);
 #endif
 #ifdef EAMXX_HAS_COSP
   proc_factory.register_product("Cosp",&create_atmosphere_process<Cosp>);

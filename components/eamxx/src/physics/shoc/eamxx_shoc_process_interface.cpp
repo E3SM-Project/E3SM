@@ -88,6 +88,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,        grid_name, ps);
   add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,       grid_name, ps);
   add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
+  add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
+  add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
@@ -157,7 +159,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 #ifdef SCREAM_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
-     , &m_buffer.ustar, &m_buffer.kbfs, &m_buffer.obklen, &m_buffer.ustar2, &m_buffer.wstar
+     , &m_buffer.kbfs, &m_buffer.ustar2, &m_buffer.wstar
 #endif
     };
   for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
@@ -332,6 +334,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
   output.shoc_ql2 = shoc_ql2;
   output.tkh      = get_field_out("eddy_diff_heat").get_view<Spack**>();
+  output.ustar    = get_field_out("ustar").get_view<Real*>();
+  output.obklen   = get_field_out("obklen").get_view<Real*>();
 
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
@@ -358,9 +362,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.ke_a = m_buffer.ke_a;
   temporaries.wv_a = m_buffer.wv_a;
   temporaries.wl_a = m_buffer.wl_a;
-  temporaries.ustar = m_buffer.ustar;
   temporaries.kbfs = m_buffer.kbfs;
-  temporaries.obklen = m_buffer.obklen;
   temporaries.ustar2 = m_buffer.ustar2;
   temporaries.wstar = m_buffer.wstar;
 
