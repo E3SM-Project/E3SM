@@ -637,9 +637,6 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, rrtmgp::cloud_optics_lw_k);
 #endif
 
-
-  std::cout << "After RRTMGP initialize ------------------------ \n";
-
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0, 500.0,false);
 
@@ -660,13 +657,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
-
-
-  std::cout << "RRTMGP IMPL 1                    ------------------------ \n";
-  std::cout << std::flush ;
-
-
-#if 0
 
   // get a host copy of lat/lon
   auto h_lat  = m_lat.get_view<const Real*,Host>();
@@ -1772,9 +1762,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
       heat_flux(icol) = (fsnt - fsns) - (flnt - flns);
     });
   }
-
-#endif
-
 
 }
 // =========================================================================================
