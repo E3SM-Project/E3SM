@@ -3365,7 +3365,7 @@
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
-    <MPILIBS>mpich,impi,openmpi</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -3398,13 +3398,6 @@
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-        <executable>mpirun</executable>
-        <arguments>
-           <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
-           <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
-        </arguments>
-    </mpirun>
     <module_system type="module" allow_error="true">
        <init_path lang="sh">/soft/packaging/lmod/lmod/init/sh</init_path>
        <init_path lang="csh">/soft/packaging/lmod/lmod/init/csh</init_path>
@@ -3433,12 +3426,6 @@
      </environment_variables>
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
-     </environment_variables>
-     <environment_variables mpilib="impi">
-        <env name="I_MPI_DEBUG">10</env>
-        <env name="I_MPI_PIN_DOMAIN">omp</env>
-        <env name="I_MPI_PIN_ORDER">spread</env>
-        <env name="I_MPI_PIN_CELL">unit</env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
