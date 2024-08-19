@@ -112,7 +112,7 @@ bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=s
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <class T, typename std::enable_if<T::rank == 1>::type* = nullptr>
+template <class T, typename std::enable_if<T::rank == 1>::type* dummy = nullptr>
 bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
                    std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
@@ -137,7 +137,7 @@ bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_val
   return pass;
 }
 
-template <class T, typename std::enable_if<T::rank == 2>::type* = nullptr>
+template <class T, typename std::enable_if<T::rank == 2>::type* dummy = nullptr>
 bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
                    std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
@@ -166,7 +166,7 @@ bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_val
   return pass;
 }
 
-template <class T, typename std::enable_if<T::rank == 3>::type* = nullptr>
+template <class T, typename std::enable_if<T::rank == 3>::type* dummy = nullptr>
 bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
                    std::string msg, std::ostream& out=std::cout) {
   bool pass = true;

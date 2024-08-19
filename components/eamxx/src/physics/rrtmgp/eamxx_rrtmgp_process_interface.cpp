@@ -1171,10 +1171,24 @@ void RRTMGPRadiation::run_impl (const double dt) {
               aero_tau_lw_k(i,k,b) = d_aero_tau_lw(icol,b,k);
             });
           } else {
-            Kokkos::deep_copy(aero_tau_sw_k, 0);
-            Kokkos::deep_copy(aero_ssa_sw_k, 0);
-            Kokkos::deep_copy(aero_g_sw_k  , 0);
-            Kokkos::deep_copy(aero_tau_lw_k, 0);
+            // cuda complains (in warning only) about these being not allowed...
+            // Kokkos::deep_copy(aero_tau_sw_k, 0);
+            // Kokkos::deep_copy(aero_ssa_sw_k, 0);
+            // Kokkos::deep_copy(aero_g_sw_k  , 0);
+            // Kokkos::deep_copy(aero_tau_lw_k, 0);
+            // So, do the manual labor instead:
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+              auto b = idx / nlay;
+              auto k = idx % nlay;
+              aero_tau_sw_k(i,k,b) = 0.0;
+              aero_ssa_sw_k(i,k,b) = 0.0;
+              aero_g_sw_k  (i,k,b) = 0.0;
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+              auto b = idx / nlay;
+              auto k = idx % nlay;
+              aero_tau_lw_k(i,k,b) = 0.0;
+            });
           }
 #endif
         });
