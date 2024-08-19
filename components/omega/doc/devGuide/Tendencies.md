@@ -39,17 +39,18 @@ OMEGA::Tendencies* NewTendencies = OMEGA::Tendencies::get(Name);
 
 ## Computation of tendencies
 To compute all tendencies for both layer thickness and normal velocity equations,
-given ocean state, `State`, and a group of auxiliary variables, `AuxState`, do:
+given ocean state, `State`, a group of auxiliary variables, `AuxState`, time level 'TimeLevel',
+and time 'Time' do:
 ```c++
-Tendencies.computeAllTendencies(State, AuxState);
+Tendencies.computeAllTendencies(State, AuxState, TimeLevel, Time);
 ```
 To call only the layer thickness tendency terms:
 ```c++
-Tendencies.computeThicknessTendencies(State, AuxState);
+Tendencies.computeThicknessTendencies(State, AuxState, TimeLevel, Time);
 ```
 To call only the normal velocity tendency terms:
 ```c++
-Tendencies.computeVelocityTendencies(State, AuxState);
+Tendencies.computeVelocityTendencies(State, AuxState, TimeLevel, Time);
 ```
 
 ## Removal of tendencies
