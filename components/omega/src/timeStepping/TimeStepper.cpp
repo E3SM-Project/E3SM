@@ -1,3 +1,6 @@
+//===-- timeStepping/TimeStepper.cpp - time stepper methods -------------*- C++
+//-*-===//
+
 #include "TimeStepper.h"
 #include "ForwardBackwardStepper.h"
 #include "RungeKutta2Stepper.h"
@@ -10,12 +13,16 @@ TimeStepper *TimeStepper::DefaultTimeStepper = nullptr;
 std::map<std::string, std::unique_ptr<TimeStepper>>
     TimeStepper::AllTimeSteppers;
 
+// Constructor. Construct a time stepper from name, type, tendencies, auxiliary
+// state, mesh and halo
 TimeStepper::TimeStepper(const std::string &Name, TimeStepperType Type,
                          Tendencies *Tend, AuxiliaryState *AuxState,
                          HorzMesh *Mesh, Halo *MeshHalo)
     : Name(Name), Type(Type), Tend(Tend), AuxState(AuxState), Mesh(Mesh),
       MeshHalo(MeshHalo) {}
 
+// Create a time stepper from name, type, tendencies, auxiliary state, mesh and
+// halo
 TimeStepper *TimeStepper::create(const std::string &Name, TimeStepperType Type,
                                  Tendencies *Tend, AuxiliaryState *AuxState,
                                  HorzMesh *Mesh, Halo *MeshHalo) {
@@ -49,6 +56,7 @@ TimeStepper *TimeStepper::create(const std::string &Name, TimeStepperType Type,
    return NewTimeStepper;
 }
 
+// Initialize the default time stepper
 int TimeStepper::init() {
    int Err           = 0;
    auto *DefMesh     = HorzMesh::getDefault();
@@ -93,9 +101,14 @@ void TimeStepper::erase(const std::string &Name) {
 // Remove all time steppers
 void TimeStepper::clear() { AllTimeSteppers.clear(); }
 
+// Get time stepper name
 std::string TimeStepper::getName() const { return Name; }
+
+// Get time stepper type
 TimeStepperType TimeStepper::getType() const { return Type; }
 
+// LayerThickness1(TimeLevel1) = LayerThickness(TimeLevel2) + Coeff *
+// LayerThicknessTend
 void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
                                         Real Coeff) const {
@@ -113,6 +126,8 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
        });
 }
 
+// NormalVelocity(TimeLevel1) = NormalVelocity(TimeLevel2) + Coeff *
+// NormalVelocityTend
 void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
                                        OceanState *State2, int TimeLevel2,
                                        Real Coeff) const {
@@ -130,6 +145,7 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
        });
 }
 
+// State1(TimeLevel1) = State2(TimeLevel2) + Coeff * Tend
 void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
                                     OceanState *State2, int TimeLevel2,
                                     Real Coeff) const {
@@ -137,16 +153,19 @@ void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
    updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
 }
 
+// LayerThickness(TimeLevel) += Coeff * LayerThicknessTend
 void TimeStepper::updateThicknessByTend(OceanState *State, int TimeLevel,
                                         Real Coeff) const {
    updateThicknessByTend(State, TimeLevel, State, TimeLevel, Coeff);
 }
 
+// NormalVelocity(TimeLevel) += Coeff * NormalVelocityTend
 void TimeStepper::updateVelocityByTend(OceanState *State, int TimeLevel,
                                        Real Coeff) const {
    updateVelocityByTend(State, TimeLevel, State, TimeLevel, Coeff);
 }
 
+// State(TimeLevel) += Coeff * Tend
 void TimeStepper::updateStateByTend(OceanState *State, int TimeLevel,
                                     Real Coeff) const {
    updateStateByTend(State, TimeLevel, State, TimeLevel, Coeff);
