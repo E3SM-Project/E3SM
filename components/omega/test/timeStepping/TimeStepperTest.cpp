@@ -25,8 +25,8 @@ constexpr Geometry Geom   = Geometry::Planar;
 constexpr int NVertLevels = 1;
 
 struct DecayThicknessTendency {
-   void operator()(Array2DReal ThicknessTend, OceanState *State,
-                   AuxiliaryState *AuxState, int ThickTimeLevel,
+   void operator()(Array2DReal ThicknessTend, const OceanState *State,
+                   const AuxiliaryState *AuxState, int ThickTimeLevel,
                    int VelTimeLevel, Real Time) const {}
 };
 
@@ -35,8 +35,8 @@ struct DecayVelocityTendency {
 
    Real exactSolution(Real Time) { return std::exp(-Coeff * Time); }
 
-   void operator()(Array2DReal NormalVelTend, OceanState *State,
-                   AuxiliaryState *AuxState, int ThickTimeLevel,
+   void operator()(Array2DReal NormalVelTend, const OceanState *State,
+                   const AuxiliaryState *AuxState, int ThickTimeLevel,
                    int VelTimeLevel, Real Time) const {
 
       auto *Mesh                = HorzMesh::getDefault();

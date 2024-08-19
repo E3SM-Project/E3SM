@@ -122,9 +122,9 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 void Tendencies::computeThicknessTendenciesOnly(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int ThickTimeLevel,       ///< [in] Time level
-    int VelTimeLevel,         ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
@@ -159,9 +159,9 @@ void Tendencies::computeThicknessTendenciesOnly(
 void Tendencies::computeVelocityTendenciesOnly(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int ThickTimeLevel,       ///< [in] Time level
-    int VelTimeLevel,         ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
@@ -241,9 +241,9 @@ void Tendencies::computeVelocityTendenciesOnly(
 void Tendencies::computeThicknessTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int ThickTimeLevel,       ///< [in] Time level
-    int VelTimeLevel,         ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
    // only need LayerThicknessAux on edge
    OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
@@ -264,8 +264,8 @@ void Tendencies::computeThicknessTendencies(
 void Tendencies::computeThicknessTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,            ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int TimeLevel,                  ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
    computeThicknessTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
 }
@@ -273,9 +273,9 @@ void Tendencies::computeThicknessTendencies(
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int ThickTimeLevel,       ///< [in] Time level
-    int VelTimeLevel,         ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
    AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
@@ -285,8 +285,8 @@ void Tendencies::computeVelocityTendencies(
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,            ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int TimeLevel,                  ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
    computeVelocityTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
 }
@@ -296,9 +296,9 @@ void Tendencies::computeVelocityTendencies(
 void Tendencies::computeAllTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int ThickTimeLevel,       ///< [in] Time level
-    int VelTimeLevel,         ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
 
    AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
@@ -312,8 +312,8 @@ void Tendencies::computeAllTendencies(
 void Tendencies::computeAllTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,            ///< [in] Time level
-    Real Time                 ///< [in] Time
+    int TimeLevel,                  ///< [in] Time level
+    Real Time                       ///< [in] Time
 ) {
    computeAllTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
 }

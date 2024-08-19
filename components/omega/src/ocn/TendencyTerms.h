@@ -272,8 +272,9 @@ class VelocityHyperDiffOnEdge {
 /// velocity tendencies within the timestepping algorithm.
 class Tendencies {
  public:
-   using CustomTendencyType = std::function<void(
-       Array2DReal, OceanState *, AuxiliaryState *, int, int, Real)>;
+   using CustomTendencyType =
+       std::function<void(Array2DReal, const OceanState *,
+                          const AuxiliaryState *, int, int, Real)>;
    // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
@@ -287,21 +288,27 @@ class Tendencies {
    VelocityHyperDiffOnEdge VelocityHyperDiff;
 
    // Methods to compute tendency groups
-   void computeThicknessTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+   void computeThicknessTendencies(const OceanState *State,
+                                   const AuxiliaryState *AuxState,
                                    int ThickTimeLevel, int VelTimeLevel,
                                    Real Time);
-   void computeVelocityTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+   void computeVelocityTendencies(const OceanState *State,
+                                  const AuxiliaryState *AuxState,
                                   int ThickTimeLevel, int VelTimeLevel,
                                   Real Time);
-   void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
-                             int ThickTimeLevel, int VelTimeLevel, Real Time);
+   void computeAllTendencies(const OceanState *State,
+                             const AuxiliaryState *AuxState, int ThickTimeLevel,
+                             int VelTimeLevel, Real Time);
 
-   void computeThicknessTendencies(const OceanState *State, const AuxiliaryState *AuxState,
+   void computeThicknessTendencies(const OceanState *State,
+                                   const AuxiliaryState *AuxState,
                                    int TimeLevel, Real Time);
-   void computeVelocityTendencies(const OceanState *State, const AuxiliaryState *AuxState,
-                                  int TimeLevel, Real Time);
-   void computeAllTendencies(const OceanState *State, const AuxiliaryState *AuxState,
-                             int TimeLevel, Real Time);
+   void computeVelocityTendencies(const OceanState *State,
+                                  const AuxiliaryState *AuxState, int TimeLevel,
+                                  Real Time);
+   void computeAllTendencies(const OceanState *State,
+                             const AuxiliaryState *AuxState, int TimeLevel,
+                             Real Time);
 
    void computeThicknessTendenciesOnly(const OceanState *State,
                                        const AuxiliaryState *AuxState,
@@ -377,13 +384,6 @@ class Tendencies {
    I4 NCellsAll; ///< Number of cells including full halo
    I4 NEdgesAll; ///< Number of edges including full halo
    I4 NChunks;   ///< Number of vertical level chunks
-
-   // Construct a new tendency object
-   Tendencies(const std::string &Name, ///< [in] Name for tendencies
-              const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              int NVertLevels,         ///< [in] Number of vertical levels
-              Config *Options          ///< [in] Configuration options
-   );
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;
