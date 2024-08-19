@@ -376,10 +376,6 @@ module li_advection
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
-      ! update masks
-      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-      err = ior(err, err_tmp)
-
       ! Save copies of masks because we need to preserve mask
       ! states prior to advection for accurate time integration.
       ! A mask update is necessary to calculate grounding line flux,

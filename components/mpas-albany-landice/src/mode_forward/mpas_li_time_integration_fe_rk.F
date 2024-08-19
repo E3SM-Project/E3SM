@@ -250,8 +250,6 @@ module li_time_integration_fe_rk
       err = ior(err, err_tmp)
       call mpas_timer_stop("face melting for grounded ice")
 
-! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
-
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
       call li_basal_melt_floating_ice(domain, err_tmp)
@@ -364,7 +362,13 @@ module li_time_integration_fe_rk
                              // ' is not supported with config_rk_order = $i', &
                              intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
          return
-      endif 
+      endif
+
+      ! Calculate masks prior to RK loop, but do not update masks within the loop
+      ! to preserve the accuracy of time integration.
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
          call mpas_log_write('beginning rk stage $i of $i', &
