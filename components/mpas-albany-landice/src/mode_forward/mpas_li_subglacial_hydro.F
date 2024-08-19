@@ -1642,7 +1642,7 @@ module li_subglacial_hydro
                    rho_water * gravity * deltatSGH / porosity + waterPressureOld
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
+         elsewhere ! should evaluate to ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
@@ -1652,7 +1652,7 @@ module li_subglacial_hydro
             waterPressure = rhoi * gravity * iceThicknessHydro
          elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
-         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
+         elsewhere ! should evaluate to ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
             waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
