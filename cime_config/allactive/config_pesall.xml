@@ -1472,6 +1472,21 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="sunspot">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
+        <comment>sunspot: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 2 nodes pure-MPI</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%IcosXISC30E3r7_r%r05_.+">
     <mach name="chrysalis">
