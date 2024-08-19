@@ -2,6 +2,8 @@
 
 namespace OMEGA {
 
+// Constructor. Construct a midpoint Runge Kutta stepper from
+// name, tendencies, auxiliary state, mesh, and halo
 RungeKutta2Stepper::RungeKutta2Stepper(const std::string &Name,
                                        Tendencies *Tend,
                                        AuxiliaryState *AuxState, HorzMesh *Mesh,
@@ -9,6 +11,7 @@ RungeKutta2Stepper::RungeKutta2Stepper(const std::string &Name,
     : TimeStepper(Name, TimeStepperType::RungeKutta2, Tend, AuxState, Mesh,
                   MeshHalo) {}
 
+// Advance the state by one step of the midpoint Runge Kutta scheme
 void RungeKutta2Stepper::doStep(OceanState *State, Real Time,
                                 Real TimeStep) const {
 
