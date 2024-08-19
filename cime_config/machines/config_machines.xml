@@ -3416,7 +3416,7 @@
           <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
+          <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack cmake</command>
