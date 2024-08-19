@@ -15,7 +15,7 @@ concurrency:
   
 jobs:
   Build-and-Deploy-docs:
-    if: ${{ github.event.repository.name != 'scream' }}
+    if: ${{ github.event.repository.name == 'e3sm' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5.0.0
+        uses: actions/setup-python@v5.1.1
         with:
           python-version: "3.10"
       - name: Install python deps
@@ -53,7 +53,7 @@ jobs:
           folder: ./site/
       # If it's a PR from within the same repo, deploy to a preview page
       # For security reasons, PRs from forks cannot write into gh-pages for now
-      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
         name: Preview docs
         uses: rossjrw/pr-preview-action@v1
         with:

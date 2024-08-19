@@ -1,19 +1,15 @@
 alg=trfvnp2
 
-# This line is separate from the nonlinear maps. It corrects an oversight in the
-# existing default trigrid grid configuration.
-./xmlchange ATM2ROF_SMAPNAME=cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_bilin.200220.nc
-
 # We want these in v3.
 a2l=cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc
-a2o=cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_trfvnp2.230516.nc
+a2o=cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc
 ./xmlchange ATM2LND_FMAPNAME_NONLINEAR=$a2l
 ./xmlchange ATM2ROF_FMAPNAME_NONLINEAR=$a2l
 ./xmlchange ATM2OCN_FMAPNAME_NONLINEAR=$a2o
 
-# These surface->atm maps are not needed, but we want to test the capability.
+# These surface->atm maps are not needed in v3, but we want to test the capability.
 l2a=cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_${alg}.230516.nc
-o2a=cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne30pg2_trfvnp2.230516.nc
+o2a=cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_trfv2.20240222.nc
 ./xmlchange LND2ATM_FMAPNAME_NONLINEAR=$l2a
 ./xmlchange LND2ATM_SMAPNAME_NONLINEAR=$l2a
 ./xmlchange OCN2ATM_FMAPNAME_NONLINEAR=$o2a

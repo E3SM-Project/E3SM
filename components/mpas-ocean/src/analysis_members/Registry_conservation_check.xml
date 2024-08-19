@@ -129,43 +129,43 @@
 		<var name="relativeMassError" type="real" dimensions="Time" units="1"
 			description="Relative mass conservation error"
 		/>
-		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from rain from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from snow from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Evaporation flux from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedSeaIceFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from sea ice from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from river runoff from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
-			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_ais_river_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
-			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_ais_ice_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
-		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from iceberg melt from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedFrazilFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedFrazilFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from frazil freezing under sea ice. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from land ice melt from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFrazilFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+		<var name="accumulatedLandIceFrazilFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from frazil freezing under land ice. Positive into the ocean."
 		/>
 	</var_struct>
@@ -192,10 +192,7 @@
 			 description="Sea ice salinity flux from coupler. Positive into the ocean."
 		/>
 		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
-			 description="Salinity flux from frazil to sea ice, given to coupler. Positive into the ocean."
-		/>
-		<var name="accumulatedLandIceFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
-			 description="Salinity flux from frazil to Land Ice, given to coupler. Positive into the ocean."
+			 description="Salinity flux from frazil to sea ice, given to coupler. Land ice does not contribute because its frazil salinity is assumed 0. Positive into the ocean."
 		/>
 	</var_struct>
             <var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
@@ -305,7 +302,6 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
-            <var name="accumulatedLandIceFrazilSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="finalCarbon"/>
             <var name="carbonChange"/>
@@ -362,7 +358,6 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
-            <var name="accumulatedLandIceFrazilSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="accumulatedAbsoluteCarbonError"/>
             <var name="accumulatedRelativeCarbonError"/>

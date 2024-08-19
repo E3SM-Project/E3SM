@@ -170,7 +170,7 @@ void run(std::mt19937_64& engine)
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
         dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack)*qv_sub(jpack);
-        auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_dry_mid_v(icol,jpack), false, range_mask);
+        auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_dry_mid_v(icol,jpack), true, range_mask);
         qv_sat_l *=  dpdry_v(icol,jpack) ;
         qv_sat_l /=  dpwet_v(icol,jpack) ;
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;

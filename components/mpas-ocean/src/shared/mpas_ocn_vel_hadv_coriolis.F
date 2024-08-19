@@ -359,6 +359,10 @@ contains
       case ('LTS','lts')
          ! For LTS, coriolis tendency term includes f: (eta+f)/h.
          usePlanetVorticity = .true.
+      
+      case ('FB_LTS','fb_lts')
+         ! For FB_LTS, coriolis tendency term includes f: (eta+f)/h.
+         usePlanetVorticity = .true.
 
       case ('split_explicit')
          ! For split explicit, Coriolis tendency uses eta/h because

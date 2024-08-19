@@ -3,3 +3,8 @@
 
 # save benchmark timing info for provenance
 ./xmlchange SAVE_TIMING=TRUE
+
+# increase mem-tolerance on pm-cpu to 30%
+if [ `./xmlquery --value MACH` == pm-cpu ]; then
+  ./xmlchange TEST_MEMLEAK_TOLERANCE=0.3
+fi

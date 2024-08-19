@@ -5,6 +5,12 @@ include(ScreamUtils)
 include (BuildCprnc)
 BuildCprnc()
 
+## Test scorpio interfaces
+CreateUnitTest(scorpio_interface_tests "scorpio_interface_tests.cpp"
+  LIBS scream_scorpio_interface LABELS "io"
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
 ## Test io utils
 CreateUnitTest(io_utils "io_utils.cpp"
   LIBS scream_io LABELS io
@@ -13,6 +19,12 @@ CreateUnitTest(io_utils "io_utils.cpp"
 
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_basic "io_basic.cpp"
+  LIBS scream_io LABELS io
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
+## Test output where we write one file per month
+CreateUnitTest(io_monthly "io_monthly.cpp"
   LIBS scream_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
@@ -36,8 +48,7 @@ CreateUnitTest(io_diags "io_diags.cpp"
 )
 
 # Test output on SE grid
-configure_file(io_test_se_grid.yaml io_test_se_grid.yaml)
-CreateUnitTest(io_test_se_grid "io_se_grid.cpp"
+CreateUnitTest(io_se_grid "io_se_grid.cpp"
   LIBS scream_io LABELS io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )

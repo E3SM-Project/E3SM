@@ -1,10 +1,26 @@
 %YAML 1.1
 ---
 ANONYMOUS:
+  Problem:
+    Basal Cubature Degree: 4
+    LandIce Field Norm:
+      sliding_velocity_basalside:
+        Regularization Type: Given Value
+        Regularization Value: 1.0e-4
+    LandIce BCs:
+      BC 0:
+        Basal Friction Coefficient:
+          Type: Power Law
+          Power Exponent: 1.0
+          Mu Type: Field 
+          Effective Pressure Type: Hydrostatic Computed At Nodes
+          Zero Effective Pressure On Floating Ice At Nodes: true
+          Zero Beta On Floating Ice: false
+          Use Pressurized Bed Above Sea Level: false
 
 # Discretization Description
   Discretization:
-#    Exodus Output File Name: albany_output.exo
+    #Exodus Output File Name: albany_output.exo
     
   Piro: 
 #   Nonlinear Solver Information
@@ -21,13 +37,21 @@ ANONYMOUS:
         Combo Type: OR
         Number of Tests: 2
         Test 0: 
-          Test Type: NormF
-          Norm Type: Two Norm
-          Scale Type: Scaled
-          Tolerance: 1.0e-05
+          Test Type: Combo
+          Combo Type: AND
+          Number of Tests: 2
+          Test 0: 
+            Test Type: NormF
+            Norm Type: Two Norm
+            Scale Type: Unscaled
+            Tolerance: 1.0e-03
+          Test 1:
+            Test Type: RelativeNormF
+            Norm Type: Two Norm
+            Tolerance: 0.9999
         Test 1: 
           Test Type: MaxIters
-          Maximum Iterations: 50
+          Maximum Iterations: 100
       Printing: 
         Output Precision: 3
         Output Processor: 0
@@ -45,7 +69,7 @@ ANONYMOUS:
       Direction: 
         Method: Newton
         Newton: 
-          Forcing Term Method: Constant
+          Forcing Term Method: Type 2   
           Rescue Bad Newton Solve: true
           Linear Solver:
             Write Linear System: false
@@ -57,14 +81,6 @@ ANONYMOUS:
 #             Linear Solver Information
               Linear Solver Type: Belos
               Linear Solver Types: 
-                AztecOO: 
-                  Forward Solve: 
-                    AztecOO Settings: 
-                      Aztec Solver: GMRES
-                      Convergence Test: r0
-                      Size of Krylov Subspace: 200
-                      Output Frequency: 20
-                    Max Iterations: 200
                 Belos:
                   Solver Type: Block GMRES
                   Solver Types:
@@ -229,4 +245,3 @@ ANONYMOUS:
                       Coordinates: myRebalanceProlongatorFact
                       Importer: myRepartitionFact
                       
-

@@ -145,6 +145,8 @@ contains
     ! initialize biogeochemical variables
     use elm_varcon            , only : c13ratio, c14ratio
     use histFileMod           , only : hist_printflds
+    use elm_varctl            , only : flandusepftdat
+
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
 
@@ -245,7 +247,7 @@ contains
 
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
-       call alm_fates%init(bounds_proc)
+       call alm_fates%init(bounds_proc, flandusepftdat)
     end if
 
     call hist_printflds()
@@ -262,7 +264,7 @@ contains
     !
     use shr_scam_mod                      , only : shr_scam_getCloseLatLon
     use landunit_varcon                   , only : istice, istice_mec, istsoil
-    use elm_varcon                        , only : h2osno_max, bdsno
+    use elm_varcon                        , only : h2osno_max, bdsno, bdfirn
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
     use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
@@ -318,8 +320,18 @@ contains
            else
               h2osno_col(c) = 0._r8
            endif
-       else ! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
-           !  potentially be large, resulting in a lot of artificial firn at initialization.
+           snow_depth_col(c) = h2osno_col(c) / bdsno
+       else! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
+           ! potentially be large, resulting in a lot of artificial firn at initialization.          ! 
+           ! amschnei@uci.edu: UPDATE - By including a new parameter, bdfirn, we can
+           ! initialize a dense (e.g, 730 kd m^-3) "deep firn" layer for glacier
+           ! land units. This deep firn layer can be set to half of the total
+           ! maximum allotted snowpack mass (i.e., "h2osno_max"), which effectively
+           ! sets the Greenland and Antarctic ice sheets' (and mountain glaciers')
+           ! climatic (aka surface) mass balance (SMB) initial condition to 0. With this
+           ! cold start condition, a multi-decadal (100 to 300 years or more)
+           ! spin up is first required to prognose nonzero SMB.
+           ! 
            ! However... (below docstring from CLMv5)
            ! In areas that should be snow-covered, it can be problematic to start with 0 snow
            ! cover, because this can affect the long-term state through soil heating, albedo
@@ -328,17 +340,20 @@ contains
            ! feedback may not activate on time (or at all). So, as a compromise, we start with
            ! a small amount of snow in places that are likely to be snow-covered for much or
            ! all of the year.
+           ! amschnei@uci.edu: Initializing "deep firn" for glacier columns
            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
               ! land ice (including multiple elevation classes, i.e. glacier_mec)
-              h2osno_col(c) = 50._r8
+              h2osno_col(c) = 0.5_r8*h2osno_max   ! start with half full snow column, representing deep firn
+              snow_depth_col(c)  = h2osno_col(c) / bdfirn
            else if (lun_pp%itype(l)==istsoil .and. grc_pp%latdeg(g) >= 44._r8) then
               ! Northern hemisphere seasonal snow
               h2osno_col(c) = 50._r8
+              snow_depth_col(c) = h2osno_col(c) / bdsno
            else
               h2osno_col(c) = 0._r8
+              snow_depth_col(c) = h2osno_col(c) / bdsno
            endif
        endif
-       snow_depth_col(c)  = h2osno_col(c) / bdsno
     end do
 
    ! Initialize urban constants

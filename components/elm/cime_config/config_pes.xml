@@ -59,7 +59,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="theta|jlse|pm-gpu|muller-gpu|pm-cpu|muller-cpu|alvarez">
+    <mach name="jlse|pm-gpu|muller-gpu|pm-cpu|muller-cpu|alvarez">
       <pes compset="any" pesize="any">
         <comment>elm: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -218,9 +218,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="ascent|summit">
+    <mach name="ascent|summit|improv">
       <pes compset="any" pesize="any">
-        <comment>elm: ascent|summit PEs for grid l%1.9x2.5|l%0.9x1.25|l%360x720cru</comment>
+        <comment>elm: ascent|summit|improv PEs for grid l%1.9x2.5|l%0.9x1.25|l%360x720cru</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -235,6 +235,21 @@
     </mach>
   </grid>
   <grid name="l%360x720cru">
+    <mach name="pm-cpu|muller-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>elm: pm-cpu 2 nodes for grid l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>192</ntasks_atm>
+          <ntasks_lnd>192</ntasks_lnd>
+          <ntasks_rof>192</ntasks_rof>
+          <ntasks_ice>192</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+          <ntasks_glc>192</ntasks_glc>
+          <ntasks_wav>192</ntasks_wav>
+          <ntasks_cpl>192</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="anvil">
       <pes compset="any" pesize="any">
         <comment>elm: anvil PEs for grid l%360x720cru</comment>
@@ -464,7 +479,7 @@
     </mach>
   </grid>
   <grid name="a%r05_l%r05_oi%null_r%r05_g%null_w%null_z%null_m%oEC60to30v3">
-    <mach name="sandiatoss3|theta|anvil|bebop">
+    <mach name="sandiatoss3|anvil|bebop">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -509,9 +524,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="ascent|summit">
+    <mach name="ascent|summit|improv">
       <pes compset="any" pesize="any">
-        <comment>elm: ascent|summit PEs for grid l%r05_*r%r05</comment>
+        <comment>elm: ascent|summit|improv PEs for grid l%r05_*r%r05</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -520,6 +535,111 @@
           <ntasks_ocn>-2</ntasks_ocn>
           <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="l%ne4np4.*">
+    <mach name="chrysalis">
+      <pes compset="any" pesize="any">
+        <comment>elm on chrysalis: any compset on ne4 grid, 3x32x2 NODESxMPIxOMP</comment>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_cpl>2</nthrds_cpl>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>2</nthrds_glc>
+          <nthrds_wav>2</nthrds_wav>
+        </nthrds>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%null_r%r05_g%mpas.gis20km_w%null_z%null_m%EC30to60E2r2">
+    <mach name="chrysalis|pm-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>GIS 20km (low-res) testing config</comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>128</ntasks_atm>
+          <ntasks_lnd>128</ntasks_lnd>
+          <ntasks_rof>128</ntasks_rof>
+          <ntasks_ice>128</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_glc>128</ntasks_glc>
+          <ntasks_wav>128</ntasks_wav>
+          <ntasks_cpl>128</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%null_r%r05_g%mpas.gis1to10kmR2_w%null_z%null_m%EC30to60E2r2">
+    <mach name="chrysalis|pm-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>GIS 1-to-10km (high-res) config</comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>512</ntasks_atm>
+          <ntasks_lnd>512</ntasks_lnd>
+          <ntasks_rof>512</ntasks_rof>
+          <ntasks_ice>512</ntasks_ice>
+          <ntasks_ocn>512</ntasks_ocn>
+          <ntasks_glc>512</ntasks_glc>
+          <ntasks_wav>512</ntasks_wav>
+          <ntasks_cpl>512</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
       </pes>
     </mach>
   </grid>

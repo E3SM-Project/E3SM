@@ -28,12 +28,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Qunit = kg/kg;
-  Qunit.set_string("kg/kg");
   auto nondim = Units::nondimensional();
-  auto Wm2 = W / m / m;
-  Wm2.set_string("W/m2)");
-  const auto m2 = m*m;
+  Units m2 (m*m,"m2");
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -51,7 +47,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("surf_mom_flux",    vector2d_layout, N/m2,    grid_name);
   add_field<Computed>("surf_radiative_T", scalar2d_layout, K,       grid_name);
   add_field<Computed>("T_2m",             scalar2d_layout, K,       grid_name);
-  add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
+  add_field<Computed>("qv_2m",            scalar2d_layout, kg/kg,   grid_name);
   add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
   add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
   add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
@@ -170,9 +166,11 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
     }
   });
 
-  // If IOP is defined, potentially overwrite imports with data from IOP file
-  if (m_intensive_observation_period) {
-    overwrite_iop_imports(called_during_initialization);
+  if (m_iop) {
+    if (m_iop->get_params().get<bool>("iop_srf_prop")) {
+      // Overwrite imports with data from IOP file
+      overwrite_iop_imports(called_during_initialization);
+    }
   }
 }
 // =========================================================================================
@@ -181,11 +179,9 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   using policy_type = KokkosTypes<DefaultDevice>::RangePolicy;
   using C = physics::Constants<Real>;
 
-  const auto& iop = m_intensive_observation_period;
-
-  const auto has_lhflx = iop->has_iop_field("lhflx");
-  const auto has_shflx = iop->has_iop_field("shflx");
-  const auto has_Tg    = iop->has_iop_field("Tg");
+  const auto has_lhflx = m_iop->has_iop_field("lhflx");
+  const auto has_shflx = m_iop->has_iop_field("shflx");
+  const auto has_Tg    = m_iop->has_iop_field("Tg");
 
   static constexpr Real latvap = C::LatVap;
   static constexpr Real stebol = C::stebol;
@@ -205,19 +201,19 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
     // Store IOP surf data into col_val
     Real col_val(std::nan(""));
     if (fname == "surf_evap" && has_lhflx) {
-      const auto f = iop->get_iop_field("lhflx");
+      const auto f = m_iop->get_iop_field("lhflx");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()()/latvap;
     } else if (fname == "surf_sens_flux" && has_shflx) {
-      const auto f = iop->get_iop_field("shflx");
+      const auto f = m_iop->get_iop_field("shflx");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()();
     } else if (fname == "surf_radiative_T" && has_Tg) {
-      const auto f = iop->get_iop_field("Tg");
+      const auto f = m_iop->get_iop_field("Tg");
       f.sync_to_host();
       col_val = f.get_view<Real, Host>()();
     } else if (fname == "surf_lw_flux_up" && has_Tg) {
-      const auto f = iop->get_iop_field("Tg");
+      const auto f = m_iop->get_iop_field("Tg");
       f.sync_to_host();
       col_val = stebol*std::pow(f.get_view<Real, Host>()(), 4);
     } else {

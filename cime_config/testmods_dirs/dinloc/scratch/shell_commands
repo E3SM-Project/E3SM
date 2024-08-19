@@ -1,0 +1,4 @@
+#!/bin/bash
+# Set DIN to be in SCRATCH space
+./xmlchange DIN_LOC_ROOT="${SCRATCH}/inputdata"
+./xmlchange DIN_LOC_ROOT_CLMFORC="${SCRATCH}/inputdata/atm/datm7"

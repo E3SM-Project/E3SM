@@ -62,20 +62,35 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'aisgis20km'
         decomp_date += '20190326'
         decomp_prefix += 'mpasli.graph.info.'
-    elif glc_grid == 'mpas.gis20km':
-        grid_date += '20210824'
-        grid_prefix += 'gis_20km_r01'
-        decomp_date += '150922'
-        decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais20km':
         grid_date += '150910'
         grid_prefix += 'ais20km'
         decomp_date += '150910'
         decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.ais8to30km':
+        grid_date += '20221027'
+        grid_prefix += 'ais_8to30km'
+        decomp_date += '240507'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.ais4to20km':
+        grid_date += '20240708'
+        grid_prefix += 'ais_4to20km'
+        decomp_date += '240507'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis20km':
+        grid_date += '20210824'
+        grid_prefix += 'gis_20km_r01'
+        decomp_date += '150922'
+        decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.gis1to10km':
         grid_date += '20210824'
         grid_prefix += 'gis_1to10km_r01'
         decomp_date += '051920'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis1to10kmR2':
+        grid_date += '20230202'
+        grid_prefix += 'gis_1to10km_r02'
+        decomp_date += '020223'
         decomp_prefix += 'mpasli.graph.info.'
     else:
         expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
@@ -205,7 +220,7 @@ def buildnml(case, caseroot, compname):
         lines.append('            filename_template="{}.mali.hist.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('            filename_interval="0001-00-00_00:00:00"')
         lines.append('            clobber_mode="truncate"')
-        lines.append('            output_interval="0001-00-00_00:00:00">')
+        lines.append('            output_interval="0000-00-01_00:00:00">')
         # Note: if output_interval is less than dt, then multiples of that interval will be checked.
         # There is some performance hit for making this too small.  For now making it 1 day.
         lines.append('')

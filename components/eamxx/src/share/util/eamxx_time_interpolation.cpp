@@ -1,4 +1,5 @@
 #include "share/util/eamxx_time_interpolation.hpp"
+#include "share/io/scream_io_utils.hpp"
 
 namespace scream{
 namespace util {
@@ -30,8 +31,8 @@ TimeInterpolation::TimeInterpolation(
 void TimeInterpolation::finalize()
 {
   if (m_is_data_from_file) {
-    m_file_data_atm_input.finalize();
-    m_is_data_from_file=false;
+    m_file_data_atm_input = nullptr;
+    m_is_data_from_file = false;
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -86,6 +87,10 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
   const std::string name = field_in.name();
   EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name) and !m_fm_time1->has_field(name),
 		  "Error!! TimeInterpolation:add_field, field + " << name << " has already been added." << "\n");
+  EKAT_REQUIRE_MSG (field_in.data_type()==DataType::FloatType or field_in.data_type()==DataType::DoubleType,
+      "[TimeInterpolation] Error! Input field must have floating-point data type.\n"
+      " - field name: " + field_in.name() + "\n"
+      " - data type : " + e2str(field_in.data_type()) + "\n");
 
   // Clone the field for each field manager to get all the metadata correct.
   auto field0 = field_in.clone();
@@ -113,7 +118,7 @@ void TimeInterpolation::shift_data()
     auto& field1 = m_fm_time1->get_field(name);
     std::swap(field0,field1);
   }
-  m_file_data_atm_input.set_field_manager(m_fm_time1);
+  m_file_data_atm_input->set_field_manager(m_fm_time1);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
@@ -160,18 +165,48 @@ void TimeInterpolation::initialize_data_from_files()
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
   input_params.set("Filename",triplet_curr.filename);
-  m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+  m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
   // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-  float var_fill_value;
   for (auto& name : m_field_names) {
-    scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
     auto& field0 = m_fm_time0->get_field(name);
-    field0.get_header().set_extra_data("mask_value",var_fill_value);
     auto& field1 = m_fm_time1->get_field(name);
-    field1.get_header().set_extra_data("mask_value",var_fill_value);
     auto& field_out = m_interp_fields.at(name);
-    field_out.get_header().set_extra_data("mask_value",var_fill_value);
+
+    auto set_fill_value = [&](const auto var_fill_value) {
+      const auto dt = field_out.data_type();
+      if (dt==DataType::FloatType) {
+        field0.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+        field1.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+        field_out.get_header().set_extra_data("mask_value",static_cast<float>(var_fill_value));
+      } else if (dt==DataType::DoubleType) {
+        field0.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+        field1.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+        field_out.get_header().set_extra_data("mask_value",static_cast<double>(var_fill_value));
+      } else {
+        EKAT_ERROR_MSG (
+            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
+            " - field name: " + field_out.name() + "\n"
+            " - data type : " + e2str(dt) + "\n");
+      }
+    };
+
+    const auto& pio_var = scorpio::get_var(triplet_curr.filename,name);
+    if (scorpio::refine_dtype(pio_var.nc_dtype)=="float") {
+      auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
+      set_fill_value(var_fill_value);
+    } else if (scorpio::refine_dtype(pio_var.nc_dtype)=="double") {
+      auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
+      set_fill_value(var_fill_value);
+    } else {
+      EKAT_ERROR_MSG (
+          "Unrecognized/unsupported data type\n"
+          " - filename: " + triplet_curr.filename + "\n"
+          " - varname : " + name + "\n"
+          " - dtype   : " + pio_var.dtype + "\n");
+    }
+
   }
   // Read first snap of data and shift to time0
   read_data();
@@ -252,10 +287,10 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   for (size_t ii=0; ii<list_of_files.size(); ii++) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
-    auto ts_file_start = scorpio::read_timestamp(filename,"case_t0");
+    scorpio::register_file(filename,scorpio::FileMode::Read);
+    auto ts_file_start = read_timestamp(filename,"case_t0");
     // Gather the units of time
-    auto time_units_tmp = scorpio::get_any_attribute(filename,"time","units");
-    auto& time_units = ekat::any_cast<std::string>(time_units_tmp);
+    auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
     int time_mult;
     if (time_units.find("seconds") != std::string::npos) {
       time_mult = 1;
@@ -272,10 +307,9 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     if (ii==0) {
       ts_ref = ts_file_start;
     }
-    scorpio::register_file(filename,scorpio::Read);
     const int ntime = scorpio::get_dimlen(filename,"time");
     for (int tt=0; tt<ntime; tt++) {
-      auto time_snap = scorpio::read_time_at_index_c2f(filename.c_str(),tt+1);
+      auto time_snap = scorpio::get_time(filename,tt);
       TimeStamp ts_snap = ts_file_start;
       if (time_snap>0) {
         ts_snap += (time_snap*time_mult);
@@ -291,6 +325,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
       time_idx_tmp.push_back(tt);
       ++running_idx;
     }
+    scorpio::release_file(filename);
   }
   // Now that we have gathered all of the timesnaps we can arrange them in order as DataFromFileTriplet objects.
   // Taking advantage of maps automatically self-sorting by the first arg.
@@ -312,23 +347,38 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
 void TimeInterpolation::read_data()
 {
   const auto triplet_curr = m_file_data_triplets[m_triplet_idx];
-  if (triplet_curr.filename != m_file_data_atm_input.get_filename()) {
+  if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
     // Then we need to close this input stream and open a new one
-    m_file_data_atm_input.finalize();
     ekat::ParameterList input_params;
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
-    m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+    m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
-    float var_fill_value;
     for (auto& name : m_field_names) {
-      scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
       auto& field = m_fm_time1->get_field(name);
-      field.get_header().set_extra_data("mask_value",var_fill_value);
+      const auto dt = field.data_type();
+      if (dt==DataType::FloatType) {
+        auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
+        field.get_header().set_extra_data("mask_value",var_fill_value);
+      } else if (dt==DataType::DoubleType) {
+        auto var_fill_value = scorpio::get_attribute<double>(triplet_curr.filename,name,"_FillValue");
+        field.get_header().set_extra_data("mask_value",var_fill_value);
+      } else {
+        EKAT_ERROR_MSG (
+            "[TimeInterpolation] Unexpected/unsupported field data type.\n"
+            " - field name: " + field.name() + "\n"
+            " - data type : " + e2str(dt) + "\n");
+      }
     }
   }
-  m_file_data_atm_input.read_variables(triplet_curr.time_idx);
+
+  if (m_logger) {
+    m_logger->info(m_header);
+    m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
+  }
+  m_file_data_atm_input->read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
 }
 /*-----------------------------------------------------------------------------------------------*/

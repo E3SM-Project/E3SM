@@ -24,7 +24,7 @@ endif()
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
 # Look for libcsm_share in the complex path we built above
-find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
+find_library(CSM_SHARE_LIB csm_share REQUIRED HINTS ${CSM_SHARE})
 
 set(CSM_LIBS  ${CSM_SHARE_LIB};mct;spio)
 set(CSM_INCLS ${CSM_SHARE})

@@ -78,7 +78,7 @@ if (SCREAM_SMALL_KERNELS)
   add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
 else()
   add_library(p3 ${P3_SRCS})
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_BASELINES_ONLY)
+  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
     # Always build shoc_sk with SCREAM_SMALL_KERNELS on
     target_compile_definitions(p3_sk PUBLIC "SCREAM_SMALL_KERNELS")
@@ -132,3 +132,6 @@ endif()
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
+
+# Add this library to eamxx_physics
+target_link_libraries(eamxx_physics INTERFACE p3)

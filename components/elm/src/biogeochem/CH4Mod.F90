@@ -3028,7 +3028,7 @@ contains
     real(r8), pointer :: co2_decomp_depth (:,:)
     real(r8), pointer :: conc_o2          (:,:)
     real(r8), pointer :: conc_ch4         (:,:)
-
+    real(r8), parameter :: smallparameter = tiny(1._r8)
     integer  :: nstep                       ! time step number
     character(len=32) :: subname='ch4_tran' ! subroutine name
     !-----------------------------------------------------------------------
@@ -3117,14 +3117,14 @@ contains
             c = filter_methc (fc)
 
             o2demand = o2_decomp_depth(c,j) + o2_oxid_depth(c,j) ! o2_decomp_depth includes autotrophic root respiration
-            if (o2demand > 0._r8) then
+            if (o2demand > smallparameter) then
                o2stress(c,j) = min((conc_o2(c,j) / dtime + o2_aere_depth(c,j)) / o2demand, 1._r8)
             else
                o2stress(c,j) = 1._r8
             end if
 
             ch4demand = ch4_oxid_depth(c,j) + ch4_aere_depth(c,j) + ch4_ebul_depth(c,j)
-            if (ch4demand > 0._r8) then
+            if (ch4demand > smallparameter) then
                ch4stress(c,j) = min((conc_ch4(c,j) / dtime + ch4_prod_depth(c,j)) / ch4demand, 1._r8)
             else
                ch4stress(c,j) = 1._r8
