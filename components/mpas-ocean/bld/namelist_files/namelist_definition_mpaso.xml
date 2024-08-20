@@ -1191,9 +1191,17 @@ Default: Defined in namelist_defaults.xml
 
 <!-- coupling -->
 
-<entry id="config_remove_AIS_coupler_runoff" type="logical"
+<entry id="config_remove_ais_river_runoff" type="logical"
 	category="coupling" group="coupling">
-If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model.
+If true, liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remove_ais_ice_runoff" type="logical"
+	category="coupling" group="coupling">
+If true, solid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

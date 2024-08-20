@@ -1,16 +1,14 @@
 %YAML 1.1
 ---
 ANONYMOUS:
-  Build Type: Tpetra
-
   Problem:
+    Basal Cubature Degree: 4
     LandIce Field Norm:
       sliding_velocity_basalside:
         Regularization Type: Given Value
         Regularization Value: 1.0e-4
     LandIce BCs:
       BC 0:
-        Cubature Degree: 4
         Basal Friction Coefficient:
           Type: Power Law
           Power Exponent: 1.0
@@ -19,6 +17,7 @@ ANONYMOUS:
           Zero Effective Pressure On Floating Ice At Nodes: true
           Zero Beta On Floating Ice: false
           Use Pressurized Bed Above Sea Level: false
+
 # Discretization Description
   Discretization:
     #Exodus Output File Name: albany_output.exo
@@ -82,14 +81,6 @@ ANONYMOUS:
 #             Linear Solver Information
               Linear Solver Type: Belos
               Linear Solver Types: 
-                AztecOO: 
-                  Forward Solve: 
-                    AztecOO Settings: 
-                      Aztec Solver: GMRES
-                      Convergence Test: r0
-                      Size of Krylov Subspace: 200
-                      Output Frequency: 20
-                    Max Iterations: 200
                 Belos:
                   Solver Type: Block GMRES
                   Solver Types:
