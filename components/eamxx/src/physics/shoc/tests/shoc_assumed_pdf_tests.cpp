@@ -160,7 +160,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE( (SDS.shoc_cldfrac[offset] == 0  || SDS.shoc_cldfrac[offset] == 1) );
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] == 0);
-        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon());
+        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
       }
     }
@@ -206,7 +206,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] != 0);
         REQUIRE(std::abs(SDS.wthv_sec[offset] < wthv_sec_bound));
-        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon());
+        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
         REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
       }
