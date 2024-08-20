@@ -310,6 +310,8 @@ class Field {
    template <typename T>
    int attachData(const T &InDataArray ///< [in] Array with data to attach
    ) {
+      static_assert(isKokkosArray<T>,
+                    "attachData requires Kokkos array as input");
       int Err = 0; // initialize return code
 
       // Attach the data array - this is a shallow copy
@@ -333,6 +335,8 @@ class Field {
    attachFieldData(const std::string &FieldName, ///< [in] Name of Field
                    const T &InDataArray ///< [in] Array with data to attach
    ) {
+      static_assert(isKokkosArray<T>,
+                    "attachFieldData requires Kokkos array as input");
 
       int Err = 0; // initialize return code
 
@@ -358,6 +362,9 @@ class Field {
    /// OMEGA array types so a template argument with the proper type must
    /// also be supplied.
    template <typename T> T getDataArray() {
+      static_assert(
+          isKokkosArray<T>,
+          "getDataArray requires Kokkos array as its template argument");
 
       // Check to make sure data is attached
       if (DataArray != nullptr) { // data is attached
