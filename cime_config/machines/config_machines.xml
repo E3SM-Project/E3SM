@@ -1778,11 +1778,11 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/dane</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/gdata/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/gdata/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/workspace/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/gdata/e3sm/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
