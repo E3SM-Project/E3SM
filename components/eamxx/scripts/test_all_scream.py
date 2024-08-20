@@ -2,7 +2,7 @@ from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
     SharedArea, safe_copy
 from git_utils import get_current_head, get_current_commit
 
-from test_factory import create_tests, COV
+from test_factory import create_tests, COV, CSR
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
@@ -385,6 +385,15 @@ class TestAllScream(object):
 
         if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
             result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
+
+        # For the compute-sanitizer tool 'racecheck', if no option --racecheck-num-workers
+        # is provided, it will attempt to use all threads available on node. This can cause
+        # issues if other test cases are being run in parallel. If the option was not specified,
+        # limit the number of threads availible to racecheck to the number of compile resources.
+        if self._parallel and isinstance(test, CSR) and not '--racecheck-num-workers' in result:
+            new_option = ' --racecheck-num-workers=' + str(test.compile_res_count)
+            index = result.index('--tool=racecheck') + len('--tool=racecheck')
+            result = result[:index] + new_option + result[index:]
 
         return result
 

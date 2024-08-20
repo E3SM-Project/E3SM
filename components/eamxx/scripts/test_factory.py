@@ -176,7 +176,7 @@ class CSM(TestProperty):
             "debug with compute sanitizer memcheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")],
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=memcheck'")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
@@ -210,7 +210,7 @@ class CSI(TestProperty):
             "debug with compute sanitizer initcheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=initcheck")],
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=initcheck'")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
@@ -227,7 +227,7 @@ class CSS(TestProperty):
             "debug with compute sanitizer synccheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=synccheck")],
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=synccheck'")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
