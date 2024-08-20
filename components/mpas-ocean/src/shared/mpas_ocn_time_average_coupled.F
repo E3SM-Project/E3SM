@@ -447,10 +447,10 @@ module ocn_time_average_coupled
 
         ! find vertical level that is just above the critical depth reference level
         ! this does not account for depression due to ice shelf cavities or sea ice
-        iLevelCritDepth = 1
+        iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
         do iLevel = 1, nVertLevels
            if(refBottomDepth(iLevel) > config_2d_thermal_forcing_depth) then
-              iLevelCritDepth = iLevel-1
+              iLevelCritDepth = iLevel
               exit
            end if
         end do
