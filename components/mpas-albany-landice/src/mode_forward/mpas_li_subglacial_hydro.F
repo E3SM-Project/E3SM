@@ -59,6 +59,9 @@ module li_subglacial_hydro
    ! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
    real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
+   !Minimum outflowing hydropotential slope applied at grounding line
+   real(kind=RKIND), parameter :: MIN_PHISLOPE_GL = 1e-10_RKIND
+
 !***********************************************************************
    contains
 
@@ -107,6 +110,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
+      real (kind=RKIND), dimension(:), pointer :: hydropotential
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: tillMax
       real (kind=RKIND), pointer :: rhoi, rhoo
@@ -199,18 +203,27 @@ module li_subglacial_hydro
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
          call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+         call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
          call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
          
          waterPressure = max(0.0_RKIND, waterPressure)
-         waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
-         ! set pressure correctly under floating ice and open ocean
+         where (li_mask_is_grounded_ice(cellMask))
+            waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+         end where
+         
+         ! set pressure and hydropotential correctly on ice-free land and in ocean
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         where ( (li_mask_is_floating_ice(cellMask)) .or. &
-                 ( (.not. li_mask_is_ice(cellMask)) .and. (bedTopography < config_sea_level) ) )
-            waterPressure = rhoo * gravity * (config_sea_level - bedTopography)
+         ! 
+         
+         where ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
+            waterPressure = 0.0_RKIND
+            hydropotential = rho_water * gravity * bedTopography
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
+            waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
+            hydropotential = 0.0_RKIND
          end where
-
+        
          ! Initialize diagnostic pressure variables
          call calc_pressure_diag_vars(block, err_tmp)
          err = ior(err, err_tmp)
@@ -821,6 +834,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterFluxDiffu
       real (kind=RKIND), dimension(:), pointer :: waterPressureSmooth
       integer, dimension(:), pointer :: hydroMarineMarginMask
+      integer, dimension(:), pointer :: hydroTerrestrialMarginMask
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
@@ -897,6 +911,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxDiffu', waterFluxDiffu)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
+      call mpas_pool_get_array(hydroPool, 'hydroTerrestrialMarginMask', hydroTerrestrialMarginMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(hydroPool, 'waterPressureSmooth', waterPressureSmooth) 
       
@@ -920,53 +935,58 @@ module li_subglacial_hydro
          waterPressureSlopeNormal(iEdge) = (waterPressureSmooth(cell2) - waterPressureSmooth(cell1)) / dcEdge(iEdge)
       end do
 
-      ! At boundaries of hydro domain, disallow inflow.  Allow outflow if hydropotential gradient requires it.
-      do iEdge = 1, nEdges
-         if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
-             (hydroMarineMarginMask(iEdge)==1)) then
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
-               hydropotentialBaseSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
-               hydropotentialSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
-            else ! cell1 is the cell outside the hydro domain
-               hydropotentialBaseSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
-               hydropotentialSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
-            endif ! which cell is icefree
-         endif ! if edge of grounded ice
-      end do
-
       ! At terrestrial margin, ignore the downslope bed topography gradient.  Including it can lead to unrealistically large
       ! hydropotential gradients and unstable channel growth.
-      ! We also want to do this at marine margins because otherwise the offshore topography can create a barrier to flow,
-      ! but that is unrealistic.
-      ! So for all boundaries of the hydro system where outflow is occuring,
-      ! the hydropotential at the margin should be determined by the geometry
-      ! at the edge of the cell in a 1-sided sense.
+      ! The hydropotential at the terrestrial margin should be determined by the geometry
+      ! at the edge of the cell in a 1-sided sense. For hydropotentialBase = rho*g*Zb + Pw, this means hydropotentialBaseSlopeNormal
+      ! at the terrestrial margin is equal to Pw/dcEdge. 
+      ! This one-sided implementation also creates outflowing conditions at terrestrial boundary
       do iEdge = 1, nEdges
-         if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
-             (hydroMarineMarginMask(iEdge)==1)) then
+         if (hydroTerrestrialMarginMask(iEdge) == 1) then
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the icefree cell - replace phi there with cell1 Phig
-               hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) + &
-                  max(rhoo * gravity * (config_sea_level - bedTopography(cell1)), 0.0_RKIND) - &
-                  hydropotentialBase(cell1)) / dcEdge(iEdge)
-               hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) + &
-                  max(rhoo * gravity * (config_sea_level - bedTopography(cell1)), 0.0_RKIND) - &
-                  hydropotential(cell1)) / dcEdge(iEdge)
+               
+               hydropotentialBaseSlopeNormal(iEdge) = - waterPressure(cell1) / dcEdge(iEdge)
+               hydropotentialSlopeNormal(iEdge) = - (rho_water * gravity * waterThickness(cell1) + waterPressure(cell1)) / dcEdge(iEdge)
+
             else ! cell1 is the icefree cell - replace phi there with cell2 Phig
-               hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - &
-                  ( rho_water * gravity * bedTopography(cell2) + &
-                    max(rhoo * gravity * (config_sea_level - bedTopography(cell2)), 0.0_RKIND) ) ) / dcEdge(iEdge)
-               hydropotentialSlopeNormal(iEdge) = (hydropotential(cell2) - &
-                  ( rho_water * gravity * bedTopography(cell2) + &
-                    max(rhoo * gravity * (config_sea_level - bedTopography(cell2)), 0.0_RKIND) ) ) / dcEdge(iEdge)
+                  
+               hydropotentialBaseSlopeNormal(iEdge) = waterPressure(cell2) / dcEdge(iEdge) 
+               hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * waterThickness(cell2) + waterPressure(cell2)) / dcEdge(iEdge)
+
             endif ! which cell is icefree
          endif ! if edge of grounded ice
       end do
 
-      ! zero gradients at edges that are marked as no flux. These should be applied at boundaries of the mesh.
+      ! Disallow inflow from the marine margin by imposing a minimum outflowing hydropotential gradient at the grounding line.
+      do iEdge = 1, nEdges
+         if ( hydroMarineMarginMask(iEdge) == 1) then
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
+               
+               if (hydropotentialBaseSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                  hydropotentialBaseSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
+               endif
+               if (hydropotentialSlopeNormal(iEdge) > -MIN_PHISLOPE_GL) then
+                  hydropotentialSlopeNormal(iEdge) = -MIN_PHISLOPE_GL
+               endif
+
+            else ! cell1 is the cell outside the hydro domain
+
+               if (hydropotentialBaseSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                  hydropotentialBaseSlopeNormal(iEdge) = MIN_PHISLOPE_GL
+               endif
+               if (hydropotentialSlopeNormal(iEdge) < MIN_PHISLOPE_GL) then
+                  hydropotentialSlopeNormal(iEdge) = MIN_PHISLOPE_GL
+               endif
+
+            endif ! which cell is icefree
+         endif ! if edge of grounded ice
+      end do
+
+      ! zero gradients along zero flux boundaries
       do iEdge = 1, nEdges
          if (waterFluxMask(iEdge) == 2) then
             hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
@@ -1617,22 +1637,23 @@ module li_subglacial_hydro
       select case (trim(config_SGH_pressure_calc))
       case ('cavity')
 
-         where (li_mask_is_floating_ice(cellMask))
-            waterPressure = rhoi * gravity * iceThicknessHydro
-         elsewhere (.not. li_mask_is_ice(cellMask))
-            waterPressure = 0.0_RKIND
-         elsewhere
+         where (li_mask_is_grounded_ice(cellMask))        
             waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
-               rho_water * gravity * deltatSGH / porosity + waterPressureOld
+                   rho_water * gravity * deltatSGH / porosity + waterPressureOld
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
+            waterPressure = 0.0_RKIND
+         elsewhere ! should evaluate to ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
+            waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
       case ('overburden')
-         where (li_mask_is_floating_ice(cellMask))
+
+         where (li_mask_is_grounded_ice(cellMask))         
             waterPressure = rhoi * gravity * iceThicknessHydro
-         elsewhere (.not. li_mask_is_ice(cellMask))
+         elsewhere ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
-         elsewhere
-            waterPressure = rhoi * gravity * iceThicknessHydro
+         elsewhere ! should evaluate to ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography <= config_sea_level))
+            waterPressure = gravity * rhoo * (config_sea_level - bedTopography)
          end where
 
       case default
@@ -1641,27 +1662,23 @@ module li_subglacial_hydro
       end select
 
       waterPressure = max(0.0_RKIND, waterPressure)
-      waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+      where (li_mask_is_grounded_ice(cellMask))
+         waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+      end where
       
       do iCell = 1, nCells
-        if ( li_mask_is_floating_ice(cellMask(iCell)) .or. &
-             ((.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) ) then
-           ! set pressure correctly under floating ice and open ocean
-           waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
-        else
-           onMarineMargin = .false.
-           do iEdge = 1, nEdgesOnCell(iCell)
-              if (hydroMarineMarginMask(edgesOnCell(iEdge, iCell)) == 1) then
-                 onMarineMargin = .true.
-                 exit
-              endif
-           enddo
-           if (onMarineMargin) then
-              ! At marine margin, don't let water pressure fall below ocean pressure
-              ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
-              if (waterPressure(iCell) < rhoo * gravity * (config_sea_level - bedTopography(iCell))) then
-                  waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
-              endif
+        onMarineMargin = .false.
+        do iEdge = 1, nEdgesOnCell(iCell)
+           if (hydroMarineMarginMask(edgesOnCell(iEdge, iCell)) == 1) then
+              onMarineMargin = .true.
+              exit
+           endif
+        enddo
+        if (onMarineMargin) then
+           ! At marine margin, don't let water pressure fall below ocean pressure
+           ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
+           if (waterPressure(iCell) < rho_water * gravity * (config_sea_level - bedTopography(iCell))) then
+               waterPressure(iCell) = rho_water * gravity * (config_sea_level - bedTopography(iCell))
            endif
         endif
       enddo
@@ -1738,15 +1755,16 @@ module li_subglacial_hydro
 
       effectivePressure = rhoi * gravity * iceThicknessHydro - waterPressure
          ! < this should evalute to 0 for floating ice if Pw set correctly there.
-      where (.not. li_mask_is_grounded_ice(cellmask))
+      where (.not. (li_mask_is_grounded_ice(cellMask)))
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
       
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
-      ! This is still correct under ice shelves/open ocean because waterPressure has been set appropriately there already.
-      ! Note this leads to a nonuniform hydropotential at sea level that is a function of the ocean depth.
-      ! That is what we want because we use this as a boundary condition on the subglacial system,
-      ! and we want the subglacial system to feel the pressure of the ocean column at its edge.
+      where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography <= config_sea_level)) 
+         hydropotentialBase = 0.0_RKIND !zero hydropotential in ocean
+      elsewhere ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography > config_sea_level))
+         hydropotentialBase = rho_water * gravity * bedTopography ! for completeness, but won't matter with one-side slope calculations on terrestrial boundaries
+      end where      
 
       ! hydropotential with water thickness
       hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
@@ -1814,6 +1832,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
+      real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: edgeMask
@@ -1859,6 +1878,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
+      call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       ! Calculate terms needed for opening (melt) rate
 
@@ -1881,9 +1901,8 @@ module li_subglacial_hydro
          channelDischarge = 0.0_RKIND
       end where
 
-      ! Disable channels from forming if there is no sheet flux
-      ! TODO: Make a function of sheet dissipation threshold?
-      where (abs(waterFlux) <= 1e-10_RKIND)
+      ! Similar to waterFlux, shut off channelDischarge if no water upstream. Prevents self-sustaining channels in the absence of distributed water
+      where (waterThicknessEdgeUpwind == 0.0_RKIND)
          channelArea = 0.0_RKIND
          channelDischarge = 0.0_RKIND
       end where
