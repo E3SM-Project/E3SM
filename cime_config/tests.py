@@ -370,7 +370,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
-            # "SMS_Ln3.ne4pg2_ne4pg2.F2010-MMF2", - temporarily disabled due to ongoing dev issues
+            "SMS_Ln3.ne4pg2_oQU480.F2010-MMF2",
             )
         },
 
