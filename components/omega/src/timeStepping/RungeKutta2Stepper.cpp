@@ -18,17 +18,19 @@ void RungeKutta2Stepper::doStep(OceanState *State, Real Time,
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
-   // $k_1=\Delta f(\phi_n, t_n)$
+   // q = (h,u)
+     
+   // R_q^{n} = RHS_q(u^{n}, h^{n}, t^{n})
    Tend->computeAllTendencies(State, AuxState, CurLevel, Time);
 
-   // $\phi_{n+{1\over2}}=\phi_n+{k_1 \over2}$
+   // q^{n+0.5} = q^{n} + 0.5*dt*R_q^{n}
    updateStateByTend(State, NextLevel, State, CurLevel, 0.5 * TimeStep);
 
-   // $k_2=\Delta f(\phi_n+{1\over2}, t_n+{\Delta t\over2})$
+   // R_q^{n+0.5} = RHS_q(u^{n+0.5}, h^{n+0.5}, t^{n+0.5})
    Tend->computeAllTendencies(State, AuxState, NextLevel,
                               Time + 0.5 * TimeStep);
 
-   // $\phi_{n+1}=\phi_n+k_2$
+   // q^{n+1} = q^{n} + dt*R_q^{n+0.5}
    updateStateByTend(State, NextLevel, State, CurLevel, TimeStep);
 
    // Update time levels (New -> Old) of prognostic variables with halo
