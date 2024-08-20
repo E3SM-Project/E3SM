@@ -23,7 +23,7 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <typeinfo>
+#include <type_traits>
 
 namespace OMEGA {
 
@@ -44,6 +44,40 @@ enum class FieldType { Unknown, I4, I8, R4, R8 };
 /// either the device (the default) or explicitly on the host. Both refers
 /// to the CPU-only case where the host and device are identical.
 enum class FieldMemLoc { Unknown, Device, Host, Both };
+
+namespace Impl {
+// determine FieldType from Kokkos array type
+template <class T> constexpr FieldType determineFieldType() {
+   if (std::is_same_v<typename T::non_const_value_type, I4>) {
+      return FieldType::I4;
+   }
+
+   if (std::is_same_v<typename T::non_const_value_type, I8>) {
+      return FieldType::I8;
+   }
+
+   if (std::is_same_v<typename T::non_const_value_type, R4>) {
+      return FieldType::R4;
+   }
+
+   if (std::is_same_v<typename T::non_const_value_type, R8>) {
+      return FieldType::R8;
+   }
+
+   return FieldType::Unknown;
+}
+
+// determine FieldMemLoc from Kokkos array type
+template <class T> constexpr FieldMemLoc determineFieldMemLoc() {
+   if (std::is_same_v<MemSpace, HostMemSpace>) {
+      return FieldMemLoc::Both;
+   } else if (T::is_hostspace) {
+      return FieldMemLoc::Host;
+   } else {
+      return FieldMemLoc::Device;
+   }
+}
+} // namespace Impl
 
 //------------------------------------------------------------------------------
 /// The Field class manages all metadata and attached data for OMEGA fields
@@ -77,13 +111,6 @@ class Field {
    /// array holding the data. We use a void pointer to manage all the
    /// various types and cast to the appropriate type when needed.
    std::shared_ptr<void> DataArray;
-
-   //---------------------------------------------------------------------------
-   /// Sets the type and location of attached data based on the input data
-   /// array.
-   int
-   setTypeLocation(const std::type_info &InType ///< [in] Typeid of data array
-   );
 
  public:
    //---------------------------------------------------------------------------
@@ -283,17 +310,14 @@ class Field {
    template <typename T>
    int attachData(const T &InDataArray ///< [in] Array with data to attach
    ) {
-
       int Err = 0; // initialize return code
 
       // Attach the data array - this is a shallow copy
       DataArray = std::make_shared<T>(InDataArray);
 
       // Determine type and location
-      Err = setTypeLocation(typeid(InDataArray));
-      if (Err != 0)
-         LOG_ERROR("Field: error determining type and location for Field {}",
-                   FldName);
+      DataType = Impl::determineFieldType<T>();
+      MemLoc   = Impl::determineFieldMemLoc<T>();
 
       return Err;
    };
