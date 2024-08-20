@@ -40,6 +40,7 @@ userGuide/TendencyTerms
 userGuide/Tendencies
 userGuide/OceanState
 userGuide/TimeMgr
+userGuide/TimeStepping
 userGuide/Reductions
 ```
 
@@ -71,6 +72,7 @@ devGuide/TendencyTerms
 devGuide/Tendencies
 devGuide/OceanState
 devGuide/TimeMgr
+devGuide/TimeStepping
 devGuide/Reductions
 ```
 
