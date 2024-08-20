@@ -864,7 +864,7 @@ contains
     real(r8) :: k_snw_coe2(5)
     real(r8) :: k_snw_coe3(5)
     data k_snw_tmps(:) /223.0_r8, 248.0_r8, 263.0_r8, 268.0_r8, 273.0_r8/
-    data k_snw_coe1(:) /2.564_r8,2.172_r8,1.985_r8,1.883_r8,1.776_r8/
+    data k_snw_coe1(:) /2.564_r8, 2.172_r8, 1.985_r8, 1.883_r8, 1.776_r8/
     data k_snw_coe2(:) /-0.059_r8, 0.015_r8, 0.073_r8, 0.107_r8, 0.147_r8/
     data k_snw_coe3(:) /0.0205_r8, 0.0252_r8, 0.0336_r8, 0.0386_r8, 0.0455_r8/
     !-----------------------------------------------------------------------
@@ -982,9 +982,9 @@ contains
             else 
                     ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
                     ! Only examine levels from snl(c)+1 -> 0 where snl(c) < 1
-                    if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
-                       bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
-                       thk(c,j) = tkair + (7.75e-5_r8 *bw(c,j) + 1.105e-6_r8*bw(c,j)*bw(c,j))*(tkice-tkair)
+                    if (snl(c) + 1 < 1 .AND. (j >= snl(c) + 1) .AND. (j <= 0)) then
+                       bw(c,j) = (h2osoi_ice(c,j) + h2osoi_liq(c,j)) / (frac_sno(c) * dz(c,j))
+                       thk(c,j) = tkair + (7.75e-5_r8 * bw(c,j) + 1.105e-6_r8 * bw(c,j) * bw(c,j)) * (tkice - tkair)
                     end if
             endif
          end do
