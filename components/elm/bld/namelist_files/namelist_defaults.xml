@@ -1686,6 +1686,13 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="2.5x3.33"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/2.5x3.33/map_1km-merge-10min_HYDRO1K-merge-nomask_to_2.5x3.33_nomask_aave_da_c130405.nc</map>
 
+<!-- mapping files for 0.25x0.25 START added on Wed May 1 11:10:45 2024-->
+
+<map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.01x0.01_nomask_to_0.25x0.25_nomask_aave_da_c240501.nc</map>
+
+<!-- mapping files for 0.25x0.25 END -->
+
 <!-- mapping files for 0.5x0.5 START added on Wed Sep 19 09:05:45 2012-->
 <!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl-->
 
@@ -1716,7 +1723,7 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="3x3min"   frm_lmask="GLOBE-Gardner-mergeGIS" to_hgrid="0.5x0.5" to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_GLOBE-Gardner-mergeGIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
 <map frm_hgrid="0.1x0.1"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
->lnd/clm2/mappingdata/maps/0.5x0.5/map_0.1x0.1_nomask_to_0.5x0.5_nomask_aave_da_c120706.nc</map>
+>lnd/clm2/mappingdata/maps/0.5x0.5/map_0.1x0.1_nomask_to_0.5x0.5_nomask_aave_da_c240308.nc</map>
 <map frm_hgrid="ne240np4"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_ne240np4_nomask_to_0.5x0.5_nomask_aave_da_c120711.nc</map>
 <map frm_hgrid="4x5"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
@@ -1733,6 +1740,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_360x720cru_cruncep_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
+<map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.5x0.5/map_0.01x0.01_nomask_to_0.5x0.5_nomask_aave_da_c240501.nc</map>
 
 <!-- mapping files for 0.5x0.5 END -->
 
@@ -1835,6 +1844,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne30np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne30np4_nomask_aave_da_c130405.nc</map>
 <map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne30np4"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne30np4/map_0.5x0.5_GSDTG2000_to_ne30np4_nomask_aave_da_c161010.nc</map>
+<map frm_hgrid="0.1x0.1"    frm_lmask="nomask"  to_hgrid="ne30np4"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/ne30np4/map_0.1x0.1_nomask_to_ne30np4_nomask_aave_da_c231218.nc</map>
 
 <map frm_hgrid="ne30np4"  frm_lmask="nomask" to_hgrid="0.5x0.5" to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
