@@ -15,7 +15,7 @@ main() {
 # Machine and project
 readonly MACHINE=pm-cpu
 # BEFORE RUNNING:  CHANGE this to your project
-readonly PROJECT="e3sm"
+readonly PROJECT="$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')"
 
 # Simulation
 readonly COMPSET="WCYCL1850"
@@ -43,7 +43,7 @@ readonly GET_REFCASE=TRUE
 #readonly RUN_REFDATE=""   # same as MODEL_START_DATE for 'branch', can be different for 'hybrid'
 
 # Set paths
-readonly CASE_ROOT="${PSCRATCH}/e3sm-scratch/${MACHINE}/${CASE_NAME}"
+readonly CASE_ROOT="${PSCRATCH}/E3SMv3/${CASE_NAME}"
 readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"
 
 # Sub-directories
@@ -417,6 +417,12 @@ then
     # Number of cores per node (machine specific)
     if [ "${MACHINE}" == "pm-cpu" ]; then
         ncore=128
+    elif [ "${MACHINE}" == "chrysalis" ]; then
+        ncore=64
+    elif [ "${MACHINE}" == "compy" ]; then
+        ncore=40
+    elif [ "${MACHINE}" == "anvil" ]; then
+        ncore=36
     else
         echo 'ERROR: MACHINE = '${MACHINE}' is not supported for custom PE layout.' 
         exit 400
