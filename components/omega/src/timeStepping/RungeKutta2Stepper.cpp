@@ -19,7 +19,6 @@ void RungeKutta2Stepper::doStep(OceanState *State, Real Time,
    const int NextLevel = 1;
 
    // q = (h,u)
-     
    // R_q^{n} = RHS_q(u^{n}, h^{n}, t^{n})
    Tend->computeAllTendencies(State, AuxState, CurLevel, Time);
 
