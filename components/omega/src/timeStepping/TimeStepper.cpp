@@ -107,7 +107,7 @@ std::string TimeStepper::getName() const { return Name; }
 // Get time stepper type
 TimeStepperType TimeStepper::getType() const { return Type; }
 
-// LayerThickness1(TimeLevel1) = LayerThickness(TimeLevel2) + Coeff *
+// LayerThickness1(TimeLevel1) = LayerThickness2(TimeLevel2) + Coeff *
 // LayerThicknessTend
 void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
@@ -126,7 +126,7 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
        });
 }
 
-// NormalVelocity(TimeLevel1) = NormalVelocity(TimeLevel2) + Coeff *
+// NormalVelocity1(TimeLevel1) = NormalVelocity2(TimeLevel2) + Coeff *
 // NormalVelocityTend
 void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
                                        OceanState *State2, int TimeLevel2,

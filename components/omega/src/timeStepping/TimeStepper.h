@@ -75,13 +75,13 @@ class TimeStepper {
    void updateStateByTend(OceanState *State1, int TimeLevel1,
                           OceanState *State2, int TimeLevel2, Real Coeff) const;
 
-   // LayerThickness1(TimeLevel1) = LayerThickness(TimeLevel2) + Coeff *
+   // LayerThickness1(TimeLevel1) = LayerThickness2(TimeLevel2) + Coeff *
    // LayerThicknessTend
    void updateThicknessByTend(OceanState *State1, int TimeLevel1,
                               OceanState *State2, int TimeLevel2,
                               Real Coeff) const;
 
-   // NormalVelocity(TimeLevel1) = NormalVelocity(TimeLevel2) + Coeff *
+   // NormalVelocity1(TimeLevel1) = NormalVelocity2(TimeLevel2) + Coeff *
    // NormalVelocityTend
    void updateVelocityByTend(OceanState *State1, int TimeLevel1,
                              OceanState *State2, int TimeLevel2,
