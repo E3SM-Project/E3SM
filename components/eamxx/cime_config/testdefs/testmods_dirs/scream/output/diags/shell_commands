@@ -29,7 +29,7 @@ $YAML_EDIT_SCRIPT -g \
  --avg-type INSTANT               \
  --freq HIST_N                    \
  --freq-units HIST_OPTION         \
- --prefix ${CASE}.scream.diags.hi \
+ --prefix ${CASE}.scream.diags.h  \
  --grid "Physics ${PGTYPE}"       \
  --fields ${FIELDS}
 
