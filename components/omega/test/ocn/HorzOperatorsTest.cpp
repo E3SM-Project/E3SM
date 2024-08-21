@@ -1,6 +1,7 @@
 #include "HorzOperators.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -397,6 +398,7 @@ int initOperatorsTest(const std::string &MeshFile) {
 
 void finalizeOperatorsTest() {
    HorzMesh::clear();
+   Dimension::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();

@@ -1,6 +1,5 @@
 #include "LayerThicknessAuxVars.h"
-#include "IOField.h"
-#include "MetaData.h"
+#include "Field.h"
 
 #include <limits>
 
@@ -16,88 +15,112 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
       SshCell("SshCell" + AuxStateSuffix, Mesh->NCellsSize, NVertLevels),
       CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth) {}
 
-void LayerThicknessAuxVars::registerFields(
-    const std::string &AuxGroupName) const {
-   addMetaData(AuxGroupName);
-   defineIOFields();
+void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
+                                           const std::string &MeshName) const {
+
+   int Err = 0; // Error flag for some calls
+
+   // Create/define fields
+   const Real FillValue = -9.99e30;
+   int NDims            = 2;
+   std::vector<std::string> DimNames(NDims);
+   std::string DimSuffix;
+   if (MeshName == "Default") {
+      DimSuffix = "";
+   } else {
+      DimSuffix = MeshName;
+   }
+
+   DimNames[0] = "NEdges" + DimSuffix;
+   DimNames[1] = "NVertLevels";
+
+   // Flux layer thickness on edges
+   auto FluxLayerThickEdgeField = Field::create(
+       FluxLayerThickEdge.label(), // field name
+       "layer thickness used for fluxes through edges. May be centered, "
+       "upwinded, or a combination of the two.", // long Name or description
+       "m",                                      // units
+       "",                                       // CF standard Name
+       0,                                        // min valid value
+       std::numeric_limits<Real>::max(),         // max valid value
+       FillValue,                                // scalar for undefined entries
+       NDims,                                    // number of dimensions
+       DimNames                                  // dimension names
+   );
+
+   // Mean layer thickness on edges
+   auto MeanLayerThickEdgeField = Field::create(
+       MeanLayerThickEdge.label(),                           // field name
+       "layer thickness averaged from cell center to edges", // long Name or
+                                                             // description
+       "m",                                                  // units
+       "",                                                   // CF standard Name
+       0,                                                    // min valid value
+       std::numeric_limits<Real>::max(),                     // max valid value
+       FillValue, // scalar used for undefined entries
+       NDims,     // number of dimensions
+       DimNames   // dimension names
+   );
+
+   // Sea surface height
+   DimNames[0]       = "NCells" + DimSuffix;
+   auto SshCellField = Field::create(
+       SshCell.label(),                     // field name
+       "sea surface height at cell center", // long Name or description
+       "m",                                 // units
+       "sea_surface_height",                // CF standard Name
+       0,                                   // min valid value
+       std::numeric_limits<Real>::max(),    // max valid value
+       FillValue,                           // scalar for undefined entries
+       NDims,                               // number of dimensions
+       DimNames                             // dimension names
+   );
+
+   // Add fields to Aux field group
+   Err = FieldGroup::addFieldToGroup(FluxLayerThickEdge.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", FluxLayerThickEdge.label(),
+                AuxGroupName);
+
+   Err = FieldGroup::addFieldToGroup(MeanLayerThickEdge.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", MeanLayerThickEdge.label(),
+                AuxGroupName);
+
+   Err = FieldGroup::addFieldToGroup(SshCell.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", SshCell.label(),
+                AuxGroupName);
+
+   // Attach field data
+   Err = FluxLayerThickEdgeField->attachData<Array2DReal>(FluxLayerThickEdge);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", FluxLayerThickEdge.label());
+
+   Err = MeanLayerThickEdgeField->attachData<Array2DReal>(MeanLayerThickEdge);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", MeanLayerThickEdge.label());
+
+   Err = SshCellField->attachData<Array2DReal>(SshCell);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", SshCell.label());
 }
 
 void LayerThicknessAuxVars::unregisterFields() const {
-   IOField::erase(FluxLayerThickEdge.label());
-   IOField::erase(MeanLayerThickEdge.label());
-   IOField::erase(SshCell.label());
-   MetaData::destroy(FluxLayerThickEdge.label());
-   MetaData::destroy(MeanLayerThickEdge.label());
-   MetaData::destroy(SshCell.label());
-}
 
-void LayerThicknessAuxVars::addMetaData(const std::string &AuxGroupName) const {
-   auto EdgeDim      = MetaDim::get("NEdges");
-   auto CellDim      = MetaDim::get("NCells");
-   auto VertDim      = MetaDim::get("NVertLevels");
-   auto AuxMetaGroup = MetaGroup::get(AuxGroupName);
+   int Err = 0;
 
-   const Real FillValue = -9.99e30;
+   Err = Field::destroy(FluxLayerThickEdge.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", FluxLayerThickEdge.label());
 
-   // Flux layer thickness on edges
-   auto FluxLayerThickEdgeMeta = ArrayMetaData::create(
-       FluxLayerThickEdge.label(),
-       "layer thickness used for fluxes through edges. May be centered, "
-       "upwinded, or a combination of the two.", /// long Name or description
-       "m",                                      /// units
-       "",                                       /// CF standard Name
-       0,                                        /// min valid value
-       std::numeric_limits<Real>::max(),         /// max valid value
-       FillValue,         /// scalar used for undefined entries
-       2,                 /// number of dimensions
-       {EdgeDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(FluxLayerThickEdge.label());
+   Err = Field::destroy(MeanLayerThickEdge.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", MeanLayerThickEdge.label());
 
-   // Mean layer thickness on edges
-   auto MeanLayerThickEdgeMeta = ArrayMetaData::create(
-       MeanLayerThickEdge.label(),
-       "layer thickness averaged from cell center to edges", /// long Name or
-                                                             /// description
-       "m",                                                  /// units
-       "",                               /// CF standard Name
-       0,                                /// min valid value
-       std::numeric_limits<Real>::max(), /// max valid value
-       FillValue,                        /// scalar used for undefined entries
-       2,                                /// number of dimensions
-       {EdgeDim, VertDim}                /// dim pointers
-   );
-   AuxMetaGroup->addField(MeanLayerThickEdge.label());
-
-   // Sea surface height
-   auto SshCellMeta = ArrayMetaData::create(
-       SshCell.label(),
-       "sea surface height at cell center", /// long Name or description
-       "m",                                 /// units
-       "",                                  /// CF standard Name
-       0,                                   /// min valid value
-       std::numeric_limits<Real>::max(),    /// max valid value
-       FillValue,         /// scalar used for undefined entries
-       2,                 /// number of dimensions
-       {CellDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(SshCell.label());
-}
-
-void LayerThicknessAuxVars::defineIOFields() const {
-   int Err;
-
-   // Flux layer thickness on edges
-   Err = IOField::define(FluxLayerThickEdge.label());
-   Err = IOField::attachData(FluxLayerThickEdge.label(), FluxLayerThickEdge);
-
-   // Mean layer thickness on edges
-   Err = IOField::define(MeanLayerThickEdge.label());
-   Err = IOField::attachData(MeanLayerThickEdge.label(), MeanLayerThickEdge);
-
-   // Sea surface height
-   Err = IOField::define(SshCell.label());
-   Err = IOField::attachData(SshCell.label(), SshCell);
+   Err = Field::destroy(SshCell.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", SshCell.label());
 }
 
 } // namespace OMEGA

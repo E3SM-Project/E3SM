@@ -1,6 +1,6 @@
 #include "VorticityAuxVars.h"
-#include "IOField.h"
-#include "MetaData.h"
+#include "DataTypes.h"
+#include "Field.h"
 
 #include <limits>
 
@@ -25,133 +25,167 @@ VorticityAuxVars::VorticityAuxVars(const std::string &AuxStateSuffix,
       AreaTriangle(Mesh->AreaTriangle), FVertex(Mesh->FVertex),
       VerticesOnEdge(Mesh->VerticesOnEdge) {}
 
-void VorticityAuxVars::registerFields(const std::string &AuxGroupName) const {
-   addMetaData(AuxGroupName);
-   defineIOFields();
+void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
+                                      const std::string &MeshName) const {
+
+   int Err = 0; // error code for some calls
+
+   // Create fields with metadata
+   const Real FillValue = -9.99e30;
+   int NDims            = 2;
+   std::vector<std::string> DimNames(NDims);
+   std::string DimSuffix;
+   if (MeshName == "Default") {
+      DimSuffix = "";
+   } else {
+      DimSuffix = MeshName;
+   }
+
+   DimNames[0] = "NVertices" + DimSuffix; // for first three fields
+   DimNames[1] = "NVertLevels";           // same for all fields below
+
+   // Relative vorticity on vertices
+   auto RelVortVertexField = Field::create(
+       RelVortVertex.label(),                              // field name
+       "curl of horizontal velocity, defined at vertices", // long name/describe
+       "s^-1",                                             // units
+       "ocean_relative_vorticity",                         // CF standard Name
+       std::numeric_limits<Real>::min(),                   // min valid value
+       std::numeric_limits<Real>::max(),                   // max valid value
+       FillValue, // scalar for undefined entries
+       NDims,     // number of dimensions
+       DimNames   // dimension names
+   );
+
+   // Normalized relative vorticity on vertices
+   auto NormRelVortVertexField = Field::create(
+       NormRelVortVertex.label(),                                // field name
+       "curl of horizontal velocity divided by layer thickness", // long Name
+       "m^-1 s^-1",                                              // units
+       "",                               // CF standard Name
+       std::numeric_limits<Real>::min(), // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValue,                        // scalar used for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   // Normalized planetary vorticity on vertices
+   auto NormPlanetVortVertexField = Field::create(
+       NormPlanetVortVertex.label(), // field name
+       "earth's rotational rate (Coriolis parameter, f) divided by layer "
+       "thickness",                      // long Name or description
+       "m^-1 s^-1",                      // units
+       "",                               // CF standard Name
+       std::numeric_limits<Real>::min(), // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValue,                        // scalar used for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   // Normalized relative vorticity on edges
+   DimNames[0]               = "NEdges" + DimSuffix; // for last two fields
+   auto NormRelVortEdgeField = Field::create(
+       NormRelVortEdge.label(), // field name
+       "curl of horizontal velocity divided by layer thickness, averaged from "
+       "vertices to edges",              // long Name or description
+       "m^-1 s^-1",                      // units
+       "",                               // CF standard Name
+       std::numeric_limits<Real>::min(), // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValue,                        // scalar used for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   // Normalized planetary vorticity on edges
+   auto NormPlanetVortEdgeField = Field::create(
+       NormPlanetVortEdge.label(), // field name
+       "earth's rotational rate (Coriolis parameter, f) divided by layer "
+       "thickness, averaged from vertices to edges", // long Name or description
+       "m^-1 s^-1",                                  // units
+       "",                                           // CF standard Name
+       std::numeric_limits<Real>::min(),             // min valid value
+       std::numeric_limits<Real>::max(),             // max valid value
+       FillValue, // scalar used for undefined entries
+       NDims,     // number of dimensions
+       DimNames   // dimension names
+   );
+
+   // Add fields to Aux field group
+   Err = FieldGroup::addFieldToGroup(RelVortVertex.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", RelVortVertex.label(),
+                AuxGroupName);
+
+   Err = FieldGroup::addFieldToGroup(NormRelVortVertex.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", NormRelVortVertex.label(),
+                AuxGroupName);
+
+   Err =
+       FieldGroup::addFieldToGroup(NormPlanetVortVertex.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}",
+                NormPlanetVortVertex.label(), AuxGroupName);
+
+   Err = FieldGroup::addFieldToGroup(NormRelVortEdge.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", NormRelVortEdge.label(),
+                AuxGroupName);
+
+   Err = FieldGroup::addFieldToGroup(NormPlanetVortEdge.label(), AuxGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error adding field {} to group {}", NormPlanetVortEdge.label(),
+                AuxGroupName);
+
+   // Attach data to fields
+   Err = RelVortVertexField->attachData<Array2DReal>(RelVortVertex);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", RelVortVertex.label());
+
+   Err = NormRelVortVertexField->attachData<Array2DReal>(NormRelVortVertex);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", NormRelVortVertex.label());
+
+   Err =
+       NormPlanetVortVertexField->attachData<Array2DReal>(NormPlanetVortVertex);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}",
+                NormPlanetVortVertex.label());
+
+   Err = NormRelVortEdgeField->attachData<Array2DReal>(NormRelVortEdge);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", NormRelVortEdge.label());
+
+   Err = NormPlanetVortEdgeField->attachData<Array2DReal>(NormPlanetVortEdge);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data to field {}", NormPlanetVortEdge.label());
 }
 
 void VorticityAuxVars::unregisterFields() const {
-   IOField::erase(RelVortVertex.label());
-   IOField::erase(NormRelVortVertex.label());
-   IOField::erase(NormPlanetVortVertex.label());
-   IOField::erase(NormRelVortEdge.label());
-   IOField::erase(NormPlanetVortEdge.label());
-   MetaData::destroy(RelVortVertex.label());
-   MetaData::destroy(NormRelVortVertex.label());
-   MetaData::destroy(NormPlanetVortVertex.label());
-   MetaData::destroy(NormRelVortEdge.label());
-   MetaData::destroy(NormPlanetVortEdge.label());
-}
+   int Err = 0;
 
-void VorticityAuxVars::addMetaData(const std::string &AuxGroupName) const {
-   auto VertexDim    = MetaDim::get("NVertices");
-   auto EdgeDim      = MetaDim::get("NEdges");
-   auto VertDim      = MetaDim::get("NVertLevels");
-   auto AuxMetaGroup = MetaGroup::get(AuxGroupName);
+   Err = Field::destroy(RelVortVertex.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", RelVortVertex.label());
 
-   const Real FillValue = -9.99e30;
+   Err = Field::destroy(NormRelVortVertex.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", NormRelVortVertex.label());
 
-   // Relative vorticity on vertices
-   auto RelVortVertexMeta = ArrayMetaData::create(
-       RelVortVertex.label(),
-       "curl of horizontal velocity, defined at vertices", /// long Name or
-                                                           /// description
-       "s^-1",                                             /// units
-       "ocean_relative_vorticity",                         /// CF standard Name
-       std::numeric_limits<Real>::min(),                   /// min valid value
-       std::numeric_limits<Real>::max(),                   /// max valid value
-       FillValue,           /// scalar used for undefined entries
-       2,                   /// number of dimensions
-       {VertexDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(RelVortVertex.label());
+   Err = Field::destroy(NormPlanetVortVertex.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", NormPlanetVortVertex.label());
 
-   // Normalized relative vorticity on vertices
-   auto NormRelVortVertexMeta = ArrayMetaData::create(
-       NormRelVortVertex.label(),
-       "curl of horizontal velocity divided by layer thickness", /// long Name
-                                                                 /// or
-                                                                 /// description
-       "m^-1 s^-1",                                              /// units
-       "",                               /// CF standard Name
-       std::numeric_limits<Real>::min(), /// min valid value
-       std::numeric_limits<Real>::max(), /// max valid value
-       FillValue,                        /// scalar used for undefined entries
-       2,                                /// number of dimensions
-       {VertexDim, VertDim}              /// dim pointers
-   );
-   AuxMetaGroup->addField(NormRelVortVertex.label());
+   Err = Field::destroy(NormRelVortEdge.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", NormRelVortEdge.label());
 
-   // Normalized planetary vorticity on vertices
-   auto NormPlanetVortVertexMeta = ArrayMetaData::create(
-       NormPlanetVortVertex.label(),
-       "earth's rotational rate (Coriolis parameter, f) divided by layer "
-       "thickness",                      /// long Name or description
-       "m^-1 s^-1",                      /// units
-       "",                               /// CF standard Name
-       std::numeric_limits<Real>::min(), /// min valid value
-       std::numeric_limits<Real>::max(), /// max valid value
-       FillValue,                        /// scalar used for undefined entries
-       2,                                /// number of dimensions
-       {VertexDim, VertDim}              /// dim pointers
-   );
-   AuxMetaGroup->addField(NormPlanetVortVertex.label());
-
-   // Normalized relative vorticity on edges
-   auto NormRelVortEdgeMeta = ArrayMetaData::create(
-       NormRelVortEdge.label(),
-       "curl of horizontal velocity divided by layer thickness, averaged from "
-       "vertices to edges",              /// long Name or description
-       "m^-1 s^-1",                      /// units
-       "",                               /// CF standard Name
-       std::numeric_limits<Real>::min(), /// min valid value
-       std::numeric_limits<Real>::max(), /// max valid value
-       FillValue,                        /// scalar used for undefined entries
-       2,                                /// number of dimensions
-       {EdgeDim, VertDim}                /// dim pointers
-   );
-   AuxMetaGroup->addField(NormRelVortEdge.label());
-
-   // Normalized planetary vorticity on edges
-   auto NormPlanetVortEdgeMeta = ArrayMetaData::create(
-       NormPlanetVortEdge.label(),
-       "earth's rotational rate (Coriolis parameter, f) divided by layer "
-       "thickness, averaged from vertices to edges", /// long Name or
-                                                     /// description
-       "m^-1 s^-1",                                  /// units
-       "",                                           /// CF standard Name
-       std::numeric_limits<Real>::min(),             /// min valid value
-       std::numeric_limits<Real>::max(),             /// max valid value
-       FillValue,         /// scalar used for undefined entries
-       2,                 /// number of dimensions
-       {EdgeDim, VertDim} /// dim pointers
-   );
-   AuxMetaGroup->addField(NormPlanetVortEdge.label());
-}
-
-void VorticityAuxVars::defineIOFields() const {
-   int Err;
-
-   // Relative vorticity on vertices
-   Err = IOField::define(RelVortVertex.label());
-   Err = IOField::attachData(RelVortVertex.label(), RelVortVertex);
-
-   // Normalized relative vorticity on vertices
-   Err = IOField::define(NormRelVortVertex.label());
-   Err = IOField::attachData(NormRelVortVertex.label(), NormRelVortVertex);
-
-   // Normalized planetary vorticity on vertices
-   Err = IOField::define(NormPlanetVortVertex.label());
-   Err =
-       IOField::attachData(NormPlanetVortVertex.label(), NormPlanetVortVertex);
-
-   // Normalized relative vorticity on edges
-   Err = IOField::define(NormRelVortEdge.label());
-   Err = IOField::attachData(NormRelVortEdge.label(), NormRelVortEdge);
-
-   // Normalized planetary vorticity on edges
-   Err = IOField::define(NormPlanetVortEdge.label());
-   Err = IOField::attachData(NormPlanetVortEdge.label(), NormPlanetVortEdge);
+   Err = Field::destroy(NormPlanetVortEdge.label());
+   if (Err != 0)
+      LOG_ERROR("Error destroying field {}", NormPlanetVortEdge.label());
 }
 
 } // namespace OMEGA

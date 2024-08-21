@@ -33,6 +33,8 @@ class HorzMesh {
 
    void finalizeParallelIO();
 
+   void createDimensions(Decomp *MeshDecomp);
+
    void readCoordinates();
 
    void readBottomDepth();
@@ -80,6 +82,7 @@ class HorzMesh {
    // Since these are used frequently, we make them public to reduce the
    // number of retrievals required.
 
+   std::string MeshName;
    std::string MeshFileName;
    int MeshFileID;
 

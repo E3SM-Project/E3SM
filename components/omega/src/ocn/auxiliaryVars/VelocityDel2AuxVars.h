@@ -88,7 +88,8 @@ class VelocityDel2AuxVars {
       }
    }
 
-   void registerFields(const std::string &AuxGroupName) const;
+   void registerFields(const std::string &AuxGroupName,
+                       const std::string &MeshName) const;
    void unregisterFields() const;
 
  private:
@@ -104,9 +105,6 @@ class VelocityDel2AuxVars {
    Array2DR8 EdgeSignOnVertex;
    Array1DR8 AreaTriangle;
    I4 VertexDegree;
-
-   void addMetaData(const std::string &AuxGroupName) const;
-   void defineIOFields() const;
 };
 
 } // namespace OMEGA

@@ -10,12 +10,11 @@
 #include "OceanState.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Field.h"
 #include "Halo.h"
 #include "IO.h"
-#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "MetaData.h"
 #include "OmegaKokkos.h"
 
 namespace OMEGA {
@@ -102,7 +101,7 @@ OceanState::OceanState(
    finalizeParallelIO();
 
    // Register fields and metadata for IO
-   defineIOFields();
+   defineFields();
 
    // Create device arrays and copy host data
    for (int I = 0; I < NTimeLevels; I++) {
@@ -149,11 +148,15 @@ OceanState::~OceanState() {
    // Kokkos arrays removed when no longer in scope
 
    int Err;
-   IOField::erase(LayerThicknessIOName);
-   IOField::erase(NormalVelocityIOName);
-   Err = MetaGroup::destroy(StateGroupName);
-   Err = MetaData::destroy(LayerThicknessIOName);
-   Err = MetaData::destroy(NormalVelocityIOName);
+   Err = FieldGroup::destroy(StateGroupName);
+   if (Err != 0)
+      LOG_ERROR("Error removing FieldGroup {}", StateGroupName);
+   Err = Field::destroy(LayerThicknessFldName);
+   if (Err != 0)
+      LOG_ERROR("Error removing Field {}", LayerThicknessFldName);
+   Err = Field::destroy(NormalVelocityFldName);
+   if (Err != 0)
+      LOG_ERROR("Error removing Field {}", NormalVelocityFldName);
 
 } // end destructor
 
@@ -217,69 +220,73 @@ void OceanState::initParallelIO(Decomp *MeshDecomp) {
 
 //------------------------------------------------------------------------------
 // Define IO fields and metadata
-void OceanState::defineIOFields() {
+void OceanState::defineFields() {
 
    int Err = 0;
 
-   LayerThicknessIOName = "LayerThickness";
-   NormalVelocityIOName = "NormalVelocity";
+   LayerThicknessFldName = "LayerThickness";
+   NormalVelocityFldName = "NormalVelocity";
    if (Name != "Default") {
-      LayerThicknessIOName.append(Name);
-      NormalVelocityIOName.append(Name);
+      LayerThicknessFldName.append(Name);
+      NormalVelocityFldName.append(Name);
    }
 
-   // Create metadata dimensions
-   auto CellDim = MetaDim::get("NCells");
-   auto EdgeDim = MetaDim::get("NEdges");
-   auto VertDim = MetaDim::get("NVertLevels");
-
-   std::vector<std::shared_ptr<MetaDim>> LayerThicknessDim{CellDim, VertDim};
-   std::vector<std::shared_ptr<MetaDim>> NormalVelocityDim{EdgeDim, VertDim};
-
-   // Create metadate for variables
-   auto NormalVelocityMeta =
-       ArrayMetaData::create(NormalVelocityIOName,
-                             "Velocity component normal to edge", /// long Name
-                             "m/s",                               /// units
-                             "",        /// CF standard Name
-                             -9.99E+10, /// min valid value
-                             9.99E+10,  /// max valid value
-                             -9.99E+30, /// scalar used for undefined entries
-                             2,         /// number of dimensions
-                             NormalVelocityDim /// dim pointers
+   // Create fields for state variables
+   int NDims = 2;
+   std::vector<std::string> DimNames(NDims);
+   DimNames[0] = "NEdges";
+   DimNames[1] = "NVertLevels";
+   auto NormalVelocityField =
+       Field::create(NormalVelocityFldName,               // field name
+                     "Velocity component normal to edge", // long Name
+                     "m/s",                               // units
+                     "sea_water_velocity",                // CF standard Name
+                     -9.99E+10,                           // min valid value
+                     9.99E+10,                            // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // number of dimensions
+                     DimNames   // dimension names
        );
 
-   auto LayerThicknessMeta =
-       ArrayMetaData::create(LayerThicknessIOName,
-                             "Thickness of layer on cell center", /// long Name
-                             "m",                                 /// units
-                             "cell_thickness", /// CF standard Name
-                             0.0,              /// min valid value
-                             9.99E+30,         /// max valid value
-                             -9.99E+30, /// scalar used for undefined entries
-                             2,         /// number of dimensions
-                             LayerThicknessDim /// dim pointers
+   DimNames[0] = "NCells";
+   auto LayerThicknessField =
+       Field::create(LayerThicknessFldName,               // Field name
+                     "Thickness of layer on cell center", /// long Name
+                     "m",                                 // units
+                     "cell_thickness",                    // CF standard Name
+                     0.0,                                 // min valid value
+                     9.99E+30,                            // max valid value
+                     -9.99E+30, // scalar used for undefined entries
+                     NDims,     // number of dimensions
+                     DimNames   // dimension names
        );
 
-   // Define IOFields for state variables
-   Err = IOField::define(NormalVelocityIOName);
-   Err = IOField::define(LayerThicknessIOName);
-
-   // Group state metadata
+   // Create a field group for state fields
    StateGroupName = "State";
    if (Name != "Default") {
       StateGroupName.append(Name);
    }
-   auto StateMetaGroup = MetaGroup::create(StateGroupName);
+   auto StateGroup = FieldGroup::create(StateGroupName);
 
-   Err = StateMetaGroup->addField(NormalVelocityIOName);
-   Err = StateMetaGroup->addField(LayerThicknessIOName);
+   Err = StateGroup->addField(NormalVelocityFldName);
+   if (Err != 0)
+      LOG_ERROR("Error adding {} to field group {}", NormalVelocityFldName,
+                StateGroupName);
+   Err = StateGroup->addField(LayerThicknessFldName);
+   if (Err != 0)
+      LOG_ERROR("Error adding {} to field group {}", LayerThicknessFldName,
+                StateGroupName);
 
-   // Associate IOField with data
-   Err = IOField::attachData<Array2DR8>(NormalVelocityIOName,
-                                        NormalVelocity[CurLevel]);
-   Err = IOField::attachData<Array2DR8>(LayerThicknessIOName,
-                                        LayerThickness[CurLevel]);
+   // Associate Field with data
+   Err = NormalVelocityField->attachData<Array2DR8>(NormalVelocity[CurLevel]);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data array to field {}",
+                NormalVelocityFldName);
+   Err = LayerThicknessField->attachData<Array2DR8>(LayerThickness[CurLevel]);
+   if (Err != 0)
+      LOG_ERROR("Error attaching data array to field {}",
+                LayerThicknessFldName);
+
 } // end defineIOFields
 
 //------------------------------------------------------------------------------
@@ -374,10 +381,10 @@ void OceanState::updateTimeLevels() {
    // Update IOField data associations
    int Err = 0;
 
-   Err = IOField::attachData<Array2DR8>(NormalVelocityIOName,
-                                        NormalVelocity[CurLevel]);
-   Err = IOField::attachData<Array2DR8>(LayerThicknessIOName,
-                                        LayerThickness[CurLevel]);
+   Err = Field::attachFieldData<Array2DR8>(NormalVelocityFldName,
+                                           NormalVelocity[CurLevel]);
+   Err = Field::attachFieldData<Array2DR8>(LayerThicknessFldName,
+                                           LayerThickness[CurLevel]);
 
 } // end updateTimeLevels
 

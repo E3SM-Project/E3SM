@@ -145,6 +145,9 @@ MAKE_OMEGA_VIEW_TYPES(HostArray, View, HostMemLayout, HostMemSpace)
 #undef MAKE_OMEGA_VIEW_TYPES
 #undef MAKE_OMEGA_VIEW_DIMS
 
+template <class T>
+inline constexpr bool isKokkosArray = Kokkos::is_view<T>::value;
+
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//

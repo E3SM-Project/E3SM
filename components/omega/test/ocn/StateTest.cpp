@@ -11,10 +11,11 @@
 
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
+#include "Field.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
-#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanState.h"
@@ -95,10 +96,8 @@ int main(int argc, char *argv[]) {
       int NVertLevels = 60;
       int NTimeLevels = 2;
 
-      // Create meta data dimensions
-      OMEGA::MetaDim::create("NCells", DefHorzMesh->NCellsSize);
-      OMEGA::MetaDim::create("NEdges", DefHorzMesh->NEdgesSize);
-      OMEGA::MetaDim::create("NVertLevels", NVertLevels);
+      // Create dimensions (Horz dims computed in Mesh init)
+      auto VertDim = OMEGA::Dimension::create("NVertLevels", NVertLevels);
 
       for (int NTimeLevels = 2; NTimeLevels < 4; NTimeLevels++) {
 
@@ -326,7 +325,9 @@ int main(int argc, char *argv[]) {
       OMEGA::HorzMesh::clear();
       OMEGA::Decomp::clear();
       OMEGA::MachEnv::removeAll();
-      OMEGA::IOField::clear();
+      OMEGA::FieldGroup::clear();
+      OMEGA::Field::clear();
+      OMEGA::Dimension::clear();
 
       if (RetVal == 0)
          LOG_INFO("State: Successful completion");

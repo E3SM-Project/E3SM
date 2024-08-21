@@ -23,7 +23,7 @@ class AuxiliaryState {
  public:
    // Member variables
 
-   // Names of the auxiliary state and its MetaGroup
+   // Names of the auxiliary state and its FieldGroup
    std::string Name;
    std::string GroupName;
 

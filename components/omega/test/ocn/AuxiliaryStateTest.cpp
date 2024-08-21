@@ -1,13 +1,13 @@
 #include "AuxiliaryState.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
+#include "Field.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
-#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "MetaData.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "mpi.h"
@@ -96,10 +96,8 @@ int initAuxStateTest(const std::string &mesh) {
    }
 
    const auto &Mesh = HorzMesh::getDefault();
-   MetaDim::create("NCells", Mesh->NCellsSize);
-   MetaDim::create("NVertices", Mesh->NVerticesSize);
-   MetaDim::create("NEdges", Mesh->NEdgesSize);
-   MetaDim::create("NVertLevels", NVertLevels);
+   // Horz dimensions created in HorzMesh
+   auto VertDim = Dimension::create("NVertLevels", NVertLevels);
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
@@ -249,7 +247,8 @@ int testAuxState() {
 
 void finalizeAuxStateTest() {
    OceanState::clear();
-   IOField::clear();
+   Field::clear();
+   Dimension::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();

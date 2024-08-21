@@ -213,24 +213,13 @@ add_omega_test(
 )
 
 ##################
-# Metadata test
+# Field test
 ##################
 
 add_omega_test(
-    METADATA_TEST
-    testMetadata.exe
-    infra/MetadataTest.cpp
-    "-n;1"
-)
-
-##################
-# IOField test
-##################
-
-add_omega_test(
-    IOFIELD_TEST
-    testIOField.exe
-    infra/IOFieldTest.cpp
+    FIELD_TEST
+    testField.exe
+    infra/FieldTest.cpp
     "-n;8"
 )
 
