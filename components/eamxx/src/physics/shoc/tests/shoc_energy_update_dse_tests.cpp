@@ -108,8 +108,12 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
       }
     }
 
-    // Call the fortran implementation
-    update_host_dse(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    update_host_dse_f(SDS.shcol,SDS.nlev,SDS.thlm,SDS.shoc_ql,SDS.inv_exner,SDS.zt_grid,
+                      SDS.phis,SDS.host_dse);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check test
     for(Int s = 0; s < shcol; ++s) {

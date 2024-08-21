@@ -51,8 +51,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
       SDS.vw_sfc[s] = vw_sfc[s];
     }
 
-    // Call the fortran implementation
-    diag_second_moments_srf(SDS);
+    // Call the C++ implementation
+    shoc_diag_second_moments_srf_f(SDS.shcol, SDS.wthl_sfc, SDS.uw_sfc, SDS.vw_sfc, SDS.ustar2, SDS.wstar);
 
     // Verify the output
     for (Int s = 0; s < shcol; ++s){

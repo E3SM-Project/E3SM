@@ -120,8 +120,13 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
       }
     }
 
-    // Call the Fortran implementation
-    shoc_length(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_length_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.host_dx,SDS.host_dy,
+                  SDS.zt_grid,SDS.zi_grid,SDS.dz_zt,SDS.tke,
+                  SDS.thv,SDS.brunt,SDS.shoc_mix);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify output
     for(Int s = 0; s < shcol; ++s) {
@@ -169,8 +174,13 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
       SDS.host_dy[s] = host_dy_small;
     }
 
-    // call fortran implentation
-    shoc_length(SDS);
+    // call C++ implentation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_length_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.host_dx,SDS.host_dy,
+                  SDS.zt_grid,SDS.zi_grid,SDS.dz_zt,SDS.tke,
+                  SDS.thv,SDS.brunt,SDS.shoc_mix);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify output
     for(Int s = 0; s < shcol; ++s) {
