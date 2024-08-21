@@ -215,7 +215,7 @@ void HorzMesh::createDimensions(Decomp *MeshDecomp) {
    if (MeshName == "Default") {
       NameSuffix = "";
    } else {
-      NameSuffix = "MeshName";
+      NameSuffix = MeshName;
    }
 
    // Create the offset and Dimension for NCells

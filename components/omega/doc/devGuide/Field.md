@@ -16,7 +16,8 @@ retrieved or updated as needed, typically during IO. The Field class is not
 meant to be used during computations - the native Omega array types without
 metadata are more appropriate for that context.
 
-To use the Field class, the Field header file must be included and the
+To use the Field class, the Field header file must be included and as part of
+the application initialization, there should be a call to the init method:
 Fields initialized with the init method:
 ```c++
 int Err = Field::init();
@@ -29,7 +30,7 @@ See {ref}`omega-dev-dimension`.
 
 Fields are created with standard metadata using
 ```c++
-   static std::shared_ptr<Field> MyField =
+   std::shared_ptr<Field> MyField =
    Field::create(FieldName,   ///< [in] Name of variable/field (string)
                  Description, ///< [in] long Name or description (string)
                  Units,       ///< [in] units (string)
@@ -51,7 +52,7 @@ number should be supplied to prevent accidentally treating valid data as a
 FillValue.  Actual field data stored in an array is attached in a separate
 call as described below. Fields without a data array can be created with:
 ```c++
-   static std::shared_ptr<Field> MyField =
+   std::shared_ptr<Field> MyField =
    Field::create(FieldName ///< [in] Name of field
    );
 ```
@@ -69,8 +70,7 @@ Additional metadata in the form of a name-value pair can be added using:
 where Value can be any supported data type (I4, I8, R4, R8, bool, string).
 Multiple pairs can be added in a single call using:
 ``` c++
-   int Err = MyField->addMetadata(
-   Err1 = SimField->addMetadata(
+   Err = SimField->addMetadata(
          {std::make_pair("Name1", Val1),
           std::make_pair("Name2", Val2),
           std::make_pair("Name3", Val3),
@@ -100,16 +100,17 @@ is provided using the field name:
 Note that the data is assumed to reside in only one location so if a mirror
 array exists (eg if replicated on host and device), a separate Field may be
 needed. However, it is is better to define only one location and allow the
-IO or other modules determine whether a transfer of data or mirror is needed.
-If the data resides in a static array whose location does not change (ie the
+IO or other modules to determine whether a transfer of data or mirror is needed.
+If the data resides in an array whose location does not change (ie the
 pointer always points to a fixed location), the attach can be performed when
-the Field and array have been created. If the location changes (eg the time
-level changes and the pointer points to a different time slice), the data can
-be attached again and the pointer is replaced with a pointer to the new
-location. The attach function primarily sets a pointer to the data location
-(both a pointer to the Array type and a raw data pointer needed for IO and
-third party libraries).  The attach function also sets the data type of the
-variable and its memory location using two enum classes:
+the Field and array have been created and any updates to the data will be
+captured correctly. If the location of the data changes (eg the time
+level changes and the pointer points to a different time slice), the data must
+be updated by calling the attach routine to replace the pointer to the new
+location. It is up to the developer to insert the appropriate call to reattach
+the data. The attach function primarily sets the pointer to the data location
+but it also sets the data type of the variable and its memory location using
+two enum classes:
 ```c++
 enum class FieldType {Unknown, I4, I8, R4, R8};
 enum class FieldMemLoc {Unknown, Device, Host, Both};
@@ -188,7 +189,7 @@ To retrieve the field data arrays, there are a few methods available. If the
 array forms are needed, there are templated retrievals by either a member
 function or a by-name interface:
 ```c++
-   HostArray1DI4 MyData1 = MyField->getDataArray<HostArray1DI4>;
+   HostArray1DI4 MyData1 = MyField->getDataArray<HostArray1DI4>();
    Array2DR8 MyData2 = Field::getFieldDataArray<Array2DR8>(FieldName);
 ```
 where all of the array and host array types are supported. If the array type
