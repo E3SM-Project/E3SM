@@ -3411,6 +3411,9 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
         </modules>
+        <modules compiler="oneapi-ifxgpu">
+          <command name="load">kokkos/git.7ff87a5-omp-sycl</command>
+        </modules>
         <modules compiler="gnu">
            <command name="unload">spack cmake</command>
            <command name="load">gcc/10.3.0</command>
@@ -3439,6 +3442,8 @@
         <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>
+        <env name="ZES_ENABLE_SYSMAN">1</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
