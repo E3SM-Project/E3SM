@@ -3,13 +3,13 @@
 #include "AuxiliaryState.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Dimension.h"
+#include "Field.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
-#include "IOField.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "MetaData.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "TendencyTerms.h"
@@ -141,10 +141,8 @@ int initTimeStepperTest(const std::string &mesh) {
    auto *DefMesh = HorzMesh::getDefault();
    auto *DefHalo = Halo::getDefault();
 
-   MetaDim::create("NCells", DefMesh->NCellsSize);
-   MetaDim::create("NVertices", DefMesh->NVerticesSize);
-   MetaDim::create("NEdges", DefMesh->NEdgesSize);
-   MetaDim::create("NVertLevels", NVertLevels);
+   // Horz dimensions created in HorzMesh
+   auto VertDim = Dimension::create("NVertLevels", NVertLevels);
 
    const int NTimeLevels = 2;
    auto *TestOceanState  = OceanState::create("TestState", DefMesh, DefHalo,
@@ -188,16 +186,12 @@ void timeLoop(Real TimeEnd, Real TimeStep) {
 
 void finalizeTimeStepperTest() {
 
-   MetaDim::destroy("NCells");
-   MetaDim::destroy("NVertices");
-   MetaDim::destroy("NEdges");
-   MetaDim::destroy("NVertLevels");
-
    TimeStepper::clear();
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();
-   IOField::clear();
+   Dimension::clear();
+   Field::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();
