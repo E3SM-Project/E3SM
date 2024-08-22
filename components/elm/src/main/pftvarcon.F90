@@ -313,10 +313,11 @@ module pftvarcon
   real(r8), allocatable :: gcbr_q(:)           !effectiveness of roots in reducing runoff-driven erosion
 
   ! NGEE Arctic snow-vegetation interactions
-  real(r8), allocatable :: bendresist(:)       ! vegetation resistance to bending under snow loading, 0 to 1 (e.g., Liston and Hiemstra 2011)
+  real(r8), allocatable :: bendresist(:)       ! vegetation resistance to bending under snow loading, 0 to 1 (e.g., Liston and Hiemstra 2011; Sturm et al. 2005)
   real(r8), allocatable :: vegshape(:)         ! shape parameter to modify shrub burial by snow (1 = parabolic, 2 = hemispheric)
   real(r8), allocatable :: stocking(:)         ! stocking density for pft (stems / hectare)
   real(r8), allocatable :: taper(:)            ! ratio of height:radius_breast_height (woody vegetation allometry)
+  logical               :: taper_defaults      ! set flag to use taper defaults if not on params file (necessary as import and set values are in different places)
 
   ! new pft properties, together with woody, crop, percrop, evergreen, stress_decid, season_decid, defined above,
   ! are introduced to define vegetation properties. This will be well defineing a pft so that no indices needed for codes.
@@ -1094,7 +1095,7 @@ contains
     call ncd_io('vegshape', vegshape, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) vegshape(:) = 1._r8
    ! check validity
-    do i = 0, npft -1
+    do i = 0, mxpft
       if (bendresist(i) .gt. 1.0_r8 .or. bendresist(i) .le. 0._r8) then
          call endrun(msg="Non-physical selection of bendresist parameter, set between 0 and 1"//errMsg(__FILE__, __LINE__))
       end if
@@ -1103,19 +1104,12 @@ contains
       end if
    end do
     call ncd_io('stocking', stocking, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if (.not. readv ) stocking(:) = 1000._r8
-    ! convert from stems/ha -> stems/m2
-    do i = 0, npft
-      stocking(i) = stocking(i) / 10000._r8
-    end do 
+    if (.not. readv ) stocking(:) = 0.1_r8 ! convert previous default of 1000 stems/ha to stems/m2 as had been done in VegStructUpdateMod.F90
+   taper_defaults = .false.
     call ncd_io('taper', taper, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) then
-      taper(:) = 200._r8
-      do i = 0, npft
-        ! RPF 240331 - need to revisit this section when integrating with IM4,
-        ! to make consistent with attempt to remove hard-coded pft numbers.
-        if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) taper(i) = 10.0_r8 ! shrubs
-      end do
+      taper(:) = 200._r8 ! pftnames not set to integers yet, so reassign further down.
+      taper_defaults = .true.
     end if
 
     ! NOTE: the following 5 PFT flags/options are addtions to 'woody', 'stress_decid', 'season_decid',
@@ -1547,6 +1541,17 @@ contains
           end if
        end do
     end if
+
+    ! reassign taper values for shrubs - RPF
+    if (taper_defaults) then
+      do i = 0, mxpft
+         if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) then
+            taper(i) = 10._r8 ! shrubs
+         else
+            taper(i) = 200._r8
+         endif
+      end do
+   end if
 
     if (masterproc) then
        write(iulog,*) 'Successfully read PFT physiological data'
