@@ -2052,6 +2052,7 @@ zblk_col(i)=zblk
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
                          * olp(i) * zblk * ulow(i)**2
 
+ncd=3.0_r8
 cd=ncd*cd
 
 !Jinbo Xie for base flux
