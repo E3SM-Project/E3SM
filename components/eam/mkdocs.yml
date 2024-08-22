@@ -11,6 +11,7 @@ nav:
  - Technical Guide:
    - tech-guide/index.md
    - tech-guide/homme.md
+   - tech-guide/atmosphere-grid-overview.md
    - tech-guide/p3.md
    - tech-guide/clubb.md
    - tech-guide/zm.md

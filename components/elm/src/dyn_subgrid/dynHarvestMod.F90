@@ -188,6 +188,9 @@ contains
           end do
           deallocate(this_data)
        end if
+
+       ! FATES does not make use of the get_do_harvest mechanism.  Make sure this is always false for fates runs.
+       if (use_fates) do_harvest = .false.
     end if
   end subroutine dynHarvest_interp_harvest_types
 

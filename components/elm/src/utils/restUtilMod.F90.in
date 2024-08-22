@@ -68,7 +68,6 @@ contains
     ! 
     ! Local variables
     integer          :: ivalue
-    type(var_desc_t) :: vardesc  ! local vardesc
     integer          :: status   ! return error code 
     integer          :: varid
     integer          :: lxtype   ! local external type (in case logical variable)
@@ -84,10 +83,10 @@ contains
        end if
 
        call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
-            long_name=trim(long_name), units=units)
-
-       status = PIO_inq_varid(ncid, trim(varname), vardesc)
-       varid = vardesc%varid
+            long_name=trim(long_name), units=units, comment=comment, &
+            fill_value=fill_value, missing_value=missing_value, &
+            ifill_value=ifill_value, imissing_value=imissing_value, &
+            varid=varid)
 
        if (trim(interpinic_flag) == 'interp') then
           status = PIO_put_att(ncid, varid, 'interpinic_flag', iflag_interp)
@@ -99,36 +98,25 @@ contains
        status = PIO_put_att(ncid, varid, 'interpinic_flag_meanings', &
             "1=nearest neighbor, 2=copy directly, 3=skip")
 
-       if (present(comment)) then
-          call ncd_putatt(ncid, varid, 'comment', trim(comment))
+       if (.not. present(fill_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+          end if
        end if
-       if (present(units)) then
-          call ncd_putatt(ncid, varid, 'units', trim(units))
+       if (.not. present(missing_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
+          end if
        end if
-       if (present(fill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', fill_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+       if (.not. present(ifill_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
+          end if
        end if
-       if (present(missing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', missing_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
-       end if
-       if (present(ifill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', ifill_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
-       end if
-       if (present(imissing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', imissing_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
-       end if
-       if ( xtype == ncd_log )then
-          status = PIO_put_att(ncid,varid,'flag_values',     (/0, 1/) )
-          status = PIO_put_att(ncid,varid,'flag_meanings',  "FALSE TRUE" )
-          status = PIO_put_att(ncid,varid,'valid_range',    (/0, 1/) )
+       if (.not. present(imissing_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
+          end if
        end if
 
     else if (flag == 'read' .or. flag == 'write') then
@@ -178,7 +166,6 @@ contains
     ! 
     ! Local variables
     integer          :: ivalue
-    type(var_desc_t) :: vardesc  ! local vardesc
     integer          :: status   ! return error code 
     integer          :: varid
     integer          :: lxtype   ! local external type (in case logical variable)
@@ -195,19 +182,22 @@ contains
 
        if (.not. present(dim1name)) then
           call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
-               long_name=trim(long_name), units=units)
+               long_name=trim(long_name), units=units, comment=comment, fill_value=fill_Value, &
+               missing_value=missing_value, ifill_value=ifill_value, imissing_value=imissing_value, &
+               nvalid_range=nvalid_range, varid=varid)
        else if (.not. present(dim2name)) then 
           call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
                dim1name=trim(dim1name), &
-               long_name=trim(long_name), units=units)
+               long_name=trim(long_name), units=units, comment=comment, fill_value=fill_Value, &
+               missing_value=missing_value, ifill_value=ifill_value, imissing_value=imissing_value, &
+               nvalid_range=nvalid_range, varid=varid)
        else if (present(dim2name)) then
           call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
                dim1name=trim(dim1name), dim2name=trim(dim2name), &
-               long_name=trim(long_name), units=units)
+               long_name=trim(long_name), units=units, comment=comment, fill_value=fill_Value, &
+               missing_value=missing_value, ifill_value=ifill_value, imissing_value=imissing_value, &
+               nvalid_range=nvalid_range, varid=varid)
        end if
-
-       status = PIO_inq_varid(ncid, trim(varname), vardesc)
-       varid = vardesc%varid
 
        if (trim(interpinic_flag) == 'interp') then
           status = PIO_put_att(ncid, varid, 'interpinic_flag', iflag_interp)
@@ -219,40 +209,25 @@ contains
        status = PIO_put_att(ncid, varid, 'interpinic_flag_meanings', &
             "1=nearest neighbor, 2=copy directly, 3=skip")
 
-       if (present(comment)) then
-          call ncd_putatt(ncid, varid, 'comment', trim(comment))
+       if (.not. present(fill_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+          end if
        end if
-       if (present(units)) then
-          call ncd_putatt(ncid, varid, 'units', trim(units))
+       if (.not. present(missing_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
+          end if
        end if
-
-       if (present(fill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', fill_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+       if (.not. present(ifill_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
+          end if
        end if
-       if (present(missing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', missing_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
-       end if
-       if (present(ifill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', ifill_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
-       end if
-       if (present(imissing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', imissing_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
-       end if
-       if (present(nvalid_range)) then
-          status = PIO_put_att(ncid,varid,'valid_range', nvalid_range )
-       end if
-       if ( xtype == ncd_log )then
-          status = PIO_put_att(ncid,varid,'flag_values',     (/0, 1/) )
-          status = PIO_put_att(ncid,varid,'flag_meanings',  "FALSE TRUE" )
-          status = PIO_put_att(ncid,varid,'valid_range',    (/0, 1/) )
+       if (.not. present(imissing_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
+          end if
        end if
 
     else if (flag == 'read' .or. flag == 'write') then
@@ -309,7 +284,6 @@ contains
     ! 
     ! Local variables
     integer          :: ivalue
-    type(var_desc_t) :: vardesc  ! local vardesc
     integer          :: status   ! return error code 
     integer          :: varid    ! returned var id
     integer          :: lxtype   ! local external type (in case logical variable)
@@ -327,15 +301,16 @@ contains
        if (switchdim) then
           call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
                dim1name=trim(dim2name), dim2name=trim(dim1name), &
-               long_name=trim(long_name), units=units)
+               long_name=trim(long_name), units=units, comment=comment, fill_value=fill_Value, &
+               missing_value=missing_value, ifill_value=ifill_value, imissing_value=imissing_value, &
+               nvalid_range=nvalid_range, varid=varid)
        else
           call ncd_defvar(ncid=ncid, varname=trim(varname), xtype=lxtype, &
                dim1name=trim(dim1name), dim2name=trim(dim2name), &
-               long_name=trim(long_name), units=units)
+               long_name=trim(long_name), units=units, comment=comment, fill_value=fill_Value, &
+               missing_value=missing_value, ifill_value=ifill_value, imissing_value=imissing_value, &
+               nvalid_range=nvalid_range, varid=varid)
        end if
-       status = PIO_inq_varid(ncid, trim(varname), vardesc)
-
-       varid = vardesc%varid
 
        if (trim(interpinic_flag) == 'interp') then
           status = PIO_put_att(ncid, varid, 'interpinic_flag', iflag_interp)
@@ -348,49 +323,35 @@ contains
             "1=>nearest_neighbor 2=>copy 3=>skip")
 
        if (switchdim) then
-          status = PIO_put_att(ncid, vardesc%varid, 'switchdim_flag', 1)
+          status = PIO_put_att(ncid, varid, 'switchdim_flag', 1)
        else
-          status = PIO_put_att(ncid, vardesc%varid, 'switchdim_flag', 0)
+          status = PIO_put_att(ncid, varid, 'switchdim_flag', 0)
        end if
-       status = PIO_put_att(ncid, vardesc%varid, 'switchdim_flag_values', (/0,1/))
-       status = PIO_put_att(ncid, vardesc%varid, 'switchdim_flag_is_0', &
+       status = PIO_put_att(ncid, varid, 'switchdim_flag_values', (/0,1/))
+       status = PIO_put_att(ncid, varid, 'switchdim_flag_is_0', &
             "1st and 2nd dims are same as model representation")
-       status = PIO_put_att(ncid, vardesc%varid, 'switchdim_flag_is_1', &
+       status = PIO_put_att(ncid, varid, 'switchdim_flag_is_1', &
             "1st and 2nd dims are switched from model representation")
 
-       if (present(comment)) then
-          call ncd_putatt(ncid, varid, 'comment', trim(comment))
+       if (.not. present(fill_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+          end if
        end if
-       if (present(units)) then
-          call ncd_putatt(ncid, varid, 'units', trim(units))
+       if (.not. present(missing_value)) then
+          if (lxtype == ncd_double) then
+             call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
+          end if
        end if
-       if (present(fill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', fill_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, '_FillValue', spval, lxtype)
+       if (.not. present(ifill_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
+          end if
        end if
-       if (present(missing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', missing_value, lxtype)
-       else if (lxtype == ncd_double) then
-          call ncd_putatt(ncid, varid, 'missing_value', spval, lxtype)
-       end if
-       if (present(ifill_value)) then
-          call ncd_putatt(ncid, varid, '_FillValue', ifill_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, '_FillValue', ispval, lxtype)
-       end if
-       if (present(imissing_value)) then
-          call ncd_putatt(ncid, varid, 'missing_value', imissing_value, lxtype)
-       else if (lxtype == ncd_int) then
-          call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
-       end if
-       if (present(nvalid_range)) then
-          status = PIO_put_att(ncid,varid,'valid_range', nvalid_range )
-       end if
-       if ( xtype == ncd_log )then
-          status = PIO_put_att(ncid,varid,'flag_values',     (/0, 1/) )
-          status = PIO_put_att(ncid,varid,'flag_meanings',  "FALSE TRUE" )
-          status = PIO_put_att(ncid,varid,'valid_range',    (/0, 1/) )
+       if (.not. present(imissing_value)) then
+          if (lxtype == ncd_int) then
+             call ncd_putatt(ncid, varid, 'missing_value', ispval, lxtype)
+          end if
        end if
 
     else 

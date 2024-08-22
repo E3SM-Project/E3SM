@@ -103,6 +103,41 @@
                         description="maximum basal speed in the domain"
                 />
 
+                <!-- stats related to subglacial hydrology -->
+                <var name="regionalSumSubglacialWaterVolume" type="real" dimensions="nRegions Time" units="m^3"
+                        description="area-integrated subglacial water volume within region"
+                />
+                <var name="regionalSumSubglacialLakeVolume" type="real" dimensions="nRegions Time" units="m^3"
+                        description="area-integrated volume of subglacial lakes within region, defined as water volume exceeding bed bump height"
+                />
+                <var name="regionalSumSubglacialLakeArea" type="real" dimensions="nRegions Time" units="m^2"
+                        description="area-integrated area of subglacial lakes within region"
+                />
+                <var name="regionalSumBasalMeltInput" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated basal meltwater contributing to the subglacial hydrologic system within region"
+                />
+                <var name="regionalSumExternalWaterInput" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated external meltwater contributing to the subglacial hydrologic system within region"
+                />
+                <var name="regionalSumChannelMelt" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated melt rate in the subglacial hydrologic system within region"
+                />
+                <var name="regionalSumDistWaterFluxMarineMargin" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated distributed subglacial water flux across marine boundaries (grounding lines or grounded marine margins) within region"
+                />
+                <var name="regionalSumDistWaterFluxTerrestrialMargin" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated distributed subglacial water flux across terrestrial margins within region"
+                />
+                <var name="regionalSumChnlWaterFluxMarineMargin" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated channelized subglacial water flux across marine boundaries (grounding lines or grounded marine margins) within region"
+                />
+                <var name="regionalSumChnlWaterFluxTerrestrialMargin" type="real" dimensions="nRegions Time" units="kg s^{-1}"
+                        description="area-integrated channelized subglacial water flux across terrestrial margins within region"
+                />
+                <var name="regionalAvgFlotationFraction" type="real" dimensions="nRegions Time" units="none"
+                        description="area-weighted average of the flotation fraction under grounded ice within region"
+                />
+
  	</var_struct>
 
 	<streams>
