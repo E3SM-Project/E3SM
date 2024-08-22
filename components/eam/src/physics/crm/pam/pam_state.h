@@ -108,6 +108,7 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
+  auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   auto ref_presi  = dm_device.get<real,2>("ref_presi");
   auto ref_pres   = dm_device.get<real,2>("ref_pres");
   auto ref_rho_d  = dm_device.get<real,2>("ref_density_dry");
@@ -131,6 +132,14 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   auto rho_v      = dm_device.get<real,4>("water_vapor");
   auto rho_c      = dm_device.get<real,4>("cloud_water");
   auto rho_i      = dm_device.get<real,4>("ice");
+
+  auto &dm_host   = coupler.get_data_manager_host_readonly();
+  auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
+  auto input_pint = dm_host.get<real const,2>("input_pint").createDeviceCopy();
+
+  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
+  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
+  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Set anelastic reference state with current CRM mean state
 
@@ -144,10 +153,9 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   real2d hmean_temp ("hmean_temp" ,nz  ,nens);
   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
   // initialize horizontal means
-  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  parallel_for(SimpleBounds<2>(nz+1,nens), YAKL_LAMBDA (int k, int iens) {
     hmean_pint(k,iens) = 0;
     if (k < nz) { 
-      hmean_pmid (k,iens) = 0;
       hmean_rho_d(k,iens) = 0;
       hmean_rho_v(k,iens) = 0;
       hmean_rho_c(k,iens) = 0;
@@ -157,33 +165,37 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   });
   // calculate horizontal means
   parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    real pmid_tmp = rho_d(k,j,i,iens)*R_d*temp(k,j,i,iens) + rho_v(k,j,i,iens)*R_v*temp(k,j,i,iens);
-    atomicAdd( hmean_pmid (k,iens), pmid_tmp * r_nx_ny );
     atomicAdd( hmean_rho_d(k,iens), rho_d   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_v(k,iens), rho_v   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_c(k,iens), rho_c   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_rho_i(k,iens), rho_i   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_temp (k,iens), temp    (k,j,i,iens) * r_nx_ny );
   });
-  // calculate interface pressure from mid-level pressure
-  parallel_for(SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
-    if (k == 0 ) {
-      real rho = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
-      real dz  = zint(k+1,iens)-zint(k  ,iens);
-      hmean_pint(k,iens) = hmean_pmid(k  ,iens) + grav*rho*dz/2;
-    } else if (k == nz) {
-      real rho = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
-      real dz  = zint(k  ,iens)-zint(k-1,iens);
-      hmean_pint(k,iens) = hmean_pmid(k-1,iens) - grav*rho*dz/2;
-    } else {
-      real rhokm1 = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
-      real rhokm0 = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
-      real dzkm1  = zint(k  ,iens)-zint(k-1,iens);
-      real dzkm0  = zint(k+1,iens)-zint(k  ,iens);
-      hmean_pint(k,iens) = 0.5_fp * ( hmean_pmid(k-1,iens) - grav*rhokm1*dzkm1/2 +
-                                      hmean_pmid(k  ,iens) + grav*rhokm0*dzkm0/2 );
+
+  // Use GCM state for reference pressure -  previously, the current CRM pressure 
+  // was used, but the way the interface pressure was calculated led to problems
+  // in edge cases (ex. over topography) - switching to GCM pressure works well
+  parallel_for( SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
+    int k_gcm = (gcm_nlev+1)-1-k_crm;
+    hmean_pint(k_crm,iens) = input_pint(k_gcm,iens);
+  });
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
+    int k_gcm = gcm_nlev-1-k_crm;
+    hmean_pmid(k_crm,iens) = input_pmid(k_gcm,iens);
+  });
+
+  // check that interface pressure is reasonable
+  parallel_for(SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
+    if ( hmean_pint(k,iens) < hmean_pmid(k,iens) ) {
+      auto phis = input_phis(iens)/grav;
+      printf("PAM-STATE - bad interface pressure for reference state - "
+             "k:%3.3d n:%3.3d y:%5.1f x:%5.1f ph:%6.1f -- "
+             "pint:%12.4f pmid:%12.4f \n",
+             k,iens,lat(iens),lon(iens),phis,
+             hmean_pint(k,iens),hmean_pmid(k,iens));
     }
   });
+
   // set anelastic reference state from CRM horizontal mean
   parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
     ref_presi(k,iens) = hmean_pint(k,iens);
@@ -258,9 +270,17 @@ inline void pam_state_save_dry_density( pam::PamCoupler &coupler ) {
 
 
 // recall CRM dry density saved previously - only for anelastic case
+// Note - The need for this arises because the SPAM dycor diagnoses the dry
+// density in a way that preserves the total density to match the reference 
+// density. However, this is problematic in the presence of the GCM forcing
+// which naturally changes the total density. Therefore, we can recall the 
+// previous dry density and use it to replace the horizontal mean returned from 
+// the dycor, which ensures that the impact of GCM forcing is preserved while
+// also retaining the dry density perturbations created by the dycor.
 inline void pam_state_recall_dry_density( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
+  using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
@@ -269,11 +289,30 @@ inline void pam_state_recall_dry_density( pam::PamCoupler &coupler ) {
   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
   auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
   //------------------------------------------------------------------------------------------------
-  parallel_for( "Recall CRM dry density",
-                SimpleBounds<4>(nz,ny,nx,nens),
-                YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
+  // initialize horizontal mean of previous CRM dry density
+  real2d old_hmean_rho_d("old_hmean_rho_d"   ,nz,nens);
+  real2d new_hmean_rho_d("new_hmean_rho_d"   ,nz,nens);
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    old_hmean_rho_d(k,iens) = 0;
+    new_hmean_rho_d(k,iens) = 0;
   });
+  real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
+  // calculate horizontal mean of previous CRM dry density
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    atomicAdd( old_hmean_rho_d(k,iens), tmp_rho_d(k,j,i,iens) * r_nx_ny );
+    atomicAdd( new_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
+  });
+  // replace horizontal mean dry density with previous value
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - new_hmean_rho_d(k,iens) + old_hmean_rho_d(k,iens);
+  });
+  //------------------------------------------------------------------------------------------------
+  // Original simple appraoch to completely reinstate the previous dry density field
+  // (this was shown to negatively impact the model stability)
+  // This was used initially, but the above
+  // parallel_for( "Recall CRM dry density",SimpleBounds<4>(nz,ny,nx,nens),YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
+  //   crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
+  // });
   //------------------------------------------------------------------------------------------------
 }
 
