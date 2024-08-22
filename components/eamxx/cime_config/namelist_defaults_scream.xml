@@ -271,14 +271,14 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- MAM4xx-Aerosol-Microphysics -->
     <mam4_aero_microphys inherit="atm_proc_base">
-    <mam4_linoz_file_name type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc</mam4_linoz_file_name>
-    <mam4_oxid_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc</mam4_oxid_file_name>
-    <mam4_linoz_chlorine_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</mam4_linoz_chlorine_file>
-    <mam4_chlorine_loading_ymd type="string" doc=""> 20100101 </mam4_chlorine_loading_ymd>
-    <mam4_rsf_file type="file" doc=""> type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/RSF_GT200nm_v3.0_c080811.nc</mam4_rsf_file>
-    <mam4_xs_long_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/temp_prs_GT200nm_JPL10_c130206.nc</mam4_xs_long_file>
-    <mam4_bc_a4_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240726_OD.nc </mam4_bc_a4_verti_emiss_file_name>
-    <mam4_so2_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726_OD.nc</mam4_so2_verti_emiss_file_name>
+    <mam4_linoz_file_name hgrid="ne4np4" type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne4pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne4pg2_c20240724.nc</mam4_linoz_file_name>
+    <mam4_oxid_file_name  hgrid="ne4np4" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_ne4pg2_L26_1850-2015_c20240821.nc</mam4_oxid_file_name>
+    <mam4_linoz_chlorine_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</mam4_linoz_chlorine_file>
+    <mam4_chlorine_loading_ymd type="integer" doc=""> 20100101 </mam4_chlorine_loading_ymd>
+    <mam4_rsf_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc</mam4_rsf_file>
+    <mam4_xs_long_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc</mam4_xs_long_file>
+    <mam4_bc_a4_verti_emiss_file_name hgrid="ne4np4" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_bc_a4_elev_ne4pg2_2010_clim_c20240821.nc </mam4_bc_a4_verti_emiss_file_name>
+    <mam4_so2_verti_emiss_file_name hgrid="ne4np4" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_ne4pg2_2010_clim_c20240821.nc</mam4_so2_verti_emiss_file_name>
     </mam4_aero_microphys>
 
     <!-- MAM4xx-Optics -->

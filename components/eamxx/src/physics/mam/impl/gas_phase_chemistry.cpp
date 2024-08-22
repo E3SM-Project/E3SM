@@ -496,7 +496,7 @@ void gas_phase_chemistry(
   }
 
   // ... Form the washout rates
-  Real het_rates[gas_pcnst];
+  Real het_rates[gas_pcnst]={0};
   // FIXME: not ported yet
   // sethet(het_rates, pmid, zmid, phis, temp, cmfdqr, prain, nevapr, delt,
   //       invariants[indexm], q);

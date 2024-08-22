@@ -21,6 +21,22 @@ using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
 using C        = scream::physics::Constants<Real>;
 using LIV      = ekat::LinInterp<Real, 1>;
 
+// We have a similar version in MAM4xx.
+// This version was created because the data view cannot be modified
+// inside the parallel_for.
+// This struct will be used in init while reading nc files.
+// The MAM4xx version will be used instead of parallel_for that loops over cols.
+struct ForcingHelper {
+  // This index is in Fortran format. i.e. starts in 1
+  int frc_ndx;
+  // does this file have altitude?
+  bool file_alt_data;
+  // number of sectors per forcing
+  int nsectors;
+  // offset in output vector from reader
+  int offset;
+  };
+
 enum TracerFileType {
   // file with PS ncol, lev, and time
   FORMULA_PS,
@@ -50,6 +66,8 @@ struct TracerTimeState {
   Real t_now;
   // Number of days in the current month, cast as a Real
   Real days_this_month;
+  //
+  int offset_time_index{0};
 };  // TricerTimeState
 
 struct TracerData {
@@ -75,7 +93,7 @@ struct TracerData {
   view_1d ps;
   const_view_1d hyam;
   const_view_1d hybm;
-
+  view_int_1d work_vert_inter[MAX_NVARS_TRACER];;
   TracerFileType file_type;
 
   void allocate_data_views() {
@@ -133,6 +151,19 @@ struct TracerData {
     hvcoord_reader.finalize();
     hyam = hyam_f.get_view<const Real *>();
     hybm = hyam_f.get_view<const Real *>();
+  }
+
+  void allocate_work_vert_inter()
+  {
+    if(file_type == FORMULA_PS ||
+        file_type == ZONAL) {
+    // we only need work array for FORMULA_PS or ZONAL
+    for(int ivar = 0; ivar < nvars_; ++ivar) {
+      work_vert_inter[ivar] =
+      view_int_1d("allocate_work_vertical_interpolation", ncol_);
+    }
+    }
+
   }
 };
 
@@ -246,6 +277,36 @@ inline void create_linoz_chlorine_reader(
   scorpio::release_file(linoz_chlorine_file);
 }
 
+// Gets the times from the NC file
+// Given a date in the format YYYYMMDD, returns its index in the time dimension.
+inline void get_time_from_ncfile(
+    const std::string &file_name,
+    const int cyclical_ymd,  // in format YYYYMMDD
+     int & cyclical_ymd_index,
+     std::vector<int> &dates) {
+  // in file_name: name of the NC file
+  // in cyclical_ymd: date in the format YYYYMMDD
+  // out cyclical_ymd_index: time index for cyclical_ymd
+  // out dates: date in YYYYMMDD format
+  scorpio::register_file(file_name, scorpio::Read);
+  const int nlevs_time = scorpio::get_time_len(file_name);
+  cyclical_ymd_index=-1;
+  for(int itime = 0; itime < nlevs_time; ++itime) {
+    int date;
+    scorpio::read_var(file_name, "date", &date, itime);
+    // std::cout << itime << " date: " << date << "\n";
+    if(date >= cyclical_ymd && cyclical_ymd_index ==-1) {
+      cyclical_ymd_index=itime;
+    }
+    dates.push_back(date);
+  }  // end itime
+  scorpio::release_file(file_name);
+  EKAT_REQUIRE_MSG(cyclical_ymd_index>=0,
+                  "Error! Current model time ("+std::to_string(cyclical_ymd)+") is not within "+
+                  "Tracer time period: ["+std::to_string(dates[0])+", "+
+                  "("+std::to_string(dates[nlevs_time-1])+").\n");
+}
+
 inline Real chlorine_loading_advance(const util::TimeStamp &ts,
                                      std::vector<Real> &values,
                                      std::vector<int> &time_secs) {
@@ -339,21 +400,6 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
 
   const auto layout_3d_mid = tgt_grid->get_3d_scalar_layout(true);
-  // FieldLayout  layout_3d_mid;
-  // if ( has_altitude ) {
-
-  //   auto make_layout = [](const std::vector<int>& extents,
-  //                       const std::vector<std::string>& names)
-  //   {
-  //     std::vector<FieldTag> tags(extents.size(),CMP);
-  //     return FieldLayout(tags,extents,names);
-  //   };
-  //   layout_3d_mid = make_layout({ncols_model, nlevs_data},
-  //                               {"ncol","altitude"});
-  //   // FieldLayout({FieldTag::Column,CMP},{ncols_model,nlevs_data});
-  // } else {
-  //   layout_3d_mid = tgt_grid->get_3d_scalar_layout(true);
-  // }
 
   const auto nondim = ekat::units::Units::nondimensional();
 
@@ -442,7 +488,7 @@ inline void update_tracer_timestate(
     // values
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
-    int next_month = (time_state.current_month + 1) % 12;
+    int next_month = time_state.offset_time_index + (time_state.current_month + 1) % 12;
     update_tracer_data_from_file(scorpio_reader, ts, next_month,
                                  tracer_horiz_interp, data_tracer_end);
   }
@@ -582,6 +628,37 @@ inline void compute_p_src_zonal_files(const std::string &tracer_file_name,
 inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const const_view_2d &p_tgt_c,
                                            const TracerData &input,
+                                           const view_2d output[])
+  {
+  // At this stage, begin/end must have the same horiz dimensions
+  EKAT_REQUIRE(input.ncol_ == output[0].extent(0));
+  const int ncol = input.ncol_;
+  const int levsiz =input.nlev_;
+  const int pver = mam4::nlev;
+
+  const int num_vars = input.nvars_;
+  const auto work = input.work_vert_inter;
+  EKAT_REQUIRE(work[num_vars-1].data() != 0);
+  // vert_interp is serial in col and lev.
+  const auto policy_setup = ESU::get_default_team_policy(num_vars, 1);
+
+  Kokkos::parallel_for(
+      "vert_interp", policy_setup,
+      KOKKOS_LAMBDA(typename LIV::MemberType const &team)
+  {
+       const int ivar = team.league_rank();
+       vert_interp(ncol, levsiz, pver, p_src_c,
+                 p_tgt_c, input.data[ivar],
+                 output[ivar],
+                 // work array
+                 work[ivar]);
+   });
+  }
+
+#if 0
+inline void perform_vertical_interpolation(const view_2d &p_src_c,
+                                           const const_view_2d &p_tgt_c,
+                                           const TracerData &input,
                                            const view_2d output[]) {
   // At this stage, begin/end must have the same horiz dimensions
   EKAT_REQUIRE(input.ncol_ == output[0].extent(0));
@@ -644,7 +721,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
       });
   Kokkos::fence();
 }
-
+#endif
 // rebin is a port from:
 // https://github.com/eagles-project/e3sm_mam4_refactor/blob/ee556e13762e41a82cb70a240c54dc1b1e313621/components/eam/src/chemistry/utils/mo_util.F90#L12
 inline void rebin(int nsrc, int ntrg, const const_view_1d &src_x,
