@@ -17,7 +17,7 @@ set(EXTERNAL_SRC
    ${EAM_COSP_DIR}/external/src/cosp_constants.F90
    ${EAM_COSP_DIR}/external/src/simulator/cosp_cloudsat_interface.F90
    ${EAM_COSP_DIR}/external/src/cosp_config.F90
-   ${EAM_COSP_DIR}/local/cosp.F90
+   ${EAM_COSP_DIR}/external/src/cosp.F90
    ${EAM_COSP_DIR}/external/src/cosp_stats.F90
    ${EAM_COSP_DIR}/external/src/simulator/quickbeam/quickbeam.F90
    ${EAM_COSP_DIR}/external/src/simulator/parasol/parasol.F90
