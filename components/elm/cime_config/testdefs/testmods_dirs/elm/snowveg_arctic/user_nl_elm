@@ -1,0 +1,8 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_42_FLUXNETSITES_simyr1850_c170912.nc'
+! this test has a parameter file with four new parameters defined for NGEE Arctic IM3
+! meant to improve snow-vegetation interactions.
+! bendresist -> varies between 0 and 1, represents how much vegetation bends under snow loading
+! vegshape -> suggested value 1 (parabolic), but 2 also used previously (Liston and Heimstra, 2011)
+! taper -> deadstem height/radius ratio, moved from hardcoded in VegStructUpdateMod to pftvarcon
+! stocking -> individual density on landscape (plants/m2), moved from hardcoded in VegStructUpdateMod to pftvarcon
+paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_ngeea-im3_c240822.nc'
