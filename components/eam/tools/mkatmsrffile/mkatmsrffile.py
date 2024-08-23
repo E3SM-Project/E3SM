@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 #---------------------------------------------------------------------------------------------------
 '''
-This is a replacement for the legacy gen_domain tool created for CESM. 
-Most legacy functionality is reproduced, with the notable exception of 
-the pole point latitude adjustment needed for the CESM FV grid.
+This is a replacement for the legacy mkatmsrffile tool created for CESM. 
+All legacy functionality is reproduced.
 
 Created April, 2024 by Walter Hannah (LLNL) 
 '''
@@ -22,12 +21,14 @@ Here is an example command that can be used to generate one as of NCO version 5.
 #---------------------------------------------------------------------------------------------------
 import datetime, os, numpy as np, xarray as xr, numba, itertools, subprocess as sp
 user, host = os.getenv('USER'), os.getenv('HOST')
-source_code_meta = 'generate_domain_E3SM.py'
+source_code_meta = 'mkatmsrffile.py'
 #---------------------------------------------------------------------------------------------------
 class clr:END,RED,GREEN,MAGENTA,CYAN = '\033[0m','\033[31m','\033[32m','\033[35m','\033[36m'
 #---------------------------------------------------------------------------------------------------
 usage = '''
 python mkatmsrffile.py  --map_file <map_file_path> 
+                        --vegetation_file <vegetation_file>
+                        --soil_water_file <soil_water_file>
                         --dst_grid <atm_grid_name>
                         [--output-root <path>]
                         [--date-stamp <date string>]
@@ -47,7 +48,6 @@ Environment
 The following output file is created:
 
   atmsrf_<dst_grid>_<date_stamp>.nc
-    ????
 
 '''
 from optparse import OptionParser
@@ -71,11 +71,11 @@ parser.add_option('--dst_grid',
 parser.add_option('--output_root',
                   dest='output_root',
                   default='./',
-                  help='Output path for domain files')
+                  help='Output path for atmsrf files')
 parser.add_option('--date-stamp',
                   dest='date_stamp',
                   default=None,
-                  help='Creation date stamp for domain files')
+                  help='Creation date stamp for atmsrf files')
 (opts, args) = parser.parse_args()
 #---------------------------------------------------------------------------------------------------
 def main():
@@ -252,6 +252,15 @@ def main():
   ds_out['soilw']            = xr.DataArray(SOILW           ,dims=['month','ncol'])
   ds_out['lon']              = ds_map.xc_b.rename({'n_b':'ncol'})
   ds_out['lat']              = ds_map.yc_b.rename({'n_b':'ncol'})
+
+  ds.attrs['title']                 = 'E3SM atmosphere surface data'
+  ds.attrs['source_code']           = source_code_meta
+  ds.attrs['hostname']              = str(host)
+  ds.attrs['history']               = f'created by {user}, '+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+  ds.attrs['input_map_file']        = opts.map_file
+  ds.attrs['input_vegetation_file'] = opts.vegetation_file
+  ds.attrs['input_soil_water_file'] = opts.soil_water_file
+
   ds_out.to_netcdf(path=output_file,mode='w')
 
   #-----------------------------------------------------------------------------
