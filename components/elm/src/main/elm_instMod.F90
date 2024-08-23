@@ -145,6 +145,8 @@ contains
     ! initialize biogeochemical variables
     use elm_varcon            , only : c13ratio, c14ratio
     use histFileMod           , only : hist_printflds
+    use elm_varctl            , only : flandusepftdat
+
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
 
@@ -245,7 +247,7 @@ contains
 
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
-       call alm_fates%init(bounds_proc)
+       call alm_fates%init(bounds_proc, flandusepftdat)
     end if
 
     call hist_printflds()
@@ -352,7 +354,6 @@ contains
               snow_depth_col(c) = h2osno_col(c) / bdsno
            endif
        endif
-       snow_depth_col(c)  = h2osno_col(c) / bdsno
     end do
 
    ! Initialize urban constants
