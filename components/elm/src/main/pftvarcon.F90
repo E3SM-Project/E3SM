@@ -1095,11 +1095,13 @@ contains
     call ncd_io('vegshape', vegshape, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) vegshape(:) = 1._r8
    ! check validity
-    do i = 0, mxpft
+    do i = 0, npft-1
       if (bendresist(i) .gt. 1.0_r8 .or. bendresist(i) .le. 0._r8) then
+         write(iulog,*) "bendresist(i) is:", i, bendresist(i), npft
          call endrun(msg="Non-physical selection of bendresist parameter, set between 0 and 1"//errMsg(__FILE__, __LINE__))
       end if
-      if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .le. 0_r8) then
+      if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .le. 0._r8) then
+         write(iulog,*) "vegshape(i) is:", i, vegshape(i), npft
          call endrun(msg="Non-physical selection of vegshape parameter, set between 0 and 2"//errMsg(__FILE__, __LINE__))
       end if
    end do
@@ -1544,7 +1546,7 @@ contains
 
     ! reassign taper values for shrubs - RPF
     if (taper_defaults) then
-      do i = 0, mxpft
+      do i = 0, npft-1
          if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) then
             taper(i) = 10._r8 ! shrubs
          else
