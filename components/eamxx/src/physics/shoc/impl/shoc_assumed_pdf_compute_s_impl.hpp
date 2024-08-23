@@ -45,7 +45,7 @@ void Functions<S,D>::shoc_assumed_pdf_compute_s(
   std_s = ekat::sqrt(ekat::max(0,
                                ekat::square(cthl)*thl2
                                + ekat::square(cqt)*qw2 - 2*cthl*sqrtthl2*cqt*sqrtqw2*r_qwthl));
-  const auto std_s_not_small = std_s > std::sqrt(std::numeric_limits<Scalar>::min()) * 100;
+  const auto std_s_not_small = std_s > std::sqrt(Kokkos::Experimental::norm_min_v<Real>) * 100;
   s = qw1-qs*((1 + beta*qw1)/(1 + beta*qs));
   if (std_s_not_small.any()) {
     C.set(std_s_not_small, sp(0.5)*(1 + ekat::erf(s/(sqrt2*std_s))));
