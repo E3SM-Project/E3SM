@@ -14,7 +14,8 @@ main() {
 
 # Machine and project
 readonly MACHINE=pm-cpu
-# BEFORE RUNNING:  CHANGE this to your project
+# NOTE: The command below will return your default project on SLURM-based systems. 
+# If you are not using SLURM or need a different project, remove the command and set it directly
 readonly PROJECT="$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')"
 
 # Simulation
@@ -53,7 +54,7 @@ readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 # Define type of run
 #  short tests: 'XS_2x5_ndays', 'XS_1x10_ndays', 'S_1x10_ndays',
 #               'M_1x10_ndays', 'M2_1x10_ndays', 'M80_1x10_ndays', 'L_1x10_ndays'
-#               * can replace XS, M, etc with custom-XY with XY being the node count
+#               * can replace XS, M, etc. with custom-XY with XY being the node count
 #  or 'production' for full simulation
 readonly run='XS_2x5_ndays'
 if [ "${run}" != "production" ]; then
