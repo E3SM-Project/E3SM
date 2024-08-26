@@ -1677,7 +1677,7 @@ is the value of that variable from the *previous* time level!
 <!-- ================ -->
 
     <!-- Variables related to the ocean-forcing re-extrapolation -->
-        <var_struct name="extrapOceanData" time_levs="1">
+        <var_struct name="extrapOceanData" time_levs="1" packages="extrapOceanData">
                 <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
                      description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
                 />
