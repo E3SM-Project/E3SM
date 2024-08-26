@@ -53,6 +53,7 @@
       <value compset="_EAM"                    >-phys default</value>
       <value compset="_EAM%CMIP6-1pctCO2"      >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_EAM%CMIP6-4xCO2"        >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
+      <value compset="20TR.*_EAM%CMIP6-.*_"    >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_EAM%CMIP6_"             >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
@@ -125,6 +126,14 @@
       <value compset="1850(?:SOI)?_EAM.*AR5sf"          >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"                 >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-GHG"      >20TR_eam_CMIP6-GHG_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-AER"      >20TR_eam_CMIP6-aer_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-NAT"      >20TR_eam_CMIP6-nat_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-xGHG-xAER">20TR_eam_CMIP6-xGHG-xaer_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-OZONE"    >20TR_eam_CMIP6-ozone_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-LULC"     >20TR_eam_CMIP6-lulc_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-VOLC"     >20TR_eam_CMIP6-volc_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
