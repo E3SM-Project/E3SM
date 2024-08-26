@@ -154,7 +154,6 @@ contains
          enddo
 
          ! Start horizontal floodfill to define locations of n-extra cells
-         seedOceanMaskHorizInit(:) = seedOceanMaskHoriz(:) !HH: benchmark/debug purpose
          seedOceanMaskHorizOld(:) = seedOceanMaskHoriz(:)
          ! go through the loop to get nCells extra into grounded ice
          do iter = 1, nCellsExtra
@@ -170,6 +169,9 @@ contains
             enddo
             seedOceanMaskHorizOld(:) = seedOceanMaskHoriz(:)
             ! Update halos
+            ! Note: halo updates could be skipped for a number of iterations equal to the
+            ! number of halo rows as a possible performance improvement in the future.
+            ! (And the loop above would need to be changed to from nCellsSolve to nCells)
             call mpas_timer_start("halo updates")
             call mpas_dmpar_field_halo_exch(domain, 'growOceanMaskHoriz')
             call mpas_dmpar_field_halo_exch(domain, 'seedOceanMaskHoriz')
@@ -183,7 +185,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             do iLayer = 1, nISMIP6OceanLayers
                layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
@@ -194,12 +196,6 @@ contains
                endif
             enddo
          enddo
-         call mpas_log_write('==HH==: updating halos for the avail/valid ocean masks')
-         ! Update halos
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'availOceanMask')
-         call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
-         call mpas_timer_stop("halo updates")
 
          ! save the initial validOceanMask
          validOceanMaskOrig(:,:) = validOceanMask(:,:)
@@ -223,6 +219,13 @@ contains
          do while (newMaskCountGlobal > 0)
             newMaskCountGlobal = 0
             GlobalLoopCount = GlobalLoopCount + 1
+            if (GlobalLoopCount > 20) then
+               ! There will only be an additional time through this loop for each sill behind a previous sill
+               ! so it should not need to alternate very many times
+               call mpas_log_write("Ocean extrapolation has alternated between horizontal and vertical " // &
+                       "extrapolation more than $i times.  Aborting", MPAS_LOG_ERR, intArgs=(/GlobalLoopCount/))
+               err = ior(err, 1)
+            endif
             ! call the horizontal extrapolation routine
             call mpas_timer_start("horizontal scheme")
             call horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, TFocean, err_tmp)
@@ -233,13 +236,15 @@ contains
             call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop("vertical scheme")
+
+            if (err > 0) then
+               call mpas_log_write("Ocean extraolation main iteration loop has encountered an error", MPAS_LOG_ERR)
+               return
+            endif
          enddo
 
          ! Reassign extrapolated TF back to primary TF field
          ismip6shelfMelt_3dThermalForcing(:,:) = TFocean(:,:)
-      else
-         ! do nothing
-         call mpas_log_write('ocean data will NOT be extrapolated into the MALI ice draft')
       endif
    !--------------------------------------------------------------------
 
@@ -329,7 +334,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(extrapOceanDataPool, 'TFoceanOld', TFoceanOld)
 
-      !TFoceanOld(:,:) = 1.0 !HH: for now, have the ocean TF field as the field of ones to make it easy to verify the horizonal/vertical averaging.
+      !TFoceanOld(:,:) = 1.0 ! for debugging, set TF to ones to make it easy to verify the horizonal/vertical averaging
       ! perform horizontal extrapolation until the validOceanMask is unchanged
       allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
       validOceanMaskOld(:,:) = validOceanMask(:,:)
@@ -352,7 +357,7 @@ contains
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
-                        if ( TFoceanOld(iLayer,jCell) > 1.0e6) then
+                        if ( TFoceanOld(iLayer,jCell) > 1.0e6_RKIND) then
                            ! raise error if an invalid ocean data value is used
                            call mpas_log_write("ocean data value used for extrapolation is invalid", &
                                 MPAS_LOG_ERR)
@@ -366,7 +371,7 @@ contains
                   enddo
                   if ( validOceanMaskOld(iLayer,iCell) == 0 .and. nValidNeighb > 0 ) then
                      ! if current cell is not valid, set its weight to zero
-                     weightCellLocal = 0
+                     weightCellLocal = 0.0_RKIND
                      validOceanMask(iLayer,iCell) = 1
                      newValidCount = 1
                   else
@@ -377,9 +382,9 @@ contains
                      TFocean(iLayer,iCell) = TFoceanOld(iLayer,iCell)
                   else
                      TFocean(iLayer,iCell) = ( weightCellLocal * TFoceanOld(iLayer,iCell) * areaCell(iCell) + &
-                                              & ((1 - weightCellLocal) * (TFsum / nValidNeighb)) ) / &
+                                              & ((1.0_RKIND - weightCellLocal) * (TFsum / nValidNeighb)) ) / &
                                               & ( weightCellLocal * areaCell(iCell) + &
-                                              & (1 - weightCellLocal) * (areaSum / nValidNeighb) )
+                                              & (1.0_RKIND - weightCellLocal) * (areaSum / nValidNeighb) )
                   endif
                   ! Accumulate cells added locally until we do the next global reduce
                   newMaskCountLocalAccum = newMaskCountLocalAccum + newValidCount
@@ -482,7 +487,7 @@ contains
          do iLayer = 2, nISMIP6OceanLayers
             if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMask(iLayer,iCell) == 0) ) then
               if ( validOceanMask(iLayer-1,iCell) == 1 ) then
-                 if ( TFocean(iLayer-1,iCell) > 1.0e6) then
+                 if (TFocean(iLayer-1,iCell) > 1.0e6_RKIND) then
                     ! raise error if an invalid ocean data value is used
                     call mpas_log_write("ocean data value used for extrapolation is invalid", &
                          MPAS_LOG_ERR)
