@@ -218,8 +218,8 @@ endif()
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
 
-option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" TRUE)
-option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" TRUE)
 if (SCREAM_RRTMGP_ENABLE_YAKL)
   add_definitions("-DRRTMGP_ENABLE_YAKL")
 endif()
