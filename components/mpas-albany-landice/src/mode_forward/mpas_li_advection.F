@@ -193,6 +193,8 @@ module li_advection
 
       type (field1DInteger), pointer :: &
            cellMaskTemporaryField, & ! scratch field containing old values of cellMask
+           edgeMaskTemporaryField, &
+           vertexMaskTemporaryField, &
            thermalCellMaskField
 
       ! Allocatable arrays need for flux-corrected transport advection
@@ -201,6 +203,7 @@ module li_advection
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
            edgeMask,              & ! integer bitmask for edges
+           vertexMask,            &
            thermalCellMask
 
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -290,6 +293,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'dynamicThickening', dynamicThickening)
       call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
 
@@ -356,6 +360,12 @@ module li_advection
       call mpas_pool_get_field(geometryPool, 'cellMaskTemporary', cellMaskTemporaryField)
       call mpas_allocate_scratch_field(cellMaskTemporaryField, .true.)
 
+      call mpas_pool_get_field(geometryPool, 'edgeMaskTemporary', edgeMaskTemporaryField)
+      call mpas_allocate_scratch_field(edgeMaskTemporaryField, .true.)
+
+      call mpas_pool_get_field(geometryPool, 'vertexMaskTemporary', vertexMaskTemporaryField)
+      call mpas_allocate_scratch_field(vertexMaskTemporaryField, .true.)
+
       call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
       call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
       thermalCellMask => thermalCellMaskField % array
@@ -366,12 +376,14 @@ module li_advection
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
-      ! update masks
-      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-      err = ior(err, err_tmp)
-
-      ! save old copycellMask for determining cells changing from grounded to floating and vice versa
+      ! Save copies of masks because we need to preserve mask
+      ! states prior to advection for accurate time integration.
+      ! A mask update is necessary to calculate grounding line flux,
+      ! after which we will reset the masks to their previous states.
       cellMaskTemporaryField % array(:) = cellMask(:)
+      edgeMaskTemporaryField % array(:) = edgeMask(:)
+      vertexMaskTemporaryField % array(:) = vertexMask(:)
+
       layerThicknessEdgeFlux(:,:) = 0.0_RKIND
 
       !-----------------------------------------------------------------
@@ -540,10 +552,10 @@ module li_advection
          dynamicThickening = (sum(layerThickness, 1) - thickness) / dt * scyr  ! units of m/yr
 
 
-         ! Update the thickness and cellMask before applying the mass balance.
-         ! The update is needed because the SMB and BMB depend on whether ice is present.
+         ! Update the thickness before applying the mass balance, but
+         ! do not update masks because mass balance acts on geometry
+         ! before advection took place.
          thickness = sum(layerThickness, 1)
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
 
 
@@ -627,6 +639,9 @@ module li_advection
             enddo
          endif
 
+         ! We need an updated set of masks to calculate fluxAcrossGroundingLine,
+         ! but we will reset this to the previous state below for accuracy of the
+         ! time integration scheme.
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
@@ -667,12 +682,17 @@ module li_advection
             endif
          enddo ! edges
 
+         ! Reset masks to state before advection and mass balance for
+         ! accuracy of time integration scheme.
+         cellMask(:) = cellMaskTemporaryField % array(:)
+         edgeMask(:) = edgeMaskTemporaryField % array(:)
+         vertexMask(:) = vertexMaskTemporaryField % array(:)
 
          ! Remap tracers to the standard vertical sigma coordinate
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
 
-         call vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
+         call vertical_remap(thickness, meshPool, layerThickness, advectedTracers, err_tmp)
          err = ior(err, err_tmp)
 
          if (config_print_thickness_advection_info) then
@@ -727,6 +747,8 @@ module li_advection
       call mpas_deallocate_scratch_field(basalTracersField, .true.)
       call mpas_deallocate_scratch_field(surfaceTracersField, .true.)
       call mpas_deallocate_scratch_field(cellMaskTemporaryField, .true.)
+      call mpas_deallocate_scratch_field(edgeMaskTemporaryField, .true.)
+      call mpas_deallocate_scratch_field(vertexMaskTemporaryField, .true.)
       call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
 
       ! === error check
@@ -1939,7 +1961,7 @@ module li_advection
 !>  OpenMP over either blocks or cells.
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, meshPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -1952,9 +1974,6 @@ module li_advection
 
       real(kind=RKIND), dimension(:), intent(in) :: &
          thickness         !< Input: ice thickness
-
-      integer, dimension(:), intent(in) :: &
-         cellMask          !< Input: mask for cells (needed for determining presence/absence of ice)
 
       !-----------------------------------------------------------------
       !
