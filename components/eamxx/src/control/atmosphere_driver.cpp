@@ -1602,7 +1602,7 @@ void AtmosphereDriver::run (const int dt) {
   //       very expensive operation, so it's not worth the effort of the
   //       nano-opt of removing the call for the 1st timestep.
   reset_accumulated_fields();
- 
+
   // Tell the output managers that we're starting a timestep. This is usually
   // a no-op, but some diags *may* require to do something. E.g., a diag that
   // computes tendency of an arbitrary quantity may want to store a copy of
