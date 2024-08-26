@@ -25,12 +25,21 @@ tendency terms, which each store constant mesh information as private member var
 
 ## Creation of non-default tendencies
 
-A non-default tendency group can be created from a string `Name`, horizontal mesh `Mesh`, number of
+A non-default tendency group can be created with or without custom tendencies.
+Without custom tendencies, it is created from a string `Name`, horizontal mesh `Mesh`, number of
 vertical levels `NVertLevels`, and a configuration `Options`:
 ```c++
 OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, Options);
 ```
 For convenience, this returns a pointer to the newly created instance.
+To allow the user to provide custom tendencies, the `create` function can take two additional arguments
+`CustomThicknessTend` and `CustomVelocityTend`
+```c++
+OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, Options, CustomThicknessTend, CustomVelocityTend);
+```
+The two custom tendency arguments need to be callable objects that take a Kokkos array `Tend`, ocean state `State`,
+auxiliary state `AuxState`, two integers: `ThickTimeLevel` and `VelTimeLevel`, and time instant `Time`.
+
 Given its name, a pointer to a named tendency group
 can be obtained at any time by calling the static `get` method:
 ```c++
@@ -40,7 +49,7 @@ OMEGA::Tendencies* NewTendencies = OMEGA::Tendencies::get(Name);
 ## Computation of tendencies
 To compute all tendencies for both layer thickness and normal velocity equations,
 given ocean state, `State`, a group of auxiliary variables, `AuxState`, thickness
-time level 'ThickTimeLevel', velocity time level `VelTimeLevel`, and time 'Time' do:
+time level 'ThickTimeLevel', velocity time level `VelTimeLevel`, and time instant `Time` do:
 ```c++
 Tendencies.computeAllTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
 ```
