@@ -25,11 +25,16 @@ endif()
 string(APPEND CMAKE_Fortran_FORMAT_FIXED_FLAG " -ffixed-form")
 string(APPEND CMAKE_Fortran_FORMAT_FREE_FLAG " -ffree-form")
 
-string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
-
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
 string(APPEND CMAKE_CXX_FLAGS " -I$ENV{MPICH_DIR}/include")
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
+
+if (compile_threaded)
+  string(APPEND CMAKE_C_FLAGS " -fopenmp")
+  string(APPEND CMAKE_Fortran_FLAGS " -fopenmp")
+  string(APPEND CMAKE_CXX_FLAGS " -fopenmp=libgomp")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
+endif()
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off")
 

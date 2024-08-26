@@ -1176,8 +1176,8 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
 
-    <environment_variables compiler="crayclang-scream" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+    <environment_variables compiler="craygnu-hipcc" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /sw/frontier/spack-envs/cpe24.07-gpu/opt/gcc-13.2/adios2-2.10.0-cyq7kvlfq5nixmw5unih2gjdkhvitava; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
