@@ -1979,6 +1979,16 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="ne120pg2_r025_IcoswISC30E3r5_gis1to10r02" compset="_MALI">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">mpas.gis1to10kmR2</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="ne120pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">r0125</grid>
