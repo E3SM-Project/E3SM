@@ -493,8 +493,8 @@ contains
                          MPAS_LOG_ERR)
                     err = ior(err,1)
                  else
-                    TFocean(iLayer,iCell) = TFocean(iLayer-1,iCell) + &
-                       (ismip6shelfMelt_zOcean(iLayer) - ismip6shelfMelt_zOcean(iLayer-1)) * &
+                    TFocean(iLayer,iCell) = TFocean(iLayer-1,iCell) - &
+                       (ismip6shelfMelt_zOcean(iLayer-1) - ismip6shelfMelt_zOcean(iLayer)) * &
                        oceanFreezingTempDepthDependence
                  endif
                  validOceanMask(iLayer,iCell) = 1
