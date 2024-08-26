@@ -138,7 +138,7 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'TFocean', TFocean)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
 
-         ! create a 2D mask based on the open ocean + floating ice +  grounded ice mask and n-extra cells into the grounded ice
+         ! create a 2D mask based on the open ocean + floating ice + grounded ice mask to be used for defining the location of the n-extra cells into the grounded ice
          allocate(seedOceanMaskHorizOld(nCells+1))
          seedOceanMaskHorizOld(:) = 0
          seedOceanMaskHoriz(:) = 0
@@ -153,7 +153,7 @@ contains
             endif
          enddo
 
-         ! Start horizontal floodfill
+         ! Start horizontal floodfill to define locations of n-extra cells
          seedOceanMaskHorizInit(:) = seedOceanMaskHoriz(:) !HH: benchmark/debug purpose
          seedOceanMaskHorizOld(:) = seedOceanMaskHoriz(:)
          ! go through the loop to get nCells extra into grounded ice

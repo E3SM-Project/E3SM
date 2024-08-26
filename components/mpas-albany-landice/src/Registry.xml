@@ -1394,7 +1394,7 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
                      packages="ismip6ShelfMelt"
-                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, ismip6shelfMelt_zBndsOcean to model.  Defaults to 0 so that missing input value will zero melt field."
+                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
                 />
                 <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
                      packages="ismip6ShelfMelt"
