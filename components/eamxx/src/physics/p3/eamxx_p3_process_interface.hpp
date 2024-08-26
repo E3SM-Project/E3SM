@@ -245,7 +245,6 @@ public:
         diag_eff_radius_qr(icol,ipack) *= 1e6;
       } // for ipack
 
-    //Kokkos::printf("OG postamble 4\n");
       // Microphysics can be subcycled together during a single physics timestep,
       // therefore we must accumulate these fluxes
       precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
@@ -264,7 +263,6 @@ public:
         heat_flux(icol)  = 0.0;
       }
     } // operator()
-
     // Local variables
     int m_ncol, m_npack;
     double m_dt;
