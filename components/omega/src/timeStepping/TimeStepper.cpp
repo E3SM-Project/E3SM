@@ -153,22 +153,4 @@ void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
    updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
 }
 
-// LayerThickness(TimeLevel) += Coeff * LayerThicknessTend
-void TimeStepper::updateThicknessByTend(OceanState *State, int TimeLevel,
-                                        Real Coeff) const {
-   updateThicknessByTend(State, TimeLevel, State, TimeLevel, Coeff);
-}
-
-// NormalVelocity(TimeLevel) += Coeff * NormalVelocityTend
-void TimeStepper::updateVelocityByTend(OceanState *State, int TimeLevel,
-                                       Real Coeff) const {
-   updateVelocityByTend(State, TimeLevel, State, TimeLevel, Coeff);
-}
-
-// State(TimeLevel) += Coeff * Tend
-void TimeStepper::updateStateByTend(OceanState *State, int TimeLevel,
-                                    Real Coeff) const {
-   updateStateByTend(State, TimeLevel, State, TimeLevel, Coeff);
-}
-
 } // namespace OMEGA

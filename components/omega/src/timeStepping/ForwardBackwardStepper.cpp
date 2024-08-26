@@ -19,7 +19,7 @@ void ForwardBackwardStepper::doStep(OceanState *State, Real Time,
    const int NextLevel = 1;
 
    // R_h^{n} = RHS_h(u^{n}, h^{n}, t^{n})
-   Tend->computeThicknessTendencies(State, AuxState, CurLevel, Time);
+   Tend->computeThicknessTendencies(State, AuxState, CurLevel, CurLevel, Time);
 
    // h^{n+1} = h^{n} + R_h^{n}
    updateThicknessByTend(State, NextLevel, State, CurLevel, TimeStep);

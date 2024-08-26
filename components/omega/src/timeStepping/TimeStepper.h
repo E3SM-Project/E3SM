@@ -87,17 +87,6 @@ class TimeStepper {
                              OceanState *State2, int TimeLevel2,
                              Real Coeff) const;
 
-   // State(TimeLevel) += Coeff * Tend
-   void updateStateByTend(OceanState *State, int TimeLevel, Real Coeff) const;
-
-   // LayerThickness(TimeLevel) += Coeff * LayerThicknessTend
-   void updateThicknessByTend(OceanState *State, int TimeLevel,
-                              Real Coeff) const;
-
-   // NormalVelocity(TimeLevel) += Coeff * NormalVelocityTend
-   void updateVelocityByTend(OceanState *State, int TimeLevel,
-                             Real Coeff) const;
-
  protected:
    // Name of time stepper
    std::string Name;

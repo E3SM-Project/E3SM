@@ -300,16 +300,6 @@ class Tendencies {
                              const AuxiliaryState *AuxState, int ThickTimeLevel,
                              int VelTimeLevel, Real Time);
 
-   void computeThicknessTendencies(const OceanState *State,
-                                   const AuxiliaryState *AuxState,
-                                   int TimeLevel, Real Time);
-   void computeVelocityTendencies(const OceanState *State,
-                                  const AuxiliaryState *AuxState, int TimeLevel,
-                                  Real Time);
-   void computeAllTendencies(const OceanState *State,
-                             const AuxiliaryState *AuxState, int TimeLevel,
-                             Real Time);
-
    void computeThicknessTendenciesOnly(const OceanState *State,
                                        const AuxiliaryState *AuxState,
                                        int ThickTimeLevel, int VelTimeLevel,

@@ -261,15 +261,6 @@ void Tendencies::computeThicknessTendencies(
                                   Time);
 }
 
-void Tendencies::computeThicknessTendencies(
-    const OceanState *State,        ///< [in] State variables
-    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,                  ///< [in] Time level
-    Real Time                       ///< [in] Time
-) {
-   computeThicknessTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
-}
-
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
@@ -280,15 +271,6 @@ void Tendencies::computeVelocityTendencies(
    AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                  Time);
-}
-
-void Tendencies::computeVelocityTendencies(
-    const OceanState *State,        ///< [in] State variables
-    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,                  ///< [in] Time level
-    Real Time                       ///< [in] Time
-) {
-   computeVelocityTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
 }
 
 //------------------------------------------------------------------------------
@@ -308,15 +290,6 @@ void Tendencies::computeAllTendencies(
                                  Time);
 
 } // end all tendency compute
-
-void Tendencies::computeAllTendencies(
-    const OceanState *State,        ///< [in] State variables
-    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
-    int TimeLevel,                  ///< [in] Time level
-    Real Time                       ///< [in] Time
-) {
-   computeAllTendencies(State, AuxState, TimeLevel, TimeLevel, Time);
-}
 
 // TODO: Implement Config options for all constructors
 ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh,

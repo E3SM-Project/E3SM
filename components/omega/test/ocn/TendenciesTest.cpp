@@ -177,9 +177,11 @@ int testTendencies() {
    // compute tendencies
    const auto *State    = OceanState::getDefault();
    const auto *AuxState = AuxiliaryState::getDefault();
-   int TimeLevel        = 0;
+   int ThickTimeLevel   = 0;
+   int VelTimeLevel     = 0;
    Real Time            = 0;
-   DefTendencies->computeAllTendencies(State, AuxState, TimeLevel, Time);
+   DefTendencies->computeAllTendencies(State, AuxState, ThickTimeLevel,
+                                       VelTimeLevel, Time);
 
    // check that everything got computed correctly
    int NCellsOwned    = Mesh->NCellsOwned;
