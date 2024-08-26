@@ -1386,6 +1386,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
+      real (kind=RKIND), pointer :: invalid_value_TF    ! CAS 8/20/2024
       integer, pointer :: nCells, nISMIP6OceanLayers
       integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth
@@ -1402,7 +1403,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_deltaT
       real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
+      integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell, indexToCellID ! CAS 8/22/2024
       real (kind=RKIND), pointer :: aSubglacial ! param A
       real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
       real (kind=RKIND), pointer :: B ! param B
@@ -1425,6 +1426,7 @@ module li_iceshelf_melt
       ! Get sea level, bedTopography, ice density
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF) ! CAS 8/20/2024 
 
       ! Get melt parameters
       call mpas_pool_get_config(liConfigs, 'config_beta_ocean_thermal_forcing', betaTF)
@@ -1452,6 +1454,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID) ! CAS 8/22/2024
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
@@ -1461,6 +1464,8 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'dtFaceMeltingCFLratio', dtFaceMeltingCFLratio)
 
          if ( config_use_3d_thermal_forcing_for_face_melt ) then
+            call mpas_log_write("config_use_3d_thermal_forcing_for_face_melt is .true.")
+
             call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
@@ -1477,14 +1482,30 @@ module li_iceshelf_melt
                      enddo
                      ! If bed is shallower than first layer, use TF from the first layer.
                      ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
-                     if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
-                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                     !if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
+                     !   TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
                      ! For all other bed depths, interpolate linearly between layers above and below bed depth.
+                     !else
+                     !   TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
+                     !                      (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
+                     !                      (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
+                     !endif
+
+                     if ( kk == 1 ) then
+                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
                      else
-                        TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
-                                           (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
-                                           (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
+                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
                      endif
+                     
+                     ! check if any invalid TFocean value is used for calculating face melting speed
+                     if ( (TFocean(iCell) == invalid_value_TF) .or. (TFocean(iCell) > 1.0e1) ) then
+                        call mpas_log_write("grounded_face_melt_ismip6: Invalid value for TFocean. " // &
+                             "TFocean(iCell)=$r zOcean(kk)=$r bedTopography(iCell)=$r kk=$i indexToCellID=$i", MPAS_LOG_ERR, &
+                             intArgs=(/kk, indexToCellID(iCell)/), &
+                             realArgs=(/TFocean(iCell), zOcean(kk), bedTopography(iCell)/) )
+                        err = ior(err, 1)
+                     endif
+
                endif
             end do
          endif
