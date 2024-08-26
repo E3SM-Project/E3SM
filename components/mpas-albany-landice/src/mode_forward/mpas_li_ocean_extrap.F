@@ -88,7 +88,6 @@ contains
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
       real (kind=RKIND) :: layerTop
       real (kind=RKIND), dimension(:,:), pointer :: TFocean, TFoceanOld
-      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: origOceanMaskHoriz
@@ -181,7 +180,6 @@ contains
 
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
-         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
@@ -303,7 +301,6 @@ contains
       real (kind=RKIND) :: layerTop, TFsum, areaSum, weightCellLocal
       real (kind=RKIND), pointer :: weightCell
       integer, dimension(:,:), allocatable :: validOceanMaskOld
-      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
       real (kind=RKIND), dimension(:,:), pointer :: TFoceanOld
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography, areaCell
@@ -431,6 +428,8 @@ contains
 
    subroutine vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, TFocean, err)
 
+      use li_constants, only: oceanFreezingTempDepthDependence
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -479,6 +478,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
 
       ! initialize the local loop and count for validOceanMask
       newMaskCountGlobal = 0
@@ -493,7 +493,9 @@ contains
                          MPAS_LOG_ERR)
                     err = ior(err,1)
                  else
-                    TFocean(iLayer,iCell) = (TFocean(iLayer-1,iCell)) + (60 * 0.0008)
+                    TFocean(iLayer,iCell) = TFocean(iLayer-1,iCell) + &
+                       (ismip6shelfMelt_zOcean(iLayer) - ismip6shelfMelt_zOcean(iLayer-1)) * &
+                       oceanFreezingTempDepthDependence
                  endif
                  validOceanMask(iLayer,iCell) = 1
                  newMaskCountLocalAccum = newMaskCountLocalAccum + 1
