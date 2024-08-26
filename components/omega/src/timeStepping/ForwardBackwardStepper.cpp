@@ -12,8 +12,7 @@ ForwardBackwardStepper::ForwardBackwardStepper(const std::string &Name,
                   MeshHalo) {}
 
 // Advance the state by one step of the forward-backward scheme
-void ForwardBackwardStepper::doStep(OceanState *State, Real Time,
-                                    Real TimeStep) const {
+void ForwardBackwardStepper::doStep(OceanState *State, Real Time) const {
 
    const int CurLevel  = 0;
    const int NextLevel = 1;

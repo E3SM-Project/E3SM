@@ -20,7 +20,7 @@ class RungeKutta4Stepper : public TimeStepper {
                       AuxiliaryState *AuxState, HorzMesh *Mesh, Halo *MeshHalo);
 
    // Advance the state by one step of the fourth-order Runge Kutta scheme
-   void doStep(OceanState *State, Real Time, Real TimeStep) const override;
+   void doStep(OceanState *State, Real Time) const override;
 
  private:
    // Number of stages

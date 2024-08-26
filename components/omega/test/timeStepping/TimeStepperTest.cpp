@@ -171,16 +171,17 @@ int initTimeStepperTest(const std::string &mesh) {
    return Err;
 }
 
-void timeLoop(Real TimeEnd, Real TimeStep) {
+void timeLoop(Real TimeEnd) {
    const auto *Stepper = TimeStepper::get("TestTimeStepper");
    auto *State         = OceanState::get("TestState");
 
+   Real TimeStep    = Stepper->getTimeStep();
    const int NSteps = std::ceil(TimeEnd / TimeStep);
    TimeStep         = TimeEnd / NSteps;
 
    for (int Step = 0; Step < NSteps; ++Step) {
       const Real Time = Step * TimeStep;
-      Stepper->doStep(State, Time, TimeStep);
+      Stepper->doStep(State, Time);
    }
 }
 
@@ -228,9 +229,11 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    Real TimeStep = BaseTimeStep;
    for (int RefLevel = 0; RefLevel < NRefinements; ++RefLevel) {
+      TestTimeStepper->setTimeStep(TimeStep);
+
       Err += initState();
 
-      timeLoop(TimeEnd, TimeStep);
+      timeLoop(TimeEnd);
 
       Errors[RefLevel] = computeErrors();
 

@@ -39,7 +39,7 @@ class TimeStepper {
 
    // The main method that every time stepper needs to define. Advances state by
    // by one time step, from Time to Time + TimeStep
-   virtual void doStep(OceanState *State, Real Time, Real TimeStep) const = 0;
+   virtual void doStep(OceanState *State, Real Time) const = 0;
 
    /// Initialize the default time stepper
    static int init();
@@ -68,6 +68,12 @@ class TimeStepper {
    /// Get type (enum) of time stepper from instance
    TimeStepperType getType() const;
 
+   /// Get time step
+   Real getTimeStep() const;
+
+   /// Set time step
+   void setTimeStep(Real TimeStepIn);
+
    // these should be protected, they are public only because of CUDA
    // limitations
 
@@ -93,6 +99,9 @@ class TimeStepper {
 
    // Type of time stepper
    TimeStepperType Type;
+
+   // Time step
+   Real TimeStep;
 
    // Pointers to objects needed by every time stepper
    Tendencies *Tend;

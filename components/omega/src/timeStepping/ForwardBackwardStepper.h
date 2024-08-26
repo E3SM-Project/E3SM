@@ -21,7 +21,7 @@ class ForwardBackwardStepper : public TimeStepper {
                           Halo *MeshHalo);
 
    // Advance the state by one step of the forward-backward scheme
-   void doStep(OceanState *State, Real Time, Real TimeStep) const override;
+   void doStep(OceanState *State, Real Time) const override;
 };
 
 } // namespace OMEGA

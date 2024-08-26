@@ -32,8 +32,7 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
 }
 
 // Advance the state by one step of the fourth-order Runge Kutta scheme
-void RungeKutta4Stepper::doStep(OceanState *State, Real Time,
-                                Real TimeStep) const {
+void RungeKutta4Stepper::doStep(OceanState *State, Real Time) const {
 
    const int CurLevel  = 0;
    const int NextLevel = 1;

@@ -101,6 +101,13 @@ void TimeStepper::erase(const std::string &Name) {
 // Remove all time steppers
 void TimeStepper::clear() { AllTimeSteppers.clear(); }
 
+// Get time step
+Real TimeStepper::getTimeStep() const { return TimeStep; }
+
+//
+// Set time step
+void TimeStepper::setTimeStep(Real TimeStepIn) { TimeStep = TimeStepIn; }
+
 // Get time stepper name
 std::string TimeStepper::getName() const { return Name; }
 

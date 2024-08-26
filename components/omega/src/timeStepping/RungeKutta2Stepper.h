@@ -20,7 +20,7 @@ class RungeKutta2Stepper : public TimeStepper {
                       AuxiliaryState *AuxState, HorzMesh *Mesh, Halo *MeshHalo);
 
    // Advance the state by one step of the midpoint Runge Kutta scheme
-   void doStep(OceanState *State, Real Time, Real TimeStep) const override;
+   void doStep(OceanState *State, Real Time) const override;
 };
 
 } // namespace OMEGA
