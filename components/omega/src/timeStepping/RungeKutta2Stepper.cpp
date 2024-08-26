@@ -12,7 +12,7 @@ RungeKutta2Stepper::RungeKutta2Stepper(const std::string &Name,
                   MeshHalo) {}
 
 // Advance the state by one step of the midpoint Runge Kutta scheme
-void RungeKutta2Stepper::doStep(OceanState *State, Real Time) const {
+void RungeKutta2Stepper::doStep(OceanState *State, TimeInstant Time) const {
 
    const int CurLevel  = 0;
    const int NextLevel = 1;

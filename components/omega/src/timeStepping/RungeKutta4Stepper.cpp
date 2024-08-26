@@ -32,13 +32,13 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
 }
 
 // Advance the state by one step of the fourth-order Runge Kutta scheme
-void RungeKutta4Stepper::doStep(OceanState *State, Real Time) const {
+void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
    for (int Stage = 0; Stage < NStages; ++Stage) {
-      const Real StageTime = Time + RKC[Stage] * TimeStep;
+      const TimeInstant StageTime = Time + RKC[Stage] * TimeStep;
       // first stage does:
       // R^{(0)} = RHS(q^{n}, t^{n})
       // q^{n+1} = q^{n} + dt * RKB[0] * dt * R^{(0)}

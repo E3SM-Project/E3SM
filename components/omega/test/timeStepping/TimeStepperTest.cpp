@@ -13,6 +13,7 @@
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "TendencyTerms.h"
+#include "TimeMgr.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -27,7 +28,7 @@ constexpr int NVertLevels = 1;
 struct DecayThicknessTendency {
    void operator()(Array2DReal ThicknessTend, const OceanState *State,
                    const AuxiliaryState *AuxState, int ThickTimeLevel,
-                   int VelTimeLevel, Real Time) const {}
+                   int VelTimeLevel, TimeInstant Time) const {}
 };
 
 struct DecayVelocityTendency {
@@ -37,7 +38,7 @@ struct DecayVelocityTendency {
 
    void operator()(Array2DReal NormalVelTend, const OceanState *State,
                    const AuxiliaryState *AuxState, int ThickTimeLevel,
-                   int VelTimeLevel, Real Time) const {
+                   int VelTimeLevel, TimeInstant Time) const {
 
       auto *Mesh                = HorzMesh::getDefault();
       auto NVertLevels          = NormalVelTend.extent_int(1);
@@ -171,16 +172,30 @@ int initTimeStepperTest(const std::string &mesh) {
    return Err;
 }
 
-void timeLoop(Real TimeEnd) {
-   const auto *Stepper = TimeStepper::get("TestTimeStepper");
-   auto *State         = OceanState::get("TestState");
+// slightly adjust time step so that it evenly divides TimeEnd and return number
+// of steps
+int adjustTimeStep(TimeStepper *Stepper, Real TimeEnd) {
+   TimeInterval TimeStep = Stepper->getTimeStep();
+   Real TimeStepSeconds;
+   TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
 
-   Real TimeStep    = Stepper->getTimeStep();
-   const int NSteps = std::ceil(TimeEnd / TimeStep);
-   TimeStep         = TimeEnd / NSteps;
+   const int NSteps = std::ceil(TimeEnd / TimeStepSeconds);
 
+   TimeStepSeconds = TimeEnd / NSteps;
+   TimeStep.set(TimeStepSeconds, TimeUnits::Seconds);
+   Stepper->setTimeStep(TimeInterval(TimeStepSeconds, TimeUnits::Seconds));
+
+   return NSteps;
+}
+
+void timeLoop(TimeInstant TimeStart, Real TimeEnd) {
+   auto *Stepper = TimeStepper::get("TestTimeStepper");
+   auto *State   = OceanState::get("TestState");
+
+   const int NSteps            = adjustTimeStep(Stepper, TimeEnd);
+   const TimeInterval TimeStep = Stepper->getTimeStep();
    for (int Step = 0; Step < NSteps; ++Step) {
-      const Real Time = Step * TimeStep;
+      const TimeInstant Time = TimeStart + Step * TimeStep;
       Stepper->doStep(State, Time);
    }
 }
@@ -208,6 +223,8 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    auto *TestAuxState   = AuxiliaryState::get("TestAuxState");
    auto *TestTendencies = Tendencies::get("TestTendencies");
 
+   Calendar TestCalendar("TestCalendar", CalendarNoCalendar);
+
    auto *TestTimeStepper = TimeStepper::create(
        "TestTimeStepper", Type, TestTendencies, TestAuxState, DefMesh, DefHalo);
 
@@ -219,25 +236,29 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    int NRefinements = 2;
    std::vector<ErrorMeasures> Errors(NRefinements);
 
-   const Real TimeEnd      = 2;
-   const Real BaseTimeStep = 0.2;
+   const TimeInstant TimeStart(&TestCalendar, 0, 0, 0, 0, 0, 0);
+   const Real TimeEnd = 1;
+
+   const Real BaseTimeStepSeconds = 0.2;
 
    const static bool CallOnlyOnce = [=]() {
       createExactSolution(TimeEnd);
       return true;
    }();
 
-   Real TimeStep = BaseTimeStep;
+   Real TimeStepSeconds = BaseTimeStepSeconds;
+
    for (int RefLevel = 0; RefLevel < NRefinements; ++RefLevel) {
-      TestTimeStepper->setTimeStep(TimeStep);
+      TestTimeStepper->setTimeStep(
+          TimeInterval(TimeStepSeconds, TimeUnits::Seconds));
 
       Err += initState();
 
-      timeLoop(TimeEnd);
+      timeLoop(TimeStart, TimeEnd);
 
       Errors[RefLevel] = computeErrors();
 
-      TimeStep /= 2;
+      TimeStepSeconds /= 2;
    }
 
    std::vector<Real> ConvRates(NRefinements - 1);

@@ -17,6 +17,7 @@
 #include "HorzMesh.h"
 #include "OceanState.h"
 #include "TendencyTerms.h"
+#include "TimeMgr.h"
 
 #include <map>
 #include <memory>
@@ -39,7 +40,7 @@ class TimeStepper {
 
    // The main method that every time stepper needs to define. Advances state by
    // by one time step, from Time to Time + TimeStep
-   virtual void doStep(OceanState *State, Real Time) const = 0;
+   virtual void doStep(OceanState *State, TimeInstant Time) const = 0;
 
    /// Initialize the default time stepper
    static int init();
@@ -69,29 +70,30 @@ class TimeStepper {
    TimeStepperType getType() const;
 
    /// Get time step
-   Real getTimeStep() const;
+   TimeInterval getTimeStep() const;
 
    /// Set time step
-   void setTimeStep(Real TimeStepIn);
+   void setTimeStep(const TimeInterval &TimeStepIn);
 
    // these should be protected, they are public only because of CUDA
    // limitations
 
    // State1(TimeLevel1) = State2(TimeLevel2) + Coeff * Tend
    void updateStateByTend(OceanState *State1, int TimeLevel1,
-                          OceanState *State2, int TimeLevel2, Real Coeff) const;
+                          OceanState *State2, int TimeLevel2,
+                          TimeInterval Coeff) const;
 
    // LayerThickness1(TimeLevel1) = LayerThickness2(TimeLevel2) + Coeff *
    // LayerThicknessTend
    void updateThicknessByTend(OceanState *State1, int TimeLevel1,
                               OceanState *State2, int TimeLevel2,
-                              Real Coeff) const;
+                              TimeInterval Coeff) const;
 
    // NormalVelocity1(TimeLevel1) = NormalVelocity2(TimeLevel2) + Coeff *
    // NormalVelocityTend
    void updateVelocityByTend(OceanState *State1, int TimeLevel1,
                              OceanState *State2, int TimeLevel2,
-                             Real Coeff) const;
+                             TimeInterval Coeff) const;
 
  protected:
    // Name of time stepper
@@ -101,7 +103,7 @@ class TimeStepper {
    TimeStepperType Type;
 
    // Time step
-   Real TimeStep;
+   TimeInterval TimeStep;
 
    // Pointers to objects needed by every time stepper
    Tendencies *Tend;

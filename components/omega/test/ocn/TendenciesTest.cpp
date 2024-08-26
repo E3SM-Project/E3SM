@@ -179,7 +179,7 @@ int testTendencies() {
    const auto *AuxState = AuxiliaryState::getDefault();
    int ThickTimeLevel   = 0;
    int VelTimeLevel     = 0;
-   Real Time            = 0;
+   TimeInstant Time;
    DefTendencies->computeAllTendencies(State, AuxState, ThickTimeLevel,
                                        VelTimeLevel, Time);
 

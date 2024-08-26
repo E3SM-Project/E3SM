@@ -102,11 +102,13 @@ void TimeStepper::erase(const std::string &Name) {
 void TimeStepper::clear() { AllTimeSteppers.clear(); }
 
 // Get time step
-Real TimeStepper::getTimeStep() const { return TimeStep; }
+TimeInterval TimeStepper::getTimeStep() const { return TimeStep; }
 
 //
 // Set time step
-void TimeStepper::setTimeStep(Real TimeStepIn) { TimeStep = TimeStepIn; }
+void TimeStepper::setTimeStep(const TimeInterval &TimeStepIn) {
+   TimeStep = TimeStepIn;
+}
 
 // Get time stepper name
 std::string TimeStepper::getName() const { return Name; }
@@ -118,18 +120,21 @@ TimeStepperType TimeStepper::getType() const { return Type; }
 // LayerThicknessTend
 void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
-                                        Real Coeff) const {
+                                        TimeInterval Coeff) const {
 
    const auto &LayerThick1    = State1->LayerThickness[TimeLevel1];
    const auto &LayerThick2    = State2->LayerThickness[TimeLevel2];
    const auto &LayerThickTend = Tend->LayerThicknessTend;
    const int NVertLevels      = LayerThickTend.extent_int(1);
 
+   Real CoeffSeconds;
+   Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
    parallelFor(
        "updateThickByTend", {Mesh->NCellsAll, NVertLevels},
        KOKKOS_LAMBDA(int ICell, int K) {
           LayerThick1(ICell, K) =
-              LayerThick2(ICell, K) + Coeff * LayerThickTend(ICell, K);
+              LayerThick2(ICell, K) + CoeffSeconds * LayerThickTend(ICell, K);
        });
 }
 
@@ -137,25 +142,28 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
 // NormalVelocityTend
 void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
                                        OceanState *State2, int TimeLevel2,
-                                       Real Coeff) const {
+                                       TimeInterval Coeff) const {
 
    const auto &NormalVel1    = State1->NormalVelocity[TimeLevel1];
    const auto &NormalVel2    = State2->NormalVelocity[TimeLevel2];
    const auto &NormalVelTend = Tend->NormalVelocityTend;
    const int NVertLevels     = NormalVelTend.extent_int(1);
 
+   Real CoeffSeconds;
+   Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
    parallelFor(
        "updateVelByTend", {Mesh->NEdgesAll, NVertLevels},
        KOKKOS_LAMBDA(int IEdge, int K) {
           NormalVel1(IEdge, K) =
-              NormalVel2(IEdge, K) + Coeff * NormalVelTend(IEdge, K);
+              NormalVel2(IEdge, K) + CoeffSeconds * NormalVelTend(IEdge, K);
        });
 }
 
 // State1(TimeLevel1) = State2(TimeLevel2) + Coeff * Tend
 void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
                                     OceanState *State2, int TimeLevel2,
-                                    Real Coeff) const {
+                                    TimeInterval Coeff) const {
    updateThicknessByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
    updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
 }

@@ -15,6 +15,7 @@
 #include "HorzMesh.h"
 #include "MachEnv.h"
 #include "OceanState.h"
+#include "TimeMgr.h"
 
 #include <functional>
 #include <memory>
@@ -274,7 +275,7 @@ class Tendencies {
  public:
    using CustomTendencyType =
        std::function<void(Array2DReal, const OceanState *,
-                          const AuxiliaryState *, int, int, Real)>;
+                          const AuxiliaryState *, int, int, TimeInstant)>;
    // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
@@ -291,23 +292,23 @@ class Tendencies {
    void computeThicknessTendencies(const OceanState *State,
                                    const AuxiliaryState *AuxState,
                                    int ThickTimeLevel, int VelTimeLevel,
-                                   Real Time);
+                                   TimeInstant Time);
    void computeVelocityTendencies(const OceanState *State,
                                   const AuxiliaryState *AuxState,
                                   int ThickTimeLevel, int VelTimeLevel,
-                                  Real Time);
+                                  TimeInstant Time);
    void computeAllTendencies(const OceanState *State,
                              const AuxiliaryState *AuxState, int ThickTimeLevel,
-                             int VelTimeLevel, Real Time);
+                             int VelTimeLevel, TimeInstant Time);
 
    void computeThicknessTendenciesOnly(const OceanState *State,
                                        const AuxiliaryState *AuxState,
                                        int ThickTimeLevel, int VelTimeLevel,
-                                       Real Time);
+                                       TimeInstant Time);
    void computeVelocityTendenciesOnly(const OceanState *State,
                                       const AuxiliaryState *AuxState,
                                       int ThickTimeLevel, int VelTimeLevel,
-                                      Real Time);
+                                      TimeInstant Time);
 
    // Create a non-default group of tendencies
    template <class... ArgTypes>

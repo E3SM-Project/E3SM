@@ -124,7 +124,7 @@ void Tendencies::computeThicknessTendenciesOnly(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
-    Real Time                       ///< [in] Time
+    TimeInstant Time                ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
@@ -161,7 +161,7 @@ void Tendencies::computeVelocityTendenciesOnly(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
-    Real Time                       ///< [in] Time
+    TimeInstant Time                ///< [in] Time
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
@@ -243,7 +243,7 @@ void Tendencies::computeThicknessTendencies(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
-    Real Time                       ///< [in] Time
+    TimeInstant Time                ///< [in] Time
 ) {
    // only need LayerThicknessAux on edge
    OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
@@ -266,7 +266,7 @@ void Tendencies::computeVelocityTendencies(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
-    Real Time                       ///< [in] Time
+    TimeInstant Time                ///< [in] Time
 ) {
    AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
@@ -280,7 +280,7 @@ void Tendencies::computeAllTendencies(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
-    Real Time                       ///< [in] Time
+    TimeInstant Time                ///< [in] Time
 ) {
 
    AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
