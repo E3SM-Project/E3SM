@@ -8,14 +8,6 @@
 
 #include <memory>
 
-
-#include "share/scream_session.hpp"
-#include "mct_coupling/ScreamContext.hpp"
-#include "control/atmosphere_driver.hpp"
-#include <iomanip> 
-#include "physics/share/physics_constants.hpp"
-
-
 namespace scream {
 
 AtmosphereProcessGroup::
@@ -373,21 +365,7 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
 }
 
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
-
-#undef D1
-#ifdef D1
-  int mmm = 0;
-#endif
-
   for (auto& atm_proc : m_atm_processes) {
-
-#ifdef D1
-    mmm++;
-    std::cout << "process is "<< mmm << "\n" << std::flush;
-    std::cout << "process name is "<< atm_proc->name() << "\n"<< std::flush;
-    m_atm_logger->flush();
-#endif
-
     atm_proc->initialize(timestamp(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);
@@ -396,7 +374,6 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
     m_atm_logger->debug("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
-//	  std::cout << "process GROUP is done\n" << std::flush;
 }
 
 void AtmosphereProcessGroup::run_impl (const double dt) {
@@ -405,7 +382,6 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
   } else {
     run_parallel(dt);
   }
-//  std::cout << "process GROUP RUN is done\n" << std::flush;
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
@@ -413,74 +389,22 @@ void AtmosphereProcessGroup::run_sequential (const double dt) {
   auto ts = timestamp();
   ts += dt;
 
-#undef D2
-#ifdef D2
-  auto& c = scream::ScreamContext::singleton();
-  auto ad = c.getNonConst<scream::control::AtmosphereDriver>();
-  const auto gn = "Physics";
-  //const auto gn = "Physics GLL";
-  const auto& phys_grid = ad.get_grids_manager()->get_grid(gn);
-  //auto area = phys_grid->get_geometry_data("area").get_view<const Real*, Host>();
-  const auto fm = ad.get_field_mgr(gn);
-  const int ncols = fm->get_grid()->get_num_local_dofs();
-  const int nlevs = fm->get_grid()->get_num_vertical_levels();
-
-  fm->get_field("T_mid").sync_to_host();
-  auto ff = fm->get_field("T_mid").get_view<const Real**, Host>();
-#endif
-
-#ifdef D2
-  for (int ii = 0; ii < ncols; ii++)
-  for (int jj = 0; jj < nlevs; jj++){
-    const auto vv = ff(ii,jj);
-m_atm_logger->info("OG T field ("+std::to_string(ii)+","+std::to_string(jj)+") = "+std::to_string(vv));
-std::cout << "OG T field (" <<std::to_string(ii)<<","<<std::to_string(jj)<<") = "<<std::to_string(vv)
-	<<"\n"<<std::flush;
-  }
-#endif
-
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps
   const bool do_update = do_update_time_stamp() &&
                       (get_subcycle_iter()==get_num_subcycles()-1);
   for (auto atm_proc : m_atm_processes) {
-
-//std::cout << "OG  proc begin ------------------------ " << atm_proc->name() << std::flush;
-
-#ifdef D2
-  fm->get_field("T_mid").sync_to_host();
-  auto ff = fm->get_field("T_mid").get_view<const Real**, Host>();
-#endif
-#ifdef D2
-  for (int ii = 0; ii < 5; ii++)
-  for (int jj = 0; jj < 3; jj++){
-    const auto vv = ff(ii,jj);
-m_atm_logger->info("OG T field ("+std::to_string(ii)+","+std::to_string(jj)+") = "+std::to_string(vv));
-std::cout << "OG T field (" <<std::to_string(ii)<<","<<std::to_string(jj)<<") = "<<std::to_string(vv)
-        <<"\n"<<std::flush;
-  }
-#endif
-  
-//std::cout << "OG  proc update stamps" << atm_proc->name() <<"\n"<<std::flush;
-
     atm_proc->set_update_time_stamps(do_update);
     // Run the process
     atm_proc->run(dt);
-    
-//std::cout << "OG  proc AFTER RUN " << atm_proc->name() <<"\n"<<std::flush;
-
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
     m_atm_logger->debug("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
-
-//std::cout << "OG AFTER mem usage " << atm_proc->name() <<"\n"<<std::flush;
-
   }
-//std::cout << "OG AFTER process group " <<"\n"<<std::flush;
 }
 
 void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
