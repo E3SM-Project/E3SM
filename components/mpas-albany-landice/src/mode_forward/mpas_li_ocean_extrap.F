@@ -91,6 +91,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: origOceanMaskHoriz
+      integer, dimension(:,:), pointer :: orig3dOceanCavityMask         ! CAS 8/16/2024
       integer, dimension(:,:), pointer :: validOceanMask, validOceanMaskOrig, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz, seedOceanMaskHorizInit
       integer, dimension(:), allocatable :: seedOceanMaskHorizOld
@@ -127,6 +128,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
          call mpas_pool_get_array(extrapOceanDataPool, 'origOceanMaskHoriz', origOceanMaskHoriz)
+         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanCavityMask', orig3dOceanCavityMask) ! CAS 8/16/2024
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMaskOrig', validOceanMaskOrig)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
@@ -189,11 +191,25 @@ contains
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
                   availOceanMask(iLayer,iCell) = 1
                endif
-               if ( (origOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
-                  validOceanMask(iLayer,iCell) = 1
-               endif
             enddo
          enddo
+         
+         ! CAS 8/16/2024 Hijacking Holly's code to test using the 3D SORRM cavity TF field. We set 3d valid ocean mask to original 3d ocean cavity mask.
+         ! We don't need to loop through the layers if we're using a 3d mask already
+         validOceanMask(:,:) = orig3dOceanCavityMask(:,:) 
+
+         !      if ( (origOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
+         !         validOceanMask(iLayer,iCell) = 1
+         !      endif
+         !   enddo
+         !enddo
+
+         call mpas_log_write('==HH==: updating halos for the avail/valid ocean masks')
+         ! Update halos
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'availOceanMask')
+         call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
+         call mpas_timer_stop("halo updates")
 
          ! save the initial validOceanMask
          validOceanMaskOrig(:,:) = validOceanMask(:,:)
@@ -201,9 +217,10 @@ contains
          ! initialize the TF field
          TFocean(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
          ! initialize the invalid data locations with fill value
+         ! CAS 8/19/2024 Changed availOceanMask in the if check to validOceanMask. We want to make sure all invalid values outside the validOceanMask are set to the invalid_value_TF
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               if ( availOceanMask(iLayer,iCell) == 0 ) then
+               if ( validOceanMask(iLayer,iCell) == 0 ) then
                   TFocean(iLayer,iCell) = invalid_value_TF
                endif
             enddo

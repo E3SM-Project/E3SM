@@ -810,6 +810,7 @@
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
                         <var name="origOceanMaskHoriz" packages="extrapOceanData" />
+                        <var name="orig3dOceanCavityMask" packages="extrapOceanData" />  <!-- CAS 8/16/2024 -->
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -915,7 +916,8 @@
 			<var name="ismip6_2dThermalForcingCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
 		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
-			<var name="origOceanMaskHoriz" packages="extrapOceanData" />
+                        <var name="origOceanMaskHoriz" packages="extrapOceanData" />
+                        <var name="orig3dOceanCavityMask" packages="extrapOceanData" /> <!-- CAS 8/16/2024 -->
 			<var name="validOceanMask" packages="extrapOceanData" />
 			<var name="validOceanMaskOrig" packages="extrapOceanData" />
 			<var name="availOceanMask" packages="extrapOceanData" />
@@ -1688,6 +1690,10 @@ is the value of that variable from the *previous* time level!
         <var_struct name="extrapOceanData" time_levs="1" packages="extrapOceanData">
                 <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
                      description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
+                />
+                <!-- CAS 8/16/2024 -->
+                <var name="orig3dOceanCavityMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
+                     description="3D mask for original valid ocean data that includes cavities (e.g., SORRM original TF data)"
                 />
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
                      description="3D mask for indicating where ocean data is present (i.e., seed mask)"
