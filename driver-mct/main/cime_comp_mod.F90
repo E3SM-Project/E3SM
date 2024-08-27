@@ -4745,7 +4745,7 @@ contains
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
        if (glc_present) then
-          call seq_diag_glc_mct(glc(ens1), fractions_ix(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+          !call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.) !SFP: comment out for now while debugging
        endif
        if (do_bgc_budgets) then
           if (rof_present) then
@@ -4786,6 +4786,9 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
+       if (glc_present) then
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+       endif          
        if (do_bgc_budgets) then
           if (atm_present) then
              call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
@@ -4793,9 +4796,6 @@ contains
           if (ice_present) then
              call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true., do_x2i=.true.)
           endif
-          if (glc_present) then
-             call seq_diag_glc_mct(glc(ens1), fractions_ix(ens1), infodata, do_x2g=.true., do_g2x=.true.)
-          endif          
           if (lnd_present) then
              call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
           endif

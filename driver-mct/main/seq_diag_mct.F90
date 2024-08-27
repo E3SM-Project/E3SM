@@ -963,9 +963,10 @@ contains
           end if
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
 
-          do num=0,10 !SFP: change later to 0,glc_nec_max (no elev classes)
-               nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flgl_qice(num),n) !SFP added 
-          end do
+!          do num=0,10 !SFP: change later to 0,glc_nec_max (no elev classes)
+!          !SFP: this somehow needs to allow for each of the 11 vectors associate w/ each of the 11 elev classes
+!                  nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flgl_qice(num),n) !SFP added 
+!          end do
 
           if ( flds_wiso_lnd )then
              nf = f_wevap_16O;
@@ -1000,9 +1001,9 @@ contains
           end if
        end do
 
-       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+!       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
-       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice !SFP add
+!       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice !SFP added
 
     end if
 
@@ -1286,7 +1287,7 @@ contains
   subroutine seq_diag_glc_mct( glc, frac_g, infodata, do_x2g, do_g2x )
 
     type(component_type)    , intent(in) :: glc    ! component type for instance1
-    type(mct_aVect)         , intent(in) :: frac_g ! frac bundle
+    type(mct_aVect)         , intent(in) :: frac_g ! frac bundle  !SFP: does not look like fractions are needed / used here?
     type(seq_infodata_type) , intent(in) :: infodata
     logical                 , intent(in), optional :: do_x2g
     logical                 , intent(in), optional :: do_g2x
@@ -1303,6 +1304,9 @@ contains
     real(r8)                 :: ca_g ! area of a grid cell
     logical,save             :: first_time = .true.
 
+    integer,save             :: counter,smb_counter,calving_counter !SFP: for debugging 
+    integer,save             :: smb_vector_length,calving_vector_length
+
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_mct) '
 
@@ -1318,46 +1322,118 @@ contains
     g2x_g => component_get_c2x_cx(glc)
     x2g_g => component_get_x2c_cx(glc)
 
-! eventually use the following if constructs to wrap relevant sections below?
-!    if (present(do_g2x)) then
-!    end if
-!    if (present(do_x2g)) then
-!    end if
+    if( present(do_g2x))then  !SPF: glc to coupler
 
-!    if (first_time) then
+       if (first_time) then
 
-       index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
-       index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
-       index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
+          calving_counter=0
+          calving_vector_length = 0
 
-       index_x2g_Flgl_qice   = mct_aVect_indexRA(x2g_g,'Flgl_qice') !SFP: might be cleaner to do "x2g" in its own section?
+          index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
+          index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
+          index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
 
-!    end if
+          !SFP:debug
+          write(logunit,*) ' '
+          write(logunit,*) ' index_g2x_Fogg_rofl = ', index_g2x_Fogg_rofl
+          write(logunit,*) ' index_g2x_Fogg_rofi = ', index_g2x_Fogg_rofi
+          write(logunit,*) ' index_g2x_Figg_rofi = ', index_g2x_Figg_rofi
+          write(logunit,*) ' '
 
-    ip = p_inst
-    ic = c_glc_gs
-    !ic = c_glc_gr !SFP: should this actually be used here? other sections of this code use"r" for c2x and "s" for x2c
-    kArea = mct_aVect_indexRA(dom_g%data,afldname)
-    lSize = mct_avect_lSize(g2x_g)
-    do n=1,lSize
-       ca_g =  dom_g%data%rAttr(kArea,n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
-            - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
-    end do
-    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       end if
 
-    ip = p_inst         
-    !SFP: unclear if next should be 'send' or 'receive' index but for now we think send (because of x2g),
-    ! but budget results don't seem to be sensitive to this choice (same numbers appear using either).
-    ic = c_glc_gs      ! cpl send
-    !ic = c_glc_gr       ! cpl receive 
-    lSize = mct_avect_lSize(x2g_g)
-    do n=1,lSize
-       ca_g =  dom_g%data%rAttr(kArea,n)
-       nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n) 
-    end do
-    budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
+       ip = p_inst
+       !ip = p_day 
+       !ic = c_glc_gs
+       ic = c_glc_gr !SFP: use recieve here since this is coming from glc to coupler?
+       kArea = mct_aVect_indexRA(dom_g%data,afldname)
+       lSize = mct_avect_lSize(g2x_g)
+
+       !SFP:debug
+       if(calving_counter==0)then !one day at 30 min land/atmos time steps
+       write(logunit,*) ' '
+       write(logunit,*) ' calving vector length (should be 7425) = ', lSize                      
+       write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1) 
+       write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
+       write(logunit,*) ' intial value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
+       write(logunit,*) ' calving flux to ocean (Fogg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
+       write(logunit,*) ' calving flux to ice (Figg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Figg_rofi,1) 
+       write(logunit,*) ' calving flux X area to ocean (Fogg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
+       write(logunit,*) ' calving flux X area to ice (Figg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Figg_rofi,1) 
+       end if
+
+       do n=1,lSize
+           ca_g =  dom_g%data%rAttr(kArea,n)
+           nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
+           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
+                   - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
+       end do
+
+       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+
+       calving_vector_length = calving_vector_length +lSize
+       calving_counter = calving_counter + 1
+
+       !SFP:debug
+       if(calving_counter==48)then !one day at 30 min land/atmos time steps
+       write(logunit,*) ' calving counter = ', calving_counter            
+       write(logunit,*) ' final value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
+       write(logunit,*) ' '
+       end if
+
+    endif !SFP: end 'do_g2x'
+
+    if( present(do_x2g))then  !SFP: coupler to glc
+
+       if (first_time) then
+
+          smb_counter=0
+          smb_vector_length = 0 
+
+          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2g_g,'Flgl_qice')
+
+          !SFP:debug
+          write(logunit,*) ' '
+          write(logunit,*) ' index_x2g_Flgl_qice = ', index_x2g_Flgl_qice
+          write(logunit,*) ' '
+
+       end if
+
+       ip = p_inst         
+       !ip = p_day 
+       ic = c_glc_gs      ! SFP: use send here since going from coupler to glc?
+       !ic = c_glc_gr     
+       kArea = mct_aVect_indexRA(dom_g%data,afldname)
+       lSize = mct_avect_lSize(x2g_g)
+
+       !SFP:debug
+       if(smb_counter==0)then !one day at 30 min land/atmos time steps
+       write(logunit,*) ' '
+       write(logunit,*) ' smb vector length (should be 7425) = ', lSize                      
+       write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1)   
+       write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
+       write(logunit,*) ' initial value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
+       end if
+
+       do n=1,lSize
+          ca_g =  dom_g%data%rAttr(kArea,n)
+          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n) 
+       end do
+
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
+
+       smb_vector_length = smb_vector_length +lSize
+       smb_counter = smb_counter + 1
+
+       !SFP:debug
+       if(smb_counter==48)then !one day at 30 min land/atmos time steps
+       write(logunit,*) ' '
+       write(logunit,*) ' smb_counter = ', smb_counter
+       write(logunit,*) ' final value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
+       write(logunit,*) ' '
+       end if
+
+    end if !SPF: end do coupler to glc           
 
     first_time = .false.
 
