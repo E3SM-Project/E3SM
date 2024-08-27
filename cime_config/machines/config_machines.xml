@@ -218,7 +218,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc/12.2.0</command>
+        <command name="load">gcc/11.2.0</command>
         <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
