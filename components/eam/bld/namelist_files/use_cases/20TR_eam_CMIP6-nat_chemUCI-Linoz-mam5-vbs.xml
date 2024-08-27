@@ -107,7 +107,7 @@
 <linoz_data_cycle_yr        >1850</linoz_data_cycle_yr>
 <linoz_data_file            >linv3_1849-2017_CMIP6_Hist_10deg_58km_c20230705.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
-<linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
+<linoz_data_type            >CYCLICAL</linoz_data_type>
 
 <!-- Set surface area density (SAD) variables -->
 <sad_type>SERIAL</sad_type>
