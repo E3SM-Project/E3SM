@@ -1421,7 +1421,7 @@ contains
            do i = 0, npft-1
                write(iulog,*) i, pftname(i), int(climatezone(i)), int(woody(i)), int(needleleaf(i)), &
                 int(evergreen(i)), int(stress_decid(i)), int(season_decid(i)), &
-                int(graminoid(i)), int(local_iscft), int(crop(i)), int(percrop(i)), int(nfixer(i))
+                int(graminoid(i)), int(temp_iscft(i)), int(crop(i)), int(percrop(i)), int(nfixer(i))
            end do
            write(iulog,*)
      end if
