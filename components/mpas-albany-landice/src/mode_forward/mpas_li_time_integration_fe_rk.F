@@ -88,6 +88,7 @@ module li_time_integration_fe_rk
       use li_bedtopo
       use li_mask
       use li_advection, only: li_grounded_to_floating
+      use li_ocean_extrap
 
       !-----------------------------------------------------------------
       ! input variables
@@ -244,6 +245,12 @@ module li_time_integration_fe_rk
       call mpas_timer_stop("advancing clock")
 
 !TODO: Determine whether grounded melting should in fact be called first
+! === Ocean forcing extrapolation into ice-shelf cavities ===========
+      call mpas_timer_start("ocean forcing extrapolation")
+      call li_ocean_extrap_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("ocean forcing extrapolation")
+
 ! === Face melting for grounded ice ===========
       call mpas_timer_start("face melting for grounded ice")
       call li_face_melt_grounded_ice(domain, err_tmp)
