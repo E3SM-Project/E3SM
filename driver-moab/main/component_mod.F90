@@ -748,6 +748,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
+         factors = 1.0 ! initialize with 1.0 all factors; then maybe correct them
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
