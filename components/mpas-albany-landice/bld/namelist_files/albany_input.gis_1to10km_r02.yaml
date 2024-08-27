@@ -1,7 +1,9 @@
 %YAML 1.1
 ---
 ANONYMOUS:
+
   Problem:
+    Depth Integrated Model: true
     Basal Cubature Degree: 4
     LandIce Field Norm:
       sliding_velocity_basalside:
