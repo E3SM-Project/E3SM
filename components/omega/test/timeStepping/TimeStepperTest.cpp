@@ -1,3 +1,18 @@
+//===-- Test driver for OMEGA time steppers -----------------------------*- C++
+//-*-===/
+//
+/// \file
+/// \brief Test driver for OMEGA time steppers
+///
+/// This driver tests the OMEGA time stepping module. It checks that every
+/// implemented time stepping scheme converges to an exact solution at
+/// the expected theoretical rate. To only measure time convergence,
+/// the initial conditions and tendency terms are set up such that for
+/// every mesh element an independent ODE is solved.
+///
+//
+//===-----------------------------------------------------------------------===/
+
 #include "TimeStepper.h"
 #include "../ocn/OceanTestCommon.h"
 #include "AuxiliaryState.h"
@@ -22,18 +37,18 @@
 
 using namespace OMEGA;
 
-constexpr Geometry Geom   = Geometry::Planar;
+// Geometry doesn't matter for this test
+constexpr Geometry Geom = Geometry::Planar;
+// Only one vertical level is needed
 constexpr int NVertLevels = 1;
 
-struct DecayThicknessTendency {
-   void operator()(Array2DReal ThicknessTend, const OceanState *State,
-                   const AuxiliaryState *AuxState, int ThickTimeLevel,
-                   int VelTimeLevel, TimeInstant Time) const {}
-};
-
+// Custom tendency for normal velocity
+// du/dt = -coeff * u
 struct DecayVelocityTendency {
    Real Coeff = 0.5;
 
+   // exact solution assumes that this is the only tendency active
+   // the solution is exponential decay
    Real exactSolution(Real Time) { return std::exp(-Coeff * Time); }
 
    void operator()(Array2DReal NormalVelTend, const OceanState *State,
@@ -62,6 +77,7 @@ int initState() {
    const auto &LayerThickCell = State->LayerThickness[0];
    const auto &NormalVelEdge  = State->NormalVelocity[0];
 
+   // Initially set thickness and velocity to 1
    deepCopy(LayerThickCell, 1);
    deepCopy(NormalVelEdge, 1);
 
@@ -80,7 +96,10 @@ int createExactSolution(Real TimeEnd) {
    const auto &LayerThickCell = ExactState->LayerThickness[0];
    const auto &NormalVelEdge  = ExactState->NormalVelocity[0];
 
+   // There are no thickness tendencies in this test, so exact thickness ==
+   // initial thickness
    deepCopy(LayerThickCell, 1);
+   // Normal velocity decays exponentially
    deepCopy(NormalVelEdge, DecayVelocityTendency{}.exactSolution(TimeEnd));
 
    return Err;
@@ -95,6 +114,7 @@ ErrorMeasures computeErrors() {
    const auto &NormalVelEdge      = State->NormalVelocity[0];
    const auto &ExactNormalVelEdge = ExactState->NormalVelocity[0];
 
+   // Only velocity errors matters, because thickness remains constant
    ErrorMeasures VelErrors;
    computeErrors(VelErrors, NormalVelEdge, ExactNormalVelEdge, DefMesh, OnEdge,
                  NVertLevels);
@@ -111,7 +131,7 @@ int initTimeStepperTest(const std::string &mesh) {
    MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
 
-   // default init
+   // Default init
 
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
@@ -137,7 +157,9 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error initializing default mesh");
    }
 
-   // non-default init
+   // Non-default init
+   // Creating non-default state and auxiliary state to use only one vertical
+   // level
 
    auto *DefMesh = HorzMesh::getDefault();
    auto *DefHalo = Halo::getDefault();
@@ -161,9 +183,12 @@ int initTimeStepperTest(const std::string &mesh) {
    }
 
    Config Options;
-   auto *TestTendencies =
-       Tendencies::create("TestTendencies", DefMesh, NVertLevels, &Options,
-                          DecayThicknessTendency{}, DecayVelocityTendency{});
+
+   // Creating non-default tendencies with custom velocity tendencies
+   // All other tendencies are disabled by default
+   auto *TestTendencies = Tendencies::create(
+       "TestTendencies", DefMesh, NVertLevels, &Options,
+       Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
    if (!TestTendencies) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test tendencies");
@@ -172,7 +197,7 @@ int initTimeStepperTest(const std::string &mesh) {
    return Err;
 }
 
-// slightly adjust time step so that it evenly divides TimeEnd and return number
+// Slightly adjust time step so that it evenly divides TimeEnd and return number
 // of steps
 int adjustTimeStep(TimeStepper *Stepper, Real TimeEnd) {
    TimeInterval TimeStep = Stepper->getTimeStep();
@@ -194,6 +219,8 @@ void timeLoop(TimeInstant TimeStart, Real TimeEnd) {
 
    const int NSteps            = adjustTimeStep(Stepper, TimeEnd);
    const TimeInterval TimeStep = Stepper->getTimeStep();
+
+   // Time loop
    for (int Step = 0; Step < NSteps; ++Step) {
       const TimeInstant Time = TimeStart + Step * TimeStep;
       Stepper->doStep(State, Time);
@@ -236,11 +263,14 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    int NRefinements = 2;
    std::vector<ErrorMeasures> Errors(NRefinements);
 
+   // Start time = 0
    const TimeInstant TimeStart(&TestCalendar, 0, 0, 0, 0, 0, 0);
+
    const Real TimeEnd = 1;
 
    const Real BaseTimeStepSeconds = 0.2;
 
+   // This creates global exact solution and needs to be done only once
    const static bool CallOnlyOnce = [=]() {
       createExactSolution(TimeEnd);
       return true;
@@ -248,6 +278,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
    Real TimeStepSeconds = BaseTimeStepSeconds;
 
+   // Convergence loop
    for (int RefLevel = 0; RefLevel < NRefinements; ++RefLevel) {
       TestTimeStepper->setTimeStep(
           TimeInterval(TimeStepSeconds, TimeUnits::Seconds));
@@ -286,6 +317,8 @@ int timeStepperTest(const std::string &MeshFile = "OmegaMesh.nc") {
    if (Err != 0) {
       LOG_CRITICAL("TimeStepperTest: Error initializing");
    }
+
+   // Test convergence rate of different time steppers
 
    Real ExpectedOrder = 4;
    Real ATol          = 0.1;
