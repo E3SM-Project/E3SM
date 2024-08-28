@@ -10,3 +10,6 @@ set(MPIFC "ftn")
 set(SCC "gcc")
 set(SCXX "g++")
 set(SFC "gfortran")
+
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++")
+
