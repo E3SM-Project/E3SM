@@ -12,6 +12,7 @@
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "TendencyTerms.h"
+#include "TimeStepper.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -95,6 +96,12 @@ int initTendenciesTest(const std::string &mesh) {
    if (MeshErr != 0) {
       Err++;
       LOG_ERROR("TendenciesTest: error initializing default mesh");
+   }
+
+   int TimeStepperErr = TimeStepper::init();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: error initializing default time stepper");
    }
 
    const auto &Mesh = HorzMesh::getDefault();
@@ -212,6 +219,7 @@ void finalizeTendenciesTest() {
    OceanState::clear();
    Field::clear();
    Dimension::clear();
+   TimeStepper::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();

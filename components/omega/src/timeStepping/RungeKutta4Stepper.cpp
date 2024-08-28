@@ -8,7 +8,7 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
                                        Tendencies *Tend,
                                        AuxiliaryState *AuxState, HorzMesh *Mesh,
                                        Halo *MeshHalo)
-    : TimeStepper(Name, TimeStepperType::RungeKutta4, Tend, AuxState, Mesh,
+    : TimeStepper(Name, TimeStepperType::RungeKutta4, 2, Tend, AuxState, Mesh,
                   MeshHalo) {
 
    auto NVertLevels = Tend->LayerThicknessTend.extent_int(1);

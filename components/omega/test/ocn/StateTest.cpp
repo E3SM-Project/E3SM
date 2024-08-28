@@ -20,6 +20,7 @@
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
+#include "TimeStepper.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -58,6 +59,11 @@ int initStateTest() {
    Err = OMEGA::HorzMesh::init();
    if (Err != 0)
       LOG_ERROR("State: error initializing default mesh");
+
+   // Initialize the default time stepper
+   Err = OMEGA::TimeStepper::init();
+   if (Err != 0)
+      LOG_ERROR("State: error initializing default time stepper");
 
    return Err;
 }
@@ -326,6 +332,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Finalize Omega objects
+      OMEGA::TimeStepper::clear();
       OMEGA::HorzMesh::clear();
       OMEGA::Decomp::clear();
       OMEGA::MachEnv::removeAll();

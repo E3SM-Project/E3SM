@@ -8,7 +8,7 @@ RungeKutta2Stepper::RungeKutta2Stepper(const std::string &Name,
                                        Tendencies *Tend,
                                        AuxiliaryState *AuxState, HorzMesh *Mesh,
                                        Halo *MeshHalo)
-    : TimeStepper(Name, TimeStepperType::RungeKutta2, Tend, AuxState, Mesh,
+    : TimeStepper(Name, TimeStepperType::RungeKutta2, 2, Tend, AuxState, Mesh,
                   MeshHalo) {}
 
 // Advance the state by one step of the midpoint Runge Kutta scheme

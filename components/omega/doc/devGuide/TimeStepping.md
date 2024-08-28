@@ -72,9 +72,11 @@ Stepper = Stepper->setTimeStep(TimeStep);
 where `TimeStep` is an instance of `TimeInterval` class.
 
 #### Getters
-Given a pointer to a `TimeStepper` you can obtain its type, name, or time step by calling
+Given a pointer to a `TimeStepper` you can obtain its type, name, number of time levels,
+or time step by calling
 ```c++
 TimeStepperType Type = Stepper->getType();
+int NTimeLevels = Stepper->getNTimeLevels();
 std::string Name = Stepper->getName();
 TimeInterval TimeStep = Stepper->getTimeStep();
 ```

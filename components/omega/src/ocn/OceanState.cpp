@@ -16,6 +16,7 @@
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
+#include "TimeStepper.h"
 
 namespace OMEGA {
 
@@ -35,10 +36,15 @@ int OceanState::init() {
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
    Halo *DefHalo         = Halo::getDefault();
 
-   // These hard-wired variables need to be updated
+   // This hard-wired variable needs to be updated
    // with retrivals/config options
-   int NTimeLevels = 2;
    int NVertLevels = 60;
+
+   auto *DefTimeStepper = TimeStepper::getDefault();
+   if (!DefTimeStepper) {
+      LOG_ERROR("TimeStepper needs to be initialized before OceanState");
+   }
+   int NTimeLevels = DefTimeStepper->getNTimeLevels();
 
    // Create the default state and set pointer to it
    OceanState::DefaultOceanState =

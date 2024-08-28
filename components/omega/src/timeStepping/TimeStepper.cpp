@@ -16,10 +16,11 @@ std::map<std::string, std::unique_ptr<TimeStepper>>
 // Constructor. Construct a time stepper from name, type, tendencies, auxiliary
 // state, mesh and halo
 TimeStepper::TimeStepper(const std::string &Name, TimeStepperType Type,
-                         Tendencies *Tend, AuxiliaryState *AuxState,
-                         HorzMesh *Mesh, Halo *MeshHalo)
-    : Name(Name), Type(Type), Tend(Tend), AuxState(AuxState), Mesh(Mesh),
-      MeshHalo(MeshHalo) {}
+                         int NTimeLevels, Tendencies *Tend,
+                         AuxiliaryState *AuxState, HorzMesh *Mesh,
+                         Halo *MeshHalo)
+    : Name(Name), Type(Type), NTimeLevels(NTimeLevels), Tend(Tend),
+      AuxState(AuxState), Mesh(Mesh), MeshHalo(MeshHalo) {}
 
 // Create a time stepper from name, type, tendencies, auxiliary state, mesh and
 // halo
@@ -115,6 +116,9 @@ std::string TimeStepper::getName() const { return Name; }
 
 // Get time stepper type
 TimeStepperType TimeStepper::getType() const { return Type; }
+
+// Get number of time level
+int TimeStepper::getNTimeLevels() const { return NTimeLevels; }
 
 // LayerThickness1(TimeLevel1) = LayerThickness2(TimeLevel2) + Coeff *
 // LayerThicknessTend

@@ -8,8 +8,8 @@ ForwardBackwardStepper::ForwardBackwardStepper(const std::string &Name,
                                                Tendencies *Tend,
                                                AuxiliaryState *AuxState,
                                                HorzMesh *Mesh, Halo *MeshHalo)
-    : TimeStepper(Name, TimeStepperType::ForwardBackward, Tend, AuxState, Mesh,
-                  MeshHalo) {}
+    : TimeStepper(Name, TimeStepperType::ForwardBackward, 2, Tend, AuxState,
+                  Mesh, MeshHalo) {}
 
 // Advance the state by one step of the forward-backward scheme
 void ForwardBackwardStepper::doStep(OceanState *State, TimeInstant Time) const {

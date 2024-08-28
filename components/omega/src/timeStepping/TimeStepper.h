@@ -69,6 +69,9 @@ class TimeStepper {
    /// Get type (enum) of time stepper from instance
    TimeStepperType getType() const;
 
+   /// Get number of time levels from instance
+   int getNTimeLevels() const;
+
    /// Get time step
    TimeInterval getTimeStep() const;
 
@@ -102,6 +105,9 @@ class TimeStepper {
    // Type of time stepper
    TimeStepperType Type;
 
+   // Number of time levels required
+   int NTimeLevels;
+
    // Time step
    TimeInterval TimeStep;
 
@@ -111,8 +117,9 @@ class TimeStepper {
    HorzMesh *Mesh;
    Halo *MeshHalo;
 
-   TimeStepper(const std::string &Name, TimeStepperType Type, Tendencies *Tend,
-               AuxiliaryState *AuxState, HorzMesh *Mesh, Halo *MeshHalo);
+   TimeStepper(const std::string &Name, TimeStepperType Type, int NTimeLevels,
+               Tendencies *Tend, AuxiliaryState *AuxState, HorzMesh *Mesh,
+               Halo *MeshHalo);
 
    TimeStepper(const TimeStepper &) = delete;
    TimeStepper(TimeStepper &&)      = delete;
