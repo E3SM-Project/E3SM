@@ -158,6 +158,16 @@
   <lname>20TRSOI_EAM%CMIP6-VOLC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>WCYCL20TR-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>hist-all-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ************************************************ -->
 <!--               MMF coupled compsets               -->
 <!-- ************************************************ -->

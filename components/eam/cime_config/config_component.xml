@@ -131,6 +131,7 @@
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-AER"      >20TR_eam_CMIP6-aer_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-NAT"      >20TR_eam_CMIP6-nat_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-xGHG-xAER">20TR_eam_CMIP6-xGHG-xaer_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6-xAER"     >20TR_eam_CMIP6-xaer_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-OZONE"    >20TR_eam_CMIP6-ozone_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-LULC"     >20TR_eam_CMIP6-lulc_chemUCI-Linoz-mam5-vbs</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6-VOLC"     >20TR_eam_CMIP6-volc_chemUCI-Linoz-mam5-vbs</value>
