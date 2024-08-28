@@ -244,8 +244,6 @@ public:
     kv.team_barrier();
   }
 
-
-
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk_sl (const KernelVariables &kv,
                            const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
@@ -297,102 +295,6 @@ public:
     kv.team_barrier();
 
   } // end of divergence_sphere_wk_sl
-
-
-
-
-
-#if 0
-  KOKKOS_INLINE_FUNCTION void
-  divergence_sphere_wk_sl (const KernelVariables &kv,
-                           const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
-                           const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
-  {
-    // Make sure the buffers have been created
-    assert (vector_buf_sl.size()>0);
-
-    const auto& D_inv = Homme::subview(m_dinv,kv.ie);
-    const auto& spheremp = Homme::subview(m_spheremp,kv.ie);
-    const auto& gv_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
-
-    // copied from strong divergence as is but without metdet
-    // conversion to contravariant
-
-    double * ggv = &gv_buf(0,0,0);
-
-    const int s1 = &v(1,0,0)-&v(0,0,0);
-    const int s2 = &v(0,1,0)-&v(0,0,0);
-    const int s3 = &v(0,0,1)-&v(0,0,0);
-
-    //not sure we can reuse strides above, so using new ones
-    const int d1 = &D_inv(1,0,0,0)-&D_inv(0,0,0,0);
-    const int d2 = &D_inv(0,1,0,0)-&D_inv(0,0,0,0);
-    const int d3 = &D_inv(0,0,1,0)-&D_inv(0,0,0,0);
-    const int d4 = &D_inv(0,0,0,1)-&D_inv(0,0,0,0);
-
-    constexpr int np_squared = NP * NP;
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
-                         [&](const int loop_idx) {
-      const int igp = loop_idx / NP;
-      const int jgp = loop_idx % NP;
-
-      int linind1 = s1 * 0 + s2 * igp + s3 * jgp;
-      const auto& vv0 = (&v(0,0,0) + linind1);
-      int linind2 = s1 * 1 + s2 * igp + s3 * jgp;
-      const auto& vv1 = (&v(0,0,0) + linind2);
-
-      int linind3 = d1 * 0 + d2 * 0 + d3 * igp + d4 * jgp;
-      int linind4 = d1 * 1 + d2 * 0 + d3 * igp + d4 * jgp;
-      *(&gv_buf(0,0,0)+linind1) = *(&D_inv(0,0,0,0)+linind3) * (*vv0) + *(&D_inv(0,0,0,0)+linind4) * (*vv1);
-
-      linind3 = d1 * 0 + d2 * 1 + d3 * igp + d4 * jgp;
-      linind4 = d1 * 1 + d2 * 1 + d3 * igp + d4 * jgp;
-      *(&gv_buf(0,0,0)+linind2) = *(&D_inv(0,0,0,0)+linind3) * (*vv0) + *(&D_inv(0,0,0,0)+linind4) * (*vv1);
-
-    });
-    kv.team_barrier();
-
-    // in strong div
-    // kgp = i in strong code, jgp=j, igp=l
-    // in weak div, n is like j in strong div,
-    // n(weak)=j(strong)=jgp
-    // m(weak)=l(strong)=igp
-    // j(weak)=i(strong)=kgp
-    constexpr int div_iters = NP * NP;
-    // keeping indices' names as in F
-    
-    //gv_buf strides are as before, s1 s2 s3
-    //dvv, div_v, and spheremp should have the same strides
-    const int f1 = &dvv(1,0)-&dvv(0,0);
-    const int f2 = &dvv(0,1)-&dvv(0,0);
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
-                         [&](const int loop_idx) {
-      // Note: for this one time, it is better if m strides faster, due to
-      //       the way the views are accessed.
-      const int mgp = loop_idx % NP;
-      const int ngp = loop_idx / NP;
-      Real dd = 0.0;
-      for (int jgp = 0; jgp < NP; ++jgp) {
-        int linind1 = s1 * 0 + s2 * ngp + s3 * jgp;
-        int linind2 = s1 * 1 + s2 * jgp + s3 * mgp;
-
-        int l1 = f1 * ngp + f2 * jgp;
-        int l2 = f1 * jgp + f2 * mgp;
-        int l3 = f1 * jgp + f2 * ngp;
-
-        dd -= (  *(&spheremp(0,0)+l1) * *(&gv_buf(0,0,0)+linind1) * *(&dvv(0,0)+l2) +
-                 *(&spheremp(0,0)+l2) * *(&gv_buf(0,0,0)+linind2) * *(&dvv(0,0)+l3)) *
-              m_scale_factor_inv;
-      }
-      int l1 = f1 * ngp + f2 * mgp;
-      *(&div_v(0,0)+l1) = dd;
-    });
-    kv.team_barrier();
-
-  } // end of divergence_sphere_wk_sl
-#endif
-
 
   // Note that divergence_sphere requires scratch space of 3 x NP x NP Reals
   // This must be called from the device space
@@ -813,116 +715,6 @@ public:
     vorticity_sphere<NUM_LEV_OUT,NUM_LEV_IN>(kv, v, vort, NUM_LEV_REQUEST);
   }
 
-
-
-
-#if 0
-
-  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT>
-  KOKKOS_INLINE_FUNCTION void
-  divergence_sphere_wk (const KernelVariables &kv,
-                        // On input, a field whose divergence is sought; on
-                        // output, the view's data are invalid.
-                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
-                        const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
-                        const int NUM_LEV_REQUEST) const
-  {
-    assert(NUM_LEV_REQUEST>=0);
-    assert(NUM_LEV_REQUEST<=NUM_LEV_IN);
-    assert(NUM_LEV_REQUEST<=NUM_LEV_OUT);
-
-    // Make sure the buffers have been created
-    assert (vector_buf_ml.size()>0);
-
-    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
-    const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
-    constexpr int np_squared = NP * NP;
-
-    const int s1 = &v(1,0,0,0)[0]-&v(0,0,0,0)[0];
-    const int s2 = &v(0,1,0,0)[0]-&v(0,0,0,0)[0];
-    const int s3 = &v(0,0,1,0)[0]-&v(0,0,0,0)[0];
-    const int s4 = &v(0,0,0,1)[0]-&v(0,0,0,0)[0];
-
-    const int d1 = &D_inv(1,0,0,0)-&D_inv(0,0,0,0);
-    const int d2 = &D_inv(0,1,0,0)-&D_inv(0,0,0,0);
-    const int d3 = &D_inv(0,0,1,0)-&D_inv(0,0,0,0);
-    const int d4 = &D_inv(0,0,0,1)-&D_inv(0,0,0,0);
-
-    Real * const vv = &v(0,0,0,0)[0];
-    const Real * const dd = &D_inv(0,0,0,0);
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
-                         [&](const int loop_idx) {
-      const int igp = loop_idx / NP;
-      const int jgp = loop_idx % NP;
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-
-        const int l1 = s1*0 + s2*igp + s3*jgp + s4*ilev;
-        const int l2 = s1*1 + l1;
-        const Real v0old = vv[l1];
-        const Real v1old = vv[l2];
-
-        int l3 = d1*0 + d2*0 + d3*igp + d4*jgp;
-        int l4 = d1*1 + d2*0 + d3*igp + d4*jgp;
-
-        vv[l1] = dd[l3] * v0old + dd[l4] * v1old;
-
-        l3 = d1*0 + d2*1 + d3*igp + d4*jgp;
-        l4 = d1*1 + d2*1 + d3*igp + d4*jgp;
-
-        vv[l2] = dd[l3] * v0old + dd[l4] * v1old;        
-
-      });
-    });
-    kv.team_barrier();
-
-    const int f1 = &dvv(1,0)-&dvv(0,0);
-    const int f2 = &dvv(0,1)-&dvv(0,0);
-
-    const Real * const ss = &spheremp(0,0);
-    const Real * const ddv = &dvv(0,0);
-
-    const int k1 = &div_v(1,0,0)[0]-&div_v(0,0,0)[0];
-    const int k2 = &div_v(0,1,0)[0]-&div_v(0,0,0)[0];
-    const int k3 = &div_v(0,0,1)[0]-&div_v(0,0,0)[0];
-
-    constexpr int div_iters = NP * NP;
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, div_iters),
-                         [&](const int loop_idx) {
-      // Note: for this one time, it is better if m strides faster, due to
-      //       the way the views are accessed.
-      const int mgp = loop_idx % NP;
-      const int ngp = loop_idx / NP;
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        Real dd = 0.0;
-        // TODO: move multiplication by scale_factor_inv outside the loop
-        for (int jgp = 0; jgp < NP; ++jgp) {
-          // Here, v is the temporary buffer, aliased on the input v.
-          
-          const int l1 = s1*0 + s2*ngp + s3*jgp + s4*ilev;
-          const int l2 = s1*1 + s2*jgp + s3*mgp + s4*ilev;
-
-          const int x1 = f1 * ngp + f2 * jgp;
-          const int x2 = f1 * jgp + f2 * mgp;
-          const int x3 = f1 * jgp + f2 * ngp;
-
-          dd -= (ss[x1] * vv[l1] * ddv[x2] +
-                 ss[x2] * vv[l2] * ddv[x3]) *
-                m_scale_factor_inv;
-        }
-        //div_v(ngp, mgp, ilev) = dd;
-        const int l1 = k1 * ngp + k2 * mgp + k3 * ilev;
-        *(&div_v(0,0,0)[0]+l1) = dd;
-      });
-    });
-    kv.team_barrier();
-
-  }//end of divergence_sphere_wk
-
-#else
-
-
-
   template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk (const KernelVariables &kv,
@@ -977,13 +769,6 @@ public:
     kv.team_barrier();
 
   }//end of divergence_sphere_wk
-
-
-#endif
-
-
-
-
 
   template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void

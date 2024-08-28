@@ -50,14 +50,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const double& dp3d_thresh, const double& vtheta_thresh, const int& internal_diagnostics_level)
 {
 
-if(theta_hydrostatic_mode){
-        std::cout << " HEEEEEEEEEEEtheta_hydrostatic_mode =TRUE \n";
-}else
-{
-        std::cout << " HEEEEEEEEEEEtheta_hydrostatic_mode =FALSE \n";
-}      
-
-	// Check that the simulation options are supported. This helps us in the future, since we
+  // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
   // options in the C++ build, we will remove some checks
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
