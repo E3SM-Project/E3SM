@@ -450,6 +450,13 @@ class TimeInterval {
                 const TimeUnits InUnits ///< unit of time for interval
    );
 
+   /// Construct time interval from a standard string in the form
+   /// DDDD_HH:MM:SS.SSSS where the width of DD and SS strings can be of
+   /// arbitrary width (within reason) and the separators can be any single
+   /// non-numeric character
+   TimeInterval(std::string &TimeString ///< [in] string form of time interval
+   );
+
    /// Destructor for time interval
    ~TimeInterval(void);
 
@@ -704,7 +711,6 @@ class TimeInstant {
    /// Create a time interval by subtracting two time instants
    TimeInterval operator-(const TimeInstant &) const;
    /// Increment time in place by adding time interval
-   /// Increment time in place by adding time interval
    TimeInstant &operator+=(const TimeInterval &);
    /// Decrement time in place by subtracting time interval
    TimeInstant &operator-=(const TimeInterval &);
@@ -745,6 +751,9 @@ class Alarm {
 
  public:
    // constructors/destructors
+
+   /// Default alarm constructor
+   Alarm(void);
 
    /// Constructs a one-time alarm using the input ring time.
    Alarm(const std::string InName,   ///< [in] Name of alarm

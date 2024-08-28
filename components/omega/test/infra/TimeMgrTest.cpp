@@ -2952,6 +2952,19 @@ int testTimeInterval(void) {
       LOG_ERROR("TimeMgrTest/TimeInterval: isPositive: FAIL");
    }
 
+   // Test time interval constructor from string
+   std::string TiStr = "1001_11:23:45.375";
+   OMEGA::TimeInterval TiTstStr(TiStr);
+   RRef = 86527425.375;
+   Err1 = TiTstStr.get(RTst, OMEGA::TimeUnits::Seconds);
+
+   if (Err1 == 0 && RTst == RRef) {
+      LOG_INFO("TimeMgrTest/TimeInterval: string constructor: PASS");
+   } else {
+      ++ErrAll;
+      LOG_ERROR("TimeMgrTest/TimeInterval: string constructor: FAIL");
+   }
+
    return ErrAll;
 
 } // end testTimeInterval
