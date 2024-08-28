@@ -91,6 +91,20 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
   add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
 
+  // Diagnostic output - mid point grid
+  add_field<Computed>("brunt", scalar3d_mid, pow(s,-1), grid_name, ps);
+  add_field<Computed>("shoc_mix", scalar3d_mid, m, grid_name, ps);
+  add_field<Computed>("isotropy", scalar3d_mid, s, grid_name, ps);
+
+  // Diagnostic output - interface grid
+  add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
+  add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
+  add_field<Computed>("wqw_sec", scalar3d_int, (kg/kg)*(m/s), grid_name, ps);
+  add_field<Computed>("qw_sec", scalar3d_int, pow(kg/kg,2), grid_name, ps);
+  add_field<Computed>("uw_sec", scalar3d_int, pow(m/s,2), grid_name, ps);
+  add_field<Computed>("vw_sec", scalar3d_int, pow(m/s,2), grid_name, ps);
+  add_field<Computed>("w3", scalar3d_int, pow(m/s,3), grid_name, ps);
+
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
 
@@ -495,6 +509,38 @@ void SHOCMacrophysics::run_impl (const double dt)
                        default_policy,
                        shoc_postprocess);
   Kokkos::fence();
+
+  // SHOC output diagnostics
+  const auto& shoc_mix = get_field_out("shoc_mix").get_view<Spack**>();
+  Kokkos::deep_copy(shoc_mix,history_output.shoc_mix);
+
+  const auto& brunt = get_field_out("brunt").get_view<Spack**>();
+  Kokkos::deep_copy(brunt,history_output.brunt);
+
+  const auto& w3 = get_field_out("w3").get_view<Spack**>();
+  Kokkos::deep_copy(w3,history_output.w3);
+
+  const auto& isotropy = get_field_out("isotropy").get_view<Spack**>();
+  Kokkos::deep_copy(isotropy,history_output.isotropy);
+
+  const auto& wthl_sec = get_field_out("wthl_sec").get_view<Spack**>();
+  Kokkos::deep_copy(wthl_sec,history_output.wthl_sec);
+
+  const auto& wqw_sec = get_field_out("wqw_sec").get_view<Spack**>();
+  Kokkos::deep_copy(wqw_sec,history_output.wqw_sec);
+
+  const auto& uw_sec = get_field_out("uw_sec").get_view<Spack**>();
+  Kokkos::deep_copy(uw_sec,history_output.uw_sec);
+
+  const auto& vw_sec = get_field_out("vw_sec").get_view<Spack**>();
+  Kokkos::deep_copy(vw_sec,history_output.vw_sec);
+
+  const auto& qw_sec = get_field_out("qw_sec").get_view<Spack**>();
+  Kokkos::deep_copy(qw_sec,history_output.qw_sec);
+
+  const auto& thl_sec = get_field_out("thl_sec").get_view<Spack**>();
+  Kokkos::deep_copy(thl_sec,history_output.thl_sec);
+
 }
 // =========================================================================================
 void SHOCMacrophysics::finalize_impl()
