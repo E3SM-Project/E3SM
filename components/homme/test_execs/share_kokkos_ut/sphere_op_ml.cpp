@@ -13,11 +13,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <random>
+#include <iostream>
 
 using namespace Homme;
-
-#define HOWMANY 200
-#define ELEMS 1000
 
 using rngAlg = std::mt19937_64;
 
@@ -479,11 +477,7 @@ class compute_sphere_operator_test_ml {
   void run_functor_divergence_sphere_wk() {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
-
-    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(policy, *this);
-    }
-
     Kokkos::fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
@@ -626,7 +620,7 @@ TEST_CASE("gradient_sphere", "gradient_sphere") {
 
 TEST_CASE("divergence_sphere_wk",
           "divergence_sphere_wk") {
-  constexpr const int elements = ELEMS;
+  constexpr const int elements = 10;
 
   compute_sphere_operator_test_ml testing_div_ml(elements);
   testing_div_ml.run_functor_divergence_sphere_wk();

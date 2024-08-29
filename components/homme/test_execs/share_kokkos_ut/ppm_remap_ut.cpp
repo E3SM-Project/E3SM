@@ -8,9 +8,7 @@
 #include "utilities/TestUtils.hpp"
 
 #include <random>
-
-#define HOWMANY 200
-#define ELEMS 1000
+#include <iostream>
 
 using namespace Homme;
 
@@ -320,10 +318,8 @@ public:
 
     initialize_layers(engine);
 
-    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagRemapTest>(ne), *this);
-    }
     Kokkos::fence();
 
     const int remap_alg = boundary_cond::fortran_remap_alg;
@@ -388,7 +384,7 @@ public:
 };
 
 TEST_CASE("ppm_mirrored", "vertical remap") {
-  constexpr int num_elems = ELEMS;
+  constexpr int num_elems = 2;
   constexpr int num_remap = 3;
   ppm_remap_functor_test<PpmMirrored> remap_test_mirrored(num_elems, num_remap);
   SECTION("grid") { remap_test_mirrored.test_grid(); }
