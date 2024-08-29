@@ -384,6 +384,7 @@ contains
       integer :: iCell, jCell, iLayer, iNeighbor, iter
       integer :: localLoopCount
       integer :: nValidNeighb, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
+      integer :: newMaskCountTotal
 
       err = 0
 
@@ -413,6 +414,7 @@ contains
 
       ! initialize the local loop and count for validOceanMask
       localLoopCount = 0
+      newMaskCountTotal = 0
       newMaskCountGlobal = 1
       call mpas_log_write('Weight given to the cell with valid data from extrapolation: $r', realArgs=(/weightCell/))
       do while ( newMaskCountGlobal > 0 )
@@ -474,15 +476,16 @@ contains
 
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
-         call mpas_log_write('Horizontal extrap: Added total $i new cells to validOceanMask', intArgs=(/newMaskCountGlobal/))
+         newMaskCountTotal = newMaskCountTotal + newMaskCountGlobal
+         !call mpas_log_write('Horizontal extrap: Added total $i new cells to validOceanMask', intArgs=(/newMaskCountGlobal/))
       enddo
-      call mpas_log_write('Horizontal extrapolation done after $i loops', intArgs=(/localLoopCount/))
+      call mpas_log_write('Horizontal extrapolation done after $i iterations.  Added total of $i cells across all processors', &
+              intArgs=(/localLoopCount, newMaskCountTotal/))
       deallocate(validOceanMaskOld)
-
-
 
    end subroutine horizontal_extrapolation
 !-----------------------------------------------------------------------
+
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
