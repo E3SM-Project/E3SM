@@ -78,6 +78,7 @@ devGuide/Reductions
 :caption: Design documents
 :maxdepth: 1
 
+design/OmegaV0ShallowWater
 design/Broadcast
 design/Config
 design/DataTypes
@@ -91,7 +92,6 @@ design/Metadata
 design/IO
 design/IOStreams
 design/Reductions
-design/ShallowWaterOmega0
 design/State
 design/Tendency
 design/Tendencies
@@ -102,5 +102,5 @@ design/Timers
 design/TimeStepping
 design/Tracers
 
-design/OmegaDesignTemplate
+design/Template
 ```
