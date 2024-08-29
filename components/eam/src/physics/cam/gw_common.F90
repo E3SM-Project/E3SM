@@ -1322,6 +1322,11 @@ real(r8):: ncd  !!tunable parameter for fbd
  logical  :: iint
  real(r8) :: zl_hint(its:ite)
  !===================================
+
+ncleff    = 1_r8
+ncd=3.0_r8
+
+
 !
 !---- constants                                                         
 !                                                                       
@@ -1702,7 +1707,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
 !==============Jinbo Xie=============================================
        !!tune the times of drag
-       ncleff    = 3.!
+       !ncleff    = 1.5!3.!1.!3.!
        !cleff    = 3._r8 * max(dxmeter(i),cleff)!turned dxmeter to array
         cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
 !==============Jinbo Xie=============================================
@@ -1975,7 +1980,9 @@ if (k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i)) then
 l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)!-(shr2_xjb(i,kp1)/velco(i,kp1))
 l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)!-(shr2_xjb(i,k)/velco(i,k))
 !print*,"l1,l2,l1/l2",l1,l2,l1/l2
-taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+!!!!
+!taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+!!!!
 !taup(i,kp1)=max(0.2*taup(i,k),min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd))
 !taup(i,k)*(l1/l2)
 !print*,"taup(i,kp1)",taup(i,kp1)
@@ -2052,7 +2059,7 @@ zblk_col(i)=zblk
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
                          * olp(i) * zblk * ulow(i)**2
 
-ncd=3.0_r8
+!ncd=3.0_r8
 cd=ncd*cd
 
 !Jinbo Xie for base flux
