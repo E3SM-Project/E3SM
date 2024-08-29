@@ -232,6 +232,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <c_diag_3rd_mom type="real" doc="Third moment vertical velocity damping factor">7.0</c_diag_3rd_mom>
       <Ckh type="real" doc="Eddy diffusivity coefficient for heat">0.1</Ckh>
       <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
+      <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
     </shoc>
 
     <!-- MAM4xx-ACI -->
