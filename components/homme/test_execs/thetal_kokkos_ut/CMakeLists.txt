@@ -11,23 +11,15 @@ SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 THETAL_KOKKOS_SETUP()
 
 # This is needed to compile the lib and test executables with the correct options
+#these vars shared between all targets, so changing one var
+#for one test only won't work, config is built once and for the last test
 SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/theta-l_kokkos/config.h.cmake.in)
 SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
 SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 SET (NUM_POINTS 4)
-SET (NUM_PLEV 128)
+SET (NUM_PLEV 12)
 SET (QSIZE_D 4)
 SET (PIO_INTERP TRUE)
-
-#these vars shared between all targets, so changing one var, like TESTE_NOMPI
-#for one test only won't work, config is built once and for the last test
-
-SET (TESTER_NOMPI TRUE)
-
-#set it to false to test caar_ut
-#SET (TESTER_NOMPI FALSE)
-
-configure_file(${HOMME_SOURCE_DIR}/test_execs/thetal_kokkos_ut/compute-error.py ${CMAKE_CURRENT_BINARY_DIR}/compute-error.py COPYONLY)
 
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
@@ -79,7 +71,7 @@ SET_TARGET_PROPERTIES(thetal_kokkos_ut_lib PROPERTIES Fortran_MODULE_DIRECTORY $
 # Setting this once and for all, good for all unit tests.
 SET (CONFIG_DEFINES HAVE_CONFIG_H)
 
-#IF (HOMMEXX_BFB_TESTING)
+IF (HOMMEXX_BFB_TESTING)
   ### Equation of state unit tests
 
   SET (EOS_UT_CXX_SRCS
@@ -240,23 +232,6 @@ SET (CONFIG_DEFINES HAVE_CONFIG_H)
   cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
 
-
-  ##########################################3 simple CAAR
-
-  SET (C1_UT_CXX_SRCS
-   ${THETA_UT_DIR}/c1_ut.cpp
-  )
-
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
-
-#cxx_unit_test_simple (s1_ut "${S1_SRCS}" "${SPHERE_OP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES_SIMPLE}" ${NUM_CPUS})  
-cxx_unit_test_simple (c1_ut "${C1_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-  TARGET_LINK_LIBRARIES(c1_ut thetal_kokkos_ut_lib)
-
   # ### Remap functor unit test
 
   SET (REMAP_THETA_UT_CXX_SRCS
@@ -288,7 +263,7 @@ cxx_unit_test_simple (c1_ut "${C1_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CON
   ENDIF()
   cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)
-#ENDIF ()
+ENDIF ()
 
 # ### DIRK functor unit test
 
