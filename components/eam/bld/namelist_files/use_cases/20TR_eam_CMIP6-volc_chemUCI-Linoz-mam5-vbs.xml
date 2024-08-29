@@ -23,6 +23,7 @@
 
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data. SO2 file contains historical volcanic but 1850 for other sectors -->
 <!-- Need to use INTERP_MISSING_MONTHS for ext_frc_volc_type to go with ths updated SO2 file -->
+<ext_frc_volc_type    >INTERP_MISSING_MONTHS</ext_frc_volc_type>
 <ext_frc_type         >CYCLICAL</ext_frc_type>
 <ext_frc_cycle_yr     >1850</ext_frc_cycle_yr>
 <no2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc </no2_ext_file>
