@@ -828,7 +828,7 @@ contains
                                m_vapor = max(qmass_1,0.0_r8)*qratio(k)*detrainment_para
                                ! phasing out h2o transport as burned area increase
                                phase_out = cosd(burnedarea_memory(icol)/area(icol)*90.0_r8) 
-                               phase_out = max(phase_out,0.3_r8)
+                               phase_out = max(phase_out,0.0_r8)
                                m_vapor = m_vapor*phase_out
                                f_vapor = m_vapor*1000.0_r8/10000.0_r8/area(icol) ! g/cm2/s
                                f_vapor = f_vapor/(abs(zint(icol,k)-zint(icol,k+1))*km_to_cm) !g/cm3/s
