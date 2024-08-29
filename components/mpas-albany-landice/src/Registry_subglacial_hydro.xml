@@ -180,8 +180,8 @@
                 <!-- convenience variables -->
                 <var name="effectivePressureSGH" type="real" dimensions="nCells Time" units="Pa"
                         description="effective ice pressure in subglacial hydrology system" />
-                <var name="effectivePressure" type="real" dimensions"nCells Time" units="Pa" packages="higherOrderVelocity"
-                        description="effectivePressureSGH averaged over timestepping interval. This is the version of effective pressure that is passed to the coupled dynamics model."/>
+                <var name="effectivePressure" type="real" dimensions="nCells Time" units="Pa" packages="higherOrderVelocity"
+                        description="Effective pressure used in basal friction calculation.  If subglacial hydrology model is active, this will be effectivePressureSGH averaged over the subglacial hydrology model timestepping subcycles. If subglacial hydrology model is inactive, this will come from a file or a parameterization."/>
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
                      description="hydropotential in subglacial hydrology system" />
                 <var name="waterFlux" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"

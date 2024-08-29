@@ -325,7 +325,6 @@ module li_subglacial_hydro
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
-      real (kind=RKIND), pointer :: deltatSGHaccumulated
       real (kind=RKIND), pointer :: masterDeltat
       real (kind=RKIND), pointer :: Cd
       real (kind=RKIND), pointer :: tillMax
@@ -333,6 +332,7 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer :: iCell, iEdge, iEdgeOnCell
       real (kind=RKIND) :: timeLeft ! subcycling time remaining until master dt is reached
+      real (kind=RKIND) :: deltatSGHaccumulated
       integer :: numSubCycles ! number of subcycles
       integer :: err_tmp
 
@@ -389,9 +389,10 @@ module li_subglacial_hydro
 
       block => domain % blocklist
       do while (associated(block))
+        
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-         effectivePressure(:) = 0.0_RKIND
+         effectivePressure = 0.0_RKIND
          deltatSGHaccumulated = 0.0_RKIND
 
          block => block % next
@@ -700,16 +701,19 @@ module li_subglacial_hydro
       !Average effectivePressureSGH over coupling interval for use in dynamics model 
       block => domain % blocklist
       do while (associated(block))
+        
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
-         effectivePressure = (effectivePressure * deltatSGHaccumulated + effectivePressureSGH) / (deltatSGHaccumulated + deltatSGH)
-         deltatSGHaccumulated = deltatSGHaccumulated + deltatSGH
-         
+         effectivePressure = (effectivePressure * deltatSGHaccumulated + effectivePressureSGH * deltatSGH) / (deltatSGHaccumulated + deltatSGH)
+   
          block => block % next
       end do
+
+      deltatSGHaccumulated = deltatSGHaccumulated + deltatSGH
+      
       ! =============
       ! =============
       ! =============
