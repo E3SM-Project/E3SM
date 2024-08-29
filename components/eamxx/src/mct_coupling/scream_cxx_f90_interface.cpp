@@ -165,18 +165,18 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 }
 
 void scream_setup_surface_coupling (const char*& import_field_names, int*& import_cpl_indices,
-                                    double*& x2a_ptr, 
+                                    double*& x2a_ptr,
 #ifdef HAVE_MOAB
                                     double*& x2a_moab_ptr,
-#endif                                  
+#endif
                                     int*& import_vector_components,
                                     double*& import_constant_multiple, bool*& do_import_during_init,
                                     const int& num_cpl_imports, const int& num_scream_imports, const int& import_field_size,
                                     char*& export_field_names, int*& export_cpl_indices,
-                                    double*& a2x_ptr, 
+                                    double*& a2x_ptr,
 #ifdef HAVE_MOAB
                                     double*& a2x_moab_ptr,
-#endif                                     
+#endif
                                     int*& export_vector_components,
                                     double*& export_constant_multiple, bool*& do_export_during_init,
                                     const int& num_cpl_exports, const int& num_scream_exports, const int& export_field_size)
@@ -207,14 +207,14 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
                                            num_cpl_imports, num_scream_imports, import_field_size, x2a_ptr,
 #ifdef HAVE_MOAB
                                            x2a_moab_ptr,
-#endif                                        
+#endif
                                            names_in[0], import_cpl_indices, import_vector_components,
                                            import_constant_multiple, do_import_during_init);
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Export,
                                            num_cpl_exports, num_scream_exports, export_field_size, a2x_ptr,
 #ifdef HAVE_MOAB
                                            a2x_moab_ptr,
-#endif                                             
+#endif
                                            names_out[0], export_cpl_indices, export_vector_components,
                                            export_constant_multiple, do_export_during_init);
   });

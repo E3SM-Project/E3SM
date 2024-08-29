@@ -19,7 +19,7 @@ module atm_comp_mct
 
 #ifdef HAVE_MOAB
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
-  use iso_c_binding 
+  use iso_c_binding
 #ifdef MOABCOMP
   use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
@@ -55,7 +55,7 @@ module atm_comp_mct
 
 
 #ifdef HAVE_MOAB
-  ! to store all fields to be set in moab 
+  ! to store all fields to be set in moab
   integer , private :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
   real(r8) , allocatable, target, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
   real(r8) , allocatable, target, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
@@ -63,7 +63,7 @@ module atm_comp_mct
   integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
 #endif
-#endif 
+#endif
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,7 +128,7 @@ CONTAINS
     character(CL)                    :: calendar       ! calendar string
 #ifdef HAVE_MOAB
     integer        :: ent_type
-    character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
+    character(CXX) :: tagname ! will store all seq_flds_a2x_fields
 #ifdef MOABDEBUG
     character*100 outfile, wopts
 #endif
@@ -210,7 +210,7 @@ CONTAINS
     call atm_domain_mct (lsize, gsMap_atm, dom_atm)
 
 #ifdef HAVE_MOAB
-    call moab_atm_phys_scream() 
+    call moab_atm_phys_scream()
 #ifdef MOABCOMP
     mpicom_atm_moab = mpicom_atm ! just to store it to be used later in MOABCOMP
     rank2 = my_task ! again, just to use it for MOABCOMP output
@@ -242,7 +242,7 @@ CONTAINS
     a2x_am = 0. ! initialize everything with 0
 
     nrecv = mct_avect_nRattr(x2a)
-    totalmbls_r = mblsize * nrecv   ! size of the double array used to receive 
+    totalmbls_r = mblsize * nrecv   ! size of the double array used to receive
     allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
     x2a_am = 0. ! initialize everything with 0
 #endif
@@ -268,9 +268,9 @@ CONTAINS
     call string_f2c(trim(username),username_c)
     call string_f2c(trim(hostname),hostname_c)
     call scream_init_atm (caseid_c,hostname_c,username_c)
-#ifdef HAVE_MOAB   
+#ifdef HAVE_MOAB
     ! data should be set now inside moab from import and export fields
-    ! do we import and export or just export at init stage ? 
+    ! do we import and export or just export at init stage ?
     tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am )
@@ -293,7 +293,7 @@ CONTAINS
   subroutine atm_run_mct(EClock, cdata, x2a, a2x)
     use iso_c_binding,  only: c_double
     use scream_f2c_mod, only: scream_run
-#ifdef HAVE_MOAB   
+#ifdef HAVE_MOAB
     use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use shr_kind_mod     ,  only: cxx=>shr_kind_cxx
     use iMOAB,              only: iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
@@ -309,7 +309,7 @@ CONTAINS
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
-#endif 
+#endif
 #endif
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -325,7 +325,7 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
-#ifdef HAVE_MOAB   
+#ifdef HAVE_MOAB
     integer        :: ierr
     character(CXX) :: tagname ! will store all seq_flds_a2x_fields , seq_flds_x2a_fields
 #ifdef MOABDEBUG
@@ -365,12 +365,12 @@ CONTAINS
     tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
     ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am )
-    
+
 #endif
     ! Run scream
     call scream_run( dt_scream )
 
-#ifdef HAVE_MOAB   
+#ifdef HAVE_MOAB
     ! export data to moab data structures
     tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
@@ -517,9 +517,9 @@ CONTAINS
 #ifdef MOABDEBUG
     character*100 outfile, wopts
 #endif
-    character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
+    character(CXX) :: tagname ! will store all seq_flds_a2x_fields
     character*32 appname
-    integer :: ATM_PHYS ! used as global identifier for iMOAB app on pphys grid atmosphere (200+ atm id) 
+    integer :: ATM_PHYS ! used as global identifier for iMOAB app on pphys grid atmosphere (200+ atm id)
     !-------------------------------------------------------------------
     !
     ! Local Variables
@@ -543,7 +543,7 @@ CONTAINS
     if (my_task == master_task) then
        print *, " moab_atm_phys_scream:: register MOAB app:", trim(appname), "  mphaid=", mphaid
     endif
-    ! find global ids    
+    ! find global ids
     num_local_cols  = scream_get_num_local_cols()
     num_global_cols = scream_get_num_global_cols()
 
@@ -644,7 +644,7 @@ CONTAINS
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
 #endif
-  ! define fields seq_flds_a2x_fields 
+  ! define fields seq_flds_a2x_fields
     tagtype = 1  ! dense, double
     numco = 1 !  one value per vertex / entity
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
@@ -653,7 +653,7 @@ CONTAINS
       print *, "Error: fail to define seq_flds_a2x_fields "
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
-    ! make sure this is defined too; it could have the same fields, but in different order, or really different 
+    ! make sure this is defined too; it could have the same fields, but in different order, or really different
     ! fields; need to make sure we have them
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )

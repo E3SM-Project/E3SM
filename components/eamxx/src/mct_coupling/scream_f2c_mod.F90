@@ -58,7 +58,7 @@ interface
                                             a2x_ptr, &
 #ifdef HAVE_MOAB
                                             a2x_moab_ptr, &
-#endif 
+#endif
                                             export_vector_components, &
                                             export_constant_multiple, do_export_during_init, &
                                             num_cpl_exports, num_scream_exports, export_field_size) bind(c)

@@ -22,10 +22,10 @@ struct SCDataManager {
   ~SCDataManager() = default;
 
   void setup_internals (const int num_cpl_fields, const int num_scream_fields, const int field_size,
-                        Real* field_data_ptr, 
+                        Real* field_data_ptr,
 #ifdef HAVE_MOAB
                         Real* field_data_moab_ptr,
-#endif                       
+#endif
                         char* field_names, int* field_cpl_indices_ptr,
                         int* field_vector_components_ptr, Real* field_constant_multiple_ptr,
                         bool* transfer_during_init_ptr)
@@ -117,7 +117,7 @@ protected:
 
   view_2d<HostDevice, Real> m_field_data;
 #ifdef HAVE_MOAB
-  view_2d<HostDevice, Real> m_field_data_moab; 
+  view_2d<HostDevice, Real> m_field_data_moab;
 #endif
   name_t*                   m_field_names;
   view_1d<HostDevice, int>  m_field_cpl_indices;

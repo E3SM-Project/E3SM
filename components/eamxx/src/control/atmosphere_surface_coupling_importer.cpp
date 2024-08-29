@@ -80,7 +80,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
                                                          m_num_cpl_imports, m_num_cols);
   m_moab_cpl_imports_view_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(),
                                                              m_moab_cpl_imports_view_h);
-#endif                                                            
+#endif
   m_import_field_names = new name_t[m_num_scream_imports];
   std::memcpy(m_import_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_imports*32*sizeof(char));
 
@@ -264,7 +264,7 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
       const auto offset = icol*info_d.col_stride + info_d.col_offset;
       info_d.data[offset] = col_val;
 #ifdef HAVE_MOAB
-   //  TODO 
+   //  TODO
 #endif
     });
   }

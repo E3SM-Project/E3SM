@@ -548,7 +548,7 @@ contains
     use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
     use semoab_mod,        only: create_moab_meshes
     use iMOAB, only : iMOAB_RegisterApplication
-    use iso_c_binding 
+    use iso_c_binding
 #endif
     !
     ! Input(s)
@@ -620,7 +620,7 @@ contains
 #ifdef HAVE_MOAB
     if (pgN > 0) then
        appname="HM_COARSE"//C_NULL_CHAR
-        ATM_ID1 = 120 ! 
+       ATM_ID1 = 120 !
        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
        if (ierr > 0 )  &
        call abortmp('Error: cannot register moab app')
@@ -641,7 +641,7 @@ contains
        endif
          appname="HM_PGX"//C_NULL_CHAR
          ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
-         !  
+         !
          ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
          ! still, need to be careful
          ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
