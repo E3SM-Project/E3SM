@@ -179,8 +179,8 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
-	    #TARGET_LINK_LIBRARIES(${execName} lapack blas)
-	    #ADD_DEPENDENCIES(${execName} blas lapack)
+      TARGET_LINK_LIBRARIES(${execName} lapack blas)
+      ADD_DEPENDENCIES(${execName} blas lapack)
     ENDIF()
   ENDIF()
 

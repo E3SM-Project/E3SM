@@ -203,10 +203,10 @@ CONTAINS
     lwork = 5*nphi
 
     ddphibak = ddphi
-!    call DGESVD('A', 'A', &
-!       nphi, nphi, ddphibak, nphi, &
-!       svdps, svdpu, nphi, svdpvt, nphi, &
-!       pwork, lwork, info)
+    call DGESVD('A', 'A', &
+       nphi, nphi, ddphibak, nphi, &
+       svdps, svdpu, nphi, svdpvt, nphi, &
+       pwork, lwork, info)
 
     if (info .ne. 0) then
       write(*,*) 'Unable to compute SVD of d/dphi matrix'
@@ -215,23 +215,23 @@ CONTAINS
 
     do i = 1, nphi
       if (abs(svdps(i)) .le. 1.0d-12) then
-!        call DSCAL(nphi, 0.0d0, svdpu(1,i), 1)
+        call DSCAL(nphi, 0.0d0, svdpu(1,i), 1)
       else
-!        call DSCAL(nphi, 1.0d0 / svdps(i), svdpu(1,i), 1)
+        call DSCAL(nphi, 1.0d0 / svdps(i), svdpu(1,i), 1)
       end if
     end do
-!    call DGEMM('T', 'T', &
-!      nphi, nphi, nphi, 1.0d0, svdpvt, nphi, svdpu, nphi, 0.0d0, &
-!      intphi, nphi)
+    call DGEMM('T', 'T', &
+      nphi, nphi, nphi, 1.0d0, svdpvt, nphi, svdpu, nphi, 0.0d0, &
+      intphi, nphi)
 
     ! Compute the int(dz) operator via pseudoinverse
     lwork = 5*nz
 
     ddzbak = ddz
-!    call DGESVD('A', 'A', &
-!       nz, nz, ddzbak, nz, &
-!       svdzs, svdzu, nz, svdzvt, nz, &
-!       zwork, lwork, info)
+    call DGESVD('A', 'A', &
+       nz, nz, ddzbak, nz, &
+       svdzs, svdzu, nz, svdzvt, nz, &
+       zwork, lwork, info)
 
     if (info .ne. 0) then
       write(*,*) 'Unable to compute SVD of d/dz matrix'
@@ -240,14 +240,14 @@ CONTAINS
 
     do i = 1, nz
       if (abs(svdzs(i)) .le. 1.0d-12) then
-!        call DSCAL(nz, 0.0d0, svdzu(1,i), 1)
+        call DSCAL(nz, 0.0d0, svdzu(1,i), 1)
       else
-!        call DSCAL(nz, 1.0d0 / svdzs(i), svdzu(1,i), 1)
+        call DSCAL(nz, 1.0d0 / svdzs(i), svdzu(1,i), 1)
       end if
     end do
-!    call DGEMM('T', 'T', &
-!      nz, nz, nz, 1.0d0, svdzvt, nz, svdzu, nz, 0.0d0, &
-!      intz, nz)
+    call DGEMM('T', 'T', &
+      nz, nz, nz, 1.0d0, svdzvt, nz, svdzu, nz, 0.0d0, &
+      intz, nz)
 
     ! Sample the equatorial velocity field and its derivative
     do k = 1, nz
