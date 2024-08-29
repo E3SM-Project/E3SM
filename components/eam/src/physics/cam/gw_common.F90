@@ -2050,7 +2050,8 @@ zblk_col(i)=zblk
 !ref Lott and Miller (1997) original scheme
           cd = max(2.0_r8-1.0_r8/od(i),0.0_r8)
 
-          ncd=3._r8
+!ncd=3._r8
+          ncd=2._r8
 cd=ncd*cd
 
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
