@@ -560,6 +560,64 @@ subroutine zm_conv_init(pref_edge)
              call endrun(routine//': ERROR required mode-species type not found')
           end if
 
+          if (aero%mode_coarse_idx > 0) then
+            do l = 1, aero%nspec(aero%mode_coarse_idx)
+               call rad_cnst_get_info(0, aero%mode_coarse_idx, l, spec_type=str32)
+               select case (trim(str32))
+               case ('sulfate')
+                  aero%coarse_so4_idx = l
+               end select
+            end do
+          end if
+
+          ! Check that required mode specie types were found
+          if (aero%mode_coarse_idx > 0) then
+             if ( aero%coarse_so4_idx == -1) then
+                write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+                  aero%coarse_so4_idx
+                call endrun(routine//': ERROR required mode-species type not found')
+             end if
+          end if
+
+#if ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE )
+          do l = 1, aero%nspec(aero%mode_coarse_idx)
+             call rad_cnst_get_info(0, aero%mode_coarse_idx, l, spec_type=str32)
+             select case (trim(str32))
+             case ('m-organic')
+               aero%coarse_mom_idx = l
+             end select
+          end do
+
+          ! Check that required mode specie types were found
+          if ( aero%coarse_mom_idx == -1) then
+             write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+                aero%coarse_mom_idx
+             call endrun(routine//': ERROR required mode-species type not found')
+          end if
+#endif
+
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+          do l = 1, aero%nspec(aero%mode_coarse_idx)
+             call rad_cnst_get_info(0, aero%mode_coarse_idx, l, spec_type=str32)
+             select case (trim(str32))
+             case ('black-c')
+                aero%coarse_bc_idx  = l
+             case ('p-organic')
+                aero%coarse_pom_idx = l
+             case ('s-organic')
+                aero%coarse_soa_idx = l
+             end select
+          end do
+
+          ! Check that required mode specie types were found
+          if ( aero%coarse_bc_idx == -1 .or. aero%coarse_pom_idx == -1 .or. aero%coarse_soa_idx == -1 ) then
+             write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+               aero%coarse_bc_idx, aero%coarse_pom_idx, aero%coarse_soa_idx
+             call endrun(routine//': ERROR required mode-species type not found')
+          end if
+#endif
+
+
           allocate( &
              aero%num_a(nmodes), &
              aero%mmr_a(nspecmx,nmodes), &
