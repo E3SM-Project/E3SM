@@ -64,6 +64,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine li_ocean_extrap_solve(domain, err)
+      use li_calving, only: li_flood_fill
 
       !-----------------------------------------------------------------
       ! input variables
@@ -89,6 +90,7 @@ contains
       real (kind=RKIND) :: layerTop
       real (kind=RKIND), dimension(:,:), pointer :: TFocean, TFoceanOld
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
+      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: origOceanMaskHoriz
       integer, dimension(:,:), pointer :: orig3dOceanCavityMask         ! CAS 8/16/2024
@@ -100,6 +102,9 @@ contains
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, err_tmp
       integer :: GlobalLoopCount, newMaskCountGlobal
+      type (field1dInteger), pointer :: seedMaskField
+      type (field1dInteger), pointer :: growMaskField
+      integer, dimension(:), pointer :: connectedMarineMask, growMask !masks to pass to flood-fill routine
 
       ! No init is needed.
       err = 0
@@ -180,36 +185,79 @@ contains
          enddo
          deallocate(seedOceanMaskHorizOld)
 
+         ! Calculate mask of connected ocean
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+         call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+         call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+         connectedMarineMask => seedMaskField % array
+         connectedmarineMask(:) = 0
+         call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+         call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+         growMask => growMaskField % array
+         growMask(:) = 0
+
+         do iCell = 1, nCells
+            ! seedMask = open ocean cells in contact with the domain boundary
+            if ((bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND)) then
+               do iNeighbor = 1, nEdgesOnCell(iCell)
+                  if (cellsOnCell(iNeighbor, iCell) == nCells + 1) then
+                     connectedMarineMask(iCell) = 1
+                     exit  ! no need to keep checking neighbors
+                  endif
+               enddo
+            endif
+            ! growMask - all marine cells
+            if (bedTopography(iCell) < config_sea_level) then
+               growMask(iCell) = 1
+            endif
+         enddo
+         ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
+         call li_flood_fill(connectedMarineMask, growMask, domain)
+
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
+         ! check for valid data
+         do iLayer = 1, nISMIP6OceanLayers
+            if (ismip6shelfMelt_zOcean(iLayer) >= 0.0_RKIND) then
+               call mpas_log_write("ismip6shelfMelt_zOcean has invalid value of $r in layer $i", MPAS_LOG_ERR, &
+                       realArgs=(/ismip6shelfMelt_zOcean(iLayer)/), intArgs=(/iLayer/))
+               err = ior(err, 1)
+            endif
+            if ((ismip6shelfMelt_zBndsOcean(1,iLayer) > 0.0_RKIND) .or. &
+                    (ismip6shelfMelt_zBndsOcean(1,iLayer) < ismip6shelfMelt_zOcean(iLayer))) then
+               call mpas_log_write("ismip6shelfMelt_zBndsOcean(1,:) has invalid value of $r in layer $i", MPAS_LOG_ERR, &
+                       realArgs=(/ismip6shelfMelt_zBndsOcean(1,iLayer)/), intArgs=(/iLayer/))
+               err = ior(err, 1)
+            endif
+            if ((ismip6shelfMelt_zBndsOcean(2,iLayer) >= 0.0_RKIND) .or. &
+                    (ismip6shelfMelt_zBndsOcean(2,iLayer) > ismip6shelfMelt_zOcean(iLayer))) then
+               call mpas_log_write("ismip6shelfMelt_zBndsOcean(2,:) has invalid value of $r in layer $i", MPAS_LOG_ERR, &
+                       realArgs=(/ismip6shelfMelt_zBndsOcean(2,iLayer)/), intArgs=(/iLayer/))
+               err = ior(err, 1)
+            endif
+         enddo
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
          do iCell = 1, nCells
             do iLayer = 1, nISMIP6OceanLayers
                layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
-               if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
-                  availOceanMask(iLayer,iCell) = 1
+               if ( (seedOceanMaskHoriz(iCell) == 1) .and. (connectedMarineMask(iCell) == 1)) then
+                  if (bedTopography(iCell) < layerTop) then
+                     availOceanMask(iLayer,iCell) = 1
+                  else
+                     ! keep the first layer below the seafloor in the region to be filled
+                     ! this ensures linear interpolation from above and below the seafloor is possible
+                     availOceanMask(iLayer,iCell) = 1
+                     exit  ! stop looping over levels after we've included the first level below the seafloor
+                  endif
                endif
             enddo
          enddo
-         
+
          ! CAS 8/16/2024 Hijacking Holly's code to test using the 3D SORRM cavity TF field. We set 3d valid ocean mask to original 3d ocean cavity mask.
-         ! We don't need to loop through the layers if we're using a 3d mask already
-         validOceanMask(:,:) = orig3dOceanCavityMask(:,:) 
-
-         !      if ( (origOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
-         !         validOceanMask(iLayer,iCell) = 1
-         !      endif
-         !   enddo
-         !enddo
-
-         call mpas_log_write('==HH==: updating halos for the avail/valid ocean masks')
-         ! Update halos
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'availOceanMask')
-         call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
-         call mpas_timer_stop("halo updates")
+         validOceanMask(:,:) = orig3dOceanCavityMask(:,:)
 
          ! save the initial validOceanMask
          validOceanMaskOrig(:,:) = validOceanMask(:,:)
@@ -217,14 +265,23 @@ contains
          ! initialize the TF field
          TFocean(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
          ! initialize the invalid data locations with fill value
-         ! CAS 8/19/2024 Changed availOceanMask in the if check to validOceanMask. We want to make sure all invalid values outside the validOceanMask are set to the invalid_value_TF
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               if ( validOceanMask(iLayer,iCell) == 0 ) then
+               if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
+                  ! Don't assign invalid value to lakes/inland seas disconnected from global ocean
+                  ! Let them retain the existing value:
+                  ! This will take on the valid ocean data value where it exists or
+                  ! zero where valid ocean data does not exist
+               elseif (validOceanMask(iLayer,iCell) == 0) then
+                  ! everywhere else where valid ocean data does not exist, insert invalid value outside of validOceanMask
                   TFocean(iLayer,iCell) = invalid_value_TF
                endif
             enddo
          enddo
+
+         ! deallocate scratch fields used for flood fill
+         call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+         call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
          ! flood-fill the valid ocean mask and TF field through
          ! horizontal and vertial extrapolation
