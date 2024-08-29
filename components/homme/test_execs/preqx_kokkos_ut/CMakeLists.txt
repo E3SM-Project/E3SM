@@ -80,7 +80,7 @@ ENDIF()
 cxx_unit_test (random_init_ut "${RANDOM_INIT_UT_F90_SRCS}" "${RANDOM_INIT_UT_CXX_SRCS}" "${RANDOM_INIT_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(random_init_ut preqx_kokkos_ut_lib)
 
-#IF (HOMMEXX_BFB_TESTING)
+IF (HOMMEXX_BFB_TESTING)
 
   ### Remap unit test ###
 
@@ -109,4 +109,4 @@ TARGET_LINK_LIBRARIES(random_init_ut preqx_kokkos_ut_lib)
   ENDIF()
   cxx_unit_test (remap_preqx_ut "${REMAP_PREQX_UT_F90_SRCS}" "${REMAP_PREQX_UT_CXX_SRCS}" "${REMAP_PREQX_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(remap_preqx_ut preqx_kokkos_ut_lib)
-#ENDIF()
+ENDIF()
