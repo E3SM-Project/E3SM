@@ -86,6 +86,7 @@ void MAMConstituentFluxes::set_grids(
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   // Constituent fluxes at the surface (gasses and aerosols)
+  //[units: kg/m2/s (mass) or #/m2/s (number)]
   add_field<Required>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
                       grid_name);
 
