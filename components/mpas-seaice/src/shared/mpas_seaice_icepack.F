@@ -10656,15 +10656,6 @@ contains
 
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-!note that icepack_recompute_constants, called from icepck_init_parameters above, recomputes Lfresh
-! - make Lfresh optional for E3SM?
-
-! tcraig, this will write out icepack parameters to fort.101, need to uncomment 3 lines
-    if (mpas_log_info % taskID == 0) then
-      call icepack_write_parameters(101)
-    endif
-!    call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
     call mpas_log_write(" ----- compare values after icepack init -----")
 
     ! Lfresh is derived in Icepack, not sent in from driver
