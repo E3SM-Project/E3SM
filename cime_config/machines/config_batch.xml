@@ -562,7 +562,7 @@
     </batch_system>
 
     <batch_system MACH="aurora" type="pbspro">
-      <batch_submit>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
+      <batch_submit>/lus/flare/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
       <queues>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="2560" default="true">EarlyAppAccess</queue>
         <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq-route</queue>

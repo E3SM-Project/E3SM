@@ -1472,9 +1472,9 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="sunspot">
+    <mach name="sunspot|aurora">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
-        <comment>sunspot: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 2 nodes pure-MPI</comment>
+        <comment>sunspot|aurora: --compset BGC* --res ne30pg2_r05_IcoswISC30E3r5 on 2 nodes pure-MPI</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1759,9 +1759,9 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="sunspot">
+    <mach name="sunspot|aurora">
       <pes compset="any" pesize="any">
-        <comment>allactive+sunspot: default, 96 mpi x 1 omp @ root 0</comment>
+        <comment>allactive+sunspot|aurora: default, 96 mpi x 1 omp @ root 0</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
           <ntasks_lnd>96</ntasks_lnd>
