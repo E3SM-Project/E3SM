@@ -67,7 +67,7 @@ TimeStepper* NewTimeStepper = TimeStepper::get(Name);
 #### Setting the time step
 After creating a time stepper, the time step can be set by
 ```c++
-Stepper = Stepper->setTimeStep(TimeStep);
+Stepper->setTimeStep(TimeStep);
 ```
 where `TimeStep` is an instance of `TimeInterval` class.
 
