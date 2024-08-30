@@ -246,6 +246,45 @@ struct Functions
     view_dnu_table dnu_table_vals;
   };
 
+#ifdef SCREAM_P3_SMALL_KERNELS
+  struct P3Temporaries {
+    P3Temporaries() = default;
+    // shape parameter of rain
+    view_2d<Spack> mu_r;
+    // temperature at the beginning of the microphysics step [K]
+    view_2d<Spack> T_atm;
+    // 2D size distribution and fallspeed parameters
+    view_2d<Spack> lamr, logn0r, nu;
+    view_2d<Spack> cdist, cdist1, cdistr;
+    // Variables needed for in-cloud calculations
+    // Inverse cloud fractions (1/cld)
+    view_2d<Spack> inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r;
+    // In cloud mass-mixing ratios
+    view_2d<Spack> qc_incld, qr_incld, qi_incld, qm_incld;
+    // In cloud number concentrations
+    view_2d<Spack> nc_incld, nr_incld, ni_incld, bm_incld;
+    // Other
+    view_2d<Spack> inv_dz, inv_rho, ze_ice, ze_rain;
+    view_2d<Spack> prec, rho, rhofacr, rhofaci;
+    view_2d<Spack> acn, qv_sat_l, qv_sat_i, sup;
+    view_2d<Spack> qv_supersat_i, tmparr2, exner;
+    view_2d<Spack> diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi;
+    view_2d<Spack> pratot, prctot;
+    // p3_tend_out, may not need these
+    view_2d<Spack> qtend_ignore, ntend_ignore;
+    // Variables still used in F90 but removed from C++ interface
+    view_2d<Spack> mu_c, lamc;
+    view_2d<Spack> qr_evap_tend;
+    // cloud sedimentation
+    view_2d<Spack> v_qc, v_nc, flux_qx, flux_nx;
+    // ice sedimentation
+    view_2d<Spack> v_qit, v_nit, flux_nit, flux_bir;
+    view_2d<Spack> flux_qir, flux_qit;
+    // rain sedimentation
+    view_2d<Spack> v_qr, v_nr;
+  };
+#endif
+
   // -- Table3 --
 
   struct Table3 {
@@ -1301,6 +1340,9 @@ struct Functions
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
     const P3LookupTables& lookup_tables,
+#ifdef SCREAM_P3_SMALL_KERNELS
+    const P3Temporaries& temporaries,
+#endif
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
     Int nk, // number of vertical cells per column
@@ -1328,6 +1370,7 @@ struct Functions
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
     const P3LookupTables& lookup_tables,
+    const P3Temporaries& temporaries,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
     Int nk, // number of vertical cells per column
