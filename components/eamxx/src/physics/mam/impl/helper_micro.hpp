@@ -90,11 +90,18 @@ struct TracerData {
   // We cannot use a std::vector<view_2d>
   // because we need to access these views from device.
   view_2d data[MAX_NVARS_TRACER];
+  // type of file
+  TracerFileType file_type;
+
+  // These views are employed in files with the PS variable
   view_1d ps;
   const_view_1d hyam;
   const_view_1d hybm;
   view_int_1d work_vert_inter[MAX_NVARS_TRACER];;
-  TracerFileType file_type;
+
+  // External forcing file (vertical emission)
+  // Uses altitude instead of pressure to interpolate data
+  view_1d altitude_int;
 
   void allocate_data_views() {
     EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
@@ -130,7 +137,7 @@ struct TracerData {
                      "Error! file does have the PS variable. \n");
     ps = ps_in;
   }
-
+  // FIXME: The same file is being opened more than twice in the microphysics module..
   void set_hyam_n_hybm(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
                        const std::string &tracer_file_name) {
     EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
@@ -167,21 +174,19 @@ struct TracerData {
   }
 };
 
-inline const_view_1d get_altitude_int(
-    const std::shared_ptr<AbstractRemapper> &horiz_remapper,
-    const std::string &tracer_file_name) {
-  // Read in hyam/hybm in start/end data
-  auto nondim        = ekat::units::Units::nondimensional();
-  const auto io_grid = horiz_remapper->get_src_grid();
-  Field altitude_int_f(FieldIdentifier("altitude_int",
-                                       io_grid->get_vertical_layout(false),
-                                       nondim, io_grid->name()));
-  altitude_int_f.allocate_view();
-  AtmosphereInput hvcoord_reader(tracer_file_name, io_grid, {altitude_int_f},
-                                 true);
-  hvcoord_reader.read_variables();
-  hvcoord_reader.finalize();
-  return altitude_int_f.get_view<const Real *>();
+// Given a filename, return altitude_int
+inline void get_altitude_int(
+    const std::string &tracer_file_name,
+    view_1d& altitude_int) {
+// in tracer_file_name: NC file name
+// out altitude_int: views of int altitude
+  scorpio::register_file(tracer_file_name, scorpio::Read);
+  const int nlevs_data = scorpio::get_dimlen(tracer_file_name, "altitude_int");
+  view_1d_host altitude_int_host("altitude_int_host", nlevs_data);
+  scorpio::read_var(tracer_file_name, "altitude_int", altitude_int_host.data());
+  scorpio::release_file(tracer_file_name);
+  altitude_int = view_1d("altitude_int",nlevs_data);
+  Kokkos::deep_copy(altitude_int, altitude_int_host);
 }  // set_altitude_int
 
 // Direct port of components/eam/src/chemistry/utils/tracer_data.F90/vert_interp
@@ -433,7 +438,7 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
 }  // create_tracer_data_reader
 
 inline void update_tracer_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    std::shared_ptr<AtmosphereInput> &scorpio_reader,
     const int time_index,  // zero-based
     AbstractRemapper &tracer_horiz_interp, TracerData &tracer_data) {
   // 1. read from field
@@ -482,6 +487,11 @@ inline void update_tracer_timestate(
     for(int ivar = 0; ivar < nvars; ++ivar) {
       Kokkos::deep_copy(tracer_beg[ivar], tracer_end[ivar]);
     }
+
+    // Following SPA to time-interpolate data in MAM4xx
+    // Assume the data is saved monthly and cycles in one year
+    // Add offset_time_index to support cases where data is saved
+    // from other periods of time.
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.
     // NOTE: If the timestep is bigger than monthly this could cause the wrong
@@ -489,7 +499,7 @@ inline void update_tracer_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = time_state.offset_time_index + (time_state.current_month + 1) % 12;
-    update_tracer_data_from_file(scorpio_reader, ts, next_month,
+    update_tracer_data_from_file(scorpio_reader, next_month,
                                  tracer_horiz_interp, data_tracer_end);
   }
 
@@ -807,7 +817,7 @@ inline void advance_tracer_data(
     TracerTimeState &time_state, TracerData &data_tracer_beg,
     TracerData &data_tracer_end, TracerData &data_tracer_out,
     const view_2d &p_src, const const_view_2d &p_tgt,
-    const const_view_1d &zi_src, const const_view_2d &zi_tgt,
+    const const_view_2d &zi_tgt,
     const view_2d output[]) {
   /* Update the TracerTimeState to reflect the current time, note the addition
    * of dt */
@@ -830,7 +840,7 @@ inline void advance_tracer_data(
      data_tracer_out.file_type == ZONAL) {
     perform_vertical_interpolation(p_src, p_tgt, data_tracer_out, output);
   } else if(data_tracer_out.file_type == VERT_EMISSION) {
-    perform_vertical_interpolation(zi_src, zi_tgt, data_tracer_out, output);
+    perform_vertical_interpolation(data_tracer_end.altitude_int, zi_tgt, data_tracer_out, output);
   }
 
 }  // advance_tracer_data

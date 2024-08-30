@@ -281,7 +281,6 @@ private_except_cuda:
   std::vector<mam_coupling::TracerData> vert_emis_data_end_;
   std::vector<mam_coupling::TracerData> vert_emis_data_beg_;
   std::vector<mam_coupling::TracerData> vert_emis_data_out_;
-  std::vector<const_view_1d> vert_emis_altitude_int_;
   std::map< std::string, std::string >vert_emis_file_name_;
   std::map< std::string, std::vector<std::string> > vert_emis_var_names_;
   view_2d vert_emis_output_[mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS];

@@ -12,7 +12,7 @@ atmosphere_processes:
   atm_procs_list: [mam4_aero_microphys]
   mam4_aero_microphys:
    mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
-   mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_1.9x2.5_L26_1850-2015_ne2np4L72_c20240722_OD.nc
+   mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
    mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
    mam4_chlorine_loading_ymd : 20100101   
    mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc

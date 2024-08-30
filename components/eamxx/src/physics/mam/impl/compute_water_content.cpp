@@ -3,67 +3,93 @@
 namespace scream::impl {
 
 KOKKOS_INLINE_FUNCTION
-void compute_water_content(const mam4::Prognostics &progs,
-                           const haero::Atmosphere &atm, int k, Real qv,
-                           Real temp, Real pmid,
-                           Real dgncur_a[mam4::AeroConfig::num_modes()],
-                           Real dgncur_awet[mam4::AeroConfig::num_modes()],
-                           Real wetdens[mam4::AeroConfig::num_modes()],
-                           Real qaerwat[mam4::AeroConfig::num_modes()]) {
+void compute_water_content( Real *state_q,   // in
+                           const Real *qqcw, // in,
+                           Real qv,// in
+                           Real temp,// in
+                           Real pmid, // in
+                           const Real num_k_a[mam4::AeroConfig::num_modes()],// in
+                           Real dgncur_a[mam4::AeroConfig::num_modes()], // out
+                           Real dgncur_awet[mam4::AeroConfig::num_modes()],// out
+                           Real wetdens[mam4::AeroConfig::num_modes()],// out
+                           Real qaerwat[mam4::AeroConfig::num_modes()]// out
+                           ) {
   constexpr int num_modes    = mam4::AeroConfig::num_modes();
   constexpr int num_aero_ids = mam4::AeroConfig::num_aerosol_ids();
+  constexpr int pcnst = mam4::pcnst;
+
 
   // get some information about aerosol species
   // FIXME: this isn't great!
+  int numptr_amode[num_modes];
+  int mam_idx[num_modes][ndrop::nspec_max];
+  int mam_cnst_idx[num_modes][ndrop::nspec_max];
   constexpr int maxd_aspectype = mam4::water_uptake::maxd_aspectype;
   int nspec_amode[num_modes], lspectype_amode[maxd_aspectype][num_modes];
   Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype];
-  mam4::water_uptake::get_e3sm_parameters(nspec_amode, lspectype_amode,
-                                          specdens_amode, spechygro);
+  int lmassptr_amode[ndrop::maxd_aspectype][num_modes];
+  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
+                             numptr_amode, specdens_amode, spechygro, mam_idx,
+                             mam_cnst_idx);
+
+  Real inv_density[num_modes][AeroConfig::num_aerosol_ids()] = {};
+  Real num2vol_ratio_min[num_modes] = {};
+  Real num2vol_ratio_max[num_modes] = {};
+  Real num2vol_ratio_max_nmodes[num_modes] = {};
+  Real num2vol_ratio_min_nmodes[num_modes] = {};
+  Real num2vol_ratio_nom_nmodes[num_modes] = {};
+  Real dgnmin_nmodes[num_modes] = {};
+  Real dgnmax_nmodes[num_modes] = {};
+  Real dgnnom_nmodes[num_modes] = {};
+  // outputs
+  bool noxf_acc2ait[AeroConfig::num_aerosol_ids()] = {};
+  int n_common_species_ait_accum = {};
+  int ait_spec_in_acc[AeroConfig::num_aerosol_ids()] = {};
+  int acc_spec_in_ait[AeroConfig::num_aerosol_ids()] = {};
+  Real mean_std_dev_nmodes[num_modes];
+  mam4::modal_aero_calcsize::init_calcsize(
+      inv_density, num2vol_ratio_min, num2vol_ratio_max,
+      num2vol_ratio_max_nmodes, num2vol_ratio_min_nmodes,
+      num2vol_ratio_nom_nmodes, dgnmin_nmodes, dgnmax_nmodes, dgnnom_nmodes,
+      mean_std_dev_nmodes,
+      // outputs
+      noxf_acc2ait, n_common_species_ait_accum, ait_spec_in_acc,
+      acc_spec_in_ait);
 
   // extract aerosol tracers for this level into state_q, which is needed
   // for computing dry aerosol properties below
   // FIXME: we should eliminate this index translation stuff
 
-  constexpr int nvars = aero_model::pcnst;
-  Real state_q[nvars];  // aerosol tracers for level k
-  mam4::utils::extract_stateq_from_prognostics(progs,
-                                  atm,state_q,
-                                  k);
-
   // compute the dry volume for each mode, and from it the current dry
   // geometric nominal particle diameter.
   // FIXME: We have to do some gymnastics here to set up the calls to
   // FIXME: calcsize. This could be improved.
-  Real inv_densities[num_modes][num_aero_ids] = {};
+
   for(int imode = 0; imode < num_modes; ++imode) {
-    const int n_spec = mam4::num_species_mode(imode);
-    for(int ispec = 0; ispec < n_spec; ++ispec) {
-      const int iaer = static_cast<int>(mam4::mode_aero_species(imode, ispec));
-      const Real density          = mam4::aero_species(iaer).density;
-      inv_densities[imode][ispec] = 1.0 / density;
-    }
-  }
-  for(int imode = 0; imode < num_modes; ++imode) {
-    Real dryvol_i, dryvol_c;  // interstitial and cloudborne dry volumes
-    mam4::calcsize::compute_dry_volume_k(k, imode, inv_densities, progs,
-                                         dryvol_i, dryvol_c);
+    const auto v2nmin = num2vol_ratio_min[imode];
+    const auto v2nmax = num2vol_ratio_max[imode];
+    const auto dgnmin = dgnmin_nmodes[imode];
+    const auto dgnmax = dgnmax_nmodes[imode];
+    const auto mean_std_dev = mean_std_dev_nmodes[imode];
+
+    Real dryvol_i, dryvol_c = 0.0;  // interstitial and cloudborne dry volumes
+    mam4::modal_aero_calcsize::compute_dry_volume(imode,       // in
+                       state_q,     // in
+                       qqcw,        // in
+                       inv_density, // in
+                       lmassptr_amode,
+                       dryvol_i, // out
+                       dryvol_c);
 
     // NOTE: there's some disagreement over whether vol2num should be called
     // NOTE: num2vol here, so I'm just adopting the nomenclature used by
     // NOTE: the following call to calcsize)
-    const mam4::Mode &mode = mam4::modes(imode);
-    Real vol2num_min =
-        1.0 / mam4::conversions::mean_particle_volume_from_diameter(
-                  mode.max_diameter, mode.mean_std_dev);
-    Real vol2num_max =
-        1.0 / mam4::conversions::mean_particle_volume_from_diameter(
-                  mode.min_diameter, mode.mean_std_dev);
-    Real vol2num;
-    mam4::calcsize::update_diameter_and_vol2num(
-        dryvol_i, progs.n_mode_i[imode](k), vol2num_min, vol2num_max,
-        mode.min_diameter, mode.max_diameter, mode.mean_std_dev,
-        dgncur_a[imode], vol2num);
+    Real num2vol_ratio_cur_i=0;
+    // Make it non-negative
+    auto num_i_k = num_k_a[imode] < 0 ? 0 : num_k_a[imode];
+    calcsize::update_diameter_and_vol2num(dryvol_i, num_i_k, v2nmin, v2nmax,
+                                        dgnmin, dgnmax, mean_std_dev,
+                                        dgncur_a[imode], num2vol_ratio_cur_i);
   }
 
   // calculate dry aerosol properties
