@@ -210,6 +210,10 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
    // Set input array
    Array2DR8 ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
 
+   // TODO(mwarusz) temporary fix for this test
+   Array2DR8 OnesEdge("OnesEdge", Mesh->NEdgesSize, NVertLevels);
+   deepCopy(OnesEdge, 1);
+
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = Setup.vectorX(X, Y);
@@ -223,7 +227,8 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
    ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, TendConfig);
    parallelFor(
        {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
-          ThickFluxDivOnC(NumThickFluxDiv, ICell, KLevel, ThickFluxEdge);
+          ThickFluxDivOnC(NumThickFluxDiv, ICell, KLevel, OnesEdge,
+                          ThickFluxEdge);
        });
 
    // Compute errors

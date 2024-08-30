@@ -12,6 +12,7 @@
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "TendencyTerms.h"
+#include "TimeStepper.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -97,6 +98,12 @@ int initTendenciesTest(const std::string &mesh) {
       LOG_ERROR("TendenciesTest: error initializing default mesh");
    }
 
+   int TimeStepperErr = TimeStepper::init();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: error initializing default time stepper");
+   }
+
    const auto &Mesh = HorzMesh::getDefault();
    std::shared_ptr<Dimension> VertDim =
        Dimension::create("NVertLevels", NVertLevels);
@@ -177,7 +184,11 @@ int testTendencies() {
    // compute tendencies
    const auto *State    = OceanState::getDefault();
    const auto *AuxState = AuxiliaryState::getDefault();
-   DefTendencies->computeAllTendencies(State, AuxState);
+   int ThickTimeLevel   = 0;
+   int VelTimeLevel     = 0;
+   TimeInstant Time;
+   DefTendencies->computeAllTendencies(State, AuxState, ThickTimeLevel,
+                                       VelTimeLevel, Time);
 
    // check that everything got computed correctly
    int NCellsOwned    = Mesh->NCellsOwned;
@@ -208,6 +219,7 @@ void finalizeTendenciesTest() {
    OceanState::clear();
    Field::clear();
    Dimension::clear();
+   TimeStepper::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();

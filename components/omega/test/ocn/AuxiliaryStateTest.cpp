@@ -10,6 +10,7 @@
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
+#include "TimeStepper.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -93,6 +94,12 @@ int initAuxStateTest(const std::string &mesh) {
    if (MeshErr != 0) {
       Err++;
       LOG_ERROR("AuxStateTest: error initializing default mesh");
+   }
+
+   int TimeStepperErr = TimeStepper::init();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("AuxStateTest: error initializing default time stepper");
    }
 
    const auto &Mesh = HorzMesh::getDefault();
@@ -249,6 +256,7 @@ void finalizeAuxStateTest() {
    OceanState::clear();
    Field::clear();
    Dimension::clear();
+   TimeStepper::clear();
    HorzMesh::clear();
    Halo::clear();
    Decomp::clear();
