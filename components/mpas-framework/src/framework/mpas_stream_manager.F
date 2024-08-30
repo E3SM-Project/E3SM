@@ -3398,10 +3398,9 @@ module mpas_stream_manager
                    !
                    write(err_string,'(a,i4,a)') 'Writing to stream '''//trim(stream % name)//''' would overwrite record ', &
                                                 stream % nRecords, ' in file '''//trim(stream % filename)//''','
-                   STREAM_ERROR_WRITE(trim(err_string))
+                   STREAM_WARNING_WRITE(trim(err_string))
                    write(err_string,'(a)') '    but clobber_mode is set to ''append''.'
-                   STREAM_ERROR_WRITE(trim(err_string))
-                   ierr = MPAS_STREAM_MGR_ERR_CLOBBER_REC
+                   STREAM_WARNING_WRITE(trim(err_string))
                else
                    ierr = MPAS_STREAM_MGR_ERROR
                end if
