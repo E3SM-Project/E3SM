@@ -665,76 +665,10 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
    });
   }
 
-#if 0
-inline void perform_vertical_interpolation(const view_2d &p_src_c,
-                                           const const_view_2d &p_tgt_c,
-                                           const TracerData &input,
-                                           const view_2d output[]) {
-  // At this stage, begin/end must have the same horiz dimensions
-  EKAT_REQUIRE(input.ncol_ == output[0].extent(0));
-
-#if 1
-  // FIXME: I was encountering a compilation error when using const_view_2d.
-  // The issue is fixed by https://github.com/E3SM-Project/EKAT/pull/346.
-  // I will keep this code until this PR is merged into the EKAT master branch
-  // and we update the EKAT version in our code. I am converting const_view_2d
-  // to view_2d.
-  auto p_src_ptr = (Real *)p_src_c.data();
-  view_2d p_src(p_src_ptr, p_src_c.extent(0), p_src_c.extent(1));
-  auto p_tgt_ptr = (Real *)p_tgt_c.data();
-  view_2d p_tgt(p_tgt_ptr, p_tgt_c.extent(0), p_tgt_c.extent(1));
-#else
-  const auto p_src = p_src_c;
-  const auto p_tgt = p_tgt_c;
-#endif
-
-  const int ncols = input.ncol_;
-  // FIXME: I am getting FPEs if I do not subtract 1 from nlevs_src.
-  const int nlevs_src = input.nlev_ - 1;
-  const int nlevs_tgt = output[0].extent(1);
-
-  LIV vert_interp(ncols, nlevs_src, nlevs_tgt);
-
-  // We can ||ize over columns as well as over variables and bands
-  const int num_vars       = input.nvars_;
-  const int num_vert_packs = nlevs_tgt;
-  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
-
-  // Setup the linear interpolation object
-  Kokkos::parallel_for(
-      "tracer_vert_interp_setup_loop", policy_setup,
-      KOKKOS_LAMBDA(typename LIV::MemberType const &team) {
-        const int icol = team.league_rank();
-        // Setup
-        vert_interp.setup(team, ekat::subview(p_src, icol),
-                          ekat::subview(p_tgt, icol));
-      });
-  Kokkos::fence();
-
-  // Now use the interpolation object in || over all variables.
-  const int outer_iters = ncols * num_vars;
-  const auto policy_interp =
-      ESU::get_default_team_policy(outer_iters, num_vert_packs);
-  Kokkos::parallel_for(
-      "tracer_vert_interp_loop", policy_interp,
-      KOKKOS_LAMBDA(typename LIV::MemberType const &team) {
-        const int icol = team.league_rank() / num_vars;
-        const int ivar = team.league_rank() % num_vars;
-
-        const auto x1 = ekat::subview(p_src, icol);
-        const auto x2 = ekat::subview(p_tgt, icol);
-
-        const auto y1 = ekat::subview(input.data[ivar], icol);
-        const auto y2 = ekat::subview(output[ivar], icol);
-
-        vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
-      });
-  Kokkos::fence();
-}
-#endif
 // rebin is a port from:
 // https://github.com/eagles-project/e3sm_mam4_refactor/blob/ee556e13762e41a82cb70a240c54dc1b1e313621/components/eam/src/chemistry/utils/mo_util.F90#L12
-inline void rebin(int nsrc, int ntrg, const const_view_1d &src_x,
+KOKKOS_INLINE_FUNCTION
+void rebin(int nsrc, int ntrg, const const_view_1d &src_x,
                   const Real trg_x[], const view_1d &src, const view_1d &trg) {
   for(int i = 0; i < ntrg; ++i) {
     Real tl = trg_x[i];

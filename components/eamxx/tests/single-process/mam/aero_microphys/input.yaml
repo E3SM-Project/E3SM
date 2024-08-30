@@ -11,12 +11,15 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [mam4_aero_microphys]
   mam4_aero_microphys:
+   mam4_linoz_ymd : 20100101   
    mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
    mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+   mam4_oxid_ymd : 20150101
    mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
    mam4_chlorine_loading_ymd : 20100101   
    mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
    mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
+   verti_emiss_ymd : 20100101
    mam4_so2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726.nc    
    mam4_so4_a1_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20240823.nc
    mam4_so4_a2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20240823.nc
@@ -43,6 +46,10 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
   pbl_height: 1.0
+  dgncur_a : [1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08] 
+  dgnumwet : [1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08]
+  qaerwat : [1193.43 ,1188.03 ,1665.08 ,1044.58]
+  wetdens : [5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22]  
   #These should come from the input file
 
 # The parameters for I/O control

@@ -130,6 +130,24 @@ void MAMMicrophysics::set_grids(
   // At interfaces
   FieldLayout scalar3d_layout_int{{COL, ILEV}, {ncol_, nlev_ + 1}};
 
+  const int nmodes    = mam4::AeroConfig::num_modes();  // Number of modes
+  // layout for 3D (ncol, nmodes, nlevs)
+  FieldLayout scalar3d_mid_nmodes =
+      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+
+  static constexpr auto m3 = m * m * m;
+     // Aerosol dry particle diameter [m]
+  add_field<Required>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
+
+  // Wet aerosol density [kg/m3]
+  add_field<Required>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
+
+  // Aerosol water [kg/kg]
+  add_field<Required>("qaerwat", scalar3d_mid_nmodes, kg / kg, grid_name);
+
+  // Wet Required diameter [m]
+  add_field<Required>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
+
   // define fields needed in mam4xx
 
   // atmospheric quantities
@@ -230,12 +248,11 @@ void MAMMicrophysics::set_grids(
     }
     linoz_data_beg_.set_file_type(tracer_file_type);
     linoz_data_end_.set_file_type(tracer_file_type);
-    // FIXME: get this from input.yaml
-    int cyclical_ymd=20100100; //in format YYYYMMDD
+    // int linoz_cyclical_ymd=20100100; //in format YYYYMMDD
+    int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
     std::vector<int>  linoz_dates;
     int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(linoz_file_name_, cyclical_ymd, cyclical_ymd_index,   linoz_dates);
-    trace_time_state_.offset_time_index=cyclical_ymd_index;
+    scream::mam_coupling::get_time_from_ncfile(linoz_file_name_, linoz_cyclical_ymd, cyclical_ymd_index, linoz_dates);
     linoz_time_state_.offset_time_index=cyclical_ymd_index;
   }
   {
@@ -254,11 +271,11 @@ void MAMMicrophysics::set_grids(
     }
     tracer_data_beg_.set_file_type(tracer_file_type);
     tracer_data_end_.set_file_type(tracer_file_type);
-    // FIXME: get this from input.yaml
-    int cyclical_ymd=20150101; //in format YYYYMMDD
+    // int cyclical_ymd=20150101; //in format YYYYMMDD
+    int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
     std::vector<int>  oxi_dates;
     int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(oxid_file_name_, cyclical_ymd, cyclical_ymd_index,   oxi_dates);
+    scream::mam_coupling::get_time_from_ncfile(oxid_file_name_, oxid_ymd, cyclical_ymd_index,   oxi_dates);
     trace_time_state_.offset_time_index=cyclical_ymd_index;
   }
 
@@ -315,11 +332,11 @@ void MAMMicrophysics::set_grids(
 
     {
     // NOTE: Here I am assuming all vert file have same times.
-    // FIXME: get this from input.yaml
-    int cyclical_ymd=20100101; //in format YYYYMMDD
+    // int cyclical_ymd=20100101; //in format YYYYMMDD
+    int verti_emiss_cyclical_ymd = m_params.get<int>("verti_emiss_ymd");
     std::vector<int>  vertical_emiss_dates;
     int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(vert_emis_file_name_["num_a4"], cyclical_ymd, cyclical_ymd_index,   vertical_emiss_dates);
+    scream::mam_coupling::get_time_from_ncfile(vert_emis_file_name_["num_a4"], verti_emiss_cyclical_ymd, cyclical_ymd_index,   vertical_emiss_dates);
     vert_emiss_time_state_.offset_time_index=cyclical_ymd_index;
     }
   }
@@ -402,7 +419,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   dry_atm_.qi        = buffer_.qi_dry;
   dry_atm_.ni        = buffer_.ni_dry;
   dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+  dry_atm_.z_surf    = 0.0;  // It is always zero.
 
   // get surface albedo: shortwave, direct
   d_sfc_alb_dir_vis_ = get_field_in("sfc_alb_dir_vis").get_view<const Real *>();
@@ -460,9 +477,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       m_params.get<std::string>("mam4_xs_long_file");
 
   photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
-
-  // FIXME: read relevant land use data from drydep surface file
-
   // set up our preprocess/postprocess functors
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
@@ -669,6 +683,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
+  const auto wet_geometric_mean_diameter_i = get_field_in("dgnumwet").get_view<const Real ***>();
+  const auto dry_geometric_mean_diameter_i = get_field_in("dgncur_a").get_view<const  Real ***>();
+  const auto qaerwat = get_field_in("qaerwat").get_view<const Real ***>();
+  const auto wetdens = get_field_in("wetdens").get_view<const Real ***>();
+
   // reset internal WSM variables
   // workspace_mgr_.reset_internals();
 
@@ -820,6 +839,14 @@ void MAMMicrophysics::run_impl(const double dt) {
         auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
         auto z_iface = ekat::subview(dry_atm.z_iface, icol);
         Real phis    = dry_atm.phis(icol);
+
+        auto wet_diameter_icol =
+            ekat::subview(wet_geometric_mean_diameter_i, icol);
+        auto dry_diameter_icol =
+            ekat::subview(dry_geometric_mean_diameter_i, icol);
+        auto qaerwat_icol     = ekat::subview(qaerwat, icol);
+        auto wetdens_icol     = ekat::subview(wetdens, icol);
+
 
         // set surface state data
         haero::Surface sfc{};
@@ -982,30 +1009,24 @@ void MAMMicrophysics::run_impl(const double dt) {
               // * dry and wet diameters [m]
               // * wet densities [kg/m3]
               // * aerosol water mass mixing ratio [kg/kg]
-              // FIXME:!!! These values are inputs for this interface
-              // We need to get these values from the FM.
-              Real dgncur_a[num_modes]    = {1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08 };
-              Real dgncur_awet[num_modes] = {1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08};
-              Real wetdens[num_modes]     = {1193.43 ,1188.03 ,1665.08 ,1044.58 };
-              Real qaerwat[num_modes]     = {5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22};
-# if 0
-              Real n_mode_i[num_modes];
-              for (int i = 0; i < num_modes; ++i) {
-                n_mode_i[i] =   progs.n_mode_i[i](k);
-              }
-              // FIXME: We do not need to invoked this function in this interface.
-              impl::compute_water_content(state_q, qqcw_long, qv, temp, pmid,
-                                          n_mode_i, dgncur_a,
-                                          dgncur_awet, wetdens, qaerwat);
+              Real dgncur_a_kk[num_modes]    = {};
+              Real dgncur_awet_kk[num_modes] = {};
+              Real wetdens_kk[num_modes]     = {};
+              Real qaerwat_kk[num_modes]     = {};
 
-#endif
+              for (int imode = 0; imode < num_modes; imode++) {
+                dgncur_awet_kk[imode] = wet_diameter_icol(imode, k);
+                dgncur_a_kk[imode] = dry_diameter_icol(imode, k);
+                qaerwat_kk[imode] = qaerwat_icol(imode, k);
+                wetdens_kk[imode] = wetdens_icol(imode, k);
+              }
               // do aerosol microphysics (gas-aerosol exchange, nucleation,
               // coagulation)
               impl::modal_aero_amicphys_intr(
                   config.amicphys, step, dt, temp, pmid, pdel, zm, pblh, qv,
                   cldfrac, vmr, vmrcw, vmr_pregaschem, vmr_precldchem,
-                  vmrcw_precldchem, vmr_tendbb, vmrcw_tendbb, dgncur_a,
-                  dgncur_awet, wetdens, qaerwat);
+                  vmrcw_precldchem, vmr_tendbb, vmrcw_tendbb, dgncur_a_kk,
+                  dgncur_awet_kk, wetdens_kk, qaerwat_kk);
               //-----------------
               // LINOZ chemistry
               //-----------------
