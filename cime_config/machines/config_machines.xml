@@ -3498,7 +3498,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+          <arg name="ranks_bind">-envall</arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
