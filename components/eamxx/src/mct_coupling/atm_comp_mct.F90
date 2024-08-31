@@ -235,6 +235,11 @@ CONTAINS
     call scream_set_cpl_indices (x2a, a2x)
 
 #ifdef HAVE_MOAB
+! for MOAB driver, need to setup surface coupling for MOAB arrays that will hold
+! fields data for import and export
+!  setup is similar to setup for the attribute vectors real data arrays (x2a%rAttr
+!  and a2x%rAttr)
+! the major difference is that moab arrays are transposed compared to AVs arrays
     mblsize = lsize
     nsend = mct_avect_nRattr(a2x)
     totalmbls = mblsize * nsend   ! size of the double array
@@ -497,6 +502,11 @@ CONTAINS
   end subroutine atm_domain_mct
 
 #ifdef HAVE_MOAB
+! as part of initialization, moab version of the MCT type grid needs to be instanced too
+! it is what we call "point cloud mesh", it contains just the vertices corresponding to the
+! grid for surface coupling
+! its tags are corresponding to the fields from a2x and x2a attribute vectors, and its
+! GLOBAL_ID tag corresponds to the global degrees of freedom in global atmosphere
   subroutine  moab_atm_phys_scream()
 
     use iMOAB, only : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &

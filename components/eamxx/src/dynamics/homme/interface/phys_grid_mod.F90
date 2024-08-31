@@ -652,7 +652,10 @@ contains
              write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
              write(iulog,*) " "
          endif
-
+! instance distributed moab meshes from elem structures
+!    1 ) spectral coarse mesh
+!    2 ) GLL fine quad mesh (used mostly for visualization)
+!    3 ) pgN FV type mesh, (most of the time pg2 mesh), used for coupling with other components;
        call create_moab_meshes(par, elem, pgN)
      endif
 #endif
