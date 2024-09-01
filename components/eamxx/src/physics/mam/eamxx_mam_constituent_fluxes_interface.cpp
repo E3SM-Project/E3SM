@@ -281,8 +281,26 @@ void MAMConstituentFluxes::run_impl(const double dt) {
 
   // preprocess input -- needs a scan for the calculation of dry_atm_, wet_aero_
   // etc.
-  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
-  Kokkos::fence();
+  // Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  // Kokkos::fence();
+
+  auto lambda =
+      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
+    const int i = team.league_rank();          // column index
+    compute_dry_mixing_ratios(team, wet_atm_,  // in
+                              dry_atm_,        // out
+                              i);              // in
+    team.team_barrier();
+    // vertical heights has to be computed after computing dry mixing ratios
+    // for atmosphere
+    compute_vertical_layer_heights(team,        // in
+                                   dry_atm_,    // out
+                                   i);          // in
+    compute_updraft_velocities(team, wet_atm_,  // in
+                               dry_atm_,        // out
+                               i);              // in
+  };
+  Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
 
   update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
                                          constituent_fluxes_,
