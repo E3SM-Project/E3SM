@@ -19,10 +19,7 @@ void update_gas_aerosols_using_constituents(
   static constexpr int pcnst   = mam4::aero_model::pcnst;
 
   // Declare local variables
-  auto wet_aero_loc           = wet_aero;
-  auto dry_atm_loc            = dry_atm;
-  const int surface_lev       = nlev - 1;
-  auto constituent_fluxes_loc = constituent_fluxes;
+  const int surface_lev = nlev - 1;
 
   // get the start index for gas species in the state_q array
   int istart = mam4::utils::gasses_start_ind();
@@ -34,8 +31,7 @@ void update_gas_aerosols_using_constituents(
   // Create a policy to loop over columns annd number of constituents
   // to update
   // FIXME: TODO:We don't need a team for "nconstituents", so we can make the
-  // kookos_for
-  // simple by using just ncols
+  // kookos_for simple by using just ncols
   const auto policy = ekat::ExeSpaceUtils<MAMConstituentFluxes::KT::ExeSpace>::
       get_default_team_policy(ncol, nconstituents);
 
@@ -58,7 +54,7 @@ void update_gas_aerosols_using_constituents(
             atmosphere_for_column(dry_atm,  // output
                                   icol);    // input
 
-        // Form state%q like array
+        // Form state%q like array at surface level
         Real state_q_at_surf_lev[pcnst] = {};
         mam4::utils::extract_stateq_from_prognostics(
             progs_at_col, haero_atm,  // input

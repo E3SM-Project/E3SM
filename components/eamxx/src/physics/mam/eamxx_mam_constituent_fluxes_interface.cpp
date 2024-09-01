@@ -253,53 +253,47 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
         get_field_out(gas_mmr_field_name).get_view<Real **>();
   }
 
-  //-----------------------------------------------------------------
-  // Setup preprocessing and post processing
-  //-----------------------------------------------------------------
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
-
 }  // end initialize_impl()
 
 // ================================================================
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-
   // -------------------------------------------------------------------
   // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
   // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
   // mixing ratios), we are *not* doing any wet to dry conversions in the
-  // "preprocess" for this process. We are simply updating the MAM4xx
-  // tracers using the "constituent fluxes".
+  // for this process. We are simply updating the MAM4xx tracers using the
+  // "constituent fluxes".
   // We are converting wet atm to dry atm. Since we do not use or update
   // any of the water constituents (qc, qv, qi etc.), we should be okay
   // to do this conversion. We need to do this conversion as our function
   // are built following HAERO data structures.
   // -------------------------------------------------------------------
 
-  // preprocess input -- needs a scan for the calculation of dry_atm_, wet_aero_
-  // etc.
-  // Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
-  // Kokkos::fence();
-
+  // Compute vertical layer heights and updraft velocity. We need these to fully
+  // populate dry_atm_, so that we can form a HAERO atmosphere object. HAERO
+  // atmosphere object is used to for state%q like array.
   auto lambda =
       KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
-    const int i = team.league_rank();          // column index
+    const int icol = team.league_rank();       // column index
     compute_dry_mixing_ratios(team, wet_atm_,  // in
                               dry_atm_,        // out
-                              i);              // in
+                              icol);           // in
     team.team_barrier();
     // vertical heights has to be computed after computing dry mixing ratios
     // for atmosphere
     compute_vertical_layer_heights(team,        // in
                                    dry_atm_,    // out
-                                   i);          // in
+                                   icol);       // in
     compute_updraft_velocities(team, wet_atm_,  // in
                                dry_atm_,        // out
-                               i);              // in
+                               icol);           // in
   };
+  // policy
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
 
   update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
