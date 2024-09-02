@@ -1,0 +1,40 @@
+%YAML 1.1
+---
+filename_prefix: scream_output.decadal.1hourlyINST_arm.h
+iotype: pnetcdf
+Averaging Type: Instant
+Max Snapshots Per File: 24  # one file per day
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_DecadalSites_c20240130.nc
+Fields:
+  Physics PG2:
+    Field Names:
+    # 3D
+    - T_mid
+    - RelativeHumidity
+    - qc
+    - qi
+    - qr
+    - qm
+    - ps
+    - cldfrac_tot_for_analysis
+    - cldfrac_liq
+    - cldfrac_ice_for_analysis
+    - omega
+    - tke
+    - eff_radius_qc
+    - eff_radius_qi
+    - nc
+    - ni
+    - nr
+    - bm
+    - p_mid
+    - z_mid
+    - U
+    - V
+    - landfrac
+output_control:
+  Frequency: 1
+  frequency_units: nhours
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true
