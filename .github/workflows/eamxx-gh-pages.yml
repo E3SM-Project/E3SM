@@ -54,7 +54,7 @@ jobs:
           echo "= The job was automatically triggered by a ${{github.event_name}} event."
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.1.1
+        uses: actions/setup-python@v5.2.0
         with:
           python-version: "3.11"
 
