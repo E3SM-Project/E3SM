@@ -27,14 +27,14 @@ jobs:
       fail-fast: false
       matrix:
         test: 
-          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - SMS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - REP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu.eam-wcprod_F2010
-          - ERP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - PET_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - PEM_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - SMS_D_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - SMS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - REP_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
+          - ERP_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - PET_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - PEM_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
