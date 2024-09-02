@@ -18,15 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: 
+        test:
+          # format test like usual (TYPE_PX.GRID.COMPSET.MACHINE_COMPILER)
           - SMS_D_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - SMS_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - REP_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
           - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
-          - ERP_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - PET_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - PEM_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
+
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 

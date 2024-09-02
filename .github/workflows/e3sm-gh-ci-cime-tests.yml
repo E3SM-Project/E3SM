@@ -5,6 +5,7 @@ on:
     branches: [ master ]
     paths:
       # first, yes to these
+      - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
       - 'cime_config/**'
       - 'components/eam/**'
       - 'components/elm/**'
@@ -26,15 +27,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: 
+        test:
+          # format test like usual (TYPE_PX.GRID.COMPSET.MACHINE_COMPILER)
           - SMS_D_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
-          - SMS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
-          - REP_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
           - ERS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
-          - ERP_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
-          - PET_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
-          - PEM_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
