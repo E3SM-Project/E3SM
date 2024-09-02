@@ -407,6 +407,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(const ekat::Comm& comm,
   return table;
 }
 #endif
+
 // performs gas phase chemistry calculations on a single level of a single
 // atmospheric column
 KOKKOS_INLINE_FUNCTION
@@ -415,6 +416,8 @@ void gas_phase_chemistry(
     const Real photo_rates[mam4::mo_photo::phtcnt],  // in
     const Real extfrc[mam4::gas_chemistry::extcnt],  // in
     Real invariants[mam4::gas_chemistry::nfs],       // in
+    const int clsmap_4[mam4::gas_chemistry::gas_pcnst], // in
+    const int permute_4[mam4::gas_chemistry::gas_pcnst],// in
     Real q[mam4::gas_chemistry::gas_pcnst]) {        // VMRs, inout
   // constexpr Real rga = 1.0/haero::Constants::gravity;
   // constexpr Real m2km = 0.01; // converts m -> km
@@ -436,16 +439,6 @@ void gas_phase_chemistry(
 
   constexpr int itermax = mam4::gas_chemistry::itermax;
   constexpr int clscnt4 = mam4::gas_chemistry::clscnt4;
-  constexpr int nfs     = mam4::gas_chemistry::nfs;
-
-  // NOTE: vvv these arrays were copied from mam4xx/gas_chem_mechanism.hpp vvv
-  constexpr int permute_4[gas_pcnst] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                                        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                        20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
-  constexpr int clsmap_4[gas_pcnst]  = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-                                        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                                        21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
-
   // These indices for species are fixed by the chemical mechanism
   // std::string solsym[] = {"O3", "H2O2", "H2SO4", "SO2", "DMS", "SOAG",
   //                         "so4_a1", "pom_a1", "soa_a1", "bc_a1", "dst_a1",

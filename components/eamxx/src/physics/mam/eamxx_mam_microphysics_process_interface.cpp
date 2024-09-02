@@ -12,7 +12,6 @@
 
 // NOTE: see the impl/ directory for the contents of the impl namespace
 #include "impl/compute_o3_column_density.cpp"
-#include "impl/compute_water_content.cpp"
 #include "impl/gas_phase_chemistry.cpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
@@ -230,25 +229,20 @@ void MAMMicrophysics::set_grids(
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
   {
-    // std::string
-    // linoz_file_name="linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc";
     linoz_file_name_ = m_params.get<std::string>("mam4_linoz_file_name");
     std::string spa_map_file = "";
     std::vector<std::string> var_names{"o3_clim",     "o3col_clim",   "t_clim",
                                        "PmL_clim",    "dPmL_dO3",     "dPmL_dT",
                                        "dPmL_dO3col", "cariolle_pscs"};
 
+    // in format YYYYMMDD
+    int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
+    scream::mam_coupling::setup_tracer_data(linoz_data_,
+                           linoz_file_name_, linoz_cyclical_ymd);
     LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, linoz_file_name_, spa_map_file, var_names, linoz_data_.file_type);
+        grid_, linoz_file_name_, spa_map_file, var_names, linoz_data_);
     LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(
         LinozHorizInterp_, linoz_file_name_);
-
-    // int linoz_cyclical_ymd=20100100; //in format YYYYMMDD
-    int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
-    std::vector<int>  linoz_dates;
-    int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(linoz_file_name_, linoz_cyclical_ymd, cyclical_ymd_index, linoz_dates);
-    linoz_time_state_.offset_time_index=cyclical_ymd_index;
 
     // linoz reader
     const auto io_grid_linoz = LinozHorizInterp_->get_src_grid();
@@ -259,35 +253,23 @@ void MAMMicrophysics::set_grids(
             ->get_num_vertical_levels();  // Number of levels per column
     const int nvars = int(var_names.size());;
     linoz_data_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
-    linoz_data_.allocate_data_views();
-    linoz_data_.allocate_work_vert_inter();
-    if(linoz_data_.file_type == TracerFileType::FORMULA_PS) {
-      linoz_data_.set_hyam_n_hybm(LinozHorizInterp_, linoz_file_name_);
-      linoz_data_.allocate_ps();
-    } else if(linoz_data_.file_type == TracerFileType::ZONAL) {
-      // we use ncremap and python scripts to convert zonal files to ne4pn4
-      // grids.
-      p_src_linoz_ =
-          view_2d("pressure_src_invariant", ncol_, num_levs_io_linoz);
-      scream::mam_coupling::compute_p_src_zonal_files(linoz_file_name_,
-                                                      p_src_linoz_);
-    }
+    linoz_data_.allocate_temporal_views();
   }
+
   {
     oxid_file_name_          = m_params.get<std::string>("mam4_oxid_file_name");
     std::string spa_map_file = "";
     //NOTE: order matches mam4xx:
     std::vector<std::string> var_names{"O3", "OH", "NO3", "HO2"};
+
+    // //in format YYYYMMDD
+    int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
+    scream::mam_coupling::setup_tracer_data(tracer_data_,
+                           oxid_file_name_, oxid_ymd);
     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, oxid_file_name_, spa_map_file, var_names, tracer_data_.file_type);
+        grid_, oxid_file_name_, spa_map_file, var_names, tracer_data_);
     TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(
         TracerHorizInterp_, oxid_file_name_);
-    // int cyclical_ymd=20150101; //in format YYYYMMDD
-    int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
-    std::vector<int>  oxi_dates;
-    int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(oxid_file_name_, oxid_ymd, cyclical_ymd_index,   oxi_dates);
-    trace_time_state_.offset_time_index=cyclical_ymd_index;
 
     const int nvars    = int(var_names.size());;
     const auto io_grid = TracerHorizInterp_->get_src_grid();
@@ -296,20 +278,12 @@ void MAMMicrophysics::set_grids(
     const int num_levs_io =
         io_grid->get_num_vertical_levels();  // Number of levels per column
     tracer_data_.init(num_cols_io, num_levs_io, nvars);
-    tracer_data_.allocate_data_views();
-    tracer_data_.allocate_ps();
-    tracer_data_.allocate_work_vert_inter();
-
-    if(tracer_data_.file_type == TracerFileType::FORMULA_PS) {
-      tracer_data_.set_hyam_n_hybm(TracerHorizInterp_, oxid_file_name_);
-    }
-
-    p_src_invariant_ =
-        view_2d("pressure_src_invariant", num_cols_io, num_levs_io);
+    tracer_data_.allocate_temporal_views();
 
     for(int ivar = 0; ivar < nvars; ++ivar) {
       cnst_offline_[ivar] = view_2d("cnst_offline_", ncol_, nlev_);
     }
+
   }
 
   {
@@ -319,8 +293,6 @@ void MAMMicrophysics::set_grids(
     // extfrc_lst(:  9) = {'SO2             ','so4_a1          ','so4_a2          ','pom_a4          ','bc_a4           ',
                           // 'num_a1          ','num_a2          ','num_a4          ','SOAG            ' }
     // This order corresponds to files in namelist e3smv2
-    // Note that I change this order to match extfrc_lst
-    // 1,9,2,6,3,7,4,5,8
     extfrc_lst_=std::vector<std::string>({"so2","so4_a1","so4_a2","pom_a4","bc_a4",
                                          "num_a1","num_a2","num_a4","soag"});
 
@@ -342,30 +314,24 @@ void MAMMicrophysics::set_grids(
     vert_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB", "num_a1_POM_ELEV_BB"};
     vert_emis_var_names_["soag"] = {"SOAbb_src","SOAbg_src", "SOAff_src"};
 
+
+    int verti_emiss_cyclical_ymd = m_params.get<int>("verti_emiss_ymd");
+
     for (const auto& var_name : extfrc_lst_) {
       const auto file_name = vert_emis_file_name_[var_name];
       const auto var_names = vert_emis_var_names_[var_name];
 
       scream::mam_coupling::TracerData data_tracer;
+      scream::mam_coupling::setup_tracer_data(data_tracer,
+                           file_name, verti_emiss_cyclical_ymd);
       auto hor_rem = scream::mam_coupling::create_horiz_remapper(
-          grid_, file_name, spa_map_file, var_names, data_tracer.file_type);
+          grid_, file_name, spa_map_file, var_names, data_tracer);
       auto file_reader =
           scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name);
       VertEmissionsHorizInterp_.push_back(hor_rem);
       VertEmissionsDataReader_.push_back(file_reader);
       vert_emis_data_.push_back(data_tracer);
     }// var_name vert emissions
-
-    {
-    // NOTE: Here I am assuming all vert file have same times.
-    // int cyclical_ymd=20100101; //in format YYYYMMDD
-    int verti_emiss_cyclical_ymd = m_params.get<int>("verti_emiss_ymd");
-    std::vector<int>  vertical_emiss_dates;
-    int cyclical_ymd_index=-1;
-    scream::mam_coupling::get_time_from_ncfile(vert_emis_file_name_["num_a4"], verti_emiss_cyclical_ymd, cyclical_ymd_index,   vertical_emiss_dates);
-    vert_emiss_time_state_.offset_time_index=cyclical_ymd_index;
-    }
-
     int i=0;
     int offset_emis_ver=0;
     for (auto it = extfrc_lst_.begin(); it != extfrc_lst_.end(); ++it, ++i) {
@@ -385,18 +351,8 @@ void MAMMicrophysics::set_grids(
           io_grid_emis
               ->get_num_vertical_levels();  // Number of levels per column
       vert_emis_data_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
-      vert_emis_data_[i].allocate_data_views();
-      if(vert_emis_data_[i].file_type == TracerFileType::FORMULA_PS) {
-        vert_emis_data_[i].allocate_ps();
-        forcings_[i].file_alt_data=false;
-      } else if(vert_emis_data_[i].file_type ==
-                TracerFileType::VERT_EMISSION) {
-      forcings_[i].file_alt_data=true;
-      // FIXME: Do not open this file three times
-      // I am getting zeros for altitude_int if I use AtmosphereInput
-      scream::mam_coupling::get_altitude_int(file_name, vert_emis_data_[i].altitude_int);
-      }
-
+      vert_emis_data_[i].allocate_temporal_views();
+      forcings_[i].file_alt_data=vert_emis_data_[i].has_altitude_;
       for (int isp = 0; isp < nvars; ++isp)
       {
         EKAT_REQUIRE_MSG(
@@ -657,7 +613,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // NOTE: nothing depends on simulation time (yet), so we can just use zero for
   // now
-  double t = 0.0;
+  // double t = 0.0;
 
   // climatology data for linear stratospheric chemistry
   auto linoz_o3_clim = buffer_.scratch[0];  // ozone (climatology) [vmr]
@@ -700,12 +656,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   trace_time_state_.t_now = ts.frac_of_year_in_days();
   scream::mam_coupling::advance_tracer_data(
       TracerDataReader_, *TracerHorizInterp_, ts, trace_time_state_,
-      tracer_data_, p_src_invariant_,
+      tracer_data_,
       dry_atm_.p_mid, dry_atm_.z_iface, cnst_offline_);
 
   scream::mam_coupling::advance_tracer_data(
       LinozDataReader_, *LinozHorizInterp_, ts, linoz_time_state_,
-      linoz_data_, p_src_linoz_,
+      linoz_data_,
       dry_atm_.p_mid, dry_atm_.z_iface, linoz_output);
 
   vert_emiss_time_state_.t_now = ts.frac_of_year_in_days();
@@ -723,13 +679,15 @@ void MAMMicrophysics::run_impl(const double dt) {
     scream::mam_coupling::advance_tracer_data(
         VertEmissionsDataReader_[i], *VertEmissionsHorizInterp_[i], ts,
         vert_emiss_time_state_,
-        vert_emis_data_[i], p_src_linoz_, dry_atm_.p_mid,
+        vert_emis_data_[i], dry_atm_.p_mid,
         dry_atm_.z_iface, vert_emis_output);
   }
 
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &col_longitudes    = col_longitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
+
+
 
   mam_coupling::DryAtmosphere &dry_atm        = dry_atm_;
   mam_coupling::AerosolState &dry_aero        = dry_aero_;
@@ -781,11 +739,14 @@ void MAMMicrophysics::run_impl(const double dt) {
   // FIXME: remove this hard-code value
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
+  // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on the device.
+  int clsmap_4[gas_pcnst], permute_4[gas_pcnst];
   for(int i = 0; i < gas_pcnst; ++i)
   {
     adv_mass_kg_per_moles[i] = mam4::gas_chemistry::adv_mass[i]/1e3;
+    clsmap_4[i]=mam4::gas_chemistry::clsmap_4[i];
+    permute_4[i]=mam4::gas_chemistry::permute_4[i];
   }
-
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
@@ -953,7 +914,7 @@ void MAMMicrophysics::run_impl(const double dt) {
               const auto& photo_rates_k = ekat::subview(photo_rates_icol,k);
               impl::gas_phase_chemistry(zm, zi, phis, temp, pmid, pdel, dt,
                                         photo_rates_k.data(), extfrc_k.data(),
-                                        invariants_k.data(), vmr);
+                                        invariants_k.data(), clsmap_4, permute_4, vmr);
               //----------------------
               // Aerosol microphysics
               //----------------------

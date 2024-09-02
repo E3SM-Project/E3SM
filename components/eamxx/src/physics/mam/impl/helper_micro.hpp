@@ -21,6 +21,39 @@ using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
 using C        = scream::physics::Constants<Real>;
 using LIV      = ekat::LinInterp<Real, 1>;
 
+
+// Linoz NetCDF files use levs instead of formula_terms.
+// This function allocates a view, so we need to do it during initialization.
+// Thus, we assume that source pressure is independent of time,
+// which is the case for Linoz files (zonal file).
+
+inline void compute_p_src_zonal_files(const view_1d &levs,
+                                      const view_2d &p_src) {
+  EKAT_REQUIRE_MSG(p_src.data() != 0,
+                   "Error: p_src has not been allocated. \n");
+  EKAT_REQUIRE_MSG(levs.data() != 0,
+                   "Error: levs has not been allocated. \n");
+  const int ncol = p_src.extent(0);
+  const int nlevs_data = levs.extent(0);
+  EKAT_REQUIRE_MSG(
+      int(p_src.extent(1)) == nlevs_data,
+      "Error: p_src has a different number of levels than the source data. \n");
+
+  const auto policy_pressure = ESU::get_default_team_policy(ncol, nlevs_data);
+  Kokkos::parallel_for(
+      "pressure_computation", policy_pressure, KOKKOS_LAMBDA(const Team &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs_data),
+                             [&](const Int &kk) {
+                               // mbar->pascals
+                               // FIXME: Does EAMxx have a better method to
+                               // convert units?"
+                               p_src(icol, kk) = levs(kk) * 100;
+                             });
+      });
+  Kokkos::fence();
+}
+
 // We have a similar version in MAM4xx.
 // This version was created because the data view cannot be modified
 // inside the parallel_for.
@@ -72,8 +105,6 @@ struct TracerTimeState {
   Real t_now;
   // Number of days in the current month, cast as a Real
   Real days_this_month;
-  //
-  int offset_time_index{0};
 };  // TricerTimeState
 
 struct TracerData {
@@ -93,6 +124,12 @@ struct TracerData {
   int ncol_{-1};
   int nlev_{-1};
   int nvars_{-1};
+  int nlevs_data;
+  int ncols_data;
+
+  //
+  int offset_time_index_{0};
+
   // We cannot use a std::vector<view_2d>
   // because we need to access these views from device.
   // 0: beg 1: end 3: out
@@ -109,69 +146,28 @@ struct TracerData {
 
   // External forcing file (vertical emission)
   // Uses altitude instead of pressure to interpolate data
-  view_1d altitude_int;
+  view_1d altitude_int_;
+  //
+  bool has_altitude_{false};
+  // pressure source for ZONAL or FORMULA_PS files
+  view_2d p_src_;
 
-  void allocate_data_views() {
+  // only for zonal files
+  view_1d zonal_levs_;
+
+  void allocate_temporal_views()
+  {
+    //BEG and OUT data views.
     EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
     EKAT_REQUIRE_MSG(nlev_ != int(-1), "Error! nlevs has not been set. \n");
+    EKAT_REQUIRE_MSG(nvars_ != int(-1), "Error! nvars has not been set. \n");
 
     for(int ivar = 0; ivar < nvars_; ++ivar) {
       data[TracerDataIndex::OUT][ivar] = view_2d("linoz_1_out", ncol_, nlev_);
       data[TracerDataIndex::BEG][ivar] = view_2d("linoz_1_out", ncol_, nlev_);
     }
-  }  // allocate_data_views
 
-  void set_file_type(const TracerFileType file_type_in) {
-    file_type = file_type_in;
-  }
-
-  void allocate_ps() {
-    EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
-    EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
-                     "Error! file does have the PS variable. \n");
-
-    ps[TracerDataIndex::OUT] = view_1d("ps", ncol_);
-    ps[TracerDataIndex::BEG] = view_1d("ps", ncol_);
-  }
-
-  // void set_data_views(view_2d list_of_views[]) {
-  //   for(int ivar = 0; ivar < nvars_; ++ivar) {
-  //     EKAT_REQUIRE_MSG(list_of_views[ivar].data() != 0,
-  //                      "Error! Insufficient memory  size.\n");
-  //     data[ivar] = list_of_views[ivar];
-  //   }
-  // }
-
-  // void set_data_ps(const view_1d &ps_in) {
-  //   EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
-  //                    "Error! file does have the PS variable. \n");
-  //   ps = ps_in;
-  // }
-  // FIXME: The same file is being opened more than twice in the microphysics module..
-  void set_hyam_n_hybm(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
-                       const std::string &tracer_file_name) {
-    EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
-                     "Error! file does have the PS variable. \n");
-
-    // Read in hyam/hybm in start/end data
-    auto nondim        = ekat::units::Units::nondimensional();
-    const auto io_grid = horiz_remapper->get_src_grid();
-    Field hyam_f(FieldIdentifier("hyam", io_grid->get_vertical_layout(true),
-                                 nondim, io_grid->name()));
-    Field hybm_f(FieldIdentifier("hybm", io_grid->get_vertical_layout(true),
-                                 nondim, io_grid->name()));
-    hyam_f.allocate_view();
-    hybm_f.allocate_view();
-    AtmosphereInput hvcoord_reader(tracer_file_name, io_grid, {hyam_f, hybm_f},
-                                   true);
-    hvcoord_reader.read_variables();
-    hvcoord_reader.finalize();
-    hyam = hyam_f.get_view<const Real *>();
-    hybm = hyam_f.get_view<const Real *>();
-  }
-
-  void allocate_work_vert_inter()
-  {
+    // for vertical interpolation using rebin routine
     if(file_type == FORMULA_PS ||
         file_type == ZONAL) {
     // we only need work array for FORMULA_PS or ZONAL
@@ -179,25 +175,24 @@ struct TracerData {
       work_vert_inter[ivar] =
       view_int_1d("allocate_work_vertical_interpolation", ncol_);
     }
+    // we use ncremap and python scripts to convert zonal files to ne4pn4
+    // grids.
+    p_src_ = view_2d("pressure_src_invariant", ncol_, nlev_);
+    }
+
+    if(file_type == TracerFileType::FORMULA_PS) {
+      ps[TracerDataIndex::OUT] = view_1d("ps", ncol_);
+      ps[TracerDataIndex::BEG] = view_1d("ps", ncol_);
+    }
+
+    if(file_type == TracerFileType::ZONAL) {
+      // we use ncremap and python scripts to convert zonal files to ne4pn4
+      // grids.
+      compute_p_src_zonal_files(zonal_levs_, p_src_);
     }
 
   }
 };
-
-// Given a filename, return altitude_int
-inline void get_altitude_int(
-    const std::string &tracer_file_name,
-    view_1d& altitude_int) {
-// in tracer_file_name: NC file name
-// out altitude_int: views of int altitude
-  scorpio::register_file(tracer_file_name, scorpio::Read);
-  const int nlevs_data = scorpio::get_dimlen(tracer_file_name, "altitude_int");
-  view_1d_host altitude_int_host("altitude_int_host", nlevs_data);
-  scorpio::read_var(tracer_file_name, "altitude_int", altitude_int_host.data());
-  scorpio::release_file(tracer_file_name);
-  altitude_int = view_1d("altitude_int",nlevs_data);
-  Kokkos::deep_copy(altitude_int, altitude_int_host);
-}  // set_altitude_int
 
 // Direct port of components/eam/src/chemistry/utils/tracer_data.F90/vert_interp
 // FIXME: I need to convert for loops to Kokkos loops.
@@ -315,11 +310,12 @@ inline void get_time_from_ncfile(
     }
     dates.push_back(date);
   }  // end itime
-  scorpio::release_file(file_name);
+
   EKAT_REQUIRE_MSG(cyclical_ymd_index>=0,
                   "Error! Current model time ("+std::to_string(cyclical_ymd)+") is not within "+
                   "Tracer time period: ["+std::to_string(dates[0])+", "+
                   "("+std::to_string(dates[nlevs_time-1])+").\n");
+  scorpio::release_file(file_name);
 }
 
 inline Real chlorine_loading_advance(const util::TimeStamp &ts,
@@ -340,17 +336,16 @@ inline Real chlorine_loading_advance(const util::TimeStamp &ts,
   return values[index] + delt * (values[index + 1] - values[index]);
 }
 
-inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
-    const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &trace_data_file, const std::string &map_file,
-    const std::vector<std::string> &var_names,
-    TracerFileType &tracer_file_type) {
-  using namespace ShortFieldTagsNames;
-
+// It reads variables that are not time-dependent and independent of columns (no MPI involved here).
+// We also obtain the offset_time_index using a date (cyclical_ymd) as input.
+// We initialize a few members of tracer_data.
+inline void setup_tracer_data(TracerData &tracer_data, // out
+                              const std::string& trace_data_file, // in
+                              const int cyclical_ymd) //in
+{
   scorpio::register_file(trace_data_file, scorpio::Read);
-
   // by default, I am assuming a zonal file.
-  tracer_file_type = ZONAL;
+  TracerFileType tracer_file_type = ZONAL;
 
   int nlevs_data = -1;
   if(scorpio::has_var(trace_data_file, "lev")) {
@@ -363,7 +358,6 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
     nlevs_data       = scorpio::get_dimlen(trace_data_file, "altitude");
     tracer_file_type = VERT_EMISSION;
   }
-
   EKAT_REQUIRE_MSG(
       nlevs_data != -1,
       "Error: The file does not contain either lev or altitude.   \n");
@@ -373,29 +367,89 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
   // This type of files use model pressure (pmid) for vertical interpolation
   if(scorpio::has_var(trace_data_file, "PS")) {
     tracer_file_type = FORMULA_PS;
+    view_1d_host hyam_h("hyam_h", nlevs_data);
+    view_1d_host hybm_h("hybm_h", nlevs_data);
+
+    scorpio::read_var(trace_data_file, "hyam", hyam_h.data());
+    scorpio::read_var(trace_data_file, "hybm", hybm_h.data());
+    view_1d hyam("hyam", nlevs_data);
+    view_1d hybm("hybm", nlevs_data);
+    Kokkos::deep_copy(hyam,hyam_h);
+    Kokkos::deep_copy(hybm,hybm_h);
+    tracer_data.hyam = hyam;
+    tracer_data.hybm = hybm;
+  }
+
+  if (tracer_file_type == ZONAL)
+  {
+    view_1d_host levs_h("levs_h", nlevs_data);
+    view_1d levs("levs", nlevs_data);
+    scorpio::read_var(trace_data_file, "lev", levs_h.data());
+    Kokkos::deep_copy(levs, levs_h);
+    tracer_data.zonal_levs_ = levs;
+  }
+
+  if (tracer_file_type == VERT_EMISSION)
+  {
+    const int nilevs_data       = scorpio::get_dimlen(trace_data_file, "altitude_int");
+    view_1d_host altitude_int_host("altitude_int_host", nilevs_data);
+    view_1d altitude_int = view_1d("altitude_int",nilevs_data);
+    scorpio::read_var(trace_data_file, "altitude_int", altitude_int_host.data());
+    Kokkos::deep_copy(altitude_int, altitude_int_host);
+    tracer_data.altitude_int_=altitude_int;
+  }
+   // time index
+  {
+  const int nlevs_time = scorpio::get_dimlen(trace_data_file,"time");
+  int cyclical_ymd_index=-1;
+  for(int itime = 0; itime < nlevs_time; ++itime) {
+    int date;
+    scorpio::read_var(trace_data_file, "date", &date, itime);
+    if(date >= cyclical_ymd) {
+      cyclical_ymd_index=itime;
+      break;
+    }
+  }  // end itime
+
+  EKAT_REQUIRE_MSG(cyclical_ymd_index>=0,
+                  "Error! Current model time ("+std::to_string(cyclical_ymd)+") is not within "+
+                  "Tracer time period.\n");
+
+  tracer_data.offset_time_index_ = cyclical_ymd_index;
   }
 
   scorpio::release_file(trace_data_file);
+  tracer_data.file_type  = tracer_file_type;
+  tracer_data.nlevs_data = nlevs_data;
+  tracer_data.ncols_data = ncols_data;
+  tracer_data.has_altitude_ = has_altitude;
 
+}
+inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &trace_data_file, const std::string &map_file,
+    const std::vector<std::string> &var_names,
+    TracerData &tracer_data) {
+  using namespace ShortFieldTagsNames;
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
   // code)
   auto horiz_interp_tgt_grid =
       model_grid->clone("tracer_horiz_interp_tgt_grid", true);
-  horiz_interp_tgt_grid->reset_num_vertical_lev(nlevs_data);
+  horiz_interp_tgt_grid->reset_num_vertical_lev(tracer_data.nlevs_data);
 
-  if(has_altitude) {
+  if(tracer_data.file_type == VERT_EMISSION) {
     horiz_interp_tgt_grid->reset_field_tag_name(LEV, "altitude");
     horiz_interp_tgt_grid->reset_field_tag_name(ILEV, "altitude_int");
   }
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
-  if(ncols_data == ncols_model) {
+  if(tracer_data.ncols_data == ncols_model) {
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
+    EKAT_REQUIRE_MSG(tracer_data.ncols_data <= ncols_model,
                      "Error! We do not allow to coarsen spa data to fit the "
                      "model. We only allow\n"
                      "       spa data to be at the same or coarser resolution "
@@ -425,7 +479,7 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
     remapper->register_field_from_tgt(ifield);
   }
   // zonal files do not have the PS variable.
-  if(tracer_file_type == FORMULA_PS) {
+  if(tracer_data.file_type == FORMULA_PS) {
     Field ps(FieldIdentifier("PS", layout_2d, nondim, tgt_grid->name()));
     ps.allocate_view();
     remapper->register_field_from_tgt(ps);
@@ -514,7 +568,7 @@ inline void update_tracer_timestate(
     // values
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
-    int next_month = time_state.offset_time_index + (time_state.current_month + 1) % 12;
+    int next_month = data_tracer.offset_time_index_ + (time_state.current_month + 1) % 12;
     update_tracer_data_from_file(scorpio_reader, next_month,
                                  tracer_horiz_interp, data_tracer);
   }
@@ -604,45 +658,6 @@ inline void compute_source_pressure_levels(const view_1d &ps_src,
       });
 }  // compute_source_pressure_levels
 
-// Linoz NetCDF files use levs instead of formula_terms.
-// This function allocates a view, so we need to do it during initialization.
-// Thus, we assume that source pressure is independent of time,
-// which is the case for Linoz files (zonal file).
-inline void compute_p_src_zonal_files(const std::string &tracer_file_name,
-                                      const view_2d &p_src) {
-  EKAT_REQUIRE_MSG(p_src.data() != 0,
-                   "Error: p_src has not been allocated. \n");
-  // Read in levs in start/end data
-  // FIXME: units are mbar; how can I get units using scorpio interface
-  auto nondim = ekat::units::Units::nondimensional();
-  scorpio::register_file(tracer_file_name, scorpio::Read);
-  const int nlevs_data = scorpio::get_dimlen(tracer_file_name, "lev");
-  view_1d_host levs_h("levs_h", nlevs_data);
-  scorpio::read_var(tracer_file_name, "lev", levs_h.data());
-  scorpio::release_file(tracer_file_name);
-  view_1d levs("levs", nlevs_data);
-  Kokkos::deep_copy(levs, levs_h);
-
-  const int ncol = p_src.extent(0);
-  EKAT_REQUIRE_MSG(
-      p_src.extent(1) == nlevs_data,
-      "Error: p_src has a different number of levels than the source data. \n");
-
-  const auto policy_pressure = ESU::get_default_team_policy(ncol, nlevs_data);
-  const int pi               = haero::Constants::pi;
-  Kokkos::parallel_for(
-      "pressure_computation", policy_pressure, KOKKOS_LAMBDA(const Team &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs_data),
-                             [&](const Int &kk) {
-                               // mbar->pascals
-                               // FIXME: Does EAMxx have a better method to
-                               // convert units?"
-                               p_src(icol, kk) = levs(kk) * 100;
-                             });
-      });
-  Kokkos::fence();
-}
 
 inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const const_view_2d &p_tgt_c,
@@ -650,7 +665,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const view_2d output[])
   {
   // At this stage, begin/end must have the same horiz dimensions
-  EKAT_REQUIRE(input.ncol_ == output[0].extent(0));
+  EKAT_REQUIRE(input.ncol_ == int(output[0].extent(0)));
   const int ncol = input.ncol_;
   const int levsiz =input.nlev_;
   const int pver = mam4::nlev;
@@ -758,9 +773,11 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
 
 inline void advance_tracer_data(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
-    AbstractRemapper &tracer_horiz_interp, const util::TimeStamp &ts,
-    TracerTimeState &time_state, TracerData &data_tracer,
-    const view_2d &p_src, const const_view_2d &p_tgt,
+    AbstractRemapper &tracer_horiz_interp,
+    const util::TimeStamp &ts,
+    TracerTimeState &time_state,
+    TracerData &data_tracer,
+    const const_view_2d &p_tgt,
     const const_view_2d &zi_tgt,
     const view_2d output[]) {
   /* Update the TracerTimeState to reflect the current time, note the addition
@@ -777,16 +794,16 @@ inline void advance_tracer_data(
   if(data_tracer.file_type == FORMULA_PS) {
     // Step 2. Compute source pressure levels
     const auto ps = data_tracer.ps[TracerDataIndex::OUT];
-    compute_source_pressure_levels(ps, p_src,
+    compute_source_pressure_levels(ps, data_tracer.p_src_,
                                    data_tracer.hyam, data_tracer.hybm);
   }
 
   // Step 3. Perform vertical interpolation
   if(data_tracer.file_type == FORMULA_PS ||
      data_tracer.file_type == ZONAL) {
-    perform_vertical_interpolation(p_src, p_tgt, data_tracer, output);
+    perform_vertical_interpolation(data_tracer.p_src_, p_tgt, data_tracer, output);
   } else if(data_tracer.file_type == VERT_EMISSION) {
-    perform_vertical_interpolation(data_tracer.altitude_int, zi_tgt, data_tracer, output);
+    perform_vertical_interpolation(data_tracer.altitude_int_, zi_tgt, data_tracer, output);
   }
 
 }  // advance_tracer_data

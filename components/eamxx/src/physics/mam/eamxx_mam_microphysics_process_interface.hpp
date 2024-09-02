@@ -257,7 +257,6 @@ private_except_cuda:
   std::shared_ptr<AtmosphereInput>  TracerDataReader_;
   std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
   mam_coupling::TracerData tracer_data_;
-  view_2d p_src_invariant_;
   view_3d invariants_;
   std::string oxid_file_name_;
   view_2d cnst_offline_[4];
@@ -266,7 +265,6 @@ private_except_cuda:
   std::shared_ptr<AtmosphereInput>  LinozDataReader_;
   std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
   mam_coupling::TracerData linoz_data_;
-  view_2d p_src_linoz_;
   std::string linoz_file_name_;
 
   // Vertical emission uses 9 files, here I am using std::vector to stote instance of each file.

@@ -17,8 +17,6 @@ void compute_o3_column_density(const ThreadTeam &team,
   // NOTE: if we need o2 column densities, set_ub_col and setcol must be changed
   Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, atm.num_levels()), [&](const int k) {
-        Real temp = atm.temperature(k);
-        Real pmid = atm.pressure(k);
         Real pdel = atm.hydrostatic_dp(k);
 
         // ... map incoming mass mixing ratios to working array
