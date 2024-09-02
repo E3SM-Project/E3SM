@@ -256,9 +256,7 @@ private_except_cuda:
   mam_coupling::TracerTimeState trace_time_state_;
   std::shared_ptr<AtmosphereInput>  TracerDataReader_;
   std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
-  mam_coupling::TracerData tracer_data_end_;
-  mam_coupling::TracerData tracer_data_beg_;
-  mam_coupling::TracerData tracer_data_out_;
+  mam_coupling::TracerData tracer_data_;
   view_2d p_src_invariant_;
   view_3d invariants_;
   std::string oxid_file_name_;
@@ -267,9 +265,7 @@ private_except_cuda:
   // linoz reader
   std::shared_ptr<AtmosphereInput>  LinozDataReader_;
   std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
-  mam_coupling::TracerData linoz_data_end_;
-  mam_coupling::TracerData linoz_data_beg_;
-  mam_coupling::TracerData linoz_data_out_;
+  mam_coupling::TracerData linoz_data_;
   view_2d p_src_linoz_;
   std::string linoz_file_name_;
 
@@ -278,9 +274,7 @@ private_except_cuda:
   std::vector<std::shared_ptr<AtmosphereInput>>  VertEmissionsDataReader_;
   std::vector<std::shared_ptr<AbstractRemapper>> VertEmissionsHorizInterp_;
   std::vector<std::string> extfrc_lst_;
-  std::vector<mam_coupling::TracerData> vert_emis_data_end_;
-  std::vector<mam_coupling::TracerData> vert_emis_data_beg_;
-  std::vector<mam_coupling::TracerData> vert_emis_data_out_;
+  std::vector<mam_coupling::TracerData> vert_emis_data_;
   std::map< std::string, std::string >vert_emis_file_name_;
   std::map< std::string, std::vector<std::string> > vert_emis_var_names_;
   view_2d vert_emis_output_[mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS];

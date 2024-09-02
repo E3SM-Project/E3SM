@@ -46,6 +46,12 @@ enum TracerFileType {
   VERT_EMISSION,
 };
 
+enum TracerDataIndex {
+  BEG=0,
+  END=1,
+  OUT=2
+};
+
 /* Maximum number of tracers (or fields) that the tracer reader can handle.
  Note: We are not allocating memory for MAX_NVARS_TRACER tracers.
  Therefore, if a file contains more than this number, it is acceptable to
@@ -89,12 +95,14 @@ struct TracerData {
   int nvars_{-1};
   // We cannot use a std::vector<view_2d>
   // because we need to access these views from device.
-  view_2d data[MAX_NVARS_TRACER];
+  // 0: beg 1: end 3: out
+  view_2d data[3][MAX_NVARS_TRACER];
   // type of file
   TracerFileType file_type;
 
   // These views are employed in files with the PS variable
-  view_1d ps;
+  // 0: beg 1: end 3: out
+  view_1d ps[3];
   const_view_1d hyam;
   const_view_1d hybm;
   view_int_1d work_vert_inter[MAX_NVARS_TRACER];;
@@ -108,7 +116,8 @@ struct TracerData {
     EKAT_REQUIRE_MSG(nlev_ != int(-1), "Error! nlevs has not been set. \n");
 
     for(int ivar = 0; ivar < nvars_; ++ivar) {
-      data[ivar] = view_2d("linoz_1", ncol_, nlev_);
+      data[TracerDataIndex::OUT][ivar] = view_2d("linoz_1_out", ncol_, nlev_);
+      data[TracerDataIndex::BEG][ivar] = view_2d("linoz_1_out", ncol_, nlev_);
     }
   }  // allocate_data_views
 
@@ -121,22 +130,23 @@ struct TracerData {
     EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
                      "Error! file does have the PS variable. \n");
 
-    ps = view_1d("ps", ncol_);
+    ps[TracerDataIndex::OUT] = view_1d("ps", ncol_);
+    ps[TracerDataIndex::BEG] = view_1d("ps", ncol_);
   }
 
-  void set_data_views(view_2d list_of_views[]) {
-    for(int ivar = 0; ivar < nvars_; ++ivar) {
-      EKAT_REQUIRE_MSG(list_of_views[ivar].data() != 0,
-                       "Error! Insufficient memory  size.\n");
-      data[ivar] = list_of_views[ivar];
-    }
-  }
+  // void set_data_views(view_2d list_of_views[]) {
+  //   for(int ivar = 0; ivar < nvars_; ++ivar) {
+  //     EKAT_REQUIRE_MSG(list_of_views[ivar].data() != 0,
+  //                      "Error! Insufficient memory  size.\n");
+  //     data[ivar] = list_of_views[ivar];
+  //   }
+  // }
 
-  void set_data_ps(const view_1d &ps_in) {
-    EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
-                     "Error! file does have the PS variable. \n");
-    ps = ps_in;
-  }
+  // void set_data_ps(const view_1d &ps_in) {
+  //   EKAT_REQUIRE_MSG(file_type == FORMULA_PS,
+  //                    "Error! file does have the PS variable. \n");
+  //   ps = ps_in;
+  // }
   // FIXME: The same file is being opened more than twice in the microphysics module..
   void set_hyam_n_hybm(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
                        const std::string &tracer_file_name) {
@@ -450,31 +460,31 @@ inline void update_tracer_data_from_file(
   const int nvars = tracer_data.nvars_;
   //
   for(int i = 0; i < nvars; ++i) {
-    tracer_data.data[i] =
+    tracer_data.data[TracerDataIndex::END][i] =
         tracer_horiz_interp.get_tgt_field(i).get_view<Real **>();
   }
 
   if(tracer_data.file_type == FORMULA_PS) {
     // Recall, the fields are registered in the order: tracers, ps
     // 3. Copy from the tgt field of the remapper into the spa_data
-    tracer_data.ps =
+    tracer_data.ps[TracerDataIndex::END] =
         tracer_horiz_interp.get_tgt_field(nvars).get_view<Real *>();
   }
 
 }  // update_tracer_data_from_file
 inline void update_tracer_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &tracer_horiz_interp, TracerTimeState &time_state,
-    TracerData &data_tracer_beg, TracerData &data_tracer_end) {
+    AbstractRemapper &tracer_horiz_interp,
+    TracerTimeState &time_state,
+    TracerData &data_tracer) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
   //        any other frequency.
   const auto month = ts.get_month() - 1;  // Make it 0-based
   if(month != time_state.current_month) {
-    //
-    const auto tracer_beg = data_tracer_beg.data;
-    const auto tracer_end = data_tracer_end.data;
-    const int nvars       = data_tracer_end.nvars_;
+    const auto tracer_data = data_tracer.data;
+    const int nvars       = data_tracer.nvars_;
+    const auto ps = data_tracer.ps;
 
     // Update the SPA time state information
     time_state.current_month = month;
@@ -485,7 +495,13 @@ inline void update_tracer_timestate(
 
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
     for(int ivar = 0; ivar < nvars; ++ivar) {
-      Kokkos::deep_copy(tracer_beg[ivar], tracer_end[ivar]);
+      Kokkos::deep_copy(tracer_data[TracerDataIndex::BEG][ivar],
+       tracer_data[TracerDataIndex::END][ivar]);
+    }
+
+    if(data_tracer.file_type == FORMULA_PS) {
+      Kokkos::deep_copy(ps[TracerDataIndex::BEG],
+       ps[TracerDataIndex::END]);
     }
 
     // Following SPA to time-interpolate data in MAM4xx
@@ -500,16 +516,14 @@ inline void update_tracer_timestate(
     //       so we will proceed.
     int next_month = time_state.offset_time_index + (time_state.current_month + 1) % 12;
     update_tracer_data_from_file(scorpio_reader, next_month,
-                                 tracer_horiz_interp, data_tracer_end);
+                                 tracer_horiz_interp, data_tracer);
   }
 
 }  // END updata_spa_timestate
 
 // This function is based on the SPA::perform_time_interpolation function.
 inline void perform_time_interpolation(const TracerTimeState &time_state,
-                                       const TracerData &data_tracer_beg,
-                                       const TracerData &data_tracer_end,
-                                       const TracerData &data_tracer_out) {
+                                       const TracerData &data_tracer) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
   // Gather time stamp info
@@ -518,20 +532,14 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
   auto &delta_t = time_state.days_this_month;
 
   // We can ||ize over columns as well as over variables and bands
-  const auto data_beg = data_tracer_beg.data;
-  const auto data_end = data_tracer_end.data;
-  const auto data_out = data_tracer_out.data;
+  const auto data = data_tracer.data;
+  const auto file_type = data_tracer.file_type;
 
-  const auto file_type = data_tracer_out.file_type;
+  const auto ps = data_tracer.ps;
+  const int num_vars = data_tracer.nvars_;
 
-  const auto ps_beg = data_tracer_beg.ps;
-  const auto ps_end = data_tracer_end.ps;
-  const auto ps_out = data_tracer_out.ps;
-
-  const int num_vars = data_tracer_end.nvars_;
-
-  const int ncol     = data_tracer_beg.ncol_;
-  const int num_vert = data_tracer_beg.nlev_;
+  const int ncol     = data_tracer.ncol_;
+  const int num_vert = data_tracer.nlev_;
 
   const int outer_iters = ncol * num_vars;
 
@@ -558,9 +566,9 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
         const int ivar = team.league_rank() % num_vars;
 
         // Get column of beg/end/out variable
-        auto var_beg = ekat::subview(data_beg[ivar], icol);
-        auto var_end = ekat::subview(data_end[ivar], icol);
-        auto var_out = ekat::subview(data_out[ivar], icol);
+        auto var_beg = ekat::subview(data[TracerDataIndex::BEG][ivar], icol);
+        auto var_end = ekat::subview(data[TracerDataIndex::END][ivar], icol);
+        auto var_out = ekat::subview(data[TracerDataIndex::OUT][ivar], icol);
 
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, num_vert), [&](const int &k) {
@@ -569,8 +577,9 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
             });
         // linoz files do not have ps variables.
         if(ivar == 1 && file_type == FORMULA_PS) {
-          ps_out(icol) =
-              linear_interp(ps_beg(icol), ps_end(icol), delta_t_fraction);
+          ps[TracerDataIndex::OUT](icol) =
+              linear_interp(ps[TracerDataIndex::BEG](icol),
+               ps[TracerDataIndex::END](icol), delta_t_fraction);
         }
       });
   Kokkos::fence();
@@ -651,6 +660,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
   EKAT_REQUIRE(work[num_vars-1].data() != 0);
   // vert_interp is serial in col and lev.
   const auto policy_setup = ESU::get_default_team_policy(num_vars, 1);
+  const auto data =input.data;
 
   Kokkos::parallel_for(
       "vert_interp", policy_setup,
@@ -658,7 +668,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
   {
        const int ivar = team.league_rank();
        vert_interp(ncol, levsiz, pver, p_src_c,
-                 p_tgt_c, input.data[ivar],
+                 p_tgt_c, data[TracerDataIndex::OUT][ivar],
                  output[ivar],
                  // work array
                  work[ivar]);
@@ -722,6 +732,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   const int nsrc     = input.nlev_;
   constexpr int pver = mam4::nlev;
   const int pverp    = pver + 1;
+  const auto data = input.data;
 
   Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy_interp,
@@ -729,7 +740,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
         const int icol = team.league_rank() / num_vars;
         const int ivar = team.league_rank() % num_vars;
 
-        const auto src = ekat::subview(input.data[ivar], icol);
+        const auto src = ekat::subview(data[TracerDataIndex::OUT][ivar], icol);
         const auto trg = ekat::subview(output[ivar], icol);
 
         // trg_x
@@ -748,8 +759,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
 inline void advance_tracer_data(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
     AbstractRemapper &tracer_horiz_interp, const util::TimeStamp &ts,
-    TracerTimeState &time_state, TracerData &data_tracer_beg,
-    TracerData &data_tracer_end, TracerData &data_tracer_out,
+    TracerTimeState &time_state, TracerData &data_tracer,
     const view_2d &p_src, const const_view_2d &p_tgt,
     const const_view_2d &zi_tgt,
     const view_2d output[]) {
@@ -757,24 +767,26 @@ inline void advance_tracer_data(
    * of dt */
   time_state.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-  update_tracer_timestate(scorpio_reader, ts, tracer_horiz_interp, time_state,
-                          data_tracer_beg, data_tracer_end);
+  update_tracer_timestate(scorpio_reader, ts,
+                          tracer_horiz_interp,
+                          time_state,
+                          data_tracer);
   // Step 1. Perform time interpolation
-  perform_time_interpolation(time_state, data_tracer_beg, data_tracer_end,
-                             data_tracer_out);
+  perform_time_interpolation(time_state, data_tracer);
 
-  if(data_tracer_out.file_type == FORMULA_PS) {
+  if(data_tracer.file_type == FORMULA_PS) {
     // Step 2. Compute source pressure levels
-    compute_source_pressure_levels(data_tracer_out.ps, p_src,
-                                   data_tracer_out.hyam, data_tracer_out.hybm);
+    const auto ps = data_tracer.ps[TracerDataIndex::OUT];
+    compute_source_pressure_levels(ps, p_src,
+                                   data_tracer.hyam, data_tracer.hybm);
   }
 
   // Step 3. Perform vertical interpolation
-  if(data_tracer_out.file_type == FORMULA_PS ||
-     data_tracer_out.file_type == ZONAL) {
-    perform_vertical_interpolation(p_src, p_tgt, data_tracer_out, output);
-  } else if(data_tracer_out.file_type == VERT_EMISSION) {
-    perform_vertical_interpolation(data_tracer_end.altitude_int, zi_tgt, data_tracer_out, output);
+  if(data_tracer.file_type == FORMULA_PS ||
+     data_tracer.file_type == ZONAL) {
+    perform_vertical_interpolation(p_src, p_tgt, data_tracer, output);
+  } else if(data_tracer.file_type == VERT_EMISSION) {
+    perform_vertical_interpolation(data_tracer.altitude_int, zi_tgt, data_tracer, output);
   }
 
 }  // advance_tracer_data
