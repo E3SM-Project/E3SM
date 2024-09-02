@@ -383,7 +383,8 @@ subroutine modal_aer_opt_init()
      end if
   end if
 
-   if(cam_chempkg_is('chemuci_linozv3_mam5_vbs')) then 
+   if(cam_chempkg_is('chemuci_linozv3_mam5_vbs') .or. &
+      cam_chempkg_is('chemuci_linozv3_mam5_soag')) then 
         call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
         call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
         call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
