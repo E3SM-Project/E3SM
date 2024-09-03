@@ -105,7 +105,7 @@ int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
          // destroy default Calendar to keep static NumCalendars member
          // accurate, then construct requested Calendar
          OmegaCal.~Calendar();
-         OmegaCal = Calendar::Calendar(ConfigCalStr, ConfigCalKind);
+         OmegaCal = Calendar(ConfigCalStr, ConfigCalKind);
       }
 
       // check for start time and set if found
@@ -113,7 +113,7 @@ int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
          std::string StartTimeStr;
          I4 Err1 = TimeMgmtConfig.get("StartTime", StartTimeStr);
 
-         StartTime = TimeInstant::TimeInstant(&OmegaCal, StartTimeStr);
+         StartTime = TimeInstant(&OmegaCal, StartTimeStr);
       }
 
       std::string NoneStr("none");
@@ -149,7 +149,7 @@ int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
 
    // set EndAlarm based on length of RunInterval
    TimeInstant EndTime = StartTime + RunInterval;
-   EndAlarm            = Alarm::Alarm("End Alarm", EndTime);
+   EndAlarm            = Alarm("End Alarm", EndTime);
 
    return RetErr;
 } // end initTimeManagement

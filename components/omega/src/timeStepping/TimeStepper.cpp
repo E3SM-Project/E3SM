@@ -93,7 +93,7 @@ int TimeStepper::init() {
       if (TimeIntConfig.existsVar("TimeStep")) {
          std::string TimeStepStr;
          Err      = TimeIntConfig.get("TimeStep", TimeStepStr);
-         TimeStep = TimeInterval::TimeInterval(TimeStepStr);
+         TimeStep = TimeInterval(TimeStepStr);
       }
       if (TimeIntConfig.existsVar("TimeStepper")) {
          std::string TimeStepperStr;
