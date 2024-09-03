@@ -8,12 +8,15 @@ on:
       - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
       - 'cime_config/**'
       - 'components/eam/**'
+      - 'components/eamxx/**'
       - 'components/elm/**'
       - 'driver-moab/**'
       - 'driver-mct/**'
       # second, no to these
       - '!components/eam/docs/**'
       - '!components/eam/mkdocs.yml'
+      - '!components/eamxx/docs/**'
+      - '!components/eamxx/mkdocs.yml'
       - '!components/elm/docs/**'
       - '!components/elm/mkdocs.yml'
 
@@ -31,7 +34,7 @@ jobs:
           - SMS_D_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
           - ERS_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
           - SMS_D_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.scream-v1prod
+          - ERS_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
