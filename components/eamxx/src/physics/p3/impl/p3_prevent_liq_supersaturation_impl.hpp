@@ -14,7 +14,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim, const Scalar& dt, const Spack& qv2qi_vapdep_tend, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context)
+void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Scalar& dt, const Spack& qv2qi_vapdep_tend, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context)
 // Note: context masks cells which are just padding for packs or which don't have any condensate worth
 // performing calculations on.
 {
@@ -23,6 +23,8 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
   constexpr Scalar inv_cp       = C::INV_CP;
   constexpr Scalar rv           = C::RV;
   constexpr Scalar qsmall       = C::QSMALL;
+  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar latice       = C::LatIce;
 
   Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 
@@ -37,8 +39,8 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
 
   //Actual qv and T after microphys step
   qv_endstep.set(has_sources,qv - qv_sinks*dt + qv_sources*dt);
-  T_endstep.set(has_sources,t_atm + ( (qv_sinks-qi2qv_sublim_tend)*latent_heat_sublim*inv_cp
-				  - qr2qv_evap_tend*latent_heat_vapor*inv_cp )*dt);
+  T_endstep.set(has_sources,t_atm + ( (qv_sinks-qi2qv_sublim_tend)*(latvap+latice)*inv_cp
+				  - qr2qv_evap_tend*latvap*inv_cp )*dt);
 
   //qv we would have at end of step if we were saturated with respect to liquid
   const auto qsl = physics::qv_sat_dry(T_endstep,pres,false,has_sources,physics::MurphyKoop,"p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
@@ -46,18 +48,18 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
   //The balance we seek is:
   // qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)
   // where the T correction for conservation is:
-  // dt*[latent_heat_sublim/cp*(qi2qv_sublim_tend-frac*qi2qv_sublim_tend)
-  //     +latent_heat_vapor/cp*(qr2qv_evap_tend  -frac*qr2qv_evap_tend)]
-  // =(1-frac)*dt/cp*(latent_heat_sublim*qi2qv_sublim_tend + latent_heat_vap*qr2qv_evap_tend).
+  // dt*[(latvap+latice)/cp*(qi2qv_sublim_tend-frac*qi2qv_sublim_tend)
+  //     +latvap/cp*(qr2qv_evap_tend  -frac*qr2qv_evap_tend)]
+  // =(1-frac)*dt/cp*((latvap+latice)*qi2qv_sublim_tend + latvap*qr2qv_evap_tend).
   // Note T correction is positive because frac *reduces* evaporative cooling. Note as well that
   // dqsl_dt comes from linearization of qsl around the end-of-step T computed before temperature
   // correction. dqsl_dt should be computed with respect to *liquid* even though frac also adjusts
   // sublimation because we want to be saturated with respect to liquid at the end of the step.
-  // dqsl_dt=Latent_heat_vapor*qsl/rv*T^2 following Clausius Clapeyron. Combining and solving for
+  // dqsl_dt=latvap*qsl/rv*T^2 following Clausius Clapeyron. Combining and solving for
   // frac yields:
 
-  A.set(has_sources,latent_heat_vapor*qsl*dt*inv_cp/(rv*T_endstep*T_endstep)
-	* (latent_heat_sublim*qi2qv_sublim_tend + latent_heat_vapor*qr2qv_evap_tend) );
+  A.set(has_sources,latvap*qsl*dt*inv_cp/(rv*T_endstep*T_endstep)
+	* ((latvap+latice)*qi2qv_sublim_tend + latvap*qr2qv_evap_tend) );
 
 
   frac.set(has_sources, (qsl-qv+qv_sinks*dt + A)/(qv_sources*dt + A) );

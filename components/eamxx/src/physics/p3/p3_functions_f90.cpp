@@ -1417,7 +1417,7 @@ void rain_sedimentation_f(
 
 void homogeneous_freezing_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* T_atm, Real* inv_exner, Real* latent_heat_fusion,
+  Real* T_atm, Real* inv_exner,
   Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm)
 {
   using P3F  = Functions<Real, DefaultDevice>;
@@ -1440,31 +1440,31 @@ void homogeneous_freezing_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS);
+  std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS-1);
 
-  ekat::host_to_device({T_atm, inv_exner, latent_heat_fusion, qc, nc, qr, nr, qi, ni, qm, bm, th_atm},
+  ekat::host_to_device({T_atm, inv_exner, qc, nc, qr, nr, qi, ni, qm, bm, th_atm},
                        nk, temp_d);
 
+  int current_index = 0;
   view_1d
-    t_d                   (temp_d[0]),
-    inv_exner_d               (temp_d[1]),
-    latent_heat_fusion_d  (temp_d[2]),
-    qc_d                  (temp_d[3]),
-    nc_d                  (temp_d[4]),
-    qr_d                  (temp_d[5]),
-    nr_d                  (temp_d[6]),
-    qi_d                  (temp_d[7]),
-    ni_d                  (temp_d[8]),
-    qm_d                  (temp_d[9]),
-    bm_d                  (temp_d[10]),
-    th_atm_d              (temp_d[11]);
+    t_d                   (temp_d[current_index++]),
+    inv_exner_d           (temp_d[current_index++]),
+    qc_d                  (temp_d[current_index++]),
+    nc_d                  (temp_d[current_index++]),
+    qr_d                  (temp_d[current_index++]),
+    nr_d                  (temp_d[current_index++]),
+    qi_d                  (temp_d[current_index++]),
+    ni_d                  (temp_d[current_index++]),
+    qm_d                  (temp_d[current_index++]),
+    bm_d                  (temp_d[current_index++]),
+    th_atm_d              (temp_d[current_index++]);
 
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::homogeneous_freezing(
-      t_d, inv_exner_d, latent_heat_fusion_d,
+      t_d, inv_exner_d,
       team,
       nk, ktop, kbot, kdir,
       qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, th_atm_d);
@@ -1474,37 +1474,6 @@ void homogeneous_freezing_f(
   std::vector<view_1d> inout_views = {qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, th_atm_d};
 
   ekat::device_to_host({qc, nc, qr, nr, qi, ni, qm, bm, th_atm}, nk, inout_views);
-}
-
-void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f)
-{
-  using P3F        = Functions<Real, DefaultDevice>;
-  using Spack      = typename P3F::Spack;
-  using view_2d    = typename P3F::view_2d<Spack>;
-
-  EKAT_REQUIRE_MSG(kte >= kts,
-                     "kte must be >= kts, kts=" << kts << " kte=" << kte);
-
-  EKAT_REQUIRE_MSG(ite >= its,
-                     "ite must be >= its, its=" << its << " ite=" << ite);
-
-  kts -= 1;
-  kte -= 1;
-  its -= 1;
-  ite -= 1;
-
-  Int nk = (kte - kts) + 1;
-  Int nj = (ite - its) + 1;
-
-  // Set up views
-  view_2d v_d("v_d", nj, nk),
-    s_d("s_d", nj, nk),
-    f_d("f_d", nj, nk);
-
-  P3F::get_latent_heat(nj, nk, v_d, s_d, f_d);
-
-  std::vector<view_2d> out_views = {v_d, s_d, f_d};
-  ekat::device_to_host({v, s, f}, nj, nk, out_views, true);
 }
 
 void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
@@ -1545,7 +1514,7 @@ void p3_main_part1_f(
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
-  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
+  Real* inv_cld_frac_r,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
   Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
@@ -1576,7 +1545,7 @@ void p3_main_part1_f(
 
   ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci,
-        acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld,
+        acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld,
         qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, nccn_prescribed},
     nk, temp_d);
 
@@ -1609,18 +1578,15 @@ void p3_main_part1_f(
     ni_d                 (temp_d[25]),
     qm_d                 (temp_d[26]),
     bm_d                 (temp_d[27]),
-    latent_heat_vapor_d  (temp_d[28]),
-    latent_heat_sublim_d (temp_d[29]),
-    latent_heat_fusion_d (temp_d[30]),
-    qc_incld_d           (temp_d[31]),
-    qr_incld_d           (temp_d[32]),
-    qi_incld_d           (temp_d[33]),
-    qm_incld_d           (temp_d[34]),
-    nc_incld_d           (temp_d[35]),
-    nr_incld_d           (temp_d[36]),
-    ni_incld_d           (temp_d[37]),
-    bm_incld_d           (temp_d[38]),
-    nccn_prescribed_d    (temp_d[39]);
+    qc_incld_d           (temp_d[28]),
+    qr_incld_d           (temp_d[29]),
+    qi_incld_d           (temp_d[30]),
+    qm_incld_d           (temp_d[31]),
+    nc_incld_d           (temp_d[32]),
+    nr_incld_d           (temp_d[33]),
+    ni_incld_d           (temp_d[34]),
+    bm_incld_d           (temp_d[35]),
+    nccn_prescribed_d    (temp_d[36]);
 
   // Call core function from kernel
   bview_1d bools_d("bools", 2);
@@ -1630,7 +1596,7 @@ void p3_main_part1_f(
     P3F::p3_main_part1(
       team, nk, do_predict_nc, do_prescribed_CCN, dt,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, nccn_prescribed_d, inv_exner_d, exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d,
-      inv_cld_frac_r_d, latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d,
+      inv_cld_frac_r_d,
       t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
       acn_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
@@ -1661,7 +1627,7 @@ void p3_main_part2_f(
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
-  Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
+  Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
   Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* is_hydromet_present)
@@ -1688,82 +1654,80 @@ void p3_main_part2_f(
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
-  std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS);
+  std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS-3);
 
   ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-        qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld,
+        qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
         cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,
         vap_ice_exchange, liq_ice_exchange, pratot, prctot, qv_prev, t_prev
         },
     nk, temp_d);
 
+  int current_index = 0;
   view_1d
-    pres_d              (temp_d[0]),
-    dpres_d             (temp_d[1]),
-    dz_d                (temp_d[2]),
-    nc_nuceat_tend_d    (temp_d[3]),
-    inv_exner_d         (temp_d[4]),
-    exner_d             (temp_d[5]),
-    inv_cld_frac_l_d    (temp_d[6]),
-    inv_cld_frac_i_d    (temp_d[7]),
-    inv_cld_frac_r_d    (temp_d[8]),
-    ni_activated_d      (temp_d[9]),
-    inv_qc_relvar_d     (temp_d[10]),
-    cld_frac_i_d        (temp_d[11]),
-    cld_frac_l_d        (temp_d[12]),
-    cld_frac_r_d        (temp_d[13]),
-    t_d                 (temp_d[14]),
-    rho_d               (temp_d[15]),
-    inv_rho_d           (temp_d[16]),
-    qv_sat_l_d          (temp_d[17]),
-    qv_sat_i_d          (temp_d[18]),
-    qv_supersat_i_d     (temp_d[19]),
-    rhofacr_d           (temp_d[20]),
-    rhofaci_d           (temp_d[21]),
-    acn_d               (temp_d[22]),
-    qv_d                (temp_d[23]),
-    th_atm_d            (temp_d[24]),
-    qc_d                (temp_d[25]),
-    nc_d                (temp_d[26]),
-    qr_d                (temp_d[27]),
-    nr_d                (temp_d[28]),
-    qi_d                (temp_d[29]),
-    ni_d                (temp_d[30]),
-    qm_d                (temp_d[31]),
-    bm_d                (temp_d[32]),
-    latent_heat_vapor_d (temp_d[33]),
-    latent_heat_sublim_d(temp_d[34]),
-    latent_heat_fusion_d(temp_d[35]),
-    qc_incld_d          (temp_d[36]),
-    qr_incld_d          (temp_d[37]),
-    qi_incld_d          (temp_d[38]),
-    qm_incld_d          (temp_d[39]),
-    nc_incld_d          (temp_d[40]),
-    nr_incld_d          (temp_d[41]),
-    ni_incld_d          (temp_d[42]),
-    bm_incld_d          (temp_d[43]),
-    mu_c_d              (temp_d[44]),
-    nu_d                (temp_d[45]),
-    lamc_d              (temp_d[46]),
-    cdist_d             (temp_d[47]),
-    cdist1_d            (temp_d[48]),
-    cdistr_d            (temp_d[49]),
-    mu_r_d              (temp_d[50]),
-    lamr_d              (temp_d[51]),
-    logn0r_d            (temp_d[52]),
-    qv2qi_depos_tend_d  (temp_d[53]),
-    precip_total_tend_d (temp_d[54]),
-    nevapr_d            (temp_d[55]),
-    qr_evap_tend_d      (temp_d[56]),
-    vap_liq_exchange_d  (temp_d[57]),
-    vap_ice_exchange_d  (temp_d[58]),
-    liq_ice_exchange_d  (temp_d[59]),
-    pratot_d            (temp_d[60]),
-    prctot_d            (temp_d[61]),
-    qv_prev_d           (temp_d[62]),
-    t_prev_d            (temp_d[63]);
+    pres_d              (temp_d[current_index++]),
+    dpres_d             (temp_d[current_index++]),
+    dz_d                (temp_d[current_index++]),
+    nc_nuceat_tend_d    (temp_d[current_index++]),
+    inv_exner_d         (temp_d[current_index++]),
+    exner_d             (temp_d[current_index++]),
+    inv_cld_frac_l_d    (temp_d[current_index++]),
+    inv_cld_frac_i_d    (temp_d[current_index++]),
+    inv_cld_frac_r_d    (temp_d[current_index++]),
+    ni_activated_d      (temp_d[current_index++]),
+    inv_qc_relvar_d     (temp_d[current_index++]),
+    cld_frac_i_d        (temp_d[current_index++]),
+    cld_frac_l_d        (temp_d[current_index++]),
+    cld_frac_r_d        (temp_d[current_index++]),
+    t_d                 (temp_d[current_index++]),
+    rho_d               (temp_d[current_index++]),
+    inv_rho_d           (temp_d[current_index++]),
+    qv_sat_l_d          (temp_d[current_index++]),
+    qv_sat_i_d          (temp_d[current_index++]),
+    qv_supersat_i_d     (temp_d[current_index++]),
+    rhofacr_d           (temp_d[current_index++]),
+    rhofaci_d           (temp_d[current_index++]),
+    acn_d               (temp_d[current_index++]),
+    qv_d                (temp_d[current_index++]),
+    th_atm_d            (temp_d[current_index++]),
+    qc_d                (temp_d[current_index++]),
+    nc_d                (temp_d[current_index++]),
+    qr_d                (temp_d[current_index++]),
+    nr_d                (temp_d[current_index++]),
+    qi_d                (temp_d[current_index++]),
+    ni_d                (temp_d[current_index++]),
+    qm_d                (temp_d[current_index++]),
+    bm_d                (temp_d[current_index++]),
+    qc_incld_d          (temp_d[current_index++]),
+    qr_incld_d          (temp_d[current_index++]),
+    qi_incld_d          (temp_d[current_index++]),
+    qm_incld_d          (temp_d[current_index++]),
+    nc_incld_d          (temp_d[current_index++]),
+    nr_incld_d          (temp_d[current_index++]),
+    ni_incld_d          (temp_d[current_index++]),
+    bm_incld_d          (temp_d[current_index++]),
+    mu_c_d              (temp_d[current_index++]),
+    nu_d                (temp_d[current_index++]),
+    lamc_d              (temp_d[current_index++]),
+    cdist_d             (temp_d[current_index++]),
+    cdist1_d            (temp_d[current_index++]),
+    cdistr_d            (temp_d[current_index++]),
+    mu_r_d              (temp_d[current_index++]),
+    lamr_d              (temp_d[current_index++]),
+    logn0r_d            (temp_d[current_index++]),
+    qv2qi_depos_tend_d  (temp_d[current_index++]),
+    precip_total_tend_d (temp_d[current_index++]),
+    nevapr_d            (temp_d[current_index++]),
+    qr_evap_tend_d      (temp_d[current_index++]),
+    vap_liq_exchange_d  (temp_d[current_index++]),
+    vap_ice_exchange_d  (temp_d[current_index++]),
+    liq_ice_exchange_d  (temp_d[current_index++]),
+    pratot_d            (temp_d[current_index++]),
+    prctot_d            (temp_d[current_index++]),
+    qv_prev_d           (temp_d[current_index++]),
+    t_prev_d            (temp_d[current_index++]);
 
   // Call core function from kernel
   const auto dnu         = P3GlobalForFortran::dnu();
@@ -1780,7 +1744,7 @@ void p3_main_part2_f(
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
       qv_prev_d, t_prev_d, t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
       qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d,
-      latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d, qc_incld_d, qr_incld_d, qi_incld_d,
+      qc_incld_d, qr_incld_d, qi_incld_d,
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
@@ -1791,7 +1755,7 @@ void p3_main_part2_f(
   std::vector<view_1d> inout_views = {
     t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
     qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d,
-    latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d, qc_incld_d, qr_incld_d, qi_incld_d, qm_incld_d,
+    qc_incld_d, qr_incld_d, qi_incld_d, qm_incld_d,
     nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d, mu_c_d, nu_d, lamc_d,
     cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d, logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d,
     nevapr_d, qr_evap_tend_d, vap_liq_exchange_d, vap_ice_exchange_d,
@@ -1800,7 +1764,7 @@ void p3_main_part2_f(
 
   ekat::device_to_host({
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc,
-      qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld,
+      qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
       qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
       mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend,
       nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
@@ -1818,7 +1782,7 @@ void p3_main_part3_f(
   Real* inv_exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc,
   Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm,
-  Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* mu_c, Real* nu, Real* lamc,
+  Real* bm, Real* mu_c, Real* nu, Real* lamc,
   Real* mu_r, Real* lamr, Real* vap_liq_exchange, Real* ze_rain, Real* ze_ice,
   Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi,
   Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc, Real* diag_eff_radius_qr)
@@ -1844,50 +1808,49 @@ void p3_main_part3_f(
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
-  std::vector<view_1d> temp_d(P3MainPart3Data::NUM_ARRAYS);
+  std::vector<view_1d> temp_d(P3MainPart3Data::NUM_ARRAYS-2);
 
   ekat::host_to_device({
       inv_exner, cld_frac_l, cld_frac_r, cld_frac_i, rho, inv_rho, rhofaci, qv, th_atm, qc,
-      nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r,
+      nc, qr, nr, qi, ni, qm, bm, mu_c, nu, lamc, mu_r,
       lamr, vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
       rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr},
     nk, temp_d);
 
+  int current_index = 0;
   view_1d
-    inv_exner_d                    (temp_d[0]),
-    cld_frac_l_d               (temp_d[1]),
-    cld_frac_r_d               (temp_d[2]),
-    cld_frac_i_d               (temp_d[3]),
-    rho_d                      (temp_d[4]),
-    inv_rho_d                  (temp_d[5]),
-    rhofaci_d                  (temp_d[6]),
-    qv_d                       (temp_d[7]),
-    th_atm_d                   (temp_d[8]),
-    qc_d                       (temp_d[9]),
-    nc_d                       (temp_d[10]),
-    qr_d                       (temp_d[11]),
-    nr_d                       (temp_d[12]),
-    qi_d                       (temp_d[13]),
-    ni_d                       (temp_d[14]),
-    qm_d                       (temp_d[15]),
-    bm_d                       (temp_d[16]),
-    latent_heat_vapor_d        (temp_d[17]),
-    latent_heat_sublim_d       (temp_d[18]),
-    mu_c_d                     (temp_d[19]),
-    nu_d                       (temp_d[20]),
-    lamc_d                     (temp_d[21]),
-    mu_r_d                     (temp_d[22]),
-    lamr_d                     (temp_d[23]),
-    vap_liq_exchange_d         (temp_d[24]),
-    ze_rain_d                  (temp_d[25]),
-    ze_ice_d                   (temp_d[26]),
-    diag_vm_qi_d               (temp_d[27]),
-    diag_eff_radius_qi_d          (temp_d[28]),
-    diag_diam_qi_d             (temp_d[29]),
-    rho_qi_d                   (temp_d[30]),
-    diag_equiv_reflectivity_d  (temp_d[31]),
-    diag_eff_radius_qc_d          (temp_d[32]),
-    diag_eff_radius_qr_d          (temp_d[33]);
+    inv_exner_d                (temp_d[current_index++]),
+    cld_frac_l_d               (temp_d[current_index++]),
+    cld_frac_r_d               (temp_d[current_index++]),
+    cld_frac_i_d               (temp_d[current_index++]),
+    rho_d                      (temp_d[current_index++]),
+    inv_rho_d                  (temp_d[current_index++]),
+    rhofaci_d                  (temp_d[current_index++]),
+    qv_d                       (temp_d[current_index++]),
+    th_atm_d                   (temp_d[current_index++]),
+    qc_d                       (temp_d[current_index++]),
+    nc_d                       (temp_d[current_index++]),
+    qr_d                       (temp_d[current_index++]),
+    nr_d                       (temp_d[current_index++]),
+    qi_d                       (temp_d[current_index++]),
+    ni_d                       (temp_d[current_index++]),
+    qm_d                       (temp_d[current_index++]),
+    bm_d                       (temp_d[current_index++]),
+    mu_c_d                     (temp_d[current_index++]),
+    nu_d                       (temp_d[current_index++]),
+    lamc_d                     (temp_d[current_index++]),
+    mu_r_d                     (temp_d[current_index++]),
+    lamr_d                     (temp_d[current_index++]),
+    vap_liq_exchange_d         (temp_d[current_index++]),
+    ze_rain_d                  (temp_d[current_index++]),
+    ze_ice_d                   (temp_d[current_index++]),
+    diag_vm_qi_d               (temp_d[current_index++]),
+    diag_eff_radius_qi_d       (temp_d[current_index++]),
+    diag_diam_qi_d             (temp_d[current_index++]),
+    rho_qi_d                   (temp_d[current_index++]),
+    diag_equiv_reflectivity_d  (temp_d[current_index++]),
+    diag_eff_radius_qc_d       (temp_d[current_index++]),
+    diag_eff_radius_qr_d       (temp_d[current_index++]);
 
   // Call core function from kernel
   const auto dnu            = P3GlobalForFortran::dnu();
@@ -1898,8 +1861,8 @@ void p3_main_part3_f(
     P3F::p3_main_part3(team, nk_pack, max_total_ni, dnu, ice_table_vals,
                        inv_exner_d, cld_frac_l_d, cld_frac_r_d, cld_frac_i_d, rho_d, inv_rho_d,
                        rhofaci_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d,
-                       qi_d, ni_d, qm_d, bm_d, latent_heat_vapor_d,
-                       latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d,
+                       qi_d, ni_d, qm_d, bm_d,
+                       mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d,
                        vap_liq_exchange_d, ze_rain_d, ze_ice_d,
                        diag_vm_qi_d, diag_eff_radius_qi_d, diag_diam_qi_d, rho_qi_d,
                        diag_equiv_reflectivity_d, diag_eff_radius_qc_d, diag_eff_radius_qr_d, physics::P3_Constants<Real>());
@@ -1908,14 +1871,14 @@ void p3_main_part3_f(
   // Sync back to host
   std::vector<view_1d> inout_views = {
     rho_d, inv_rho_d, rhofaci_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d,
-    ni_d, qm_d, bm_d, latent_heat_vapor_d, latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d,
+    ni_d, qm_d, bm_d, mu_c_d, nu_d, lamc_d, mu_r_d,
     lamr_d, vap_liq_exchange_d, ze_rain_d, ze_ice_d, diag_vm_qi_d, diag_eff_radius_qi_d,
     diag_diam_qi_d, rho_qi_d, diag_equiv_reflectivity_d, diag_eff_radius_qc_d, diag_eff_radius_qr_d
   };
 
   ekat::device_to_host({
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm,
-      latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, ze_rain, ze_ice,
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, ze_rain, ze_ice,
       diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc,
       diag_eff_radius_qr
     },

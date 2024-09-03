@@ -34,9 +34,6 @@ void Functions<S,D>
   const uview_1d<const Spack>& inv_cld_frac_l,
   const uview_1d<const Spack>& inv_cld_frac_i,
   const uview_1d<const Spack>& inv_cld_frac_r,
-  const uview_1d<const Spack>& latent_heat_vapor,
-  const uview_1d<const Spack>& latent_heat_sublim,
-  const uview_1d<const Spack>& latent_heat_fusion,
   const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -80,6 +77,8 @@ void Functions<S,D>
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
+  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar latice       = C::LatIce;
 
   const Scalar p3_spa_to_nc = p3constants.p3_spa_to_nc;
 
@@ -124,7 +123,7 @@ void Functions<S,D>
     auto drymass = qc(k) < qsmall;
     auto not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qc(k));
-    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qc(k) * latent_heat_vapor(k) * inv_cp);
+    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qc(k) * latvap * inv_cp);
     qc(k).set(drymass, 0);
     nc(k).set(drymass, 0);
     if ( not_drymass.any() ) {
@@ -147,7 +146,7 @@ void Functions<S,D>
     drymass = qr(k) < qsmall;
     not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qr(k));
-    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qr(k) * latent_heat_vapor(k) * inv_cp);
+    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qr(k) * latvap * inv_cp);
     qr(k).set(drymass, 0);
     nr(k).set(drymass, 0);
     if ( not_drymass.any() ) {
@@ -157,7 +156,7 @@ void Functions<S,D>
     drymass = (qi(k) < qsmall || (qi(k) < 1.e-8 && qv_supersat_i(k) < -0.1));
     not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qi(k));
-    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qi(k) * latent_heat_sublim(k) * inv_cp);
+    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qi(k) * (latvap+latice) * inv_cp);
     qi(k).set(drymass, 0);
     ni(k).set(drymass, 0);
     qm(k).set(drymass, 0);
@@ -168,7 +167,7 @@ void Functions<S,D>
 
     drymass = (qi(k) >= qsmall && qi(k) < 1.e-8 && T_atm(k) >= T_zerodegc);
     qr(k).set(drymass, qr(k) + qi(k));
-    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qi(k) * latent_heat_fusion(k) * inv_cp);
+    th_atm(k).set(drymass, th_atm(k) - inv_exner(k) * qi(k) * latice * inv_cp);
     qi(k).set(drymass, 0);
     ni(k).set(drymass, 0);
     qm(k).set(drymass, 0);

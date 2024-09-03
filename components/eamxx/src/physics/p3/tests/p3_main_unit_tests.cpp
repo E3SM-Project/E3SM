@@ -57,6 +57,8 @@ static void run_bfb_p3_main_part1()
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
+  constexpr Scalar latvap = C::LatVap;
+  constexpr Scalar latice = C::LatIce;
 
   P3MainPart1Data isds_fortran[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -74,6 +76,14 @@ static void run_bfb_p3_main_part1()
         {d.T_atm, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+
+    // C++ impl uses constants for latent_heat values. Manually set here
+    // so F90 can match
+    for (int k=0; k<d.kte; ++k) {
+      d.latent_heat_vapor[k] = latvap;
+      d.latent_heat_sublim[k] = latvap+latice;
+      d.latent_heat_fusion[k] = latice;
+    }
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -94,7 +104,7 @@ static void run_bfb_p3_main_part1()
   for (auto& d : isds_cxx) {
     p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt,
                     d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
-                    d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
+                    d.inv_cld_frac_r,
                     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
                     d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
                     d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
@@ -148,6 +158,8 @@ static void run_bfb_p3_main_part2()
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
+  constexpr Scalar latvap = C::LatVap;
+  constexpr Scalar latice = C::LatIce;
 
   P3MainPart2Data isds_fortran[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -166,6 +178,14 @@ static void run_bfb_p3_main_part2()
         {d.t_prev, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+
+    // C++ impl uses constants for latent_heat values. Manually set here
+    // so F90 can match
+    for (int k=0; k<d.kte; ++k) {
+      d.latent_heat_vapor[k] = latvap;
+      d.latent_heat_sublim[k] = latvap+latice;
+      d.latent_heat_fusion[k] = latice;
+    }
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -189,7 +209,7 @@ static void run_bfb_p3_main_part2()
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
-      d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
+      d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
       d.prctot, &d.is_hydromet_present);
@@ -219,9 +239,9 @@ static void run_bfb_p3_main_part2()
         REQUIRE(isds_fortran[i].ni[k]                 == isds_cxx[i].ni[k]);
         REQUIRE(isds_fortran[i].qm[k]                 == isds_cxx[i].qm[k]);
         REQUIRE(isds_fortran[i].bm[k]                 == isds_cxx[i].bm[k]);
-        REQUIRE(isds_fortran[i].latent_heat_vapor[k]  == isds_cxx[i].latent_heat_vapor[k]);
-        REQUIRE(isds_fortran[i].latent_heat_sublim[k] == isds_cxx[i].latent_heat_sublim[k]);
-        REQUIRE(isds_fortran[i].latent_heat_fusion[k] == isds_cxx[i].latent_heat_fusion[k]);
+        REQUIRE(isds_fortran[i].latent_heat_vapor[k]  == latvap);
+        REQUIRE(isds_fortran[i].latent_heat_sublim[k] == (latvap+latice));
+        REQUIRE(isds_fortran[i].latent_heat_fusion[k] == latice);
         REQUIRE(isds_fortran[i].qc_incld[k]           == isds_cxx[i].qc_incld[k]);
         REQUIRE(isds_fortran[i].qr_incld[k]           == isds_cxx[i].qr_incld[k]);
         REQUIRE(isds_fortran[i].qi_incld[k]           == isds_cxx[i].qi_incld[k]);
@@ -256,6 +276,9 @@ static void run_bfb_p3_main_part2()
 
 static void run_bfb_p3_main_part3()
 {
+  constexpr Scalar latvap = C::LatVap;
+  constexpr Scalar latice = C::LatIce;
+
   auto engine = setup_random_test();
 
   constexpr Scalar qsmall     = C::QSMALL;
@@ -273,6 +296,13 @@ static void run_bfb_p3_main_part3()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize(engine, { {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+
+    // C++ impl uses constants for latent_heat values. Manually set here
+    // so F90 can match
+    for (int k=0; k<d.kte; ++k) {
+      d.latent_heat_vapor[k] = latvap;
+      d.latent_heat_sublim[k] = latvap+latice;
+    }
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -294,7 +324,7 @@ static void run_bfb_p3_main_part3()
     p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
       d.inv_exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
-      d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
+      d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm,
       d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
       d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc, d.diag_eff_radius_qr);
   }
@@ -317,8 +347,8 @@ static void run_bfb_p3_main_part3()
         REQUIRE(isds_fortran[i].ni[k]                      == isds_cxx[i].ni[k]);
         REQUIRE(isds_fortran[i].qm[k]                      == isds_cxx[i].qm[k]);
         REQUIRE(isds_fortran[i].bm[k]                      == isds_cxx[i].bm[k]);
-        REQUIRE(isds_fortran[i].latent_heat_vapor[k]       == isds_cxx[i].latent_heat_vapor[k]);
-        REQUIRE(isds_fortran[i].latent_heat_sublim[k]      == isds_cxx[i].latent_heat_sublim[k]);
+        REQUIRE(isds_fortran[i].latent_heat_vapor[k]       == latvap);
+        REQUIRE(isds_fortran[i].latent_heat_sublim[k]      == latvap+latice);
         REQUIRE(isds_fortran[i].mu_c[k]                    == isds_cxx[i].mu_c[k]);
         REQUIRE(isds_fortran[i].nu[k]                      == isds_cxx[i].nu[k]);
         REQUIRE(isds_fortran[i].lamc[k]                    == isds_cxx[i].lamc[k]);
@@ -399,7 +429,7 @@ static void run_bfb_p3_main()
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,
       d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
-      d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, 
+      d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
       d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
     d.template transpose<ekat::TransposeDirection::f2c>();
   }

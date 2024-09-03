@@ -88,10 +88,6 @@ Int Functions<S,D>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
-
-  get_latent_heat(nj, nk, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion);
-
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
 
@@ -202,9 +198,6 @@ Int Functions<S,D>
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
     const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
     const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
-    const auto olatent_heat_vapor  = ekat::subview(latent_heat_vapor, i);
-    const auto olatent_heat_sublim = ekat::subview(latent_heat_sublim, i);
-    const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
@@ -232,7 +225,7 @@ Int Functions<S,D>
     p3_main_part1(
       team, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
       opres, odpres, odz, onc_nuceat_tend, onccn_prescribed, oinv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion,
+      inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
@@ -251,8 +244,8 @@ Int Functions<S,D>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
-      olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
+      qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
@@ -295,7 +288,7 @@ Int Functions<S,D>
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
-      T_atm, oinv_exner, olatent_heat_fusion, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
+      T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
       oni, oqm, obm, oth);
 
     //
@@ -305,7 +298,7 @@ Int Functions<S,D>
     p3_main_part3(
       team, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
-      oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
+      oqm, obm, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
       orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, p3constants);
 

@@ -15,7 +15,7 @@ void Functions<S,D>
   const Spack& qr2qi_immers_freeze_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend,
   const Spack& ni2nr_melt_tend, const Spack& qi2qv_sublim_tend, const Spack& qv2qi_vapdep_tend, const Spack& qv2qi_nucleat_tend,
   const Spack& ni_nucleat_tend, const Spack& ni_selfcollect_tend, const Spack& ni_sublim_tend, const Spack& qc2qi_berg_tend,
-  const Spack& inv_exner, const Spack& latent_heat_sublim, const Spack& latent_heat_fusion, const bool do_predict_nc,
+  const Spack& inv_exner, const bool do_predict_nc,
   const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rho_qm_cloud,
   Spack& th_atm, Spack& qv, Spack& qi, Spack& ni, Spack& qm, Spack& bm, Spack& qc,
   Spack& nc, Spack& qr, Spack& nr,
@@ -23,6 +23,8 @@ void Functions<S,D>
 {
   constexpr Scalar QSMALL          = C::QSMALL;
   constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
+  constexpr Scalar latvap          = C::LatVap;
+  constexpr Scalar latice          = C::LatIce;
 
   qc.set(context, qc + (-qc2qi_hetero_freeze_tend-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
   if ( do_predict_nc ){
@@ -76,9 +78,9 @@ void Functions<S,D>
   qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend)*dt);
 
   constexpr Scalar INV_CP = C::INV_CP;
-  th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend) * latent_heat_sublim * INV_CP +
-                                (qr2qi_collect_tend + qc2qi_collect_tend + qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend - 
-                                qi2qr_melt_tend + qc2qi_berg_tend) * latent_heat_fusion * INV_CP) * dt);
+  th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend) * (latvap+latice) * INV_CP +
+                                (qr2qi_collect_tend + qc2qi_collect_tend + qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend -
+                                qi2qr_melt_tend + qc2qi_berg_tend) * latice * INV_CP) * dt);
 }
 
 template<typename S, typename D>
@@ -88,13 +90,14 @@ void Functions<S,D>
   const Spack& qc2qr_accret_tend, const Spack& nc_accret_tend,
   const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
   const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
-  const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& inv_exner, const Spack& latent_heat_vapor,
+  const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& inv_exner,
   const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
   const Smask& context)
 {
   constexpr Scalar NCCNST = C::NCCNST;
   constexpr int IPARAM    = C::IPARAM;
   constexpr Scalar INV_CP = C::INV_CP;
+  constexpr Scalar latvap       = C::LatVap;
 
   qc.set(context, qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt);
   qr.set(context, qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt);
@@ -115,7 +118,7 @@ void Functions<S,D>
 
   qv.set(context, qv + qr2qv_evap_tend *dt);
 
-  th_atm.set(context, th_atm + inv_exner*(-qr2qv_evap_tend * latent_heat_vapor * INV_CP) * dt);
+  th_atm.set(context, th_atm + inv_exner*(-qr2qv_evap_tend * latvap * INV_CP) * dt);
 }
 
 } // namespace p3

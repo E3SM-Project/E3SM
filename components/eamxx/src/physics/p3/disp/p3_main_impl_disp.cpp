@@ -115,10 +115,6 @@ Int Functions<Real,DefaultDevice>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
-
-  get_latent_heat(nj, nk, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion);
-
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // load constants into local vars
@@ -244,7 +240,7 @@ Int Functions<Real,DefaultDevice>
   p3_main_part1_disp(
       nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion,
+      inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
@@ -259,8 +255,7 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
       cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor,
-      latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+      qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
@@ -301,7 +296,7 @@ Int Functions<Real,DefaultDevice>
 
   // homogeneous freezing f cloud and rain
   homogeneous_freezing_disp(
-      T_atm, inv_exner, latent_heat_fusion, nj, nk, ktop, kbot, kdir, qc, nc, qr, nr, qi,
+      T_atm, inv_exner, nj, nk, ktop, kbot, kdir, qc, nc, qr, nr, qi,
       ni, qm, bm, th, nucleationPossible, hydrometeorsPresent);
 
   //
@@ -311,7 +306,7 @@ Int Functions<Real,DefaultDevice>
   p3_main_part3_disp(
       nj, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, inv_exner, cld_frac_l, cld_frac_r, cld_frac_i,
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
-      qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
+      qm, bm, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
       rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
       p3constants);
