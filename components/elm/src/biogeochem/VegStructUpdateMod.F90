@@ -233,8 +233,10 @@ contains
 
          ! adjust lai and sai for burying by snow.
          ! snow burial fraction for short vegetation (e.g. grasses) as in
-         ! Wang and Zeng, 2007.
-         if (woody(ivt(p)) >= 1.0_r8 ) then
+         ! Wang and Zeng et al 2007.
+         ! Taller vegetation (trees and shrubs) have been updated to use formulation similar to
+         ! Sturm et al. 2005; Liston and Hiemstra, 2011; and Belke-Brea et al. 2020
+         if ( woody(ivt(p)) >= 1.0_r8 ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - (ol / max(1.e-06_r8, bendresist(ivt(p)) * (htop(p)-hbot(p)))) ** vegshape(ivt(p))
          else
