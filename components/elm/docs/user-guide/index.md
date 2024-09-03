@@ -76,3 +76,8 @@ Using the above-mentioned settings:
 [FATES](fates.md) can be run in various modes with ELM through the use of namelist settings.
 The [FATES User's Guide section on namelist options](https://fates-users-guide.readthedocs.io/en/latest/user/Namelist-Options-and-Run-Time-Modes.html)
 provides guidance on enabling these different FATES run modes.
+
+## Generate land initial condition
+
+Initial ELM condition can be generated using `interpinic` and the notes about it are available [here](interpinic.md).
+
