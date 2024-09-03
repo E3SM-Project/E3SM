@@ -2,6 +2,7 @@
 //-*-===//
 
 #include "TimeStepper.h"
+#include "Config.h"
 #include "ForwardBackwardStepper.h"
 #include "RungeKutta2Stepper.h"
 #include "RungeKutta4Stepper.h"
@@ -12,6 +13,21 @@ namespace OMEGA {
 TimeStepper *TimeStepper::DefaultTimeStepper = nullptr;
 std::map<std::string, std::unique_ptr<TimeStepper>>
     TimeStepper::AllTimeSteppers;
+
+// convert string into TimeStepperType enum
+TimeStepperType getTimeStepperFromStr(const std::string &InString) {
+
+   TimeStepperType TimeStepperChoice;
+   if (InString == "Forward-Backward") {
+      TimeStepperChoice = TimeStepperType::ForwardBackward;
+   } else if (InString == "RungeKutta4") {
+      TimeStepperChoice = TimeStepperType::RungeKutta4;
+   } else if (InString == "RungeKutta2") {
+      TimeStepperChoice = TimeStepperType::RungeKutta2;
+   }
+
+   return TimeStepperChoice;
+}
 
 // Constructor. Construct a time stepper from name, type, tendencies, auxiliary
 // state, mesh and halo
@@ -65,9 +81,31 @@ int TimeStepper::init() {
    auto *DefHalo     = Halo::getDefault();
    auto *DefTend     = Tendencies::getDefault();
 
-   TimeStepper::DefaultTimeStepper =
-       create("Default", TimeStepperType::ForwardBackward, DefTend, DefAuxState,
-              DefMesh, DefHalo);
+   // Initialize default options
+   TimeInterval TimeStep;
+   TimeStepperType TimeStepperChoice = TimeStepperType::ForwardBackward;
+
+   // Retrieve TimeStepper options from Config if available
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TimeIntConfig("TimeIntegration");
+   if (OmegaConfig->existsGroup("TimeIntegration")) {
+      Err = OmegaConfig->get(TimeIntConfig);
+      if (TimeIntConfig.existsVar("TimeStep")) {
+         std::string TimeStepStr;
+         Err      = TimeIntConfig.get("TimeStep", TimeStepStr);
+         TimeStep = TimeInterval::TimeInterval(TimeStepStr);
+      }
+      if (TimeIntConfig.existsVar("TimeStepper")) {
+         std::string TimeStepperStr;
+         Err               = TimeIntConfig.get("TimeStepper", TimeStepperStr);
+         TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
+      }
+   }
+
+   TimeStepper::DefaultTimeStepper = create(
+       "Default", TimeStepperChoice, DefTend, DefAuxState, DefMesh, DefHalo);
+   DefaultTimeStepper->setTimeStep(TimeStep);
+
    return Err;
 }
 
