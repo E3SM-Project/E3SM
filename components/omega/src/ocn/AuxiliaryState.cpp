@@ -1,4 +1,5 @@
 #include "AuxiliaryState.h"
+#include "Config.h"
 #include "Field.h"
 #include "Logging.h"
 
@@ -131,9 +132,17 @@ int AuxiliaryState::init() {
    int Err                 = 0;
    const HorzMesh *DefMesh = HorzMesh::getDefault();
 
-   // These hard-wired variable needs to be updated
-   // with retrivals/config options
-   const int NVertLevels = 60;
+   int NVertLevels = 60;
+
+   // Retrieve NVertLevels from Config if available
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config DimConfig("Dimension");
+   if (OmegaConfig->existsGroup("Dimension")) {
+      Err = OmegaConfig->get(DimConfig);
+      if (DimConfig.existsVar("NVertLevels")) {
+         Err = DimConfig.get("NVertLevels", NVertLevels);
+      }
+   }
 
    AuxiliaryState::DefaultAuxState =
        AuxiliaryState::create("Default", DefMesh, NVertLevels);

@@ -1,4 +1,5 @@
 #include "LayerThicknessAuxVars.h"
+#include "Config.h"
 #include "Field.h"
 
 #include <limits>
@@ -13,7 +14,25 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
       MeanLayerThickEdge("MeanLayerThickEdge" + AuxStateSuffix,
                          Mesh->NEdgesSize, NVertLevels),
       SshCell("SshCell" + AuxStateSuffix, Mesh->NCellsSize, NVertLevels),
-      CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth) {}
+      CellsOnEdge(Mesh->CellsOnEdge), BottomDepth(Mesh->BottomDepth) {
+
+   I4 Err = 0;
+
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config AdvectConfig("Advection");
+   if (OmegaConfig->existsGroup("Advection")) {
+      std::string FluxThickTypeStr;
+      Err = OmegaConfig->get(AdvectConfig);
+      if (AdvectConfig.existsVar("FluxThicknessType")) {
+         Err = AdvectConfig.get("FluxThicknessType", FluxThickTypeStr);
+         if (FluxThickTypeStr == "Center") {
+            FluxThickEdgeChoice = Center;
+         } else if (FluxThickTypeStr == "Upwind") {
+            FluxThickEdgeChoice = Upwind;
+         }
+      }
+   }
+}
 
 void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
                                            const std::string &MeshName) const {

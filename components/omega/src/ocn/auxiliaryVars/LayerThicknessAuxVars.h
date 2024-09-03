@@ -17,7 +17,6 @@ class LayerThicknessAuxVars {
    Array2DReal MeanLayerThickEdge;
    Array2DReal SshCell;
 
-   // TODO(mwarusz): get this from config
    FluxThickEdgeOption FluxThickEdgeChoice = Center;
 
    LayerThicknessAuxVars(const std::string &AuxStateSuffix,
