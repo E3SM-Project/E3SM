@@ -37,6 +37,16 @@ Below list the standard configuration compsets supported in the current version 
 |`WCYCLSSP245` | Standard configuration with prescribed SSP-245 forcings |
 |`WCYCLSSP370` | Standard configuration with prescribed SSP-370 forcings |
 |`WCYCLSSP585` | Standard configuration with prescribed SSP-585 forcings |
+|<td colspan=2> |
+|<b>Extra Compsets</b> |<b>For single-forcings simulations of the historical period (1850-2014) </b>|
+|`WCYCL20TR-GHG` | Greenhouse gases only configuration (`GHGs`)|
+|`WCYCL20TR-aer` | Anthropogenic aerosols and precursors only configuration (`aer`)|
+|`WCYCL20TR-xGHG-xaer` | All forcings except GHGs and aer (`solar irradiance, stratospheric ozone and volcanic emissions, land use land cover`) |
+|`WCYCL20TR-xaer` | All forcings except aer (`GHGs, solar irradiance, stratospheric ozone and volcanic emissions, land use land cover`) |
+|`WCYCL20TR-nat` | Natural-only configuration (`solar irradiance, stratospheric volcanic emissions, land use land cover`) |
+|`WCYCL20TR-ozone` | Stratospheric ozone only configuration |
+|`WCYCL20TR-lulc` | Land use land cover only configuration |
+|`WCYCL20TR-volc` | Stratospheric volcanic emissions only configuration |
 
 The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
 The compset naming follows the same convention, e.g., `CRYO1850` and `CRYO1850-4xCO2` are with prognostic ice-shelf melt fluxes for the `polar processes` simulation campaign.
