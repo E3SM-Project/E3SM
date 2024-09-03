@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Decomp.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "IO.h"
 #include "Logging.h"
@@ -223,7 +224,7 @@ int readMesh(const int MeshFileID, // file ID for open mesh file
          OnVertexOffset[Vrtx * VertexDegree + Cell] =
              VertexGlob * VertexDegree + Cell;
       } // end loop VertexDegree
-   } // end loop NVerticesLocal
+   }    // end loop NVerticesLocal
 
    // Create the parallel IO decompositions
    IO::Rearranger Rearr = IO::RearrBox;
@@ -332,11 +333,24 @@ int Decomp::init(const std::string &MeshFileName) {
 
    int Err = 0; // default successful return code
 
-   // TODO: retrieve from Config when available - currently hardwired
    // Initialize decomposition options
-   I4 InHaloWidth           = 3;
-   std::string DecompMethod = "MetisKWay";
-   PartMethod Method        = getPartMethodFromStr(DecompMethod);
+   I4 InHaloWidth              = 3;
+   std::string DecompMethodStr = "MetisKWay";
+
+   // Retrieve options from Config if possible
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config DecompConfig("Decomp");
+   if (OmegaConfig->existsGroup("Decomp")) {
+      Err = OmegaConfig->get(DecompConfig);
+      if (DecompConfig.existsVar("HaloWidth")) {
+         Err = DecompConfig.get("HaloWidth", InHaloWidth);
+      }
+      if (DecompConfig.existsVar("DecompMethod")) {
+         Err = DecompConfig.get("DecompMethod", DecompMethodStr);
+      }
+   }
+
+   PartMethod Method = getPartMethodFromStr(DecompMethodStr);
 
    // Retrieve the default machine environment
    MachEnv *DefEnv = MachEnv::getDefault();
@@ -793,7 +807,7 @@ int Decomp::partCellsKWay(
          for (int n = 0; n < CellsOnCellSize; ++n) {
             CellsOnCellBuf[n] = CellsOnCellInit[n];
          } // end loop CellsOnCell
-      } // end if this is MyTask
+      }    // end if this is MyTask
       Err = MPI_Bcast(&CellsOnCellBuf[0], CellsOnCellSize, MPI_INT32_T, Task,
                       Comm);
       if (Err != 0) {
@@ -823,7 +837,8 @@ int Decomp::partCellsKWay(
             }
          }
       } // end cell loop for buffer
-   } // end task loop
+   }    // end task loop
+
    AdjAdd[NCellsGlobal] = Add; // Add the ending address
 
    // Set up remaining partitioning variables
@@ -910,7 +925,7 @@ int Decomp::partCellsKWay(
          CellLocTmp[2 * LocalAdd]     = TaskLoc;
          CellLocTmp[2 * LocalAdd + 1] = LocalAdd;
       } // end if my task
-   } // end loop over all cells
+   }    // end loop over all cells
 
    // Find and add the halo cells to the cell list. Here we use the
    // adjacency array to find the active neighbor cells and store if they
@@ -949,7 +964,7 @@ int Decomp::partCellsKWay(
                   HaloList.insert(NbrID);
                   CellsInList.insert(NbrID);
                } // end search for existing entry
-            } // end if not on task
+            }    // end if not on task
 
          } // end loop over neighbors
 
@@ -1180,8 +1195,8 @@ int Decomp::partEdges(
                ++HaloCount;
                EdgesAll.erase(EdgeGlob);
             } // end if valid edge
-         } // end loop over cell edges
-      } // end cell loop
+         }    // end loop over cell edges
+      }       // end cell loop
       // reset address range for next halo and set NEdgesHalo
       CellStart = CellEnd;
       if ((Halo + 1) < HaloWidth)
@@ -1585,8 +1600,8 @@ int Decomp::rearrangeCellArrays(
             }
             NEdgesOnCellTmp(LocCell) = EdgeCount;
          } // end if local cell
-      } // end loop over chunk of global cells
-   } // end loop over MPI tasks
+      }    // end loop over chunk of global cells
+   }       // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs
@@ -1721,8 +1736,8 @@ int Decomp::rearrangeEdgeArrays(
             }
             NEdgesOnEdgeTmp(LocEdge) = EdgeCount;
          } // end if local cell
-      } // end loop over chunk of global cells
-   } // end loop over MPI tasks
+      }    // end loop over chunk of global cells
+   }       // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs
@@ -1830,8 +1845,8 @@ int Decomp::rearrangeVertexArrays(
                ++BufAdd;
             }
          } // end if local cell
-      } // end loop over chunk of global cells
-   } // end loop over MPI tasks
+      }    // end loop over chunk of global cells
+   }       // end loop over MPI tasks
 
    // Copy to final location on host - wait to create device copies until
    // the entries are translated to local addresses rather than global IDs
