@@ -94,17 +94,7 @@
 </compset>
 
 <compset>
-  <alias>hist-GHG</alias>
-  <lname>20TRSOI_EAM%CMIP6-GHG_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>WCYCL20TR-aer</alias>
-  <lname>20TRSOI_EAM%CMIP6-AER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>hist-aer</alias>
   <lname>20TRSOI_EAM%CMIP6-AER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
@@ -114,17 +104,7 @@
 </compset>
 
 <compset>
-  <alias>hist-all-xGHG-xaer</alias>
-  <lname>20TRSOI_EAM%CMIP6-xGHG-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>WCYCL20TR-nat</alias>
-  <lname>20TRSOI_EAM%CMIP6-NAT_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>hist-nat</alias>
   <lname>20TRSOI_EAM%CMIP6-NAT_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
@@ -134,17 +114,7 @@
 </compset>
 
 <compset>
-  <alias>hist-ozone</alias>
-  <lname>20TRSOI_EAM%CMIP6-OZONE_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>WCYCL20TR-lulc</alias>
-  <lname>20TRSOI_EAM%CMIP6-LULC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>hist-lulc</alias>
   <lname>20TRSOI_EAM%CMIP6-LULC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
@@ -154,17 +124,7 @@
 </compset>
 
 <compset>
-  <alias>hist-volc</alias>
-  <lname>20TRSOI_EAM%CMIP6-VOLC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>WCYCL20TR-xaer</alias>
-  <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>hist-all-xaer</alias>
   <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
