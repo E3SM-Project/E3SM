@@ -253,13 +253,13 @@ def main():
   ds_out['lon']              = ds_map.xc_b.rename({'n_b':'ncol'})
   ds_out['lat']              = ds_map.yc_b.rename({'n_b':'ncol'})
 
-  ds.attrs['title']                 = 'E3SM atmosphere surface data'
-  ds.attrs['source_code']           = source_code_meta
-  ds.attrs['hostname']              = str(host)
-  ds.attrs['history']               = f'created by {user}, '+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-  ds.attrs['input_map_file']        = opts.map_file
-  ds.attrs['input_vegetation_file'] = opts.vegetation_file
-  ds.attrs['input_soil_water_file'] = opts.soil_water_file
+  ds_out.attrs['title']                 = 'E3SM atmosphere surface data'
+  ds_out.attrs['source_code']           = source_code_meta
+  ds_out.attrs['hostname']              = str(host)
+  ds_out.attrs['history']               = f'created by {user}, '+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+  ds_out.attrs['input_map_file']        = opts.map_file
+  ds_out.attrs['input_vegetation_file'] = opts.vegetation_file
+  ds_out.attrs['input_soil_water_file'] = opts.soil_water_file
 
   ds_out.to_netcdf(path=output_file,mode='w')
 
