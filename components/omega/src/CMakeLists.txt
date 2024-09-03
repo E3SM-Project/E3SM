@@ -61,7 +61,7 @@ target_link_libraries(
 if(OMEGA_BUILD_EXECUTABLE)
 
   set(EXESRC_FILES
-    drivers/DrvDummy.cpp
+    drivers/standalone/OceanDriver.cpp
   )
 
   # Create the executable target
