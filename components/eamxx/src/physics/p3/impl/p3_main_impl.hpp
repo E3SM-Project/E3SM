@@ -87,9 +87,11 @@ Int Functions<S,D>
   const physics::P3_Constants<S> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
 
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto scratch_size = ScratchViewType::shmem_size(2);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;
@@ -97,9 +99,6 @@ Int Functions<S,D>
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
-
-  // per-column bools
-  view_2d<bool> bools("bools", nj, 2);
 
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
@@ -201,9 +200,11 @@ Int Functions<S,D>
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
-    // Need to watch out for race conditions with these shared variables
-    bool &nucleationPossible  = bools(i, 0);
-    bool &hydrometeorsPresent = bools(i, 1);
+    // Use Kokkos' scratch pad for allocating 2 bools
+    // per team to determine early exits
+    ScratchViewType bools(team.team_scratch(0), 2);
+    bool &nucleationPossible  = bools(0);
+    bool &hydrometeorsPresent = bools(1);
 
     view_1d_ptr_array<Spack, 36> zero_init = {
       &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
