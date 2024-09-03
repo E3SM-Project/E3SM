@@ -26,12 +26,30 @@ int Tendencies::init() {
    int Err = 0;
 
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
-   Config *TendConfig;
+
+   // Get TendConfig group if available
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TendConfig("Tendencies");
+   if (OmegaConfig->existsGroup("Tendencies")) {
+      Err = OmegaConfig->get(TendConfig);
+   }
 
    int NVertLevels = 60;
 
+   // Retrieve NVertLevels from Config if available
+   Config DimConfig("Dimension");
+   if (OmegaConfig->existsGroup("Dimension")) {
+      Err = OmegaConfig->get(DimConfig);
+      if (DimConfig.existsVar("NVertLevels")) {
+         Err = DimConfig.get("NVertLevels", NVertLevels);
+      }
+   }
+
+   // TODO: move setMasks to HorzMesh constructor
+   DefHorzMesh->setMasks(NVertLevels);
+
    Tendencies::DefaultTendencies =
-       Tendencies::create("Default", DefHorzMesh, NVertLevels, TendConfig);
+       create("Default", DefHorzMesh, NVertLevels, &TendConfig);
 
    return Err;
 
@@ -289,52 +307,68 @@ void Tendencies::computeAllTendencies(
 
 // TODO: Implement Config options for all constructors
 ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh,
-                                               Config *Options)
+                                               Config *TendConfig)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell) {
 
-   // Options->get("ThicknessFluxTendencyEnable", Enabled);
+   if (TendConfig->existsVar("ThicknessFluxTendencyEnable")) {
+      TendConfig->get("ThicknessFluxTendencyEnable", Enabled);
+   }
 }
 
 PotentialVortHAdvOnEdge::PotentialVortHAdvOnEdge(const HorzMesh *Mesh,
-                                                 Config *Options)
+                                                 Config *TendConfig)
     : NEdgesOnEdge(Mesh->NEdgesOnEdge), EdgesOnEdge(Mesh->EdgesOnEdge),
       WeightsOnEdge(Mesh->WeightsOnEdge) {
 
-   // Options->get("PVTendencyEnable", Enabled);
+   if (TendConfig->existsVar("PVTendencyEnable")) {
+      TendConfig->get("PVTendencyEnable", Enabled);
+   }
 }
 
-KEGradOnEdge::KEGradOnEdge(const HorzMesh *Mesh, Config *Options)
+KEGradOnEdge::KEGradOnEdge(const HorzMesh *Mesh, Config *TendConfig)
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge) {
 
-   // Options->get("KETendencyEnable", Enabled);
+   if (TendConfig->existsVar("KETendencyEnable")) {
+      TendConfig->get("KETendencyEnable", Enabled);
+   }
 }
 
-SSHGradOnEdge::SSHGradOnEdge(const HorzMesh *Mesh, Config *Options)
+SSHGradOnEdge::SSHGradOnEdge(const HorzMesh *Mesh, Config *TendConfig)
     : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge) {
 
-   // Options->get("SSHTendencyEnable", Enabled);
+   if (TendConfig->existsVar("SSHTendencyEnable")) {
+      TendConfig->get("SSHTendencyEnable", Enabled);
+   }
 }
 
 VelocityDiffusionOnEdge::VelocityDiffusionOnEdge(const HorzMesh *Mesh,
-                                                 Config *Options)
+                                                 Config *TendConfig)
     : CellsOnEdge(Mesh->CellsOnEdge), VerticesOnEdge(Mesh->VerticesOnEdge),
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge),
       MeshScalingDel2(Mesh->MeshScalingDel2), EdgeMask(Mesh->EdgeMask) {
 
-   // Options->get("VelDiffTendencyEnable", Enabled);
-   // Options->get("ViscDel2", ViscDel2);
+   if (TendConfig->existsVar("VelDiffTendencyEnable")) {
+      TendConfig->get("VelDiffTendencyEnable", Enabled);
+   }
+   if (TendConfig->existsVar("ViscDel2")) {
+      TendConfig->get("ViscDel2", ViscDel2);
+   }
 }
 
 VelocityHyperDiffOnEdge::VelocityHyperDiffOnEdge(const HorzMesh *Mesh,
-                                                 Config *Options)
+                                                 Config *TendConfig)
     : CellsOnEdge(Mesh->CellsOnEdge), VerticesOnEdge(Mesh->VerticesOnEdge),
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge),
       MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(Mesh->EdgeMask) {
 
-   // Options->get("VelHyperDiffTendencyEnable", Enabled);
-   // Options->get("ViscDel4", ViscDel4);
+   if (TendConfig->existsVar("VelHyperDiffTendencyEnable")) {
+      TendConfig->get("VelHyperDiffTendencyEnable", Enabled);
+   }
+   if (TendConfig->existsVar("ViscDel4")) {
+      TendConfig->get("ViscDel4", ViscDel4);
+   }
 }
 
 } // end namespace OMEGA

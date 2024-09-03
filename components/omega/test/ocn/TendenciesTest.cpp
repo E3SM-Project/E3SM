@@ -156,7 +156,7 @@ int testTendencies() {
 
    const auto *Mesh = HorzMesh::getDefault();
    // test creation of another tendencies
-   Config *Options;
+   Config *Options = Config::getOmegaConfig();
    Tendencies::create("TestTendencies", Mesh, 12, Options);
 
    // test retrievel of another tendencies
