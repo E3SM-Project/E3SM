@@ -13,6 +13,8 @@
 #include "TimeLevel.hpp"
 #include "mpi/Comm.hpp"
 
+#include <cinttypes>
+
 namespace Homme {
 
 namespace {
@@ -50,10 +52,10 @@ void print_global_state_hash (const std::string& label) {
   all_reduce_HashType(comm.mpi_comm(), accum, gaccum, 5);
   if (comm.root()) {
     for (int i = 0; i < NUM_TIME_LEVELS; ++i)
-      fprintf(stderr, "hxxhash> %14d %1d %16lx (E %s)\n",
+      fprintf(stderr, "hxxhash> %14d %1d %16" PRIx64 " (E %s)\n",
               tl.nstep, i, gaccum[i], label.c_str());
     for (int i = 0; i < Q_NUM_TIME_LEVELS; ++i)
-      fprintf(stderr, "hxxhash> %14d %1d %16lx (T %s)\n",
+      fprintf(stderr, "hxxhash> %14d %1d %16" PRIx64 " (T %s)\n",
               tl.nstep, i, gaccum[NUM_TIME_LEVELS+i], label.c_str());
   }
 }
