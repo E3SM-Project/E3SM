@@ -1944,7 +1944,7 @@ enddo
         if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
           if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
             temv = 1.0_r8 / velco(i,k)
-            tem1 = coefm(i)/(ncleff*dxy(i))*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
 
