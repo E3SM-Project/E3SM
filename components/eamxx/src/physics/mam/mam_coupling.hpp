@@ -776,6 +776,24 @@ void compute_wet_mixing_ratios(const Team& team,
   });
 }
 
+// Computes the reciprocal of pseudo density for a column
+inline
+void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
+                                      const_view_2d pdel,
+                                      const int nlev,
+                                      // output
+                                      view_2d rpdel) {
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
+              EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
+                                     "Error: pdel should be > 0.\n");
+              rpdel(icol, kk) = 1 / pdel(icol, kk);
+            });
+      });
+}
 // Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
 // "packs". Following function copies a 2d view till model levels
 inline
