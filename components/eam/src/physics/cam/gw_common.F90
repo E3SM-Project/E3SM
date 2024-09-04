@@ -1306,6 +1306,8 @@ real(r8)                 :: pe,ke
 
 !=====Jinbo Xie=====
 integer :: wdir_add_xjb(mdir,its:ite)
+real(r8):: ncleff  !!tunable parameter
+real(r8):: ncd
 !=====Jinbo Xie=====
 
 
@@ -1700,7 +1702,8 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
 !==============Jinbo Xie=============================================
        !cleff    = 3._r8 * max(dxmeter(i),cleff)!turned dxmeter to array
-        cleff    = 3._r8 * max(dxmax_ls,cleff)
+        ncleff   = 3._r8
+        cleff    = 3._r8/ncleff * max(dxmax_ls,cleff)
         !cleff    = 2._r8 * max(dxmax_ls,cleff)
 !==============Jinbo Xie=============================================
        coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
@@ -1941,7 +1944,7 @@ enddo
         if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
           if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
             temv = 1.0_r8 / velco(i,k)
-            tem1 = coefm(i)/dxy(i)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            tem1 = coefm(i)/(ncleff*dxy(i))*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
 
@@ -2046,6 +2049,10 @@ zblk_col(i)=zblk
 !so it is good and not needed for an uneven grid area
 !ref Lott and Miller (1997) original scheme
           cd = max(2.0_r8-1.0_r8/od(i),0.0_r8)
+
+ncd=3._r8
+cd=ncd*cd
+
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
                          * olp(i) * zblk * ulow(i)**2
 !Jinbo Xie for base flux
