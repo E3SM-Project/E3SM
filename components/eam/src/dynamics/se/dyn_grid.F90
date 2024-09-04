@@ -667,17 +667,16 @@ contains
     ! The native HOMME GLL grid
     call cam_grid_register(trim(gridname), dyn_decomp, lat_coord, lon_coord,  &
                            grid_map_d,block_indexed=.false., unstruct=.true.)
-    if (.not.single_column .or. scm_multcols) then
-      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
-                                'gll grid areas', trim(ncolname), pearea, pemap)
-    else
-      ! If single column model, set pearea_scm(1) to be the area.
-      ! Then register attribute in same way as non-SCM to simplify.
+    if (single_column .or. scm_multcols) then
+      ! If single column model, set pearea_scm(1) to be the area as 1 value to simplify
       allocate(pearea_scm(1))
       pearea_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
       call cam_grid_attribute_register(trim(gridname), trim(areaname), &
-           'gll grid areas', trim(ncolname), pearea_scm, pemap)
-      nullify(pearea_scm)
+                                'gll grid areas', trim(ncolname), pearea_scm)
+    else
+      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
+                                'gll grid areas', trim(ncolname), pearea, pemap)
+
     end if ! .not. single_column
 
     call cam_grid_attribute_register(trim(gridname), 'np', '', np)
@@ -692,6 +691,9 @@ contains
     nullify(grid_map_d)
     nullify(pearea)
     nullify(pemap)
+    if (single_column .or. scm_multcols) then
+       nullify(pearea_scm)
+    endif
 
     !---------------------------------------------------------------------------
     ! Create grid object for physics grid on the dynamics decomposition
