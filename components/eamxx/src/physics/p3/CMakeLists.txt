@@ -74,14 +74,14 @@ set(P3_SK_SRCS
     )
 
 set(P3_LIBS "p3")
-if (SCREAM_SMALL_KERNELS)
+if (SCREAM_P3_SMALL_KERNELS)
   add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
 else()
   add_library(p3 ${P3_SRCS})
   if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
-    # Always build shoc_sk with SCREAM_SMALL_KERNELS on
-    target_compile_definitions(p3_sk PUBLIC "SCREAM_SMALL_KERNELS")
+    # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
+    target_compile_definitions(p3_sk PUBLIC "SCREAM_P3_SMALL_KERNELS")
     list(APPEND P3_LIBS "p3_sk")
   endif()
 endif()

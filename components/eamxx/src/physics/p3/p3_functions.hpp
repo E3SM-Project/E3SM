@@ -420,7 +420,7 @@ struct Functions
     const uview_1d<Spack>& nc_tend,
     Scalar& precip_liq_surf);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void cloud_sedimentation_disp(
     const uview_2d<Spack>& qc_incld,
     const uview_2d<const Spack>& rho,
@@ -468,7 +468,7 @@ struct Functions
     Scalar& precip_liq_surf,
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void rain_sedimentation_disp(
     const uview_2d<const Spack>& rho,
     const uview_2d<const Spack>& inv_rho,
@@ -518,7 +518,7 @@ struct Functions
     Scalar& precip_ice_surf,
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void ice_sedimentation_disp(
     const uview_2d<const Spack>& rho,
     const uview_2d<const Spack>& inv_rho,
@@ -562,7 +562,7 @@ struct Functions
     const uview_1d<Spack>& bm,
     const uview_1d<Spack>& th_atm);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void homogeneous_freezing_disp(
     const uview_2d<const Spack>& T_atm,
     const uview_2d<const Spack>& inv_exner,
@@ -868,7 +868,7 @@ struct Functions
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
                            const uview_1d<const Scalar>& col_loc);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void check_values_disp(const uview_2d<const Spack>& qv, const uview_2d<const Spack>& temp, const Int& ktop, const Int& kbot,
                            const Int& timestepcount, const bool& force_abort, const Int& source_ind,
                            const uview_2d<const Scalar>& col_loc, const Int& nj, const Int& nk);
@@ -914,7 +914,7 @@ struct Functions
     Scalar& precip_ice_surf,
     view_1d_ptr_array<Spack, 36>& zero_init);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_init_disp(
     const Int& nj,const Int& nk_pack,
     const uview_2d<const Spack>& cld_frac_i, const uview_2d<const Spack>& cld_frac_l,
@@ -988,7 +988,7 @@ struct Functions
     bool& is_hydromet_present,
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part1_disp(
     const Int& nj,
     const Int& nk,
@@ -1121,7 +1121,7 @@ struct Functions
     const Int& nk,
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part2_disp(
     const Int& nj,
     const Int& nk,
@@ -1246,7 +1246,7 @@ struct Functions
     const uview_1d<Spack>& diag_eff_radius_qr,
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part3_disp(
     const Int& nj,
     const Int& nk_pack,
@@ -1319,7 +1319,7 @@ struct Functions
     Int nk, // number of vertical cells per column
     const physics::P3_Constants<ScalarT> & p3constants);
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_P3_SMALL_KERNELS
   static Int p3_main_internal_disp(
     const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,

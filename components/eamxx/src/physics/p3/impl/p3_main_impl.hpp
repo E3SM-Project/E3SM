@@ -349,7 +349,7 @@ Int Functions<S,D>
   Int nk,
   const physics::P3_Constants<S> & p3constants)
 {
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_P3_SMALL_KERNELS
   return p3_main_internal(runtime_options,
                          prognostic_state,
                          diagnostic_inputs,
