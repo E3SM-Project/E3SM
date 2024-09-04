@@ -30,8 +30,7 @@ struct RemapStateProvider {
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
-  bool              m_process_nh_vars_bool;
-  int              m_process_nh_vars;
+  bool              m_process_nh_vars;
 
   // These two morally are d(w_i)/ds and d(phinh_i)/ds.
   // However, since in the remap we need to multiply by ds
@@ -52,113 +51,27 @@ struct RemapStateProvider {
     assert (params.params_set);
 
 #ifdef HOMMEXX_BFB_TESTING
-    m_process_nh_vars_bool = true;
-    m_process_nh_vars = 1;
-    std::cout << "hey HOMMEXX_BFB_TESTING is defined \n";
+    m_process_nh_vars = true;
 #else
-
-if( m_process_nh_vars_bool){
-    std::cout << "hey BEFORE  m_process_nh_vars_bool is true \n";
-}else{
-    std::cout << "hey BEFORE  m_process_nh_vars_bool is false \n";
-}
-
-std::cout << "hey BEFORE params.theta_hydrostatic_mode " << params.theta_hydrostatic_mode << "\n";
-
-//    m_process_nh_vars_bool = false;
-//    m_process_nh_vars_bool = !params.theta_hydrostatic_mode;
-    if(params.theta_hydrostatic_mode){
-    std::cout << "IN ASSIGNMENT hey params.theta_hydrostatic_mode is true \n";
-    m_process_nh_vars = 0;
-    m_process_nh_vars_bool = false;
-    }else{
-    std::cout << "IN ASSIGNMENT hey params.theta_hydrostatic_mode is false \n";
-    m_process_nh_vars = 1;  
-    m_process_nh_vars_bool = true;  
-    }
-    std::cout << "hey HOMMEXX_BFB_TESTING is NOT defined \n";
+    m_process_nh_vars = !params.theta_hydrostatic_mode;
 #endif
 
-    std::cout << "as int: hey m_process_nh_vars " << m_process_nh_vars << "\n";
-
-if(params.theta_hydrostatic_mode){
-    std::cout << "hey params.theta_hydrostatic_mode is true \n";
-}else{
-    std::cout << "hey params.theta_hydrostatic_mode is false \n";
-}
-
-    std::cout << ">>>>>>>>>>>> m_process_nh_vars  " << m_process_nh_vars << " \n";
-    std::cout << ">>>>>>>>>>>> m_process_nh_vars_bool  " << m_process_nh_vars_bool << " \n";
-if(m_process_nh_vars){
-    std::cout << "hey m_process_nh_vars is true \n";
-}else{
-    std::cout << "hey m_process_nh_vars is false \n";
-}
-
-if(m_process_nh_vars_bool){
-    std::cout << "hey m_process_nh_vars_bool is true \n";
-}else{
-    std::cout << "hey m_process_nh_vars_bool is false \n";
-}
-
-////////////////////////// put abort if bool assignment failed
-
-
-//if(params.theta_hydrostatic_mode && m_process_nh_vars_bool)
-//Kokkos::abort("BOOL assignment failed, (params.theta_hydrostatic_mode && m_process_nh_vars_bool) == TRUE.\n");
-
-
-
-
-
     if (m_process_nh_vars) {
-    
-std::cout << "INSIDE w phi assignment m_process_nh_vars is true \n";
-
       m_delta_w     = decltype(m_delta_w) ("w_i increments",elements.num_elems());
       m_delta_phinh = decltype(m_delta_phinh) ("phinh_i increments",elements.num_elems());
     }
 
-if(m_process_nh_vars){
-    std::cout << "2hey m_process_nh_vars is true \n";
-}else
-{
-    std::cout << "2hey m_process_nh_vars is false \n";
-}
-
     m_hvcoord = Context::singleton().get<HybridVCoord>();
     assert (m_hvcoord.m_inited);
-
-if(m_process_nh_vars){
-    std::cout << "3hey m_process_nh_vars is true \n";
-}else
-{
-    std::cout << "3hey m_process_nh_vars is false \n";
-}
 
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
 
-  if(m_process_nh_vars){
-    std::cout << "4hey m_process_nh_vars is true \n";
-}else
-{
-    std::cout << "4hey m_process_nh_vars is false \n";
-}
-  
-    }
+   } 
 
   int requested_buffer_size (int num_teams) const {
 
-if(m_process_nh_vars){
-    std::cout << "IN REQUESTED hey m_process_nh_vars is true \n";
-}else
-{
-    std::cout << "IN REQUESTED hey m_process_nh_vars is false \n";
-}
-
     if (!m_process_nh_vars) {
-    //if (m_process_nh_vars==0) {
       return 0;
     }
 
@@ -171,16 +84,7 @@ if(m_process_nh_vars){
 
   void init_buffers(const FunctorsBuffersManager& fbm, int num_teams) {
 
-if(m_process_nh_vars){
-    std::cout << "IN BUFFERS hey m_process_nh_vars is true \n";
-}else
-{
-    std::cout << "IN BUFFERS hey m_process_nh_vars is false \n";
-}
-
     if (!m_process_nh_vars) {
-
-    std::cout << "hey we should be returning from init_buffers \n";
      return;
     }
 
@@ -194,20 +98,17 @@ if(m_process_nh_vars){
 
   KOKKOS_INLINE_FUNCTION
   int num_states_remap() const {
-    //return (m_process_nh_vars ? 5 : 3);
-    return ( (m_process_nh_vars) ? 5 : 3);
+    return (m_process_nh_vars ? 5 : 3);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const {
-    //return (m_process_nh_vars ? 2 : 0);
-    return ( (m_process_nh_vars) ? 2 : 0);
+    return (m_process_nh_vars ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const {
-    //return (m_process_nh_vars ? 2 : 0);
-    return ((m_process_nh_vars) ? 2 : 0);
+    return (m_process_nh_vars ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
