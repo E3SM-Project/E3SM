@@ -101,6 +101,7 @@ module dyn_grid
   real(r8),      allocatable :: pelon_deg(:)        ! pe-local longitudes (degrees)
   real(r8),          pointer :: pearea(:) => null() ! pe-local areas
   integer(iMap),     pointer :: pemap(:)  => null() ! pe-local map for PIO decomp
+  real(r8),          pointer :: pearea_scm(:) => null() ! special case: area for SCM (only 1 value)
 
 !===================================================================================================
 contains
@@ -618,7 +619,7 @@ contains
     integer(iMap),       pointer :: grid_map_d(:,:)
     integer(iMap),       pointer :: grid_map_p(:,:)
     integer                      :: ie, i, j, k, mapind ! Loop variables
-    real(r8)                     :: area_scm(1), lat, lon
+    real(r8)                     :: lat, lon
     integer                      :: ncols_p_lcl         ! local column count
     integer                      :: ncols_p_gbl         ! global column count
     integer(iMap),       pointer :: physgrid_map(:)
@@ -670,12 +671,13 @@ contains
       call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
                                 'gll grid areas', trim(ncolname), pearea, pemap)
     else
-      ! if single column model, then this attribute has to be handled
-      ! by assigning just the SCM point. Else, the model will bomb out
-      ! when writing the header information to history output
-      area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
-      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
-                                    'gll grid areas', trim(ncolname), area_scm)
+      ! If single column model, set pearea_scm(1) to be the area.
+      ! Then register attribute in same way as non-SCM to simplify.
+      allocate(pearea_scm(1))
+      pearea_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
+      call cam_grid_attribute_register(trim(gridname), trim(areaname), &
+           'gll grid areas', trim(ncolname), pearea_scm, pemap)
+      nullify(pearea_scm)
     end if ! .not. single_column
 
     call cam_grid_attribute_register(trim(gridname), 'np', '', np)
