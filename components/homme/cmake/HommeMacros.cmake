@@ -163,7 +163,7 @@ macro(createTestExec execName execType macroNP macroNC
 
   IF (HOMME_USE_KOKKOS)
   if("${E3SM_KOKKOS_PATH}" STREQUAL "")
-    target_link_libraries(${execName} kokkos)
+    target_link_libraries(${execName} Kokkos::kokkos)
   else()
     link_to_kokkos(${execName})
   endif()
