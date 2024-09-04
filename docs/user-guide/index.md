@@ -62,8 +62,9 @@ for each of the historical ("20TR") compsets including the single-forcing compse
 |`WCYCL20TR-lulc`| 1850         | 1850            | 1850     | 1850               | 1850    | 1850    | varying |
 |`WCYCL20TR-volc`| 1850         | 1850            | 1850     | 1850               | varying | 1850    | 1850    |
 
-
-- <sub> *Volcano* refers to stratospheric volcanic SO2 emissions; *1850* for *Volcano refers to background (average) stratospheric volcanic emissions used in pre-industrial control experiments</sub>
+<!-- markdownlint-disable-next-line MD033 -->
+- <sub> *Volcano* refers to stratospheric volcanic SO2 emissions; *1850* for *Volcano* refers to background (average) stratospheric volcanic emissions used in pre-industrial control experiments</sub>
+<!-- markdownlint-disable-next-line MD033 -->
 - <sub> *Oxidants* always follow *Aerosol & precursors* for fixed or varying.</sub>
 
 The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
