@@ -42,6 +42,8 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   using const_view_1d = typename KT::template view_1d<const Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
+  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+
   // unmanaged views (for buffer and workspace manager)
   using uview_1d = Unmanaged<typename KT::template view_1d<Real>>;
   using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
@@ -107,6 +109,7 @@ private_except_cuda:
 
   // configuration data (for the moment, we plan to be able to move this to
   // the device, so we can't use C++ strings)
+#define MAX_FILENAME_LEN 256
   struct Config {
     // photolysis parameters
     struct {
@@ -279,6 +282,8 @@ private_except_cuda:
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 
+  view_1d_host acos_cosine_zenith_host_;
+  view_1d acos_cosine_zenith_;
 
 }; // MAMMicrophysics
 

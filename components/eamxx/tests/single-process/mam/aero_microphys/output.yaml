@@ -6,7 +6,12 @@ Fields:
   Physics:
     Field Names:
       - T_mid
-      
+      # To save these fields make sure to turn on
+      # OUTPUT_TRACER_FIELDS
+      #- oxi_fields
+      #- linoz_fields
+      #- vertical_emission_fields
+
 output_control:
   Frequency: 1
   frequency_units: nsteps

@@ -15,12 +15,12 @@ namespace scream::mam_coupling {
 
 using namespace ShortFieldTagsNames;
 using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 
 using ExeSpace = typename KT::ExeSpace;
 using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
 using C        = scream::physics::Constants<Real>;
 using LIV      = ekat::LinInterp<Real, 1>;
-
 
 // Linoz NetCDF files use levs instead of formula_terms.
 // This function allocates a view, so we need to do it during initialization.
@@ -31,9 +31,8 @@ inline void compute_p_src_zonal_files(const view_1d &levs,
                                       const view_2d &p_src) {
   EKAT_REQUIRE_MSG(p_src.data() != 0,
                    "Error: p_src has not been allocated. \n");
-  EKAT_REQUIRE_MSG(levs.data() != 0,
-                   "Error: levs has not been allocated. \n");
-  const int ncol = p_src.extent(0);
+  EKAT_REQUIRE_MSG(levs.data() != 0, "Error: levs has not been allocated. \n");
+  const int ncol       = p_src.extent(0);
   const int nlevs_data = levs.extent(0);
   EKAT_REQUIRE_MSG(
       int(p_src.extent(1)) == nlevs_data,
@@ -68,7 +67,7 @@ struct ForcingHelper {
   int nsectors;
   // offset in output vector from reader
   int offset;
-  };
+};
 
 enum TracerFileType {
   // file with PS ncol, lev, and time
@@ -79,17 +78,13 @@ enum TracerFileType {
   VERT_EMISSION,
 };
 
-enum TracerDataIndex {
-  BEG=0,
-  END=1,
-  OUT=2
-};
+enum TracerDataIndex { BEG = 0, END = 1, OUT = 2 };
 
 /* Maximum number of tracers (or fields) that the tracer reader can handle.
  Note: We are not allocating memory for MAX_NVARS_TRACER tracers.
  Therefore, if a file contains more than this number, it is acceptable to
  increase this limit. Currently, Linoz files have 8 fields. */
-constexpr int MAX_NVARS_TRACER = 10;
+constexpr int MAX_NVARS_TRACER             = 10;
 constexpr int MAX_NUM_VERT_EMISSION_FIELDS = 25;
 
 // Linoz structures to help manage all of the variables:
@@ -142,7 +137,8 @@ struct TracerData {
   view_1d ps[3];
   const_view_1d hyam;
   const_view_1d hybm;
-  view_int_1d work_vert_inter[MAX_NVARS_TRACER];;
+  view_int_1d work_vert_inter[MAX_NVARS_TRACER];
+  ;
 
   // External forcing file (vertical emission)
   // Uses altitude instead of pressure to interpolate data
@@ -155,9 +151,8 @@ struct TracerData {
   // only for zonal files
   view_1d zonal_levs_;
 
-  void allocate_temporal_views()
-  {
-    //BEG and OUT data views.
+  void allocate_temporal_views() {
+    // BEG and OUT data views.
     EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
     EKAT_REQUIRE_MSG(nlev_ != int(-1), "Error! nlevs has not been set. \n");
     EKAT_REQUIRE_MSG(nvars_ != int(-1), "Error! nvars has not been set. \n");
@@ -168,16 +163,15 @@ struct TracerData {
     }
 
     // for vertical interpolation using rebin routine
-    if(file_type == FORMULA_PS ||
-        file_type == ZONAL) {
-    // we only need work array for FORMULA_PS or ZONAL
-    for(int ivar = 0; ivar < nvars_; ++ivar) {
-      work_vert_inter[ivar] =
-      view_int_1d("allocate_work_vertical_interpolation", ncol_);
-    }
-    // we use ncremap and python scripts to convert zonal files to ne4pn4
-    // grids.
-    p_src_ = view_2d("pressure_src_invariant", ncol_, nlev_);
+    if(file_type == FORMULA_PS || file_type == ZONAL) {
+      // we only need work array for FORMULA_PS or ZONAL
+      for(int ivar = 0; ivar < nvars_; ++ivar) {
+        work_vert_inter[ivar] =
+            view_int_1d("allocate_work_vertical_interpolation", ncol_);
+      }
+      // we use ncremap and python scripts to convert zonal files to ne4pn4
+      // grids.
+      p_src_ = view_2d("pressure_src_invariant", ncol_, nlev_);
     }
 
     if(file_type == TracerFileType::FORMULA_PS) {
@@ -190,57 +184,8 @@ struct TracerData {
       // grids.
       compute_p_src_zonal_files(zonal_levs_, p_src_);
     }
-
   }
 };
-
-// Direct port of components/eam/src/chemistry/utils/tracer_data.F90/vert_interp
-// FIXME: I need to convert for loops to Kokkos loops.
-KOKKOS_INLINE_FUNCTION
-void vert_interp(int ncol, int levsiz, int pver, const view_2d &pin,
-                 const const_view_2d &pmid, const view_2d &datain,
-                 const view_2d &dataout,
-                 // work array
-                 const view_int_1d &kupper) {
-  const int one = 1;
-  // Initialize index array
-  for(int i = 0; i < ncol; ++i) {
-    kupper(i) = one;
-  }  // ncol
-
-  for(int k = 0; k < pver; ++k) {
-    // Top level we need to start looking is the top level for the previous k
-    // for all column points
-    int kkstart = levsiz;
-    for(int i = 0; i < ncol; ++i) {
-      kkstart = haero::min(kkstart, kupper(i));
-    }
-
-    // Store level indices for interpolation
-    for(int kk = kkstart - 1; kk < levsiz - 1; ++kk) {
-      for(int i = 0; i < ncol; ++i) {
-        if(pin(i, kk) < pmid(i, k) && pmid(i, k) <= pin(i, kk + 1)) {
-          kupper(i) = kk;
-        }  // end if
-      }    // end for
-    }      // end kk
-    // Interpolate or extrapolate...
-    for(int i = 0; i < ncol; ++i) {
-      if(pmid(i, k) < pin(i, 0)) {
-        dataout(i, k) = datain(i, 0) * pmid(i, k) / pin(i, 0);
-      } else if(pmid(i, k) > pin(i, levsiz - 1)) {
-        dataout(i, k) = datain(i, levsiz - 1);
-      } else {
-        Real dpu = pmid(i, k) - pin(i, kupper(i));
-        Real dpl = pin(i, kupper(i) + 1) - pmid(i, k);
-        dataout(i, k) =
-            (datain(i, kupper(i)) * dpl + datain(i, kupper(i) + 1) * dpu) /
-            (dpl + dpu);
-      }  // end if
-    }    // end col
-  }      // end k
-
-}  // vert_interp
 
 KOKKOS_INLINE_FUNCTION
 Real linear_interp(const Real &x0, const Real &x1, const Real &t) {
@@ -289,32 +234,33 @@ inline void create_linoz_chlorine_reader(
 
 // Gets the times from the NC file
 // Given a date in the format YYYYMMDD, returns its index in the time dimension.
-inline void get_time_from_ncfile(
-    const std::string &file_name,
-    const int cyclical_ymd,  // in format YYYYMMDD
-     int & cyclical_ymd_index,
-     std::vector<int> &dates) {
+inline void get_time_from_ncfile(const std::string &file_name,
+                                 const int cyclical_ymd,  // in format YYYYMMDD
+                                 int &cyclical_ymd_index,
+                                 std::vector<int> &dates) {
   // in file_name: name of the NC file
   // in cyclical_ymd: date in the format YYYYMMDD
   // out cyclical_ymd_index: time index for cyclical_ymd
   // out dates: date in YYYYMMDD format
   scorpio::register_file(file_name, scorpio::Read);
   const int nlevs_time = scorpio::get_time_len(file_name);
-  cyclical_ymd_index=-1;
+  cyclical_ymd_index   = -1;
   for(int itime = 0; itime < nlevs_time; ++itime) {
     int date;
     scorpio::read_var(file_name, "date", &date, itime);
     // std::cout << itime << " date: " << date << "\n";
-    if(date >= cyclical_ymd && cyclical_ymd_index ==-1) {
-      cyclical_ymd_index=itime;
+    if(date >= cyclical_ymd && cyclical_ymd_index == -1) {
+      cyclical_ymd_index = itime;
     }
     dates.push_back(date);
   }  // end itime
 
-  EKAT_REQUIRE_MSG(cyclical_ymd_index>=0,
-                  "Error! Current model time ("+std::to_string(cyclical_ymd)+") is not within "+
-                  "Tracer time period: ["+std::to_string(dates[0])+", "+
-                  "("+std::to_string(dates[nlevs_time-1])+").\n");
+  EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0,
+                   "Error! Current model time (" +
+                       std::to_string(cyclical_ymd) + ") is not within " +
+                       "Tracer time period: [" + std::to_string(dates[0]) +
+                       ", " + "(" + std::to_string(dates[nlevs_time - 1]) +
+                       ").\n");
   scorpio::release_file(file_name);
 }
 
@@ -336,12 +282,12 @@ inline Real chlorine_loading_advance(const util::TimeStamp &ts,
   return values[index] + delt * (values[index + 1] - values[index]);
 }
 
-// It reads variables that are not time-dependent and independent of columns (no MPI involved here).
-// We also obtain the offset_time_index using a date (cyclical_ymd) as input.
-// We initialize a few members of tracer_data.
-inline void setup_tracer_data(TracerData &tracer_data, // out
-                              const std::string& trace_data_file, // in
-                              const int cyclical_ymd) //in
+// It reads variables that are not time-dependent and independent of columns (no
+// MPI involved here). We also obtain the offset_time_index using a date
+// (cyclical_ymd) as input. We initialize a few members of tracer_data.
+inline void setup_tracer_data(TracerData &tracer_data,             // out
+                              const std::string &trace_data_file,  // in
+                              const int cyclical_ymd)              // in
 {
   scorpio::register_file(trace_data_file, scorpio::Read);
   // by default, I am assuming a zonal file.
@@ -374,14 +320,13 @@ inline void setup_tracer_data(TracerData &tracer_data, // out
     scorpio::read_var(trace_data_file, "hybm", hybm_h.data());
     view_1d hyam("hyam", nlevs_data);
     view_1d hybm("hybm", nlevs_data);
-    Kokkos::deep_copy(hyam,hyam_h);
-    Kokkos::deep_copy(hybm,hybm_h);
+    Kokkos::deep_copy(hyam, hyam_h);
+    Kokkos::deep_copy(hybm, hybm_h);
     tracer_data.hyam = hyam;
     tracer_data.hybm = hybm;
   }
 
-  if (tracer_file_type == ZONAL)
-  {
+  if(tracer_file_type == ZONAL) {
     view_1d_host levs_h("levs_h", nlevs_data);
     view_1d levs("levs", nlevs_data);
     scorpio::read_var(trace_data_file, "lev", levs_h.data());
@@ -389,47 +334,47 @@ inline void setup_tracer_data(TracerData &tracer_data, // out
     tracer_data.zonal_levs_ = levs;
   }
 
-  if (tracer_file_type == VERT_EMISSION)
-  {
-    const int nilevs_data       = scorpio::get_dimlen(trace_data_file, "altitude_int");
+  if(tracer_file_type == VERT_EMISSION) {
+    const int nilevs_data =
+        scorpio::get_dimlen(trace_data_file, "altitude_int");
     view_1d_host altitude_int_host("altitude_int_host", nilevs_data);
-    view_1d altitude_int = view_1d("altitude_int",nilevs_data);
-    scorpio::read_var(trace_data_file, "altitude_int", altitude_int_host.data());
+    view_1d altitude_int = view_1d("altitude_int", nilevs_data);
+    scorpio::read_var(trace_data_file, "altitude_int",
+                      altitude_int_host.data());
     Kokkos::deep_copy(altitude_int, altitude_int_host);
-    tracer_data.altitude_int_=altitude_int;
+    tracer_data.altitude_int_ = altitude_int;
   }
-   // time index
+  // time index
   {
-  const int nlevs_time = scorpio::get_dimlen(trace_data_file,"time");
-  int cyclical_ymd_index=-1;
-  for(int itime = 0; itime < nlevs_time; ++itime) {
-    int date;
-    scorpio::read_var(trace_data_file, "date", &date, itime);
-    if(date >= cyclical_ymd) {
-      cyclical_ymd_index=itime;
-      break;
-    }
-  }  // end itime
+    const int nlevs_time   = scorpio::get_dimlen(trace_data_file, "time");
+    int cyclical_ymd_index = -1;
+    for(int itime = 0; itime < nlevs_time; ++itime) {
+      int date;
+      scorpio::read_var(trace_data_file, "date", &date, itime);
+      if(date >= cyclical_ymd) {
+        cyclical_ymd_index = itime;
+        break;
+      }
+    }  // end itime
 
-  EKAT_REQUIRE_MSG(cyclical_ymd_index>=0,
-                  "Error! Current model time ("+std::to_string(cyclical_ymd)+") is not within "+
-                  "Tracer time period.\n");
+    EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0, "Error! Current model time (" +
+                                                  std::to_string(cyclical_ymd) +
+                                                  ") is not within " +
+                                                  "Tracer time period.\n");
 
-  tracer_data.offset_time_index_ = cyclical_ymd_index;
+    tracer_data.offset_time_index_ = cyclical_ymd_index;
   }
 
   scorpio::release_file(trace_data_file);
-  tracer_data.file_type  = tracer_file_type;
-  tracer_data.nlevs_data = nlevs_data;
-  tracer_data.ncols_data = ncols_data;
+  tracer_data.file_type     = tracer_file_type;
+  tracer_data.nlevs_data    = nlevs_data;
+  tracer_data.ncols_data    = ncols_data;
   tracer_data.has_altitude_ = has_altitude;
-
 }
 inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
     const std::string &trace_data_file, const std::string &map_file,
-    const std::vector<std::string> &var_names,
-    TracerData &tracer_data) {
+    const std::vector<std::string> &var_names, TracerData &tracer_data) {
   using namespace ShortFieldTagsNames;
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
@@ -528,8 +473,7 @@ inline void update_tracer_data_from_file(
 }  // update_tracer_data_from_file
 inline void update_tracer_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &tracer_horiz_interp,
-    TracerTimeState &time_state,
+    AbstractRemapper &tracer_horiz_interp, TracerTimeState &time_state,
     TracerData &data_tracer) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
@@ -537,8 +481,8 @@ inline void update_tracer_timestate(
   const auto month = ts.get_month() - 1;  // Make it 0-based
   if(month != time_state.current_month) {
     const auto tracer_data = data_tracer.data;
-    const int nvars       = data_tracer.nvars_;
-    const auto ps = data_tracer.ps;
+    const int nvars        = data_tracer.nvars_;
+    const auto ps          = data_tracer.ps;
 
     // Update the SPA time state information
     time_state.current_month = month;
@@ -550,12 +494,11 @@ inline void update_tracer_timestate(
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
     for(int ivar = 0; ivar < nvars; ++ivar) {
       Kokkos::deep_copy(tracer_data[TracerDataIndex::BEG][ivar],
-       tracer_data[TracerDataIndex::END][ivar]);
+                        tracer_data[TracerDataIndex::END][ivar]);
     }
 
     if(data_tracer.file_type == FORMULA_PS) {
-      Kokkos::deep_copy(ps[TracerDataIndex::BEG],
-       ps[TracerDataIndex::END]);
+      Kokkos::deep_copy(ps[TracerDataIndex::BEG], ps[TracerDataIndex::END]);
     }
 
     // Following SPA to time-interpolate data in MAM4xx
@@ -568,7 +511,8 @@ inline void update_tracer_timestate(
     // values
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
-    int next_month = data_tracer.offset_time_index_ + (time_state.current_month + 1) % 12;
+    int next_month =
+        data_tracer.offset_time_index_ + (time_state.current_month + 1) % 12;
     update_tracer_data_from_file(scorpio_reader, next_month,
                                  tracer_horiz_interp, data_tracer);
   }
@@ -586,10 +530,10 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
   auto &delta_t = time_state.days_this_month;
 
   // We can ||ize over columns as well as over variables and bands
-  const auto data = data_tracer.data;
+  const auto data      = data_tracer.data;
   const auto file_type = data_tracer.file_type;
 
-  const auto ps = data_tracer.ps;
+  const auto ps      = data_tracer.ps;
   const int num_vars = data_tracer.nvars_;
 
   const int ncol     = data_tracer.ncol_;
@@ -633,7 +577,7 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
         if(ivar == 1 && file_type == FORMULA_PS) {
           ps[TracerDataIndex::OUT](icol) =
               linear_interp(ps[TracerDataIndex::BEG](icol),
-               ps[TracerDataIndex::END](icol), delta_t_fraction);
+                            ps[TracerDataIndex::END](icol), delta_t_fraction);
         }
       });
   Kokkos::fence();
@@ -658,74 +602,43 @@ inline void compute_source_pressure_levels(const view_1d &ps_src,
       });
 }  // compute_source_pressure_levels
 
-
 inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const const_view_2d &p_tgt_c,
                                            const TracerData &input,
-                                           const view_2d output[])
-  {
+                                           const view_2d output[]) {
   // At this stage, begin/end must have the same horiz dimensions
   EKAT_REQUIRE(input.ncol_ == int(output[0].extent(0)));
-  const int ncol = input.ncol_;
-  const int levsiz =input.nlev_;
-  const int pver = mam4::nlev;
+  const int ncol   = input.ncol_;
+  const int levsiz = input.nlev_;
+  const int pver   = mam4::nlev;
 
   const int num_vars = input.nvars_;
+  // FIXME:delete  work[ivar]
   const auto work = input.work_vert_inter;
-  EKAT_REQUIRE(work[num_vars-1].data() != 0);
+  EKAT_REQUIRE(work[num_vars - 1].data() != 0);
   // vert_interp is serial in col and lev.
-  const auto policy_setup = ESU::get_default_team_policy(num_vars, 1);
-  const auto data =input.data;
+  const int outer_iters   = ncol * num_vars;
+  const auto policy_setup = ESU::get_default_team_policy(outer_iters, pver);
+  const auto data         = input.data;
 
   Kokkos::parallel_for(
       "vert_interp", policy_setup,
-      KOKKOS_LAMBDA(typename LIV::MemberType const &team)
-  {
-       const int ivar = team.league_rank();
-       vert_interp(ncol, levsiz, pver, p_src_c,
-                 p_tgt_c, data[TracerDataIndex::OUT][ivar],
-                 output[ivar],
-                 // work array
-                 work[ivar]);
-   });
-  }
+      KOKKOS_LAMBDA(typename LIV::MemberType const &team) {
+        // The policy is over ncols*num_vars, so retrieve icol/ivar
+        const int icol             = team.league_rank() / num_vars;
+        const int ivar             = team.league_rank() % num_vars;
+        const auto pin_at_icol     = ekat::subview(p_src_c, icol);
+        const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
+        const auto datain          = data[TracerDataIndex::OUT][ivar];
+        const auto datain_at_icol  = ekat::subview(datain, icol);
+        const auto dataout         = output[ivar];
+        const auto dataout_at_icol = ekat::subview(dataout, icol);
 
-// rebin is a port from:
-// https://github.com/eagles-project/e3sm_mam4_refactor/blob/ee556e13762e41a82cb70a240c54dc1b1e313621/components/eam/src/chemistry/utils/mo_util.F90#L12
-KOKKOS_INLINE_FUNCTION
-void rebin(int nsrc, int ntrg, const const_view_1d &src_x,
-                  const Real trg_x[], const view_1d &src, const view_1d &trg) {
-  for(int i = 0; i < ntrg; ++i) {
-    Real tl = trg_x[i];
-    if(tl < src_x(nsrc)) {
-      int sil = 0;
-      for(; sil <= nsrc; ++sil) {
-        if(tl <= src_x(sil)) {
-          break;
-        }
-      }
-      Real tu = trg_x[i + 1];
-      int siu = 0;
-      for(; siu <= nsrc; ++siu) {
-        if(tu <= src_x(siu)) {
-          break;
-        }
-      }
-      Real y = 0.0;
-      sil    = haero::max(sil, 1);
-      siu    = haero::min(siu, nsrc);
-      for(int si = sil; si <= siu; ++si) {
-        int si1 = si - 1;
-        Real sl = haero::max(tl, src_x(si1));
-        Real su = haero::min(tu, src_x(si));
-        y += (su - sl) * src(si1);
-      }
-      trg(i) = y / (trg_x[i + 1] - trg_x[i]);
-    } else {
-      trg(i) = 0.0;
-    }
-  }
-}  // rebin
+        mam4::vertical_interpolation::vert_interp(
+            team, levsiz, pver, pin_at_icol, pmid_at_icol, datain_at_icol,
+            dataout_at_icol);
+      });
+}
 
 inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
                                            const const_view_2d &zi,
@@ -747,7 +660,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   const int nsrc     = input.nlev_;
   constexpr int pver = mam4::nlev;
   const int pverp    = pver + 1;
-  const auto data = input.data;
+  const auto data    = input.data;
 
   Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy_interp,
@@ -757,7 +670,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
 
         const auto src = ekat::subview(data[TracerDataIndex::OUT][ivar], icol);
         const auto trg = ekat::subview(output[ivar], icol);
-
+        // FIXME: Try to avoid copy of trg_x by modifying rebin
         // trg_x
         Real trg_x[pver + 1];
         // I am trying to do this:
@@ -766,27 +679,22 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
           trg_x[pverp - i - 1] = m2km * zi(icol, i);
         }
         team.team_barrier();
-
-        rebin(nsrc, ntrg, src_x, trg_x, src, trg);
+        mam4::vertical_interpolation::rebin(team, nsrc, ntrg, src_x, trg_x, src,
+                                            trg);
       });
 }
 
 inline void advance_tracer_data(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
-    AbstractRemapper &tracer_horiz_interp,
-    const util::TimeStamp &ts,
-    TracerTimeState &time_state,
-    TracerData &data_tracer,
-    const const_view_2d &p_tgt,
-    const const_view_2d &zi_tgt,
+    AbstractRemapper &tracer_horiz_interp, const util::TimeStamp &ts,
+    TracerTimeState &time_state, TracerData &data_tracer,
+    const const_view_2d &p_tgt, const const_view_2d &zi_tgt,
     const view_2d output[]) {
   /* Update the TracerTimeState to reflect the current time, note the addition
    * of dt */
   time_state.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-  update_tracer_timestate(scorpio_reader, ts,
-                          tracer_horiz_interp,
-                          time_state,
+  update_tracer_timestate(scorpio_reader, ts, tracer_horiz_interp, time_state,
                           data_tracer);
   // Step 1. Perform time interpolation
   perform_time_interpolation(time_state, data_tracer);
@@ -794,16 +702,17 @@ inline void advance_tracer_data(
   if(data_tracer.file_type == FORMULA_PS) {
     // Step 2. Compute source pressure levels
     const auto ps = data_tracer.ps[TracerDataIndex::OUT];
-    compute_source_pressure_levels(ps, data_tracer.p_src_,
-                                   data_tracer.hyam, data_tracer.hybm);
+    compute_source_pressure_levels(ps, data_tracer.p_src_, data_tracer.hyam,
+                                   data_tracer.hybm);
   }
 
   // Step 3. Perform vertical interpolation
-  if(data_tracer.file_type == FORMULA_PS ||
-     data_tracer.file_type == ZONAL) {
-    perform_vertical_interpolation(data_tracer.p_src_, p_tgt, data_tracer, output);
+  if(data_tracer.file_type == FORMULA_PS || data_tracer.file_type == ZONAL) {
+    perform_vertical_interpolation(data_tracer.p_src_, p_tgt, data_tracer,
+                                   output);
   } else if(data_tracer.file_type == VERT_EMISSION) {
-    perform_vertical_interpolation(data_tracer.altitude_int_, zi_tgt, data_tracer, output);
+    perform_vertical_interpolation(data_tracer.altitude_int_, zi_tgt,
+                                   data_tracer, output);
   }
 
 }  // advance_tracer_data
