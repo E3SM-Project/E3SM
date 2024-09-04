@@ -24,7 +24,7 @@ is available.
 
 A *fully coupled* compset is one which has active components for at least the atmosphere, ocean, land surface, ocean and
 sea-ice all interacting.  Each compset is associated with a specific forcing condition.
-Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  `water cycle change and impacts`, `human-earth system feedbacks`, and `polar processes, sea-level rise and coastal impacts`. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for `water cycle change and impacts` simulation campaign.
+Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  **water cycle change and impacts**, **human-earth system feedbacks**, and **polar processes, sea-level rise and coastal impacts**. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for `water cycle change and impacts` simulation campaign.
 Below list the standard configuration compsets supported in the current version of E3SM:
 
 |Compset alias | Description |
@@ -37,7 +37,7 @@ Below list the standard configuration compsets supported in the current version 
 |`WCYCLSSP245` | Standard configuration with prescribed SSP-245 forcings |
 |`WCYCLSSP370` | Standard configuration with prescribed SSP-370 forcings |
 |`WCYCLSSP585` | Standard configuration with prescribed SSP-585 forcings |
-| | #### Compsets for single-forcings simulations of the historical period (1850-2014) |
+| | **Compsets for single-forcings simulations of the historical period (1850-2014)** |
 |`WCYCL20TR-GHG` | Greenhouse gases only configuration (`GHGs`)|
 |`WCYCL20TR-aer` | Anthropogenic aerosols and precursors only configuration (`aer`)|
 |`WCYCL20TR-xGHG-xaer` | All forcings except GHGs and aer (`solar irradiance, stratospheric ozone and volcanic emissions, land use land cover`) |
@@ -46,6 +46,25 @@ Below list the standard configuration compsets supported in the current version 
 |`WCYCL20TR-ozone` | Stratospheric ozone only configuration |
 |`WCYCL20TR-lulc` | Land use land cover only configuration |
 |`WCYCL20TR-volc` | Stratospheric volcanic emissions only configuration |
+
+The table below specifies which forcing category is fixed at 1850 conditions and which are allowed to vary over the historical period
+for each of the historical ("20TR") compsets including the single-forcing compsets.
+
+|Compset alias  |  GHGs    | Aerosol & precursors | Oxidants | Ozone (CI & Linoz) | Volcano | Solar   |  Land Use & ndep/popdensa |
+|:------------  |:-----:   | :---:                | :---:    | :---:              | :---:   | :---:   | :---:   |
+|`WCYCL20TR`    | varying       | varying         | varying  | varying            | varying | varying | varying |
+|`WCYCL20TR-GHG`| varying       | 1850            | 1850     | 1850               | 1850    | 1850    | 1850    |
+|`WCYCL20TR-aer`| 1850          | varying         | varying  | 1850               | 1850    | 1850    | 1850    |
+|`WCYCL20TR-xGHG-xaer`| 1850    | 1850            | 1850     | varying            | varying | varying | varying |
+|`WCYCL20TR-xaer`| varying      | 1850            | 1850     | varying            | varying | varying | varying |
+|`WCYCL20TR-nat`| 1850          | 1850            | 1850     | 1850               | varying | varying | 1850    |
+|`WCYCL20TR-ozone`| 1850        | 1850            | 1850     | varying            | 1850    | 1850    | 1850    |
+|`WCYCL20TR-lulc`| 1850         | 1850            | 1850     | 1850               | 1850    | 1850    | varying |
+|`WCYCL20TR-volc`| 1850         | 1850            | 1850     | 1850               | varying | 1850    | 1850    |
+
+
+- <sub> *Volcano* refers to stratospheric volcanic SO2 emissions; *1850* for *Volcano refers to background (average) stratospheric volcanic emissions used in pre-industrial control experiments</sub>
+- <sub> *Oxidants* always follow *Aerosol & precursors* for fixed or varying.</sub>
 
 The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
 The compset naming follows the same convention, e.g., `CRYO1850` and `CRYO1850-4xCO2` are with prognostic ice-shelf melt fluxes for the `polar processes` simulation campaign.
