@@ -306,17 +306,10 @@ deep_copy_impl (const Field& src) {
   auto src_alloc_props = src.get_header().get_alloc_properties();
   auto tgt_alloc_props =     get_header().get_alloc_properties();
 
-  // If a manual parallel_for is required (b/c of alloc sizes difference),
-  // we need to create extents (rather than just using the one in layout),
-  // since we don't know if we're running on host or device
-  using device_t = typename Field::get_device<HD>;
-  using exec_space = typename device_t::execution_space;
-  using RangePolicy = Kokkos::RangePolicy<exec_space>;
-  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
-  extents_type ext ("",rank);
-  Kokkos::deep_copy(ext,layout.extents());
+  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
   auto policy = RangePolicy(0,layout.size());
 
+  auto ext = layout.extents();
   switch (rank) {
     case 1:
       {
@@ -324,14 +317,14 @@ deep_copy_impl (const Field& src) {
           auto v     =     get_view<      ST*,HD>();
           auto v_src = src.get_view<const ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-              v(idx) = v_src(idx);
-            });
+            v(idx) = v_src(idx);
+          });
         } else {
           auto v     =     get_strided_view<      ST*,HD>();
           auto v_src = src.get_strided_view<const ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-              v(idx) = v_src(idx);
-            });
+            v(idx) = v_src(idx);
+          });
         }
       }
       break;
@@ -658,15 +651,10 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       " - x layout: " + x_l.to_string() + "\n"
       " - y layout: " + y_l.to_string() + "\n");
 
-  using device_t = typename Field::get_device<HD>;
-  using exec_space = typename device_t::execution_space;
-  using RangePolicy = Kokkos::RangePolicy<exec_space>;
+  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
+  auto policy = RangePolicy(0,x_l.size());
 
-  // Need to create extents (rather than just using the one in x_l),
-  // since we don't know if we're running on host or device
-  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
-  extents_type ext ("",x_l.rank());
-  Kokkos::deep_copy(ext,x_l.extents());
+  auto ext = layout.extents();
 
   auto policy = RangePolicy(0,x_l.size());
   switch (x_l.rank()) {
