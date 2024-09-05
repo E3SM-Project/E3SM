@@ -42,6 +42,17 @@ macro (CreateScorpioTargets)
     option (PIO_ENABLE_FORTRAN "Enable the Fortran library builds" ON)
 
     add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
+
+    set (SCORPIO_Fortran_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/externals/scorpio/src/flib CACHE INTERNAL "SCORPIO Fortran include dirs")
+    set (C_INCLUDE_DIRS "${E3SM_EXTERNALS_DIR}/scorpio/src/clib")
+    list(APPEND C_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/externals/scorpio/src/clib")
+    set (SCORPIO_C_INCLUDE_DIRS "${C_INCLUDE_DIRS}" CACHE INTERNAL "SCORPIO C include dirs")
+
+    # Add GPTL from SCORPIO
+    if (NOT GPTL_PATH)
+      set (GPTL_PATH ${E3SM_EXTERNALS_DIR}/scorpio/src/gptl CACHE INTERNAL "Path to GPTL library")
+    endif ()
+
     EkatDisableAllWarning(pioc)
     EkatDisableAllWarning(piof)
     EkatDisableAllWarning(gptl)

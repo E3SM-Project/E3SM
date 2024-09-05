@@ -1,14 +1,15 @@
 #include <catch2/catch.hpp>
 
-#include <random>
-
 #include "ElementOps.hpp"
-#include "Types.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/SyncUtils.hpp"
 #include "utilities/ViewUtils.hpp"
+#include "Types.hpp"
+
+#include <iostream>
+#include <random>
 
 using namespace Homme;
 

@@ -1613,16 +1613,17 @@ contains
 
 #ifdef MODEL_THETA_L
   if (dt_remap_factor==0) then
-     adjust_ps=.true.   ! stay on reference levels for Eulerian case
+    adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
-#ifdef SCREAM
-     adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
-#else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
-#endif
+    adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
   endif
 #else
-  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
+  adjust_ps=.true.     ! preqx requires forcing to stay on reference levels
+#endif
+
+#if defined(CAM) && !defined(SCREAM) 
+  adjust_ps=.true.     ! Special case when CAM is defined, and SCREAM is not defined, 
+                       ! require forcing to stay on reference levels no matter dt_remap_factor
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)

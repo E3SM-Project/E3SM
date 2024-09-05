@@ -172,6 +172,19 @@
     <desc>Turn on the passing of water isotope fields through the coupler</desc>
   </entry>
 
+  <entry id="FLDS_POLAR">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_MPASO%[^_]*ISMF">TRUE</value>
+      <value compset="_MPASSI%DIB_">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of polar fields through the coupler</desc>
+  </entry>
+
   <entry id="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
@@ -232,6 +245,7 @@
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
       <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO" grid="oi%RRSwISC6to18E3r5">RASM_OPTION2</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -262,9 +276,10 @@
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
-      <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU|GSW|E3SMWCv2|CPLWCH)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
+      <value compset="_DATM%JRA.*_MPASO%OECO" >CO2A</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO" >CO2A_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
       <value compset="_MPASSI_MPASO_.*_BGC%BCRC" >CO2C</value>
@@ -369,6 +384,10 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC08to60E3r1">180</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC04to60E3r1">360</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC02to60E3r1">720</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC01to60E3r1">1440</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>

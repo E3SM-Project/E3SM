@@ -8,6 +8,9 @@
 #define HOMMEXX_EXEC_SPACE_DEFS_HPP
 
 #include <cassert>
+#ifdef HOMMEXX_BFB_TESTING
+#include <tuple>
+#endif
 
 #include <Kokkos_Core.hpp>
 
@@ -153,11 +156,7 @@ struct DefaultThreadsDistribution {
   team_num_threads_vectors(const int num_parallel_iterations,
                            const ThreadPreferences tp = ThreadPreferences()) {
     return Parallel::team_num_threads_vectors_from_pool(
-#ifdef KOKKOS_ENABLE_DEPRECATED_CODE
-      ExecSpaceType::thread_pool_size()
-#else
-      ExecSpaceType::impl_thread_pool_size()
-#endif
+      ExecSpaceType().impl_thread_pool_size()
       , num_parallel_iterations, tp);
   }
 };
@@ -193,7 +192,7 @@ static
 typename std::enable_if<!OnGpu<ExecSpaceType>::value,int>::type
 get_num_concurrent_teams (const Kokkos::TeamPolicy<ExecSpaceType,Tags...>& policy) {
   const int team_size = policy.team_size();
-  const int concurrency = ExecSpaceType::concurrency();
+  const int concurrency = ExecSpaceType().concurrency();
   return (concurrency + team_size - 1) / team_size;
 }
 
@@ -201,9 +200,6 @@ template<typename ExecSpaceType, typename... Tags>
 static
 typename std::enable_if<OnGpu<ExecSpaceType>::value,int>::type
 get_num_concurrent_teams (const Kokkos::TeamPolicy<ExecSpaceType,Tags...>& policy) {
-  // const int team_size = policy.team_size() * policy.vector_length();
-  // const int concurrency = ExecSpaceType::concurrency();
-  // return (concurrency + team_size - 1) / team_size;
   return policy.league_size();
 }
 
@@ -360,7 +356,7 @@ struct Dispatch<HommexxGPU> {
       });
     // Broadcast result to all threads by doing sum of one thread's
     // non-0 value and the rest of the 0s.
-    Kokkos::Impl::CudaTeamMember::vector_reduce(
+    Kokkos::TeamPolicy<ExeSpace>::member_type::vector_reduce(
       Kokkos::Sum<ValueType>(local_tmp));
     result = local_tmp;
 #else
@@ -388,6 +384,21 @@ struct Dispatch<HommexxGPU> {
                     lambda, result);
   }
 
+#ifdef HOMMEXX_BFB_TESTING
+  // Template for getting the type of the second argument to a lambda
+  private:
+  template <typename T> struct arg2;
+
+  template <typename F, typename... Args>
+  struct arg2<void (F::*)(Args...) const>
+  {
+    using type = typename std::remove_reference<
+      typename std::tuple_element<1,std::tuple<Args...>>::type
+      >::type;
+  };
+  public:
+#endif
+
   template<class Lambda>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_scan (
@@ -400,11 +411,7 @@ struct Dispatch<HommexxGPU> {
     // serialize parallel scans.
 
     // Detect the value type
-    using value_type =
-      typename Kokkos::Impl::FunctorAnalysis
-        < Kokkos::Impl::FunctorPatternInterface::SCAN
-        , void
-        , Lambda >::value_type ;
+    using value_type = typename arg2<decltype(&Lambda::operator())>::type;
 
     // All threads init result.
     value_type accumulator = Kokkos::reduction_identity<value_type>::sum();

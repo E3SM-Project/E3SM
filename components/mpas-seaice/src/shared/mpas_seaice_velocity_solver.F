@@ -1431,7 +1431,6 @@ contains
 
                    ! this routine doesnt reset icePressure
                    call icepack_ice_strength(&
-                        nCategories, &
                         iceAreaCell(iCell), &
                         iceVolumeCell(iCell), &
                         openWaterArea(iCell), &

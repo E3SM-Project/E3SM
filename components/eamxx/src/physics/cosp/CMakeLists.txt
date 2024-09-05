@@ -17,7 +17,7 @@ set(EXTERNAL_SRC
    ${EAM_COSP_DIR}/external/src/cosp_constants.F90
    ${EAM_COSP_DIR}/external/src/simulator/cosp_cloudsat_interface.F90
    ${EAM_COSP_DIR}/external/src/cosp_config.F90
-   ${EAM_COSP_DIR}/local/cosp.F90
+   ${EAM_COSP_DIR}/external/src/cosp.F90
    ${EAM_COSP_DIR}/external/src/cosp_stats.F90
    ${EAM_COSP_DIR}/external/src/simulator/quickbeam/quickbeam.F90
    ${EAM_COSP_DIR}/external/src/simulator/parasol/parasol.F90
@@ -53,3 +53,6 @@ add_library(eamxx_cosp ${COSP_SRCS})
 target_link_libraries(eamxx_cosp physics_share scream_share cosp)
 target_compile_options(eamxx_cosp PUBLIC)
 target_compile_definitions(eamxx_cosp PUBLIC EAMXX_HAS_COSP)
+
+# Add this library to eamxx_physics
+target_link_libraries(eamxx_physics INTERFACE eamxx_cosp)

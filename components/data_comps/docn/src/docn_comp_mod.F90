@@ -31,6 +31,12 @@ module docn_comp_mod
   use docn_shr_mod   , only: sst_constant_value ! namelist input
   use docn_shr_mod   , only: nullstr
 
+#ifdef HAVE_MOAB
+!   character(1024)         :: domain_file        ! file containing domain info (set my input)
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+
+  use iso_c_binding
+#endif
 
   ! !PUBLIC TYPES:
   implicit none
@@ -75,6 +81,10 @@ module docn_comp_mod
   integer(IN), pointer   :: imask(:)
   real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
 
+#ifdef HAVE_MOAB
+  integer ::    mdpoid ! data: ocean local component
+#endif
+
   !--------------------------------------------------------------------------
   integer(IN)     , parameter :: ktrans = 8
   character(12)   , parameter :: avifld(1:ktrans) = &
@@ -90,6 +100,18 @@ module docn_comp_mod
 CONTAINS
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#ifdef HAVE_MOAB
+  SUBROUTINE errorout(ierr, message)
+  integer ierr
+  character*(*) message
+  if (ierr.ne.0) then
+    print *, message
+    call exit (1)
+  end if
+  return
+  end subroutine
+#endif
+
   !===============================================================================
   subroutine docn_comp_init(Eclock, x2o, o2x, &
        seq_flds_x2o_fields, seq_flds_o2x_fields, &
@@ -100,6 +122,13 @@ CONTAINS
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
+#ifdef HAVE_MOAB
+#include "moab/MOABConfig.h"
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+                     iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+                     iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
+                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo
+#endif
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -139,6 +168,15 @@ CONTAINS
     logical       :: write_restart=.false.
     type(iosystem_desc_t), pointer :: ocn_pio_subsystem
 
+#ifdef HAVE_MOAB
+    character*400  tagname
+    real(R8) latv, lonv
+    integer iv, tagindex
+    real(R8), allocatable, target :: data(:)
+    integer(IN), pointer :: idata(:)   ! temporary
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+#endif
+
     !--- formats ---
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: F0L   = "('(docn_comp_init) ',a, l2)"
@@ -147,7 +185,7 @@ CONTAINS
     character(*), parameter :: F03   = "('(docn_comp_init) ',a,i8,a)"
     character(*), parameter :: F04   = "('(docn_comp_init) ',2a,2i8,'s')"
     character(*), parameter :: F05   = "('(docn_comp_init) ',a,2f10.4)"
-    character(*), parameter :: F06   = "('(docn_comp_init) ',a,f10.4)"
+    character(*), parameter :: F06   = "('(docn_comp_init) ',a,5i8)"
     character(*), parameter :: F90   = "('(docn_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(docn_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(docn_comp_init) "
@@ -279,13 +317,6 @@ CONTAINS
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
 
-    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
-
-    ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')
-    if (ksomask /= 0) then
-       o2x%rAttr(ksomask, :) = ggrid%data%rAttr(kfrac,:)
-    end if
-
     index_lon = mct_aVect_indexRA(ggrid%data,'lon')
     xc(:) = ggrid%data%rAttr(index_lon,:)
 
@@ -294,6 +325,115 @@ CONTAINS
 
     call t_stopf('docn_initmctavs')
 
+#ifdef HAVE_MOAB
+
+   allocate(moab_vert_coords(lsize*3))
+   do iv = 1, lsize
+      lonv = xc(iv) * SHR_CONST_PI/180.
+      latv = yc(iv) * SHR_CONST_PI/180.
+      moab_vert_coords(3*iv-2)=COS(latv)*COS(lonv)
+      moab_vert_coords(3*iv-1)=COS(latv)*SIN(lonv)
+      moab_vert_coords(3*iv  )=SIN(latv)
+   enddo
+
+   ! create the vertices with coordinates from MCT domain
+   ierr = iMOAB_CreateVertices(mpoid, lsize*3, 3, moab_vert_coords)
+   if (ierr .ne. 0)  &
+      call shr_sys_abort('Error: fail to create MOAB vertices in land model')
+
+   tagname='GLOBAL_ID'//C_NULL_CHAR
+   ierr = iMOAB_DefineTagStorage(mpoid, tagname, &
+                                 0, & ! dense, integer
+                                 1, & ! number of components
+                                 tagindex )
+   if (ierr .ne. 0)  &
+      call shr_sys_abort('Error: fail to retrieve GLOBAL_ID tag ')
+
+   ! get list of global IDs for Dofs
+   call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+
+   ierr = iMOAB_SetIntTagStorage ( mpoid, tagname, lsize, &
+                                    0, & ! vertex type
+                                    idata)
+   if (ierr .ne. 0)  &
+      call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
+
+   ierr = iMOAB_ResolveSharedEntities( mpoid, lsize, idata );
+   if (ierr .ne. 0)  &
+      call shr_sys_abort('Error: fail to resolve shared entities')
+
+   deallocate(moab_vert_coords)
+   deallocate(idata)
+
+   ierr = iMOAB_UpdateMeshInfo( mpoid )
+   if (ierr .ne. 0)  &
+      call shr_sys_abort('Error: fail to update mesh info ')
+
+   allocate(data(lsize))
+   ierr = iMOAB_DefineTagStorage( mpoid, "area:aream:frac:mask"//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
+   tagname='area'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to get area tag ')
+
+   ! set the same data for aream (model area) as area
+   ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+   tagname='aream'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set aream tag ')
+
+   data(:) = ggrid%data%rAttr(kmask,:)
+   tagname='mask'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set mask tag ')
+
+   data(:) = ggrid%data%rAttr(kfrac,:)
+   tagname='frac'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mpoid, tagname, lsize, &
+                                      0, & ! set data on vertices
+                                      data)
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to set frac tag ')
+
+   deallocate(data)
+
+   ! define tags
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_x2o_fields)//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create seq_flds_x2o_fields tags ')
+
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(seq_flds_o2x_fields)//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create seq_flds_o2x_fields tags ')
+
+   ierr = iMOAB_DefineTagStorage( mpoid, trim(flds_strm)//C_NULL_CHAR, &
+                                     1, & ! dense, double
+                                     1, & ! number of components
+                                     tagindex )
+   if (ierr > 0 )  &
+      call errorout(ierr, 'Error: fail to create flds_strm tags ')
+#endif
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
@@ -379,14 +519,19 @@ CONTAINS
 
   end subroutine docn_comp_init
 
-  !===============================================================================
-
   subroutine docn_comp_run(EClock, x2o, o2x, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
     ! !DESCRIPTION:  run method for docn model
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_GetMeshInfo, &
+                     iMOAB_SetDoubleTagStorage, &
+                     iMOAB_WriteMesh
+    use seq_flds_mod, only: moab_set_tag_from_av
+#endif
+
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -422,6 +567,19 @@ CONTAINS
     character(len=CL) :: local_case_name
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
+
+#ifdef HAVE_MOAB
+    integer :: ierr     ! error code
+    integer :: kgg
+    character*100  tagname
+    integer tagindex
+    real(R8), allocatable, target :: data(:)
+#ifdef MOABDEBUG
+    integer  :: cur_docn_stepno
+    character*100 outfile, wopts, lnum
+#endif
+
+#endif
 
     character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
     character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
@@ -486,6 +644,8 @@ CONTAINS
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
 
+    if (my_task .EQ. master_task) &
+         write(logunit,*) "DOCN datamode case = ", trim(datamode)
     call t_startf('docn_datamode')
     select case (trim(datamode))
 
@@ -647,10 +807,70 @@ CONTAINS
 
     call t_stopf('docn_datamode')
 
+#ifdef HAVE_MOAB
+
+   allocate(data(lsize))
+   data(:) = 0.0
+
+   ! set dense double tags on vertices of the temporary DOCN app
+   ! first set o2x data
+   call moab_set_tag_from_av('So_t'//C_NULL_CHAR, o2x, kt, mpoid, data, lsize) 
+
+   call moab_set_tag_from_av('So_s'//C_NULL_CHAR, o2x, ks, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'So_u'//C_NULL_CHAR, o2x, ku, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
+
+   if (kswp /= 0) then
+      call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
+   endif
+
+   ! next set x2o data
+   call moab_set_tag_from_av( 'Foxx_swnet'//C_NULL_CHAR, x2o, kswnet, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Foxx_lwup'//C_NULL_CHAR, x2o, klwup, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Foxx_sen'//C_NULL_CHAR, x2o, ksen, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Foxx_lat'//C_NULL_CHAR, x2o, klat, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Foxx_rofi'//C_NULL_CHAR, x2o, krofi, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Faxa_lwdn'//C_NULL_CHAR, x2o, klwdn, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Faxa_snow'//C_NULL_CHAR, x2o, ksnow, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Fioi_melth'//C_NULL_CHAR, x2o, kmelth, mpoid, data, lsize)
+
+   ! next set avstrm data
+   call moab_set_tag_from_av( 'strm_h'//C_NULL_CHAR, avstrm, kh, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'strm_qbot'//C_NULL_CHAR, avstrm, kqbot, mpoid, data, lsize)
+
+
+#ifdef MOABDEBUG
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_docn_stepno )
+    write(lnum,"(I0.2)")cur_docn_stepno
+    outfile = 'docn_comp_run_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mpoid, outfile, wopts)
+    if (ierr > 0 )  then
+       write(logunit,*) 'Failed to write ocean component state '
+    endif
+#endif
+
+#endif
+
     !----------------------------------------------------------
     ! Debug output
     !----------------------------------------------------------
-
     if (dbug > 0 .and. my_task == master_task) then
        do n = 1,lsize
           write(logunit,F01)'import: ymd,tod,n,Foxx_swnet = ', target_ymd, target_tod, n, x2o%rattr(kswnet,n)

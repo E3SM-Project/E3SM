@@ -9,7 +9,7 @@ module CarbonStateUpdate2Mod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use pftvarcon        , only : npcropmin
+  use pftvarcon        , only : iscft
   use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp
   use tracer_varcon    , only : is_active_betr_bgc
@@ -186,7 +186,7 @@ contains
          veg_cs%deadcrootc(p)          = veg_cs%deadcrootc(p)         - veg_cf%hrv_deadcrootc_to_litter(p)         * dt
 
          ! crops
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
              veg_cs%livestemc(p)       = veg_cs%livestemc(p)          - veg_cf%hrv_livestemc_to_prod1c(p)          *dt
              veg_cs%leafc(p)           = veg_cs%leafc(p)              - veg_cf%hrv_leafc_to_prod1c(p)              *dt
              veg_cs%grainc(p)          = veg_cs%grainc(p)             - veg_cf%hrv_grainc_to_prod1c(p)             *dt

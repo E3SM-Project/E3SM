@@ -12,8 +12,8 @@ module elm_initializeMod
   use elm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use elm_varctl       , only : create_glacier_mec_landunit, iulog
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
-  use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan
-  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd 
+  use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh
+  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
   use elm_varsur       , only : fert_cft, fert_p_cft
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
@@ -59,6 +59,7 @@ contains
     ! !USES:
     use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub
     use elm_varpar                , only: cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: mxpft, numveg, mxpft_nc, numpft
     use elm_varpar                , only: update_pft_array_bounds
     use elm_varpar                , only: surfpft_lb, surfpft_ub
     use elm_varcon                , only: elm_varcon_init
@@ -268,10 +269,10 @@ contains
 
     allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
-    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
-    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
+    !allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    !allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
@@ -293,6 +294,14 @@ contains
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
     call pftconrd()
+    ! if by user-defined PFT (numbers and names), 'numpft/mxpft_nc' may be changed including other derived indices
+    !
+    ! a few arrays allocation previously done above is moved here i.e. after this 'pftconrd' call
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
+    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+
     call soilorder_conrd()
 
     ! Read in FATES parameter values early in the call sequence as well
@@ -468,6 +477,7 @@ contains
     use elm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
     use elm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
     use controlMod            , only : nlfilename
+    use controlMod            , only : fluh_timeseries
     use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
     use domainMod             , only : ldomain
     use initInterpMod         , only : initInterp
@@ -508,6 +518,7 @@ contains
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     use FATESFireFactoryMod   , only : scalar_lightning
     use FanStreamMod          , only : fanstream_init, fanstream_interp
+    use dynFATESLandUseChangeMod, only : dynFatesLandUseInit
     !
     ! !ARGUMENTS
     implicit none
@@ -733,6 +744,11 @@ contains
     call init_subgrid_weights_mod(bounds_proc)
     call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
+
+    ! Initialize fates LUH2 usage
+    if (use_fates_luh) then
+       call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
+    end if
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)

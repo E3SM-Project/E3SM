@@ -81,7 +81,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     }
 
     Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
-      inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr);
+      inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, physics::P3_Constants<Real>());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -123,7 +123,8 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     for(int si=0; si<Spack::n; ++si){
         qc_incld[si] = 1e-6 * i * Spack::n + si;
       }
-    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr);
+    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend, 
+		    nc2nr_autoconv_tend, ncautr, physics::P3_Constants<Real>());
         if((qc2qr_autoconv_tend < 0.0).any()){errors++;}
     }
 

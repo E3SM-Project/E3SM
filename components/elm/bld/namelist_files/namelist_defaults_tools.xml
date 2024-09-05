@@ -146,6 +146,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <lmask type="grvl"             >ISRIC-WISE</lmask>
 <lmask type="slp10"            >AVHRR</lmask>
 <lmask type="ero"              >AVHRR</lmask>
+<lmask type="fert"             >ISRIC-WISE</lmask>
+<lmask type="toprad"           >nomask</lmask>
 
 <!-- Grid resolutions for different types of mksurfdata_map input files -->
 <hgrid type="lak"              >3x3min</hgrid>
@@ -174,6 +176,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <hgrid type="grvl"             >5x5min</hgrid>
 <hgrid type="slp10"            >0.5x0.5</hgrid>
 <hgrid type="ero"              >0.5x0.5</hgrid>
+<hgrid type="fert"             >5x5min</hgrid>
+<hgrid type="toprad"           >0.01x0.01</hgrid>
 
 
 <!-- namelist filenames for different types of mksurfdata_map input files -->
@@ -201,7 +205,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_filename type="grvl" >mksrf_fgrvl</mksrf_filename>
 <mksrf_filename type="slp10" >mksrf_fslp10</mksrf_filename>
 <mksrf_filename type="ero" >mksrf_fero</mksrf_filename>
-
+<mksrf_filename type="fert" >mksrf_ffert</mksrf_filename>
+<mksrf_filename type="toprad" >mksrf_ftoprad</mksrf_filename>
 
 <!-- mksrf_navyoro Orography -->
 <mksrf_fnavyoro hgrid="0.33x0.33" mask="navy" >lnd/clm2/rawdata/mksrf_navyoro_20min.c010129.nc</mksrf_fnavyoro>
@@ -209,7 +214,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- mksrf_lai -->
 
 <mksrf_flai hgrid="0.5x0.5" lmask="MODIS" crop="on"
->lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_lai24pftnontrop_c120712.nc
+>lnd/clm2/rawdata/mksrf_lai34cft_simyr2000_c200622.nc
 </mksrf_flai>
 <mksrf_flai hgrid="0.5x0.5" lmask="MODIS" crop="off"
 >lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_lai_global_c090506.nc
@@ -308,6 +313,13 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_fero hgrid="0.5x0.5" lmask="AVHRR"
 >lnd/clm2/rawdata/mksrf_soilero_0.5x0.5.c220523.nc</mksrf_fero>
 
+<!-- fert dataset -->
+<mksrf_ffert hgrid="5x5min" lmask="ISRIC-WISE"
+>lnd/clm2/rawdata/mksrf_fert.c220309.nc</mksrf_ffert>
+
+<mksrf_ftoprad hgrid="0.01x0.01" lmask="nomask"
+>lnd/clm2/rawdata/mksrf_toprad_0.01x0.01.c240422.nc</mksrf_ftoprad>
+
 <!-- mksrf_fvegtyp -->
 
 <!-- test years -->
@@ -318,6 +330,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_fvegtyp hgrid="3x3min"        sim_year="2000" crop="off" >lnd/clm2/rawdata/pftlanduse.3minx3min.simyr2000.c110913/mksrf_landuse_rc2000_c110913.nc</mksrf_fvegtyp>
 
 <mksrf_fvegtyp hgrid="3x3min"        sim_year="2000" crop="on"  >lnd/clm2/rawdata/pftlanduse.3minx3min.simyr2000.c110913/mksrf_24pftNT_landuse_rc2000_c121207.nc</mksrf_fvegtyp>
+
+<mksrf_fvegtyp hgrid="0.5x0.5"       sim_year="1850" crop="on"  >lnd/clm2/rawdata/mksrf_newcrop_c200813.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5"       sim_year="2000" crop="on"  >lnd/clm2/rawdata/mksrf_newcrop_c200813.nc</mksrf_fvegtyp>
+
 
 <!-- Historical period from 1850 to 2015 -->
 <!-- Recall that sim_year just denotes the creation of a file for that year; transient LULCC years processed are based on the list in the file noted in the namelist -->

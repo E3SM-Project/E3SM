@@ -47,7 +47,7 @@ subview (const int idim, const int k, const bool dynamic) const {
   FieldAllocProp props(m_scalar_type_size);
   props.m_committed = true;
   props.m_scalar_type_size = m_scalar_type_size;
-  props.m_layout = m_layout.strip_dim(idim);
+  props.m_layout = m_layout.clone().strip_dim(idim);
 
   // Output is contioguous if either
   //  - this->m_contiguous=true AND idim==0
@@ -67,13 +67,55 @@ subview (const int idim, const int k, const bool dynamic) const {
     // and there is no packing
     props.m_last_extent = m_layout.dim(idim);
     props.m_pack_size_max = 1;
-    props.m_alloc_size = m_alloc_size / m_last_extent;
   } else {
     // We are keeping the last dim, so same last extent and max pack size
     props.m_last_extent = m_last_extent;
     props.m_pack_size_max = m_pack_size_max;
-    props.m_alloc_size = m_alloc_size / m_layout.dim(idim);
   }
+  // give it an invalid value because subviews don't get allocated
+  props.m_alloc_size = -1;
+  return props;
+}
+
+FieldAllocProp FieldAllocProp::subview(const int idim,
+                                       const int index_beg,
+                                       const int index_end) const {
+  EKAT_REQUIRE_MSG(
+      is_committed(),
+      "Error! Subview requires alloc properties to be committed.\n");
+  EKAT_REQUIRE_MSG(idim < m_layout.rank(),
+                   "Error! Dimension index out of bounds.\n");
+  EKAT_REQUIRE_MSG(index_beg < index_end,
+                   "Error! Slice indices are invalid (non-increasing).\n");
+  EKAT_REQUIRE_MSG(
+      index_beg >= 0 && index_end < m_layout.dim(idim),
+      "Error! Slice index range along the idim dimension is out of bounds.\n");
+
+  // Set new layout basic stuff
+  FieldAllocProp props(m_scalar_type_size);
+  props.m_committed = true;
+  props.m_scalar_type_size = m_scalar_type_size;
+  props.m_layout = m_layout.clone();
+  props.m_layout.reset_dim(idim, index_end - index_beg);
+
+  // we do not currently have the capability for contiguous multi-slice views
+  props.m_contiguous = false;
+
+  props.m_subview_info =
+      SubviewInfo(idim, index_beg, index_end, m_layout.dim(idim));
+  // Figure out strides/packs
+  if (idim == (m_layout.rank() - 1)) {
+    // We're slicing the possibly padded dim, so everything else is as in the
+    // layout, and there is no packing
+    props.m_last_extent = index_end - index_beg;
+    props.m_pack_size_max = 1;
+  } else {
+    // We are keeping the last dim, so same last extent and max pack size
+    props.m_last_extent = m_last_extent;
+    props.m_pack_size_max = m_pack_size_max;
+  }
+  // give it an invalid value because subviews don't get allocated
+  props.m_alloc_size = -1;
   return props;
 }
 
@@ -81,7 +123,7 @@ void FieldAllocProp::request_allocation (const int pack_size) {
   using ekat::ScalarTraits;
 
   EKAT_REQUIRE_MSG(!m_committed,
-      "Error! Cannot change allocation properties after they have been commited.\n");
+      "Error! Cannot change allocation properties after they have been committed.\n");
 
   const int vts = m_scalar_type_size*pack_size;
 

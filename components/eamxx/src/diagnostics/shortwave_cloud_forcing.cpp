@@ -17,7 +17,7 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  const auto m2 = m*m;
+  Units m2 (m*m,"m2");
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();

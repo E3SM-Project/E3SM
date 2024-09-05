@@ -98,6 +98,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/CIME/data/config/config_tests.xml</value>
+      <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/config_tests.xml</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -321,6 +322,7 @@
     <type>char</type>
     <values>
       <value component="any">$CIMEROOT/CIME/SystemTests</value>
+      <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -349,6 +351,7 @@
       <value component="mpaso"    >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>
       <value component="ww3"      >$COMP_ROOT_DIR_WAV/cime_config/testdefs/testmods_dirs</value>
+      <value component="mali"      >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

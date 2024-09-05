@@ -46,7 +46,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- twowayirrigation default -->
 <tw_irr>.false.</tw_irr>
-
 <!-- extra gw pumping for irrigation default -->
 <extra_gw_irr>.false.</extra_gw_irr>
 
@@ -55,7 +54,14 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
-<suplnitro use_fates=".true." >NONE</suplnitro>
+
+<!-- Supplemental N and P for FATES -->
+<!-- With c-only FATES, don't want partial N and P dynamics -->
+<!-- this is also true at different phases of spin-up -->
+<!-- so more cases than not, FATES wants supplemented N and P -->
+<suplnitro use_fates=".true." >ALL</suplnitro>
+<suplphos use_fates=".true." >ALL</suplphos>
+
 
 <!-- Nutrient competition pathway -->
 <nu_com>RD</nu_com>
@@ -108,7 +114,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
 <!-- Do downscaling to topounit -->
-<use_atm_downscaling_to_topunit>.false.</use_atm_downscaling_to_topunit>
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->
 <use_lake_wat_storage>.false.</use_lake_wat_storage>
@@ -123,11 +128,13 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <paramfile nu_com="ECA" use_cn=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
 <paramfile use_crop=".false." use_fates=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
+
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api25.5.0_12pft_c230710.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.36.0.0_12pft_c240517.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -267,10 +274,13 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <!-- Initial conditions for DYAMOND1, DYAMOND2 and for seasons of ENSO neutral year 2013 -->
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20160801">lnd/clm2/initdata/20220928.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20200120">lnd/clm2/initdata/20221218.F2010-CICE.ne30pg2_ne1024pg2.elm.r.2020-01-20-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="19941001">lnd/clm2/initdata/20231226.I2010CRUELM.ne1024pg2_ICOS10.elm.r.1994-10-01-00000.nc</finidat>
+<finidat hgrid="ne256np4.pg2"  mask="ICOS10" ic_ymd="19941001">lnd/clm2/initdata/20240104.I2010CRUELM.ne256pg2.elm.r.1994-10-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="101">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-01-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="401">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-04-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="701">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-07-01-00000.nc</finidat>
 <finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="1001">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-10-01-00000.nc</finidat>
+
 <finidat hgrid="360x720cru" mask="oRRS15to5"   ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45-360x720cru.clm2.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="r0125"      mask="oRRS15to5"   sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS15to5.clm2.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="r0125"      mask="oRRS18to6v3" sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2016-08-01-00000.nc</finidat>
@@ -292,12 +302,16 @@ lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
 <fsurdat hgrid="ne120np4.pg2" sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne120pg2_simyr2010_c230119.nc</fsurdat>
+<fsurdat hgrid="ne256np4.pg2" sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr1850_c240131.nc</fsurdat>
 <fsurdat hgrid="ne256np4.pg2" sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
 <fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024np4_simyr2010_c220523.nc</fsurdat>
+<fsurdat hgrid="r025"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
@@ -410,7 +424,7 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c230417_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729_with_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne16np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne16np4_simyr1850_c160108.nc</fsurdat>
@@ -430,10 +444,14 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false."  use_atm_downscaling_to_topunit =".true.">
+lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1950_c210924.nc</fsurdat>
+<fsurdat hgrid="r025"    sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr1850_c240125_TOP.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
@@ -497,6 +515,10 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne1024np4.pg2"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne256np4.pg2"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne256pg2_hist_simyr1850-2015_c240131.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
@@ -565,6 +587,16 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 <flanduse_timeseries hgrid="ne30np4"       rcp="2.6" sim_year_range="1850-2100"
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
+<!-- Land Use Harmonization unified timeseries data sets for dynamic FATES land use change -->
+<fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_fates=".true."
+ >lnd/clm2/surfdata_map/fates-sci.1.68.3_api.31.0.0_tools.1.0.1/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c231101.nc</fluh_timeseries>
+
+<fluh_timeseries hgrid="4x5" sim_year_range="constant" use_fates=".true."
+>lnd/clm2/surfdata_map/fates-sci.1.68.3_api.31.0.0_tools.1.0.1/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c231101.nc</fluh_timeseries>
+
+<!-- Land Use Harmonization static landuse x pft mapping data sets for FATES land use change -->
+<flandusepftdat hgrid="4x5" use_fates=".true." >lnd/clm2/surfdata_map/fates-sci.1.77.0_api.36.0.0/fates_landuse_pft_map_4x5_240206.nc</flandusepftdat>
+
 <!-- GLC mask datasets (relative to {csmdata}) -->
 <!-- Currently glc_grid is not being read from anywhere, so these rules are broken.  -->
 <!-- Until that is fixed, the first entry matching hgrid will be used. -->
@@ -576,22 +608,10 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="0.9x1.25" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_0.9x1.25_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="ne30np4" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_ne30np4_GIS_AIS_171002.nc</fglcmask>
 
-
-<fglcmask hgrid="48x96"    glc_grid="gland20" >glc/cism/griddata/glcmaskdata_48x96_Gland20km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland10" >glc/cism/griddata/glcmaskdata_48x96_Gland10km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland20" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland20km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland10" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland10km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland20" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland20km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland10" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland10km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<!-- MALI grids that could be used if the glc_grid logic was working. -->
+<!-- MALI grids -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
+<fglcmask hgrid="r05"      glc_grid="mpas.gis20km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r0125"    glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r0125_GIS_AIS.210407.nc</fglcmask>
 <fglcmask hgrid="ne30np4.pg2"  glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_ne30pg2_GIS_AIS.210407.nc</fglcmask>
@@ -909,6 +929,8 @@ this mask will have smb calculated over the entire global land surface
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." tw_irr=".true." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." use_hydrstress=".true."  >.true.</create_crop_landunit>
 
 <!-- =========================================  -->
 <!-- Performance issues                         -->
@@ -1664,6 +1686,13 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="2.5x3.33"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/2.5x3.33/map_1km-merge-10min_HYDRO1K-merge-nomask_to_2.5x3.33_nomask_aave_da_c130405.nc</map>
 
+<!-- mapping files for 0.25x0.25 START added on Wed May 1 11:10:45 2024-->
+
+<map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="0.25x0.25"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.01x0.01_nomask_to_0.25x0.25_nomask_aave_da_c240501.nc</map>
+
+<!-- mapping files for 0.25x0.25 END -->
+
 <!-- mapping files for 0.5x0.5 START added on Wed Sep 19 09:05:45 2012-->
 <!-- Created by lnd/clm/bld/namelist_files/createMapEntry.pl-->
 
@@ -1694,7 +1723,7 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="3x3min"   frm_lmask="GLOBE-Gardner-mergeGIS" to_hgrid="0.5x0.5" to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_GLOBE-Gardner-mergeGIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
 <map frm_hgrid="0.1x0.1"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
->lnd/clm2/mappingdata/maps/0.5x0.5/map_0.1x0.1_nomask_to_0.5x0.5_nomask_aave_da_c120706.nc</map>
+>lnd/clm2/mappingdata/maps/0.5x0.5/map_0.1x0.1_nomask_to_0.5x0.5_nomask_aave_da_c240308.nc</map>
 <map frm_hgrid="ne240np4"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_ne240np4_nomask_to_0.5x0.5_nomask_aave_da_c120711.nc</map>
 <map frm_hgrid="4x5"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
@@ -1711,6 +1740,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_360x720cru_cruncep_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
+<map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.5x0.5/map_0.01x0.01_nomask_to_0.5x0.5_nomask_aave_da_c240501.nc</map>
 
 <!-- mapping files for 0.5x0.5 END -->
 
@@ -1813,6 +1844,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/ne30np4/map_1km-merge-10min_HYDRO1K-merge-nomask_to_ne30np4_nomask_aave_da_c130405.nc</map>
 <map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne30np4"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne30np4/map_0.5x0.5_GSDTG2000_to_ne30np4_nomask_aave_da_c161010.nc</map>
+<map frm_hgrid="0.1x0.1"    frm_lmask="nomask"  to_hgrid="ne30np4"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/ne30np4/map_0.1x0.1_nomask_to_ne30np4_nomask_aave_da_c231218.nc</map>
 
 <map frm_hgrid="ne30np4"  frm_lmask="nomask" to_hgrid="0.5x0.5" to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
@@ -2061,6 +2094,39 @@ this mask will have smb calculated over the entire global land surface
 
 <!-- mapping files for r0125xr0125 END -->
 
+<map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_AVHRR_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="MODIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.9x1.25"    frm_lmask="GRDC"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.9x1.25_GRDC_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="IGBPmergeICESatGIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_10x10min_IGBPmergeICESatGIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_10x10min_nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="360x720cru"    frm_lmask="cruncep"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_360x720cru_cruncep_to_0.25x0.25_nomask_aave_da_c240124.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="GLOBE-Gardner-mergeGIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_GLOBE-Gardner-mergeGIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="GLOBE-Gardner"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_GLOBE-Gardner_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="LandScan2004"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_LandScan2004_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="MODIS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_MODIS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="USGS"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_3x3min_USGS_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="IGBP-GSDP"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_IGBP-GSDP_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="ISRIC-WISE"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_ISRIC-WISE_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="nomask"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_5x5min_nomask_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="r025xr025"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_GSDTG2000_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
+
 <map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_AVHRR_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
 <map frm_hgrid="0.5x0.5"    frm_lmask="MODIS"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
@@ -2127,24 +2193,31 @@ this mask will have smb calculated over the entire global land surface
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
 <fates_spitfire_mode           use_fates=".true.">0</fates_spitfire_mode>
-<use_fates_fixed_biogeog       use_fates=".true.">.false.</use_fates_fixed_biogeog>
-<use_fates_nocomp              use_fates=".true.">.false.</use_fates_nocomp>
+<fates_harvest_mode            use_fates=".true.">no_harvest</fates_harvest_mode>
+<fates_history_dimlevel        use_fates=".true.">2,2</fates_history_dimlevel>
+<fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
+<fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
+<fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
 <use_fates_tree_damage         use_fates=".true.">.false.</use_fates_tree_damage>
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
 <use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
-<use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
-<fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
-<fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
+<use_fates_lupft               use_fates=".true.">.false.</use_fates_lupft>
+<use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true."                                  >.false.</use_fates_luh>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
-<fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
 <use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
+<use_fates_nocomp              use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp              use_fates=".true."                      >.false.</use_fates_nocomp>
 <use_fates_fixed_biogeog       use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
+<use_fates_fixed_biogeog       use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog       use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
-
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                      bgc_mode="fates"  >.false.</use_lch4>

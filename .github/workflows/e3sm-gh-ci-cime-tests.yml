@@ -3,26 +3,40 @@ name: gh
 on:
   pull_request:
     branches: [ master ]
+    paths:
+      # first, yes to these
+      - 'cime_config/**'
+      - 'components/eam/**'
+      - 'components/elm/**'
+      - 'driver-moab/**'
+      - 'driver-mct/**'
+      # second, no to these
+      - '!components/eam/docs/**'
+      - '!components/eam/mkdocs.yml'
+      - '!components/elm/docs/**'
+      - '!components/elm/mkdocs.yml'
 
   workflow_dispatch:
 
 jobs:
 
   ci:
+    if: ${{ github.event.repository.name == 'e3sm' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         test: 
-          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - SMS_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - REP_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - ERP_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - PET_P4.ne4pg2_oQU480.F2010.singularity_gnu
-          - PEM_P4.ne4pg2_oQU480.F2010.singularity_gnu
+          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - SMS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - REP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu.eam-wcprod_F2010
+          - ERP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - PET_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+          - PEM_P4.ne4pg2_oQU480.F2010.singularity2_gnu
     container: 
-      image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
+      image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
     steps:
       - 

@@ -158,8 +158,8 @@ void HybridVCoord::random_init(int seed) {
 
     Errors::runtime_check(curr>prev,"Error! hybrid_a+hybrid_b is not increasing.\n", -1);
 
-    host_hybrid_am_real(i-1) = (host_hybrid_ai(i) + host_hybrid_ai(i))/2.0;
-    host_hybrid_bm_real(i-1) = (host_hybrid_bi(i) + host_hybrid_bi(i))/2.0;
+    host_hybrid_am_real(i-1) = (host_hybrid_ai(i) + host_hybrid_ai(i-1))/2.0;
+    host_hybrid_bm_real(i-1) = (host_hybrid_bi(i) + host_hybrid_bi(i-1))/2.0;
   }
 
   Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);

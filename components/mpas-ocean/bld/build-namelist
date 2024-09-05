@@ -54,6 +54,9 @@ OPTIONS
      -ocn_ismf             variable for defining how the ocn model will handle ice shelf melt
                            fluxes
                            Options are: none, data, internal, coupled
+     -ocn_sgr              variable for defining how the ocn model will handle subglacial
+                           runoff
+                           Options are: none, data
      -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASO configuration scripts.
@@ -67,6 +70,8 @@ OPTIONS
      -ice_bgc              check for coupling with sea ice BGC
      -ntasks_ocn           NTASKS_OCN for this case
      -ninst_ocn            NINST_OCN for this case
+     -ocn_tidal_mixing     variable for defining if to run with parameterized tidal mixing
+                           Options are: false, true. Default is false
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -109,6 +114,7 @@ my %opts = ( help          => 0,
              ocn_forcing   => undef,
              ocn_iceberg   => undef,
              ocn_ismf      => undef,
+             ocn_sgr      => undef,
              decomp_prefix => undef,
              date_stamp    => undef,
              ocn_bgc       => undef,
@@ -119,6 +125,7 @@ my %opts = ( help          => 0,
              cfg_dir       => $cfgdir,
              ntasks_ocn    => 0,
              ninst_ocn     => 0,
+             ocn_tidal_mixing => undef,
            );
 
 GetOptions(
@@ -134,6 +141,7 @@ GetOptions(
     "ocn_forcing=s"   => \$opts{'ocn_forcing'},
     "ocn_iceberg=s"   => \$opts{'ocn_iceberg'},
     "ocn_ismf=s"      => \$opts{'ocn_ismf'},
+    "ocn_sgr=s"       => \$opts{'ocn_sgr'},
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
     "ocn_bgc=s"       => \$opts{'ocn_bgc'},
@@ -145,6 +153,7 @@ GetOptions(
     "ntasks_ocn=i"    => \$opts{'ntasks_ocn'},
     "ninst_ocn=i"     => \$opts{'ninst_ocn'},
     "preview"         => \$opts{'preview'},
+    "ocn_tidal_mixing=s"   => \$opts{'ocn_tidal_mixing'},
 )  or usage();
 
 # Give usage message.
@@ -176,6 +185,7 @@ my $OCN_GRID      = $opts{'ocn_grid'};
 my $OCN_FORCING   = $opts{'ocn_forcing'};
 my $OCN_ICEBERG   = $opts{'ocn_iceberg'};
 my $OCN_ISMF      = $opts{'ocn_ismf'};
+my $OCN_SGR       = $opts{'ocn_sgr'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 my $ocn_bgc       = $opts{'ocn_bgc'};
@@ -185,6 +195,7 @@ my $atm_co2_const_val = $opts{'atm_co2_const_val'};
 my $ice_bgc       = $opts{'ice_bgc'};
 my $NINST_OCN     = $opts{'ninst_ocn'};
 my $NTASKS_OCN    = $opts{'ntasks_ocn'};
+my $OCN_TIDAL_MIXING   = $opts{'ocn_tidal_mixing'};
 $cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;
@@ -205,6 +216,7 @@ print $fh  <<"EOF";
 <config_definition>
 <entry id="ocn_grid" value="$OCN_GRID">
 <entry id="ocn_forcing" value="$OCN_FORCING">
+<entry id="ocn_tidal_mixing" value="$OCN_TIDAL_MIXING">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -450,6 +462,7 @@ my $ntasks = $NTASKS_OCN / $NINST_OCN;
 
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
+print "MPASO build-namelist: ocn_tidal_mixing is $OCN_TIDAL_MIXING \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -557,9 +570,9 @@ add_default($nl, 'config_Redi_constant_kappa');
 add_default($nl, 'config_Redi_maximum_slope');
 add_default($nl, 'config_Redi_use_slope_taper');
 add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_limit_term1');
 add_default($nl, 'config_Redi_use_quasi_monotone_limiter');
 add_default($nl, 'config_Redi_quasi_monotone_safety_factor');
-add_default($nl, 'config_Redi_limit_term1');
 add_default($nl, 'config_Redi_min_layers_diag_terms');
 add_default($nl, 'config_Redi_horizontal_taper');
 add_default($nl, 'config_Redi_horizontal_ramp_min');
@@ -616,6 +629,8 @@ add_default($nl, 'config_use_cvmix');
 add_default($nl, 'config_cvmix_prandtl_number');
 add_default($nl, 'config_cvmix_background_scheme');
 add_default($nl, 'config_cvmix_background_diffusion');
+add_default($nl, 'config_cvmix_background_diffusion_passive');
+add_default($nl, 'config_cvmix_background_diffusion_passive_enable');
 add_default($nl, 'config_cvmix_background_viscosity');
 add_default($nl, 'config_cvmix_BryanLewis_bl1');
 add_default($nl, 'config_cvmix_BryanLewis_bl2');
@@ -693,15 +708,28 @@ add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
+if ($OCN_SGR eq 'data') {
+	add_default($nl, 'config_subglacial_runoff_mode', 'val'=>"data");
+} else {
+	add_default($nl, 'config_subglacial_runoff_mode');
+}
+add_default($nl, 'config_flux_attenuation_coefficient_subglacial_runoff');
+add_default($nl, 'config_sgr_flux_vertical_location');
+add_default($nl, 'config_use_sgr_opt_kpp');
+add_default($nl, 'config_use_sgr_opt_temp_prescribed');
+add_default($nl, 'config_use_sgr_opt_salt_prescribed');
+add_default($nl, 'config_sgr_temperature_prescribed');
+add_default($nl, 'config_sgr_salinity_prescribed');
 
 ############################
 # Namelist group: coupling #
 ############################
 
+add_default($nl, 'config_remove_ais_river_runoff');
 if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
-	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".true.");
+	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
 } else {
-	add_default($nl, 'config_remove_AIS_coupler_runoff', 'val'=>".false.");
+	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
 }
 
 ######################################
@@ -718,7 +746,7 @@ add_default($nl, 'config_enable_shortwave_energy_fixer');
 ###########################################
 
 add_default($nl, 'config_use_self_attraction_loading');
-add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_self_attraction_loading_depth_cutoff');
 add_default($nl, 'config_mpas_to_grid_weights_file');
 add_default($nl, 'config_grid_to_mpas_weights_file');
 add_default($nl, 'config_self_attraction_loading_compute_interval');
@@ -759,7 +787,6 @@ add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
 add_default($nl, 'config_frazil_sea_ice_reference_salinity');
-add_default($nl, 'config_frazil_land_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
@@ -776,6 +803,15 @@ if ($OCN_ISMF eq 'coupled') {
 } else {
 	add_default($nl, 'config_land_ice_flux_mode');
 }
+if ($OCN_TIDAL_MIXING eq 'true') {
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_alpha', 'val'=>"0.777");
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_A0', 'val'=>"0.656");
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_U0', 'val'=>"0.003");
+} else {
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_alpha');
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_A0');
+	add_default($nl, 'config_land_ice_flux_tidal_Jourdain_U0');
+}
 add_default($nl, 'config_land_ice_flux_formulation');
 add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
 add_default($nl, 'config_land_ice_flux_attenuation_coefficient');
@@ -785,7 +821,6 @@ add_default($nl, 'config_land_ice_flux_cp_ice');
 add_default($nl, 'config_land_ice_flux_rho_ice');
 add_default($nl, 'config_land_ice_flux_explicit_topDragCoeff');
 add_default($nl, 'config_land_ice_flux_ISOMIP_gammaT');
-add_default($nl, 'config_land_ice_flux_rms_tidal_velocity');
 add_default($nl, 'config_land_ice_flux_jenkins_heat_transfer_coefficient');
 add_default($nl, 'config_land_ice_flux_jenkins_salt_transfer_coefficient');
 
@@ -818,8 +853,11 @@ add_default($nl, 'config_loglaw_bottom_drag_min');
 add_default($nl, 'config_loglaw_bottom_drag_max');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
+add_default($nl, 'config_topographic_wave_drag_scheme');
 add_default($nl, 'config_topographic_wave_drag_coeff');
 add_default($nl, 'config_thickness_drag_type');
+add_default($nl, 'config_topographic_wave_drag_cutoff_depth');
+add_default($nl, 'config_topographic_wave_drag_cutoff_width');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -1005,6 +1043,12 @@ add_default($nl, 'config_manufactured_solution_wavelength_x');
 add_default($nl, 'config_manufactured_solution_wavelength_y');
 add_default($nl, 'config_manufactured_solution_amplitude');
 
+#####################################
+# Namelist group: init_mode_subgrid #
+#####################################
+
+add_default($nl, 'config_subgrid_table_levels');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1016,7 +1060,7 @@ if ($OCN_FORCING eq 'datm_forced_restoring') {
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
-	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
+	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_use_activeTracers_surface_restoring');
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring');
@@ -1775,6 +1819,7 @@ my @groups = qw(run_modes
                 transport_tests
                 init_mode_vert_levels
                 manufactured_solution
+                init_mode_subgrid
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

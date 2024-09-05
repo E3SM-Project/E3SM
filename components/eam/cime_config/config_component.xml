@@ -53,8 +53,7 @@
       <value compset="_EAM"                    >-phys default</value>
       <value compset="_EAM%CMIP6-1pctCO2"      >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_EAM%CMIP6-4xCO2"        >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="^((?!SSP).)*_EAM%CMIP6_" >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
-      <value compset="SSP.*_EAM%CMIP6_"        >&eamv3_phys_defaults; &eamv2_chem_defaults;</value>
+      <value compset="_EAM%CMIP6_"             >&eamv3_phys_defaults; &eamv3_chem_defaults;</value>
       <value compset="_ELM%[^_]*BC"            >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"            >-co2_cycle</value>
 
@@ -72,14 +71,15 @@
 
       <!-- Multiscale modeling framework (MMF) -->
       <value compset="_EAM%.*MMF1"     >-crm samxx -crm_dt 10 </value>
-      <value compset="_EAM%.*MMF2_"    >-crm pam -pam_dycor spam -crm_dt 8 </value>
-      <value compset="_EAM%.*MMF2-AWFL">-crm pam -pam_dycor awfl -crm_dt 8 </value>
+      <value compset="_EAM%.*MMF2_"    >-crm pam -pam_dycor spam -crm_dt 10 </value>
+      <value compset="_EAM%.*MMF2-AWFL">-crm pam -pam_dycor awfl -crm_dt 10 </value>
       <value compset="_EAM%.*MMF"      >-use_MMF -nlev 60 -crm_nz 50</value>
-      <value compset="_EAM%.*MMF"      >-crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
+      <value compset="_EAM%.*MMF1"     >-crm_dx 2000 -crm_nx 64 -crm_ny 1 -crm_nx_rad 4 -crm_ny_rad 1</value>
+      <value compset="_EAM%.*MMF2"     >-crm_dx 3000 -crm_nx 45 -crm_ny 1 -crm_nx_rad 5 -crm_ny_rad 1</value>
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%.*MMF2"     >-MMF_microphysics_scheme p3 -chem none</value>
-      <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
-      <value compset="_EAM%.*MMF1"     >-use_MMF_VT</value>   <!-- CRM variance transport -->
+      <value compset="_EAM%.*MMF"      >-rad rrtmgp -rrtmgpxx</value>
+      <value compset="_EAM%.*MMF"      >-use_MMF_VT</value>   <!-- CRM variance transport -->
       <value compset="_EAM%.*MMF1"     >-use_MMF_ESMT</value> <!-- explicit scalar momentum transport -->
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
@@ -129,6 +129,7 @@
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6"        >SSP245_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf"          >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>
@@ -136,7 +137,7 @@
       <value compset="20TR(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >20TR_eam_chemUCI-Linoz-mam5</value>
       <value compset="ARM95_EAM"                        >scam_arm95</value>
       <value compset="ARM97_EAM"                        >scm_arm97_chemUCI-Linoz-mam5-vbs</value>
-      <value compset="SCM_EAM"                          >scm_generic_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SCM_EAM"                          >scam_generic</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
@@ -194,24 +195,24 @@
   </entry>
 
   <description>
-    <desc compset="_EAM"  >cam5 physics:</desc>
-    <desc compset="_EAM.*CMIP6"    >EAM with complete set of E3SM atmospheric mods for V3 (72 layers model) with chemUCI, Linozv3, MAM5 and VBS SOA - CMIP6-DECK:</desc>
-    <desc compset="_EAM.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
-    <desc compset="_EAM.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
+    <desc compset="_EAM.*">EAM with </desc>
+    <desc compset="^.*_EAM(?:(?!MMF|SCREAM|IDEAL|ADIAB).)*$">complete set of E3SM atmospheric mods for V3 (80 layers, P3, ZM  with convective microphysics, chemUCI, Linozv3, MAM5 and VBS SOA): </desc>
+    <desc compset="_EAM.*CMIP6"    >CMIP6 forcings:</desc>
     <desc compset="_EAM.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
     <desc compset="_EAM%FCHM">EAM super_fast_llnl chemistry:</desc>
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
-    <desc compset="ARM95_EAM%">single column EAM ARM95 IOP test case:</desc>
-    <desc compset="ARM97_EAM%">single column EAM ARM97 IOP test case:</desc>
+    <desc compset="ARM95_EAM%">single column ARM95 IOP test case:</desc>
+    <desc compset="ARM97_EAM%">single column ARM97 IOP test case:</desc>
     <desc compset="RICO_EAM%">single column EAM RICO IOP test case:</desc>
-    <desc compset="ADIAB"        >EAM adiabatic physics:</desc>
-    <desc compset="IDEAL"        >EAM ideal physics:</desc>
+    <desc compset="ADIAB"        >adiabatic physics:</desc>
+    <desc compset="IDEAL"        >ideal physics:</desc>
     <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
-    <desc compset="EAM.*_BGC%*">EAM prognostic CO2 cycle turned on.</desc>
+    <desc compset="EAM.*_BGC%*">prognostic CO2 cycle turned on.</desc>
     <desc compset="_EAM%SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_EAM%SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_EAM%SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>
     <desc compset="_EAM%SCREAM-HR-DYAMOND2">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_EAM%DPSCREAM">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol: doubly periodic boundary conditions.</desc>
     <desc compset="_EAM%SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
     <desc compset="_EAM%SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
     <!-- MMF / Super-Parameterization -->

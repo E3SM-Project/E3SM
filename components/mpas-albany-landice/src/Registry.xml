@@ -145,9 +145,9 @@
 		            description="Selection of the method for bedrock uplift calculation."
 		            possible_values="'none', 'data', 'sealevelmodel'"
         />
-        <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
-            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
-            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
+        <nml_option name="config_slm_coupling_interval" type="integer" default_value="2" units="years"
+            description="Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval."
+            possible_values="Any positive integer"
 		/>
         <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
             description="File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model."
@@ -234,11 +234,11 @@
                 />
                 <nml_option name="config_grounded_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from grounded ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)"
                 />
                 <nml_option name="config_floating_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from floating ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)"
                 />
 		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".true." units="unitless"
                         description="If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true."
@@ -842,6 +842,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!-- If restart file sizes become too large, eigencalvingParameter,
                              groundedVonMisesThresholdStress, and floatingVonMisesThresholdStress
                              could be moved to packages. -->
@@ -869,7 +870,8 @@
                         <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
 			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
                         <var name="externalWaterInput" packages="hydro"/>
-                        <!-- SGH state variables: -->
+                        <!-- SGH variables: -->
+                        <var name="deltatSGH" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 			<var name="tillWaterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
@@ -935,6 +937,7 @@
                                 input_interval="initial_only"
                                 runtime_format="single_file">
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
                         <var name="nVerticesInRegion"/>
@@ -1065,10 +1068,10 @@ is the value of that variable from the *previous* time level!
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Angle the edge normal makes with local eastward direction."
@@ -1125,10 +1128,10 @@ is the value of that variable from the *previous* time level!
                 />
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity;hydro"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity;hydro"
 		/>
 		<!-- Variables only needed by HO solver -->
 		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
@@ -1372,7 +1375,7 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
-                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="0.0" packages="ismip6ShelfMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
@@ -1411,7 +1414,7 @@ is the value of that variable from the *previous* time level!
 		     description="thermal forcing for ISMIP6 retreat paramterization, from previous input time."
 	        />
                 <var name="ismip6RunoffPrevious" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
-                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time" 
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time"
 	     />
       	     <var name="ismip6_2dThermalForcingCurrent" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="thermal forcing for ISMIP6 retreat parameterization, at current input time."
@@ -1733,6 +1736,9 @@ is the value of that variable from the *previous* time level!
         <var_struct name="regions" time_levs="1">
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless" default_value="1"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <var name="regionEdgeMasks" type="integer" dimensions="nRegions nEdges" units="unitless" default_value="1"
+	       description="masks set to 1 in edges that fall within a given region and 0 otherwise"
 	       />
 	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"

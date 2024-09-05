@@ -2,6 +2,7 @@
 #define SCREAM_HORIZ_INTERP_REMAPPER_BASE_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/grid/remap/horiz_interp_remapper_data.hpp"
 
 namespace scream
 {
@@ -16,18 +17,12 @@ namespace scream
 
 class HorizInterpRemapperBase : public AbstractRemapper
 {
-protected:
-  enum class InterpType {
-    Refine,
-    Coarsen
-  };
-
 public:
   HorizInterpRemapperBase (const grid_ptr_type& fine_grid,
                            const std::string& map_file,
                            const InterpType type);
 
-  virtual ~HorizInterpRemapperBase () = default;
+  ~HorizInterpRemapperBase ();
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
@@ -39,10 +34,14 @@ public:
     // be 0 src/tgt gids on some ranks, which means src/tgt.dim(0)=0.
     using namespace ShortFieldTagsNames;
 
-    return src.strip_dim(COL)==tgt.strip_dim(COL);
+    // Use congruence, since we don't really care about dimension names, only tags/extents
+    return src.clone().strip_dim(COL).congruent(tgt.clone().strip_dim(COL));
   }
 
 protected:
+
+  FieldLayout create_layout (const FieldLayout& fl_in,
+                             const grid_ptr_type& grid) const;
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
@@ -66,31 +65,10 @@ protected:
     EKAT_ERROR_MSG ("HorizInterpRemapperBase only supports fwd remapping.\n");
   }
 
-  using gid_type = AbstractGrid::gid_type;
   using KT = KokkosTypes<DefaultDevice>;
 
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
-
-  struct Triplet {
-    // Note: unfortunately, C++17 does not support emplace-ing POD
-    //       types as aggregates unless a ctor is declared. C++20 does though.
-    Triplet () = default;
-    Triplet(const gid_type rr, const gid_type cc, const Real ww)
-      : row(rr), col(cc), w(ww) {}
-    gid_type row;
-    gid_type col;
-    Real  w;
-  };
-
-  std::vector<Triplet>
-  get_my_triplets (const std::string& map_file) const;
-
-  void create_coarse_grids (const std::vector<Triplet>& triplets);
-
-  // Not a const ref, since we'll sort the triplets according to
-  // how row gids appear in the coarse grid
-  void create_crs_matrix_structures (std::vector<Triplet>& triplets);
 
   void create_ov_fields ();
 
@@ -129,9 +107,15 @@ public:
   view_1d<int>    m_col_lids;
   view_1d<Real>   m_weights;
 
+  // Keep track of this, since we need to tell the remap data repo
+  // we are releasing the data for our map file.
+  std::string     m_map_file;
+
   InterpType      m_type;
 
   ekat::Comm      m_comm;
+
+  static std::map<std::string,HorizRemapperData> s_remapper_data;
 };
 
 } // namespace scream

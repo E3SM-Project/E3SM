@@ -18,6 +18,11 @@ module atm_comp_mct
   use datm_shr_mod    , only: presaero
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -80,6 +85,9 @@ CONTAINS
     real(R8)          :: orbObliqr                 ! orb obliquity (radians)
     real(R8)          :: nextsw_cday               ! calendar of next atm sw
 
+#ifdef HAVE_MOAB
+    integer(IN)       :: ATM_PHYS_CID  ! used to create a new comp id for phys atm; 200+ compid
+#endif
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
     integer(IN) , parameter :: master_task=0 ! task number of master task
@@ -164,6 +172,18 @@ CONTAINS
     ! Initialize datm
     !----------------------------------------------------------------------------
 
+
+#ifdef HAVE_MOAB
+    ATM_PHYS_CID = 200 + compid 
+    ierr = iMOAB_RegisterApplication(trim("DATM")//C_NULL_CHAR, mpicom, ATM_PHYS_CID, mphaid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data atm comp'
+      call shr_sys_abort(subname//' ERROR in registering data atm comp')
+    endif
+     ! send path of atm domain file to MOAB coupler. Note that here we may have the land domain in some cases?
+    call seq_infodata_PutData( infodata, atm_mesh=SDATM%domainFile)
+#endif
+  
     call datm_comp_init(Eclock, x2a, a2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &

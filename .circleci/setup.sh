@@ -11,6 +11,10 @@ function download
     return $?
 }
 
+# Install Singularity deps:
+
+sudo apt-get update && sudo apt-get -y install uuid-dev
+
 # Install Singularity
 download && \
     tar -xzf singularity-${VERSION}.tar.gz && \

@@ -9,6 +9,10 @@
 *.la
 *.a
 
+# Shared libraries
+*.so
+*.so.*
+
 # Executables
 *.exe
 
@@ -30,7 +34,20 @@ site
 # Ignore emacs backup files
 *~
 
+#Ignore Mac folder files
+.DS_Store
+
+#Ignore vscode dir
+.vscode
+
+
 # Ignore mkdocs site-generated files in eamxx
 components/eamxx/site/*
 # Ignore auto-generated eamxx_params.md file
 components/eamxx/docs/common/eamxx_params.md
+
+# Python packaging
+*.egg-info
+components/eamxx/src/python/build
+components/eamxx/src/python/build_src
+components/eamxx/src/python/dist

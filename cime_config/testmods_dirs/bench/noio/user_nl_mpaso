@@ -6,3 +6,4 @@ config_am_timeseriesstatsmonthlymin_enable=false
 config_am_timeseriesstatsmonthlymax_enable=false
 config_am_eddyproductvariables_enable=false
 config_am_oceanheatcontent_enable=false
+config_am_conservationcheck_enable=false

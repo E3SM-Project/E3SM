@@ -12,7 +12,7 @@ module CNNitrogenStateType
   use elm_varctl             , only : use_vertsoilc, use_century_decomp, use_fan
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin, nstor
+  use pftvarcon              , only : iscft, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -502,7 +502,7 @@ contains
     ! !USES:
     use elm_varpar     , only : crop_prog
     use decompMod      , only : bounds_type
-    use pftvarcon      , only : noveg, npcropmin
+    use pftvarcon      , only : noveg, iscft
     !
     ! !ARGUMENTS:
     class(nitrogenstate_type)      :: this
@@ -588,7 +588,7 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+          if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
              this%deadstemn_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcn(veg_pp%itype(p))
           else
              this%deadstemn_patch(p) = 0._r8
@@ -1007,7 +1007,7 @@ contains
            this%npool_patch(p)              + &
            this%retransn_patch(p)
 
-      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegn_patch(p) = &
               this%dispvegn_patch(p) + &
               this%grainn_patch(p)

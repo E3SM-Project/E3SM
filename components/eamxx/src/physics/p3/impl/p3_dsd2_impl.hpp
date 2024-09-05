@@ -76,7 +76,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,
-  Spack& lamr, Spack& cdistr, Spack& logn0r, 
+  Spack& lamr,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
@@ -84,27 +85,24 @@ get_rain_dsd2 (
   constexpr auto cons1  = C::CONS1;
 
   lamr.set(context  , 0);
-  cdistr.set(context, 0);
-  logn0r.set(context, 0);
 
   const auto qr_gt_small = qr >= qsmall && context;
 
+  const Scalar mu_r_const = p3constants.p3_mu_r_constant;
+
   if (qr_gt_small.any()) {
-    constexpr Scalar mu_r_const = C::mu_r_const;
     // use lookup table to get mu
     // mu-lambda relationship is from Cao et al. (2008), eq. (7)
 
     // find spot in lookup table
     // (scaled N/q for lookup table parameter space)
     const auto nr_lim = max(nr, nsmall);
-    Spack inv_dum(0);
-    inv_dum.set(qr_gt_small, cbrt(qr / (cons1 * nr_lim * 6)));
 
     // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
     mu_r.set(qr_gt_small, mu_r_const);
     // recalculate slope based on mu_r
-    lamr.set(qr_gt_small, cbrt(cons1 * nr_lim * (mu_r + 3) *
-                                     (mu_r + 2) * (mu_r + 1)/qr));
+    const auto mass_to_d3_factor = cons1 * (mu_r + 3) * (mu_r + 2) * (mu_r + 1);
+    lamr.set(qr_gt_small, cbrt(mass_to_d3_factor * nr_lim / qr));
 
     // check for slope
     const auto lammax = (mu_r+1.)*sp(1.e+5);
@@ -121,15 +119,31 @@ get_rain_dsd2 (
       lamr.set(lt, lammin);
       lamr.set(gt, lammax);
       ekat_masked_loop(either, s) {
-        nr[s] = std::exp(3*std::log(lamr[s]) + std::log(qr[s]) +
-                         std::log(std::tgamma(mu_r[s] + 1)) - std::log(std::tgamma(mu_r[s] + 4)))
-          / cons1;
+        nr[s] = lamr[s]*lamr[s]*lamr[s] * qr[s] / mass_to_d3_factor[s];
       }
     }
+  }
+}
 
+template <typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>::
+get_cdistr_logn0r (
+  const Spack& qr, const Spack& nr, const Spack& mu_r,
+  const Spack& lamr, Spack& cdistr, Spack& logn0r,
+  const Smask& context)
+{
+  constexpr auto qsmall = C::QSMALL;
+
+  cdistr.set(context, 0);
+  logn0r.set(context, 0);
+
+  const auto qr_gt_small = qr >= qsmall && context;
+
+  if (qr_gt_small.any()) {
     cdistr.set(qr_gt_small, nr/tgamma(mu_r + 1));
     // note: logn0r is calculated as log10(n0r)
-    logn0r.set(qr_gt_small, log10(nr) + (mu_r + 1) * log10(lamr) - log10(tgamma(mu_r+1)));
+    logn0r.set(qr_gt_small, log10(cdistr) + (mu_r + 1) * log10(lamr));
   }
 }
 

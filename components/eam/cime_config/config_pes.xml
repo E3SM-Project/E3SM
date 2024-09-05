@@ -140,7 +140,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="theta|pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse">
+    <mach name="pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse">
       <pes compset="any" pesize="any">
         <comment>eam: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -157,7 +157,7 @@
     </mach>
     <mach name="gcp12">
       <pes compset="any" pesize="any">
-        <comment>eam+gcp: default 1 node</comment>
+        <comment>eam+gcp12: default 1 node, 56x1</comment>
         <ntasks>
           <ntasks_atm>-1</ntasks_atm>
           <ntasks_lnd>-1</ntasks_lnd>
@@ -280,16 +280,31 @@
     </mach>
     <mach name="gcp12">
       <pes compset="any" pesize="any">
-        <comment>gcp12: any compset on ne4np4.pg2 grid, 56x1 except 36 for ice/ocn</comment>
+        <comment>gcp12: any compset on ne4np4.pg2 grid, 2 nodes 96x1</comment>
         <ntasks>
-          <ntasks_atm>56</ntasks_atm>
-          <ntasks_lnd>56</ntasks_lnd>
-          <ntasks_rof>56</ntasks_rof>
-          <ntasks_ice>36</ntasks_ice>
-          <ntasks_ocn>36</ntasks_ocn>
-          <ntasks_cpl>56</ntasks_cpl>
-          <ntasks_glc>56</ntasks_glc>
-          <ntasks_wav>56</ntasks_wav>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="pm-cpu|muller-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>pm-cpu: any compset on ne4pg2 grid</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
         </ntasks>
       </pes>
     </mach>
@@ -756,6 +771,21 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset="any" pesize="any">
+        <comment>improv pelayout for any EAM compset on ne30np4.pg2 grid </comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
     <mach name="anvil">
@@ -774,7 +804,7 @@
   </grid>
   <grid name="a%ne30.+_oi%.*EC.*to">
     <mach name="gcp12">
-      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3 
+      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
                                or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
                                         1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
@@ -799,7 +829,7 @@
       </pes>
     </mach>
     <mach name="gcp10">
-      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3 
+      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
                                or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
                                         1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
@@ -826,16 +856,118 @@
     <mach name="pm-cpu|muller-cpu|alvarez">
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 4 nodes, 128x1 </comment>
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="S">
+        <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 1 node, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>512</ntasks_atm>
-          <ntasks_lnd>512</ntasks_lnd>
-          <ntasks_rof>512</ntasks_rof>
-          <ntasks_ice>512</ntasks_ice>
-          <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_cpl>512</ntasks_cpl>
+          <ntasks_atm>128</ntasks_atm>
+          <ntasks_lnd>128</ntasks_lnd>
+          <ntasks_rof>128</ntasks_rof>
+          <ntasks_ice>128</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>128</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="M">
+        <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 8 nodes, 128x1 </comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_lnd>1024</ntasks_lnd>
+          <ntasks_rof>1024</ntasks_rof>
+          <ntasks_ice>1024</ntasks_ice>
+          <ntasks_ocn>1024</ntasks_ocn>
+          <ntasks_cpl>1024</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="L">
+        <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 22 nodes, 128x1 </comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>2816</ntasks_atm>
+          <ntasks_lnd>2816</ntasks_lnd>
+          <ntasks_rof>2816</ntasks_rof>
+          <ntasks_ice>2816</ntasks_ice>
+          <ntasks_ocn>2816</ntasks_ocn>
+          <ntasks_cpl>2816</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="XL">
+        <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 45 nodes, 120x1 </comment>
+        <MAX_MPITASKS_PER_NODE>120</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>5400</ntasks_atm>
+          <ntasks_lnd>5400</ntasks_lnd>
+          <ntasks_rof>5400</ntasks_rof>
+          <ntasks_ice>5400</ntasks_ice>
+          <ntasks_ocn>5400</ntasks_ocn>
+          <ntasks_cpl>5400</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2.+_oi%IcoswISC30E3r5.+">
+    <mach name="pm-cpu|muller-cpu|alvarez">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="S">
+        <comment> pm-cpu: ne30pg2_r05_IcoswISC30E3r5, 1 node, 128x1 </comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>128</ntasks_atm>
+          <ntasks_lnd>128</ntasks_lnd>
+          <ntasks_rof>128</ntasks_rof>
+          <ntasks_ice>128</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>128</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
+        <comment> pm-cpu: ne30pg2_r05_IcoswISC30E3r5, 8 nodes, 128x1 </comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_lnd>1024</ntasks_lnd>
+          <ntasks_rof>1024</ntasks_rof>
+          <ntasks_ice>1024</ntasks_ice>
+          <ntasks_ocn>1024</ntasks_ocn>
+          <ntasks_cpl>1024</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="L">
+        <comment> pm-cpu: ne30pg2_r05_IcoswISC30E3r5, 22 nodes, 128x1 </comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>2816</ntasks_atm>
+          <ntasks_lnd>2816</ntasks_lnd>
+          <ntasks_rof>2816</ntasks_rof>
+          <ntasks_ice>2816</ntasks_ice>
+          <ntasks_ocn>2816</ntasks_ocn>
+          <ntasks_cpl>2816</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="XL">
+        <comment> pm-cpu: ne30pg2_r05_IcoswISC30E3r5, 45 nodes, 120x1 </comment>
+        <MAX_MPITASKS_PER_NODE>120</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>5400</ntasks_atm>
+          <ntasks_lnd>5400</ntasks_lnd>
+          <ntasks_rof>5400</ntasks_rof>
+          <ntasks_ice>5400</ntasks_ice>
+          <ntasks_ocn>5400</ntasks_ocn>
+          <ntasks_cpl>5400</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="gcp12">
+      <!--2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP-->
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="any">
+        <comment> gcp12 eam F compset  --res ne30pg2_IcoswISC30E3r5 on 4 nodes </comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_lnd>-4</ntasks_lnd>
         </ntasks>
       </pes>
     </mach>
@@ -1034,21 +1166,6 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="theta">
-      <pes compset="any" pesize="any">
-        <comment>RRM grid on 128 Theta nodes</comment>
-        <ntasks>
-          <ntasks_atm>8192</ntasks_atm>
-          <ntasks_lnd>8192</ntasks_lnd>
-          <ntasks_rof>8192</ntasks_rof>
-          <ntasks_ice>8192</ntasks_ice>
-          <ntasks_ocn>8192</ntasks_ocn>
-          <ntasks_glc>8192</ntasks_glc>
-          <ntasks_wav>8192</ntasks_wav>
-          <ntasks_cpl>8192</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
@@ -1062,9 +1179,37 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
+        <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_glc>-4</ntasks_glc>
+          <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="summit|ascent|pm-gpu|muller-gpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="pm-cpu|muller-cpu|alvarez|gcp12">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="any">
+        <comment>pm-cpu/gcp: eam, 2 nodes: --res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1127,7 +1272,7 @@
   <grid name="a%ne120np4">
     <mach name="pm-cpu|muller-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC.+SWAV.*" pesize="any">
-        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1 ~1 sypd</comment>
+        <comment>pm-cpu: ne120pg2 F-compset with MPASSI on 43 nodes 128x1 ~1 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5504</ntasks_atm>
@@ -1149,68 +1294,6 @@
           <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
-      </pes>
-    </mach>
-    <mach name="theta">
-      <pes compset=".*EAM.+ELM.+DOCN.+SGLC.+SWAV.*" pesize="any">
-        <comment>ne120 F-compset on 128 nodes 0.524sypd</comment>
-        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>8192</ntasks_atm>
-          <ntasks_cpl>8192</ntasks_cpl>
-          <ntasks_ice>8192</ntasks_ice>
-          <ntasks_lnd>8192</ntasks_lnd>
-          <ntasks_rof>8192</ntasks_rof>
-          <ntasks_ocn>8192</ntasks_ocn>
-          <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_cpl>2</nthrds_cpl>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-        </nthrds>
-      </pes>
-      <pes compset=".*EAM.+ELM.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="L">
-        <comment>ne120 F-compset on 384 nodes</comment>
-        <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>10800</ntasks_atm>
-          <ntasks_cpl>10800</ntasks_cpl>
-          <ntasks_ice>10800</ntasks_ice>
-          <ntasks_lnd>1472</ntasks_lnd>
-          <ntasks_rof>1472</ntasks_rof>
-          <ntasks_ocn>1472</ntasks_ocn>
-          <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>8</nthrds_atm>
-          <nthrds_cpl>8</nthrds_cpl>
-          <nthrds_ice>8</nthrds_ice>
-          <nthrds_lnd>8</nthrds_lnd>
-          <nthrds_rof>8</nthrds_rof>
-          <nthrds_ocn>8</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_cpl>0</rootpe_cpl>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_lnd>10816</rootpe_lnd>
-          <rootpe_rof>10816</rootpe_rof>
-          <rootpe_ocn>10816</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-        </rootpe>
       </pes>
     </mach>
   </grid>

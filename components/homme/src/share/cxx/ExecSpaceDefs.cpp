@@ -204,7 +204,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #elif defined(KOKKOS_ENABLE_HIP)
   // Use 64 wavefronts per CU and 120 CUs.
   const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
-  const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
+  const int num_threads_warp = Kokkos::Impl::HIPTraits::WarpSize;
 #else
   // I want thread-distribution rules to be unit-testable even when GPU spaces
   // are off. Thus, make up a GPU-like machine:
