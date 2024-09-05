@@ -122,9 +122,9 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 #else
   //m_process_nh_vars = !params.theta_hydrostatic_mode;
   if (params.theta_hydrostatic_mode){
-	  m_process_nh_vars = 0;
+    m_process_nh_vars = 0;
   }else{
-	  m_process_nh_vars = 1;
+    m_process_nh_vars = 1;
   }
 #endif
 }

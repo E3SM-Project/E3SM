@@ -43,13 +43,7 @@ TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
 
-#target_link_libraries(thetal_kokkos_ut_lib kokkos)
-
-if("${E3SM_KOKKOS_PATH}" STREQUAL "")
-  target_link_libraries(thetal_kokkos_ut_lib kokkos)
-else()
-  link_to_kokkos(thetal_kokkos_ut_lib)
-endif()
+target_link_libraries(thetal_kokkos_ut_lib Kokkos::kokkos)
 
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing csm_share ${COMPOSE_LIBRARY_CPP} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)

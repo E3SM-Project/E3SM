@@ -66,11 +66,9 @@ struct RemapStateProvider {
 
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
-
-   } 
+  } 
 
   int requested_buffer_size (int num_teams) const {
-
     if (!m_process_nh_vars) {
       return 0;
     }
@@ -83,9 +81,8 @@ struct RemapStateProvider {
   }
 
   void init_buffers(const FunctorsBuffersManager& fbm, int num_teams) {
-
     if (!m_process_nh_vars) {
-     return;
+      return;
     }
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
