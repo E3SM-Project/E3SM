@@ -79,7 +79,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TITLE: mkatmsrffile test failure
           ASSIGNEES: whannah1
-          LABELS: bug
+          LABELS: bug,notify-mkatmsrffile-gh-action
           BODY: |
             Workflow failed! There's likely an issue in the mkatmsrffile tool! For more information, please see:
               - Workflow URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} (number ${{ github.run_number }}, attempt ${{ github.run_attempt }})
