@@ -118,9 +118,13 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
 
 #ifdef HOMMEXX_BFB_TESTING
-  m_process_nh_vars = true;
+  m_process_nh_vars = 1;
 #else
-  m_process_nh_vars = !params.theta_hydrostatic_mode;
+  if (params.theta_hydrostatic_mode){
+    m_process_nh_vars = 0;
+  }else{
+    m_process_nh_vars = 1;
+  }
 #endif
 }
 

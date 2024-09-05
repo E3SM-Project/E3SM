@@ -33,7 +33,7 @@ static void apply_cam_forcing_tracers(const Real dt, ForcingFunctor& ff,
   if ( p.ftype == ForcingAlg::FORCING_2) adjustment = true;
 #endif
 
-  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, adjustment, p.moisture);
+  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, adjustment, p.use_moisture);
 
   GPTLstop("ApplyCAMForcing_tracers"); 
 }

@@ -41,6 +41,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     runtype,       &
     integration,   &       ! integration method
     theta_hydrostatic_mode,       &   
+    theta_hydrostatic_mode_integer,       &
     transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
     semi_lagrange_cdr_alg, &     ! see control_mod for semi_lagrange_* descriptions
     semi_lagrange_cdr_check, &
@@ -452,8 +453,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
+    theta_hydrostatic_mode_integer = 1    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
     theta_hydrostatic_mode = .false.   ! default NH
+    theta_hydrostatic_mode_integer = 0   ! default NH
 #endif
 
 
@@ -850,7 +853,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
 #endif
 
+if(theta_hydrostatic_mode)       theta_hydrostatic_mode_integer = 1
+if(.not. theta_hydrostatic_mode) theta_hydrostatic_mode_integer = 0
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(theta_hydrostatic_mode_integer ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)

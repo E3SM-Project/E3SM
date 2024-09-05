@@ -23,7 +23,7 @@ struct SimulationParams
   void print(std::ostream& out = std::cout);
 
   TimeStepType  time_step_type;
-  MoistDry      moisture;
+  bool          use_moisture;
   RemapAlg      remap_alg;
   TestCase      test_case;
   ForcingAlg    ftype = ForcingAlg::FORCING_OFF;
@@ -77,7 +77,7 @@ inline void SimulationParams::print (std::ostream& out) {
 
   out << "\n************** CXX SimulationParams **********************\n\n";
   out << "   time_step_type: " << etoi(time_step_type) << "\n";
-  out << "   moisture: " << (moisture==MoistDry::DRY ? "dry" : "moist") << "\n";
+  out << "   use_moisture: " << (use_moisture ? "moist" : "dry") << "\n";
   out << "   remap_alg: " << etoi(remap_alg) << "\n";
   out << "   test case: " << etoi(test_case) << "\n";
   out << "   ftype: " << etoi(ftype) << "\n";
