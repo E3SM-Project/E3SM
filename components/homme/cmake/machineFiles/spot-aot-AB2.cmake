@@ -22,9 +22,8 @@ SET(HOMME_USE_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
-#set(KOKKOS_HOME "/home/onguba/kokkos-build/apr03-2024-aot/install" CACHE STRING "")
-set(KOKKOS_HOME "/home/onguba/kokkos-build/june22-2024-aot/install" CACHE STRING "")
-set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
+#set(KOKKOS_HOME "/home/onguba/kokkos-build/june22-2024-aot/install" CACHE STRING "")
+#set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
 
 SET (NetCDF_Fortran_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
 SET (NetCDF_C_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")

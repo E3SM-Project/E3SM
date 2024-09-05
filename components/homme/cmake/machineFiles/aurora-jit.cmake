@@ -21,10 +21,8 @@ SET(HOMME_USE_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
-set(KOKKOS_HOME "/home/onguba/kokkos-build/jan03-2024/install" CACHE STRING "")
-#set(KOKKOS_HOME "/home/onguba/kokkos-build/oct01-jit/install" CACHE STRING "")
-#set(KOKKOS_HOME "/home/onguba/kokkos-build/bld-jit-aug18/install" CACHE STRING "")
-set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
+#set(KOKKOS_HOME "/home/onguba/kokkos-build/jan03-2024/install" CACHE STRING "")
+#set(E3SM_KOKKOS_PATH ${KOKKOS_HOME} CACHE STRING "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
