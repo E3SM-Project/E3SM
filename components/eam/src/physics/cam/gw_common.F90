@@ -1067,9 +1067,9 @@ ENDIF
                     dtaux2d_fd,dtauy2d_fd,u1,v1,t1,q1,                         &
                     del,                                                       &
                     prsi,prsl,prslk,zl,rcl,                                    &
-                    xland1,br1,hpbl,bnv_in,dz2,                               &
+                    xland1,br1,hpbl,bnv_in,dz2,                                &
                     kpblmax,dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,               &
-                    dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,&
+                    dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,       &
                     g,cp,rd,rv,fv,pi,dxmeter,dymeter,deltim,kpbl,kdt,lat,      &
                     ids,ide, jds,jde, kds,kde,                                 &
                     ims,ime, jms,jme, kms,kme,                                 &
@@ -1856,8 +1856,8 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
 
    DO i=its,ite
       !IF ((xland1(i)-1.5) .le. 0.) then
-       !IF (xland1(i) .gt. 0..and.2._r8*var(i).gt.0) then
-        IF (xland1(i) .gt. 0.) then
+       IF (xland1(i) .gt. 0..and.2._r8*var(i).gt.0) then
+       !IF (xland1(i) .gt. 0.) then
           a1=0.00026615161_r8*var(i)**2_r8
           a2=a1*0.005363_r8
          DO k=kts,kte

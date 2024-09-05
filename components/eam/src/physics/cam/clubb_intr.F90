@@ -1978,7 +1978,7 @@ end subroutine clubb_init_cnst
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
         t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
-        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver:1:-1),&
+        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver+1:1:-1),&
         pi3d=state%exner(:,pver:1:-1),z=zbot,&
         rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
         rthblten=ttgw(:,pver:1:-1),&
@@ -1994,6 +1994,13 @@ end subroutine clubb_init_cnst
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
         gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1 )
+
+        !!
+        dtaux3_fd=0.0_r8
+        dtauy3_fd=0.0_r8
+        dusfc_fd=0.0_r8
+        dvsfc_fd=0.0_r8
+        !!
         !!=========Jinbo Xie=========
         call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
