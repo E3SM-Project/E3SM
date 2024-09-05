@@ -133,18 +133,18 @@
 <!-- ************************************************ -->
 <compset>
   <alias>WCYCL1950-MMF1</alias>
-  <lname>1950SOI_EAM%CMIP6-MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1950SOI_EAM%MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL20TR-MMF1</alias>
-  <lname>20TRSOI_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- separate compset for testing (NS = no spinup) -->
 <compset>
   <alias>WCYCL20TRNS-MMF1</alias>
-  <lname>20TR_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TR_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 <!-- ************************************************** -->
 <!-- ************************************************** -->
