@@ -400,7 +400,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      filespecs.filename = compute_filename (control,filespecs,timestamp);
+      filespecs.filename = compute_filename (filespecs,timestamp);
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control);
     }
@@ -613,11 +613,11 @@ long long OutputManager::res_dep_memory_footprint () const {
 }
 
 std::string OutputManager::
-compute_filename (const IOControl& control,
-                  const IOFileSpecs& file_specs,
+compute_filename (const IOFileSpecs& file_specs,
                   const util::TimeStamp& timestamp) const
 {
   auto filename = m_filename_prefix + file_specs.suffix();
+  const auto& control = m_output_control;
 
   // Always add avg type and frequency info
   filename += "." + e2str(m_avg_type);
