@@ -90,6 +90,7 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
+KOKKOS_INLINE_FUNCTION
 ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0,
                                                const ScalarX &x1,
                                                const ScalarT &t) {
