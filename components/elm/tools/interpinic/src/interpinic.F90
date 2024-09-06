@@ -146,9 +146,21 @@ contains
     call check_ret (nf90_open(fin,  NF90_NOWRITE, ncidi ))
     call check_ret (nf90_open(fout, NF90_NOWRITE, ncido ))
     call check_ret (nf_inq_format( ncido, ncformat ))
-    if ( ncformat /= NF_FORMAT_64BIT )then
-       write (6,*) 'error: output file is NOT in NetCDF large-file format!'
-       stop
+    ! 20240822 csz++
+    ! Allow any format for output dataset
+    ! if ( ncformat /= NF_FORMAT_64BIT )then
+    ! write (6,*) 'error: output file is NOT in NetCDF large-file format!'
+    ! stop
+    if ( ncformat == NF_FORMAT_CLASSIC )then
+       write (6,*) 'info: output file is NF_FORMAT_CLASSIC'
+    else if ( ncformat == NF_FORMAT_64BIT_OFFSET )then
+       write (6,*) 'info: output file is NF_FORMAT_64BIT_OFFSET'
+    else if ( ncformat == NF_FORMAT_64BIT_DATA )then
+       write (6,*) 'info: output file is NF_FORMAT_64BIT_DATA'
+    else if ( ncformat == NF_FORMAT_NETCDF4 )then
+       write (6,*) 'info: output file is NF_FORMAT_NETCDF4'
+    else if ( ncformat == NF_FORMAT_NETCDF4_CLASSIC )then
+       write (6,*) 'info: output file is NF_FORMAT_NETCDF4_CLASSIC'
     end if
 
     call check_ret (nf90_inq_dimid(ncidi, "column", dimidcols ))
@@ -321,7 +333,11 @@ contains
     ! OK now, open the output file for writing
     !
     call check_ret(nf90_close( ncido))
-    call check_ret (nf90_open(fout, ior(NF90_WRITE,  NF_64BIT_OFFSET), ncido ))
+    ! 20240822 csz++
+    ! Allow any format for output dataset
+    ! call check_ret (nf90_open(fout, ior(NF90_WRITE,  NF_64BIT_OFFSET), ncido ))
+    call check_ret (nf90_open(fout, NF90_WRITE, ncido ))
+    ! csz--
 
     call addglobal (ncido, cmdline)
 
