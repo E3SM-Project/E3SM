@@ -1324,7 +1324,7 @@ real(r8):: ncd  !!tunable parameter for fbd
  !===================================
 
 ncleff    = 3._r8
-ncd=3.0_r8
+ncd       = 3._r8
 
 !
 !---- constants                                                         
