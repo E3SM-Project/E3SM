@@ -8,6 +8,9 @@
 #define HOMMEXX_EXEC_SPACE_DEFS_HPP
 
 #include <cassert>
+#ifdef HOMMEXX_BFB_TESTING
+#include <tuple>
+#endif
 
 #include <Kokkos_Core.hpp>
 
@@ -64,12 +67,6 @@ using Hommexx_Serial = void;
 #else
 # define HOMMEXX_STATIC static
 #endif
-
-
-// a hack to have a cpu build without rebuilding kokkos
-//#define HOMMEXX_SERIAL_SPACE
-
-
 
 // Selecting the execution space. If no specific request, use Kokkos default
 // exec space
@@ -353,7 +350,7 @@ struct Dispatch<HommexxGPU> {
       });
     // Broadcast result to all threads by doing sum of one thread's
     // non-0 value and the rest of the 0s.
-    Kokkos::Impl::CudaTeamMember::vector_reduce(
+    Kokkos::TeamPolicy<ExeSpace>::member_type::vector_reduce(
       Kokkos::Sum<ValueType>(local_tmp));
     result = local_tmp;
 #else
@@ -381,6 +378,21 @@ struct Dispatch<HommexxGPU> {
                     lambda, result);
   }
 
+#ifdef HOMMEXX_BFB_TESTING
+  // Template for getting the type of the second argument to a lambda
+  private:
+  template <typename T> struct arg2;
+
+  template <typename F, typename... Args>
+  struct arg2<void (F::*)(Args...) const>
+  {
+    using type = typename std::remove_reference<
+      typename std::tuple_element<1,std::tuple<Args...>>::type
+      >::type;
+  };
+  public:
+#endif
+
   template<class Lambda>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_scan (
@@ -393,11 +405,7 @@ struct Dispatch<HommexxGPU> {
     // serialize parallel scans.
 
     // Detect the value type
-    using value_type =
-      typename Kokkos::Impl::FunctorAnalysis
-        < Kokkos::Impl::FunctorPatternInterface::SCAN
-        , void
-        , Lambda >::value_type ;
+    using value_type = typename arg2<decltype(&Lambda::operator())>::type;
 
     // All threads init result.
     value_type accumulator = Kokkos::reduction_identity<value_type>::sum();

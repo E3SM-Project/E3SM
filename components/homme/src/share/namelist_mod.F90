@@ -41,7 +41,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     runtype,       &
     integration,   &       ! integration method
     theta_hydrostatic_mode,       &   
-    theta_hydrostatic_mode_integer,       &   
+    theta_hydrostatic_mode_integer,       &
     transport_alg , &      ! SE Eulerian, classical SL, cell-integrated SL
     semi_lagrange_cdr_alg, &     ! see control_mod for semi_lagrange_* descriptions
     semi_lagrange_cdr_check, &

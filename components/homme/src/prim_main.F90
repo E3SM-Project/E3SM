@@ -20,7 +20,7 @@ program prim_main
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep
-  use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf,t_disablef, t_enablef ! _EXTERNAL
+  use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf, t_disablef, t_enablef ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
 #if (defined MODEL_THETA_L && defined ARKODE)
@@ -241,7 +241,7 @@ program prim_main
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
 
-     if(tl%nstep < 2) then 
+     if(tl%nstep < 2) then
         call t_disablef()
      endif
      if(tl%nstep >= 2) call t_enablef()

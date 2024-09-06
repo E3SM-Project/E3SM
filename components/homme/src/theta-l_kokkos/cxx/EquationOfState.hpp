@@ -250,7 +250,7 @@ public:
 
 public:
 
-  int            m_theta_hydrostatic_mode;
+  int             m_theta_hydrostatic_mode;
   HybridVCoord    m_hvcoord;
 };
 

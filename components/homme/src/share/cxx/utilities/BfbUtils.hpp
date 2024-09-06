@@ -64,11 +64,7 @@ KOKKOS_INLINE_FUNCTION
 ScalarType int_pow (ScalarType val, int k) {
   constexpr int max_shift = 30;
   if (k<0) {
-#ifdef KOKKOS_ENABLE_SYCL
     Kokkos::printf ("k = %d\n",k);
-#else
-    printf ("k = %d\n",k);
-#endif
     Kokkos::abort("int_pow implemented only for k>=0.\n");
   }
 

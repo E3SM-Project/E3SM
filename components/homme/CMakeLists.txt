@@ -206,7 +206,6 @@ IF (HOMME_USE_KOKKOS)
 
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
 
-  #not user afaik
   IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SYCL")
     SET (HOMMEXX_SYCL_SPACE ON)
   ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
@@ -453,11 +452,8 @@ if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 ENDIF ()
 
-# If we don't need kokkos we don't need EKAT, and if
-# Homme is built in EAMxx EKAT is already built
-if("${E3SM_KOKKOS_PATH}" STREQUAL "")
-IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
-  # Add ekat's cmake/pkg_build folder to cmake path
+IF (HOMME_USE_KOKKOS)
+  # Add ekat's cmake scripts folders to cmake path
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
   set (EKAT_CMAKE_PATH ${EKAT_SOURCE_DIR}/cmake)
   list(APPEND CMAKE_MODULE_PATH
@@ -472,11 +468,6 @@ IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
     # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
     include (EkatBuildKokkos)
   endif()
-ENDIF ()
-ELSE ()
-  IF (${HOMME_USE_KOKKOS})
-  INCLUDE(Kokkos)
-  ENDIF ()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

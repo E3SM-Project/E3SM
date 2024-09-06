@@ -353,9 +353,6 @@ struct CaarFunctorImpl {
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
 
-
-
-
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
     Kokkos::fence();
@@ -380,15 +377,12 @@ struct CaarFunctorImpl {
 
     KernelVariables kv(team, m_tu);
 
-  //  Kokkos::printf("OG before div_vdp\n");
-
     // =========== EPOCH 1 =========== //
     compute_div_vdp(kv);
 
     // =========== EPOCH 2 =========== //
     kv.team_barrier();
 
-// Kokkos::printf("OG before div_vdp\n");
     // Computes pi, omega, and phi.
     const bool ok = compute_scan_quantities(kv);
     if ( ! ok) nerr = 1;
@@ -397,7 +391,6 @@ struct CaarFunctorImpl {
       // ============ EPOCH 2.1 =========== //
       kv.team_barrier();
       compute_interface_quantities(kv);
-// Kokkos::printf("OG nonhydro \n");
     }
 
     if (m_rsplit==0) {
@@ -406,7 +399,6 @@ struct CaarFunctorImpl {
       compute_vertical_advection(kv);
     }
 
-// Kokkos::printf("OG before accum \n");
     // ============= EPOCH 3 ============== //
     kv.team_barrier();
     compute_accumulated_quantities(kv);

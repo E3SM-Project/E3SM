@@ -270,9 +270,8 @@ contains
     interface
        subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode_integer, &
             fv_metdet, g2f_remapd, f2g_remapd, D_f, Dinv_f) bind(c)
-         use iso_c_binding, only: c_bool, c_int, c_double
+         use iso_c_binding, only: c_int, c_double
          integer (c_int), value, intent(in) :: nelemd, np, nf, nf_max
-         !logical (c_bool), value, intent(in) :: theta_hydrostatic_mode
          integer (c_int), value, intent(in) :: theta_hydrostatic_mode_integer
          real (c_double), dimension(nf*nf,nelemd), intent(in) :: fv_metdet
          real (c_double), dimension(np,np,nf_max*nf_max), intent(in) :: g2f_remapd
@@ -281,7 +280,6 @@ contains
        end subroutine init_gllfvremap_c
     end interface
     integer (c_int) :: thm
-    !logical (c_bool) :: thm
     thm = theta_hydrostatic_mode_integer
     call init_gllfvremap_c(nelemd, np, gfr%nphys, nphys_max, thm, &
          gfr%fv_metdet, gfr%g2f_remapd, gfr%f2g_remapd, gfr%D_f, gfr%Dinv_f)
@@ -995,7 +993,7 @@ contains
           end do
        end do
     end do
-!    call dgeqrf(np*np, nphys*nphys, R, size(R,1), tau, wrk, np*np*nphys*nphys, info)
+    call dgeqrf(np*np, nphys*nphys, R, size(R,1), tau, wrk, np*np*nphys*nphys, info)
   end subroutine gfr_init_R
 
   subroutine gfr_init_interp_matrix(npsrc, interp)
@@ -1077,13 +1075,12 @@ contains
     !     g = inv(M_sgsg) M_sgf inv(S) M_ff f
     wrk = reshape(gfr%w_ff(:nf2), (/nf,nf/))*f(:nf,:nf)
     if (nf == npi) then
-
-!       call dtrsm('l', 'u', 't', 'n', nf2, 1, one, R, size(R,1), wrk, nf2)
-!       call dormqr('l', 'n', nf2, 1, nf2, R, size(R,1), tau, wrk, nf2, wr, np2, info)
+       call dtrsm('L', 'U', 'T', 'N', nf2, 1, one, R, size(R,1), wrk, nf2)
+       call dormqr('L', 'N', nf2, 1, nf2, R, size(R,1), tau, wrk, nf2, wr, np2, info)
        g(:npi,:npi) =  wrk
     else
-!       call dtrtrs('u', 't', 'n', nf2, 1, R, size(R,1), wrk, nf2, info)
-!       call dtrtrs('u', 'n', 'n', nf2, 1, R, size(R,1), wrk, nf2, info)
+       call dtrtrs('U', 'T', 'N', nf2, 1, R, size(R,1), wrk, nf2, info)
+       call dtrtrs('U', 'N', 'N', nf2, 1, R, size(R,1), wrk, nf2, info)
        g(:npi,:npi) = zero
        do fj = 1,nf
           do fi = 1,nf
@@ -1652,7 +1649,7 @@ contains
 
     n = np*np
 
-!    call dpotrf('u', n, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), info)
+    call dpotrf('U', n, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), info)
     if (info /= 0) print *, 'gfr ERROR> dpotrf returned', info
 
     do i = 1,n
@@ -1663,8 +1660,8 @@ contains
     gfr%pg1sd%s = reshape(gfr%w_gg(:np,:np), (/np*np/))
 
     ! Form R's = c
-!    call dtrtrs('u', 't', 'n', n, 1, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), &
-!         gfr%pg1sd%s, np*np, info)
+    call dtrtrs('U', 'T', 'N', n, 1, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), &
+         gfr%pg1sd%s, np*np, info)
     if (info /= 0) print *, 'gfr ERROR> dtrtrs returned', info
     gfr%pg1sd%sts = sum(gfr%pg1sd%s*gfr%pg1sd%s)
   end subroutine gfr_pg1_init
@@ -1697,11 +1694,11 @@ contains
     mass = sum(gfr%w_gg*g)
 
     ! Solve R'z = b.
-!    call dtrtrs('u', 't', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+    call dtrtrs('U', 'T', 'N', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
     ! Assemble z + (d - s'z)/(s's) s.
     x(:n) = x(:n) + ((mass - sum(s%s(:n)*x(:n)))/s%sts)*s%s(:n)
     ! Solve R x = z + (d - s'z)/(s's) s.
-!    call dtrtrs('u', 'n', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+    call dtrtrs('U', 'N', 'N', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
 
     ! Extract g(I).
     g = reshape(x(:n), (/np,np/))

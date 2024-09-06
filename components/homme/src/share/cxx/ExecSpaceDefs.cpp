@@ -177,7 +177,7 @@ team_num_threads_vectors_for_gpu (
   }
 #else
   return std::make_pair(4,16);
-#endif  
+#endif
 }
 
 } // namespace Parallel
