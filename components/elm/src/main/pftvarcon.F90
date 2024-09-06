@@ -459,18 +459,18 @@ contains
     !    but cannot be less, i.e. there cannot be more pfts in the surface file than there are set of pft parameters, if running the non-crop version of model.
     if (npft<maxpatch_pft .and. .not.use_crop) call endrun(msg=' ERROR: pft number less than maxpatch_pft: '//errMsg(__FILE__, __LINE__))
 
-    allocate( dleaf         (0:mxpft) )       
-    allocate( c3psn         (0:mxpft) )       
-    allocate( xl            (0:mxpft) )          
-    allocate( rhol          (0:mxpft,numrad) ) 
-    allocate( rhos          (0:mxpft,numrad) ) 
-    allocate( taul          (0:mxpft,numrad) ) 
-    allocate( taus          (0:mxpft,numrad) ) 
-    allocate( z0mr          (0:mxpft) )        
-    allocate( displar       (0:mxpft) )     
-    allocate( roota_par     (0:mxpft) )   
-    allocate( rootb_par     (0:mxpft) )   
-    allocate( crop          (0:mxpft) )        
+    allocate( dleaf         (0:mxpft) )
+    allocate( c3psn         (0:mxpft) )
+    allocate( xl            (0:mxpft) )
+    allocate( rhol          (0:mxpft,numrad) )
+    allocate( rhos          (0:mxpft,numrad) )
+    allocate( taul          (0:mxpft,numrad) )
+    allocate( taus          (0:mxpft,numrad) )
+    allocate( z0mr          (0:mxpft) )
+    allocate( displar       (0:mxpft) )
+    allocate( roota_par     (0:mxpft) )
+    allocate( rootb_par     (0:mxpft) )
+    allocate( crop          (0:mxpft) )
     allocate( percrop       (0:mxpft) )
     allocate( irrigated     (0:mxpft) )
     allocate( smpso         (0:mxpft) )
@@ -1079,7 +1079,7 @@ contains
     if ( .not. readv ) gcbr_p(:) = 0._r8
     call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) gcbr_q(:) = 0._r8
-       
+
     call ncd_io('mergetoclmpft', mergetoelmpft, 'read', ncid, readvar=readv)
     ! in case parameter file is using 'mergetoelmpft'
     if ( .not. readv ) call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)
@@ -1097,11 +1097,9 @@ contains
    ! check validity
     do i = 0, npft-1
       if (bendresist(i) .gt. 1.0_r8 .or. bendresist(i) .le. 0._r8) then
-         write(iulog,*) "bendresist(i) is:", i, bendresist(i), npft
          call endrun(msg="Non-physical selection of bendresist parameter, set between 0 and 1"//errMsg(__FILE__, __LINE__))
       end if
       if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .le. 0._r8) then
-         write(iulog,*) "vegshape(i) is:", i, vegshape(i), npft
          call endrun(msg="Non-physical selection of vegshape parameter, set between 0 and 2"//errMsg(__FILE__, __LINE__))
       end if
    end do
@@ -1177,7 +1175,7 @@ contains
     end if
 
     call ncd_pio_closefile(ncid)
-   
+
     ! transfer the temporary real to logical
     do i=0, mxpft
        if (temp_iscft(i) == 1._r8) iscft(i) = .true.
@@ -1547,11 +1545,11 @@ contains
     ! reassign taper values for shrubs - RPF
     if (taper_defaults) then
       do i = 0, npft-1
-         if (i >= nbrdlf_evr_shrub .and. i <= nbrdlf_dcd_brl_shrub) then
+         if (woody(i) == 2._r8) then
             taper(i) = 10._r8 ! shrubs
-         else
+         else if (woody(i) == 1._r8) then
             taper(i) = 200._r8
-         endif
+         end if
       end do
    end if
 
