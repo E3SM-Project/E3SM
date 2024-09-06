@@ -1954,6 +1954,15 @@ Specifies the method for decomposing CLM grids across processors.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options related to within-gridcell hillslope hydrologic connectivity                                     -->
+<!-- ========================================================================================  -->
+<entry id="use_IM2_hillslope_hydrology" type="logical" category="default_settings"
+       group="elm_inparm" valid_values=".true.,.false" value=".false." >
+If TRUE use within-gridcell hillslope hydrologic connectivity based on drainage terms at the 
+topounit level. Based on the IM2 implementation from NGEE Arctic project.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface                                  -->
 <!-- ========================================================================================  -->
 

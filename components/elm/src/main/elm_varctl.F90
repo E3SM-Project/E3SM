@@ -455,6 +455,11 @@ module elm_varctl
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
+  ! Subgrid hillslope hydrologic connectivity (through topounits)
+  !-----------------------------------------------------------------------
+  logical, public            :: use_IM2_hillslope_hydrology  = .false.
+ 
+  !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
   logical, public :: use_pheno_flux_limiter = .false.
 
