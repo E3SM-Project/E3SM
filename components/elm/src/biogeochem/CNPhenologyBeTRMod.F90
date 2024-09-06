@@ -525,7 +525,7 @@ contains
          prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
 
          season_decid                        =>    veg_vp%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
@@ -875,7 +875,7 @@ contains
          dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
 
          leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          stress_decid                        =>    veg_vp%stress_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for stress-deciduous leaf habit (0 or 1)
 
          soilpsi                             =>    soilstate_vars%soilpsi_col                            , & ! Input:  [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa)
@@ -2295,7 +2295,7 @@ contains
     associate(                                                                                             &
          ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type
 
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          onset_flag                          =>    cnstate_vars%onset_flag_patch                           , & ! Input:  [real(r8)  (:) ]  onset flag
          onset_counter                       =>    cnstate_vars%onset_counter_patch                        , & ! Input:  [real(r8)  (:) ]  onset days counter
@@ -2880,7 +2880,7 @@ contains
     associate(                                                                             &
          ivt                      =>    veg_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
          deadwdcn                 =>    veg_vp%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)
 

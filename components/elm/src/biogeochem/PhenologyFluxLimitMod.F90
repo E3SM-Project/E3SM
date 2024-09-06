@@ -397,7 +397,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_gresp_storage_to_xfer        , s_gresp_storage,nelms)
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_d, nelms, f_gresp_storage_to_xfer)
-  
+
   !initialize stoichiometric relationship between carbon production flux and corresponding state varaibles
   call spm_list_init(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafc_xfer_to_leafc        , s_leafc, nelms)
@@ -432,7 +432,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_gresp_storage_to_xfer      , s_gresp_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_gresp_storage     , s_gresp_storage, nelms)
 
-   
+
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_p, nelms, f_gresp_storage_to_xfer)
   !initialize stoichiometry relationship between nutrient consumption and corresponding state variables
@@ -474,7 +474,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_to_food               , s_grainn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, f_supplement_to_plantn)
   !initialize stoichiometry relationship between nutrient production and corresponding state variables
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
@@ -512,7 +512,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_frootn_to_retransn             , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, f_supplement_to_plantn)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
@@ -613,7 +613,7 @@ contains
   real(r8) :: ar_p
   associate(                                                    &
          ivt                   =>    veg_pp%itype             , & ! Input:  [integer  (:)     ]  pft vegetation type
-         woody                 =>    veg_vp%woody             , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 =>    veg_vp%woody             , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          harvdate              =>    crop_vars%harvdate_patch   & ! Input:  [integer  (:)     ]  harvest date
          )
   ! set time steps
@@ -847,7 +847,7 @@ contains
   real(r8) :: dt
   associate(                                                       &
          ivt                   => veg_pp%itype                   , & ! Input:  [integer  (:)     ]  pft vegetation type
-         woody                 => veg_vp%woody                   , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_vp%woody                   , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          nf                    => veg_nf              , &
          ns                    => veg_ns               &
   )
@@ -1031,7 +1031,7 @@ contains
 
   associate(                                                     &
     ivt                   => veg_pp%itype                      , & ! Input:  [integer  (:)     ]  pft vegetation type
-    woody                 => veg_vp%woody                      , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+    woody                 => veg_vp%woody                      , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
     pf                    => veg_pf               , &
     ps                    => veg_ps                &
   )

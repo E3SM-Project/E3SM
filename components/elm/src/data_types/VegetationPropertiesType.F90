@@ -43,7 +43,7 @@ module VegetationPropertiesType
      real(r8), pointer :: dsladlai      (:) => null()  ! dSLA/dLAI, projected area basis [m^2/gC]
      real(r8), pointer :: leafcn        (:) => null()  ! leaf C:N (gC/gN)
      real(r8), pointer :: flnr          (:) => null()  ! fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
-     real(r8), pointer :: woody         (:) => null()  ! binary flag for woody lifeform (1=woody, 0=not woody)
+     real(r8), pointer :: woody         (:) => null()  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
      real(r8), pointer :: lflitcn       (:) => null()  ! leaf litter C:N (gC/gN)
      real(r8), pointer :: frootcn       (:) => null()  ! fine root C:N (gC/gN)
      real(r8), pointer :: livewdcn      (:) => null()  ! live wood (phloem and ray parenchyma) C:N (gC/gN)
@@ -329,7 +329,7 @@ contains
     allocate( this%needleleaf(0:numpft))                         ; this%needleleaf(:)            =spval
     allocate( this%nfixer(0:numpft))                             ; this%nfixer(:)                =spval
     ! -----------------------------------------------------------------------------------------------------------
-    ! NGEE Arctic show-vegetation interactions
+    ! NGEE Arctic snow-vegetation interactions
     allocate(this%bendresist(0:numpft))                          ; this%bendresist(:)            =spval
     allocate(this%vegshape(0:numpft))                            ; this%vegshape(:)              =spval
     allocate(this%stocking(0:numpft))                            ; this%stocking(:)              =spval

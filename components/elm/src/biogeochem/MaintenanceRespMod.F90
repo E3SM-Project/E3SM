@@ -70,7 +70,7 @@ contains
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      br_mr_Inst = tempr
-     
+
    end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
@@ -107,7 +107,7 @@ contains
 
     associate(                                                        &
          ivt            =>    veg_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type
-         woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          br_xr          =>    veg_vp%br_xr                      , & ! Input:  [real(r8) (:)   ]  base rate for excess respiration
          frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index
@@ -160,7 +160,7 @@ contains
             ! calculate temperature corrections for each soil layer, for use in
             ! estimating fine root maintenance respiration with depth
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
-        
+
          end do
       end do
 
