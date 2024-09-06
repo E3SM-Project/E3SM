@@ -5,6 +5,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+    paths:
+      - 'components/eamxx/cime_config/namelist_defaults_scream.xml'
   schedule:
     - cron: '00 00 * * *'
   workflow_dispatch:
@@ -21,7 +23,7 @@ jobs:
           show-progress: false
           submodules: false
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.2.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Run unit tests
