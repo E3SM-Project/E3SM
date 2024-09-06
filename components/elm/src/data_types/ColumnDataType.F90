@@ -7529,14 +7529,16 @@ contains
                 c = filter_soilc(fc)
                 this%decomp_cpools_leached(c,l) = 0._r8
              end do
-             do j = 1, nlev
-                do fc = 1,num_soilc
+             if(l/=i_cwd)then
+               do j = 1, nlev
+                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
                    this%decomp_cpools_leached(c,l) = &
                      this%decomp_cpools_leached(c,l) + &
                      this%decomp_cpools_transport_tendency(c,j,l) * dzsoi_decomp(j)
-                end do
-             end do
+                 end do
+               end do
+             endif
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 this%som_c_leached(c) = &
@@ -9781,8 +9783,9 @@ contains
           c = filter_soilc(fc)
           this%decomp_npools_leached(c,l) = 0._r8
        end do
-       do j = 1, nlev
-          do fc = 1,num_soilc
+       if(l/=i_cwd)then
+         do j = 1, nlev
+            do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_npools_leached(c,l) = &
                   this%decomp_npools_leached(c,l) + &
@@ -9790,8 +9793,9 @@ contains
 
              this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + &
                 (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
-          end do
-       end do
+           end do
+         end do
+       endif
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%som_n_leached(c) = &
@@ -11311,16 +11315,16 @@ contains
           c = filter_soilc(fc)
           this%decomp_ppools_leached(c,l) = 0._r8
        end do
-
-       do j = 1, nlevdecomp
-          do fc = 1,num_soilc
+       if(l/=i_cwd)then
+         do j = 1, nlevdecomp
+           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_ppools_leached(c,l) = &
                   this%decomp_ppools_leached(c,l) + &
                   this%decomp_ppools_transport_tendency(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-
+           end do
+         end do
+       endif
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%som_p_leached(c) = &
