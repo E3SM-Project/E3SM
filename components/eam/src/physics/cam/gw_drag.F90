@@ -1148,6 +1148,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
         gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
+        !gwd_ls=1,gwd_bl=1,gwd_ss=0,gwd_fd=0 )
 	! z and dz all above surface and sea level, no need to add a new layer
 	! (just need an empty),gwd_opt(no need in my, take out 33 option))
 	!(itimestep just needs an empty, number of timestep,0)
