@@ -171,7 +171,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     if (perform_history_restart) {
       using namespace scorpio;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
+      IOFileSpecs hist_restart_specs;
+      hist_restart_specs.ftype = FileType::HistoryRestart;
+      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,m_avg_type,m_output_control);
 
       scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
@@ -196,22 +198,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       // We do NOT allow changing output specs across restart. If you do want to change
       // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
-      auto old_freq = scorpio::get_attribute<int>(rhist_file,"GLOBAL","averaging_frequency");
-      EKAT_REQUIRE_MSG (old_freq == m_output_control.frequency,
-          "Error! Cannot change frequency when performing history restart.\n"
-          "  - old freq: " << old_freq << "\n"
-          "  - new freq: " << m_output_control.frequency << "\n");
-      auto old_freq_units = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_frequency_units");
-      EKAT_REQUIRE_MSG (old_freq_units == m_output_control.frequency_units,
-          "Error! Cannot change frequency units when performing history restart.\n"
-          "  - old freq units: " << old_freq_units << "\n"
-          "  - new freq units: " << m_output_control.frequency_units << "\n");
-      auto old_avg_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_type");
-      EKAT_REQUIRE_MSG (old_avg_type == e2str(m_avg_type),
-          "Error! Cannot change avg type when performing history restart.\n"
-          "  - old avg type: " << old_avg_type + "\n"
-          "  - new avg type: " << e2str(m_avg_type) << "\n");
-
+      // NOTE: we do not check that freq/freq_units/avg_type are not changed: since we used
+      //       that info to find the correct rhist file, we already know that they match!
       auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","file_max_storage_type");
       EKAT_REQUIRE_MSG (old_storage_type == e2str(m_output_file_specs.storage.type),
           "Error! Cannot change file storage type when performing history restart.\n"

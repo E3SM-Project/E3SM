@@ -9,6 +9,9 @@
 TEST_CASE ("find_filename_in_rpointer") {
   using namespace scream;
 
+  constexpr auto AVG = OutputAvgType::Average;
+  constexpr auto INST = OutputAvgType::Instant;
+
   ekat::Comm comm(MPI_COMM_WORLD);
 
   util::TimeStamp t0({2023,9,7},{12,0,0});
@@ -17,21 +20,33 @@ TEST_CASE ("find_filename_in_rpointer") {
   // Create a dummy rpointer
   std::ofstream rpointer ("rpointer.atm");
 
-  rpointer << "foo.r." + t0.to_string() + ".nc\n";
-  rpointer << "bar2.rhist." + t0.to_string() + ".nc\n";
-  rpointer << "bar.rhist." + t0.to_string() + ".nc\n";
+  IOControl foo_c, bar_c, bar2_c;
+  foo_c.frequency  = 3; foo_c.frequency_units  = "nsteps";
+  bar_c.frequency  = 1; bar_c.frequency_units  = "ndays";
+  bar2_c.frequency = 6; bar2_c.frequency_units = "nhours";
+
+  std::string foo_fname  = "foo.r.INSTANT.nsteps_x3." + t0.to_string() + ".nc";
+  std::string bar_fname  = "bar.rhist.AVERAGE.ndays_x1." + t0.to_string() + ".nc";
+  std::string bar2_fname = "bar.rhist.AVERAGE.nhours_x6." + t0.to_string() + ".nc";
+
+  rpointer << foo_fname<< "\n";
+  rpointer << bar_fname<< "\n";
+  rpointer << bar2_fname << "\n";
   rpointer.close();
 
   // Now test find_filename_in_rpointer with different inputs
+  REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,AVG)); // missing control (needed for rhist files)
+  REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,AVG,bar_c)); // wrong prefix
+  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t1,AVG,bar_c)); // wrong timestamp
+  REQUIRE_THROWS (find_filename_in_rpointer("bar",true, comm,t0,AVG,bar_c)); // bar is not model restart
+  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t0,INST,bar_c)); // wrong avg type
+  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t0,INST,bar2_c)); // wrong freq specs
+  REQUIRE_THROWS (find_filename_in_rpointer("foo",false,comm,t0,INST,foo_c)); // foo is model restart
+  REQUIRE_THROWS (find_filename_in_rpointer("foo",true,comm,t0,AVG)); // model restart MUST be INSTANT
 
-  REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0)); // wrong prefix
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t1)); // wrong timestamp
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",true, comm,t0)); // bar is not model restart
-  REQUIRE_THROWS (find_filename_in_rpointer("foo",false,comm,t0)); // foo is model restart
-
-  REQUIRE (find_filename_in_rpointer("bar", false,comm,t0)==("bar.rhist."+t0.to_string()+".nc"));
-  REQUIRE (find_filename_in_rpointer("bar2",false,comm,t0)==("bar2.rhist."+t0.to_string()+".nc"));
-  REQUIRE (find_filename_in_rpointer("foo", true, comm,t0)==("foo.r."+t0.to_string()+".nc"));
+  REQUIRE (find_filename_in_rpointer("bar",false,comm,t0,AVG,bar_c)==bar_fname);
+  REQUIRE (find_filename_in_rpointer("bar",false,comm,t0,AVG,bar2_c)==bar2_fname);
+  REQUIRE (find_filename_in_rpointer("foo",true, comm,t0)==foo_fname);
 }
 
 TEST_CASE ("io_control") {
