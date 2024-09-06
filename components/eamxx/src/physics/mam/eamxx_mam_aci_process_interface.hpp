@@ -123,7 +123,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   // added correctly to the cloud-micorphysics scheme.
   view_2d hetfrz_immersion_nucleation_tend_;
   view_2d hetfrz_contact_nucleation_tend_;
-  view_2d hetfrz_depostion_nucleation_tend_;
+  view_2d hetfrz_deposition_nucleation_tend_;
 
   view_2d diagnostic_scratch_[hetro_scratch_];
 

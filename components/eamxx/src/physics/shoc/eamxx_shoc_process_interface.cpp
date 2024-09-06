@@ -156,7 +156,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
     {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
      , &m_buffer.kbfs, &m_buffer.ustar2, &m_buffer.wstar
@@ -182,7 +182,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
   };
@@ -191,7 +191,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
     &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
     &m_buffer.vw_sec, &m_buffer.w3
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.dz_zi
 #endif
   };
@@ -353,7 +353,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   temporaries.se_b = m_buffer.se_b;
   temporaries.ke_b = m_buffer.ke_b;
   temporaries.wv_b = m_buffer.wv_b;
@@ -485,7 +485,7 @@ void SHOCMacrophysics::run_impl (const double dt)
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
                  workspace_mgr,runtime_options,input,input_output,output,history_output
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
                  , temporaries
 #endif
                  );
