@@ -316,6 +316,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: waterVelocityCellX
       real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
+      real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -330,6 +332,7 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer :: iCell, iEdge, iEdgeOnCell
       real (kind=RKIND) :: timeLeft ! subcycling time remaining until master dt is reached
+      real (kind=RKIND) :: deltatSGHaccumulated
       integer :: numSubCycles ! number of subcycles
       integer :: err_tmp
 
@@ -383,6 +386,19 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'deltat', masterDeltat)
       timeLeft = masterDeltat  ! in seconds
       numSubCycles = 0
+
+      block => domain % blocklist
+      do while (associated(block))
+        
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+         effectivePressure = 0.0_RKIND
+         deltatSGHaccumulated = 0.0_RKIND
+
+         block => block % next
+      end do
+
+
       ! =============
       ! =============
       ! =============
@@ -682,7 +698,22 @@ module li_subglacial_hydro
       call mpas_dmpar_field_halo_exch(domain, 'waterPressureSmooth')
       call mpas_timer_stop("halo updates")
 
+      !Average effectivePressureSGH over coupling interval for use in dynamics model 
+      block => domain % blocklist
+      do while (associated(block))
+        
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
+         call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+         call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
+         effectivePressure = (effectivePressure * deltatSGHaccumulated + effectivePressureSGH * deltatSGH) / (deltatSGHaccumulated + deltatSGH)
+   
+         block => block % next
+      end do
+
+      deltatSGHaccumulated = deltatSGHaccumulated + deltatSGH
+      
       ! =============
       ! =============
       ! =============
@@ -1536,7 +1567,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterPressureOld
       real (kind=RKIND), dimension(:), pointer :: waterPressureTendency
       real (kind=RKIND), dimension(:), pointer :: waterThickness
-      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
       real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
       real (kind=RKIND), dimension(:), pointer :: closingRate
       real (kind=RKIND), dimension(:), pointer :: openingRate
@@ -1595,7 +1626,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
 
-      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
       call mpas_pool_get_array(hydroPool, 'waterPressureTendency', waterPressureTendency)
@@ -1625,8 +1656,8 @@ module li_subglacial_hydro
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * &
-              effectivePressure(:)**3 * waterThickness(:)
-!      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND
+              effectivePressureSGH(:)**3 * waterThickness(:)
+!      closingRate(:) = waterThickness(:) * effectivePressureSGH(:) / 1.0e13_RKIND
 !          ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
       zeroOrderSum = closingRate - openingRate + (basalMeltInput + externalWaterInput) / rho_water - &
@@ -1729,7 +1760,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: hydropotential
-      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
       real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: config_sea_level
@@ -1744,7 +1775,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
 
-      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
@@ -1753,12 +1784,12 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-      effectivePressure = rhoi * gravity * iceThicknessHydro - waterPressure
+      effectivePressureSGH = rhoi * gravity * iceThicknessHydro - waterPressure
          ! < this should evalute to 0 for floating ice if Pw set correctly there.
       where (.not. (li_mask_is_grounded_ice(cellMask)))
-         effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
+         effectivePressureSGH = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
-      
+    
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
       where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography <= config_sea_level)) 
          hydropotentialBase = 0.0_RKIND !zero hydropotential in ocean
@@ -1830,7 +1861,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelChangeRate
       real (kind=RKIND), dimension(:), pointer :: flowParamAChannel
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
-      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: effectivePressureSGH
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       integer, dimension(:), pointer :: waterFluxMask
@@ -1874,7 +1905,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelEffectivePressure', channelEffectivePressure)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(hydroPool, 'effectivePressureSGH', effectivePressureSGH)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
@@ -1938,7 +1969,7 @@ module li_subglacial_hydro
 
          ! Not sure if these ought to be upwind average, but using centered
          flowParamAChannel(iEdge) = 0.5_RKIND * (flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
-         channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressure(cell1) + effectivePressure(cell2))
+         channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressureSGH(cell1) + effectivePressureSGH(cell2))
       end do
       channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3
 
