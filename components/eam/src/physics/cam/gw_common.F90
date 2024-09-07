@@ -964,7 +964,7 @@ end subroutine grid_size
 !
       do k = kts,kte+1
          do i = its,ite
-            if(k.le.kte)pdh(i,k) = p3d(i,k)
+            if(k.le.kte) pdh(i,k) = p3d(i,k)
              pdhi(i,k) = p3di(i,k)
          enddo
       enddo
@@ -1946,9 +1946,9 @@ enddo
         if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
           if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
             temv = 1.0_r8 / velco(i,k)
-            !tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             !tem1 = coefm(i)/(sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
-            tem1 = coefm(i)/(max(dxy(i),dxmax_ls)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            !tem1 = coefm(i)/(max(dxy(i),dxmax_ls)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             !tem1 = coefm(i)/(max(sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8),dxmax_ls)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
@@ -2003,6 +2003,7 @@ endif
 
    if(lcap.lt.kte) then
       do klcap = lcapp1,kte
+
          do i = its,ite
            taup(i,klcap) = prsi(i,klcap) / prsi(i,lcap) * taup(i,lcap)
          enddo
@@ -2126,6 +2127,12 @@ IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) T
    do k = kts,kte
       do i = its,ite
          taud_ls(i,k)  = taud_ls(i,k) * dtfac(i) * ls_taper
+         !!Jinbo Xie apply limiter for ogwd
+         !1.dudt < |c-u|/dt, so u-c cannot change sign(u^n+1 = u^n + du/dt * dt)
+         !2.dudt<tndmax, eliminate ridiculous large tendency
+         taud_ls(i,k)  = min(taud_ls(i,k),umcfac*abs(velco(i,k))/kdt)
+         taud_ls(i,k)  = min(taud_ls(i,k),tndmax)
+         !!Jinbo Xie
          taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper
          dtaux2d_ls(i,k) = taud_ls(i,k) * xn(i)
          dtauy2d_ls(i,k) = taud_ls(i,k) * yn(i)

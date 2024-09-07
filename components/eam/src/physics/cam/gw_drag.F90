@@ -1143,7 +1143,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
         cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
         dt=dt,dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
+        kpbl2d=kpbl2d_in,itimestep=dt,gwd_opt=0,&
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
