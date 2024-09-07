@@ -1989,7 +1989,7 @@ end subroutine clubb_init_cnst
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
         dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=0,gwd_opt=0,&
+        kpbl2d=kpbl2d_in,itimestep=0._r8,gwd_opt=0,&
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
