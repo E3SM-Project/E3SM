@@ -1993,7 +1993,7 @@ end subroutine clubb_init_cnst
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
-        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=0 )
+        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
         !!=========Jinbo Xie=========
         call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
