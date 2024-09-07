@@ -1325,7 +1325,6 @@ real(r8):: ncd  !!tunable parameter for fbd
 
 ncleff    = 3._r8
 ncd       = 1._r8!3._r8
-
 !
 !---- constants                                                         
 !                                                                       
@@ -1706,7 +1705,6 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
 !==============Jinbo Xie=============================================
        !!tune the times of drag
-       !ncleff    = 1.5!3.!1.!3.!
        !cleff    = 3._r8 * max(dxmeter(i),cleff)!turned dxmeter to array
         cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
 !==============Jinbo Xie=============================================
@@ -1951,6 +1949,7 @@ enddo
             !tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             !tem1 = coefm(i)/(sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             tem1 = coefm(i)/(max(dxy(i),dxmax_ls)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+            !tem1 = coefm(i)/(max(sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8),dxmax_ls)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
 
@@ -1982,7 +1981,7 @@ l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)!-(shr2_xjb(i,kp1)/velco(i,kp1))
 l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)!-(shr2_xjb(i,k)/velco(i,k))
 !print*,"l1,l2,l1/l2",l1,l2,l1/l2
 !!!!
-!taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
 !!!!
 !taup(i,kp1)=max(0.2*taup(i,k),min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd))
 !taup(i,k)*(l1/l2)
