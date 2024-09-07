@@ -2129,14 +2129,8 @@ IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) T
          !!Jinbo Xie apply limiter for ogwd
          !1.dudt < |c-u|/dt, so u-c cannot change sign(u^n+1 = u^n + du/dt * dt)
          !2.dudt<tndmax, eliminate ridiculous large tendency
-!if (taud_ls(i,k).lt.0) then
-!write(iulog,*)"Jinbo Xie i,k,kdt,taud_ls(i,k),umcfac*abs(velco(i,k))/kdt,tndmax",i,k,kdt,taud_ls(i,k),umcfac*abs(velco(i,k))/kdt,tndmax
-!endif
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/kdt),taud_ls(i,k))
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),tndmax),taud_ls(i,k))
-!if (taud_ls(i,k).lt.0) then
-!        write(iulog,*)"Jinbo Xie, after,i,k,kdt,taud_ls(i,k),umcfac*abs(velco(i,k))/kdt,tndmax",i,k,kdt,taud_ls(i,k),umcfac*abs(velco(i,k))/kdt,tndmax
-!endif
          !!Jinbo Xie
          taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper
          dtaux2d_ls(i,k) = taud_ls(i,k) * xn(i)
