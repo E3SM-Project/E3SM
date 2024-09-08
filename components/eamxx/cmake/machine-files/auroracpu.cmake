@@ -17,23 +17,15 @@ set(CMAKE_C_FLAGS "-O3 -DNDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS " -lifcore -\-intel -Xclang -mlong-double-64 -DNDEBUG  -fortlib" CACHE STRING "" FORCE)
 #set(CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -\-intel -Xclang -fsycl-allow-virtual-functions -lsycl -mlong-double-64 -DNDEBUG ${SYCL_LINK_FLAGS} -fortlib  -L${MPICH_DIR}/lib" CACHE STRING "" FORCE)
 
-
-
-#
-#        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
-#        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
-#        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
-
-
 #this is needed for cime builds!
-set(NETCDF_PATH "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(NETCDF_DIR  "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(NETCDF_C_PATH "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
-set(NETCDF_C      "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
+set(NETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
+set(NETCDF_DIR  "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
+set(NETCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
+set(NETCDF_C      "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
 #this one is for rrtmgp
-set(NetCDF_C_PATH "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007" CACHE STRING "")
-set(NETCDF_FORTRAN_PATH "/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(PNETCDF_PATH "/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007")
+set(NetCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007" CACHE STRING "")
+set(NETCDF_FORTRAN_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
+set(PNETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007")
 
 
 

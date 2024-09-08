@@ -3753,14 +3753,14 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
     <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/lus/gecko/projects/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lus/flare/projects/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/flare/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -3783,7 +3783,7 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-       <init_path lang="sh">/lus/gecko/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
+       <init_path lang="sh">/lus/flare/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
        <init_path lang="csh">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/csh</init_path>
        <init_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/env_modules_python.py</init_path>
        <cmd_path lang="sh">module</cmd_path>
@@ -3811,11 +3811,11 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables>
-        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
-        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
-        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
-        <env name="LD_LIBRARY_PATH">/opt/cray/pe/gcc-libs:/opt/cray/pe/python/3.9.13.1/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
-        <env name="PATH">/opt/cray/pe/python/3.9.13.1/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
+        <env name="NETCDF_C_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
+        <env name="NETCDF_FORTRAN_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
+        <env name="PNETCDF_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
+        <env name="LD_LIBRARY_PATH">/opt/cray/pe/gcc-libs:/opt/cray/pe/python/3.9.13.1/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/opt/cray/pe/python/3.9.13.1/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
         <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
@@ -3864,14 +3864,14 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
     <COMPILERS>oneapi-ifx</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/lus/gecko/projects/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lus/flare/projects/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lus/gecko/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lus/gecko/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lus/gecko/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/flare/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -3892,7 +3892,7 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-       <init_path lang="sh">/lus/gecko/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
+       <init_path lang="sh">/lus/flare/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
        <init_path lang="csh">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/csh</init_path>
        <init_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/env_modules_python.py</init_path>
        <cmd_path lang="sh">module</cmd_path>
@@ -3916,11 +3916,11 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables>
-        <env name="NETCDF_C_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
-        <env name="NETCDF_FORTRAN_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
-        <env name="PNETCDF_PATH">/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
-        <env name="LD_LIBRARY_PATH">/opt/cray/pe/gcc-libs:/opt/cray/pe/python/3.9.13.1/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
-        <env name="PATH">/opt/cray/pe/python/3.9.13.1/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/gecko/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
+        <env name="NETCDF_C_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007</env>
+        <env name="NETCDF_FORTRAN_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007</env>
+        <env name="PNETCDF_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007</env>
+        <env name="LD_LIBRARY_PATH">/opt/cray/pe/gcc-libs:/opt/cray/pe/python/3.9.13.1/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/opt/cray/pe/python/3.9.13.1/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007/bin:$ENV{PATH}</env>
         <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
