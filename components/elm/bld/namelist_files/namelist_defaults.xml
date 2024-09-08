@@ -666,7 +666,7 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2100</stream_year_last_ndep>
 
-<stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   >lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   >lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp245_c240903.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="8.5" >lnd/clm2/ndepdata/fndep_clm_rcp8.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="6"   >lnd/clm2/ndepdata/fndep_clm_rcp6.0_simyr1849-2106_1.9x2.5_c100810.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
@@ -899,8 +899,8 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_popdens>
 
-<stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
-<stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."    >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true." >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
 
 <popdensmapalgo use_cn=".true."                               >bilinear</popdensmapalgo>
 
