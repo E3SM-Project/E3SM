@@ -22,13 +22,13 @@ set(CMAKE_EXE_LINKER_FLAGS " -lifcore -\-intel -Xclang -fsycl-allow-virtual-func
 
 
 #this is needed for cime builds!
-set(NETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(NETCDF_DIR  "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(NETCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
-set(NETCDF_C      "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007")
+set(NETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002")
+set(NETCDF_DIR  "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002")
+set(NETCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002")
+set(NETCDF_C      "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002")
 #this one is for rrtmgp
-set(NetCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2023.05.15.007" CACHE STRING "")
-set(NETCDF_FORTRAN_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2023.05.15.007")
-set(PNETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2023.05.15.007")
+set(NetCDF_C_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002" CACHE STRING "")
+set(NETCDF_FORTRAN_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002")
+set(PNETCDF_PATH "/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2024.04.15.002")
 
 
