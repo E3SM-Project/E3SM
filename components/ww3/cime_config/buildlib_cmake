@@ -43,14 +43,23 @@ def buildlib(bldroot, installpath, case):
     # Define WW3 repository directories
     repodir  = "{}/components/ww3/src".format(srcroot)
     modeldir = "{}/WW3/model".format(repodir)
+    builddir = "{}/wav".format(exeroot)
 
     # TODO: these work dirs will have to be changed to live in the binary/build area.
     # Achieving this will probably require a significant refactor of the ww3 infrastructure.
     # Doing this stuff in-source not only clutters the repo, but also introduces potential race
     # conditions if we were to try to build multiple ww3 cases simultaneously.
-    bindir   = "{}/bin".format(modeldir)
-    exedir   = "{}/exe".format(modeldir)
-    tmpdir   = "{}/tmp".format(modeldir)
+    bindir1   = "{}/bin".format(modeldir)
+    bindir   = "{}/wav/bin".format(exeroot)
+    shutil.copytree(bindir1, bindir)
+    auxdir1   = "{}/aux".format(modeldir)
+    auxdir   = "{}/wav/aux".format(exeroot)
+    shutil.copytree(auxdir1, auxdir)
+    ftndir1   = "{}/ftn".format(modeldir)
+    ftndir   = "{}/wav/ftn".format(exeroot)
+    shutil.copytree(ftndir1, ftndir)
+    
+    tmpdir   = "{}/wav/tmp".format(exeroot)
 
     # Run w3_setup to create wwatch3.env file
     env_file = os.path.join(bindir, "wwatch3.env")
@@ -77,7 +86,7 @@ def buildlib(bldroot, installpath, case):
 y
 """.format(sf90, scc, tmpdir))
 
-    run_bld_cmd_ensure_logging("./w3_setup {} -s E3SM < w3_setup.inp".format(modeldir), logger, from_dir=bindir)
+    run_bld_cmd_ensure_logging("./w3_setup {} -s E3SM < w3_setup.inp".format(builddir), logger, from_dir=bindir)
     os.remove(inp_file)
 
     # Generate pre-processed WW3 source code
@@ -85,7 +94,7 @@ y
     for exe in ww3_exe:
       run_bld_cmd_ensure_logging("./w3_source {}".format(exe), logger, from_dir=bindir)
     for exe in ww3_exe:
-      tarfile = "{}/work/{}.tar.gz".format(modeldir,exe)
+      tarfile = "{}/work/{}.tar.gz".format(builddir,exe)
       shutil.move(tarfile, tmpdir)
       run_bld_cmd_ensure_logging("tar -xzvf {}.tar.gz".format(exe), logger, from_dir=tmpdir)
     run_bld_cmd_ensure_logging("rm ww3_shel.F90", logger, from_dir=tmpdir)
