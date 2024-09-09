@@ -308,10 +308,13 @@ CONTAINS
 #ifdef MOABCOMP
     use mct_mod
     use seq_comm_mct,     only : num_moab_exports
+#endif 
 
+    integer :: ent_type
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
+    integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
 #endif
