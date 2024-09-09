@@ -265,14 +265,14 @@ contains
 
   subroutine gfr_init_hxx() bind(c)
 #if KOKKOS_TARGET
-    use control_mod, only: theta_hydrostatic_mode_integer
+    use control_mod, only: theta_hydrostatic_mode
     use iso_c_binding, only: c_int
     interface
-       subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode_integer, &
+       subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode, &
             fv_metdet, g2f_remapd, f2g_remapd, D_f, Dinv_f) bind(c)
          use iso_c_binding, only: c_int, c_double
          integer (c_int), value, intent(in) :: nelemd, np, nf, nf_max
-         integer (c_int), value, intent(in) :: theta_hydrostatic_mode_integer
+         integer (c_int), value, intent(in) :: theta_hydrostatic_mode
          real (c_double), dimension(nf*nf,nelemd), intent(in) :: fv_metdet
          real (c_double), dimension(np,np,nf_max*nf_max), intent(in) :: g2f_remapd
          real (c_double), dimension(nf_max*nf_max,np,np), intent(in) :: f2g_remapd
@@ -280,7 +280,8 @@ contains
        end subroutine init_gllfvremap_c
     end interface
     integer (c_int) :: thm
-    thm = theta_hydrostatic_mode_integer
+    thm = 0
+    if (theta_hydrostatic_mode) thm = 1
     call init_gllfvremap_c(nelemd, np, gfr%nphys, nphys_max, thm, &
          gfr%fv_metdet, gfr%g2f_remapd, gfr%f2g_remapd, gfr%D_f, gfr%Dinv_f)
 #endif

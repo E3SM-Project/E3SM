@@ -37,7 +37,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling,
-                               const int& ftype, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
+                               const int& ftype, const bool& prescribed_wind, const bool& use_moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
                                const double& scale_factor, const double& laplacian_rigid_factor)
@@ -90,7 +90,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.hypervis_subcycle             = hypervis_subcycle;
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = disable_diagnostics;
-  params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
+  params.use_moisture                  = use_moisture;
   params.use_cpstar                    = use_cpstar;
   params.transport_alg                 = transport_alg;
   // SphereOperators parameters; preqx supports only the sphere.

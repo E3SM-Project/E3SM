@@ -160,8 +160,8 @@ TEST_CASE("forcing", "forcing") {
     std::cout << "Testing tracers forcing.\n";
     for (const bool hydrostatic : {true,false}) {
       std::cout << " -> hydrostatic mode: " << (hydrostatic ? "true" : "false") << "\n";
-      for (const MoistDry moisture : {MoistDry::DRY,MoistDry::MOIST}) {
-        std::cout << "   -> moisture: " << (moisture==MoistDry::MOIST ? "moist" : "dry") << "\n";
+      for (const bool use_moisture: {false,true}) {
+        std::cout << "   -> moisture: " << (use_moisture ? "moist" : "dry") << "\n";
         for (const bool adjustment : {true,false}) {
           std::cout << "     -> adjustment: " << (adjustment ? "true" : "false") << "\n";
 
@@ -200,8 +200,8 @@ TEST_CASE("forcing", "forcing") {
           ff.init_buffers(fbm);
 
           // Run tracers forcing (cxx and f90)
-          ff.tracers_forcing(dt,np1,np1_qdp,adjustment,moisture);
-          tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,moisture==MoistDry::MOIST,adjustment);
+          ff.tracers_forcing(dt,np1,np1_qdp,adjustment,use_moisture);
+          tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,use_moisture,adjustment);
 
           // Compare answers
           Kokkos::deep_copy(h_dp,state.m_dp3d);

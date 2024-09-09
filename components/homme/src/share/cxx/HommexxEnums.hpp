@@ -47,11 +47,6 @@ enum class ForcingAlg : int {
   FORCING_2   = 2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
 
-enum class MoistDry {
-  MOIST,
-  DRY
-};
-
 enum class AdvectionForm {
   Conservative,
   NonConservative
