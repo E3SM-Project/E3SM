@@ -173,7 +173,6 @@ module seq_frac_mct
   use seq_comm_mct, only : mbofxid !           iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
-  use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
   ! for tri grid, sameg_al would be false 
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 

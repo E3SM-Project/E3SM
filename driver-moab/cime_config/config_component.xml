@@ -1367,6 +1367,15 @@
     <desc>atm2ocn flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2OCN_FMOABMAP">
+    <type>char</type>
+    <valid_values>online,offline</valid_values>
+    <default_value>online</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn flux variable moab map type</desc>
+  </entry>
+
   <entry id="ATM2OCN_FMAPNAME_NONLINEAR">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
@@ -1390,6 +1399,15 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ATM2OCN_SMOABMAP">
+    <type>char</type>
+    <valid_values>online,offline</valid_values>
+    <default_value>online</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn state variable moab map type</desc>
   </entry>
 
   <entry id="ATM2OCN_VMAPNAME">

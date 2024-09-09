@@ -224,7 +224,10 @@ module seq_comm_mct
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
-  integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
+  integer, public :: mbintxao ! iMOAB id for intx mesh between atmosphere and ocean
+  integer, public :: mbrmapfao ! iMOAB id for read map for flux var between atmosphere and ocean
+  integer, public :: mbaxoid  ! iMOAB id for atm on coupler in ocean context
+  integer, public :: mbrmapsao ! iMOAB id for read map for state var between atmosphere and ocean
   integer, public :: mbintxoa ! iMOAB id for intx mesh between atmosphere and ocean
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
 !!#ifdef MOABDEBUG
@@ -665,6 +668,9 @@ contains
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
     mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations
     mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
+    mbrmapfao = -1 ! iMOAB id for read map for flux var between atmosphere and ocean
+    mbaxoid = -1 ! used for read a2o fmap in moab
+    mbrmapsao = -1
     mbintxoa = -1 ! iMOAB id for  mpas ocean  intx with atm
     mblxid = -1   ! iMOAB id for land on coupler pes
 !!#ifdef MOABDEBUG

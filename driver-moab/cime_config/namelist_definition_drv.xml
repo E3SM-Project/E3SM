@@ -3710,6 +3710,19 @@
     </values>
   </entry>
 
+  <entry id="atm2ocn_fmoabmap"    modify_via_xml="ATM2OCN_FMOABMAP">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      Moab maps can be calculated online or in advance. Default is online
+    </desc>
+    <values>
+      <value>$ATM2OCN_FMOABMAP</value>
+      <value bfbflag="on">online</value>
+    </values>
+  </entry>
+
   <entry id="atm2ocn_fmapname_nonlinear"    modify_via_xml="ATM2OCN_FMAPNAME_NONLINEAR">
     <type>char</type>
     <category>mapping</category>
@@ -3750,6 +3763,19 @@
     <values>
       <value>$ATM2OCN_SMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2ocn_smoabmap"    modify_via_xml="ATM2OCN_SMOABMAP">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      Moab maps can be calculated online or in advance. Default is online
+    </desc>
+    <values>
+      <value>$ATM2OCN_SMOABMAP</value>
+      <value bfbflag="on">online</value>
     </values>
   </entry>
 
