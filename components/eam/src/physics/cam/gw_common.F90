@@ -1324,7 +1324,7 @@ real(r8):: ncd  !!tunable parameter for fbd
  real(r8) :: zl_hint(its:ite)
  !===================================
 
-ncleff    = 3._r8
+ncleff    = 3._r8!3._r8
 ncd       = 3._r8!1._r8!1._r8!3._r8
 !
 !---- constants                                                         
