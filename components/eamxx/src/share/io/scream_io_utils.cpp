@@ -77,7 +77,11 @@ std::string find_filename_in_rpointer (
           "   output freq      : " + std::to_string(control.frequency) + "\n"
           "   output freq units: " + control.frequency_units + "\n"
           "   rpointer content:\n" + content + "\n\n"
-          " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n");
+          " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n"
+          " It is also possible you are using a rhist file create before commit 6b7d441330d. That commit changed how rhist file names\n"
+          " are formed. In particular, we no longer use INSTANT.${REST_OPTION}_x${REST_N}, but we use the avg type, and freq/freq_option\n"
+          " of the output stream (to avoid name clashes if 2 streams only differ for one of those). If you want to use your rhist file,\n"
+          " please rename it, so that the avg-type, freq, and freq_option reflect those of the output stream.\n");
     }
   }
 
