@@ -499,7 +499,7 @@ contains
    ! This verison of add_landunit is specific to polygonal tundra.
    !
    ! !USES:
-   use landunit_varcon , only : istsoil, istcrop, istice_mec, istdlak, isturb_MIN, isturb_MAX
+   use landunit_varcon , only : istsoil
    !
    ! !ARGUMENTS:
    integer  , intent(inout) :: li         ! input value is index of last landunit added; output value is index of this newly-added landunit

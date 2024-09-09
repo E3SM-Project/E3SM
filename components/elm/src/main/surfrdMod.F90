@@ -1159,7 +1159,7 @@ contains
     else if ( (.not. cft_dim_exists) .and. (.not. create_crop_landunit) )then
 
        ! Format where crop is part of the natural veg. landunit
-       if ( masterproc ) write(iulog,*) "WARNING: The PFT format is an unsupported format that will be removed in th future!"
+       if ( masterproc ) write(iulog,*) "WARNING: The PFT format is an unsupported format that will be removed in the future!"
        call surfrd_pftformat( begg, endg, ncid )
 
     else if ( cft_dim_exists .and. .not. create_crop_landunit )then
@@ -1285,6 +1285,26 @@ contains
        call collapse_crop_var(fert_cft(begg:endg,:,:), begg, endg)
        call collapse_crop_var(fert_p_cft(begg:endg,:,:), begg, endg)
     end if
+
+    if (use_polygonal_tundra) then
+      ! adjust wt_lunit(:,:,istsoil) for polygonal fraction:
+      do nl = begg,endg
+        do t = 1,max_topounits
+          wt_lunit(nl,t,istlowcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,ilowcenpoly)
+          wt_lunit(nl,t,istflatcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,iflatcenpoly)
+          wt_lunit(nl,t,isthighcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,ihighcenpoly)
+          wt_lunit(nl,t,istsoil) = wt_lunit(nl,t,istsoil) - sum(wt_lunit(nl,t,istlowcenpoly:isthighcenpoly))
+          ! check to make sure istsoil weight is still positive:
+          if (wt_lunit(nl,t,istsoil) .lt. 0_r8) then
+            call endrun(msg='ERROR:Polygonal tundra fraction > 100% in surface file'//&
+                                   errMsg(__FILE__, __LINE__))
+          end if
+        end do
+      end do
+    end if
+    write(iulog,*) "DEBUG 1 - wt_lunit is:", wt_lunit(begg:endg,1,:)
+    write(iulog,*) "DEBUG 2 - wt_polygon is:", wt_polygon(begg:endg,1,:)
+    write(iulog,*) "DEBUG 3 - wt_nat_patch is:", wt_nat_patch(begg:endg,1,:)
 
   end subroutine surfrd_veg_all
 
