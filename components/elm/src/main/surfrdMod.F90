@@ -669,7 +669,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     call domain_clean(surfdata_domain)
-
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
@@ -1073,7 +1072,8 @@ contains
     use elm_varpar      , only : surfpft_lb, surfpft_ub, surfpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
     use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft, wt_polygon
-    use landunit_varcon , only : istsoil, istcrop, ilowcenpoly, iflatcenpoly, ihighcenpoly
+    use landunit_varcon , only : istsoil, istcrop
+    use landunit_varcon , only : istlowcenpoly, ilowcenpoly, istflatcenpoly, iflatcenpoly, isthighcenpoly, ihighcenpoly
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
@@ -1130,7 +1130,8 @@ contains
       if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_LCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
       wt_polygon(begg:endg,1:max_topounits,ilowcenpoly) = arrayl(begg:endg,1:max_topounits)
     else
-      wt_polygon(begg:endg,1:max_topounits,1) = 0._r8
+      wt_polygon(begg:endg,1:max_topounits,ilowcenpoly:ihighcenpoly) = 0._r8
+      wt_lunit(begg:endg,1:max_topounits,istlowcenpoly:isthighcenpoly) = 0._r8
     endif
 
     ! add two other types
