@@ -1325,7 +1325,7 @@ real(r8):: ncd  !!tunable parameter for fbd
  !===================================
 
 ncleff    = 3._r8
-ncd       = 3._r8!1._r8!3._r8
+ncd       = 3._r8!1._r8!1._r8!3._r8
 !
 !---- constants                                                         
 !                                                                       
@@ -1948,7 +1948,6 @@ enddo
           if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
             temv = 1.0_r8 / velco(i,k)
             tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
-            !tem1 = coefm(i)/(sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
             hd   = sqrt(taup(i,k) / tem1)
             fro  = brvf(i) * hd * temv
 
