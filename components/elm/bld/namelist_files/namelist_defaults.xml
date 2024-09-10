@@ -613,6 +613,7 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis20km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
+<fglcmask hgrid="r025"     glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r025_GIS_AIS.20240910.nc</fglcmask>
 <fglcmask hgrid="r0125"    glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r0125_GIS_AIS.210407.nc</fglcmask>
 <fglcmask hgrid="ne30np4.pg2"  glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_ne30pg2_GIS_AIS.210407.nc</fglcmask>
 
@@ -623,6 +624,7 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="r05"       use_cn=".false.">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</flndtopo>
 <flndtopo hgrid="r05"       use_cn=".true.">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</flndtopo>
+<flndtopo hgrid="r025"      >lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr1850_c240125.nc</flndtopo>
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
