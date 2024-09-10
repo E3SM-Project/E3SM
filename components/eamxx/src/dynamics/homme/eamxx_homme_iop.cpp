@@ -268,8 +268,6 @@ apply_iop_forcing(const Real dt)
   auto Q_dyn = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
   auto Qdp_dyn = get_internal_field("Qdp_dyn").get_view<Pack*****>();
 
-  const bool use_moisture = (params.moisture == Homme::MoistDry::MOIST);
-
   // Load data from IOP files, if necessary
   m_iop->read_iop_file_data(timestamp());
 
