@@ -6,6 +6,7 @@
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
+#include <physics/mam/online_emission.hpp>
 #include <physics/mam/srf_emission.hpp>
 
 // For declaring surface and online emission class derived from atm process
@@ -20,7 +21,7 @@ namespace scream {
 // The process responsible for handling MAM4 surface and online emissions. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
-  using KT      = ekat::KokkosTypes<DefaultDevice>;
+  using KT = ekat::KokkosTypes<DefaultDevice>;
   using view_1d = typename KT::template view_1d<Real>;
   using view_2d = typename KT::template view_2d<Real>;
 
@@ -40,10 +41,12 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   view_1d fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
-  static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
+  static constexpr Real amufac = 1.65979e-23; // 1.e4* kg / amu
 
- public:
+public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
+  using onlineEmiss =
+      mam_coupling::onlineEmissions<Real, DefaultDevice>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -59,8 +62,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -85,9 +88,9 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     }
     // local variables for preprocess struct
     view_2d constituent_fluxes_pre_;
-  };  // MAMSrfOnlineEmiss::Preprocess
+  }; // MAMSrfOnlineEmiss::Preprocess
 
- private:
+private:
   // preprocessing scratch pad
   Preprocess preprocess_;
 
@@ -95,9 +98,11 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // FIXME: Remove the hardwired indices and use a function
   // to find them from an array.
   const std::map<std::string, int> spcIndex_in_pcnst_ = {
-      {"so2", 12},    {"dms", 13},    {"so4_a1", 15},
-      {"num_a1", 22}, {"so4_a2", 23}, {"num_a2", 27},
-      {"pom_a4", 36}, {"bc_a4", 37},  {"num_a4", 39}};
+      {"so2", 12},    {"dms", 13},    {"so4_a1", 15}, {"dst_a1", 19},
+      {"ncl_a1", 20}, {"mom_a1", 21}, {"num_a1", 22}, {"so4_a2", 23},
+      {"ncl_a2", 25}, {"mom_a2", 26}, {"num_a2", 27}, {"dst_a3", 28},
+      {"ncl_a3", 29}, {"num_a3", 35}, {"pom_a4", 36}, {"bc_a4", 37},
+      {"mom_a4", 38}, {"num_a4", 39}};
 
   // A struct carrying all the fields needed to read
   // surface emissions of a species
@@ -122,12 +127,14 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // A vector for carrying emissions for all the species
   std::vector<srf_emiss_> srf_emiss_species_;
 
+  onlineEmiss::onlineEmissData online_emis_data;
+
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
 
-};  // MAMSrfOnlineEmiss
+}; // MAMSrfOnlineEmiss
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
+#endif // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
