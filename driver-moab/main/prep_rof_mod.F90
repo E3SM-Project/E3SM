@@ -1,7 +1,7 @@
 module prep_rof_mod
 
 #include "shr_assert.h"
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8
+  use shr_kind_mod,     only: R8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: cxx => SHR_KIND_CXX
@@ -112,22 +112,22 @@ module prep_rof_mod
 
   ! accumulation variables over moab fields 
   character(CXX)                        :: sharedFieldsLndRof ! used in moab to define l2racc_lm
-  real (kind=r8) , allocatable, private, target :: l2racc_lm(:,:)   ! lnd export, lnd grid, cpl pes
-  real (kind=r8) , allocatable, private :: l2x_lm2(:,:)  ! basically l2x_lm, but in another copy, on rof module
+  real (kind=R8) , allocatable, private, target :: l2racc_lm(:,:)   ! lnd export, lnd grid, cpl pes
+  real (kind=R8) , allocatable, private :: l2x_lm2(:,:)  ! basically l2x_lm, but in another copy, on rof module
   integer        , target  :: l2racc_lm_cnt  ! l2racc_lm: number of time samples accumulated
   integer :: nfields_sh_lr ! number of fields in sharedFieldsLndRof
   integer :: lsize_lm ! size of land in moab, local
 
   character(CXX)       :: sharedFieldsAtmRof ! used in moab to define a2racc_am
-  real (kind=r8) , allocatable, private ::  a2racc_am(:,:)   ! atm export, atm grid, cpl pes
-  real (kind=r8) , allocatable, private :: a2x_am2(:,:)  ! basically a2x_am, but in another copy, on rof module
+  real (kind=R8) , allocatable, private ::  a2racc_am(:,:)   ! atm export, atm grid, cpl pes
+  real (kind=R8) , allocatable, private :: a2x_am2(:,:)  ! basically a2x_am, but in another copy, on rof module
   integer        , target  :: a2racc_am_cnt  ! a2racc_am: number of time samples accumulated 
   integer :: nfields_sh_ar ! number of fields in sharedFieldsAtmRof
   integer :: lsize_am ! size of atm in moab, local
 
   character(CXX)       :: sharedFieldsOcnRof ! used in moab to define o2racc_om
-  real (kind=r8) , allocatable, private, target ::  o2racc_om(:,:)   ! ocn export, ocn grid, cpl pes
-  real (kind=r8) , allocatable, private :: o2r_om2(:,:)  ! basically o2x_om, but in another copy, on rof module, only shared with rof
+  real (kind=R8) , allocatable, private, target ::  o2racc_om(:,:)   ! ocn export, ocn grid, cpl pes
+  real (kind=R8) , allocatable, private :: o2r_om2(:,:)  ! basically o2x_om, but in another copy, on rof module, only shared with rof
   integer        , target  :: o2racc_om_cnt  ! o2racc_om: number of time samples accumulated
   integer :: nfields_sh_or ! number of fields in sharedFieldsOcnRof
   integer :: lsize_om ! size of ocn in moab, local
@@ -145,12 +145,12 @@ module prep_rof_mod
   logical :: samegrid_al   ! samegrid atm and lnd
 
   ! moab stuff
-   real (kind=r8) , allocatable, private :: fractions_rm (:,:) ! will retrieve the fractions from rof, and use them
+   real (kind=R8) , allocatable, private :: fractions_rm (:,:) ! will retrieve the fractions from rof, and use them
   !  they were init with 
   ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'  in moab, on the fractions 
-  real (kind=r8) , allocatable, private :: x2r_rm (:,:) ! result of merge
-  real (kind=r8) , allocatable, private :: a2x_rm (:,:)
-  real (kind=r8) , allocatable, private :: l2x_rm (:,:)
+  real (kind=R8) , allocatable, private :: x2r_rm (:,:) ! result of merge
+  real (kind=R8) , allocatable, private :: a2x_rm (:,:)
+  real (kind=R8) , allocatable, private :: l2x_rm (:,:)
 
   !================================================================================================
 
@@ -1223,7 +1223,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     integer, save :: index_x2r_coszen_str
 
     integer, save :: index_frac
-    real(r8)      :: frac
+    real(R8)      :: frac
     character(CL) :: fracstr
     logical, save :: first_time = .true.
     logical, save :: flds_wiso_rof = .false.
@@ -1529,7 +1529,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     integer, save :: index_x2r_coszen_str
 
     integer, save :: index_frac
-    real(r8)      :: frac
+    real(R8)      :: frac
     character(CL) :: fracstr
     logical, save :: first_time = .true.
     logical, save :: flds_wiso_rof = .false.
@@ -1548,7 +1548,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     character*32             :: outfile, wopts, lnum
 #endif
 #ifdef MOABCOMP
-    real(r8)                 :: difference
+    real(R8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
@@ -1995,7 +1995,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
   end function prep_rof_get_o2racc_om_cnt
 
   function prep_rof_get_o2racc_om()
-   real(r8), DIMENSION(:, :), pointer :: prep_rof_get_o2racc_om
+   real(R8), DIMENSION(:, :), pointer :: prep_rof_get_o2racc_om
    prep_rof_get_o2racc_om => o2racc_om
   end function prep_rof_get_o2racc_om
 
@@ -2011,7 +2011,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
   end function prep_rof_get_l2racc_lm_cnt
 
   function prep_rof_get_l2racc_lm()
-    real(r8), DIMENSION(:, :), pointer :: prep_rof_get_l2racc_lm
+    real(R8), DIMENSION(:, :), pointer :: prep_rof_get_l2racc_lm
     prep_rof_get_l2racc_lm => l2racc_lm
   end function prep_rof_get_l2racc_lm
 

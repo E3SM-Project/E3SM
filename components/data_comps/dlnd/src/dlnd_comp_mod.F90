@@ -148,10 +148,10 @@ CONTAINS
 #ifdef HAVE_MOAB
     character*400  tagname
     real(R8) latv, lonv
-    integer iv, tagindex, ilat, ilon  !, arrsize, nfields ! ierr is already defined as integer above
+    integer iv, tagindex, ilat, ilon 
     real(R8), allocatable, target :: data(:)
     integer(IN), pointer :: idata(:)   ! temporary
-    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(R8), dimension(:), allocatable :: moab_vert_coords  ! temporary
 #ifdef MOABDEBUG
     character*100 outfile, wopts
 #endif
