@@ -1979,6 +1979,26 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="ERA5r025_r05_IcoswISC30E3r5_gis1to10r02" compset="_MALI">
+      <grid name="atm">ERA5r025</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis1to10kmR2</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ERA5r025_r025_IcoswISC30E3r5_gis1to10r02" compset="_MALI">
+      <grid name="atm">ERA5r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">mpas.gis1to10kmR2</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="ne120pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">r0125</grid>
@@ -2799,6 +2819,14 @@
       <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oRRS18to6v3.220124.nc</file>
       <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oRRS18to6v3.220124.nc</file>
       <desc>TL319 is JRA lat/lon grid:</desc>
+    </domain>
+
+    <domain name="ERA5r025">
+      <nx>1440</nx>
+      <ny>721</ny>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ERA5r025_IcoswISC30E3r5.240903.nc</file>
+      <file grid="ice|ocn" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ERA5r025_IcoswISC30E3r5.240903.nc</file>
+      <desc>ERA5r025 is the lat/lon cap grid used by ERA5 data:</desc>
     </domain>
 
     <!--=====================================================================-->
@@ -4732,6 +4760,38 @@
        <map name="LND2ATM_SMAPNAME">cpl/gridmaps/TL319/map_r05_to_TL319_traave.20240212.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ERA5r025" ocn_grid="IcoswISC30E3r5">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_IcoswISC30E3r5_traave.20240903.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_IcoswISC30E3r5-nomask_trbilin.20240903.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_IcoswISC30E3r5_esmfpatch.20240903.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ERA5r025_traave.20240903.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ERA5r025_traave.20240903.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ERA5r025" lnd_grid="r05">
+       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r05_traave.20240905.nc</map>
+       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r05_esmfbilin.20240907.nc</map>
+       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r05/map_r05_to_ERA5r025_traave.20240905.nc</map>
+       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r05/map_r05_to_ERA5r025_traave.20240905.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ERA5r025" rof_grid="r05">
+       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r05_traave.20240905.nc</map>
+       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r05_esmfbilin.20240907.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ERA5r025" lnd_grid="r025">
+       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_traave.20240903.nc</map>
+       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_trbilin.20240903.nc</map>
+       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r025/map_r025_to_ERA5r025_traave.20240903.nc</map>
+       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r025/map_r025_to_ERA5r025_traave.20240903.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ERA5r025" rof_grid="r025">
+       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_traave.20240903.nc</map>
+       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_trbilin.20240903.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="T31" ocn_grid="gx3v7">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_T31_to_gx3v7_aave_da_090903.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_T31_to_gx3v7_patch_090903.nc</map>
@@ -5633,6 +5693,13 @@
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_gis1to10kmR2_trbilin.20240403.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_r05_traave.20240403.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_r05_traave.20240403.nc</map>
+    </gridmap>
+ 
+    <gridmap glc_grid="mpas.gis1to10kmR2" lnd_grid="r025">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r025/map_r025_to_gis1to10kmR2_traave.20240903.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r025/map_r025_to_gis1to10kmR2_trbilin.20240903.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_r025_traave.20240903.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10kmR2_to_r025_traave.20240903.nc</map>
     </gridmap>
  
     <gridmap glc_grid="mpas.gis1to10kmR2" lnd_grid="ne30np4.pg2">
