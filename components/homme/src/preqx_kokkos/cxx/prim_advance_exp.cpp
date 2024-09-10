@@ -34,7 +34,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   // Determine the tracers time level
   tl.n0_qdp= -1;
-  if (params.moisture == MoistDry::MOIST) {
+  if (params.use_moisture) {
     tl.update_tracers_levels(params.qsplit);
   }
 

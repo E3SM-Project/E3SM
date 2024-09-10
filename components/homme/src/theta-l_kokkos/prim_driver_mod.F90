@@ -103,12 +103,12 @@ contains
     ! Fill the simulation params structures in C++
     test_name = TRIM(test_case) // C_NULL_CHAR
 
-    if (disable_diagnostics) disable_diagnostics_int=1
-    if (.not.disable_diagnostics) disable_diagnostics_int=0
-    if (use_moisture) use_moisture_int=1
-    if (.not.use_moisture) use_moisture_int=0
-    if(theta_hydrostatic_mode) theta_hydrostatic_mode_int=1
-    if(.not.theta_hydrostatic_mode) theta_hydrostatic_mode_int=0
+    disable_diagnostics_int = 0
+    if (disable_diagnostics) disable_diagnostics_int = 1
+    use_moisture_int = 0
+    if (use_moisture) use_moisture_int = 1
+    theta_hydrostatic_mode_int = 0
+    if (theta_hydrostatic_mode) theta_hydrostatic_mode_int = 1
 
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
@@ -358,17 +358,16 @@ contains
     !
     ! Optional Input
     !
-    integer, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
-    integer(kind=c_int) :: dummy
+    logical, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+    integer(kind=c_int) :: ab
     ! Initialize the C++ functors in the C++ context
     ! If no argument allocate_buffer is present,
     ! let Homme internally allocate buffers
+    ab = 1
     if (present(allocate_buffer)) then
-       call init_functors_c (allocate_buffer)
-    else
-       dummy=1;
-       call init_functors_c (dummy)
-    endif
+       if (.not. allocate_buffer) ab = 0
+    end if
+    call init_functors_c (ab)
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()

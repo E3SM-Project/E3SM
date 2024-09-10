@@ -60,8 +60,7 @@ struct GllFvRemapImpl {
 
   struct Data {
     int nelemd, qsize, nf2, n_dss_fld;
-    bool use_moisture;
-    int theta_hydrostatic_mode;
+    bool use_moisture, theta_hydrostatic_mode;
 
     static constexpr int nbuf1 = 2, nbuf2 = 1;
     Buf1 buf1[nbuf1];
@@ -108,7 +107,7 @@ struct GllFvRemapImpl {
   void init_buffers(const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 
-  void init_data(const int nf, const int nf_max, const int theta_hydrostatic_mode,
+  void init_data(const int nf, const int nf_max, const bool theta_hydrostatic_mode,
                  const Real* fv_metdet_r, const Real* g2f_remapd_r,
                  const Real* f2g_remapd_r, const Real* D_f_r, const Real* Dinv_f_r);
 

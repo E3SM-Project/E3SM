@@ -43,7 +43,6 @@ module control_mod
 ! flag used by preqx, theta-l and theta-c models
 ! should be renamed to "hydrostatic_mode"
   logical, public :: theta_hydrostatic_mode
-  integer, public :: theta_hydrostatic_mode_integer
 
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options

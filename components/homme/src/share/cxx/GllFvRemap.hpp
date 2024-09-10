@@ -40,7 +40,7 @@ public:
   typedef Phys2T::const_type CPhys2T;
   typedef Phys3T::const_type CPhys3T;
 
-  void init_data(const int nf, const int nf_max, const int theta_hydrostatic_mode,
+  void init_data(const int nf, const int nf_max, const bool theta_hydrostatic_mode,
                  const Real* fv_metdet, const Real* g2f_remapd, const Real* f2g_remapd,
                  const Real* D_f, const Real* Dinv_f);
 

@@ -23,7 +23,7 @@ public:
 
   EquationOfState () = default;
 
-  void init (const int theta_hydrostatic_mode,
+  void init (const bool theta_hydrostatic_mode,
              const HybridVCoord& hvcoord) {
     m_theta_hydrostatic_mode = theta_hydrostatic_mode;
     m_hvcoord = hvcoord;
@@ -250,7 +250,7 @@ public:
 
 public:
 
-  int             m_theta_hydrostatic_mode;
+  bool            m_theta_hydrostatic_mode;
   HybridVCoord    m_hvcoord;
 };
 

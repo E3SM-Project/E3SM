@@ -131,7 +131,7 @@ void GllFvRemapImpl::init_boundary_exchanges () {
 template <typename T> using FV = Kokkos::View<T, Kokkos::LayoutLeft, Kokkos::HostSpace>;
 
 void GllFvRemapImpl
-::init_data (const int nf, const int nf_max, const int theta_hydrostatic_mode,
+::init_data (const int nf, const int nf_max, const bool theta_hydrostatic_mode,
              const Real* fv_metdet_r, const Real* g2f_remapd_r, const Real* f2g_remapd_r,
              const Real* D_f_r, const Real* Dinv_f_r) {
   using Kokkos::create_mirror_view;
@@ -395,7 +395,7 @@ void GllFvRemapImpl
   const auto hvcoord = m_hvcoord;
   
   const bool use_moisture = m_data.use_moisture;
-  const int theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
+  const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
 
   const bool want_dp_fv_out = dp_fv_out_ptr != nullptr;
   VPhys2T dp_fv_out;
@@ -605,7 +605,7 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
   const auto fT = m_forcing.m_ft;
   const auto hvcoord = m_hvcoord;
   const auto dp3d = m_state.m_dp3d;
-  const int theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
+  const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
   ElementOps ops; ops.init(hvcoord);
   const auto tu_ne = m_tu_ne;
