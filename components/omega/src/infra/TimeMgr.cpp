@@ -3985,7 +3985,12 @@ std::string TimeInstant::getString(
    FmtString << ":";
    FmtString << "%02d"; // 2 digit minute with leading 0
    FmtString << ":";
-   FmtString << "%0" << SecondWidth + 3 << "." << SecondWidth << "f"; // seconds
+   if (SecondWidth == 0) {
+      FmtString << "%02.0f"; // seconds with no decimal digits
+   } else {
+      // seconds with SecondWidth number of decimal digits
+      FmtString << "%0" << SecondWidth + 3 << "." << SecondWidth << "f";
+   }
 
    // convert format string to an actual string for formatted write
    const std::string Tmp = FmtString.str();
