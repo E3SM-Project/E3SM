@@ -152,10 +152,14 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  m_buffer.precip_liq_surf_flux = decltype(m_buffer.precip_liq_surf_flux)(mem, m_num_cols);
-  mem += m_buffer.precip_liq_surf_flux.size();
-  m_buffer.precip_ice_surf_flux = decltype(m_buffer.precip_ice_surf_flux)(mem, m_num_cols);
-  mem += m_buffer.precip_ice_surf_flux.size();
+  using scalar_1d_view_t = decltype(m_buffer.precip_liq_surf_flux);
+  scalar_1d_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar] = {
+    &m_buffer.precip_liq_surf_flux, &m_buffer.precip_ice_surf_flux
+  };
+  for (int i=0; i<Buffer::num_1d_scalar; ++i) {
+    *_1d_scalar_view_ptrs[i] = scalar_1d_view_t(mem, m_num_cols);
+    mem += _1d_scalar_view_ptrs[i]->size();
+  }
 
   // 2d scalar views
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -167,26 +171,38 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
-  m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.inv_exner.size();
-  m_buffer.th_atm = decltype(m_buffer.th_atm)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.th_atm.size();
-  m_buffer.cld_frac_l = decltype(m_buffer.cld_frac_l)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_l.size();
-  m_buffer.cld_frac_i = decltype(m_buffer.cld_frac_i)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_i.size();
-  m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.dz.size();
-  m_buffer.qv2qi_depos_tend = decltype(m_buffer.qv2qi_depos_tend)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.qv2qi_depos_tend.size();
-  m_buffer.rho_qi = decltype(m_buffer.rho_qi)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.rho_qi.size();
-  m_buffer.precip_liq_flux = decltype(m_buffer.precip_liq_flux)(s_mem, m_num_cols, nk_pack_p1);
-  s_mem += m_buffer.precip_liq_flux.size();
-  m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack_p1);
-  s_mem += m_buffer.precip_ice_flux.size();
-  m_buffer.unused = decltype(m_buffer.unused)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.unused.size();
+  using spack_2d_view_t = decltype(m_buffer.inv_exner);
+  spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
+    &m_buffer.inv_exner, &m_buffer.th_atm, &m_buffer.cld_frac_l, &m_buffer.cld_frac_i,
+    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi, &m_buffer.unused
+#ifdef SCREAM_P3_SMALL_KERNELS
+    , &m_buffer.mu_r, &m_buffer.T_atm, &m_buffer.lamr, &m_buffer.logn0r, &m_buffer.nu,
+    &m_buffer.cdist, &m_buffer.cdist1, &m_buffer.cdistr, &m_buffer.inv_cld_frac_i,
+    &m_buffer.inv_cld_frac_l, &m_buffer.inv_cld_frac_r, &m_buffer.qc_incld, &m_buffer.qr_incld,
+    &m_buffer.qi_incld, &m_buffer.qm_incld, &m_buffer.nc_incld, &m_buffer.nr_incld,
+    &m_buffer.ni_incld, &m_buffer.bm_incld, &m_buffer.inv_dz, &m_buffer.inv_rho, &m_buffer.ze_ice,
+    &m_buffer.ze_rain, &m_buffer.prec, &m_buffer.rho, &m_buffer.rhofacr, &m_buffer.rhofaci,
+    &m_buffer.acn, &m_buffer.qv_sat_l, &m_buffer.qv_sat_i, &m_buffer.sup, &m_buffer.qv_supersat_i,
+    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_equiv_reflectivity, &m_buffer.diag_vm_qi,
+    &m_buffer.diag_diam_qi, &m_buffer.pratot, &m_buffer.prctot, &m_buffer.qtend_ignore,
+    &m_buffer.ntend_ignore, &m_buffer.mu_c, &m_buffer.lamc, &m_buffer.qr_evap_tend, &m_buffer.v_qc,
+    &m_buffer.v_nc, &m_buffer.flux_qx, &m_buffer.flux_nx, &m_buffer.v_qit, &m_buffer.v_nit,
+    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir, &m_buffer.flux_qit, &m_buffer.v_qr,
+    &m_buffer.v_nr
+#endif
+  };
+  for (int i=0; i<Buffer::num_2d_vector; ++i) {
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nk_pack);
+    s_mem += _2d_spack_mid_view_ptrs[i]->size();
+  }
+
+  spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2dp1_vector] = {
+    &m_buffer.precip_liq_flux, &m_buffer.precip_ice_flux
+  };
+  for (int i=0; i<Buffer::num_2dp1_vector; ++i) {
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nk_pack_p1);
+    s_mem += _2d_spack_int_view_ptrs[i]->size();
+  }
 
   // WSM data
   m_buffer.wsm_data = s_mem;
@@ -324,6 +340,66 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack**>();
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
+#ifdef SCREAM_P3_SMALL_KERNELS
+  // Temporaries
+  temporaries.mu_r                    = m_buffer.mu_r;
+  temporaries.T_atm                   = m_buffer.T_atm;
+  temporaries.lamr                    = m_buffer.lamr;
+  temporaries.logn0r                  = m_buffer.logn0r;
+  temporaries.nu                      = m_buffer.nu;
+  temporaries.cdist                   = m_buffer.cdist;
+  temporaries.cdist1                  = m_buffer.cdist1;
+  temporaries.cdistr                  = m_buffer.cdistr;
+  temporaries.inv_cld_frac_i          = m_buffer.inv_cld_frac_i;
+  temporaries.inv_cld_frac_l          = m_buffer.inv_cld_frac_l;
+  temporaries.inv_cld_frac_r          = m_buffer.inv_cld_frac_r;
+  temporaries.qc_incld                = m_buffer.qc_incld;
+  temporaries.qr_incld                = m_buffer.qr_incld;
+  temporaries.qi_incld                = m_buffer.qi_incld;
+  temporaries.qm_incld                = m_buffer.qm_incld;
+  temporaries.nc_incld                = m_buffer.nc_incld;
+  temporaries.nr_incld                = m_buffer.nr_incld;
+  temporaries.ni_incld                = m_buffer.ni_incld;
+  temporaries.bm_incld                = m_buffer.bm_incld;
+  temporaries.inv_dz                  = m_buffer.inv_dz;
+  temporaries.inv_rho                 = m_buffer.inv_rho;
+  temporaries.ze_ice                  = m_buffer.ze_ice;
+  temporaries.ze_rain                 = m_buffer.ze_rain;
+  temporaries.prec                    = m_buffer.prec;
+  temporaries.rho                     = m_buffer.rho;
+  temporaries.rhofacr                 = m_buffer.rhofacr;
+  temporaries.rhofaci                 = m_buffer.rhofaci;
+  temporaries.acn                     = m_buffer.acn;
+  temporaries.qv_sat_l                = m_buffer.qv_sat_l;
+  temporaries.qv_sat_i                = m_buffer.qv_sat_i;
+  temporaries.sup                     = m_buffer.sup;
+  temporaries.qv_supersat_i           = m_buffer.qv_supersat_i;
+  temporaries.tmparr2                 = m_buffer.tmparr2;
+  temporaries.exner                   = m_buffer.exner;
+  temporaries.diag_equiv_reflectivity = m_buffer.diag_equiv_reflectivity;
+  temporaries.diag_vm_qi              = m_buffer.diag_vm_qi;
+  temporaries.diag_diam_qi            = m_buffer.diag_diam_qi;
+  temporaries.pratot                  = m_buffer.pratot;
+  temporaries.prctot                  = m_buffer.prctot;
+  temporaries.qtend_ignore            = m_buffer.qtend_ignore;
+  temporaries.ntend_ignore            = m_buffer.ntend_ignore;
+  temporaries.mu_c                    = m_buffer.mu_c;
+  temporaries.lamc                    = m_buffer.lamc;
+  temporaries.qr_evap_tend            = m_buffer.qr_evap_tend;
+  temporaries.v_qc                    = m_buffer.v_qc;
+  temporaries.v_nc                    = m_buffer.v_nc;
+  temporaries.flux_qx                 = m_buffer.flux_qx;
+  temporaries.flux_nx                 = m_buffer.flux_nx;
+  temporaries.v_qit                   = m_buffer.v_qit;
+  temporaries.v_nit                   = m_buffer.v_nit;
+  temporaries.flux_nit                = m_buffer.flux_nit;
+  temporaries.flux_bir                = m_buffer.flux_bir;
+  temporaries.flux_qir                = m_buffer.flux_qir;
+  temporaries.flux_qit                = m_buffer.flux_qit;
+  temporaries.v_qr                    = m_buffer.v_qr;
+  temporaries.v_nr                    = m_buffer.v_nr;
+#endif
+
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,
                             prog_state.th,pmid,pmid_dry,T_atm,t_prev,

@@ -18,6 +18,9 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
 
   static void run_bfb()
   {
+    constexpr Scalar latvap       = C::LatVap;
+    constexpr Scalar latice       = C::LatIce;
+
     auto engine = setup_random_test();
 
     IceSupersatConservationData f90_data[max_pack_size];
@@ -27,6 +30,10 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
     for (auto& d : f90_data) {
       d.randomize(engine);
       d.dt = f90_data[0].dt; // hold this fixed, it is not packed data
+
+      // C++ impl uses constants for latent_heat values. Manually set here
+      // so F90 can match
+      d.latent_heat_sublim = latvap+latice;
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -46,10 +53,9 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack cld_frac_i, latent_heat_sublim, qidep, qinuc, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
+      Spack cld_frac_i, qidep, qinuc, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cld_frac_i[s] = cxx_device(vs).cld_frac_i;
-        latent_heat_sublim[s] = cxx_device(vs).latent_heat_sublim;
         qidep[s] = cxx_device(vs).qidep;
         qinuc[s] = cxx_device(vs).qinuc;
         qv[s] = cxx_device(vs).qv;
@@ -59,7 +65,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
         qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
       }
 
-      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
+      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

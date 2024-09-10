@@ -45,7 +45,6 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_ice_relaxation_timescale.cpp
     eti/p3_ice_nucleation.cpp
     eti/p3_ice_cldliq_wet_growth.cpp
-    eti/p3_get_latent_heat.cpp
     eti/p3_check_values.cpp
     eti/p3_incloud_mixingratios.cpp
     eti/p3_subgrid_variance_scaling.cpp
@@ -63,13 +62,13 @@ endif()
 
 # List of dispatch source files if monolithic kernels are off
 set(P3_SK_SRCS
-    disp/p3_check_values_impl_disp.cpp  
-    disp/p3_ice_sed_impl_disp.cpp  
-    disp/p3_main_impl_part1_disp.cpp  
+    disp/p3_check_values_impl_disp.cpp
+    disp/p3_ice_sed_impl_disp.cpp
+    disp/p3_main_impl_part1_disp.cpp
     disp/p3_main_impl_part3_disp.cpp
-    disp/p3_cloud_sed_impl_disp.cpp     
-    disp/p3_main_impl_disp.cpp     
-    disp/p3_main_impl_part2_disp.cpp  
+    disp/p3_cloud_sed_impl_disp.cpp
+    disp/p3_main_impl_disp.cpp
+    disp/p3_main_impl_part2_disp.cpp
     disp/p3_rain_sed_impl_disp.cpp
     )
 
