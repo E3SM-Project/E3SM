@@ -17,8 +17,6 @@ ENDIF()
 SET (USE_MPIEXEC "srun" CACHE STRING "")
 SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
 
-SET (CHRYSALIS_MACHINE TRUE CACHE BOOL "")
-
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_ZEN2 ON CACHE BOOL "")
 
