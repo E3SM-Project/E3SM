@@ -20,8 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - SMS_D_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
-          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
+          - SMS_D_Ld1_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
+          - ERS_Ld3_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
     container: 
       image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
