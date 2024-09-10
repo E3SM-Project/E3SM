@@ -239,6 +239,7 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 
 add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_remove_ais_ice_runoff');
+add_default($nl, 'config_2d_thermal_forcing_depth');
 
 ######################################
 # Namelist group: shortwaveRadiation #
