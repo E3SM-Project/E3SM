@@ -327,6 +327,7 @@ contains
                write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on rof cpl'
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields on rof cpl')
             endif
+            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
             if (samegrid_lr) then
                ! the same mesh , lnd and rof use the same dofs, but restricted 
                ! we do not compute intersection, so we will have to just send data from lnd to rof and viceversa, by GLOBAL_ID matching
@@ -363,7 +364,6 @@ contains
                ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the 
                ! lnd for the intx lnd-rof context (coverage)
                !    
-               call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
                type1 = 3 ! land is FV now on coupler side
                type2 = 3;
 
