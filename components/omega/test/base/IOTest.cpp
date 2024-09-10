@@ -10,6 +10,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "IO.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Logging.h"
@@ -35,6 +36,14 @@ int initIOTest() {
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("IOTest: Error reading config file");
+      return Err;
+   }
 
    // Initialize the IO system
    Err = OMEGA::IO::init(DefComm);

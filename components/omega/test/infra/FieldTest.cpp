@@ -10,6 +10,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "Field.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -58,6 +59,14 @@ int initFieldTest() {
    Err              = IO::init(DefComm);
    if (Err != 0) {
       LOG_ERROR("IO initialization failed");
+      return Err;
+   }
+
+   // Open config file
+   OMEGA::Config("omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("FieldTest: Error reading config file");
       return Err;
    }
 

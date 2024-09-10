@@ -15,6 +15,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "Halo.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "IO.h"
@@ -108,6 +109,14 @@ int initHaloTest() {
 
    // Initialize the logging system
    OMEGA::initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("omega");
+   IErr = OMEGA::Config::readAll("omega.yml");
+   if (IErr != 0) {
+      LOG_CRITICAL("HaloTest: Error reading config file");
+      return IErr;
+   }
 
    // Initialize the IO system
    IErr = OMEGA::IO::init(DefComm);

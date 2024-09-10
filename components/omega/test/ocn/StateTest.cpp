@@ -9,6 +9,7 @@
 //
 //===-----------------------------------------------------------------------===/
 
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -39,6 +40,16 @@ int initStateTest() {
    OMEGA::MachEnv::init(MPI_COMM_WORLD);
    OMEGA::MachEnv *DefEnv = OMEGA::MachEnv::getDefault();
    MPI_Comm DefComm       = DefEnv->getComm();
+
+   OMEGA::initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("State: Error reading config file");
+      return Err;
+   }
 
    // Initialize the IO system
    Err = OMEGA::IO::init(DefComm);

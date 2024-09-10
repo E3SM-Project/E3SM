@@ -133,6 +133,16 @@ int initTimeStepperTest(const std::string &mesh) {
 
    // Default init
 
+   initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("TimeStepperTest: Error reading config file");
+      return Err;
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;

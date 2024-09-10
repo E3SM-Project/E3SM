@@ -74,6 +74,16 @@ int initTendenciesTest(const std::string &mesh) {
    MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
 
+   initLogging(DefEnv);
+
+   // Open config file
+   Config("omega");
+   Err = Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("TendenciesTest: Error reading config file");
+      return Err;
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
