@@ -35,12 +35,18 @@
     <lname>SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM</lname>
    </compset>
 
+   <compset>
+    <alias>SSP370_ZATM_BGC</alias>
+    <lname>SSP370_EAM%CMIP6_ELM%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM</lname>
+   </compset>
+
    <entry id="NCPL_BASE_PERIOD">
      <values>
        <value compset="ZLND">year</value>
        <value compset="ZATM">year</value>
        <value compset="SSP245_ZATM">year</value>
        <value compset="SSP245_ZATM_BGC">year</value>
+       <value compset="SSP370_ZATM_BGC">year</value>
      </values>
    </entry>
 
@@ -50,6 +56,7 @@
        <value compset="ZATM">1</value>
        <value compset="SSP245_ZATM">1</value>
        <value compset="SSP245_ZATM_BGC">1</value>
+       <value compset="SSP370_ZATM_BGC">1</value>
      </values>
    </entry>
 
@@ -59,6 +66,7 @@
        <value compset="ZATM">17520</value>
        <value compset="SSP245_ZATM">17520</value>
        <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
      </values>
    </entry>
 
@@ -67,6 +75,7 @@
        <value compset="ZATM">17520</value>
        <value compset="SSP245_ZATM">17520</value>
        <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
      </values>
    </entry>
 
