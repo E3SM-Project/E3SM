@@ -1,0 +1,39 @@
+%YAML 1.1
+---
+filename_prefix: scream_output.decadal.6hourlyINST_coarse.h
+iotype: pnetcdf
+Averaging Type: Instant
+Max Snapshots Per File: 4  # one file per day
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+Fields:
+  Physics PG2:
+    Field Names:
+    # 3D fields on model levels
+    - T_mid
+    - qv
+    - RelativeHumidity
+    - U
+    - V
+    - omega
+    - qc
+    - nc
+    - qr
+    - qi
+    - tke
+    - o3_volume_mix_ratio
+    # 2D fields
+    - VapWaterPath
+    - LiqWaterPath
+    - IceWaterPath
+    - surf_radiative_T
+    - ps
+    - qv_2m
+    - T_2m
+    - ocnfrac
+    - landfrac
+output_control:
+  Frequency: 6
+  frequency_units: nhours
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true

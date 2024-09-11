@@ -1714,9 +1714,9 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     </environment_variables>
   </machine>
 
-  <machine MACH="singularity2">
-    <DESC>Singularity container 2.0</DESC>
-    <NODENAME_REGEX>singularity2</NODENAME_REGEX>
+  <machine MACH="ghci-oci">
+    <DESC>OCI-based container 2.0</DESC>
+    <NODENAME_REGEX>ghci-oci</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
