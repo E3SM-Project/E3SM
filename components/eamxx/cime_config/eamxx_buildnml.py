@@ -181,7 +181,8 @@ def perform_consistency_checks(case, xml):
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
-                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
+                    f"restart frequency ({rest_n} steps).\n"
                     " Please, ensure restart happens on a step when rad is ON")
         elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
             if rest_opt in ["nseconds", "nsecond"]:
