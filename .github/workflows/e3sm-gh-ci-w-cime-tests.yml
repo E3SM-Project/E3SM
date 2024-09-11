@@ -23,7 +23,7 @@ jobs:
           - SMS_D_Ld1_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
           - ERS_Ld3_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
     container: 
-      image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.1.0
 
     steps:
       - 
@@ -36,10 +36,6 @@ jobs:
         name: CIME
         working-directory: cime/scripts
         run: |
-          mkdir -p $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
-          wget https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
-          mv p3_lookup_table_1.dat-v4.1.2 $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
-          export USER=test
           ./create_test ${{ matrix.test }} --wait --debug
       - 
         name: Artifacts
