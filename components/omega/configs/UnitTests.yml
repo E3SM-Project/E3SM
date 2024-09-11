@@ -8,7 +8,7 @@ omega:
       TimeStepper: Forward-Backward
       TimeStep: 0000_00:30:00
    Dimension:
-      NVertLevels: 1
+      NVertLevels: 60
    Decomp:
       HaloWidth: 3
       DecompMethod: MetisKWay
