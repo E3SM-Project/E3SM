@@ -1120,6 +1120,7 @@
 
 <!-- AM_eddyProductVariables -->
 <config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="RRSwISC6to18E3r5">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
 <config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>
