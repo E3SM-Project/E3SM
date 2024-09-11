@@ -412,6 +412,7 @@
       <value compset=".+" grid="a%ne256np4">144</value>
       <value compset=".+" grid="a%ne512np4">432</value>
       <value compset=".+" grid="a%ne1024np4">864</value>
+      <value compset=".+" grid="a%ne0np4_CAx32v1">864</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>

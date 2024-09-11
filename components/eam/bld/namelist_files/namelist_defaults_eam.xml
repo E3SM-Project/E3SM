@@ -107,6 +107,7 @@
 <!-- Regionally Refined Initial Conditions (RRM) -->
 <!-- ******************************************* -->
 
+<ncdata dyn="se" hgrid="ne0np4_CAx32v1"                   nlev="128"                >atm/cam/inic/homme/HICCUP.atm_era5.2015-01-01.ne0np4_CAx32v1_highorder.L128.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4x8arm"                     nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_arm30x8_L30_c130424.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4x8arm"                     nlev="26" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
@@ -148,6 +149,7 @@
 <bnd_topo hgrid="ne512np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
 
+<bnd_topo hgrid="ne0np4_CAx32v1" >atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"        >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon" npg="2">atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</bnd_topo>
@@ -723,6 +725,7 @@
 <drydep_srf_file hgrid="ne512np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne512pg2_200212.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne1024pg2_200212.nc</drydep_srf_file>
 
+<drydep_srf_file hgrid="ne0np4_CAx32v1">atm/cam/chem/trop_mam/atmsrf_CAx32v1_pg2_20220517.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" >atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" npg="2" >atm/cam/chem/trop_mam/atmsrf_conusx4v1pg2_20020609.nc</drydep_srf_file>
@@ -1420,7 +1423,7 @@
 
 
 <!-- RRM grids  -->
-
+<se_ne hgrid="ne0np4_CAx32v1"> 0 </se_ne>
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_northamericax4v1"  > 0 </se_ne>
@@ -1430,6 +1433,7 @@
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
 <mesh_file>/dev/null</mesh_file>
+<mesh_file hgrid="ne0np4_CAx32v1" >atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_northamericax4v1"  >atm/cam/inic/homme/northamericax4v1.g</mesh_file>
@@ -1444,6 +1448,7 @@
 
 <tom_sponge_start> 0d0 </tom_sponge_start>
 <nu_top> 2.5e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_CAx32v1"> 1e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne120np4"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne240np4"> 4.3e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne256np4"> 4e4 </nu_top>
@@ -1513,6 +1518,10 @@
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 6  </dt_tracer_factor>
 <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 6  </hypervis_subcycle_q>
 
+<se_tstep            dyn_target="theta-l" hgrid="ne0np4_CAx32v1"> 8.333333333333333d0 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_CAx32v1"> 6 </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_CAx32v1"> 6 </hypervis_subcycle_q>
+
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"      > 3 </hypervis_subcycle_tom>
@@ -1526,7 +1535,6 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"       > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
-
 
 <!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
