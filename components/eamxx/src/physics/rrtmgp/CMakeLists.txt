@@ -127,6 +127,7 @@ yakl_process_target(rrtmgp)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
+find_package(Kokkos REQUIRED)
 target_link_libraries(rrtmgp yakl Kokkos::kokkos)
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
