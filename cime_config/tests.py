@@ -305,6 +305,7 @@ _TESTS = {
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
             "ERS.f09_g16_g.MALISIA",
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
+            "ERS_Ld5.TL319_IcoswISC30E3r5_gis20.MPAS_LISIO_JRA1p5.mpaso-ocn_glc_tf_coupling",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
