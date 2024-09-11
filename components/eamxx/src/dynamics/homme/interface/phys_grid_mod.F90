@@ -325,6 +325,7 @@ contains
   subroutine get_my_phys_data (gids, lat, lon, area, pg_type)
     use homme_context_mod, only: iam
     use shr_const_mod,     only: pi=>SHR_CONST_PI
+    use control_mod,       only: geometry
     !
     ! Input(s)
     !
@@ -336,6 +337,7 @@ contains
     !
     integer :: pgN, load_bal, idof, ndofs
     type(pg_specs_t), pointer :: pgs
+    logical :: is_sphere
 
     ! Possible values for pg_type:
     !   0 : physics grid on GLL nodes
@@ -364,10 +366,15 @@ contains
       ! TODO: when you enable twin columns, you'll have to manually
       !       do the search, since you can't just grab the offset-ed entries
       ndofs = get_num_local_columns (pgN)
+      is_sphere = trim(geometry) /= 'plane'
       do idof=1,ndofs
         gids(idof) = pgs%g_dofs(pgs%g_dofs_offsets(iam+1) + idof)
-        lat(idof)  = pgs%g_lat (pgs%g_dofs_offsets(iam+1) + idof) * 180.0_c_double / pi
-        lon(idof)  = pgs%g_lon (pgs%g_dofs_offsets(iam+1) + idof) * 180.0_c_double / pi
+        lat(idof)  = pgs%g_lat (pgs%g_dofs_offsets(iam+1) + idof)
+        lon(idof)  = pgs%g_lon (pgs%g_dofs_offsets(iam+1) + idof)
+        if (is_sphere) then
+          lat(idof) = lat(idof) * 180.0_c_double / pi
+          lon(idof) = lon(idof) * 180.0_c_double / pi
+        end if
         area(idof) = pgs%g_area(pgs%g_dofs_offsets(iam+1) + idof)
       enddo
 
