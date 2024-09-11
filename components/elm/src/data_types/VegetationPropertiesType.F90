@@ -43,7 +43,7 @@ module VegetationPropertiesType
      real(r8), pointer :: dsladlai      (:) => null()  ! dSLA/dLAI, projected area basis [m^2/gC]
      real(r8), pointer :: leafcn        (:) => null()  ! leaf C:N (gC/gN)
      real(r8), pointer :: flnr          (:) => null()  ! fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
-     real(r8), pointer :: woody         (:) => null()  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
+     real(r8), pointer :: woody         (:) => null()  ! woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
      real(r8), pointer :: lflitcn       (:) => null()  ! leaf litter C:N (gC/gN)
      real(r8), pointer :: frootcn       (:) => null()  ! fine root C:N (gC/gN)
      real(r8), pointer :: livewdcn      (:) => null()  ! live wood (phloem and ray parenchyma) C:N (gC/gN)
