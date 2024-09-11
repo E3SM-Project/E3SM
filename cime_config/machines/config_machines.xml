@@ -3912,7 +3912,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       </modules>
       <modules compiler="intel">
         <command name="load">gcc/8.1.0</command>
-        <command name="load">intel/19.0.5</command>
+        <command name="load">intel/20.0.0</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/19.10</command>
@@ -3921,7 +3921,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="impi" compiler="intel">
-	<command name="load">intelmpi/2019u4</command>
+	<command name="load">intelmpi/2020</command>
       </modules>
       <modules mpilib="impi" compiler="pgi">
 	<command name="load">intelmpi/2019u3</command>
