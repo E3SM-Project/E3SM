@@ -81,26 +81,32 @@ int TimeStepper::init() {
    auto *DefHalo     = Halo::getDefault();
    auto *DefTend     = Tendencies::getDefault();
 
-   // Initialize default options
    TimeInterval TimeStep;
-   TimeStepperType TimeStepperChoice = TimeStepperType::ForwardBackward;
+   TimeStepperType TimeStepperChoice;
 
    // Retrieve TimeStepper options from Config if available
    Config *OmegaConfig = Config::getOmegaConfig();
    Config TimeIntConfig("TimeIntegration");
-   if (OmegaConfig->existsGroup("TimeIntegration")) {
-      Err = OmegaConfig->get(TimeIntConfig);
-      if (TimeIntConfig.existsVar("TimeStep")) {
-         std::string TimeStepStr;
-         Err      = TimeIntConfig.get("TimeStep", TimeStepStr);
-         TimeStep = TimeInterval(TimeStepStr);
-      }
-      if (TimeIntConfig.existsVar("TimeStepper")) {
-         std::string TimeStepperStr;
-         Err               = TimeIntConfig.get("TimeStepper", TimeStepperStr);
-         TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
-      }
+   Err = OmegaConfig->get(TimeIntConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("TimeStepper: TimeIntegration group not found in Config");
+      return Err;
    }
+   std::string TimeStepStr;
+   Err = TimeIntConfig.get("TimeStep", TimeStepStr);
+   if (Err != 0) {
+      LOG_CRITICAL("TimeStepper: TimeStep not found in TimeIntConfig");
+      return Err;
+   }
+   TimeStep = TimeInterval(TimeStepStr);
+
+   std::string TimeStepperStr;
+   Err = TimeIntConfig.get("TimeStepper", TimeStepperStr);
+   if (Err != 0) {
+      LOG_CRITICAL("TimeStepper: TimeStepper not found in TimeIntConfig");
+      return Err;
+   }
+   TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
 
    TimeStepper::DefaultTimeStepper = create(
        "Default", TimeStepperChoice, DefTend, DefAuxState, DefMesh, DefHalo);

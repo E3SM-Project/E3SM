@@ -333,21 +333,29 @@ int Decomp::init(const std::string &MeshFileName) {
 
    int Err = 0; // default successful return code
 
-   // Initialize decomposition options
-   I4 InHaloWidth              = 3;
-   std::string DecompMethodStr = "MetisKWay";
+   I4 InHaloWidth;
+   std::string DecompMethodStr;
 
-   // Retrieve options from Config if possible
+   // Retrieve options from Config
    Config *OmegaConfig = Config::getOmegaConfig();
+
    Config DecompConfig("Decomp");
-   if (OmegaConfig->existsGroup("Decomp")) {
-      Err = OmegaConfig->get(DecompConfig);
-      if (DecompConfig.existsVar("HaloWidth")) {
-         Err = DecompConfig.get("HaloWidth", InHaloWidth);
-      }
-      if (DecompConfig.existsVar("DecompMethod")) {
-         Err = DecompConfig.get("DecompMethod", DecompMethodStr);
-      }
+   Err = OmegaConfig->get(DecompConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: Decomp group not found in Config");
+      return Err;
+   }
+
+   Err = DecompConfig.get("HaloWidth", InHaloWidth);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: HaloWidth not found in Decomp Config");
+      return Err;
+   }
+
+   Err = DecompConfig.get("DecompMethod", DecompMethodStr);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: DecompMethod not found in Decomp Config");
+      return Err;
    }
 
    PartMethod Method = getPartMethodFromStr(DecompMethodStr);
