@@ -36,17 +36,7 @@ int OceanState::init() {
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
    Halo *DefHalo         = Halo::getDefault();
 
-   int NVertLevels = 60;
-
-   // Retrieve NVertLevels from Config if available
-   Config *OmegaConfig = Config::getOmegaConfig();
-   Config DimConfig("Dimension");
-   if (OmegaConfig->existsGroup("Dimension")) {
-      Err = OmegaConfig->get(DimConfig);
-      if (DimConfig.existsVar("NVertLevels")) {
-         Err = DimConfig.get("NVertLevels", NVertLevels);
-      }
-   }
+   int NVertLevels = DefHorzMesh->NVertLevels;
 
    auto *DefTimeStepper = TimeStepper::getDefault();
    if (!DefTimeStepper) {
