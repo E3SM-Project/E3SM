@@ -197,8 +197,6 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
 
    const auto Mesh = HorzMesh::getDefault();
 
-   Config *TendConfig = Config::getOmegaConfig();
-
    // Compute exact result
    Array2DReal ExactThickFluxDiv("ExactThickFluxDiv", Mesh->NCellsOwned,
                                  NVertLevels);
@@ -224,7 +222,7 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
    // Compute numerical result
    Array2DReal NumThickFluxDiv("NumThickFluxDiv", Mesh->NCellsOwned,
                                NVertLevels);
-   ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, TendConfig);
+   ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh);
    parallelFor(
        {Mesh->NCellsOwned, NVertLevels}, KOKKOS_LAMBDA(int ICell, int KLevel) {
           ThickFluxDivOnC(NumThickFluxDiv, ICell, KLevel, OnesEdge,
@@ -260,8 +258,6 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
    TestSetup Setup;
 
    const auto Mesh = HorzMesh::getDefault();
-
-   Config *TendConfig = Config::getOmegaConfig();
 
    // Compute exact result
    Array2DReal ExactPotVortHAdv("ExactPotVortHAdv", Mesh->NEdgesOwned,
@@ -308,7 +304,7 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
    // Compute numerical result
    Array2DReal NumPotVortHAdv("NumPotVortHAdv", Mesh->NEdgesOwned, NVertLevels);
 
-   PotentialVortHAdvOnEdge PotVortHAdvOnE(Mesh, TendConfig);
+   PotentialVortHAdvOnEdge PotVortHAdvOnE(Mesh);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           PotVortHAdvOnE(NumPotVortHAdv, IEdge, KLevel, NormRelVortEdge,
@@ -345,8 +341,6 @@ int testKEGrad(int NVertLevels, Real RTol) {
 
    const auto Mesh = HorzMesh::getDefault();
 
-   Config *TendConfig = Config::getOmegaConfig();
-
    // Compute exact result
    Array2DReal ExactKEGrad("ExactKEGrad", Mesh->NEdgesOwned, NVertLevels);
 
@@ -368,7 +362,7 @@ int testKEGrad(int NVertLevels, Real RTol) {
    // Compute numerical result
    Array2DReal NumKEGrad("NumKEGrad", Mesh->NEdgesOwned, NVertLevels);
 
-   KEGradOnEdge KEGradOnE(Mesh, TendConfig);
+   KEGradOnEdge KEGradOnE(Mesh);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           KEGradOnE(NumKEGrad, IEdge, KLevel, KECell);
@@ -404,8 +398,6 @@ int testSSHGrad(int NVertLevels, Real RTol) {
 
    const auto Mesh = HorzMesh::getDefault();
 
-   Config *TendConfig = Config::getOmegaConfig();
-
    // Compute exact result
    Array2DReal ExactSSHGrad("ExactSSHGrad", Mesh->NEdgesOwned, NVertLevels);
 
@@ -427,7 +419,7 @@ int testSSHGrad(int NVertLevels, Real RTol) {
    // Compute numerical result
    Array2DReal NumSSHGrad("NumSSHGrad", Mesh->NEdgesOwned, NVertLevels);
 
-   SSHGradOnEdge SSHGradOnE(Mesh, TendConfig);
+   SSHGradOnEdge SSHGradOnE(Mesh);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           SSHGradOnE(NumSSHGrad, IEdge, KLevel, SSHCell);
@@ -463,10 +455,18 @@ int testVelDiff(int NVertLevels, Real RTol) {
 
    const auto Mesh = HorzMesh::getDefault();
 
-   Config *TendConfig = Config::getOmegaConfig();
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TendConfig("Tendencies");
+   Err = OmegaConfig->get(TendConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("Tendencies: Tendencies group not found in Config");
+   }
 
-   // TODO: move to Mesh constructor
-   Mesh->setMasks(NVertLevels);
+   VelocityDiffusionOnEdge VelDiffOnE(Mesh);
+   Err = TendConfig.get("ViscDel2", VelDiffOnE.ViscDel2);
+   if (Err != 0) {
+      LOG_CRITICAL("Tendencies: ViscDel2 not found in TendConfig");
+   }
 
    // Compute exact result
    Array2DReal ExactVelDiff("ExactVelDiff", Mesh->NEdgesOwned, NVertLevels);
@@ -495,7 +495,6 @@ int testVelDiff(int NVertLevels, Real RTol) {
    // Compute numerical result
    Array2DReal NumVelDiff("NumVelDiff", Mesh->NEdgesOwned, NVertLevels);
 
-   VelocityDiffusionOnEdge VelDiffOnE(Mesh, TendConfig);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           VelDiffOnE(NumVelDiff, IEdge, KLevel, DivCell, RVortVertex);
@@ -531,10 +530,18 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
 
    const auto Mesh = HorzMesh::getDefault();
 
-   Config *TendConfig = Config::getOmegaConfig();
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TendConfig("Tendencies");
+   Err = OmegaConfig->get(TendConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("Tendencies: Tendencies group not found in Config");
+   }
 
-   // TODO: move to Mesh constructor
-   Mesh->setMasks(NVertLevels);
+   VelocityHyperDiffOnEdge VelHyperDiffOnE(Mesh);
+   Err = TendConfig.get("ViscDel4", VelHyperDiffOnE.ViscDel4);
+   if (Err != 0) {
+      LOG_CRITICAL("Tendencies: ViscDel4 not found in TendConfig");
+   }
 
    // Compute exact result
    Array2DReal ExactVelHyperDiff("ExactVelHyperDiff", Mesh->NEdgesOwned,
@@ -565,7 +572,6 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
    Array2DReal NumVelHyperDiff("NumVelHyperDiff", Mesh->NEdgesOwned,
                                NVertLevels);
 
-   VelocityHyperDiffOnEdge VelHyperDiffOnE(Mesh, TendConfig);
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           VelHyperDiffOnE(NumVelHyperDiff, IEdge, KLevel, DivCell, RVortVertex);
@@ -605,6 +611,14 @@ int initTendTest(const std::string &mesh) {
 
    // Initialize logging
    initLogging(DefEnv);
+
+   // Open config file
+   Config("omega");
+   Err = Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("TendencyTermsTest: Error reading config file");
+      return Err;
+   }
 
    I4 IOErr = IO::init(DefComm);
    if (IOErr != 0) {
