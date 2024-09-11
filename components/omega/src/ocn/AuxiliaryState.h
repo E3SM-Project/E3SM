@@ -1,6 +1,7 @@
 #ifndef OMEGA_AUXSTATE_H
 #define OMEGA_AUXSTATE_H
 
+#include "Config.h"
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
@@ -55,6 +56,9 @@ class AuxiliaryState {
 
    /// Remove all auxiliary states
    static void clear();
+
+   /// Read and set config options
+   int readConfigOptions(Config *OmegaConfig);
 
    /// Compute all auxiliary variables based on an ocean state at a given time
    /// level

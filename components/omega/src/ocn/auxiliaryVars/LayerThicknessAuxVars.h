@@ -17,7 +17,7 @@ class LayerThicknessAuxVars {
    Array2DReal MeanLayerThickEdge;
    Array2DReal SshCell;
 
-   FluxThickEdgeOption FluxThickEdgeChoice = Center;
+   FluxThickEdgeOption FluxThickEdgeChoice;
 
    LayerThicknessAuxVars(const std::string &AuxStateSuffix,
                          const HorzMesh *Mesh, int NVertLevels);
