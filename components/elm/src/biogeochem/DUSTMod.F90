@@ -171,7 +171,7 @@ contains
 
     this%lnd_frc_mbl_patch(begp:endp) = spval
     call hist_addfld1d (fname='LND_FRC_DUST_MBL', units='-',  &
-         avgflag='A', long_name='land fraction for dust mobilization', &
+         avgflag='A', long_name='bare soil fraction for land fraction for dust mobilization', &
          ptr_patch=this%lnd_frc_mbl_patch, default='inactive')
 
   end subroutine InitHistory
