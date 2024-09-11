@@ -55,7 +55,8 @@ def buildnml(case, caseroot, compname):
                           "wQU225EC60to30sp50x36",
                           "wQU225EC30to60E2r2sp50x36",
                           "wQU225EC30to60E2r2sp36x36",
-                          "wQU225EC30to60E2r2sp25x36")
+                          "wQU225EC30to60E2r2sp25x36",
+                          "wQU225Icos30E3r5sp36x36")
     expect((wav_grid+wav_spec) in wav_grid_supported, "Combination of WAV_GRID {} and WAV_SPEC {} is not supported in ww3. Choose from: '{}'".format(wav_grid,wav_spec,wav_grid_supported) )
 
     #--------------------------------------------------------------------
