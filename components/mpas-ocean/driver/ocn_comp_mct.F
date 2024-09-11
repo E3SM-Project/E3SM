@@ -223,6 +223,7 @@ contains
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
+    character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
     ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -876,6 +877,16 @@ contains
                                             ocn_c2_glcshelf=.true.)
     else
        call mpas_log_write('ERROR: unknown land_ice_flux_mode: ' // trim(config_land_ice_flux_mode), MPAS_LOG_CRIT)
+    end if
+
+    call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
+    if ( trim(config_glc_thermal_forcing_coupling_mode) == 'off' ) then
+       call seq_infodata_PutData(infodata, ocn_c2_glctf=.false.)
+    else if ( trim(config_glc_thermal_forcing_coupling_mode) == '2d' ) then
+       call seq_infodata_PutData(infodata, ocn_c2_glctf=.true.)
+    else
+       call mpas_log_write('ERROR: unknown config_glc_thermal_forcing_coupling_mode: ' // &
+               trim(config_glc_thermal_forcing_coupling_mode), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
@@ -2709,6 +2720,7 @@ contains
                        config_use_MacroMoleculesTracers_sea_ice_coupling
 
    character (len=StrKIND), pointer :: config_land_ice_flux_mode
+   character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
    logical :: keepFrazil
 
@@ -2719,6 +2731,8 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
+   call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', &
+                                                config_glc_thermal_forcing_coupling_mode)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
@@ -2754,7 +2768,6 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
      call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
-     call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
 
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
@@ -2773,6 +2786,9 @@ contains
      if (config_remove_ais_ice_runoff) then
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
+     endif
+     if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
      endif
 
      ! BGC fields
@@ -2935,7 +2951,9 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       endif
 
 
        !Fyke: test

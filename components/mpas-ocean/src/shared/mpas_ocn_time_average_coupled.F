@@ -164,15 +164,17 @@ module ocn_time_average_coupled
            !$omp end parallel
         end if
 
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
+        if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
 
-        !$omp parallel
-        !$omp do schedule(runtime)
-        do iCell = 1, nCells
-           avgThermalForcingAtCritDepth(iCell) = 0.0_RKIND
-        end do
-        !$omp end do
-        !$omp end parallel
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgThermalForcingAtCritDepth(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
+           !$omp end parallel
+        endif
 
         !  set up BGC coupling fields if necessary
         if (config_use_ecosysTracers) then
@@ -438,38 +440,40 @@ module ocn_time_average_coupled
 
         end if
 
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
-        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
-        call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+        if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
+           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
+           call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+           call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
 
-        ! find vertical level that is just above the critical depth reference level
-        ! this does not account for depression due to ice shelf cavities or sea ice
-        iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
-        do iLevel = 1, nVertLevels
-           if(refBottomDepth(iLevel) > config_2d_thermal_forcing_depth) then
-              iLevelCritDepth = iLevel
-              exit
-           end if
-        end do
-        !$omp parallel
-        !$omp do schedule(runtime)
-        ! calculate thermal forcing at identified level for each cell
-        do iCell = 1, nCells
-           ! ignore cells that are too shallow
-           if (iLevelCritDepth <= maxLevelCell(iCell)) then
-              ! this uses the level shallower than the reference level.  could interpolate instead
-              ! note: assuming no LandIce cavity, but we may want to support that
-              freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
-                 pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
-              avgThermalForcingAtCritDepth(iCell) = ( avgThermalForcingAtCritDepth(iCell) * nAccumulatedCoupled &
-                 + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
-            end if
-        end do
-        !$omp end do
-        !$omp end parallel
+           ! find vertical level that is just above the critical depth reference level
+           ! this does not account for depression due to ice shelf cavities or sea ice
+           iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
+           do iLevel = 1, nVertLevels
+              if(refBottomDepth(iLevel) > config_2d_thermal_forcing_depth) then
+                 iLevelCritDepth = iLevel
+                 exit
+              end if
+           end do
+           !$omp parallel
+           !$omp do schedule(runtime)
+           ! calculate thermal forcing at identified level for each cell
+           do iCell = 1, nCells
+              ! ignore cells that are too shallow
+              if (iLevelCritDepth <= maxLevelCell(iCell)) then
+                 ! this uses the level shallower than the reference level.  could interpolate instead
+                 ! note: assuming no LandIce cavity, but we may want to support that
+                 freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
+                    pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
+                 avgThermalForcingAtCritDepth(iCell) = ( avgThermalForcingAtCritDepth(iCell) * nAccumulatedCoupled &
+                    + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
+               end if
+           end do
+           !$omp end do
+           !$omp end parallel
+        endif
 
         !  accumulate BGC coupling fields if necessary
         if (config_use_ecosysTracers) then

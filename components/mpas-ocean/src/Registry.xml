@@ -807,6 +807,10 @@
 					description="If true, solid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_glc_thermal_forcing_coupling_mode" type="character" default_value="off"
+					description="If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'."
+					possible_values="'off', '2d'"
+		/>
 		<nml_option name="config_2d_thermal_forcing_depth" type="real" default_value="300" units="m"
 					description="Depth at which to pass 2d thermal forcing to the coupler for use in the GLC component.  Note that mapping files for this field must be created with a mask to exclude ocean grid cells shallower than this value and thus must be regenerated if this value is changed."
 					possible_values="any non-negative value"
