@@ -33,9 +33,7 @@ int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
             Alarm &EndAlarm         ///< [out] alarm to end simulation
 ) {
 
-   // Error codes
-   I4 RetErr = 0;
-   I4 Err    = 0;
+   I4 Err = 0; // Error code
 
    // Init the default machine environment based on input MPI communicator
    MachEnv::init(Comm);
@@ -48,26 +46,26 @@ int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
    Config("omega");
    Err = Config::readAll("omega.yml");
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error reading config file");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error reading config file");
+      return Err;
    }
    Config *OmegaConfig = Config::getOmegaConfig();
 
    // read and save time management options from Config
    Err = initTimeManagement(OmegaCal, StartTime, EndAlarm, OmegaConfig);
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error initializing time management");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error initializing time management");
+      return Err;
    }
 
    // initialize remaining Omega modules
    Err = initOmegaModules(Comm);
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error initializing Omega modules");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error initializing Omega modules");
+      return Err;
    }
 
-   return RetErr;
+   return Err;
 } // end ocnInit
 
 // Read time management options from config
@@ -75,142 +73,149 @@ int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
                        Alarm &EndAlarm, Config *OmegaConfig) {
 
    // error code
-   I4 RetErr = 0;
+   I4 Err = 0;
 
    // create RunInterval and zero length interval for comparison
    TimeInterval RunInterval, ZeroInterval;
 
    // extract variables for time management group
    Config TimeMgmtConfig("TimeManagement");
-   if (OmegaConfig->existsGroup("TimeManagement")) {
-      int Err1 = OmegaConfig->get(TimeMgmtConfig);
-      // check requested calendar is a valid option, return error if not found
-      if (TimeMgmtConfig.existsVar("CalendarType")) {
-         std::string ConfigCalStr;
-         CalendarKind ConfigCalKind = CalendarUnknown;
-         I4 Err1     = TimeMgmtConfig.get("CalendarType", ConfigCalStr);
-         I4 ICalType = 9;
-         for (I4 I = 0; I < NUM_SUPPORTED_CALENDARS; ++I) {
-            if (ConfigCalStr == CalendarKindName[I]) {
-               ICalType      = I;
-               ConfigCalKind = (CalendarKind)(ICalType + 1);
-               break;
-            }
-         }
-         if (ICalType == 9) {
-            LOG_ERROR("ocnInit: Requested Calendar type not found");
-            ++RetErr;
-            return RetErr;
-         }
-         // destroy default Calendar to keep static NumCalendars member
-         // accurate, then construct requested Calendar
-         OmegaCal.~Calendar();
-         OmegaCal = Calendar(ConfigCalStr, ConfigCalKind);
-      }
+   Err = OmegaConfig->get(TimeMgmtConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: TimeManagement group not found in Config");
+      return Err;
+   }
 
-      // check for start time and set if found
-      if (TimeMgmtConfig.existsVar("StartTime")) {
-         std::string StartTimeStr;
-         I4 Err1 = TimeMgmtConfig.get("StartTime", StartTimeStr);
-
-         StartTime = TimeInstant(&OmegaCal, StartTimeStr);
+   // check requested calendar is a valid option, return error if not found
+   std::string ConfigCalStr;
+   Err = TimeMgmtConfig.get("CalendarType", ConfigCalStr);
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: CalendarType not found in TimeMgmtConfig");
+      return Err;
+   }
+   CalendarKind ConfigCalKind = CalendarUnknown;
+   I4 ICalType                = CalendarUnknown;
+   for (I4 I = 0; I < NUM_SUPPORTED_CALENDARS; ++I) {
+      if (ConfigCalStr == CalendarKindName[I]) {
+         ICalType      = I;
+         ConfigCalKind = (CalendarKind)(ICalType + 1);
+         break;
       }
+   }
+   if (ICalType == CalendarUnknown) {
+      LOG_CRITICAL("ocnInit: Requested Calendar type not found");
+      Err = -1;
+      return Err;
+   }
+   // destroy default Calendar to keep static NumCalendars member
+   // accurate, then construct requested Calendar
+   OmegaCal.~Calendar();
+   OmegaCal = Calendar(ConfigCalStr, ConfigCalKind);
 
-      std::string NoneStr("none");
-      // set RunInterval by checking for StopTime and RunDuration in Config,
-      // if both are present and inconsistent, use RunDuration
-      if (TimeMgmtConfig.existsVar("StopTime")) {
-         std::string StopTimeStr;
-         I4 Err1 = TimeMgmtConfig.get("StopTime", StopTimeStr);
-         if (StopTimeStr != NoneStr) {
-            TimeInstant StopTime(&OmegaCal, StopTimeStr);
-            RunInterval = StopTime - StartTime;
-         }
-      }
-      if (TimeMgmtConfig.existsVar("RunDuration")) {
-         std::string RunDurationStr;
-         I4 Err1 = TimeMgmtConfig.get("RunDuration", RunDurationStr);
-         if (RunDurationStr != NoneStr) {
-            TimeInterval IntervalFromStr(RunDurationStr);
-            if (IntervalFromStr != RunInterval) {
-               LOG_WARN("ocnInit: RunDuration and StopTime are inconsistent: "
-                        "using RunDuration");
-               RunInterval = IntervalFromStr;
-            }
-         }
+   // retrieve start time from config
+   std::string StartTimeStr;
+   Err = TimeMgmtConfig.get("StartTime", StartTimeStr);
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: StartTime not found in TimeMgmtConfig");
+      return Err;
+   }
+   StartTime = TimeInstant(&OmegaCal, StartTimeStr);
+
+   std::string NoneStr("none");
+
+   // set RunInterval by checking for StopTime and RunDuration in Config,
+   // if both are present and inconsistent, use RunDuration
+   std::string StopTimeStr;
+   I4 Err1 = TimeMgmtConfig.get("StopTime", StopTimeStr);
+   if (Err1 != 0) {
+      LOG_WARN("ocnInit: StopTime not found in TimeMgmtConfig");
+   } else if (StopTimeStr != NoneStr) {
+      TimeInstant StopTime(&OmegaCal, StopTimeStr);
+      RunInterval = StopTime - StartTime;
+   }
+   std::string RunDurationStr;
+   I4 Err2 = TimeMgmtConfig.get("RunDuration", RunDurationStr);
+   if (Err2 != 0) {
+      LOG_WARN("ocnInit: RunDuration not found in TimeMgmtConfig");
+   } else if (RunDurationStr != NoneStr) {
+      TimeInterval IntervalFromStr(RunDurationStr);
+      if (IntervalFromStr != RunInterval) {
+         LOG_WARN("ocnInit: RunDuration and StopTime are inconsistent: "
+                  "using RunDuration");
+         RunInterval = IntervalFromStr;
       }
    }
 
    // return error if RunInterval set to zero
    if (RunInterval == ZeroInterval) {
-      LOG_ERROR("ocnInit: Simulation run duration set to zero");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Simulation run duration set to zero");
+      Err = -1;
+      return Err;
    }
 
    // set EndAlarm based on length of RunInterval
    TimeInstant EndTime = StartTime + RunInterval;
    EndAlarm            = Alarm("End Alarm", EndTime);
 
-   return RetErr;
+   return Err;
 } // end initTimeManagement
 
 // Call init routines for remaining Omega modules
 int initOmegaModules(MPI_Comm Comm) {
 
-   // error codes
-   I4 RetErr = 0;
-   I4 Err    = 0;
+   // error code
+   I4 Err = 0;
 
    // initialize all necessary Omega modules
    Err = IO::init(Comm);
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error initializing parallel IO");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error initializing parallel IO");
+      return Err;
    }
 
    Err = Decomp::init();
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error initializing default decomposition");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error initializing default decomposition");
+      return Err;
    }
 
    Err = Halo::init();
    if (Err != 0) {
-      LOG_ERROR("ocnInit: Error initializing default halo");
-      ++RetErr;
+      LOG_CRITICAL("ocnInit: Error initializing default halo");
+      return Err;
    }
 
    Err = HorzMesh::init();
    if (Err != 0) {
-      ++RetErr;
-      LOG_ERROR("ocnInit: Error initializing default mesh");
+      LOG_CRITICAL("ocnInit: Error initializing default mesh");
+      return Err;
    }
 
    Err = AuxiliaryState::init();
    if (Err != 0) {
-      ++RetErr;
-      LOG_ERROR("ocnInit: Error initializing default aux state");
+      LOG_CRITICAL("ocnInit: Error initializing default aux state");
+      return Err;
    }
 
    Err = Tendencies::init();
    if (Err != 0) {
-      ++RetErr;
-      LOG_ERROR("ocnInit: Error initializing default tendencies");
+      LOG_CRITICAL("ocnInit: Error initializing default tendencies");
+      return Err;
    }
 
    Err = TimeStepper::init();
    if (Err != 0) {
-      ++RetErr;
-      LOG_ERROR("ocnInit: Error initializing default time stepper");
+      LOG_CRITICAL("ocnInit: Error initializing default time stepper");
+      return Err;
    }
 
    Err = OceanState::init();
    if (Err != 0) {
-      ++RetErr;
-      LOG_ERROR("ocnInit: Error initializing default state");
+      LOG_CRITICAL("ocnInit: Error initializing default state");
+      return Err;
    }
 
-   return RetErr;
+   return Err;
 } // end initOmegaModules
 
 } // end namespace OMEGA
