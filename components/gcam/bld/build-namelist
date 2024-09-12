@@ -357,6 +357,14 @@ add_default($nl, 'gdp_gcam_file');
 add_default($nl, 'co2_gcam_file');
 add_default($nl, 'surface_co2_downscaling_method');
 
+# future (>= 2015) land conversion assumptions
+add_default($nl, 'crop_addtreeonly');
+add_default($nl, 'crop_setherbfracrem');
+add_default($nl, 'crop_setavailtreefracrem');
+add_default($nl, 'pasture_addtreeonly');
+add_default($nl, 'pasture_setherbfracrem');
+add_default($nl, 'pasture_setavailtreefracrem');
+
 # name of dynamic landuse timeseries file
 add_default($nl, 'fdyndat_ehc');
 
