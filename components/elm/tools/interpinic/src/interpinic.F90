@@ -151,6 +151,7 @@ contains
     ! if ( ncformat /= NF_FORMAT_64BIT )then
     ! write (6,*) 'error: output file is NOT in NetCDF large-file format!'
     ! stop
+    ! 20240822 csz--
     if ( ncformat == NF_FORMAT_CLASSIC )then
        write (6,*) 'info: output file is NF_FORMAT_CLASSIC'
     else if ( ncformat == NF_FORMAT_64BIT_OFFSET )then
@@ -226,13 +227,26 @@ contains
     ret = nf90_inq_dimid(ncidi, "month", dimidmon)
     if (ret == NF90_NOERR) then
        call check_ret (nf90_inquire_dimension(ncidi, dimidmon, len=nlevmon))
-       call check_ret (nf90_inq_dimid(ncido, "month", dimid ))
-       call check_ret (nf90_inquire_dimension(ncido, dimid, len=dimlen))
-       if (dimlen/=nlevmon) then
-          write (6,*) 'error: input and output nlevmon values disagree'
-          write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
-          stop
+       ! 20240912 csz++
+       ! Many restart files have "month" dimension in input dataset
+       ! It is only necessary that the output dataset contains "month" dimension
+       ! when a variable in the input dataset contains the "month" dimension
+       ! Otherwise, the "month" dimension will never be used
+       ! Warn rather than die when input has "month" and output does not
+       !call check_ret (nf90_inq_dimid(ncido, "month", dimid ))
+       ret = nf90_inq_dimid(ncido, "month", dimid )
+       if ( ret == nf_ebaddim ) then
+          write (6,*) 'warning: input has "month" dimension and output does not'
+          write (6,*) 'warning: if input variables use "month" dimension then interpolation will fail'
+       else
+          call check_ret (nf90_inquire_dimension(ncido, dimid, len=dimlen))
+          if (dimlen/=nlevmon) then
+             write (6,*) 'error: input and output nlevmon values disagree'
+             write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
+             stop
+          end if
        end if
+       ! 20240912 csz--
     else
        write (6,*) 'month dimension does NOT exist on the input dataset'
        dimidmon = -9999
