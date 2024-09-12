@@ -91,8 +91,8 @@ TEST_CASE("output_restart","io")
                  const util::TimeStamp& run_t0,
                  const int nsteps)
   {
-    OutputManager output_manager;
-    output_manager.setup(comm,output_params,fm,gm,run_t0,case_t0,false);
+    OutputManager output_manager(comm, output_params, run_t0, case_t0, false);
+    output_manager.setup(fm,gm);
 
     // We advance the fields, by adding dt to each entry of the fields at each time step
     // The output restart data is written every 5 time steps, while the output freq is 10.
@@ -131,7 +131,7 @@ TEST_CASE("output_restart","io")
     output_params.set<std::string>("filename_prefix","monolithic");
     output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
     run(fm_mono,t0,t0,20);
-    
+
     // 2. Run for 15 days on fm0, write restart every 5 steps
     auto fm_rest = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix","restarted");
@@ -150,7 +150,7 @@ TEST_CASE("output_restart","io")
   }
   // Finalize everything
   scorpio::finalize_subsystem();
-} 
+}
 
 /*=============================================================================================*/
 std::shared_ptr<FieldManager>

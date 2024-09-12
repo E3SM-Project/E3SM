@@ -677,56 +677,42 @@ void AtmosphereDriver::create_fields()
   m_atm_logger->info("[EAMxx] create_fields ... done!");
 }
 
-void AtmosphereDriver::initialize_output_managers () {
-  m_atm_logger->info("[EAMxx] initialize_output_managers ...");
+void AtmosphereDriver::create_output_managers () {
+  m_atm_logger->info("[EAMxx] create_output_managers ...");
   start_timer("EAMxx::init");
-  start_timer("EAMxx::initialize_output_managers");
+  start_timer("EAMxx::create_output_managers");
 
-  check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
+  check_ad_status (s_comm_set | s_params_set | s_ts_inited);
 
   auto& io_params = m_atm_params.sublist("Scorpio");
+
+  ekat::ParameterList checkpoint_params;
+  checkpoint_params.set("frequency_units",std::string("never"));
+  checkpoint_params.set("Frequency",-1);
 
   // IMPORTANT: create model restart OutputManager first! This OM will be in charge
   // of creating rpointer.atm, while other OM's will simply append to it.
   // If this assumption is not verified, we must always append to rpointer, which
   // can make the rpointer file a bit confusing.
-
-  // Check for model restart output
-  ekat::ParameterList checkpoint_params;
-  checkpoint_params.set("frequency_units",std::string("never"));
-  checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
-    auto restart_pl = io_params.sublist("model_restart");
-    restart_pl.set<std::string>("Averaging Type","Instant");
-    restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
-    auto& om = m_output_managers.emplace_back();
-    if (fvphyshack) {
-      // Don't save CGLL fields from ICs to the restart file.
-      std::map<std::string,field_mgr_ptr> fms;
-      for (auto& it : m_field_mgrs) {
-        if (it.first == "Physics GLL") continue;
-        fms[it.first] = it.second;
-      }
-      om.set_logger(m_atm_logger);
-      om.setup(m_atm_comm,restart_pl,         fms,m_grids_manager,m_run_t0,m_case_t0,true);
-    } else {
-      om.set_logger(m_atm_logger);
-      om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
-    }
-    om.set_logger(m_atm_logger);
-    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,it.second);
-    }
+    // Create model restart manager
+    auto params = io_params.sublist("model_restart");
+    params.set<std::string>("Averaging Type","Instant");
+    params.sublist("provenance") = m_atm_params.sublist("provenance");
+    m_output_managers.emplace_back(m_atm_comm,
+                                   params,
+                                   m_run_t0,
+                                   m_case_t0,
+                                   /*is_model_restart_output*/ true);
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
-    checkpoint_params.set<std::string>("frequency_units",restart_pl.sublist("output_control").get<std::string>("frequency_units"));
-    checkpoint_params.set("Frequency",restart_pl.sublist("output_control").get<int>("Frequency"));
+    checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
+    checkpoint_params.set("Frequency",params.sublist("output_control").get<int>("Frequency"));
   }
 
-  // Build one manager per output yaml file
+  // Create one output manager per output yaml file
   using vos_t = std::vector<std::string>;
   const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
-  int om_tally = 0;
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
@@ -737,15 +723,64 @@ void AtmosphereDriver::initialize_output_managers () {
 
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {
-      params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
-      om_tally++;
+      params.set<std::string>("filename_prefix",m_casename+".scream.h");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
-    // Add a new output manager
-    m_output_managers.emplace_back();
-    auto& om = m_output_managers.back();
+
+    m_output_managers.emplace_back(m_atm_comm,
+                                   params,
+                                   m_run_t0,
+                                   m_case_t0,
+                                   /*is_model_restart_output*/ false);
+  }
+
+  m_ad_status |= s_output_created;
+
+  stop_timer("EAMxx::create_output_managers");
+  stop_timer("EAMxx::init");
+  m_atm_logger->info("[EAMxx] create_output_managers ... done!");
+}
+
+void AtmosphereDriver::initialize_output_managers () {
+  m_atm_logger->info("[EAMxx] initialize_output_managers ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::initialize_output_managers");
+
+  check_ad_status (s_output_created | s_grids_created | s_fields_created);
+
+  // Early return if no output managers exist
+  if (m_output_managers.empty()) return;
+
+  // Check for model restart output manager and setup if it exists.
+  // IMPORTANT: the restart output manager must be the first in the list.
+  if (m_output_managers.front().is_restart()) {
+    auto& om = m_output_managers.front();
+    if (fvphyshack) {
+      // Don't save CGLL fields from ICs to the restart file.
+      std::map<std::string,field_mgr_ptr> fms;
+      for (auto& it : m_field_mgrs) {
+        if (it.first == "Physics GLL") continue;
+        fms[it.first] = it.second;
+      }
+      om.set_logger(m_atm_logger);
+      om.setup(fms, m_grids_manager);
+    } else {
+      om.set_logger(m_atm_logger);
+      om.setup(m_field_mgrs,m_grids_manager);
+    }
     om.set_logger(m_atm_logger);
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
+    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+      om.add_global(it.first,it.second);
+    }
+  }
+
+  // Setup output managers
+  for (auto& om : m_output_managers) {
+    // We do not need to setup any restart output manager
+    if (om.is_restart()) continue;
+
+    om.set_logger(m_atm_logger);
+    om.setup(m_field_mgrs,m_grids_manager);
   }
 
   m_ad_status |= s_output_inited;
@@ -1573,6 +1608,8 @@ initialize (const ekat::Comm& atm_comm,
   init_scorpio ();
 
   init_time_stamps (run_t0, case_t0);
+
+  create_output_managers ();
 
   create_atm_processes ();
 

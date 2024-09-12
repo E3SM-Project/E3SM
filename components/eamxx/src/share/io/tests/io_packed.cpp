@@ -62,7 +62,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   auto my_pdf = [&](std::mt19937_64& engine) -> Real {
     std::uniform_int_distribution<int> pdf (0,100);
     Real v = pdf(engine);
@@ -79,7 +79,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
@@ -122,8 +122,8 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
-  OutputManager om;
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  OutputManager om(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Run output manager
   om.init_timestep(t0,0);

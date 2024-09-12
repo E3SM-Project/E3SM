@@ -87,7 +87,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   auto my_pdf = [&](std::mt19937_64& engine) -> Real {
     std::uniform_int_distribution<int> pdf (0,100);
     Real v = pdf(engine);
@@ -105,7 +105,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   int count=0;
   using stratts_t = std::map<std::string,std::string>;
@@ -162,14 +162,16 @@ void write (const std::string& avg_type, const std::string& freq_units,
   }
   om_pl.set("Max Snapshots Per File", max_snaps);
 
-  // Create Output manager
-  OutputManager om;
-
   // Attempt to use invalid fp precision string
-  om_pl.set("Floating Point Precision",std::string("triple"));
-  REQUIRE_THROWS (om.setup(comm,om_pl,fm,gm,t0,t0,false));
+  {
+    om_pl.set("Floating Point Precision",std::string("triple"));
+    OutputManager om(comm,om_pl,t0,false);
+    REQUIRE_THROWS (om.setup(fm,gm));
+  }
+
   om_pl.set("Floating Point Precision",std::string("single"));
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  OutputManager om(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;

@@ -68,8 +68,8 @@ TEST_CASE("se_grid_io")
   ctl_pl.set("Frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
-  OutputManager om;
-  om.setup(io_comm,params,fm0,gm,t0,t0,false);
+  OutputManager om(io_comm,params,t0,false);
+  om.setup(fm0,gm);
   om.init_timestep(t0,dt);
   om.run(t0+dt);
   om.finalize();
@@ -94,7 +94,7 @@ TEST_CASE("se_grid_io")
   }
   ins_input.finalize();
 
-  // All Done 
+  // All Done
   scorpio::finalize_subsystem();
 }
 

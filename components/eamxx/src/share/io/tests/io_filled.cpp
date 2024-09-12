@@ -93,7 +93,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
@@ -140,8 +140,8 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
-  OutputManager om;
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  OutputManager om(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
@@ -207,13 +207,13 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1
-  //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step. 
+  //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step.
   //                        we add + 1 more in cases where (N%2=0) because that means the first snap was filled.
   //  avg=AVERAGE: output = a + M+1 = a + M*(M+1)/M
   // The last one comes from
   //   a + 2*(1 + 2 +..+M)/M =
   //   a + 2*sum(i)/M = a + 2*(M(M+1)/2)/M,
-  //         where M = freq/2 + ( N%2=0 ? 0 : 1 ), 
+  //         where M = freq/2 + ( N%2=0 ? 0 : 1 ),
   //               a = floor(N/freq)*freq + ( N%2=0 ? 0 : -1)
   for (int n=0; n<num_writes; ++n) {
     reader.read_variables(n);

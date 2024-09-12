@@ -67,7 +67,14 @@ public:
   using globals_map_t = std::map<std::string,ekat::any>;
 
   // Constructor(s) & Destructor
-  OutputManager () = default;
+  OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+                 const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
+                 const bool is_model_restart_output);
+  OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+                 const util::TimeStamp& run_t0,
+                 const bool is_model_restart_output)
+    : OutputManager(io_comm, params, run_t0, run_t0, is_model_restart_output) {}
+
   virtual ~OutputManager ();
 
   // Set up the manager, creating all output streams. Inputs:
@@ -79,34 +86,11 @@ public:
   //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
   //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
   //  - is_model_restart_output: whether this output stream is to write a model restart file
-  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const std::shared_ptr<fm_type>& field_mgr,
-              const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& run_t0,
-              const util::TimeStamp& case_t0,
-              const bool is_model_restart_output);
-  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const std::shared_ptr<fm_type>& field_mgr,
-              const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& run_t0,
-              const bool is_model_restart_output) {
-    setup (io_comm,params,field_mgr,grids_mgr,run_t0,run_t0,is_model_restart_output);
-  }
+  void setup (const std::shared_ptr<fm_type>& field_mgr,
+              const std::shared_ptr<const gm_type>& grids_mgr);
 
-  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-              const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& run_t0,
-              const util::TimeStamp& case_t0,
-              const bool is_model_restart_output);
-
-  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-              const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& run_t0,
-              const bool is_model_restart_output) {
-    setup (io_comm,params,field_mgrs,grids_mgr,run_t0,run_t0,is_model_restart_output);
-  }
+  void setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
+              const std::shared_ptr<const gm_type>& grids_mgr);
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
@@ -119,6 +103,8 @@ public:
 
   long long res_dep_memory_footprint () const;
 
+  bool is_restart () const { return m_is_model_restart_output; }
+
   // For debug and testing purposes
   const IOControl&   output_control    () const { return m_output_control;    }
   const IOFileSpecs& output_file_specs () const { return m_output_file_specs; }
@@ -129,9 +115,8 @@ protected:
 
   void set_file_header(const IOFileSpecs& file_specs);
 
-  // Craft the restart parameter list
-  void set_params (const ekat::ParameterList& params,
-                   const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
+  // Craft the restart parameter list from the parameters given at construction
+  void set_params (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
   void setup_file (      IOFileSpecs& filespecs,
                    const IOControl& control);
