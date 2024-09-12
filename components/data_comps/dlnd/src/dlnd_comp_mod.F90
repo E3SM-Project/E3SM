@@ -105,10 +105,13 @@ CONTAINS
 
     ! !DESCRIPTION: initialize dlnd model
 #ifdef HAVE_MOAB
-       use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+       use iMOAB, only: iMOAB_DefineTagStorage, &
                         iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                         iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
-                        iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo, iMOAB_WriteMesh
+                        iMOAB_UpdateMeshInfo
+#ifdef MOABDEBUG
+       use iMOAB, only: iMOAB_WriteMesh
+#endif
 #endif
     implicit none
 
