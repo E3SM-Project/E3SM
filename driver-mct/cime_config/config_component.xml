@@ -1518,6 +1518,23 @@
     <desc>atm2wav state mapping file decomp type</desc>
   </entry>
 
+  <entry id="WAV2ATM_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2atm state mapping file</desc>
+  </entry>
+
+  <entry id="WAV2ATM_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2atm state mapping file decomp type</desc>
+  </entry>
+
   <entry id="OCN2ATM_FMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -2000,6 +2017,23 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>wav2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="WAV2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="WAV2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ocn flux mapping file decomp type</desc>
   </entry>
 
   <entry id="IAC2ATM_FMAPNAME">
