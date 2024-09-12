@@ -63,7 +63,7 @@ contains
     use elm_varpar                , only: update_pft_array_bounds
     use elm_varpar                , only: surfpft_lb, surfpft_ub
     use elm_varcon                , only: elm_varcon_init
-    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec, max_polygon
+    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec, max_polygon, max_non_poly_lunit
     use column_varcon             , only: col_itype_to_icemec_class
     use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
@@ -267,7 +267,11 @@ contains
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
-    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
+    if (use_polygonal_tundra) then
+      allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           ))
+    else
+      allocate (wt_lunit     (begg:endg,1:max_topounits, max_non_poly_lunit  ))
+    end if
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
     !allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
     !allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))

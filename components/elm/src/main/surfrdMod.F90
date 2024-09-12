@@ -1131,7 +1131,8 @@ contains
       wt_polygon(begg:endg,1:max_topounits,ilowcenpoly) = arrayl(begg:endg,1:max_topounits)
     else
       wt_polygon(begg:endg,1:max_topounits,ilowcenpoly:ihighcenpoly) = 0._r8
-      wt_lunit(begg:endg,1:max_topounits,istlowcenpoly:isthighcenpoly) = 0._r8
+      ! this shouldn't be necessary any more, as istolowcenpoly:isthighcenpoly
+     ! wt_lunit(begg:endg,1:max_topounits,istlowcenpoly:isthighcenpoly) = 0._r8
     endif
 
     ! add two other types
