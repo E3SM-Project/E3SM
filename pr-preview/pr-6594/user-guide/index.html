@@ -2120,7 +2120,7 @@ is available.</p>
 <h2 id="supported-coupled-compsets">Supported Coupled Compsets</h2>
 <p>A <em>fully coupled</em> compset is one which has active components for at least the atmosphere, ocean, land surface, ocean and
 sea-ice all interacting.  Each compset is associated with a specific forcing condition.
-Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  <code>water cycle change and impacts</code>, <code>human-earth system feedbacks</code>, and <code>polar processes, sea-level rise and coastal impacts</code>. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for <code>water cycle change and impacts</code> simulation campaign.
+Coupled compsets in E3SM are developed  for three science-driven simulation campaigns:  <strong>water cycle change and impacts</strong>, <strong>human-earth system feedbacks</strong>, and <strong>polar processes, sea-level rise and coastal impacts</strong>. The standard coupled configurations -- which consist of prognostic atmosphere, land, river, ocean and sea-ice components -- form the base physical coupled system and are mainly designed for <code>water cycle change and impacts</code> simulation campaign.
 Below list the standard configuration compsets supported in the current version of E3SM:</p>
 <table>
 <thead>
@@ -2162,8 +2162,160 @@ Below list the standard configuration compsets supported in the current version 
 <td style="text-align: left;"><code>WCYCLSSP585</code></td>
 <td style="text-align: left;">Standard configuration with prescribed SSP-585 forcings</td>
 </tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><strong>Compsets for single-forcings simulations of the historical period (1850-2014)</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-GHG</code></td>
+<td style="text-align: left;">Greenhouse gases only configuration (<code>GHGs</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-aer</code></td>
+<td style="text-align: left;">Anthropogenic aerosols and precursors only configuration (<code>aer</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-xGHG-xaer</code></td>
+<td style="text-align: left;">All forcings except GHGs and aer (<code>solar irradiance, stratospheric ozone and volcanic emissions, land use land cover</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-xaer</code></td>
+<td style="text-align: left;">All forcings except aer (<code>GHGs, solar irradiance, stratospheric ozone and volcanic emissions, land use land cover</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-nat</code></td>
+<td style="text-align: left;">Natural-only configuration (<code>solar irradiance, stratospheric volcanic emissions, land use land cover</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-ozone</code></td>
+<td style="text-align: left;">Stratospheric ozone only configuration</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-lulc</code></td>
+<td style="text-align: left;">Land use land cover only configuration</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-volc</code></td>
+<td style="text-align: left;">Stratospheric volcanic emissions only configuration</td>
+</tr>
 </tbody>
 </table>
+<p>The table below specifies which forcing category is fixed at 1850 conditions and which are allowed to vary over the historical period
+for each of the historical ("20TR") compsets including the single-forcing compsets.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Compset alias</th>
+<th style="text-align: center;">GHGs</th>
+<th style="text-align: center;">Aerosol &amp; precursors</th>
+<th style="text-align: center;">Oxidants</th>
+<th style="text-align: center;">Ozone (CI &amp; Linoz)</th>
+<th style="text-align: center;">Volcano</th>
+<th style="text-align: center;">Solar</th>
+<th style="text-align: center;">Land Use &amp; ndep/popdensa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR</code></td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-GHG</code></td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-aer</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-xGHG-xaer</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-xaer</code></td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-nat</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-ozone</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-lulc</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WCYCL20TR-volc</code></td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">varying</td>
+<td style="text-align: center;">1850</td>
+<td style="text-align: center;">1850</td>
+</tr>
+</tbody>
+</table>
+<!-- markdownlint-disable-next-line MD033 -->
+<ul>
+<li><sub> <em>Volcano</em> refers to stratospheric volcanic SO2 emissions; <em>1850</em> for <em>Volcano</em> refers to background (average) stratospheric volcanic emissions used in pre-industrial control experiments</sub></li>
+</ul>
+<!-- markdownlint-disable-next-line MD033 -->
+<ul>
+<li><sub> <em>Oxidants</em> always follow <em>Aerosol &amp; precursors</em> for fixed or varying.</sub></li>
+</ul>
 <p>The compsets for the other two science simulation campaigns are being finalized, with additional components and/or features.
 The compset naming follows the same convention, e.g., <code>CRYO1850</code> and <code>CRYO1850-4xCO2</code> are with prognostic ice-shelf melt fluxes for the <code>polar processes</code> simulation campaign.</p>
 <p>Compsets are also available for standalone component model configurations, See the User Guides for the components for more information.</p>
