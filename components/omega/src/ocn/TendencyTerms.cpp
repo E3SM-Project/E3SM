@@ -99,57 +99,58 @@ int Tendencies::readTendConfig(Config *TendConfig ///< [in] Tendencies subconfig
 ) {
    int Err = 0;
 
-   Err = TendConfig->get("ThicknessFluxTendencyEnable",
-                         this->ThicknessFluxDiv.Enabled);
-   if (Err != 0) {
+   I4 TendGroupErr = TendConfig->get("ThicknessFluxTendencyEnable",
+                                     this->ThicknessFluxDiv.Enabled);
+   if (TendGroupErr != 0) {
       LOG_CRITICAL("Tendencies: ThicknessFluxTendencyEnable not found in "
                    "TendConfig");
-      return Err;
+      return TendGroupErr;
    }
 
-   Err = TendConfig->get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
-   if (Err != 0) {
+   I4 PotVortErr = TendConfig->get("PVTendencyEnable",
+                                   this->PotientialVortHAdv.Enabled);
+   if (PotVortErr != 0) {
       LOG_CRITICAL("Tendencies: PVTendencyEnable not found in TendConfig");
-      return Err;
+      return PotVortErr;
    }
 
-   Err = TendConfig->get("KETendencyEnable", this->KEGrad.Enabled);
-   if (Err != 0) {
+   I4 KEGradErr = TendConfig->get("KETendencyEnable", this->KEGrad.Enabled);
+   if (KEGradErr != 0) {
       LOG_CRITICAL("Tendencies: KETendencyEnable not found in TendConfig");
-      return Err;
+      return KEGradErr;
    }
 
-   Err = TendConfig->get("SSHTendencyEnable", this->SSHGrad.Enabled);
-   if (Err != 0) {
+   I4 SSHGradErr = TendConfig->get("SSHTendencyEnable", this->SSHGrad.Enabled);
+   if (SSHGradErr != 0) {
       LOG_CRITICAL("Tendencies: SSHTendencyEnable not found in TendConfig");
-      return Err;
+      return SSHGradErr;
    }
 
-   Err = TendConfig->get("VelDiffTendencyEnable",
-                         this->VelocityDiffusion.Enabled);
-   if (Err != 0) {
+   I4 VelDiffErr = TendConfig->get("VelDiffTendencyEnable",
+                                   this->VelocityDiffusion.Enabled);
+   if (VelDiffErr != 0) {
       LOG_CRITICAL("Tendencies: VelDiffTendencyEnable not found in TendConfig");
-      return Err;
+      return VelDiffErr;
    }
 
-   I4 Err1 = TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
-   if (Err1 != 0 && this->VelocityDiffusion.Enabled) {
+   I4 ViscDel2 = TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
+   if (ViscDel2 != 0 && this->VelocityDiffusion.Enabled) {
       LOG_CRITICAL("Tendencies: ViscDel2 not found in TendConfig");
-      return Err1;
+      return ViscDel2;
    }
 
-   Err = TendConfig->get("VelHyperDiffTendencyEnable",
-                         this->VelocityHyperDiff.Enabled);
-   if (Err != 0) {
+   I4 VelHyperErr = TendConfig->get("VelHyperDiffTendencyEnable",
+                                    this->VelocityHyperDiff.Enabled);
+   if (VelHyperErr != 0) {
       LOG_CRITICAL("Tendencies: VelHyperDiffTendencyEnable not found in "
                    "TendConfig");
-      return Err;
+      return VelHyperErr;
    }
 
-   I4 Err2 = TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
-   if (Err2 != 0 && this->VelocityHyperDiff.Enabled) {
+   I4 ViscDel4 = TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
+   if (ViscDel4 != 0 && this->VelocityHyperDiff.Enabled) {
       LOG_CRITICAL("Tendencies: ViscDel4 not found in TendConfig");
-      return Err2;
+      return ViscDel4;
    }
 
    return Err;

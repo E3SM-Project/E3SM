@@ -23,8 +23,8 @@
 int main(int argc, char *argv[]) {
 
    OMEGA::I4 ErrAll;
-   OMEGA::I4 Err1;
-   OMEGA::I4 Err2;
+   OMEGA::I4 ErrCurr;
+   OMEGA::I4 ErrFinalize;
 
    MPI_Init(&argc, &argv); // initialize MPI
    Kokkos::initialize();   // initialize Kokkos
@@ -34,30 +34,30 @@ int main(int argc, char *argv[]) {
    OMEGA::TimeInstant CurrTime;
    OMEGA::Alarm EndAlarm;
 
-   Err1 = OMEGA::ocnInit(MPI_COMM_WORLD, OmegaCal, CurrTime, EndAlarm);
-   if (Err1 == 0) {
+   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD, OmegaCal, CurrTime, EndAlarm);
+   if (ErrCurr == 0) {
       LOG_INFO("DriverTest: Omega initialize PASS");
    } else {
       LOG_INFO("DriverTest: Omega initialize FAIL");
    }
 
-   if (Err1 == 0) {
-      Err1 = OMEGA::ocnRun(CurrTime, EndAlarm);
+   if (ErrCurr == 0) {
+      ErrCurr = OMEGA::ocnRun(CurrTime, EndAlarm);
    }
-   if (Err1 == 0) {
+   if (ErrCurr == 0) {
       LOG_INFO("DriverTest: Omega model run PASS");
    } else {
       LOG_INFO("DriverTest: Omega model run FAIL");
    }
 
-   Err2 = OMEGA::ocnFinalize(CurrTime);
-   if (Err2 == 0) {
+   ErrFinalize = OMEGA::ocnFinalize(CurrTime);
+   if (ErrFinalize == 0) {
       LOG_INFO("DriverTest: Omega finalize PASS");
    } else {
       LOG_INFO("DriverTest: Omega finalize FAIL");
    }
 
-   ErrAll = abs(Err1) + abs(Err2);
+   ErrAll = abs(ErrCurr) + abs(ErrFinalize);
    if (ErrAll == 0) {
       LOG_INFO("DriverTest: Successful completion");
    }
