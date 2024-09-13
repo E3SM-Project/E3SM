@@ -107,8 +107,8 @@ int Tendencies::readTendConfig(Config *TendConfig ///< [in] Tendencies subconfig
       return TendGroupErr;
    }
 
-   I4 PotVortErr = TendConfig->get("PVTendencyEnable",
-                                   this->PotientialVortHAdv.Enabled);
+   I4 PotVortErr = 
+       TendConfig->get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
    if (PotVortErr != 0) {
       LOG_CRITICAL("Tendencies: PVTendencyEnable not found in TendConfig");
       return PotVortErr;
