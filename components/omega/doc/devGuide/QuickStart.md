@@ -149,7 +149,8 @@ ln -sf  planar_test_mesh.nc test/OmegaPlanarMesh.nc
 
 ### Running CTests
 
-Omega includes several unit tests that run through CTest.  These need to be
+Omega includes several unit tests that run through CTest. Several tests require options read from a YAML configuration file. Before running the tests, copy
+the `UnitTest.yml` file from the `configs` directory in the Omega repo into the `test` directory, and rename it `omega.yml`. The unit tests need to be
 run on a compute node.
 
 To run the tests:

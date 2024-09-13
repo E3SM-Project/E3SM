@@ -14,7 +14,7 @@ are developed and as Omega is integrated with E3SM.
 ### ocnInit
 
 The `ocnInit` method initializes everything needed to run the Omega ocean model,
-and has the following interace:
+and has the following interface:
 ```c++
 int ocnInit(MPI_Comm Comm, Calendar &OmegaCal, TimeInstant &StartTime, Alarm &EndAlarm);
 ```
