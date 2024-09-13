@@ -63,7 +63,7 @@ int initFieldTest() {
    }
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("FieldTest: Error reading config file");

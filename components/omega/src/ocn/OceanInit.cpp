@@ -43,7 +43,7 @@ int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
    initLogging(DefEnv);
 
    // Read config file into Config object
-   Config("omega");
+   Config("Omega");
    Err = Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: Error reading config file");

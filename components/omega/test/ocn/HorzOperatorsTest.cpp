@@ -371,7 +371,7 @@ int initOperatorsTest(const std::string &MeshFile) {
    initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("OperatorsTest: Error reading config file");

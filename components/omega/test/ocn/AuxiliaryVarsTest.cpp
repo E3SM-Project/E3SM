@@ -634,7 +634,7 @@ int initAuxVarsTest(const std::string &mesh) {
    initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("AuxVarsTest: Error reading config file");

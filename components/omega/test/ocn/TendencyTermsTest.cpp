@@ -613,7 +613,7 @@ int initTendTest(const std::string &mesh) {
    initLogging(DefEnv);
 
    // Open config file
-   Config("omega");
+   Config("Omega");
    Err = Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("TendencyTermsTest: Error reading config file");

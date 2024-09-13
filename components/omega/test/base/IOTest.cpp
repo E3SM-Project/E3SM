@@ -38,7 +38,7 @@ int initIOTest() {
    OMEGA::initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("IOTest: Error reading config file");

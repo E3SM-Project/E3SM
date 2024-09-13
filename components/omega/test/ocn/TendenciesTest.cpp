@@ -77,7 +77,7 @@ int initTendenciesTest(const std::string &mesh) {
    initLogging(DefEnv);
 
    // Open config file
-   Config("omega");
+   Config("Omega");
    Err = Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("TendenciesTest: Error reading config file");

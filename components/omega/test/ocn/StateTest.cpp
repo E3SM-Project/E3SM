@@ -44,7 +44,7 @@ int initStateTest() {
    OMEGA::initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("State: Error reading config file");

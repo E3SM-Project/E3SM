@@ -111,7 +111,7 @@ int initHaloTest() {
    OMEGA::initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    IErr = OMEGA::Config::readAll("omega.yml");
    if (IErr != 0) {
       LOG_CRITICAL("HaloTest: Error reading config file");

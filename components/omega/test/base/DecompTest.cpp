@@ -39,7 +39,7 @@ int initDecompTest() {
    OMEGA::initLogging(DefEnv);
 
    // Open config file
-   OMEGA::Config("omega");
+   OMEGA::Config("Omega");
    Err = OMEGA::Config::readAll("omega.yml");
    if (Err != 0) {
       LOG_CRITICAL("DecompTest: Error reading config file");
