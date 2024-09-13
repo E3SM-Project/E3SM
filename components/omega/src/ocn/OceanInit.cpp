@@ -173,6 +173,12 @@ int initOmegaModules(MPI_Comm Comm) {
       return Err;
    }
 
+   Err = Field::init();
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: Error initializing Fields");
+      return Err;
+   }
+
    Err = Decomp::init();
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: Error initializing default decomposition");
