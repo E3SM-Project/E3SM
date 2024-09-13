@@ -2312,6 +2312,44 @@ TimeInterval::TimeInterval(
 } // end TimeInterval::TimeInterval real length/unit constructor
 
 //------------------------------------------------------------------------------
+// TimeInterval::TimeInterval
+// Construct a time interval from a standard string in the form
+// DDDD_HH:MM:SS.SSSS where the width of DD and SS strings can be of
+// arbitrary width (within reason) and the separators can be any single
+// non-numeric character
+TimeInterval::TimeInterval(
+    std::string &TimeString // [in] string form of time interval
+) {
+
+   // Not a calendar interval
+   IsCalendar  = false;
+   CalInterval = 0;
+
+   I4 Err{0};
+
+   // Extract variables from string
+   I8 Day     = 0;
+   I8 Hour    = 0;
+   I8 Minute  = 0;
+   R8 RSecond = 0.;
+
+   std::istringstream ss(TimeString);
+   char discard;
+   ss >> Day >> discard >> Hour >> discard >> Minute >> discard >> RSecond;
+
+   R8 SecondsSet = Day * SECONDS_PER_DAY + Hour * SECONDS_PER_HOUR +
+                   Minute * SECONDS_PER_MINUTE + RSecond;
+
+   // Use the set function to define the Time Interval
+   Err = this->set(SecondsSet, TimeUnits::Seconds);
+
+   if (Err != 0)
+      LOG_ERROR("TimeMgr: TimeInterval constructor from string error "
+                "using using set function to construct TimeInterval.");
+
+} // end TimeInterval::TimeInterval constructor from string
+
+//------------------------------------------------------------------------------
 // TimeInterval::~TimeInterval - destructor for time interval
 // Destructor for a time interval. No allocated space so does nothing.
 
@@ -3587,12 +3625,12 @@ TimeInstant::TimeInstant(Calendar *Cal,          //< [in] Calendar to use
    CalPtr = Cal;
 
    // Extract variables from string
-   I8 Year;
-   I8 Month;
-   I8 Day;
-   I8 Hour;
-   I8 Minute;
-   R8 RSecond;
+   I8 Year    = 0;
+   I8 Month   = 0;
+   I8 Day     = 0;
+   I8 Hour    = 0;
+   I8 Minute  = 0;
+   R8 RSecond = 0.;
 
    std::istringstream ss(TimeString);
    char discard;
@@ -3947,7 +3985,12 @@ std::string TimeInstant::getString(
    FmtString << ":";
    FmtString << "%02d"; // 2 digit minute with leading 0
    FmtString << ":";
-   FmtString << "%" << SecondWidth + 3 << "." << SecondWidth << "f"; // seconds
+   if (SecondWidth == 0) {
+      FmtString << "%02.0f"; // seconds with no decimal digits
+   } else {
+      // seconds with SecondWidth number of decimal digits
+      FmtString << "%0" << SecondWidth + 3 << "." << SecondWidth << "f";
+   }
 
    // convert format string to an actual string for formatted write
    const std::string Tmp = FmtString.str();
@@ -3975,6 +4018,21 @@ std::string TimeInstant::getString(
 
 // Alarm constructors/destructors
 //------------------------------------------------------------------------------
+// Alarm::Alarm - default constructor
+// The default constructor creates an alarm with ring time equal to zero
+Alarm::Alarm(void) {
+
+   Name    = "";
+   Ringing = false;
+   Stopped = false;
+
+   Periodic = false;
+
+   TimeInstant AlarmTime;
+   RingTime = AlarmTime;
+
+} // end Alarm::Alarm - default
+
 // Alarm::Alarm - construct single instance alarm
 // Construct a single alarm using the input ring time.
 

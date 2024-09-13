@@ -1,4 +1,5 @@
 #include "AuxiliaryState.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -71,6 +72,16 @@ int initAuxStateTest(const std::string &mesh) {
    MachEnv::init(MPI_COMM_WORLD);
    MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
+
+   initLogging(DefEnv);
+
+   // Open config file
+   Config("Omega");
+   Err = Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("AuxStateTest: Error reading config file");
+      return Err;
+   }
 
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {

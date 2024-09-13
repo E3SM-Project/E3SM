@@ -27,6 +27,7 @@ userGuide/MachEnv
 userGuide/Config
 userGuide/Broadcast
 userGuide/Logging
+userGuide/Driver
 userGuide/Decomp
 userGuide/Dimension
 userGuide/Field
@@ -56,6 +57,7 @@ devGuide/BuildDocs
 devGuide/DataTypes
 devGuide/MachEnv
 devGuide/Config
+devGuide/Driver
 devGuide/Broadcast
 devGuide/CMakeBuild
 devGuide/Logging

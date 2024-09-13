@@ -316,3 +316,14 @@ add_omega_test(
     infra/OmegaKokkosTest.cpp
     "-n;1"
 )
+
+##################
+# Driver test
+##################
+
+add_omega_test(
+    DRIVER_TEST
+    testDriver.exe
+    drivers/StandaloneDriverTest.cpp
+    "-n;8"
+)

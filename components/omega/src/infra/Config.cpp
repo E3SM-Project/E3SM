@@ -86,7 +86,7 @@ int Config::readAll(const std::string ConfigFile // [in] input YAML config file
 
    // Now give the full config the omega name and extract the
    // top-level omega node from the Root.
-   ConfigAll.Name = "omega";
+   ConfigAll.Name = "Omega";
 
    for (int ReadGroup = 0; ReadGroup < Config::NumReadGroups; ++ReadGroup) {
 
@@ -95,7 +95,7 @@ int Config::readAll(const std::string ConfigFile // [in] input YAML config file
          // Read temporary root node
          YAML::Node RootNode = YAML::LoadFile(ConfigFile);
          // Extract Omega node
-         ConfigAll.Node = RootNode["omega"];
+         ConfigAll.Node = RootNode["Omega"];
       }
       MPI_Barrier(ConfigComm);
    }

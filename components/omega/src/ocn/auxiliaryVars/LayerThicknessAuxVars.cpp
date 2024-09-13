@@ -1,4 +1,5 @@
 #include "LayerThicknessAuxVars.h"
+#include "Config.h"
 #include "Field.h"
 
 #include <limits>

@@ -74,6 +74,16 @@ int initTendenciesTest(const std::string &mesh) {
    MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
 
+   initLogging(DefEnv);
+
+   // Open config file
+   Config("Omega");
+   Err = Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("TendenciesTest: Error reading config file");
+      return Err;
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
@@ -156,7 +166,7 @@ int testTendencies() {
 
    const auto *Mesh = HorzMesh::getDefault();
    // test creation of another tendencies
-   Config *Options;
+   Config *Options = Config::getOmegaConfig();
    Tendencies::create("TestTendencies", Mesh, 12, Options);
 
    // test retrievel of another tendencies

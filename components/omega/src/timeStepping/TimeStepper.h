@@ -29,6 +29,11 @@ namespace OMEGA {
 /// needs to extended every time a new time stepper is added
 enum class TimeStepperType { ForwardBackward, RungeKutta4, RungeKutta2 };
 
+/// Translate string for time stepper type into enum
+TimeStepperType getTimeStepperFromStr(
+    const std::string &InString ///< [in] choice of time stepping method
+);
+
 //------------------------------------------------------------------------------
 /// A base class for Omega time steppers
 ///

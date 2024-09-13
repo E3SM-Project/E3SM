@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
    // Define some variables for a reference configuration
    // These are meant to create a hierachy that tests at least two levels
    // and includes a variable of each supported type.
-   // omega:
+   // Omega:
    //   Hmix:
    //     HmixOn: true
    //     HmixI4: 3
@@ -109,8 +109,8 @@ int main(int argc, char *argv[]) {
                                     "fifth"};
 
    // Build up a reference configuration
-   OMEGA::Config ConfigOmegaAll("omegaroot");
-   OMEGA::Config ConfigOmegaRef("omega");
+   OMEGA::Config ConfigOmegaAll("Omegaroot");
+   OMEGA::Config ConfigOmegaRef("Omega");
    OMEGA::Config ConfigHmixRef("Hmix");
    OMEGA::Config ConfigHmixDel2Ref("HmixDel2");
    OMEGA::Config ConfigVmixRef("Vmix");

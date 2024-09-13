@@ -62,7 +62,8 @@ class HorzMesh {
 
    /// Construct a new local mesh for a given decomposition
    HorzMesh(const std::string &Name, ///< [in] Name for mesh
-            Decomp *Decomp           ///< [in] Decomposition for mesh
+            Decomp *Decomp,          ///< [in] Decomposition for mesh
+            I4 InNVertLevels         ///< [in] num vertical levels
    );
 
    // Forbid copy and move construction
@@ -89,6 +90,8 @@ class HorzMesh {
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
    // should always use the 0:NCellsXX-1 form.
+
+   I4 NVertLevels; ///< number of vertical levels
 
    Array1DI4 NCellsHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
@@ -249,7 +252,8 @@ class HorzMesh {
    /// Creates a new mesh by calling the constructor and puts it in the
    /// AllHorzMeshes map
    static HorzMesh *create(const std::string &Name, ///< [in] Name for mesh
-                           Decomp *Decomp ///< [in] Decomposition for mesh
+                           Decomp *Decomp,  ///< [in] Decomposition for mesh
+                           I4 InNVertLevels ///< [in] num vertival levels
    );
 
    /// Destructor - deallocates all memory and deletes a HorzMesh

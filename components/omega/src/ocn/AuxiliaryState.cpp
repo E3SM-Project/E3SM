@@ -1,4 +1,5 @@
 #include "AuxiliaryState.h"
+#include "Config.h"
 #include "Field.h"
 #include "Logging.h"
 
@@ -131,12 +132,14 @@ int AuxiliaryState::init() {
    int Err                 = 0;
    const HorzMesh *DefMesh = HorzMesh::getDefault();
 
-   // These hard-wired variable needs to be updated
-   // with retrivals/config options
-   const int NVertLevels = 60;
+   int NVertLevels = DefMesh->NVertLevels;
 
    AuxiliaryState::DefaultAuxState =
        AuxiliaryState::create("Default", DefMesh, NVertLevels);
+
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Err                 = DefaultAuxState->readConfigOptions(OmegaConfig);
+
    return Err;
 }
 
@@ -170,5 +173,37 @@ void AuxiliaryState::erase(const std::string &Name) {
 
 // Remove all auxiliary states
 void AuxiliaryState::clear() { AllAuxStates.clear(); }
+
+// Read and set config options
+int AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
+
+   int Err = 0;
+
+   Config AdvectConfig("Advection");
+   Err = OmegaConfig->get(AdvectConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("AuxiliaryState: Advection group not found in Config");
+      return Err;
+   }
+   std::string FluxThickTypeStr;
+   Err = AdvectConfig.get("FluxThicknessType", FluxThickTypeStr);
+   if (Err != 0) {
+      LOG_CRITICAL("AuxiliaryState: FluxThicknessType not found in "
+                   "AdvectConfig");
+      return Err;
+   }
+
+   if (FluxThickTypeStr == "Center") {
+      this->LayerThicknessAux.FluxThickEdgeChoice = Center;
+   } else if (FluxThickTypeStr == "Upwind") {
+      this->LayerThicknessAux.FluxThickEdgeChoice = Upwind;
+   } else {
+      LOG_CRITICAL("AuxiliaryState: Unknown FluxThicknessType requested");
+      Err = -1;
+      return Err;
+   }
+
+   return Err;
+}
 
 } // namespace OMEGA

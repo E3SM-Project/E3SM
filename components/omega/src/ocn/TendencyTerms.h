@@ -26,10 +26,10 @@ namespace OMEGA {
 /// arrays
 class ThicknessFluxDivOnCell {
  public:
-   bool Enabled = false;
+   bool Enabled;
 
    /// constructor declaration
-   ThicknessFluxDivOnCell(const HorzMesh *Mesh, Config *Options);
+   ThicknessFluxDivOnCell(const HorzMesh *Mesh);
 
    /// The functor takes cell index, vertical chunk index, and thickness flux
    /// array as inputs, outputs the tendency array
@@ -70,10 +70,10 @@ class ThicknessFluxDivOnCell {
 /// momentum equation
 class PotentialVortHAdvOnEdge {
  public:
-   bool Enabled = false;
+   bool Enabled;
 
    /// constructor declaration
-   PotentialVortHAdvOnEdge(const HorzMesh *Mesh, Config *Options);
+   PotentialVortHAdvOnEdge(const HorzMesh *Mesh);
 
    /// The functor takes edge index, vertical chunk index, and arrays for
    /// normalized relative vorticity, normalized planetary vorticity, layer
@@ -117,10 +117,10 @@ class PotentialVortHAdvOnEdge {
 /// Gradient of kinetic energy defined on edges, for momentum equation
 class KEGradOnEdge {
  public:
-   bool Enabled = false;
+   bool Enabled;
 
    /// constructor declaration
-   KEGradOnEdge(const HorzMesh *Mesh, Config *Options);
+   KEGradOnEdge(const HorzMesh *Mesh);
 
    /// The functor takes edge index, vertical chunk index, and kinetic energy
    /// array as inputs, outputs the tendency array
@@ -147,10 +147,10 @@ class KEGradOnEdge {
 /// acceleration, for momentum equation
 class SSHGradOnEdge {
  public:
-   bool Enabled = false;
+   bool Enabled;
 
    /// constructor declaration
-   SSHGradOnEdge(const HorzMesh *Mesh, Config *Options);
+   SSHGradOnEdge(const HorzMesh *Mesh);
 
    /// The functor takes edge index, vertical chunk index, and array of
    /// layer thickness/SSH, outputs tendency array
@@ -178,10 +178,12 @@ class SSHGradOnEdge {
 /// Laplacian horizontal mixing, for momentum equation
 class VelocityDiffusionOnEdge {
  public:
-   bool Enabled = false;
+   bool Enabled;
+
+   R8 ViscDel2;
 
    /// constructor declaration
-   VelocityDiffusionOnEdge(const HorzMesh *Mesh, Config *Options);
+   VelocityDiffusionOnEdge(const HorzMesh *Mesh);
 
    /// The functor takes edge index, vertical chunk index, and arrays for
    /// divergence of horizontal velocity (defined at cell centers) and relative
@@ -213,7 +215,6 @@ class VelocityDiffusionOnEdge {
    }
 
  private:
-   R8 ViscDel2 = 1._Real;
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
    Array1DR8 DcEdge;
@@ -225,10 +226,12 @@ class VelocityDiffusionOnEdge {
 /// Biharmonic horizontal mixing, for momentum equation
 class VelocityHyperDiffOnEdge {
  public:
-   bool Enabled = false;
+   bool Enabled;
+
+   Real ViscDel4;
 
    /// Constructor declaration
-   VelocityHyperDiffOnEdge(const HorzMesh *Mesh, Config *Options);
+   VelocityHyperDiffOnEdge(const HorzMesh *Mesh);
 
    /// The functor takes the edge index, vertical chunk index, and arrays for
    /// the laplacian of divergence of horizontal velocity and the laplacian of
@@ -260,7 +263,6 @@ class VelocityHyperDiffOnEdge {
    }
 
  private:
-   Real ViscDel4 = 1._Real;
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
    Array1DR8 DcEdge;
@@ -351,6 +353,9 @@ class Tendencies {
    // get tendencies by name
    static Tendencies *get(const std::string &Name ///< [in]
    );
+
+   // read and set config options
+   int readTendConfig(Config *TendConfig);
 
  private:
    // Construct a new tendency object

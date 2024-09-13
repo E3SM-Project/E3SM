@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -631,6 +632,14 @@ int initAuxVarsTest(const std::string &mesh) {
 
    // initialize logging
    initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("Omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("AuxVarsTest: Error reading config file");
+      return Err;
+   }
 
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {

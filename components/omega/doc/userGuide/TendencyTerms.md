@@ -17,7 +17,7 @@ tendency terms are currently implemented:
 
 Among the internal data stored by each functor is a `bool` which can enable or
 disable the contribution of that particular term to the tendency. These flags
-are default set to `false`, and need to be enabled by the configuration file:
+need to be provided in the configuration file:
 ```yaml
 Tendencies:
    ThicknessFluxTendencyEnable: true

@@ -36,9 +36,7 @@ int OceanState::init() {
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
    Halo *DefHalo         = Halo::getDefault();
 
-   // This hard-wired variable needs to be updated
-   // with retrivals/config options
-   int NVertLevels = 60;
+   int NVertLevels = DefHorzMesh->NVertLevels;
 
    auto *DefTimeStepper = TimeStepper::getDefault();
    if (!DefTimeStepper) {

@@ -9,6 +9,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "HorzMesh.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -38,6 +39,14 @@ int initHorzMeshTest() {
 
    // Initialize the Logging system
    OMEGA::initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("Omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("HorzMeshTest: Error reading config file");
+      return Err;
+   }
 
    // Initialize the IO system
    Err = OMEGA::IO::init(DefComm);

@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Decomp.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "IO.h"
 #include "Logging.h"
@@ -332,11 +333,32 @@ int Decomp::init(const std::string &MeshFileName) {
 
    int Err = 0; // default successful return code
 
-   // TODO: retrieve from Config when available - currently hardwired
-   // Initialize decomposition options
-   I4 InHaloWidth           = 3;
-   std::string DecompMethod = "MetisKWay";
-   PartMethod Method        = getPartMethodFromStr(DecompMethod);
+   I4 InHaloWidth;
+   std::string DecompMethodStr;
+
+   // Retrieve options from Config
+   Config *OmegaConfig = Config::getOmegaConfig();
+
+   Config DecompConfig("Decomp");
+   Err = OmegaConfig->get(DecompConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: Decomp group not found in Config");
+      return Err;
+   }
+
+   Err = DecompConfig.get("HaloWidth", InHaloWidth);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: HaloWidth not found in Decomp Config");
+      return Err;
+   }
+
+   Err = DecompConfig.get("DecompMethod", DecompMethodStr);
+   if (Err != 0) {
+      LOG_CRITICAL("Decomp: DecompMethod not found in Decomp Config");
+      return Err;
+   }
+
+   PartMethod Method = getPartMethodFromStr(DecompMethodStr);
 
    // Retrieve the default machine environment
    MachEnv *DefEnv = MachEnv::getDefault();
@@ -824,6 +846,7 @@ int Decomp::partCellsKWay(
          }
       } // end cell loop for buffer
    } // end task loop
+
    AdjAdd[NCellsGlobal] = Add; // Add the ending address
 
    // Set up remaining partitioning variables

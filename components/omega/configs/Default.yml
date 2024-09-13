@@ -1,0 +1,27 @@
+Omega:
+   TimeManagement:
+      StartTime: 0001-01-01_00:00:00
+      StopTime: 0001-01-01_02:00:00
+      RunDuration: none #0000_02:00:00.000
+      CalendarType: No Leap
+   TimeIntegration:
+      TimeStepper: Forward-Backward
+      TimeStep: 0000_00:10:00
+   Dimension:
+      NVertLevels: 60
+   Decomp:
+      HaloWidth: 3
+      DecompMethod: MetisKWay
+   State:
+      NTimeLevels: 2
+   Advection:
+      FluxThicknessType: Center
+   Tendencies:
+      ThicknessFluxTendencyEnable: true
+      PVTendencyEnable: true
+      KETendencyEnable: true
+      SSHTendencyEnable: true
+      VelDiffTendencyEnable: true
+      ViscDel2: 1.0e3
+      VelHyperDiffTendencyEnable: true
+      ViscDel4: 1.2e11

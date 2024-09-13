@@ -1,4 +1,5 @@
 #include "HorzOperators.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -368,6 +369,14 @@ int initOperatorsTest(const std::string &MeshFile) {
 
    // Initialize the Logging system
    initLogging(DefEnv);
+
+   // Open config file
+   OMEGA::Config("Omega");
+   Err = OMEGA::Config::readAll("omega.yml");
+   if (Err != 0) {
+      LOG_CRITICAL("OperatorsTest: Error reading config file");
+      return Err;
+   }
 
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
