@@ -3865,7 +3865,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <DIN_LOC_ROOT_CLMFORC>/compyfs/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/compyfs/$USER/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/compyfs/e3sm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc.intel.v20.0.04/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
