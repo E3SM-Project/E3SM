@@ -195,7 +195,6 @@ int initTimeStepperTest(const std::string &mesh) {
    Config Options;
 
    // Creating non-default tendencies with custom velocity tendencies
-   // All other tendencies are disabled by default
    auto *TestTendencies = Tendencies::create(
        "TestTendencies", DefMesh, NVertLevels, &Options,
        Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
@@ -203,6 +202,14 @@ int initTimeStepperTest(const std::string &mesh) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test tendencies");
    }
+
+   // Disable all other tendencies
+   TestTendencies->ThicknessFluxDiv.Enabled   = false;
+   TestTendencies->PotientialVortHAdv.Enabled = false;
+   TestTendencies->KEGrad.Enabled             = false;
+   TestTendencies->SSHGrad.Enabled            = false;
+   TestTendencies->VelocityDiffusion.Enabled  = false;
+   TestTendencies->VelocityHyperDiff.Enabled  = false;
 
    return Err;
 }
