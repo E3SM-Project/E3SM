@@ -146,12 +146,9 @@ contains
     call check_ret (nf90_open(fin,  NF90_NOWRITE, ncidi ))
     call check_ret (nf90_open(fout, NF90_NOWRITE, ncido ))
     call check_ret (nf_inq_format( ncido, ncformat ))
-    ! 20240822 csz++
+
     ! Allow any format for output dataset
-    ! if ( ncformat /= NF_FORMAT_64BIT )then
-    ! write (6,*) 'error: output file is NOT in NetCDF large-file format!'
-    ! stop
-    ! 20240822 csz--
+
     if ( ncformat == NF_FORMAT_CLASSIC )then
        write (6,*) 'info: output file is NF_FORMAT_CLASSIC'
     else if ( ncformat == NF_FORMAT_64BIT_OFFSET )then
@@ -227,13 +224,13 @@ contains
     ret = nf90_inq_dimid(ncidi, "month", dimidmon)
     if (ret == NF90_NOERR) then
        call check_ret (nf90_inquire_dimension(ncidi, dimidmon, len=nlevmon))
-       ! 20240912 csz++
+
        ! Many restart files have "month" dimension in input dataset
        ! It is only necessary that the output dataset contains "month" dimension
        ! when a variable in the input dataset contains the "month" dimension
        ! Otherwise, the "month" dimension will never be used
        ! Warn rather than die when input has "month" and output does not
-       !call check_ret (nf90_inq_dimid(ncido, "month", dimid ))
+
        ret = nf90_inq_dimid(ncido, "month", dimid )
        if ( ret == nf_ebaddim ) then
           write (6,*) 'warning: input has "month" dimension and output does not'
@@ -247,7 +244,6 @@ contains
              stop
           end if
        end if
-       ! 20240912 csz--
     else
        write (6,*) 'month dimension does NOT exist on the input dataset'
        dimidmon = -9999
@@ -348,11 +344,9 @@ contains
     ! OK now, open the output file for writing
     !
     call check_ret(nf90_close( ncido))
-    ! 20240822 csz++
+
     ! Allow any format for output dataset
-    ! call check_ret (nf90_open(fout, ior(NF90_WRITE,  NF_64BIT_OFFSET), ncido ))
     call check_ret (nf90_open(fout, NF90_WRITE, ncido ))
-    ! csz--
 
     call addglobal (ncido, cmdline)
 
