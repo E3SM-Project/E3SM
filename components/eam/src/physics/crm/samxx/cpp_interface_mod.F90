@@ -19,6 +19,7 @@ module cpp_interface_mod
                    crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                    crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                    crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
+                   crm_output_mcup_alt, &
                    crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
                    crm_output_qg_mean, crm_output_qr_mean, crm_output_mu_crm, crm_output_md_crm, crm_output_eu_crm, &
                    crm_output_du_crm, crm_output_ed_crm, crm_output_flux_qt, crm_output_flux_u, crm_output_flux_v, &
@@ -57,6 +58,7 @@ module cpp_interface_mod
                                       crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                                       crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                                       crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
+                                      crm_output_mcup_alt, &
                                       crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
                                       crm_output_qg_mean, crm_output_qr_mean, crm_output_mu_crm, crm_output_md_crm, crm_output_eu_crm, &
                                       crm_output_du_crm, crm_output_ed_crm, crm_output_flux_qt, crm_output_flux_u, crm_output_flux_v, &

@@ -93,6 +93,8 @@ module crm_output_module
       real(crm_rknd), allocatable :: mcuup (:,:)      ! unsat updraft cloud mass flux
       real(crm_rknd), allocatable :: mcudn (:,:)      ! unsat downdraft cloud mass flux
 
+      real(crm_rknd), allocatable :: mcup_alt  (:,:)      ! updraft cloud mass flux - no threshold
+
       ! For convective transport
       real(crm_rknd), allocatable :: mu_crm(:,:)      ! mass flux up
       real(crm_rknd), allocatable :: md_crm(:,:)      ! mass flux down
@@ -280,6 +282,8 @@ contains
       if (.not. allocated(output%mcuup )) allocate(output%mcuup (ncol,nlev))  ! unsat updraft cloud mass flux
       if (.not. allocated(output%mcudn )) allocate(output%mcudn (ncol,nlev))  ! unsat downdraft cloud mass flux
 
+      if (.not. allocated(output%mcup_alt  )) allocate(output%mcup_alt  (ncol,nlev))  ! updraft cloud mass flux
+
       if (.not. allocated(output%mu_crm)) allocate(output%mu_crm(ncol,nlev))  ! mass flux up
       if (.not. allocated(output%md_crm)) allocate(output%md_crm(ncol,nlev))  ! mass flux down
       if (.not. allocated(output%du_crm)) allocate(output%du_crm(ncol,nlev))  ! mass detrainment from updraft
@@ -366,6 +370,8 @@ contains
       call prefetch(output%mcdn   )
       call prefetch(output%mcuup  )
       call prefetch(output%mcudn  )
+
+      call prefetch(output%mcup_alt   )
 
       call prefetch(output%mu_crm )
       call prefetch(output%md_crm )
@@ -495,6 +501,8 @@ contains
       output%mcdn   = 0
       output%mcuup  = 0
       output%mcudn  = 0
+
+      output%mcup_alt   = 0
 
       ! Convective transport
       output%mu_crm = 0
@@ -629,6 +637,8 @@ contains
       if (allocated(output%mcdn)) deallocate(output%mcdn)
       if (allocated(output%mcuup)) deallocate(output%mcuup)
       if (allocated(output%mcudn)) deallocate(output%mcudn)
+
+      if (allocated(output%mcup_alt)) deallocate(output%mcup_alt)
 
       if (allocated(output%mu_crm)) deallocate(output%mu_crm)
       if (allocated(output%md_crm)) deallocate(output%md_crm)

@@ -109,6 +109,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_gliqwp        , :: crm_output_gliqwp ); 
   YAKL_SCOPE( crm_output_mctot         , :: crm_output_mctot ); 
   YAKL_SCOPE( crm_output_mcup          , :: crm_output_mcup ); 
+  YAKL_SCOPE( crm_output_mcup_alt          , :: crm_output_mcup_alt ); 
   YAKL_SCOPE( crm_output_mcdn          , :: crm_output_mcdn ); 
   YAKL_SCOPE( crm_output_mcuup         , :: crm_output_mcuup ); 
   YAKL_SCOPE( crm_output_mcudn         , :: crm_output_mcudn ); 
@@ -434,6 +435,7 @@ void pre_timeloop() {
       crm_output_gliqwp    (k,icrm) = 0.0;
       crm_output_mctot     (k,icrm) = 0.0;
       crm_output_mcup      (k,icrm) = 0.0;
+      crm_output_mcup_alt      (k,icrm) = 0.0;
       crm_output_mcdn      (k,icrm) = 0.0;
       crm_output_mcuup     (k,icrm) = 0.0;
       crm_output_mcudn     (k,icrm) = 0.0;

@@ -19,6 +19,7 @@ void post_icycle() {
   YAKL_SCOPE( crm_output_cldtop   , :: crm_output_cldtop );
   YAKL_SCOPE( w                   , :: w );
   YAKL_SCOPE( crm_output_mcup     , :: crm_output_mcup );
+  YAKL_SCOPE( crm_output_mcup_alt     , :: crm_output_mcup_alt );
   YAKL_SCOPE( crm_output_mcuup    , :: crm_output_mcuup );
   YAKL_SCOPE( crm_output_mcdn     , :: crm_output_mcdn );
   YAKL_SCOPE( crm_output_mcudn    , :: crm_output_mcudn );
@@ -88,6 +89,13 @@ void post_icycle() {
       real tmp;
       if(tmp1*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)) > cwp_threshold) {
          yakl::atomicAdd(crm_output_cld(l,icrm), CF3D(k,j,i,icrm));
+
+         // note that wmin = 2.0 - use smaller threshold for alt output
+         if(w(k+1,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm) > 2*0.1) {
+           tmp = rho(k,icrm)*0.5*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm)) * CF3D(k,j,i,icrm);
+           yakl::atomicAdd(crm_output_mcup_alt(l,icrm), tmp);
+         }
+         
          if(w(k+1,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm) > 2*wmin) {
            tmp = rho(k,icrm)*0.5*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm)) * CF3D(k,j,i,icrm);
            yakl::atomicAdd(crm_output_mcup(l,icrm), tmp);

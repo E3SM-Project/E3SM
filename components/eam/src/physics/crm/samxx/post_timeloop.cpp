@@ -81,6 +81,7 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_gicewp       , :: crm_output_gicewp );
   YAKL_SCOPE( crm_output_gliqwp       , :: crm_output_gliqwp );
   YAKL_SCOPE( crm_output_mcup         , :: crm_output_mcup );
+  YAKL_SCOPE( crm_output_mcup_alt         , :: crm_output_mcup_alt );
   YAKL_SCOPE( crm_output_mcdn         , :: crm_output_mcdn );
   YAKL_SCOPE( crm_output_mcuup        , :: crm_output_mcuup );
   YAKL_SCOPE( crm_output_mcudn        , :: crm_output_mcudn );
@@ -403,6 +404,7 @@ void post_timeloop() {
     crm_output_gicewp(k,icrm) = crm_output_gicewp(k,icrm)*crm_input_pdel(k,icrm)*1000.0/ggr * factor_xyt;
     crm_output_gliqwp(k,icrm) = crm_output_gliqwp(k,icrm)*crm_input_pdel(k,icrm)*1000.0/ggr * factor_xyt;
     crm_output_mcup  (k,icrm) = crm_output_mcup (k,icrm) * factor_xyt;
+    crm_output_mcup_alt  (k,icrm) = crm_output_mcup_alt (k,icrm) * factor_xyt;
     crm_output_mcdn  (k,icrm) = crm_output_mcdn (k,icrm) * factor_xyt;
     crm_output_mcuup (k,icrm) = crm_output_mcuup(k,icrm) * factor_xyt;
     crm_output_mcudn (k,icrm) = crm_output_mcudn(k,icrm) * factor_xyt;
