@@ -583,6 +583,7 @@ end subroutine linoz_readnl
 !update from last o3_new due to gas chemisry change
                     ! use o3_new to prevent negative value                     
                          delo3_psc= o3_new*(psc_loss -1._r8)
+                         delo3_psc = 0._r8  ! set O3 PSC loss to zero
                          o3_new =o3_new + delo3_psc !o3_new:update from gas chem loss
 
                       !
