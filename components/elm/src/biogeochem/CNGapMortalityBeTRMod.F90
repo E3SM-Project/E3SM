@@ -91,7 +91,7 @@ contains
     ! !USES:
     use elm_time_manager , only: get_days_per_year
     use elm_varcon       , only: secspday
-    use pftvarcon        , only: npcropmin
+    use pftvarcon        , only: iscft
     use elm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
@@ -188,7 +188,7 @@ contains
             * gap_indicator(gid_m_deadcrootn_to_litter)
 
 
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(veg_pp%itype(p))) then
             veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m &
                * gap_indicator(gid_m_retransn_to_litter)
          end if
@@ -239,7 +239,7 @@ contains
          veg_pf%m_deadstemp_to_litter(p)           = veg_ps%deadstemp(p)           * m
          veg_pf%m_livecrootp_to_litter(p)          = veg_ps%livecrootp(p)          * m
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(veg_pp%itype(p))) then
             veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
          end if
 

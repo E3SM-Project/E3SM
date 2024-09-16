@@ -660,7 +660,7 @@ contains
           call t_startf('read_next_trcdata')
           call read_next_trcdata(state, flds, file )
           call t_stopf('read_next_trcdata')
-          if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam
+          if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam,data_time
        end if
 
     endif

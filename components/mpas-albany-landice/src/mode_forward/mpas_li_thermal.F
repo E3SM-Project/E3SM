@@ -70,7 +70,7 @@ module li_thermal
    ! Note: kelvin_to_celsius = 273.15 (perhaps it should be called celsius_to_kelvin?)
 
    real (kind=RKIND), parameter ::   &
-        maxtempThreshold =  100._RKIND + kelvin_to_celsius,   &
+        maxtempThreshold =  1e-6_RKIND + kelvin_to_celsius,   &
         mintempThreshold = -100._RKIND + kelvin_to_celsius
 
 !***********************************************************************
@@ -792,8 +792,9 @@ module li_thermal
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       if (deltat <= 0.0_RKIND) then
+         err = ior(err, 1)
          call mpas_log_write('li_thermal_solver was called with invalid deltat = $r', MPAS_LOG_ERR, realArgs=(/deltat/))
-         call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
+         return
       endif
 
 
@@ -1305,25 +1306,25 @@ module li_thermal
                mintemp = minval(temperature(:,iCell))
 
                if (maxtemp > maxtempThreshold) then
-                  call mpas_log_write('maxtemp > maxtempThreshold: indexToCellID=$i, maxtemp = $r', intArgs=(/indexToCellID(iCell)/), &
+                  err = ior(err, 1)
+                  call mpas_log_write('maxtemp > maxtempThreshold: indexToCellID=$i, maxtemp = $r', MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/maxtemp/))
-                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
-                  call mpas_log_write('temperature:')
+                  call mpas_log_write('    thickness = $r', MPAS_LOG_ERR, realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('    temperature:', MPAS_LOG_ERR)
                   do k = 1, nVertLevels
-                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
+                     call mpas_log_write('    $i $r', MPAS_LOG_ERR, intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
                if (mintemp < mintempThreshold) then
-                  call mpas_log_write('mintemp < mintempThreshold: indexToCellID=$i, mintemp = $r', intArgs=(/indexToCellID(iCell)/), &
+                  err = ior(err, 1)
+                  call mpas_log_write('mintemp < mintempThreshold: indexToCellID=$i, mintemp = $r', MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/mintemp/))
-                  call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
-                  call mpas_log_write('temperature:')
+                  call mpas_log_write('    thickness = $r', MPAS_LOG_ERR, realArgs=(/thickness(iCell)/))
+                  call mpas_log_write('    temperature:', MPAS_LOG_ERR)
                   do k = 1, nVertLevels
-                     call mpas_log_write('$i $r', intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
+                     call mpas_log_write('    $i $r', MPAS_LOG_ERR, intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
                   enddo
-                  call mpas_log_write("An error has occurred in li_thermal. Aborting...", MPAS_LOG_CRIT)
                endif
 
             enddo   ! iCell
@@ -2840,15 +2841,21 @@ module li_thermal
                ! to the form as Eqn (66) in Aschwanden and others (2012) "An
                ! enthalpy formulation for glaciers and ice sheets". An extra
                ! term (1-w) would be more accurate.
-                basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
-                ! TZ: allow basalWaterThickness freely accumulate here. Change it to something else for difference cases
-                if (basalWaterThickness(iCell) < 0.0_RKIND) then
-                    basalWaterThickness(iCell) = 0.0_RKIND
-                endif
             else   ! temperature solver
                groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)   ! m/s
             endif
 
+            ! Update basal water thickness based on melting or freezing (same for enthalpy or temperature)
+            if (groundedBasalMassBal(iCell) > 0.0) then
+               ! for freezing conditions, limit positive BMB to the available basal water
+               groundedBasalMassBal(iCell) = min(groundedBasalMassBal(iCell), basalWaterThickness(iCell) / deltat)
+            endif
+            basalWaterThickness(iCell) = basalWaterThickness(iCell) - deltat*groundedBasalMassBal(iCell)
+
+            ! negative water thickness should not occur, but if round off leads to it, set back to zero
+            if (basalWaterThickness(iCell) < 0.0_RKIND) then
+               basalWaterThickness(iCell) = 0.0_RKIND
+            endif
 
          endif   ! ice is present and grounded
 

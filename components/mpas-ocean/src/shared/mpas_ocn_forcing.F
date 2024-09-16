@@ -27,6 +27,7 @@ module ocn_forcing
    use mpas_dmpar
    use ocn_constants
    use ocn_diagnostics_variables
+   use ocn_config
 
    implicit none
    private
@@ -122,7 +123,7 @@ contains
 
         real (kind=RKIND) :: zTop, zBot, transmissionCoeffTop, transmissionCoeffBot
 
-        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff
+        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff, fractionAbsorbedSubglacialRunoff
 
         integer :: iCell, k, timeLevel, nCells
 
@@ -147,6 +148,7 @@ contains
 
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
+        call mpas_pool_get_array(forcingPool, 'fractionAbsorbedSubglacialRunoff', fractionAbsorbedSubglacialRunoff)
 
         nCells = nCellsArray( 2 )
 
@@ -179,6 +181,48 @@ contains
               transmissionCoeffTop = transmissionCoeffBot
            end do
         end do
+
+!  now do subglacial runoff separately
+        if ( trim(config_subglacial_runoff_mode) == 'data' ) then
+            if ( trim(config_sgr_flux_vertical_location) == 'top' ) then
+                do iCell = 1, nCells
+                   zTop = 0.0_RKIND
+                   transmissionCoeffTop = ocn_forcing_transmission(zTop, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+                   do k = minLevelCell(iCell), maxLevelCell(iCell)
+                      zBot = zTop - layerThickness(k,iCell)
+                      transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+                      fractionAbsorbedSubglacialRunoff(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
+                      zTop = zBot
+                      transmissionCoeffTop = transmissionCoeffBot
+                   end do
+                end do
+            else if ( trim(config_sgr_flux_vertical_location) == 'uniform' ) then
+                do iCell = 1, nCells
+                   ! calculate total thickness
+                   zTop = 0.0_RKIND
+                   do k = minLevelCell(iCell), maxLevelCell(iCell)
+                      zTop = zTop + layerThickness(k,iCell)
+                   end do
+                   ! distribute flux evenly throughout water column
+                   zBot = 0.0_RKIND
+                   do k = minLevelCell(iCell), maxLevelCell(iCell)
+                     fractionAbsorbedSubglacialRunoff(k, iCell) = layerThickness(k,iCell) / zTop
+                   end do
+                end do
+            else if ( trim(config_sgr_flux_vertical_location) == 'bottom' ) then
+                do iCell = 1, nCells
+                   zTop = 0.0_RKIND
+                   transmissionCoeffTop = ocn_forcing_transmission(zTop, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+                   do k = maxLevelCell(iCell), minLevelCell(iCell), -1
+                      zBot = zTop - layerThickness(k,iCell)
+                      transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficientSubglacialRunoff(iCell))
+                      fractionAbsorbedSubglacialRunoff(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
+                      zTop = zBot
+                      transmissionCoeffTop = transmissionCoeffBot
+                   end do
+                end do
+            end if
+        end if
 
     end subroutine ocn_forcing_build_fraction_absorbed_array!}}}
 

@@ -250,7 +250,7 @@ contains
     namelist /elm_inparm / use_c13, use_c14
 
     namelist /elm_inparm/ fates_paramfile, use_fates,      &
-          fates_spitfire_mode, use_fates_logging,        &
+          fates_spitfire_mode, fates_harvest_mode,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
@@ -260,7 +260,10 @@ contains
           use_fates_nocomp,                             &
           use_fates_sp,                                 &
           use_fates_luh,                                &
+          use_fates_lupft,                              &
+          use_fates_potentialveg,                       &
           fluh_timeseries,                              &
+          flandusepftdat,                               &
           fates_parteh_mode,                            &
           fates_seeddisp_cadence,                       &
           use_fates_tree_damage,                        &
@@ -282,7 +285,7 @@ contains
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
-         use_vancouver, use_mexicocity, use_noio
+         use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -724,6 +727,7 @@ contains
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extrasnowlayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_firn_percolation_and_compaction, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_T_rho_dependent_snowthk, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -804,9 +808,10 @@ contains
 
 
     call mpi_bcast (fates_spitfire_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_harvest_mode, len(fates_harvest_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fluh_timeseries, len(fluh_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (flandusepftdat, len(flandusepftdat) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_cohort_age_tracking, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -814,6 +819,8 @@ contains
     call mpi_bcast (use_fates_nocomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_sp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_luh, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_lupft, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_potentialveg, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
@@ -1025,6 +1032,7 @@ contains
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction
+    write(iulog,*) '    use_T_rho_dependent_snowthk = ', use_T_rho_dependent_snowthk
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
@@ -1220,9 +1228,10 @@ contains
     write(iulog, *) '    use_fates = ', use_fates
     if (use_fates) then
        write(iulog, *) '    fates_spitfire_mode = ', fates_spitfire_mode
-       write(iulog, *) '    use_fates_logging = ', use_fates_logging
+       write(iulog, *) '    fates_harvest_mode = ', fates_harvest_mode
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
-       write(iulog, *) '    fluh_timeseries = ', fluh_timeseries
+       write(iulog, *) '    fluh_timeseries = ', trim(fluh_timeseries)
+       write(iulog, *) '    flandusepftdat = ', trim(flandusepftdat)
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
        write(iulog, *) '    use_fates_tree_damage = ', use_fates_tree_damage
        write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking
@@ -1234,6 +1243,8 @@ contains
        write(iulog, *) '    use_fates_nocomp = ', use_fates_nocomp
        write(iulog, *) '    use_fates_sp = ', use_fates_sp
        write(iulog, *) '    use_fates_luh = ', use_fates_luh
+       write(iulog, *) '    use_fates_lupft = ', use_fates_lupft
+       write(iulog, *) '    use_fates_potentialveg = ', use_fates_potentialveg
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
        write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
        write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'

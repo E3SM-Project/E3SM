@@ -342,9 +342,18 @@
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
+<config_subglacial_runoff_mode>'off'</config_subglacial_runoff_mode>
+<config_flux_attenuation_coefficient_subglacial_runoff>0.001</config_flux_attenuation_coefficient_subglacial_runoff>
+<config_sgr_flux_vertical_location>'bottom'</config_sgr_flux_vertical_location>
+<config_use_sgr_opt_kpp>.true.</config_use_sgr_opt_kpp>
+<config_use_sgr_opt_temp_prescribed>.false.</config_use_sgr_opt_temp_prescribed>
+<config_use_sgr_opt_salt_prescribed>.false.</config_use_sgr_opt_salt_prescribed>
+<config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
+<config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
 
 <!-- coupling -->
-<config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
+<config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
+<config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -1111,6 +1120,7 @@
 
 <!-- AM_eddyProductVariables -->
 <config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="RRSwISC6to18E3r5">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
 <config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>

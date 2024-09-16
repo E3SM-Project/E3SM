@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc            >Historical single forcing simulation with land held at 1850 condition</use_case_desc>
+<use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+<use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+
+<sim_year>1850</sim_year>
+
+<sim_year_range>1850-2000</sim_year_range>
+
+<clm_start_type>arb_ic</clm_start_type>
+
+
+<stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >1850</stream_year_last_ndep>
+<model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
+
+
+<stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
+<model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
+
+<stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >1850</stream_year_last_popdens>
+<model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
+
+
+<!-- CMIP6 DECK compsets -->
+
+<fsurdat hgrid="ne30np4">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
+<flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
+<finidat hgrid="ne30np4" mask="oEC60to30v3">lnd/clm2/initdata_map/20180316.DECKv1b_A1.ne30_oEC.edison.clm2.r.1980-01-01-00000.8575c3f_c20190904.nc</finidat>
+
+<fsurdat hgrid="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
+
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
+
+<!-- Hack to override files for ne1024 for SCREAM, even though the sim years do not match up -->
+<fsurdat hgrid="ne1024np4.pg2">lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
+
+<check_finidat_year_consistency>.false.</check_finidat_year_consistency>
+<check_dynpft_consistency>.false.</check_dynpft_consistency>
+
+
+</namelist_defaults>

@@ -14,21 +14,16 @@ on:
 jobs:
 
   ci-w:
+    if: ${{ github.event.repository.name == 'e3sm' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        test: 
-          - SMS_D_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - SMS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - REP_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - ERS_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu.allactive-wcprod_1850
-          - ERP_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - PET_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
-          - PEM_P8.ne4pg2_oQU480.WCYCL2010NS.singularity_gnu
+        test:
+          - SMS_D_Ld1_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
+          - ERS_Ld3_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
     container: 
-      image: ghcr.io/mahf708/e3sm-imgs:v0.0.6
+      image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
 
     steps:
       - 

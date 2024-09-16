@@ -626,6 +626,16 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="TL319_r05_IcoswISC30E3r5" compset="(DATM|XATM|SATM)">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="TL319_IcosXISC30E3r7" compset="(DATM|XATM|SATM)">
       <grid name="atm">TL319</grid>
       <grid name="lnd">TL319</grid>
@@ -1835,6 +1845,8 @@
 
     <!--- mali grids -->
 
+    <!--- mali grids with AIS and GIS -->
+
     <model_grid alias="ne30_oECv3_aisgis" compset="_MALI">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
@@ -1854,6 +1866,8 @@
       <grid name="wav">null</grid>
       <mask>oEC60to30v3wLI</mask>
     </model_grid>
+
+    <!--- mali grids with GIS -->
 
     <model_grid alias="ne30_oECv3_gis" compset="_MALI">
       <grid name="atm">ne30np4</grid>
@@ -1985,6 +1999,8 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <!--- mali grids with AIS -->
+
     <model_grid alias="f09_g16_a" compset="_MALI">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -2003,6 +2019,56 @@
       <grid name="glc">mpas.ais20km</grid>
       <grid name="wav">null</grid>
       <mask>oQU240wLI</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_oQU240wLI_ais8to30" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">oQU240wLI</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.ais8to30km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240wLI</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r05_IcoswISC30E3r5_ais8to30" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.ais8to30km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_IcoswISC30E3r5_ais8to30" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.ais8to30km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r05_IcoswISC30E3r5_ais4to20" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.ais4to20km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_IcoswISC30E3r5_ais4to20" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.ais4to20km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
     <!-- new runoff grids for data runoff model DROF -->
@@ -3277,6 +3343,18 @@
       <nx>45675</nx>
       <ny>1</ny>
       <desc>mpas.ais20km is a uniform-resolution 20km MALI grid of the Antarctic Ice Sheet.  It is primarily intended for testing.</desc>
+    </domain>
+
+    <domain name="mpas.ais8to30km">
+      <nx>98341</nx>
+      <ny>1</ny>
+      <desc>mpas.ais8to30km is a variable resolution MALI mesh of the Antarctic Ice Sheet with resolution varying from 8 km in fast flowing regions and near the ice-sheet margins to 30 km in the ice-sheet interior.  It behaves reasonably well for most of the ice sheet but results in Thwaites Glacier retreating too rapidly due to insufficient resolution there.  It is meant as a cheaper alternative to mpas.ais4to20km for testing realistic conditions.</desc>
+    </domain>
+
+    <domain name="mpas.ais4to20km">
+      <nx>385379</nx>
+      <ny>1</ny>
+      <desc>mpas.ais4to20km is a variable resolution MALI mesh of the Antarctic Ice Sheet with resolution varying from 4 km in fast flowing regions and near the ice-sheet margins to 20 km in the ice-sheet interior.  It was the primary mesh and initial condition used for ISMIP6-Antarctica-2300 and is the primary Antarctic mesh to use for E3SM v3 simulation and development with an active Antarctic Ice Sheet component.</desc>
     </domain>
 
     <!-- WW3 domains-->
@@ -5621,6 +5699,76 @@
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI-nomask_esmfnearestdtos.20240509.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oQU240wLI_esmfnearestdtos.20240509.nc</map>
     </gridmap>
+
+    <!-- ====================    -->
+    <!-- GLC: mpas.ais8to30km    -->
+    <!-- ====================    -->
+
+    <gridmap glc_grid="mpas.ais8to30km" lnd_grid="r05">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r05/map_r05_to_ais8to30_traave.20240701.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_ais8to30_trbilin.20240701.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_r05_traave.20240701.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_r05_traave.20240701.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais8to30km" lnd_grid="TL319">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais8to30_traave.20240701.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais8to30_trbilin.20240701.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_TL319_traave.20240701.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_TL319_traave.20240701.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais8to30km" ocn_grid="oQU240wLI">
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI-nomask_to_ais8to30_esmfaave.20240701.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI-nomask_to_ais8to30_esmfbilin.20240701.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfnearestdtos.20240701.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI_esmfnearestdtos.20240701.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais8to30km" ocn_grid="IcoswISC30E3r5">
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5-nomask_to_ais8to30_esmfaave.20240701.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5-nomask_to_ais8to30_esmfbilin.20240701.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5-nomask_esmfnearestdtos.20240701.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_IcoswISC30E3r5_esmfnearestdtos.20240701.nc</map>
+    </gridmap>
+
+    <!-- ====================    -->
+    <!-- GLC: mpas.ais4to20km    -->
+    <!-- ====================    -->
+
+    <gridmap glc_grid="mpas.ais4to20km" lnd_grid="r05">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r05/map_r05_to_ais4to20_traave.20240701.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_ais4to20_trbilin.20240701.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_r05_traave.20240701.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_r05_traave.20240701.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais4to20km" lnd_grid="TL319">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais4to20_traave.20240701.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ais4to20_trbilin.20240701.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_TL319_traave.20240701.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_TL319_traave.20240701.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.ais4to20km" ocn_grid="IcoswISC30E3r5">
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5-nomask_to_ais4to20_esmfaave.20240701.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5-nomask_to_ais4to20_esmfbilin.20240701.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5-nomask_esmfaave.20240701.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5-nomask_esmfbilin.20240701.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5-nomask_esmfnearestdtos.20240701.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_IcoswISC30E3r5_esmfnearestdtos.20240701.nc</map>
+    </gridmap>
+
 
     <!-- ======================================================== -->
     <!-- GRIDS: glc to ocn mapping                                -->

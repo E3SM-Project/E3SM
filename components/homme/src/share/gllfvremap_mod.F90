@@ -2088,9 +2088,14 @@ contains
 
     type (spherical_polar_t) :: p
 
-    p = change_coordinates(gfr%center_f(i,j,ie))
-    lat = p%lat
-    lon = p%lon
+    if (gfr%is_planar) then
+       lon = gfr%center_f(i,j,ie)%x
+       lat = gfr%center_f(i,j,ie)%y
+    else
+       p = change_coordinates(gfr%center_f(i,j,ie))
+       lat = p%lat
+       lon = p%lon
+    end if
   end subroutine gfr_f_get_latlon
 
   subroutine gfr_f_get_corner_latlon(ie, i, j, c, lat, lon)
@@ -2103,9 +2108,14 @@ contains
 
     type (spherical_polar_t) :: p
 
-    p = change_coordinates(gfr%corners_f(c,i,j,ie))
-    lat = p%lat
-    lon = p%lon
+    if (gfr%is_planar) then
+       lon = gfr%corners_f(c,i,j,ie)%x
+       lat = gfr%corners_f(c,i,j,ie)%y
+    else
+       p = change_coordinates(gfr%corners_f(c,i,j,ie))
+       lat = p%lat
+       lon = p%lon
+    end if
   end subroutine gfr_f_get_corner_latlon
 
   subroutine gfr_f_get_cartesian3d(ie, i, j, p)
@@ -2318,6 +2328,7 @@ contains
     ! Make up a test function for use in unit tests.
 
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
+    use physical_constants, only: dd_pi, Lx, Ly
 
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete, timeidx, qidx, nlev
@@ -2329,7 +2340,13 @@ contains
     do ie = nets, nete
        do j = 1,np
           do i = 1,np
-             p = change_coordinates(elem(ie)%spherep(i,j))
+             if (gfr%is_planar) then
+                p%x = elem(ie)%spherep(i,j)%lon*2*dd_pi/Lx
+                p%y = elem(ie)%spherep(i,j)%lat*2*dd_pi/Ly
+                p%z = 0
+             else
+                p = change_coordinates(elem(ie)%spherep(i,j))
+             end if
              elem(ie)%state%ps_v(i,j,timeidx) = &
                   1.0d3*(1 + 0.05*sin(2*p%x+0.5)*sin(p%y+1.5)*sin(3*p%z+2.5))
              q = 0.5*(1 + sin(3*p%x)*sin(3*p%y)*sin(4*p%z))
@@ -2609,7 +2626,8 @@ contains
     logical, intent(in) :: verbose
 
     real(kind=real_kind) :: a, b, rd, x, y, f0(np*np), f1(np*np), g(np,np), &
-         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1
+         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1, lat, lon, latext(2), &
+         lonext(2), tol
     integer :: nf, nf2, ie, i, j, k, iremap, info, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:), ps_v_fv(:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
@@ -2668,6 +2686,31 @@ contains
        if (rd > 10*eps) then
           nerr = nerr + 1
           write(iulog,*) 'gfr> Dinv', ie, rd
+       end if
+       if (gfr%is_planar) then
+          lonext(1) = minval(elem(ie)%spherep(:,:)%lon)
+          lonext(2) = maxval(elem(ie)%spherep(:,:)%lon)
+          latext(1) = minval(elem(ie)%spherep(:,:)%lat)
+          latext(2) = maxval(elem(ie)%spherep(:,:)%lat)
+          tol = max(lonext(2) - lonext(1), latext(2) - latext(1))*1.e4*eps
+          do i = 1, nf
+             do j = 1, nf
+                call gfr_f_get_latlon(ie, i, j, lat, lon)
+                if ( lon < lonext(1) .or. lon > lonext(2) .or. &
+                     lat < latext(1) .or. lat > latext(2)) then
+                   write(iulog,*) 'gfr> planar latlon ctr', ie, latext, lonext, lat, lon
+                   nerr = nerr + 1
+                end if
+                do k = 1, 4
+                   call gfr_f_get_corner_latlon(ie, i, j, k, lat, lon)
+                   if ( lon < lonext(1) - tol .or. lon > lonext(2) + tol .or. &
+                        lat < latext(1) - tol .or. lat > latext(2) + tol) then
+                      write(iulog,*) 'gfr> planar latlon crn', ie, latext, lonext, lat, lon
+                      nerr = nerr + 1
+                   end if                   
+                end do
+             end do
+          end do
        end if
 
        ! Check that FV -> GLL -> FV recovers the original FV values exactly
@@ -2839,8 +2882,8 @@ contains
     use kinds, only: iulog
 
     type (cartesian3D_t) :: corners(4), sphere
-    real (real_kind) :: refin(2), refout(2), err
-    integer :: i, j, n, nerr
+    real (real_kind) :: refin(2), refout(2), err, tol
+    integer :: i, j, n, trial, nerr
 
     nerr = 0
 
@@ -2854,18 +2897,28 @@ contains
     do i = 1,n
        refin(1) = -1 + (1.0_real_kind/(n-1))*(i-1)
        do j = 1,n
-          refin(2) = -1 + (1.0_real_kind/(n-1))*(j-1)
-          call ref2sphere(corners, refin(1), refin(2), sphere)
-          call sphere2ref(corners, sphere, refout(1), refout(2))
-          err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
-          if (err > 15*eps .or. &
-               maxval(abs(refout)) > 1 + 5*eps .or. &
-               any(refout /= refout)) then
-             write(iulog,*) refin(1), refin(2)
-             write(iulog,*) refout(1), refout(2)
-             write(iulog,*) err
-             nerr = nerr + 1
-          end if
+          do trial = 1, 2
+             refin(2) = -1 + (1.0_real_kind/(n-1))*(j-1)
+             call ref2sphere(corners, refin(1), refin(2), sphere)
+             if (trial == 2) then
+                sphere%x = 0.9d0*sphere%x
+                sphere%y = 0.9d0*sphere%y
+                sphere%z = 0.9d0*sphere%z
+             end if
+             call sphere2ref(corners, sphere, refout(1), refout(2))
+             err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
+             tol = 15*eps
+             if (trial == 2) tol = 1e-6
+             if (err > tol .or. &
+                  maxval(abs(refout)) > 1 + 5*eps .or. &
+                  any(refout /= refout)) then
+                write(iulog,*) 'gfr> test_sphere2ref trial', trial
+                write(iulog,*) refin(1), refin(2)
+                write(iulog,*) refout(1), refout(2)
+                write(iulog,*) err
+                nerr = nerr + 1
+             end if
+          end do
        end do
     end do
     if (nerr /= 0) write(iulog,*) 'test_sphere2ref FAILED'
