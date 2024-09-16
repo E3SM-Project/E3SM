@@ -1715,16 +1715,16 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
   </machine>
 
   <machine MACH="ghci-oci">
-    <DESC>OCI-based container 2.0</DESC>
+    <DESC>OCI-based container</DESC>
     <NODENAME_REGEX>ghci-oci</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/e3sm/cesm-inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/e3sm/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{HOME}/projects/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CIME_OUTPUT_ROOT>/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/projects/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/projects/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/local/packages/bin/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
@@ -1740,8 +1740,8 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       </arguments>
     </mpirun>
     <module_system type="none"/>
-    <RUNDIR>$ENV{HOME}/projects/e3sm/scratch/$CASE/run</RUNDIR>
-    <EXEROOT>$ENV{HOME}/projects/e3sm/scratch/$CASE/bld</EXEROOT>
+    <RUNDIR>/projects/e3sm/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>/projects/e3sm/scratch/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="E3SM_SRCROOT">$SRCROOT</env>
     </environment_variables>
