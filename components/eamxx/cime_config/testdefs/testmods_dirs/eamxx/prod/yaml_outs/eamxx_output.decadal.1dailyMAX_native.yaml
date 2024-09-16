@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: scream_output.decadal.1dailyMAX_native.h
+filename_prefix: eamxx_output.decadal.1dailyMAX_native.h
 iotype: pnetcdf
 Averaging Type: Max
 Max Snapshots Per File: 1
