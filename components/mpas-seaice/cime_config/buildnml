@@ -337,8 +337,8 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file = 'Iceberg_Climatology_Merino.SOwISC12to30E3r3.20240829.nc'
         if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
+            grid_date = '20240829'
+            grid_prefix = 'mpassi.SOwISC12to30E3r3.rstFromG-chrysalis'
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
