@@ -1177,52 +1177,17 @@ CONTAINS
 
     !-------------------------------------------------------------------------------
     ! RCEMIP phase 2 - Mock-Walker
-
-    ! MW_295dT1p25 - mean SST = 295 K / dSST = 1.25 K
-
-    if (sst_option == 11) then
-      mean_SST = 295 - TkFrz
-      delta_SST = 1.25
+    if (sst_option>=11 .and. sst_option<=15) then
+      if (sst_option==11) then; mean_SST = 295 - TkFrz; delta_SST = 1.250; end if ! MW_295dT1p25
+      if (sst_option==12) then; mean_SST = 300 - TkFrz; delta_SST = 0.625; end if ! MW_300dT0p625
+      if (sst_option==13) then; mean_SST = 300 - TkFrz; delta_SST = 1.250; end if ! MW_300dT1p25
+      if (sst_option==14) then; mean_SST = 300 - TkFrz; delta_SST = 2.500; end if ! MW_300dT2p5
+      if (sst_option==15) then; mean_SST = 305 - TkFrz; delta_SST = 1.250; end if ! MW_305dT1p25
       do i = 1, lsize
         sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
       end do
     end if
-
-    ! MW_300dT0p625 - mean SST = 300 K / dSST = 0.625 K
-    if (sst_option == 12) then
-      mean_SST = 300 - TkFrz
-      delta_SST = 0.625
-      do i = 1, lsize
-        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
-      end do
-    end if
-
-    ! MW_300dT1p25 - mean SST = 300 K / dSST = 1.25 K
-    if (sst_option == 13) then
-      mean_SST = 300 - TkFrz
-      delta_SST = 1.25
-      do i = 1, lsize
-        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
-      end do
-    end if
-
-    ! MW_300dT2p5 - mean SST = 300 K / dSST = 2.5 K
-    if (sst_option == 14) then
-      mean_SST = 300 - TkFrz
-      delta_SST = 2.5
-      do i = 1, lsize
-        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
-      end do
-    end if
-
-    ! MW_305dT1p25 - mean SST = 305 K / dSST = 1.25 K
-    if (sst_option == 15) then
-      mean_SST = 305 - TkFrz
-      delta_SST = 1.25
-      do i = 1, lsize
-        sst(i) = mean_SST + (delta_SST/2) * cos( rlat(i) * 360/54 )
-      end do
-    end if
+    !-------------------------------------------------------------------------------
 
   end subroutine prescribed_sst
 
