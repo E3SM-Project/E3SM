@@ -303,6 +303,15 @@ macro(init_standalone_build)
   file(APPEND ${_ProfileScript} "# modify 'OUTFILE' with a path in that the profiler can\n")
   file(APPEND ${_ProfileScript} "# create files such as a path in a scratch file system.\n")
 
+  # copy yaml configuration files
+  file(MAKE_DIRECTORY "${OMEGA_BUILD_DIR}/configs")
+  file(COPY "${OMEGA_SOURCE_DIR}/configs/Default.yml"
+       DESTINATION "${OMEGA_BUILD_DIR}/configs")
+  file(COPY "${OMEGA_SOURCE_DIR}/configs/Default.yml"
+       DESTINATION "${OMEGA_BUILD_DIR}/test")
+  file(RENAME "${OMEGA_BUILD_DIR}/test/Default.yml"
+       "${OMEGA_BUILD_DIR}/test/omega.yml")
+
   # set C and Fortran compilers *before* calling CMake project()
   set(CMAKE_C_COMPILER ${OMEGA_C_COMPILER})
   set(CMAKE_Fortran_COMPILER ${OMEGA_Fortran_COMPILER})
