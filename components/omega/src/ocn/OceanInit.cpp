@@ -140,8 +140,10 @@ int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
    } else if (RunDurationStr != NoneStr) {
       TimeInterval IntervalFromStr(RunDurationStr);
       if (IntervalFromStr != RunInterval) {
-         LOG_WARN("ocnInit: RunDuration and StopTime are inconsistent: "
-                  "using RunDuration");
+         if (StopTimeStr != NoneStr) {
+            LOG_WARN("ocnInit: RunDuration and StopTime are inconsistent: "
+                     "using RunDuration");
+         }
          RunInterval = IntervalFromStr;
       }
    }
