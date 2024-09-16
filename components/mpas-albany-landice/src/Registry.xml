@@ -457,11 +457,19 @@
 			    description="If true, extrapolate ocean data (temperature and salinity, or thermal forcing) from external source into underneath the ice draft."
 			    possible_values=".true. or .false."
                 />
-                <nml_option name="config_recalculate_thermal_forcing" type="logical" defaualt_value=".false." units="unitless"
-                            description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options inconfig_thermal_forcing_param_type. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
-                            possible_values=".true. or .false."
-                />
-                <nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
+      <nml_option name="config_recalculate_thermal_forcing" type="logical" default_value=".false." units="unitless"
+             description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options inconfig_thermal_forcing_param_type. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
+             possible_values=".true. or .false."
+      />
+		<nml_option name="config_TF_param_type" type="character" default_value="ISMIP6melt" units="unitless"
+				  description="Name of ocean thermal forcing parameterization method, as outlined in Hager et al. (2024). 'ISMIP6retreat' and 'AMretreat' ignore bathymetry and icebergs during extrapolation. 'ISMIP6melt' and 'AMmelt' account for bathymetry in extrapolation. 'AMberg' accounts for bathymetry and iceberg meltwater in extrapolation. 'AM' indicates a depth averaged thermal forcing, while 'ISMIP6retreat uses an average thermal forcing between 200-500m depth, and thermal forcing in 'ISMIP6melt' is taken at the grounding line. A final option, 'AMfit' uses input field icebergFjordMask to assign 'AMberg' to iceberg-laden fjords, and 'AMmelt' otherwise."
+				  possible_values="'ISMIP6retreat','AMretreat','ISMIP6melt','AMmelt','AMberg','AMfit'"
+	   />
+		<nml_option name="config_TF_iceberg_depth" type="real" default_value="-175.0" units="m"
+				  description="Depth above which to iceberg meltwater is important. If config_TF_param_type is set to 'AMberg' or 'AMfit', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
+				  possible_values="Any negative real value"
+		/>
+		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
 			    description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
 		/>
 		<nml_option name="config_weight_value_cell" type="real" default_value="0.9" units="unitless"
