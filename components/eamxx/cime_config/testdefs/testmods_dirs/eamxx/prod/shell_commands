@@ -61,7 +61,7 @@ else
 fi
 
 # set the output yaml files
-output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/v1prod/yaml_outs/ -maxdepth 1 -type f)
+output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/prod/yaml_outs/ -maxdepth 1 -type f)
 for file in ${output_yaml_files[@]}; do
     # if the word "coarse" is in the file name, do nothing
     if [[ "${file}" == *"_coarse.yaml" && "${hmapfile}" == "not-supported-yet" ]]; then
