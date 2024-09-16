@@ -759,8 +759,7 @@
       <value compset="^20TR.+CMIP6-OZONE"                       >284.317</value>
       <value compset="^20TR.+CMIP6-LULC"                        >284.317</value>
       <value compset="^20TR.+CMIP6-VOLC"                        >284.317</value>
-      <value compset="^SSP585.+CMIP6"				>0.000001</value>
-      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
+      <value compset="^SSP.+CMIP6"                              >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>

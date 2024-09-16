@@ -485,48 +485,48 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
      dataset (arbitrarily, RCP8.5) for the historical period, because all of the
      RCP datasets contain the 1850-2000 period as well as the future period. -->
 
-<flanduse_timeseries hgrid="360x720cru"    sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="360x720cru"    sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_360x720cru_hist_simyr1850-2015_c180220.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="0.9x1.25"      sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="0.9x1.25"      sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.9x1.25_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="1.9x2.5"       sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="1.9x2.5"       sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_1.9x2.5_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="10x15"         sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="10x15"         sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_10x15_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="48x96"         sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="48x96"         sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_48x96_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne0np4_antarcticax4v1"    sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_antarcticax4v1pg2_hist_simyr1850-2015_c210131.nc</flanduse_timeseries>
 
-<flanduse_timeseries hgrid="1x1_tropicAtl" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="1x1_tropicAtl" sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_hist_simyr1850-2005_c130627.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="1x1_brazil"    sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="1x1_brazil"    sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_1x1_brazil_rcp8.5_simyr1850-2100_c140610.nc</flanduse_timeseries>
 
-<flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
- <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2000" 
+ <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2015" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4.pg2_hist_simyr1850-2015_c210113.nc</flanduse_timeseries>
- <flanduse_timeseries hgrid="ne4np4.pg2"  sim_year_range="1850-2000"
+ <flanduse_timeseries hgrid="ne4np4.pg2"  sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne4pg2_hist_simyr1850-2015_c210722.nc</flanduse_timeseries>
- <flanduse_timeseries hgrid="ne0np4_northamericax4v1.pg2"  sim_year_range="1850-2000" 
+ <flanduse_timeseries hgrid="ne0np4_northamericax4v1.pg2"  sim_year_range="1850-2015" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne0np4_northamericax4v1.pg2_hist_simyr1850-2015_c211015.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
-<flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2015"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne1024np4.pg2"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne256np4.pg2"
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne256pg2_hist_simyr1850-2015_c240131.nc</flanduse_timeseries>
 
-<flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="r0125" sim_year_range="1850-2015"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
 
-<flanduse_timeseries hgrid="r05" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="r05" sim_year_range="1850-2015"
   use_crop=".false." use_cn=".true." >lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
 
-<flanduse_timeseries hgrid="r05" sim_year_range="1850-2000"
+<flanduse_timeseries hgrid="r05" sim_year_range="1850-2015"
   use_crop=".false." use_cn=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
 
 <!-- Dynamic PFT surface datasets for future scenarios(relative to {csmdata}) -->
@@ -666,7 +666,7 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2100</stream_year_last_ndep>
 
-<stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   >lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   >lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp245_c240903.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="8.5" >lnd/clm2/ndepdata/fndep_clm_rcp8.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="6"   >lnd/clm2/ndepdata/fndep_clm_rcp6.0_simyr1849-2106_1.9x2.5_c100810.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
@@ -899,8 +899,8 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_popdens>
 
-<stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
-<stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."    >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true." >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
 
 <popdensmapalgo use_cn=".true."                               >bilinear</popdensmapalgo>
 

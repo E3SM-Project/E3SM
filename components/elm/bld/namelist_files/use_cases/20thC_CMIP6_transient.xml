@@ -9,7 +9,7 @@
 
 <sim_year>1850</sim_year>
 
-<sim_year_range>1850-2000</sim_year_range>
+<sim_year_range>1850-2015</sim_year_range>
 
 <clm_start_type>arb_ic</clm_start_type>
 
@@ -18,7 +18,7 @@
 
 
 <stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >2101</stream_year_last_ndep>
 <model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
 
 
@@ -27,7 +27,7 @@
 <model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
 
 <stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
 
 
