@@ -1,25 +1,25 @@
 Omega:
-   TimeManagement:
-      StartTime: 0001-01-01_00:00:00
-      StopTime: 0001-01-01_02:00:00
-      RunDuration: none
-      CalendarType: No Leap
-   TimeIntegration:
-      TimeStepper: Forward-Backward
-      TimeStep: 0000_00:30:00
-   Dimension:
-      NVertLevels: 60
-   Decomp:
-      HaloWidth: 3
-      DecompMethod: MetisKWay
-   Advection:
-      FluxThicknessType: Center
-   Tendencies:
-      ThicknessFluxTendencyEnable: true
-      PVTendencyEnable: true
-      KETendencyEnable: true
-      SSHTendencyEnable: true
-      VelDiffTendencyEnable: true
-      ViscDel2: 1.0
-      VelHyperDiffTendencyEnable: true
-      ViscDel4: 1.0
+  TimeManagement:
+    StartTime: 0001-01-01_00:00:00
+    StopTime: 0001-01-01_02:00:00
+    RunDuration: none
+    CalendarType: No Leap
+  TimeIntegration:
+    TimeStepper: Forward-Backward
+    TimeStep: 0000_00:30:00
+  Dimension:
+    NVertLevels: 60
+  Decomp:
+    HaloWidth: 3
+    DecompMethod: MetisKWay
+  Advection:
+    FluxThicknessType: Center
+  Tendencies:
+    ThicknessFluxTendencyEnable: true
+    PVTendencyEnable: true
+    KETendencyEnable: true
+    SSHTendencyEnable: true
+    VelDiffTendencyEnable: true
+    ViscDel2: 1.0
+    VelHyperDiffTendencyEnable: true
+    ViscDel4: 1.0
