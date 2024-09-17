@@ -1896,14 +1896,20 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_C_ROOT}</env>
-      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_ROOT}</env>
-      <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
       <env name="BLAS_ROOT">$ENV{OPENBLAS_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">OpenBLAS</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+    </environment_variables>
+    <environment_variables mpilib="mpi-serial">
+      <env name="NETCDF_FORTRAN_PATH">/home/jgfouca/packages/netcdf-fortran-4.6.1-bin</env>
+      <env name="LD_LIBRARY_PATH">/home/jgfouca/packages/netcdf-fortran-4.6.1-bin:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
 
@@ -3497,7 +3503,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED> 
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
        <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
@@ -4290,7 +4296,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
   </machine>
 
   <machine MACH="chicoma-gpu">
-    <DESC>Chicoma GPU nodes at LANL IC. Each GPU node has single 
+    <DESC>Chicoma GPU nodes at LANL IC. Each GPU node has single
 AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
     <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
     <OS>Linux</OS>
