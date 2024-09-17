@@ -58,6 +58,7 @@ module ocn_manufactured_solution
    real (kind=RKIND) :: kx, ky
    real (kind=RKIND) :: ang_freq
    real (kind=RKIND) :: eta0
+   real (kind=RKIND) :: viscDel2, viscDel4
    real (kind=RKIND) :: H0
 
 !***********************************************************************
@@ -200,6 +201,19 @@ contains
             v = eta0*((fEdge(iEdge) + gravity*ky)*cos(phase) &
                       + ang_freq*sin(phase) &
                       - 0.5_RKIND*eta0*(kx + ky)*sin(2.0_RKIND*(phase))) 
+
+            if (.not. config_disable_vel_hmix) then
+               if (config_use_mom_del2) then 
+                  viscDel2 = config_mom_del2
+                  u = u + viscDel2 * eta0 * kx**2 * cos(phase)
+                  v = v + viscDel2 * eta0 * ky**2 * cos(phase)
+               endif
+               if (config_use_mom_del4) then 
+                  viscDel4 = config_mom_del4
+                  u = u - viscDel4 * eta0 * (kx**4 * cos(phase) + kx**2 * ky**2 * cos(phase))
+                  v = v - viscDel4 * eta0 * (ky**4 * cos(phase) + kx**2 * ky**2 * cos(phase))
+               endif
+            endif
 
             tend(k,iEdge) = tend(k,iEdge) + u*cos(angleEdge(iEdge)) + v*sin(angleEdge(iEdge))
          enddo
