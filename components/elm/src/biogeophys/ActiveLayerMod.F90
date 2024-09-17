@@ -184,7 +184,7 @@ contains
          ! update subsidence based on change in ALT
          ! melt_profile stores the amount of excess_ice
          ! melted in this timestep.
-         do j = nlevgrnd-1,1,-1
+         do j = 1,nlevgrnd
             if (j < k_frz) then
                melt_profile(j) = 0.0_r8
             else if (j .eq. k_frz) then
