@@ -75,6 +75,12 @@ class Decomp {
        const std::vector<I4> &CellsOnCellInit ///< [in] cell nbrs in init dstrb
    );
 
+   /// Trivially partition cells in the case of single task
+   /// It sets the NCells sizes (NCellsOwned,
+   /// NCellsHalo array, NCellsAll and NCellsSize) and the final CellID
+   /// and CellLoc arrays
+   void partCellsSingleTask();
+
    /// Partition the edges given the cell partition and edge connectivity
    /// The first cell ID associated with an edge in the CellsOnEdge array
    /// is assumed to own the edge. The inputs are the edge-cell connectivity

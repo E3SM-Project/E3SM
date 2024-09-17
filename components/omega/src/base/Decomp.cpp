@@ -425,29 +425,37 @@ Decomp::Decomp(
    // Close file
    Err = IO::closeFile(FileID);
 
-   // Use the mesh adjacency information to create a partition of cells
-   switch (Method) { // branch depending on method chosen
-
-   //---------------------------------------------------------------------------
-   // ParMetis KWay method
-   case PartMethodMetisKWay: {
-
-      Err = partCellsKWay(InEnv, CellsOnCellInit);
-      if (Err != 0) {
-         LOG_CRITICAL("Decomp: Error partitioning cells KWay");
-         return;
-      }
-      break;
-   } // end case MethodKWay
+   // In the case of single task avoid calling a full partitioning routine and
+   // just set the needed variables directly. This is done because some METIS
+   // functions can raise SIGFPE when numparts == 1 due to division by zero
+   // See: https://github.com/KarypisLab/METIS/issues/67
+   if (NumTasks == 1) {
+      partCellsSingleTask();
+   } else {
+      // Use the mesh adjacency information to create a partition of cells
+      switch (Method) { // branch depending on method chosen
 
       //---------------------------------------------------------------------------
-      // Unknown partitioning method
+      // ParMetis KWay method
+      case PartMethodMetisKWay: {
 
-   default:
-      LOG_CRITICAL("Decomp: Unknown or unsupported decomposition method");
-      return;
+         Err = partCellsKWay(InEnv, CellsOnCellInit);
+         if (Err != 0) {
+            LOG_CRITICAL("Decomp: Error partitioning cells KWay");
+            return;
+         }
+         break;
+      } // end case MethodKWay
 
-   } // End switch on Method
+         //---------------------------------------------------------------------------
+         // Unknown partitioning method
+
+      default:
+         LOG_CRITICAL("Decomp: Unknown or unsupported decomposition method");
+         return;
+
+      } // End switch on Method
+   }
 
    //---------------------------------------------------------------------------
 
@@ -765,6 +773,32 @@ Decomp *Decomp::get(const std::string Name ///< [in] Name of environment
    }
 
 } // end get Decomposition
+
+//------------------------------------------------------------------------------
+// Trivially partition cells in the case of single task
+// It sets the NCells sizes (NCellsOwned,
+// NCellsHalo array, NCellsAll and NCellsSize) and the final CellID
+// and CellLoc arrays
+void Decomp::partCellsSingleTask() {
+
+   NCellsOwned = NCellsGlobal;
+
+   NCellsHaloH = HostArray1DI4("NCellsHalo", HaloWidth);
+   for (int Halo = 0; Halo < HaloWidth; ++Halo) {
+      NCellsHaloH(Halo) = NCellsGlobal;
+   }
+
+   NCellsAll  = NCellsGlobal;
+   NCellsSize = NCellsGlobal + 1;
+
+   CellIDH  = HostArray1DI4("CellID", NCellsSize);
+   CellLocH = HostArray2DI4("CellLoc", NCellsSize, 2);
+   for (int Cell = 0; Cell < NCellsAll; ++Cell) {
+      CellIDH(Cell)     = Cell + 1;
+      CellLocH(Cell, 0) = 0;
+      CellLocH(Cell, 1) = Cell;
+   }
+} // end function partCellsSingleTask
 
 //------------------------------------------------------------------------------
 // Partition the cells using the Metis/ParMetis KWay method
