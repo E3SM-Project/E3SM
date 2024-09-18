@@ -43,6 +43,7 @@ userGuide/OceanState
 userGuide/TimeMgr
 userGuide/TimeStepping
 userGuide/Reductions
+userGuide/Tracers
 ```
 
 ```{toctree}
@@ -76,6 +77,7 @@ devGuide/OceanState
 devGuide/TimeMgr
 devGuide/TimeStepping
 devGuide/Reductions
+devGuide/Tracers
 ```
 
 ```{toctree}

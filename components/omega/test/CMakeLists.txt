@@ -338,3 +338,14 @@ add_omega_test(
     drivers/StandaloneDriverTest.cpp
     "-n;8"
 )
+
+##################
+# Tracers test
+##################
+
+add_omega_test(
+    TRACERS_TEST
+    testTracers.exe
+    ocn/TracersTest.cpp
+    "-n;8"
+)
