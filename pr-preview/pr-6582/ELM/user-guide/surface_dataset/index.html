@@ -1911,7 +1911,7 @@
         <li class="md-nav__item">
   <a href="#1-load-the-appropriate-modules" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Load the appropriate modules.
+      1. Load the appropriate modules
     </span>
   </a>
   
@@ -1920,7 +1920,25 @@
         <li class="md-nav__item">
   <a href="#2-compile-mksurfdata_map" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Compile mksurfdata_map.
+      2. Compile mksurfdata_map
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-the-namelist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build the namelist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-mksurfdata_map-via-an-interactive-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run mksurfdata_map via an interactive job
     </span>
   </a>
   
@@ -1954,11 +1972,11 @@
 
 <h1 id="creating-an-elm-surface-dataset">Creating an ELM surface dataset</h1>
 <p>The notes describe the steps in creating an ELM surface dataset at 0.5x0.5 resolution for 1950 on Perlmutter.</p>
-<h2 id="1-load-the-appropriate-modules">1. Load the appropriate modules.</h2>
+<h2 id="1-load-the-appropriate-modules">1. Load the appropriate modules</h2>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;e3ms-dir&gt;
 <span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>./cime/CIME/Tools/get_case_env<span class="k">)</span>
 </code></pre></div>
-<h2 id="2-compile-mksurfdata_map">2. Compile <code>mksurfdata_map</code>.</h2>
+<h2 id="2-compile-mksurfdata_map">2. Compile <code>mksurfdata_map</code></h2>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>components/elm/tools/mksurfdata_map/src/
 
 make<span class="w"> </span>clean
@@ -1967,11 +1985,10 @@ make<span class="w"> </span>clean
 
 <span class="nv">USER_FC</span><span class="o">=</span>ifort<span class="w"> </span><span class="nv">LIB_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nc-config --flibs`&quot;</span><span class="w"> </span><span class="nv">INC_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nf-config --includedir`&quot;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </code></pre></div>
-<ol>
-<li>Build the namelist. This steps assumes that the resolution for which the new surface dataset is being created is a supported resolution.
+<h2 id="build-the-namelist">Build the namelist</h2>
+<p>This steps assumes that the resolution for which the new surface dataset is being created is a supported resolution.
 If the surface dataset is being created for an unsupported resolution, 16 mapping files will have to be created to map the raw datasets
-onto this unsupported resolution.</li>
-</ol>
+onto this unsupported resolution.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>../
 
 <span class="nv">RES</span><span class="o">=</span><span class="m">0</span>.5x0.5
@@ -1981,9 +1998,7 @@ onto this unsupported resolution.</li>
 ./mksurfdata.pl<span class="w"> </span>-res<span class="w"> </span><span class="nv">$RES</span><span class="w"> </span>-years<span class="w"> </span><span class="nv">$YR</span><span class="w"> </span>-d<span class="w"> </span>-dinlc<span class="w"> </span><span class="nv">$DIN_LOC_ROOT</span>
 mv<span class="w"> </span>namelist<span class="w"> </span>namelist.<span class="nv">$RES</span>.<span class="nv">$YR</span>
 </code></pre></div>
-<ol>
-<li>Run <code>mksurfdata_map</code> via an interactive job.</li>
-</ol>
+<h2 id="run-mksurfdata_map-via-an-interactive-job">Run <code>mksurfdata_map</code> via an interactive job</h2>
 <div class="highlight"><pre><span></span><code>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">01</span>:00:00<span class="w"> </span>--constraint<span class="w"> </span>cpu<span class="w"> </span>--account<span class="w"> </span>e3sm
 
 <span class="nv">RES</span><span class="o">=</span><span class="m">0</span>.5x0.5
