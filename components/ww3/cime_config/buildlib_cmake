@@ -45,21 +45,18 @@ def buildlib(bldroot, installpath, case):
     modeldir = "{}/WW3/model".format(repodir)
     builddir = "{}/wav".format(exeroot)
 
-    # TODO: these work dirs will have to be changed to live in the binary/build area.
-    # Achieving this will probably require a significant refactor of the ww3 infrastructure.
-    # Doing this stuff in-source not only clutters the repo, but also introduces potential race
-    # conditions if we were to try to build multiple ww3 cases simultaneously.
-    bindir1   = "{}/bin".format(modeldir)
-    bindir   = "{}/wav/bin".format(exeroot)
-    shutil.copytree(bindir1, bindir)
-    auxdir1   = "{}/aux".format(modeldir)
-    auxdir   = "{}/wav/aux".format(exeroot)
-    shutil.copytree(auxdir1, auxdir)
-    ftndir1   = "{}/ftn".format(modeldir)
-    ftndir   = "{}/wav/ftn".format(exeroot)
-    shutil.copytree(ftndir1, ftndir)
+    # work dirs are placed in the binary/build area.
+    bindir_source  = "{}/bin".format(modeldir)
+    bindir   = "{}/bin".format(builddir)
+    shutil.copytree(bindir_source, bindir)
+    auxdir_source  = "{}/aux".format(modeldir)
+    auxdir   = "{}/aux".format(builddir)
+    shutil.copytree(auxdir_source, auxdir)
+    ftndir_source  = "{}/ftn".format(modeldir)
+    ftndir   = "{}/ftn".format(builddir)
+    shutil.copytree(ftndir_source, ftndir)
     
-    tmpdir   = "{}/wav/tmp".format(exeroot)
+    tmpdir   = "{}/tmp".format(builddir)
 
     # Run w3_setup to create wwatch3.env file
     env_file = os.path.join(bindir, "wwatch3.env")
