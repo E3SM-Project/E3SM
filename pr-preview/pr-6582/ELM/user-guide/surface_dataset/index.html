@@ -1902,6 +1902,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-load-the-appropriate-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Load the appropriate modules.
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-compile-mksurfdata_map" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Compile mksurfdata_map.
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1928,15 +1954,11 @@
 
 <h1 id="creating-an-elm-surface-dataset">Creating an ELM surface dataset</h1>
 <p>The notes describe the steps in creating an ELM surface dataset at 0.5x0.5 resolution for 1950 on Perlmutter.</p>
-<ol>
-<li>Load the appropriate modules.</li>
-</ol>
+<h2 id="1-load-the-appropriate-modules">1. Load the appropriate modules.</h2>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;e3ms-dir&gt;
 <span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>./cime/CIME/Tools/get_case_env<span class="k">)</span>
 </code></pre></div>
-<ol>
-<li>Compile <code>mksurfdata_map</code>.</li>
-</ol>
+<h2 id="2-compile-mksurfdata_map">2. Compile <code>mksurfdata_map</code>.</h2>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>components/elm/tools/mksurfdata_map/src/
 
 make<span class="w"> </span>clean
