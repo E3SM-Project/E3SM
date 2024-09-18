@@ -15,7 +15,7 @@ The steps involved in creating a new IC files are as follows:
 
 The notes below provide an example of creating 1850 ELM IC file for the NARRM grid using E3SM v3 LR piControl from year = 0101. These notes are provided for Chrysalis.
 
-### 1. Identification of the input ELM IC file
+## 1. Identification of the input ELM IC file
 
 The identified input land condition file for this case is the following:
 
@@ -39,7 +39,7 @@ elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1850-01-01-00000.c`date "+
 ```
 # Load relevant modules
 cd <e3sm-dir>
-eval $(./cime/CIME/Tools/get_case_env/get_case_env)
+eval $(./cime/CIME/Tools/get_case_env)
 
 # change directory
 cd components/elm/tools/interpinic/src
