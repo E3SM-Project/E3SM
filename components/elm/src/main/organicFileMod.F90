@@ -106,6 +106,9 @@ contains
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun('organicrd: errror reading ORGANIC')
 
+       ! Close file
+       call ncd_pio_closefile(ncid)
+
        if ( masterproc )then
           write(iulog,*) 'Successfully read organic matter data'
           write(iulog,*)
