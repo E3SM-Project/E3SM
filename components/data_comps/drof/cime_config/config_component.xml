@@ -13,7 +13,7 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%NYFAIS00][%NYFAIS45][%NYFAIS55][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA][%JRA-1p5][%JRA-1p5-AIS0ROF][%JRA-1p4-2018][%JRA-1p4-2018-AIS0ICE][%JRA-1p4-2018-AIS0LIQ][%JRA-1p4-2018-AIS0ROF[%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]">Data runoff model</desc>
+    <desc rof="DROF[%NULL][%NYF][%NYFAIS00][%NYFAIS45][%NYFAIS55][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p5-AIS0ROF][%JRA-1p4-2018][%JRA-1p4-2018-AIS0ICE][%JRA-1p4-2018-AIS0LIQ][%JRA-1p4-2018-AIS0ROF[%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]">Data runoff model</desc>
     <desc option="NULL"     >NULL mode</desc>
     <desc option="NYF"      >COREv2 normal year forcing:</desc>
     <desc option="NYFAIS00" >COREv2 normal year forcing:</desc>
@@ -24,6 +24,7 @@
     <desc option="IAFAIS45" >COREv2 interannual year forcing:</desc>
     <desc option="IAFAIS55" >COREv2 interannual year forcing:</desc>
     <desc option="CPLHIST"  >CPLHIST mode:</desc>
+    <desc option="JRA-1p5-2023">JRA55 interannual forcing, v1.5, through 2023</desc>
     <desc option="JRA-1p5">JRA55 interannual forcing, v1.5, through 2020</desc>
     <desc option="JRA-1p5-AIS0ROF">JRA55 interannual forcing, v1.5, through 2020, no rofi or rofl around AIS</desc>
     <desc option="JRA-1p4-2018">JRA55 interannual forcing, v1.4, through 2018</desc>
@@ -61,6 +62,7 @@
       <value compset="_DROF%IAFAIS55" >DIATREN_IAF_AIS55_RX1</value>
       <value compset="_DROF%CPLHIST">CPLHIST</value>
       <value compset="_DROF%JRA" >IAF_JRA</value>
+      <value compset="_DROF%JRA-1p5-2023" >IAF_JRA_1p5</value>
       <value compset="_DROF%JRA-1p5" >IAF_JRA_1p5</value>
       <value compset="_DROF%JRA-1p5-AIS0ROF" >IAF_JRA_1p5_AIS0ROF</value>
       <value compset="_DROF%JRA-1p4-2018" >IAF_JRA_1p4_2018</value>
@@ -165,6 +167,7 @@
       <value compset="_DROF%JRA"          >1</value>
       <value compset="_DROF%JRA-1p4-2018" >1</value>
       <value compset="_DROF%JRA-1p5"      >1</value>
+      <value compset="_DROF%JRA-1p5-2023" >1</value>
     </values>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
@@ -179,6 +182,7 @@
       <value compset="_DROF%JRA"          >1958</value>
       <value compset="_DROF%JRA-1p4-2018" >1958</value>
       <value compset="_DROF%JRA-1p5"      >1958</value>
+      <value compset="_DROF%JRA-1p5-2023" >1958</value>
     </values>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
@@ -193,6 +197,7 @@
       <value compset="_DROF%JRA"          >2016</value>
       <value compset="_DROF%JRA-1p4-2018" >2018</value>
       <value compset="_DROF%JRA-1p5"      >2020</value>
+      <value compset="_DROF%JRA-1p5-2023" >2023</value>
     </values>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
