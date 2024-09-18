@@ -1990,45 +1990,45 @@ So, for a new ELM SP-mode IC file, use an ELM input file corresponding to the SP
 </code></pre></div>
 <h2 id="2-obtaining-an-elm-restart-file">2. Obtaining an ELM restart file</h2>
 <p>Using an existing NARRM land IC and making a copy of it</p>
-<div class="highlight"><pre><span></span><code>cd components/elm/tools/interpinic
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>components/elm/tools/interpinic
 
-cp /lcrc/group/e3sm/data/inputdata/lnd/clm2/initdata_map/elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1870-01-01-00000.c20240704.nc \
-elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1850-01-01-00000.c`date &quot;+%Y%m%d&quot;`.nc
+cp<span class="w"> </span>/lcrc/group/e3sm/data/inputdata/lnd/clm2/initdata_map/elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1870-01-01-00000.c20240704.nc<span class="w"> </span><span class="se">\</span>
+elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1850-01-01-00000.c<span class="sb">`</span>date<span class="w"> </span><span class="s2">&quot;+%Y%m%d&quot;</span><span class="sb">`</span>.nc
 </code></pre></div>
 <h2 id="3-compiling-interpinic">3. Compiling <code>interpinic</code></h2>
-<div class="highlight"><pre><span></span><code># Load relevant modules
-cd &lt;e3sm-dir&gt;
-eval $(./cime/CIME/Tools/get_case_env)
+<div class="highlight"><pre><span></span><code><span class="c1"># Load relevant modules</span>
+<span class="nb">cd</span><span class="w"> </span>&lt;e3sm-dir&gt;
+<span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>./cime/CIME/Tools/get_case_env<span class="k">)</span>
 
-# change directory
-cd components/elm/tools/interpinic/src
+<span class="c1"># change directory</span>
+<span class="nb">cd</span><span class="w"> </span>components/elm/tools/interpinic/src
 
-export USER_LDFLAGS=&quot;-L$NETCDF_C_DIR/lib -lnetcdf -L$NETCDF_F_DIR/lib -lnetcdff  -L$HDF5_DIR/lib -lhdf5&quot;
+<span class="nb">export</span><span class="w"> </span><span class="nv">USER_LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L</span><span class="nv">$NETCDF_C_DIR</span><span class="s2">/lib -lnetcdf -L</span><span class="nv">$NETCDF_F_DIR</span><span class="s2">/lib -lnetcdff  -L</span><span class="nv">$HDF5_DIR</span><span class="s2">/lib -lhdf5&quot;</span>
 
-USER_FC=ifort LIB_NETCDF=&quot;`nc-config --flibs`&quot; INC_NETCDF=&quot;`nf-config --includedir`&quot; make VERBOSE=1
+<span class="nv">USER_FC</span><span class="o">=</span>ifort<span class="w"> </span><span class="nv">LIB_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nc-config --flibs`&quot;</span><span class="w"> </span><span class="nv">INC_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nf-config --includedir`&quot;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </code></pre></div>
 <h2 id="4-run-interpinic">4. Run <code>interpinic</code></h2>
 <p>The <code>interpinic</code> can then be run via the following batch job (e.g., <code>remap.r025_RRSwISC6to18E3r4.1850.batch</code>) to generate the initial condition.</p>
-<div class="highlight"><pre><span></span><code>&gt;cat remap.r025_RRSwISC6to18E3r4.1850.batch
+<div class="highlight"><pre><span></span><code>&gt;cat<span class="w"> </span>remap.r025_RRSwISC6to18E3r4.1850.batch
 
-#!/bin/sh
-#SBATCH  --job-name=remap
-#SBATCH  --nodes=1
-#SBATCH  --exclusive
-#SBATCH  --time 24:00:00
-#SBATCH  -p slurm
-#SBATCH  --account esmd
+<span class="c1">#!/bin/sh</span>
+<span class="c1">#SBATCH  --job-name=remap</span>
+<span class="c1">#SBATCH  --nodes=1</span>
+<span class="c1">#SBATCH  --exclusive</span>
+<span class="c1">#SBATCH  --time 24:00:00</span>
+<span class="c1">#SBATCH  -p slurm</span>
+<span class="c1">#SBATCH  --account esmd</span>
 
-# Load relevant modules.
-cd &lt;e3sm-dir&gt;
-eval $(./cime/CIME/Tools/get_case_env/get_case_env)
+<span class="c1"># Load relevant modules.</span>
+<span class="nb">cd</span><span class="w"> </span>&lt;e3sm-dir&gt;
+<span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>./cime/CIME/Tools/get_case_env/get_case_env<span class="k">)</span>
 
-# Change dir to `interpinic`
-cd components/elm/tools/interpinic/src
+<span class="c1"># Change dir to `interpinic`</span>
+<span class="nb">cd</span><span class="w"> </span>components/elm/tools/interpinic/src
 
-srun -n 1 ./interpinic \
--i /lcrc/group/e3sm2/ac.golaz/E3SMv3/v3.LR.piControl/archive/rest/0101-01-01-00000/v3.LR.piControl.elm.r.0101-01-01-00000.nc \
--o elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1850-01-01-00000.c20240903.nc
+srun<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>./interpinic<span class="w"> </span><span class="se">\</span>
+-i<span class="w"> </span>/lcrc/group/e3sm2/ac.golaz/E3SMv3/v3.LR.piControl/archive/rest/0101-01-01-00000/v3.LR.piControl.elm.r.0101-01-01-00000.nc<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>elmi.v3-NARRM.northamericax4v1pg2_r025_IcoswISC30E3r5.1850-01-01-00000.c20240903.nc
 </code></pre></div>
 
 
