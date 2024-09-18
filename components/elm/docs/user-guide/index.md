@@ -81,7 +81,6 @@ provides guidance on enabling these different FATES run modes.
 
 A new surface dataset for ELM is generated using `mksurfdata_map` and the notes about it are available [here](surface_dataset.md)
 
-
 ## Generate land initial condition
 
 Initial ELM condition can be generated using `interpinic` and the notes about it are available [here](interpinic.md).
