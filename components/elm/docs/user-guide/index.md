@@ -77,7 +77,11 @@ Using the above-mentioned settings:
 The [FATES User's Guide section on namelist options](https://fates-users-guide.readthedocs.io/en/latest/user/Namelist-Options-and-Run-Time-Modes.html)
 provides guidance on enabling these different FATES run modes.
 
+## Create land surface dataset
+
+A new surface dataset for ELM is generated using `mksurfdata_map` and the notes about it are available [here](surface_dataset.md)
+
+
 ## Generate land initial condition
 
 Initial ELM condition can be generated using `interpinic` and the notes about it are available [here](interpinic.md).
-
