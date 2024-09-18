@@ -93,6 +93,11 @@ MACHINE_METADATA = {
     "linux-generic" :        ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-debug" :  ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", ""),
+    "ghci-snl-openmp" : ([],
+                         ["mpicxx","mpifort","mpicc"],
+                         "",
+                         "/projects/e3sm/baselines/scream/master-baselines"
+                        ),
 }
 
 if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
