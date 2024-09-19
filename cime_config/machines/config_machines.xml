@@ -223,8 +223,8 @@
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel/2023.1.0</command>
+        <command name="load">PrgEnv-intel/8.5.0</command>
+        <command name="load">intel/2023.2.0</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -239,13 +239,25 @@
         <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
-      <modules>
+      <modules compiler="intel">
+        <command name="load">craype-accel-host</command>
+        <command name="load">craype/2.7.30</command>
+        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
+      </modules>
+
+      <modules compiler="!intel">
         <command name="load">craype-accel-host</command>
         <command name="load">craype/2.7.20</command>
         <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+      </modules>
+
+      <modules>
         <command name="load">cmake/3.24.3</command>
         <command name="load">evp-patch</command>
       </modules>
