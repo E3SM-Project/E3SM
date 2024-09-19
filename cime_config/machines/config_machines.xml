@@ -1880,9 +1880,10 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">sems-netcdf-c-serial/4.9.2</command>
+        <command name="load">sems-netcdf-fortran-serial/4.6.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/4.1.6</command>
+        <command name="load">sems-openmpi-no-cuda/4.1.6</command>
         <command name="load">sems-netcdf-c/4.9.2</command>
         <command name="load">sems-netcdf-cxx/4.2</command>
         <command name="load">sems-netcdf-fortran/4.6.1</command>
@@ -1896,6 +1897,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <environment_variables>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_C_ROOT}</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_ROOT}</env>
       <env name="BLAS_ROOT">$ENV{OPENBLAS_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
@@ -1903,12 +1905,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <env name="BLA_VENDOR">OpenBLAS</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
     </environment_variables>
-    <environment_variables mpilib="mpi-serial">
-      <env name="NETCDF_FORTRAN_PATH">/home/jgfouca/packages/netcdf-fortran-4.6.1-bin</env>
-      <env name="LD_LIBRARY_PATH">/home/jgfouca/packages/netcdf-fortran-4.6.1-bin:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
