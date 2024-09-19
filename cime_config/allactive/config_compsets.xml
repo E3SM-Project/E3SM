@@ -392,6 +392,11 @@
 </compset>
 
 <compset>
+  <alias>CRYO1850-1pctCO2</alias>
+  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>CRYO1950</alias>
   <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
@@ -408,7 +413,12 @@
 
 <compset>
   <alias>CRYO20TR</alias>
-  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>CRYOSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
