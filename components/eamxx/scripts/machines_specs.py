@@ -237,9 +237,9 @@ def is_cuda_machine(machine):
     assert_machine_supported(machine)
 
     env_setup_raw = MACHINE_METADATA[machine][0]
-    env_setup_str = " ".join(env_setup_raw)
+    env_setup_str = " ".join(env_setup_raw).lower()
 
-    return "cuda" in env_setup_str.lower()
+    return ("no-cuda" not in env_setup_str and "cuda" in env_setup_str)
 
 ###############################################################################
 def setup_mach_env(machine, ctest_j=None):
