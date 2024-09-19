@@ -13,3 +13,8 @@ string(APPEND CMAKE_Fortran_FLAGS " -Wno-implicit-interface")
 
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
+
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L/opt/cray/pe/gcc/12.2.0/snos/lib64 -lgfortran -lstdc++")
+
+# to support Fortran specific compiler intrinsic functions
+set(E3SM_LINK_WITH_FORTRAN "TRUE")

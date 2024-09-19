@@ -12,7 +12,7 @@ module MaintenanceRespMod
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use pftvarcon           , only : npcropmin
+  use pftvarcon           , only : iscft
   use SharedParamsMod   , only : ParamsShareInst
   use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
@@ -182,10 +182,10 @@ contains
 
          end if
 
-         if (woody(ivt(p)) == 1) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             livestem_mr(p) = livestemn(p)*br_mr*tc
             livecroot_mr(p) = livecrootn(p)*br_mr*tc
-         else if (ivt(p) >= npcropmin .and. livestemn(p) .gt. 0._r8) then
+         else if (iscft(ivt(p)) .and. livestemn(p) .gt. 0._r8) then
             livestem_mr(p) = livestemn(p)*br_mr*tc
             grain_mr(p) = grainn(p)*br_mr*tc
          end if

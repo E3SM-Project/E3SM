@@ -272,7 +272,7 @@ contains
     !
     ! !USES:
     use decompMod , only : BOUNDS_LEVEL_CLUMP
-    use pftvarcon , only : npcropmin, nppercropmin
+    use pftvarcon , only : iscft, crop, percrop
     use landunit_varcon, only : istsoil, istcrop, istice_mec
     use column_varcon, only : icol_road_perv
     !
@@ -420,17 +420,17 @@ contains
        t =veg_pp%topounit(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
-             if (veg_pp%itype(p) < npcropmin) then
+             if (.not. iscft(veg_pp%itype(p))) then
                 l =veg_pp%landunit(p)
                 if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                    fnc = fnc + 1
                    this_filter(nc)%soilnopcropp(fnc) = p
                 end if
              else
-                if (veg_pp%itype(p) < nppercropmin) then
+                if (percrop(veg_pp%itype(p)) < 1) then
                    fc = fc + 1
                    this_filter(nc)%pcropp(fc) = p
-                else if (veg_pp%itype(p) >= nppercropmin) then
+                else if (percrop(veg_pp%itype(p)) >= 1) then
                    fpc = fpc + 1
                    this_filter(nc)%ppercropp(fpc) = p
                 end if

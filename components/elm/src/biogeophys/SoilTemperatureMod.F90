@@ -834,7 +834,7 @@ contains
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use elm_varctl      , only : iulog
+    use elm_varctl      , only : iulog, use_T_rho_dependent_snowthk
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -847,7 +847,7 @@ contains
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: l,c,j                     ! indices
+    integer  :: l,c,j,i                     ! indices
     integer  :: nlevbed                   ! # levels to bedrock
     integer  :: fc                        ! lake filtered column indices
     real(r8) :: dksat                     ! thermal conductivity for saturated soil (j/(k s m))
@@ -856,6 +856,17 @@ contains
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
     character(len=64) :: event
+    
+    real(r8), parameter :: rho_ice     = 917._r8
+    real(r8) :: k_snw_vals(5)
+    real(r8) :: k_snw_tmps(5)
+    real(r8) :: k_snw_coe1(5)
+    real(r8) :: k_snw_coe2(5)
+    real(r8) :: k_snw_coe3(5)
+    data k_snw_tmps(:) /223.0_r8, 248.0_r8, 263.0_r8, 268.0_r8, 273.0_r8/
+    data k_snw_coe1(:) /2.564_r8, 2.172_r8, 1.985_r8, 1.883_r8, 1.776_r8/
+    data k_snw_coe2(:) /-0.059_r8, 0.015_r8, 0.073_r8, 0.107_r8, 0.147_r8/
+    data k_snw_coe3(:) /0.0205_r8, 0.0252_r8, 0.0336_r8, 0.0386_r8, 0.0455_r8/
     !-----------------------------------------------------------------------
     event = 'SoilThermProp'
     call t_start_lnd( event )
@@ -943,14 +954,39 @@ contains
                   endif
                endif
             endif
+            
+            if (use_T_rho_dependent_snowthk) then ! choose which snow thermal conductivity to use 
+               if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
+                    bw(c,j) = (h2osoi_ice(c,j) + h2osoi_liq(c,j)) / (frac_sno(c) * dz(c,j))
 
-            ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
-            ! Only examine levels from snl(c)+1 -> 0 where snl(c) < 1
-            if (snl(c)+1 < 1 .AND. (j >= snl(c)+1) .AND. (j <= 0)) then
-               bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
-               thk(c,j) = tkair + (7.75e-5_r8 *bw(c,j) + 1.105e-6_r8*bw(c,j)*bw(c,j))*(tkice-tkair)
-            end if
+                       do i = 1, 5
+                            k_snw_vals(i) = k_snw_coe1(i) * (bw(c,j) / rho_ice)**2 - k_snw_coe2(i) * (bw(c,j) / rho_ice) + k_snw_coe3(i)
+                       end do
 
+                       do i = 1, size(k_snw_tmps) - 1
+                        if (k_snw_tmps(i) <= t_soisno(c,j) .and. t_soisno(c,j) <= k_snw_tmps(i + 1)) then
+                            thk(c,j) = k_snw_vals(i) + (t_soisno(c,j) - k_snw_tmps(i)) * (k_snw_vals(i + 1)-k_snw_vals(i)) / (k_snw_tmps(i + 1) - k_snw_tmps(i))
+                        end if
+                       end do
+
+                     ! Handle edge cases if t_soisno(c,j) is outside the given range
+                       if (t_soisno(c,j) < k_snw_tmps(1)) then
+                           thk(c,j) = k_snw_vals(1)
+                       else if (t_soisno(c,j) > k_snw_tmps(size(k_snw_tmps))) then
+                           thk(c,j) = k_snw_vals(size(k_snw_tmps))
+                       end if
+
+               end if
+
+
+            else 
+                    ! Thermal conductivity of snow, which from Jordan (1991) pp. 18
+                    ! Only examine levels from snl(c)+1 -> 0 where snl(c) < 1
+                    if (snl(c) + 1 < 1 .AND. (j >= snl(c) + 1) .AND. (j <= 0)) then
+                       bw(c,j) = (h2osoi_ice(c,j) + h2osoi_liq(c,j)) / (frac_sno(c) * dz(c,j))
+                       thk(c,j) = tkair + (7.75e-5_r8 * bw(c,j) + 1.105e-6_r8 * bw(c,j) * bw(c,j)) * (tkice - tkair)
+                    end if
+            endif
          end do
       end do
 

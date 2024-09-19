@@ -38,6 +38,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-NYF-PISMF-DSGR</alias>
+    <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%PISMFDATMFORCEDDSGR_DROF%NYFAIS45_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-NYF-DISMF</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%DISMFDATMFORCED_DROF%NYFAIS45_SGLC_SWAV</lname>
   </compset>
@@ -85,6 +90,16 @@
   <compset>
     <alias>GMPAS-JRA1p5-DIB-PISMF</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p5-DIB-PISMF-DSGR</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDDSGR_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p5-DIB-PISMF-DSGR-TMIX</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCEDDSGRTMIX_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
