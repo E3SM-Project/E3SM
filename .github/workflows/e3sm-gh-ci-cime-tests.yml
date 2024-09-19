@@ -5,14 +5,18 @@ on:
     branches: [ master ]
     paths:
       # first, yes to these
+      - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
       - 'cime_config/**'
       - 'components/eam/**'
+      - 'components/eamxx/**'
       - 'components/elm/**'
       - 'driver-moab/**'
       - 'driver-mct/**'
       # second, no to these
       - '!components/eam/docs/**'
       - '!components/eam/mkdocs.yml'
+      - '!components/eamxx/docs/**'
+      - '!components/eamxx/mkdocs.yml'
       - '!components/elm/docs/**'
       - '!components/elm/mkdocs.yml'
 
@@ -26,17 +30,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: 
-          - SMS_D_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - SMS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - REP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - ERS_P4.ne4pg2_oQU480.F2010.singularity2_gnu.eam-wcprod_F2010
-          - ERP_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - PET_P4.ne4pg2_oQU480.F2010.singularity2_gnu
-          - PEM_P4.ne4pg2_oQU480.F2010.singularity2_gnu
+        test:
+          - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+          - ERS_Ld5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu.eam-wcprod_F2010
+          - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
+          - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
     container: 
-      image: ghcr.io/mahf708/e3sm-imgs:v0.0.9
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.1.0
 
     steps:
       - 
@@ -49,10 +49,6 @@ jobs:
         name: CIME
         working-directory: cime/scripts
         run: |
-          mkdir -p $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
-          wget https://web.lcrc.anl.gov/public/e3sm/inputdata/atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
-          mv p3_lookup_table_1.dat-v4.1.2 $HOME/projects/e3sm/cesm-inputdata/atm/cam/physprops/
-          export USER=test
           ./create_test ${{ matrix.test }} --wait --debug
       - 
         name: Artifacts
@@ -61,7 +57,7 @@ jobs:
         with:
           name: ${{ matrix.test }}
           path: |
-            ~/projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
-            ~/projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
-            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
-            ~/projects/e3sm/scratch/${{ matrix.test }}*/run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
+            /projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test }}*/run/*.cprnc.out

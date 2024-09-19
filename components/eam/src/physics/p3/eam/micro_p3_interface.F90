@@ -1630,6 +1630,12 @@ end subroutine micro_p3_readnl
    call outfld('FREQI',       freqi,       pcols,    lchnk)
    call outfld('FREQR',       freqr,       psetcols, lchnk)
    call outfld('CDNUMC',      cdnumc,      pcols,    lchnk)
+!<shanyp 05182024
+   call outfld('ICIMRST',     icimrst,      pcols,    lchnk)
+   call outfld('ICWMRST',     icwmrst,      pcols,    lchnk)
+   call outfld('ICINC' ,      icinc,        pcols,    lchnk)
+   call outfld('ICWNC' ,      icwnc,        pcols,    lchnk)
+!shanyp 05182024>
 
    call outfld('CLOUDFRAC_LIQ_MICRO',  cld_frac_l,      pcols, lchnk)
    call outfld('CLOUDFRAC_ICE_MICRO',  cld_frac_i,      pcols, lchnk)

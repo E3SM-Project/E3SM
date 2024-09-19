@@ -46,7 +46,8 @@ module mo_extfrc
 
 contains
 
-  subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod)
+  subroutine extfrc_inti( extfrc_specifier, extfrc_type, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod, &
+                          extfrc_volc_type, extfrc_volc_cycle_yr)
 
     !-----------------------------------------------------------------------
     ! 	... initialize the surface forcings
@@ -71,6 +72,8 @@ contains
     integer  , intent(in)        :: extfrc_cycle_yr
     integer  , intent(in)        :: extfrc_fixed_ymd
     integer  , intent(in)        :: extfrc_fixed_tod
+    character(len=*), intent(in) :: extfrc_volc_type
+    integer  , intent(in)        :: extfrc_volc_cycle_yr
 
     !-----------------------------------------------------------------------
     ! 	... local variables
@@ -204,6 +207,14 @@ contains
        else if( extfrc_type == 'CYCLICAL' ) then
           write(iulog,*) ' cycle year = ',extfrc_cycle_yr
        end if
+       if (extfrc_volc_type /= 'NULL' ) then
+          write(iulog,*) ' '
+          write(iulog,*) 'Volcanic SO2 type = ',extfrc_volc_type
+          if (extfrc_volc_type  == 'CYCLICAL' ) then
+              write(iulog,*) ' '
+              write(iulog,*) 'Volcanic SO2 cycle year = ',extfrc_volc_cycle_yr
+          end if
+       end if
        write(iulog,*) ' '
        write(iulog,*) 'there are ',extfrc_cnt,' species with external forcing files'
        do m = 1,extfrc_cnt
@@ -264,11 +275,19 @@ contains
 
        allocate(forcings(m)%file%in_pbuf(size(forcings(m)%sectors)))
        forcings(m)%file%in_pbuf(:) = .false.
-       call trcdata_init( forcings(m)%sectors, &
-                          forcings(m)%filename, filelist, datapath, &
-                          forcings(m)%fields,  &
-                          forcings(m)%file, &
-                          rmv_file, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod, extfrc_type)
+       if (trim(forcings(m)%species) == 'SO2' .and. extfrc_volc_type /= 'NULL') then
+          call trcdata_init( forcings(m)%sectors, &
+                             forcings(m)%filename, filelist, datapath, &
+                             forcings(m)%fields,  &
+                             forcings(m)%file, rmv_file, extfrc_volc_cycle_yr, &
+                             extfrc_fixed_ymd, extfrc_fixed_tod, extfrc_volc_type)
+       else
+          call trcdata_init( forcings(m)%sectors, &
+                             forcings(m)%filename, filelist, datapath, &
+                             forcings(m)%fields,  &
+                             forcings(m)%file, &
+                             rmv_file, extfrc_cycle_yr, extfrc_fixed_ymd, extfrc_fixed_tod, extfrc_type)
+       end if
 
     enddo frcing_loop
 

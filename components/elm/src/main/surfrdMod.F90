@@ -1105,6 +1105,8 @@ contains
     end if
     fert_p_cft = 0.0_r8
 
+    wt_nat_patch(begg:endg, :, :) = 0.0_r8
+    wt_cft(begg:endg, :, :) = 0.0_r8
     if (.not. create_crop_landunit) then
        call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
             dim1name=grlnd, readvar=readvar)
@@ -1263,6 +1265,8 @@ contains
 
        do nl = begg,endg
           do t = 1, max_topounits
+            ! (TODO) the following assumes that rainfed/irrigated crop are ordered side by side
+            ! indexing is fixed
             wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
             wt_cft(nl,t,nc3irrig)      = 0._r8
             wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)
@@ -1702,7 +1706,12 @@ contains
 
     call ncd_io(ncid=ncid, varname='STDEV_ELEV', flag='read', data=domain%stdev_elev, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: STDEV_ELEV  NOT on fsurdat file' )
+    if (.not. readvar) then
+         write(iulog,*) trim(subname),' WARNING: STDEV_ELEV  NOT on fsurdat file. Try to use STD_ELEV instead.'
+         call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=domain%stdev_elev, &
+              dim1name=grlnd, readvar=readvar)
+         if (.not. readvar) call endrun( trim(subname)//' ERROR: BOTH STD_ELEV and STDEV_ELEV NOT on fsurdat file' )
+    endif
     call ncd_io(ncid=ncid, varname='SKY_VIEW', flag='read', data=domain%sky_view, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( trim(subname)//' ERROR: SKY_VIEW  NOT on fsurdat file' )

@@ -289,9 +289,9 @@
 <config_temperature_growth_diatoms>0.063</config_temperature_growth_diatoms>
 <config_temperature_growth_small_plankton>0.063</config_temperature_growth_small_plankton>
 <config_temperature_growth_phaeocystis>0.063</config_temperature_growth_phaeocystis>
-<config_grazed_fraction_diatoms>0.0</config_grazed_fraction_diatoms>
-<config_grazed_fraction_small_plankton>0.7</config_grazed_fraction_small_plankton>
-<config_grazed_fraction_phaeocystis>0.7</config_grazed_fraction_phaeocystis>
+<config_grazed_fraction_diatoms>0.19</config_grazed_fraction_diatoms>
+<config_grazed_fraction_small_plankton>0.19</config_grazed_fraction_small_plankton>
+<config_grazed_fraction_phaeocystis>0.19</config_grazed_fraction_phaeocystis>
 <config_mortality_diatoms>0.007</config_mortality_diatoms>
 <config_mortality_small_plankton>0.007</config_mortality_small_plankton>
 <config_mortality_phaeocystis>0.007</config_mortality_phaeocystis>

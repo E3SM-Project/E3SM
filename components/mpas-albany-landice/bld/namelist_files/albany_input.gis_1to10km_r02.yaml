@@ -1,7 +1,9 @@
 %YAML 1.1
 ---
 ANONYMOUS:
+
   Problem:
+    Depth Integrated Model: true
     Basal Cubature Degree: 4
     LandIce Field Norm:
       sliding_velocity_basalside:
@@ -12,35 +14,34 @@ ANONYMOUS:
         Basal Friction Coefficient:
           Type: Power Law
           Power Exponent: 1.0
-          Mu Type: Field 
+          Mu Type: Field
           Effective Pressure Type: Hydrostatic Computed At Nodes
           Zero Effective Pressure On Floating Ice At Nodes: true
           Zero Beta On Floating Ice: false
           Use Pressurized Bed Above Sea Level: false
-
 # Discretization Description
   Discretization:
     #Exodus Output File Name: albany_output.exo
-    
-  Piro: 
+
+  Piro:
 #   Nonlinear Solver Information
-    NOX: 
+    NOX:
       Nonlinear Solver: Line Search Based
-      Line Search: 
-        Full Step: 
+      Line Search:
+        Full Step:
           Full Step: 1.0e+00
         Method: Backtrack
-      Solver Options: 
+      Solver Options:
         Status Test Check Type: Minimal
-      Status Tests: 
+      Status Tests:
         Test Type: Combo
         Combo Type: OR
         Number of Tests: 2
-        Test 0: 
+        Test 0:
           Test Type: Combo
           Combo Type: AND
           Number of Tests: 2
-          Test 0: 
+          Test 0:
             Test Type: NormF
             Norm Type: Two Norm
             Scale Type: Unscaled
@@ -49,13 +50,13 @@ ANONYMOUS:
             Test Type: RelativeNormF
             Norm Type: Two Norm
             Tolerance: 0.9999
-        Test 1: 
+        Test 1:
           Test Type: MaxIters
           Maximum Iterations: 100
-      Printing: 
+      Printing:
         Output Precision: 3
         Output Processor: 0
-        Output Information: 
+        Output Information:
           Error: true
           Warning: true
           Outer Iteration: true
@@ -66,21 +67,21 @@ ANONYMOUS:
           Stepper Details: true
           Stepper Parameters: true
 
-      Direction: 
+      Direction:
         Method: Newton
-        Newton: 
-          Forcing Term Method: Type 2   
+        Newton:
+          Forcing Term Method: Type 2
           Rescue Bad Newton Solve: true
           Linear Solver:
             Write Linear System: false
             Tolerance: 1.0e-8
-            
-          Stratimikos Linear Solver: 
+
+          Stratimikos Linear Solver:
             Stratimikos:
-             
+
 #             Linear Solver Information
               Linear Solver Type: Belos
-              Linear Solver Types: 
+              Linear Solver Types:
                 Belos:
                   Solver Type: Block GMRES
                   Solver Types:
@@ -95,133 +96,133 @@ ANONYMOUS:
                   VerboseObject:
                     Output File: none
                     Verbosity Level: low
-                    
+
 #             Preconditioner Information
               Preconditioner Type: MueLu
-              Preconditioner Types: 
-                
-                Ifpack2: 
+              Preconditioner Types:
+
+                Ifpack2:
                   Overlap: 1
-                  Prec Type: ILUT                
-              
-                MueLu: 
-                  Matrix: 
+                  Prec Type: ILUT
+
+                MueLu:
+                  Matrix:
                     PDE equations: 2
-                  Factories: 
-                    myLineDetectionFact: 
+                  Factories:
+                    myLineDetectionFact:
                       factory: LineDetectionFactory
                       'linedetection: orientation': coordinates
-                    mySemiCoarsenPFact1: 
+                    mySemiCoarsenPFact1:
                       factory: SemiCoarsenPFactory
                       'semicoarsen: coarsen rate': 14
-                    UncoupledAggregationFact2: 
+                    UncoupledAggregationFact2:
                       factory: UncoupledAggregationFactory
                       'aggregation: ordering': graph
                       'aggregation: max selected neighbors': 0
                       'aggregation: min agg size': 3
                       'aggregation: phase3 avoid singletons': true
-                    MyCoarseMap2: 
+                    MyCoarseMap2:
                       factory: CoarseMapFactory
                       Aggregates: UncoupledAggregationFact2
-                    myTentativePFact2: 
+                    myTentativePFact2:
                       'tentative: calculate qr': true
                       factory: TentativePFactory
                       Aggregates: UncoupledAggregationFact2
                       CoarseMap: MyCoarseMap2
-                    mySaPFact2: 
+                    mySaPFact2:
                       'sa: eigenvalue estimate num iterations': 10
                       'sa: damping factor': 1.33333e+00
                       factory: SaPFactory
                       P: myTentativePFact2
-                    myTransferCoordinatesFact: 
+                    myTransferCoordinatesFact:
                       factory: CoordinatesTransferFactory
                       CoarseMap: MyCoarseMap2
                       Aggregates: UncoupledAggregationFact2
-                    myTogglePFact: 
+                    myTogglePFact:
                       factory: TogglePFactory
                       'semicoarsen: number of levels': 2
-                      TransferFactories: 
+                      TransferFactories:
                         P1: mySemiCoarsenPFact1
                         P2: mySaPFact2
                         Ptent1: mySemiCoarsenPFact1
                         Ptent2: myTentativePFact2
                         Nullspace1: mySemiCoarsenPFact1
                         Nullspace2: myTentativePFact2
-                    myRestrictorFact: 
+                    myRestrictorFact:
                       factory: TransPFactory
                       P: myTogglePFact
-                    myToggleTransferCoordinatesFact: 
+                    myToggleTransferCoordinatesFact:
                       factory: ToggleCoordinatesTransferFactory
                       Chosen P: myTogglePFact
-                      TransferFactories: 
+                      TransferFactories:
                         Coordinates1: mySemiCoarsenPFact1
                         Coordinates2: myTransferCoordinatesFact
-                    myRAPFact: 
+                    myRAPFact:
                       factory: RAPFactory
                       P: myTogglePFact
                       R: myRestrictorFact
-                      TransferFactories: 
+                      TransferFactories:
                         For Coordinates: myToggleTransferCoordinatesFact
-                    myRepartitionHeuristicFact: 
+                    myRepartitionHeuristicFact:
                       factory: RepartitionHeuristicFactory
                       A: myRAPFact
                       'repartition: min rows per proc': 3000
                       'repartition: max imbalance': 1.327e+00
                       'repartition: start level': 1
-                    myZoltanInterface: 
+                    myZoltanInterface:
                       factory: ZoltanInterface
                       A: myRAPFact
                       Coordinates: myToggleTransferCoordinatesFact
                       number of partitions: myRepartitionHeuristicFact
-                    myRepartitionFact: 
+                    myRepartitionFact:
                       factory: RepartitionFactory
                       A: myRAPFact
                       Partition: myZoltanInterface
                       'repartition: remap parts': true
                       number of partitions: myRepartitionHeuristicFact
-                    myRebalanceProlongatorFact: 
+                    myRebalanceProlongatorFact:
                       factory: RebalanceTransferFactory
                       type: Interpolation
                       P: myTogglePFact
                       Coordinates: myToggleTransferCoordinatesFact
                       Nullspace: myTogglePFact
-                    myRebalanceRestrictionFact: 
+                    myRebalanceRestrictionFact:
                       factory: RebalanceTransferFactory
                       type: Restriction
                       R: myRestrictorFact
-                    myRebalanceAFact: 
+                    myRebalanceAFact:
                       factory: RebalanceAcFactory
                       A: myRAPFact
                       TransferFactories: { }
-                    mySmoother1: 
+                    mySmoother1:
                       factory: TrilinosSmoother
                       type: LINESMOOTHING_BANDEDRELAXATION
                       'smoother: pre or post': both
-                      ParameterList: 
+                      ParameterList:
                         'relaxation: type': Gauss-Seidel
                         'relaxation: sweeps': 1
                         'relaxation: damping factor': 1.0
-                    mySmoother3: 
+                    mySmoother3:
                       factory: TrilinosSmoother
                       type: RELAXATION
                       'smoother: pre or post': both
-                      ParameterList: 
+                      ParameterList:
                         'relaxation: type': Gauss-Seidel
                         'relaxation: sweeps': 1
                         'relaxation: damping factor': 1.0
-                    mySmoother4: 
+                    mySmoother4:
                       factory: TrilinosSmoother
                       type: RELAXATION
                       'smoother: pre or post': pre
-                      ParameterList: 
+                      ParameterList:
                         'relaxation: type': Gauss-Seidel
                         'relaxation: sweeps': 4
                         'relaxation: damping factor': 1.0
-                  Hierarchy: 
+                  Hierarchy:
                     max levels: 7
                     'coarse: max size': 2000
                     verbosity: None
-                    Finest: 
+                    Finest:
                       Smoother: mySmoother1
                       CoarseSolver: mySmoother4
                       P: myRebalanceProlongatorFact
@@ -232,7 +233,7 @@ ANONYMOUS:
                       A: myRebalanceAFact
                       Coordinates: myRebalanceProlongatorFact
                       Importer: myRepartitionFact
-                    All: 
+                    All:
                       startLevel: 1
                       Smoother: mySmoother4
                       CoarseSolver: mySmoother4
@@ -244,4 +245,3 @@ ANONYMOUS:
                       A: myRebalanceAFact
                       Coordinates: myRebalanceProlongatorFact
                       Importer: myRepartitionFact
-                      
