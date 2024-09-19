@@ -80,13 +80,24 @@ add_omega_test(
     "-n;8"
 )
 
-#############
-# Decomp test
-#############
+##########################
+# Decomp test using 1 task
+##########################
 
 add_omega_test(
-    DECOMP_TEST
-    testDecomp.exe
+    DECOMP_NTASK1_TEST
+    testDecompNTask1.exe
+    base/DecompTest.cpp
+    "-n;1"
+)
+
+###########################
+# Decomp test using 8 tasks
+###########################
+
+add_omega_test(
+    DECOMP_NTASK8_TEST
+    testDecompNTask8.exe
     base/DecompTest.cpp
     "-n;8"
 )
