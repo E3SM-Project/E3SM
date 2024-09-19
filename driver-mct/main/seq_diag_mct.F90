@@ -48,9 +48,9 @@ module seq_diag_mct
   use shr_reprosum_mod, only : shr_reprosum_calc
   use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
-  use prep_glc_mod,  only : prep_glc_get_x2gacc_gx_cnt  !SFP: added this and next - unclear which is needed          
-!  use prep_glc_mod,  only : prep_glc_get_l2gacc_lx_cnt  
-  
+  use prep_glc_mod,  only : prep_glc_get_x2gacc_gx_cnt  !SFP: added this and next 
+  use glc_elevclass_mod, only: glc_get_num_elevation_classes 
+
   implicit none
   save
   private
@@ -222,10 +222,6 @@ module seq_diag_mct
 
   logical          :: flds_wiso             ! If water isotope fields are active
 
-  !--- temporary pointers ---
-  integer        , pointer :: x2gacc_gx_cnt ! SFP added
-!  integer        , pointer :: l2gacc_lx_cnt ! SFP: unclear if this or the above is needed / more relevant
-
   ! !PUBLIC DATA MEMBERS
 
   !--- time-averaged (annual?) global budge diagnostics ---
@@ -274,8 +270,8 @@ module seq_diag_mct
   integer :: index_l2x_Flrl_irrig
   integer :: index_l2x_Flrl_wslake
 
-  integer :: index_l2x_Flgl_qice(0:10) !SFP added
-  integer :: index_x2l_Sg_ice_covered(0:10) !SFP added
+  integer, allocatable :: index_l2x_Flgl_qice(:) !SFP: added this and next; unclear if this is the best way to treat these
+  integer, allocatable :: index_x2l_Sg_ice_covered(:)
 
   integer :: index_x2l_Faxa_lwdn
   integer :: index_x2l_Faxa_rainc
@@ -449,6 +445,9 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_snow_16O
   integer :: index_x2i_Faxa_snow_18O
   integer :: index_x2i_Faxa_snow_HDO
+
+  integer :: glc_nec !SFP: added
+  integer :: x2gacc_gx_cnt ! SFP added (maybe not needed)
 
   !===============================================================================
 contains
@@ -892,7 +891,7 @@ contains
 
     real(r8)                 :: l2x_Flgl_qice_col_sum !SFP: sum of fluxes over no. MECs (cols)
 
-    character(len=64)        :: name         !SFP: added this and next 2
+    character(len=64)        :: name         !SFP: added this and next 2 for support of working w/ data in MECs
     character(len= 2)        :: cnum         
     integer(in)              :: num               
 
@@ -916,6 +915,13 @@ contains
     kArea = mct_aVect_indexRA(dom_l%data,afldname)
     kl    = mct_aVect_indexRA(frac_l,lfrinname)
 
+    ! get number of elevation classes and allocate relevant sets of indices 
+    glc_nec = glc_get_num_elevation_classes()
+    if (first_time) then
+       allocate(index_l2x_Flgl_qice(0:glc_nec))
+       allocate(index_x2l_Sg_ice_covered(0:glc_nec))
+    end if
+   
     if (present(do_l2x)) then
        if (first_time) then
           index_l2x_Fall_swnet  = mct_aVect_indexRA(l2x_l,'Fall_swnet')
@@ -931,12 +937,13 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
           index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
 
-          do num=0,10 !SFP: change later to 0,glc_nec_max (no. of elev classes)
+          !SFP: added this loop 
+          do num=0,glc_nec 
              write(cnum,'(i2.2)') num
              name = 'Flgl_qice' // cnum
-             index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name)) !SFP added
+             index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name))
              name = 'Sg_ice_covered' // cnum
-             index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) !SFP added
+             index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) 
           end do
 
           index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
@@ -975,11 +982,12 @@ contains
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
 
           l2x_Flgl_qice_col_sum = 0.0d0
-          do num=0,10 !SFP: change later to 0,glc_nec_max (no elev classes)
-          !SFP: this somehow needs to allow for each of the 11 vectors associate w/ each of the 11 elev classes
-             l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n)  !SFP added 
+          do num=0,glc_nec 
+             !SFP: this should sum the contributions from each of the n vectors in the total no. of MECs
+             !SFP: product on RHS is the SMB flux times the fraction of area in that particular elevation class times the land cell area 
+             l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * ca_l  !SFP added 
           end do
-          nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_Flgl_qice_col_sum !SFP added 
+          nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - l2x_Flgl_qice_col_sum !SFP added 
 
           if ( flds_wiso_lnd )then
              nf = f_wevap_16O;
@@ -1014,9 +1022,13 @@ contains
           end if
        end do
 
-!       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+!       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice !SFP: waiting for this to contain actual non-zero values
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice !SFP added
+
+       ! SFP: are these needed? Currently not sure how / if / when to deallocate these ...
+       !deallocate(index_l2x_Flgl_qice(0:glc_nec))
+       !deallocate(index_x2l_Sg_ice_covered(0:glc_nec))
 
     end if
 
@@ -1309,16 +1321,15 @@ contains
 
     !----- local -----
     type(mct_aVect), pointer :: g2x_g
-!    type(mct_aVect), pointer :: x2g_g
-    type(mct_aVect), pointer :: x2gacc_g        !SFP: replace above w/ vector for accumulated fluxes
+    type(mct_aVect), pointer :: x2gacc_g        
     type(mct_ggrid), pointer :: dom_g
     integer(in)              :: n,ic,nf,ip      ! generic index
-    integer(in)              :: kArea             ! index of area field in aVect
-    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_g ! area of a grid cell
+    integer(in)              :: kArea           ! index of area field in aVect
+    integer(in)              :: lSize           ! size of aVect
+    real(r8)                 :: ca_g            ! area of a grid cell
     logical,save             :: first_time = .true.
 
-    integer,save             :: counter,smb_counter,calving_counter !SFP: for debugging 
+    integer,save             :: counter,smb_counter,calving_counter !SFP: added (mostly for debugging) 
     integer,save             :: smb_vector_length,calving_vector_length
 
     !----- formats -----
@@ -1334,11 +1345,7 @@ contains
 
     dom_g => component_get_dom_cx(glc)
     g2x_g => component_get_c2x_cx(glc)
-!    x2g_g => component_get_x2c_cx(glc)
-    x2gacc_g => component_get_x2c_cx(glc)       !SFP: use accum fluxes vector
-
-    x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt() !SFP: counter for how many times SMB flux accumulation has occured
-!    l2gacc_lx_cnt => prep_glc_get l2gacc_lx_cnt() 
+    x2gacc_g => component_get_x2c_cx(glc)
 
     if( present(do_g2x))then  !SPF: glc to coupler
 
@@ -1352,33 +1359,32 @@ contains
           index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
 
           !SFP:debug
-          write(logunit,*) ' '
-          write(logunit,*) ' index_g2x_Fogg_rofl = ', index_g2x_Fogg_rofl
-          write(logunit,*) ' index_g2x_Fogg_rofi = ', index_g2x_Fogg_rofi
-          write(logunit,*) ' index_g2x_Figg_rofi = ', index_g2x_Figg_rofi
-          write(logunit,*) ' '
+          !write(logunit,*) ' '
+          !write(logunit,*) ' index_g2x_Fogg_rofl = ', index_g2x_Fogg_rofl
+          !write(logunit,*) ' index_g2x_Fogg_rofi = ', index_g2x_Fogg_rofi
+          !write(logunit,*) ' index_g2x_Figg_rofi = ', index_g2x_Figg_rofi
+          !write(logunit,*) ' '
 
        end if
 
-       !ip = p_inst
+       !ip = p_inst !SFP: this value, day or inst, does not change anything here
        ip = p_day 
-       !ic = c_glc_gs
-       ic = c_glc_gr !SFP: use recieve here since this is coming from glc to coupler?
+       ic = c_glc_gr !SFP: use recieve here ("_gr") since this is coming from glc to coupler?
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
        lSize = mct_avect_lSize(g2x_g)
 
        !SFP:debug
-       if(calving_counter==0)then !one day at 30 min land/atmos time steps
-       write(logunit,*) ' '
-       write(logunit,*) ' calving vector length (7425 in coupler) = ', lSize                      
-       write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1) 
-       write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
-       write(logunit,*) ' intial value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
-       write(logunit,*) ' calving flux to ocean (Fogg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
-       write(logunit,*) ' calving flux to ice (Figg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Figg_rofi,1) 
-       write(logunit,*) ' calving flux X area to ocean (Fogg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
-       write(logunit,*) ' calving flux X area to ice (Figg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Figg_rofi,1) 
-       end if
+       !if(calving_counter==0)then 
+       !write(logunit,*) ' '
+       !write(logunit,*) ' calving vector length (7425 in coupler) = ', lSize                      
+       !write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1) 
+       !write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
+       !write(logunit,*) ' intial value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
+       !write(logunit,*) ' calving flux to ocean (Fogg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
+       !write(logunit,*) ' calving flux to ice (Figg_rofi) in one cell = ', g2x_g%rAttr(index_g2x_Figg_rofi,1) 
+       !write(logunit,*) ' calving flux X area to ocean (Fogg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Fogg_rofi,1) 
+       !write(logunit,*) ' calving flux X area to ice (Figg_rofi) in one cell = ', dom_g%data%rAttr(kArea,1)*g2x_g%rAttr(index_g2x_Figg_rofi,1) 
+       !end if
 
        do n=1,lSize
            ca_g =  dom_g%data%rAttr(kArea,n)
@@ -1389,60 +1395,63 @@ contains
 
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
-       calving_vector_length = calving_vector_length +lSize
-       calving_counter = calving_counter + 1
+       !SFP: only needed for debugging
+       !calving_vector_length = calving_vector_length +lSize
+       !calving_counter = calving_counter + 1   
 
        !SFP:debug
-       if(calving_counter==48)then !one day at 30 min land/atmos time steps
-       write(logunit,*) ' calving counter = ', calving_counter            
-       write(logunit,*) ' final value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
-       write(logunit,*) ' '
-       end if
+       !if(calving_counter==48)then !one day at 30 min land/atmos time steps
+       !write(logunit,*) ' calving counter = ', calving_counter            
+       !write(logunit,*) ' final value of calving flux sum vector = ', budg_dataL(f_wioff,ic,ip)
+       !write(logunit,*) ' '
+       !end if
 
     endif !SFP: end 'do_g2x'
 
     if( present(do_x2g))then  !SFP: coupler to glc
 
+       x2gacc_gx_cnt = prep_glc_get_x2gacc_gx_cnt() !SFP: counter for how many times SMB flux accumulation has occured 
+                                                    ! note that this would be useful below but does not seem to work currently
+                                                    ! (being reset to zero before being called here?)
        if (first_time) then
 
-          smb_counter=0
-          smb_vector_length = 0 
+          smb_counter=0 !SFP: this may be needed in order to turn average flux into accumulated flux (by multiplying average by no of lnd coupling intervals)
 
-          !index_x2g_Flgl_qice   = mct_aVect_indexRA(x2g_g,'Flgl_qice')
-          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2gacc_g,'Flgl_qice')  !SFP: use accum flux vector
+          !smb_vector_length = 0 !SFP: debugging only 
+
+          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2gacc_g,'Flgl_qice')  
 
           !SFP:debug
-          write(logunit,*) ' '
-          write(logunit,*) ' index_x2g_Flgl_qice = ', index_x2g_Flgl_qice
-          write(logunit,*) ' '
+          !write(logunit,*) ' '
+          !write(logunit,*) ' index_x2g_Flgl_qice = ', index_x2g_Flgl_qice
+          !write(logunit,*) ' '
 
        end if
 
-       !ip = p_inst         
+       !ip = p_inst !SFP: as above, day vs. inst. does not seem to matter here         
        ip = p_day 
-       ic = c_glc_gs      ! SFP: use send here since going from coupler to glc?
-       !ic = c_glc_gr     
+       ic = c_glc_gs      ! SFP: use send here ("_gs") since going from coupler to glc?
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
-       !lSize = mct_avect_lSize(x2g_g)
-       lSize = mct_avect_lSize(x2gacc_g)        !SFP: use accum flux vector
+       lSize = mct_avect_lSize(x2gacc_g)        
 
        !SFP:debug
-       if(smb_counter==0)then !one day at 30 min land/atmos time steps
-       write(logunit,*) ' '
-       write(logunit,*) ' smb vector length (7425 in coupler) = ', lSize                      
-       write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1)   
-       write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
-       write(logunit,*) ' initial value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
-       end if
+       !if(smb_counter==0)then !one day at 30 min land/atmos time steps
+       !write(logunit,*) ' '
+       !write(logunit,*) ' smb vector length (7425 in coupler) = ', lSize                      
+       !write(logunit,*) ' kArea(1) = ', dom_g%data%rAttr(kArea,1)   
+       !write(logunit,*) ' kArea(50) = ', dom_g%data%rAttr(kArea,50)   
+       !write(logunit,*) ' initial value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
+       !end if
 
        do n=1,lSize
           ca_g =  dom_g%data%rAttr(kArea,n)
-          !nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n) 
-          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2gacc_g%rAttr(index_x2g_Flgl_qice,n) !SFP: use accum flux vector 
+          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2gacc_g%rAttr(index_x2g_Flgl_qice,n)
        end do
 
-       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * 48.0d0  !SFP: hack to see if this recovers actual value from time averaged value
-       !budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * x2gacc_gx_cnt !SFP: ideally use this or something like it to contain actual value  
+       !budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * 48.0d0  !SFP: hack to see if this recovers actual value from time averaged value
+       !budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * x2gacc_gx_cnt !SFP: ideally use this ... but always zero (zeroed before called?)
+       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * smb_counter !SFP: this works but smb_counter seems like sloppy way to recover no. of lnd steps per glc coupling step
+                                                                 ! would be nicer to use value of x2gacc_gx_cnt (but always 0 as currently called)
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
 
@@ -1450,16 +1459,15 @@ contains
        smb_counter = smb_counter + 1
 
        !SFP:debug
-       if(smb_counter==48)then !one day at 30 min land/atmos time steps
-       write(logunit,*) ' '
-       write(logunit,*) ' smb_counter = ', smb_counter
-       write(logunit,*) ' x2gacc_gx_cnt = ', x2gacc_gx_cnt
-!       write(logunit,*) ' l2gacc_lx_cnt = ', l2gacc_lx_cnt 
-!       write(logunit,*) ' current value of x2g_ vector = ', x2g_g%rAttr(index_x2g_Flgl_qice,:) 
-!       write(logunit,*) ' current value of x2gacc_ vector = ', x2gacc_g%rAttr(index_x2g_Flgl_qice,:) 
-       write(logunit,*) ' final value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
-       write(logunit,*) ' '
-       end if
+       !if(smb_counter==48)then !one day at 30 min land/atmos time steps
+       !write(logunit,*) ' '
+       !write(logunit,*) ' smb_counter = ', smb_counter
+       !write(logunit,*) ' x2gacc_gx_cnt = ', x2gacc_gx_cnt
+       !write(logunit,*) ' current value of x2g_ vector = ', x2g_g%rAttr(index_x2g_Flgl_qice,:) 
+       !write(logunit,*) ' current value of x2gacc_ vector = ', x2gacc_g%rAttr(index_x2g_Flgl_qice,:) 
+       !write(logunit,*) ' final value of smb sum vector = ', budg_dataL(f_wgsmb,ic,ip)
+       !write(logunit,*) ' '
+       !end if
 
     end if !SPF: end do coupler to glc           
 
