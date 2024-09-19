@@ -467,14 +467,15 @@ int testVelDiff(int NVertLevels, Real RTol) {
    if (Err != 0) {
       LOG_CRITICAL("Tendencies: ViscDel2 not found in TendConfig");
    }
+   const Real ViscDel2 = VelDiffOnE.ViscDel2;
 
    // Compute exact result
    Array2DReal ExactVelDiff("ExactVelDiff", Mesh->NEdgesOwned, NVertLevels);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = Setup.laplaceVecX(X, Y);
-          VecField[1] = Setup.laplaceVecY(X, Y);
+          VecField[0] = ViscDel2 * Setup.laplaceVecX(X, Y);
+          VecField[1] = ViscDel2 * Setup.laplaceVecY(X, Y);
        },
        ExactVelDiff, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
        ExchangeHalos::No);
@@ -542,6 +543,7 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
    if (Err != 0) {
       LOG_CRITICAL("Tendencies: ViscDel4 not found in TendConfig");
    }
+   const Real ViscDel4 = VelHyperDiffOnE.ViscDel4;
 
    // Compute exact result
    Array2DReal ExactVelHyperDiff("ExactVelHyperDiff", Mesh->NEdgesOwned,
@@ -549,8 +551,8 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = -Setup.laplaceVecX(X, Y);
-          VecField[1] = -Setup.laplaceVecY(X, Y);
+          VecField[0] = -ViscDel4 * Setup.laplaceVecX(X, Y);
+          VecField[1] = -ViscDel4 * Setup.laplaceVecY(X, Y);
        },
        ExactVelHyperDiff, EdgeComponent::Normal, Geom, Mesh, NVertLevels,
        ExchangeHalos::No);
