@@ -1336,15 +1336,7 @@ end subroutine diag_conv_tend_ini
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TMQ     ',ftem, pcols   ,lchnk     )
-!     
-! Mass of saturated q vertically integrated
-!
-    call qsat(state%t(:ncol,:), state%pmid(:ncol,:), tem2(:ncol,:), ftem(:ncol,:))
-    ftem(:ncol,:) = ftem(:ncol,:) * state%pdel(:ncol,:) * rga
-    do k=2,pver
-       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-    end do
-    call outfld ('TMQS    ',ftem, pcols   ,lchnk     )
+
 !
 ! Mass of vertically integrated water vapor flux
 !
@@ -1377,6 +1369,14 @@ end subroutine diag_conv_tend_ini
     call outfld ('TVH     ',ftem, pcols   ,lchnk     )
 
     if (moist_physics) then
+
+      ! Mass of saturated q vertically integrated
+       call qsat(state%t(:ncol,:), state%pmid(:ncol,:), tem2(:ncol,:), ftem(:ncol,:))
+       ftem(:ncol,:) = ftem(:ncol,:) * state%pdel(:ncol,:) * rga
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       call outfld ('TMQS    ',ftem, pcols   ,lchnk     )
 
        ! Relative humidity
        call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &
