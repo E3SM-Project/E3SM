@@ -229,6 +229,50 @@
     <lname>2000_EAM%RCE-MMF2_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- Mock-Walker RCE for RCEMIP phase 2 -->
+  <compset>
+    <alias>FRCE-MW_295dT1p25</alias>
+    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQP11_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW_300dT0p625</alias>
+    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQP12_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW_300dT1p25</alias>
+    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQP13_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW_300dT2p5</alias>
+    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQP14_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW_305dT1p25</alias>
+    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQP15_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FRCE-MW-MMF1_295dT1p25</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQP11_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW-MMF1_300dT0p625</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQP12_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW-MMF1_300dT1p25</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQP13_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW-MMF1_300dT2p5</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQP14_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FRCE-MW-MMF1_305dT1p25</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQP15_SROF_SGLC_SWAV</lname>
+  </compset>
+
+
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->

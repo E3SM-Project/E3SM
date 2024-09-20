@@ -257,7 +257,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAP11,SST_AQUAP12,SST_AQUAP13,SST_AQUAP14,SST_AQUAP15,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
     <desc>
       General method that operates on the data. This is generally
       implemented in the data models but is set in the strdata method for
@@ -323,6 +323,11 @@
       <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
       <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
       <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
+      <value docn_mode="sst_aquap11$">SST_AQUAP11</value>
+      <value docn_mode="sst_aquap12$">SST_AQUAP12</value>
+      <value docn_mode="sst_aquap13$">SST_AQUAP13</value>
+      <value docn_mode="sst_aquap14$">SST_AQUAP14</value>
+      <value docn_mode="sst_aquap15$">SST_AQUAP15</value>
       <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
       <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
       <value docn_mode="som$">SOM</value>
