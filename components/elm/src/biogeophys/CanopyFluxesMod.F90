@@ -17,7 +17,7 @@ module CanopyFluxesMod
   use elm_varctl            , only : use_hydrstress
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
-  use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
+  use pftvarcon             , only : crop, nfixer
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
@@ -869,7 +869,8 @@ contains
             p = filterp(f)
             c = veg_pp%column(p)
             if(.not.veg_pp%is_fates(p)) then
-               if (veg_pp%itype(p) == nsoybean .or. veg_pp%itype(p) == nsoybeanirrig) then
+               ! soybean (crop with N fixation)
+               if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
 
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
@@ -909,7 +910,8 @@ contains
             do f = 1, fn
                p = filterp(f)
                c = veg_pp%column(p)
-               if (veg_pp%itype(p) == nsoybean .or. veg_pp%itype(p) == nsoybeanirrig) then
+               ! soybean (crop with N fixation)
+               if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
             end do

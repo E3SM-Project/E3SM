@@ -72,7 +72,16 @@
       <value compset="1850(?:SOI)?_EAM%CMIP6_ELM.*_BGC%BCRC">1850_CMIP6bgc_control</value>
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
-      <value compset="20TR.*_EAM%.*CMIP6.*_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-GHG_ELM">20thC_CMIP6xLULC_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-AER_ELM">20thC_CMIP6xLULC_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-NAT_ELM">20thC_CMIP6xLULC_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-OZONE_ELM">20thC_CMIP6xLULC_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-VOLC_ELM">20thC_CMIP6xLULC_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-xGHG-xAER_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-xAER_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6-LULC_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%MMF.*_ELM">20thC_CMIP6_transient</value>
       <value compset="20TR_EAM%CMIP6_ELM.*_BGC%LNDATM">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_ELM%[^_]*BGC">20thC_bgc_transient</value>

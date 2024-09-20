@@ -225,7 +225,6 @@ contains
       !$acc routine seq
     use elm_varcon     , only : rgas, tfrz
     use elm_varctl     , only : carbon_only
-    use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     !
     ! !ARGUMENTS:
@@ -388,6 +387,7 @@ contains
          gb_mol        => photosyns_vars%gb_mol_patch              , & ! Output: [real(r8) (:)   ]  leaf boundary layer conductance (umol H2O/m**2/s)
          gs_mol        => photosyns_vars%gs_mol_patch              , & ! Output: [real(r8) (:,:) ]  leaf stomatal conductance (umol H2O/m**2/s)
          vcmax_z       => photosyns_vars%vcmax_z_patch             , & ! Output: [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)
+         vcmax25_top   => photosyns_vars%vcmax25_top_patch         , & ! Output: [real(r8) (:)   ]  maximum rate of carboxylation at top canopy at 25oC (umol co2/m**2/s)
          cp            => photosyns_vars%cp_patch                  , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)
          kc            => photosyns_vars%kc_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)
          ko            => photosyns_vars%ko_patch                  , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)
@@ -789,6 +789,9 @@ contains
 
             vcmax_z(p,iv) = vcmax_z(p,iv) * btran(p)
             lmr_z(p,iv) = lmr_z(p,iv) * btran(p)
+
+            ! output variable
+            vcmax25_top(p) = vcmax25top
          end do       ! canopy layer loop
       end do          ! patch loop
 
@@ -1594,7 +1597,6 @@ contains
     use elm_varctl        , only : carbon_only
     !use elm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt
     use elm_varpar        , only : nlevsoi
-    use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use pftvarcon         , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     use ColumnType        , only : col_pp
 

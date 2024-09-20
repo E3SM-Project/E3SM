@@ -86,23 +86,65 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- Compsets for historical single forcing experiments, two aliases each with WCYCL20TR or hist as prefix -->
+
+<compset>
+  <alias>WCYCL20TR-GHG</alias>
+  <lname>20TRSOI_EAM%CMIP6-GHG_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-aer</alias>
+  <lname>20TRSOI_EAM%CMIP6-AER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-xGHG-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xGHG-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-nat</alias>
+  <lname>20TRSOI_EAM%CMIP6-NAT_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-ozone</alias>
+  <lname>20TRSOI_EAM%CMIP6-OZONE_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-lulc</alias>
+  <lname>20TRSOI_EAM%CMIP6-LULC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-volc</alias>
+  <lname>20TRSOI_EAM%CMIP6-VOLC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ************************************************ -->
 <!--               MMF coupled compsets               -->
 <!-- ************************************************ -->
 <compset>
   <alias>WCYCL1950-MMF1</alias>
-  <lname>1950SOI_EAM%CMIP6-MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1950SOI_EAM%MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL20TR-MMF1</alias>
-  <lname>20TRSOI_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- separate compset for testing (NS = no spinup) -->
 <compset>
   <alias>WCYCL20TRNS-MMF1</alias>
-  <lname>20TR_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TR_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 <!-- ************************************************** -->
 <!-- ************************************************** -->

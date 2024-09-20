@@ -76,11 +76,10 @@ _TESTS = {
             )
         },
 
-
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
         "tests" : (
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
@@ -95,6 +94,8 @@ _TESTS = {
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-lnd_rof_2way",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics"
             )
@@ -274,6 +275,7 @@ _TESTS = {
             "ERS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "PEM_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
+            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
             )
         },
 
@@ -302,7 +304,7 @@ _TESTS = {
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
             "ERS.f09_g16_g.MALISIA",
-            "ERS_Ld5.TL319_oQU240wLI_ais20.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
@@ -321,6 +323,7 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
+            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4pg2_oQU480.F2010",
@@ -337,6 +340,7 @@ _TESTS = {
             "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-nlmaps",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5.GPMPAS-JRA.mosart-rof_ocn_2way",
             )
         },
 

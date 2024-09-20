@@ -28,9 +28,8 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-archive-env acme-env acme-cmake/3.26.3 acme-gcc/11.2.0 sems-archive-git/2.10.1 acme-openmpi/4.1.4 acme-netcdf/4.7.4/acme",
+    "mappy"   : (["module purge", "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
                   "export GATOR_INITIAL_MB=4000MB",
-                  "export PATH=/ascldap/users/jgfouca/packages/valgrind-3.22.0/bin:$PATH",
                  ],
                  ["mpicxx","mpifort","mpicc"],
                   "",
@@ -238,9 +237,9 @@ def is_cuda_machine(machine):
     assert_machine_supported(machine)
 
     env_setup_raw = MACHINE_METADATA[machine][0]
-    env_setup_str = " ".join(env_setup_raw)
+    env_setup_str = " ".join(env_setup_raw).lower()
 
-    return "cuda" in env_setup_str.lower()
+    return ("no-cuda" not in env_setup_str and "cuda" in env_setup_str)
 
 ###############################################################################
 def setup_mach_env(machine, ctest_j=None):
