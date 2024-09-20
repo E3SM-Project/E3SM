@@ -23,9 +23,9 @@ USER_FC=ifort LIB_NETCDF="`nc-config --flibs`" INC_NETCDF="`nf-config --included
 
 ## Build the namelist
 
-This steps assumes that the resolution for which the new surface dataset is being created is a supported resolution.
+This step assumes that the resolution for which the new surface dataset is being created is a supported resolution.
 If the surface dataset is being created for an unsupported resolution, 16 mapping files will have to be created to map the raw datasets
-onto this unsupported resolution.
+onto this unsupported resolution. The `namelist` file with default number of glaciers (equal to zero) can be generated as:
 
 ```bash
 cd ../
@@ -35,7 +35,16 @@ YR=1950
 DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
 
 ./mksurfdata.pl -res $RES -years $YR -d -dinlc $DIN_LOC_ROOT
-mv namelist namelist.$RES.$YR
+```
+
+An example of generating the namelist for 0.25 deg (`r025`) resolution for 1980 with 10 glacier layers is as follows:
+
+```bash
+RES=r025
+YR=1980
+DIN_LOC_ROOT=/global/cfs/cdirs/e3sm/inputdata
+
+./mksurfdata.pl -res $RES -years $YR -d -dinlc $DIN_LOC_ROOT -glc_nec 10
 ```
 
 ## Run `mksurfdata_map` via an interactive job
@@ -43,9 +52,5 @@ mv namelist namelist.$RES.$YR
 ```bash
 salloc --nodes 1 --qos interactive --time 01:00:00 --constraint cpu --account e3sm
 
-RES=0.5x0.5
-YR=1950
-NAMELIST=namelist.$RES.$YR
-
-srun -n 1 ./mksurfdata_map < $NAMELIST
+srun -n 1 ./mksurfdata_map < namelist
 ```
