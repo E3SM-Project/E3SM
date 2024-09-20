@@ -207,7 +207,7 @@ contains
          l = col_pp%landunit(c)
          ! no qflx_surf in polygonal ground
          if (lun_pp%ispolygon(l)) then
-            qflx_surf(c) = 0
+            qflx_surf(c) = 0._r8
          else
             ! assume qinmax large relative to qflx_top_soil in control
             if (origflag == 1) then
@@ -849,7 +849,7 @@ contains
        ! Water table changes due to qcharge
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-             nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
 
           !scs: use analytical expression for aquifer specific yield
           rous = watsat(c,nlevbed) &
@@ -857,7 +857,7 @@ contains
           rous=max(rous,0.02_r8)
 
           !--  water table is below the soil column  --------------------------------------
-              g = col_pp%gridcell(c)
+          g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
           qcharge_temp = qcharge(c)
 
@@ -865,10 +865,10 @@ contains
           zwt(c) = zwt(c) + (qflx_grnd_irrig_col(c) * dtime)/1000._r8/rous
 
           if(jwt(c) == nlevbed) then
-               if (.not. (zengdecker_2009_with_var_soil_thick)) then
-                wa(c)  = wa(c) + qcharge(c)  * dtime
-                zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
-             end if
+            if (.not. (zengdecker_2009_with_var_soil_thick)) then
+              wa(c)  = wa(c) + qcharge(c)  * dtime
+              zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
+            end if
           else
              !-- water table within soil layers 1-9  -------------------------------------
              ! try to raise water table to account for qcharge
@@ -931,7 +931,7 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-             nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
 
           ! define frost table as first frozen layer with unfrozen layer above it
           if(t_soisno(c,1) > tfrz) then
@@ -941,10 +941,10 @@ contains
           endif
 
           do k=2, nlevbed
-             if (t_soisno(c,k-1) > tfrz .and. t_soisno(c,k) <= tfrz) then
-                k_frz=k
-                exit
-             endif
+            if (t_soisno(c,k-1) > tfrz .and. t_soisno(c,k) <= tfrz) then
+               k_frz=k
+               exit
+            endif
           enddo
 
           frost_table(c)=z(c,k_frz)
@@ -1201,7 +1201,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-             nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
@@ -1211,7 +1211,7 @@ contains
                 else
                    jwt(c) = j-1
                    exit
-            end if
+                end if
              end if
           enddo
        end do
@@ -1426,11 +1426,11 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-            if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
+              if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
                    rsub_top(c)    = 0._r8
                 else
                    rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
-        end if
+              end if
              end if
 
              if (use_vsfm) rsub_top(c) = 0._r8
@@ -1442,28 +1442,28 @@ contains
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then
-            if (zengdecker_2009_with_var_soil_thick) then
-                if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
+               if (zengdecker_2009_with_var_soil_thick) then
+                 if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
                      zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
-           end if
-                   rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
-                   rsub_top_tot = - rsub_top(c) * dtime
-                   s_y = watsat(c,nlevbed) &
+                 end if
+                 rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
+                 rsub_top_tot = - rsub_top(c) * dtime
+                 s_y = watsat(c,nlevbed) &
                      * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-                   s_y=max(s_y,0.02_r8)
-                   rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
-                   rsub_top_layer=min(rsub_top_layer,0._r8)
-                   h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
-                   rsub_top_tot = rsub_top_tot - rsub_top_layer
-                   if (rsub_top_tot >= 0.) then
-                      zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
-                   else
-                      zwt(c) = zi(c,nlevbed)
-                   end if
-               if (rsub_top_tot < 0.) then
-                  rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
-                      rsub_top_tot = 0.
-                   end if
+                 s_y=max(s_y,0.02_r8)
+                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
+                 rsub_top_layer=min(rsub_top_layer,0._r8)
+                 h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
+                 rsub_top_tot = rsub_top_tot - rsub_top_layer
+                 if (rsub_top_tot >= 0.) then
+                    zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
+                 else
+                    zwt(c) = zi(c,nlevbed)
+                 end if
+                 if (rsub_top_tot < 0.) then
+                   rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
+                   rsub_top_tot = 0.
+                 end if
                 else
                    wa(c)  = wa(c) - rsub_top(c) * dtime
                    zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
@@ -1609,8 +1609,8 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-             nlevbed = nlev2bed(c)
-             do j = 1, nlevbed-1
+          nlevbed = nlev2bed(c)
+          do j = 1, nlevbed-1
              if (h2osoi_liq(c,j) < watmin) then
                 xs(c) = watmin - h2osoi_liq(c,j)
                 ! deepen water table if water is passed from below zwt layer
@@ -1628,8 +1628,8 @@ contains
        ! Get water for bottom layer from layers above if possible
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-             nlevbed = nlev2bed(c)
-             j = nlevbed
+          nlevbed = nlev2bed(c)
+          j = nlevbed
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)
              searchforwater: do i = nlevbed-1, 1, -1

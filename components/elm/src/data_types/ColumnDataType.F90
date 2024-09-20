@@ -1236,12 +1236,7 @@ contains
        if (.not. lun_pp%lakpoi(l)) then
 
           if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
-            if (use_arctic_init) then
-              g = lun_pp%gridcell(l)
-              this%t_soisnow(c,1:nlevgrnd) = 250._r8 + 40._r8 * cos(grc_pp%lat(g)) ! vary between 250 and 290 based on cos(lat)
-            else
-              this%t_soisno(c,1:nlevgrnd) = 250._r8
-            end if
+             this%t_soisno(c,1:nlevgrnd) = 250._r8
 
           else if (lun_pp%itype(l) == istwet) then
              this%t_soisno(c,1:nlevgrnd) = 277._r8
@@ -1286,7 +1281,12 @@ contains
                 end if
              end if
           else
-             this%t_soisno(c,1:nlevgrnd) = 274._r8
+            if (use_arctic_init) then
+              g = lun_pp%gridcell(l)
+              this%t_soisno(c,1:nlevgrnd) = 250._r8 + 40._r8 * cos(grc_pp%lat(g)) ! vary between 250 and 290 based on cos(lat)
+            else
+              this%t_soisno(c,1:nlevgrnd) = 274._r8
+            end if
           endif
           this%t_grnd(c) = this%t_soisno(c,snl(c)+1)
        endif

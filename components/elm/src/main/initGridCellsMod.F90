@@ -376,14 +376,6 @@ contains
     ! c) natural vegetation, flat centered polygons
     ! d) natural vegetation, low centered polygons
 
-    !if (use_polygonal_tundra) then
-    !  orig_wtlunit2topounit = wtlunit2topounit
-    !  ! adjust wtlunit2topounit to subtract fraction that is polygonal
-    !  wtlunit2topounit = wtlunit2topounit * (1._r8 - sum(wt_polygon(gi, topo_ind, :))) ! sum over polygon types
-    !  ! DEBUG:
-    !  write(iulog,*) "DEBUG / new, original, polygon weights are:",wtlunit2topounit,orig_wtlunit2topounit,wt_polygon(gi,topo_ind,:)
-    !endif
-
     ! For FATES: the total number of patches may not match what is in the surface
     ! file, and therefor the weighting can't be used. The weightings in
     ! wt_nat_patch may be meaningful (like with fixed biogeography), but they
@@ -424,8 +416,7 @@ contains
                p_wt = wt_nat_patch(gi,topo_ind,m)
              end if
              call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
-             write(iulog,*) "polygon column counter:", z, pi, ci, li, ti
-           end do 
+           end do
          end do
        end if 
 

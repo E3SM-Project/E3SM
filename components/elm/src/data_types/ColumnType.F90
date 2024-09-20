@@ -175,11 +175,6 @@ contains
     deallocate(this%hslp_p10   )
     deallocate(this%nlevbed    )
     deallocate(this%zibed      )
-    ! RPF note: moving these to col_ws, but col_ws never seems to be deallocated?
-    !deallocate(this%iwp_microrel)
-    !deallocate(this%iwp_exclvol )
-    !deallocate(this%iwp_ddep    )
-    !deallocate(this%iwp_subsidence)
     deallocate(this%meangradz     )
     deallocate(this%hydrologically_active)
     deallocate(this%is_fates)
