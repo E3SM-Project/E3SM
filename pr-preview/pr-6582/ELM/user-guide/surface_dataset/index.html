@@ -1986,9 +1986,9 @@ make<span class="w"> </span>clean
 <span class="nv">USER_FC</span><span class="o">=</span>ifort<span class="w"> </span><span class="nv">LIB_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nc-config --flibs`&quot;</span><span class="w"> </span><span class="nv">INC_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nf-config --includedir`&quot;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </code></pre></div>
 <h2 id="build-the-namelist">Build the namelist</h2>
-<p>This steps assumes that the resolution for which the new surface dataset is being created is a supported resolution.
+<p>This step assumes that the resolution for which the new surface dataset is being created is a supported resolution.
 If the surface dataset is being created for an unsupported resolution, 16 mapping files will have to be created to map the raw datasets
-onto this unsupported resolution.</p>
+onto this unsupported resolution. The <code>namelist</code> file with default number of glaciers (equal to zero) can be generated as:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>../
 
 <span class="nv">RES</span><span class="o">=</span><span class="m">0</span>.5x0.5
@@ -1996,16 +1996,18 @@ onto this unsupported resolution.</p>
 <span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
 
 ./mksurfdata.pl<span class="w"> </span>-res<span class="w"> </span><span class="nv">$RES</span><span class="w"> </span>-years<span class="w"> </span><span class="nv">$YR</span><span class="w"> </span>-d<span class="w"> </span>-dinlc<span class="w"> </span><span class="nv">$DIN_LOC_ROOT</span>
-mv<span class="w"> </span>namelist<span class="w"> </span>namelist.<span class="nv">$RES</span>.<span class="nv">$YR</span>
+</code></pre></div>
+<p>An example of generating the namelist for 0.25 deg (<code>r025</code>) resolution for 1980 with 10 glacier layers is as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">RES</span><span class="o">=</span>r025
+<span class="nv">YR</span><span class="o">=</span><span class="m">1980</span>
+<span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
+
+./mksurfdata.pl<span class="w"> </span>-res<span class="w"> </span><span class="nv">$RES</span><span class="w"> </span>-years<span class="w"> </span><span class="nv">$YR</span><span class="w"> </span>-d<span class="w"> </span>-dinlc<span class="w"> </span><span class="nv">$DIN_LOC_ROOT</span><span class="w"> </span>-glc_nec<span class="w"> </span><span class="m">10</span>
 </code></pre></div>
 <h2 id="run-mksurfdata_map-via-an-interactive-job">Run <code>mksurfdata_map</code> via an interactive job</h2>
 <div class="highlight"><pre><span></span><code>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">01</span>:00:00<span class="w"> </span>--constraint<span class="w"> </span>cpu<span class="w"> </span>--account<span class="w"> </span>e3sm
 
-<span class="nv">RES</span><span class="o">=</span><span class="m">0</span>.5x0.5
-<span class="nv">YR</span><span class="o">=</span><span class="m">1950</span>
-<span class="nv">NAMELIST</span><span class="o">=</span>namelist.<span class="nv">$RES</span>.<span class="nv">$YR</span>
-
-srun<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>./mksurfdata_map<span class="w"> </span>&lt;<span class="w"> </span><span class="nv">$NAMELIST</span>
+srun<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>./mksurfdata_map<span class="w"> </span>&lt;<span class="w"> </span>namelist
 </code></pre></div>
 
 
