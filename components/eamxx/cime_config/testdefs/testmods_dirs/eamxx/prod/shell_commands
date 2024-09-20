@@ -3,6 +3,7 @@
 cime_root=$(./xmlquery --value CIMEROOT)
 input_data_dir=$(./xmlquery --value DIN_LOC_ROOT)
 atmchange=$cime_root/../components/eamxx/scripts/atmchange
+case_name=$(./xmlquery --value CASE)
 
 # Change run length
 ./xmlchange RUN_STARTDATE="1994-10-01"
@@ -61,7 +62,7 @@ else
 fi
 
 # set the output yaml files
-output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/v1prod/yaml_outs/ -maxdepth 1 -type f)
+output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/prod/yaml_outs/ -maxdepth 1 -type f)
 for file in ${output_yaml_files[@]}; do
     # if the word "coarse" is in the file name, do nothing
     if [[ "${file}" == *"_coarse.yaml" && "${hmapfile}" == "not-supported-yet" ]]; then
@@ -82,6 +83,8 @@ for file in ${output_yaml_files[@]}; do
         sed -i "s|horiz_remap_file:.*_to_ne30.*|horiz_remap_file: ${hmapfile}|" ./$(basename ${file})
         sed -i "s|horiz_remap_file:.*_to_DecadalSites.*|horiz_remap_file: ${armmapfile}|" ./$(basename ${file})
     fi
+    # replace all filename prefixes so that st_archive works...
+    sed -i "s|eamxx_output.decadal|${case_name}.scream|" ./$(basename ${file})
 done
 
 # TODO:
