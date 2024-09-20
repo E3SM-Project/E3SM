@@ -1336,7 +1336,6 @@ end subroutine diag_conv_tend_ini
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TMQ     ',ftem, pcols   ,lchnk     )
-
 !
 ! Mass of vertically integrated water vapor flux
 !
