@@ -34,6 +34,10 @@ using HommexxGPU = Kokkos::Cuda;
 using HommexxGPU = Kokkos::Experimental::HIP;
 #endif
 
+#ifdef KOKKOS_ENABLE_SYCL
+using HommexxGPU = Kokkos::Experimental::SYCL;
+#endif
+
 #else
 using HommexxGPU = void;
 #endif

@@ -236,7 +236,7 @@ public:
     });
   }
 
-  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const MoistDry moisture) {
+  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const bool use_moisture) {
     // The Functor needs to be fully setup to use this function
     assert (is_setup);
 
@@ -245,7 +245,7 @@ public:
     m_np1_qdp = np1_qdp;
     m_adjustment = adjustment;
 
-    m_moist = (moisture==MoistDry::MOIST);
+    m_moist = use_moisture;
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);
     Kokkos::fence();
