@@ -819,7 +819,7 @@ void HommeDynamics::init_homme_views () {
   std::stringstream msg;
   msg << "\n************** HOMMEXX SimulationParams **********************\n\n";
   msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
-  msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
+  msg << "   moisture: " << (params.use_moisture ? "moist" : "dry") << "\n";
   msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
   msg << "   test case: " << Homme::etoi(params.test_case) << "\n";
   msg << "   ftype: " << Homme::etoi(params.ftype) << "\n";

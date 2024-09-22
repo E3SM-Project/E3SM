@@ -277,7 +277,7 @@ apply_iop_forcing(const Real dt)
 
   ElementOps elem_ops;
   elem_ops.init(hvcoord);
-  const bool use_moisture = (params.moisture == Homme::MoistDry::MOIST);
+  const bool use_moisture = params.use_moisture;
 
   // Load data from IOP files, if necessary
   m_iop->read_iop_file_data(timestamp());

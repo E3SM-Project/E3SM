@@ -4,7 +4,7 @@
 #endif
 
 module homme_driver_mod
-  use iso_c_binding,     only: c_ptr, c_int, c_double, c_bool, C_NULL_CHAR
+  use iso_c_binding,     only: c_ptr, c_int, c_double, C_NULL_CHAR
 
   use parallel_mod,  only: abortmp
 
@@ -192,7 +192,7 @@ contains
                                  elem, hybrid, hvcoord, deriv, tl
 
     ! Local variable
-    logical(kind=c_bool), parameter :: allocate_buffer = .false.
+    logical, parameter :: allocate_buffer = 0
 
     if (.not. is_data_structures_inited) then
       call abortmp ("Error! 'prim_init_data_structures_f90' has not been called yet.\n")
