@@ -1,6 +1,6 @@
 module prep_ocn_mod
 
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8
+  use shr_kind_mod,     only: R8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
@@ -137,7 +137,7 @@ module prep_ocn_mod
   integer        , target  :: x2oacc_ox_cnt ! x2oacc_ox: number of time samples accumulated
 
   ! accumulation variables for moab data
-  real (kind=r8) , allocatable, private, target :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
+  real (kind=R8) , allocatable, private, target :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
   integer        , target  :: x2oacc_om_cnt ! x2oacc_ox: number of time samples accumulated, in moab array
   integer                  :: arrSize_x2o_om !   this will be a module variable, size moabLocal_size * nof
 
@@ -154,20 +154,20 @@ module prep_ocn_mod
   !================================================================================================
 
 
-  real (kind=r8) , allocatable, private :: fractions_om (:,:) ! will retrieve the fractions from ocean, and use them
+  real (kind=R8) , allocatable, private :: fractions_om (:,:) ! will retrieve the fractions from ocean, and use them
   !  they were init with
   ! character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad' in moab, on the fractions
-  real (kind=r8) , allocatable, private :: x2o_om (:,:)
-  real (kind=r8) , allocatable, private :: a2x_om (:,:)
-  real (kind=r8) , allocatable, private :: i2x_om (:,:)
-  real (kind=r8) , allocatable, private :: r2x_om (:,:)
-  real (kind=r8) , allocatable, private :: xao_om (:,:)
+  real (kind=R8) , allocatable, private :: x2o_om (:,:)
+  real (kind=R8) , allocatable, private :: a2x_om (:,:)
+  real (kind=R8) , allocatable, private :: i2x_om (:,:)
+  real (kind=R8) , allocatable, private :: r2x_om (:,:)
+  real (kind=R8) , allocatable, private :: xao_om (:,:)
 
   ! this will be constructed first time, and be used to copy fields for shared indices
   ! between xao and x2o
   character(CXX) :: shared_fields_xao_x2o
   ! will need some array to hold the data for copying
-  real(r8) , allocatable, save :: shared_values(:) ! will be the size of shared indices * lsize
+  real(R8) , allocatable, save :: shared_values(:) ! will be the size of shared indices * lsize
   integer    :: size_of_shared_values
 
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
@@ -268,7 +268,7 @@ contains
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
     integer noflds   ! used for number of fields in allocating moab accumulated array x2oacc_om
-    real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
+    real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
 
     !---------------------------------------------------------------
 
@@ -786,7 +786,7 @@ contains
          arrsize = nrflds*mlsize
          allocate (tmparray(arrsize)) ! mlsize is the size of local land
          ! do we need to zero out others or just river ?
-         tmparray = 0._r8
+         tmparray = 0._R8
          ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' cant zero out r2x tags on ocn'
@@ -1095,7 +1095,7 @@ subroutine prep_ocn_accum_avg_moab()
     !
     ! Local Variables
     integer                  :: eii, ewi, egi, eoi, eai, eri, exi, efi, emi
-    real(r8)                 :: flux_epbalfact ! adjusted precip factor
+    real(R8)                 :: flux_epbalfact ! adjusted precip factor
     type(mct_avect), pointer :: x2o_ox
     integer                  :: cnt
     character(*), parameter  :: subname = '(prep_ocn_mrg)'
@@ -1177,7 +1177,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     !---------------------------------------------------------------
 
 
-    real(r8)                 :: flux_epbalfact ! adjusted precip factor
+    real(R8)                 :: flux_epbalfact ! adjusted precip factor
 
     ! will build x2o_om , similar to x2o_ox
     ! no averages, just one ocn instance
@@ -1187,11 +1187,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer  :: kof,kif
     integer  :: lsize, arrsize ! for double arrays
     integer , save :: noflds,naflds,niflds,nrflds,nxflds!  ,ngflds,nwflds, no glacier or wave model
-    real(r8) :: ifrac,ifracr
-    real(r8) :: afrac,afracr
-    real(r8) :: frac_sum
-    real(r8) :: avsdr, anidr, avsdf, anidf   ! albedos
-    real(r8) :: fswabsv, fswabsi             ! sw
+    real(R8) :: ifrac,ifracr
+    real(R8) :: afrac,afracr
+    real(R8) :: frac_sum
+    real(R8) :: avsdr, anidr, avsdf, anidf   ! albedos
+    real(R8) :: fswabsv, fswabsi             ! sw
     character(CL),allocatable :: field_ocn(:)   ! string converted to char
     character(CL),allocatable :: field_atm(:)   ! string converted to char
     character(CL),allocatable :: field_ice(:)   ! string converted to char
@@ -1289,7 +1289,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #endif
 #ifdef MOABCOMP
     character(CXX) :: mct_field
-    real(r8)                 :: difference
+    real(R8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
@@ -1345,7 +1345,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))
-       r2x_om = 0._r8 ! should we zero out all of them ?
+       r2x_om = 0._R8 ! should we zero out all of them ?
        allocate(xao_om (lsize, nxflds))
        ! allocate fractions too
        ! use the fraclist fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
@@ -1769,7 +1769,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        ifrac = fractions_om(n,kif) ! fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
        afrac = fractions_om(n,kof) ! fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
        frac_sum = ifrac + afrac
-       if ((frac_sum) /= 0._r8) then
+       if ((frac_sum) /= 0._R8) then
           ifrac = ifrac / (frac_sum)
           afrac = afrac / (frac_sum)
        endif
@@ -1777,7 +1777,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        ifracr = fractions_om(n,kir) ! fo_kir_ifrad(n)  ! fractions_o%rAttr(kir,n)
        afracr = fractions_om(n,kor) ! fo_kor_ofrad(n) ! fractions_o%rAttr(kor,n)
        frac_sum = ifracr + afracr
-       if ((frac_sum) /= 0._r8) then
+       if ((frac_sum) /= 0._R8) then
           ifracr = ifracr / (frac_sum)
           afracr = afracr / (frac_sum)
        endif
@@ -1913,7 +1913,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           ifrac = fractions_om(n,kif) !fo_kif_ifrac(n) ! fractions_o%rAttr(kif)
           afrac = fractions_om(n,kof) ! fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
           frac_sum = ifrac + afrac
-          if ((frac_sum) /= 0._r8) then
+          if ((frac_sum) /= 0._R8) then
              ifrac = ifrac / (frac_sum)
              afrac = afrac / (frac_sum)
           endif
@@ -2046,7 +2046,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     !-----------------------------------------------------------------------
     !
     ! Arguments
-    real(r8)       , intent(in)    :: flux_epbalfact
+    real(R8)       , intent(in)    :: flux_epbalfact
     type(mct_aVect), intent(in)    :: a2x_o
     type(mct_aVect), intent(in)    :: i2x_o
     type(mct_aVect), intent(in)    :: r2x_o
@@ -2061,11 +2061,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer  :: kof,kif
     integer  :: lsize
     integer  :: noflds,naflds,niflds,nrflds,nwflds,nxflds,ngflds
-    real(r8) :: ifrac,ifracr
-    real(r8) :: afrac,afracr
-    real(r8) :: frac_sum
-    real(r8) :: avsdr, anidr, avsdf, anidf   ! albedos
-    real(r8) :: fswabsv, fswabsi             ! sw
+    real(R8) :: ifrac,ifracr
+    real(R8) :: afrac,afracr
+    real(R8) :: frac_sum
+    real(R8) :: avsdr, anidr, avsdf, anidf   ! albedos
+    real(R8) :: fswabsv, fswabsi             ! sw
     character(CL),allocatable :: field_ocn(:)   ! string converted to char
     character(CL),allocatable :: field_atm(:)   ! string converted to char
     character(CL),allocatable :: field_ice(:)   ! string converted to char
@@ -2584,7 +2584,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        ifrac = fractions_o%rAttr(kif,n)
        afrac = fractions_o%rAttr(kof,n)
        frac_sum = ifrac + afrac
-       if ((frac_sum) /= 0._r8) then
+       if ((frac_sum) /= 0._R8) then
           ifrac = ifrac / (frac_sum)
           afrac = afrac / (frac_sum)
        endif
@@ -2592,7 +2592,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        ifracr = fractions_o%rAttr(kir,n)
        afracr = fractions_o%rAttr(kor,n)
        frac_sum = ifracr + afracr
-       if ((frac_sum) /= 0._r8) then
+       if ((frac_sum) /= 0._R8) then
           ifracr = ifracr / (frac_sum)
           afracr = afracr / (frac_sum)
        endif
@@ -2738,7 +2738,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           ifrac = fractions_o%rAttr(kif,n)
           afrac = fractions_o%rAttr(kof,n)
           frac_sum = ifrac + afrac
-          if ((frac_sum) /= 0._r8) then
+          if ((frac_sum) /= 0._R8) then
              ifrac = ifrac / (frac_sum)
              afrac = afrac / (frac_sum)
           endif
@@ -3068,7 +3068,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
   function prep_ocn_get_x2oacc_om()
-    real(r8), DIMENSION(:, :), pointer :: prep_ocn_get_x2oacc_om
+    real(R8), DIMENSION(:, :), pointer :: prep_ocn_get_x2oacc_om
     prep_ocn_get_x2oacc_om => x2oacc_om
   end function prep_ocn_get_x2oacc_om
   function prep_ocn_get_x2oacc_om_cnt()

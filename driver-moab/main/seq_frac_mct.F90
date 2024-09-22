@@ -180,7 +180,7 @@ module seq_frac_mct
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
-        iMOAB_ApplyScalarProjectionWeights, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
+        iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
         iMOAB_FreeSenderBuffers, iMOAB_GetDoubleTagStorage
 #ifdef MOABDEBUG
    use seq_comm_mct,     only : num_moab_exports
