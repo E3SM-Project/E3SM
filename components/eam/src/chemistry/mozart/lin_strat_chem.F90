@@ -990,6 +990,7 @@ end subroutine linoz_readnl
        sfc_const(2,:ncol) = x_sfc(3,:ncol)
        sfc_const(3,:ncol) = x_sfc(4,:ncol)
        o3_lbl =9
+       sfc_const(3,:ncol) = 1.1d0 * sfc_const(3,:ncol) ! increase surf. CH4 by 10%
      endif    
     endif    
 ! 
