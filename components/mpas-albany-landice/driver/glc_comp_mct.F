@@ -44,6 +44,14 @@ module glc_comp_mct
   use mpas_dmpar
   use mpas_constants
   use mpas_log
+#ifdef HAVE_MOAB
+   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
+   use mpas_moabmesh
+   use seq_comm_mct, only: MBGLID
+   use seq_comm_mct,      only: num_moab_exports
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+   use seq_comm_mct, only:  seq_comm_compare_mb_mct
+#endif
 
   use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
   use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -535,6 +543,10 @@ contains
 !-----------------------------------------------------------------------
     call t_stopf ('mali_init')
 
+#ifdef HAVE_MOAB
+    call init_moab_mpas(domain, glcID, MBGLID) ! should return MBGLID ..
+    call mpas_log_write('initialized MOAB MPAS land ice instance... ')
+#endif
 !-----------------------------------------------------------------------
 !
 !   check for consistency of mali and sync clock initial time
