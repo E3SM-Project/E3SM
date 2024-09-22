@@ -133,7 +133,9 @@ contains
     end if
     if( has_h2 ) then
        do k = 1,pver
-          invariants(:ncol,k,h2_ndx) = 5.5e-7_r8 * invariants(:ncol,k,m_ndx)
+          !invariants(:ncol,k,h2_ndx) = 5.5e-7_r8 * invariants(:ncol,k,m_ndx)
+          ! increase H2 concentration by 10%
+          invariants(:ncol,k,h2_ndx) = 1.1_r8 * 5.5e-7_r8 * invariants(:ncol,k,m_ndx)
        end do
     end if
 
