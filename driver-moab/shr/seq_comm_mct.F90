@@ -218,6 +218,7 @@ module seq_comm_mct
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
   integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
+  integer, public :: mbglid ! glc moab id
   integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
