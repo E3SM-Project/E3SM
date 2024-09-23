@@ -274,20 +274,25 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   // Compute vertical layer heights and updraft velocity. We need these to fully
   // populate dry_atm_, so that we can form a HAERO atmosphere object. HAERO
   // atmosphere object is used to for state%q like array.
+  // NOTE: We cannot pass a member of the interface class (in this case, MAMConstituentFluxes)
+  // inside a parallel_for. Instead, we must create a soft copy of each member.
+  const auto & wet_atm = wet_atm_;
+  const auto & dry_atm= dry_atm_;
+
   auto lambda =
       KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
     const int icol = team.league_rank();       // column index
-    compute_dry_mixing_ratios(team, wet_atm_,  // in
-                              dry_atm_,        // out
+    compute_dry_mixing_ratios(team, wet_atm,  // in
+                              dry_atm,        // out
                               icol);           // in
     team.team_barrier();
     // vertical heights has to be computed after computing dry mixing ratios
     // for atmosphere
     compute_vertical_layer_heights(team,        // in
-                                   dry_atm_,    // out
+                                   dry_atm,    // out
                                    icol);       // in
-    compute_updraft_velocities(team, wet_atm_,  // in
-                               dry_atm_,        // out
+    compute_updraft_velocities(team, wet_atm,  // in
+                               dry_atm,        // out
                                icol);           // in
   };
   // policy
