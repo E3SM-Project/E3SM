@@ -57,10 +57,23 @@ void fpe_guard_wrapper (const Lambda& f) {
   try {
     f();
   } catch (std::exception &e) {
+    // Print exception msg, then call MPI_Abort
     fprintf(stderr, "%s\n", e.what());
+
+    // Get raw comm before cleaning up singleton
     auto& c = ScreamContext::singleton();
+    auto raw_comm = c.get<ekat::Comm>().mpi_comm();
     c.clean_up();
-    throw;
+
+    MPI_Abort (raw_comm,1);
+  } catch (...) {
+
+    // Get raw comm before cleaning up singleton
+    auto& c = ScreamContext::singleton();
+    auto raw_comm = c.get<ekat::Comm>().mpi_comm();
+    c.clean_up();
+
+    MPI_Abort (raw_comm,1);
   }
 
   // Restore the FPE flag as it was when control was handed to us.
