@@ -49,7 +49,10 @@ module glc_comp_mct
    use mpas_moabmesh
    use seq_comm_mct, only: MBGLID
    use seq_comm_mct,      only: num_moab_exports
-   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
+#ifdef MOABDEBUG
+   use iMOAB, only :iMOAB_WriteMesh
+#endif
    use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
 
@@ -75,7 +78,15 @@ module glc_comp_mct
   private :: glc_domain_mct
 
 ! !PRIVATE MODULE VARIABLES
+#ifdef HAVE_MOAB
+  private :: glc_export_moab
+  private :: glc_import_moab
+  integer , private :: mblsize, totalmbls, totalmbls_r
+  real (kind=RKIND) , allocatable, private :: g2x_gm(:,:)
 
+  real (kind=RKIND) , allocatable, private :: x2g_gm(:,:)
+  integer :: mpicom_moab
+#endif
   integer, private :: my_task
 
   integer  :: nsend, nrecv
@@ -192,6 +203,20 @@ contains
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
 
+#ifdef HAVE_MOAB
+    integer :: ierrmb, numco, tagtype, tagindex, ent_type
+    character(CXX) :: tagname
+#ifdef MOABCOMP
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) :: mct_field, modelStr
+#endif
+#ifdef MOABDEBUG
+    character(CXX) :: outfile, wopts 
+#endif
+#endif
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -546,6 +571,15 @@ contains
 #ifdef HAVE_MOAB
     call init_moab_mpas(domain, glcID, MBGLID) ! should return MBGLID ..
     call mpas_log_write('initialized MOAB MPAS land ice instance... ')
+
+#ifdef MOABDEBUG
+    if (MBGLID .ge. 0 ) then !  we are on glc comp pes
+       outfile = 'GLC_mpas.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+       ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+    endif
+
+#endif
 #endif
 !-----------------------------------------------------------------------
 !
@@ -594,6 +628,52 @@ contains
     nsend = mct_avect_nRattr(g2x_g)
     nrecv = mct_avect_nRattr(x2g_g)
 
+#ifdef HAVE_MOAB
+    ! initialize moab tag fields array
+   mblsize = lsize
+   totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
+   allocate ( g2x_gm(lsize, nsend) )
+   g2x_gm = 0._r8
+  ! define tags according to the seq_flds_g2x_fields
+   tagtype = 1  ! dense, double
+   numco = 1 !  one value per cell / entity
+   tagname = trim(seq_flds_g2x_fields)//C_NULL_CHAR
+   ierrmb = iMOAB_DefineTagStorage(MBGLID, tagname, tagtype, numco,  tagindex )
+   if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB g2x fields ' // trim(seq_flds_g2x_fields), MPAS_LOG_ERR)
+   endif
+   !  set all tags to 0 in one method
+   ent_type = 1! cells
+   ierr = iMOAB_SetDoubleTagStorage ( MBGLID, tagname, totalmbls , ent_type, g2x_gm )
+   if ( ierr /= 0 ) then
+      call mpas_log_write('Fail to set MOAB fields '// trim(seq_flds_g2x_fields), MPAS_LOG_ERR)
+   endif
+
+   totalmbls_r = mblsize * nrecv ! size of the double array for importing
+   allocate (x2g_gm(lsize, nrecv) )
+   x2g_gm = 0._r8
+
+   tagname = trim(seq_flds_x2g_fields)//C_NULL_CHAR
+   ierrmb = iMOAB_DefineTagStorage(MBGLID, tagname, tagtype, numco,  tagindex )
+   if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB x2g fields ' // trim(seq_flds_x2g_fields), MPAS_LOG_ERR)
+   endif
+   !  set all tags to 0 in one method
+   ierr = iMOAB_SetDoubleTagStorage ( MBGLID, tagname, totalmbls_r , ent_type, x2g_gm )
+   if ( ierr /= 0 ) then
+      call mpas_log_write('Fail to set MOAB fields ',  MPAS_LOG_ERR)
+   endif
+
+   ! add domain tags
+   tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
+   tagtype = 1
+   ierr = iMOAB_DefineTagStorage(MBGLID, tagname, tagtype, numco,  tagindex )
+   if ( ierr /= 0 ) then
+      call mpas_log_write('Fail to set define dom fields ',  MPAS_LOG_ERR)
+   endif
+
+
+#endif
 !-----------------------------------------------------------------------
 !
 !   initialize necessary coupling info
@@ -680,6 +760,12 @@ contains
 !       call mpas_dmpar_global_abort('ERROR in glc_import_mct')
 !    endif
 
+! GLC CURRENTLY DOES NOT REQUIRE IMPORT OF THE INITIAL STATE
+!    call glc_import_moab( errorCode)
+!    if (errorCode /= 0) then
+!       call mpas_dmpar_global_abort('ERROR in glc_import_moab')
+!    endif
+
 ! MPASO builds forcing arrays, which we don't have
 !    ! Build forcing arrays.
 !    block_ptr => domain % blocklist
@@ -727,6 +813,12 @@ contains
     if (errorCode /= 0) then
        call mpas_log_write('Error in glc_export_mct', MPAS_LOG_CRIT)
     endif
+#ifdef HAVE_MOAB
+      call glc_export_moab(errorCode)
+      if (errorCode /= 0) then
+       call mpas_log_write('Error in glc_export_moab', MPAS_LOG_CRIT)
+    endif
+#endif
 
     ! Setup clock for initial runs
 ! Some MPASO ocean pools handled here, but we don't have them.
@@ -848,6 +940,10 @@ contains
       call glc_import_mct(x2g_g, err_tmp)
       err = ior(err,err_tmp)
 
+#ifdef HAVE_MOAB
+ !     call glc_import_moab( err_tmp)  ! not yet executed, because coupler is not done yet
+ !     err = ior(err,err_tmp)
+#endif
       ! Initialize time average fields
 !      block_ptr => domain % blocklist
 !      do while(associated(block_ptr))
@@ -1013,6 +1109,11 @@ contains
       ! Export state to coupler
       call glc_export_mct(g2x_g, err_tmp)
       err = ior(err,err_tmp)
+
+#ifdef HAVE_MOAB
+      call glc_export_moab(err_tmp)
+#endif
+      
 
       ! Move time levels back the way MPAS will expect them on the next time step
       block => domain % blocklist
@@ -1532,7 +1633,204 @@ contains
 
   end subroutine glc_export_mct
 
+#ifdef HAVE_MOAB
+!=================================================================================
 
+
+   subroutine glc_import_moab(errorCode)
+
+! !INPUT/OUTPUT PARAMETERS:
+! !OUTPUT PARAMETERS:
+
+   integer, intent(out) :: &
+      errorCode              ! returned error code
+
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   character (len=StrKIND) ::   &
+      label,                 &
+      message
+
+   integer ::  &
+      i,n
+
+   type (block_type), pointer :: block
+
+   type (mpas_pool_type), pointer :: meshPool
+   type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: thermalPool
+
+   integer, pointer :: nCellsSolve
+
+   real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
+                                               floatingBasalMassBal,&
+                                               surfaceTemperature,&
+                                               basalOceanHeatflx,&
+                                               OceanDensity
+
+    integer :: ierr, ent_type
+    character(CXX) :: tagname
+
+    errorCode = 0
+
+!  get moab tags from MPOID
+
+
+   ent_type = 1 ! cells
+   !  get all tags in one method
+   tagname = trim(seq_flds_x2g_fields)//C_NULL_CHAR
+   ierr = iMOAB_GetDoubleTagStorage ( MBGLID, tagname, totalmbls_r, ent_type, x2g_gm )
+   if ( ierr /= 0 ) then
+      call mpas_log_write('Fail to get MOAB fields ',  MPAS_LOG_ERR)
+   endif
+
+!--------------------------------------------------------------
+
+    n = 0
+    block => domain % blocklist
+
+    do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         ! Get variables from pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+
+         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+!         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+         !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
+
+         do i = 1, nCellsSolve
+            n = n + 1
+            sfcMassBal(i) = x2g_gm (n, index_x2g_Flgl_qice)
+            floatingBasalMassBal(i) = x2g_gm (n, index_x2g_Fogx_qiceli)
+
+         end do
+
+         block => block % next
+    end do
+
+  end subroutine glc_import_moab
+
+
+!=================================================================================
+
+
+  subroutine glc_export_moab(errorCode)
+
+   use li_mask
+   use iMOAB, only: iMOAB_SetDoubleTagStorage
+   !-------------------------------------------------------------------
+
+   integer, intent(out) :: errorCode
+
+   !-------------------------------------------------------------------
+   integer ::  &
+      i,n
+
+   type (block_type), pointer :: block
+
+   real (kind=RKIND), pointer :: config_sea_level
+
+   type (mpas_pool_type), pointer :: meshPool
+   type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: thermalPool
+
+   integer, pointer :: nCellsSolve, nVertLevels
+
+   real (kind=RKIND), dimension(:), pointer :: upperSurface
+   real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
+   real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:,:), pointer :: temperature
+   integer, dimension(:), pointer :: cellMask
+
+   integer:: ent_type, ierr
+   character(CXX) :: tagname
+   !-------------------------------------------------------------------
+
+    errorCode = 0
+
+    n = 0
+    block => domain % blocklist
+
+    call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
+
+    do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         ! Get variables from pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
+
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+         call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         do i = 1, nCellsSolve
+            n = n + 1
+
+            !call route_ice_runoff(0.0_RKIND, & !Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), and attach to ice calving flux once present...
+            !                      rofi_to_ocn=Fogg_rofi, &
+            !                      rofi_to_ice=Figg_rofi)
+            g2x_gm (n, index_g2x_Fogg_rofi)=0.0 !...and remove these placeholders
+            g2x_gm (n, index_g2x_Figg_rofi)=0.0 !...and remove these placeholders
+            g2x_gm (n, index_g2x_Fogg_rofl) = 0.0 !Attach to subglacial liquid flux once present
+
+            g2x_gm (n, index_g2x_Sg_topo) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
+            g2x_gm (n, index_g2x_Sg_tbot) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
+            ! layerThickness is not populated on init, so calculating like this instead:
+            g2x_gm (n, index_g2x_Sg_dztbot) = layerThicknessFractions(nVertLevels) * thickness(i) / 2.0
+            g2x_gm (n, index_g2x_Sg_lithop) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+
+            !!!Mask configurations
+            g2x_gm (n, index_g2x_Sg_ice_covered) = li_mask_is_ice_int(cellMask(i))
+            ! Sg_icemask should be 1 in locations where GLC will use a SMB value
+            ! This is cells with ice or bare land (no ocean cells)
+            ! This can easily be checked by any cells where upperSurface is
+            ! above sea level!
+            if (upperSurface(i) > config_sea_level) then
+               g2x_gm (n, index_g2x_Sg_icemask) = 1
+            else
+               g2x_gm (n, index_g2x_Sg_icemask) = 0
+            endif
+
+            ! icemask_coupled_fluxes for now should be the same as icemask
+            ! If we add in the ability to prevent the ice sheet from evolving
+            ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
+            g2x_gm (n, index_g2x_Sg_icemask_coupled_fluxes) = g2x_gm (index_g2x_Sg_icemask, n)
+
+            ! Add masks used for ice shelf basal melt calculation
+            g2x_gm (n, index_g2x_Sg_icemask_floating) = li_mask_is_floating_ice_int(cellMask(i))
+            g2x_gm (n, index_g2x_Sg_icemask_grounded) = li_mask_is_grounded_ice_int(cellMask(i))
+
+         end do
+
+         block => block % next
+    end do
+
+    ent_type = 1 ! cells
+    !  set all tags in one method
+    tagname = trim(seq_flds_g2x_fields)//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MBGLID, tagname, totalmbls , ent_type, g2x_gm )
+    if ( ierr /= 0 ) then
+       call mpas_log_write('Fail to set MOAB fields ',  MPAS_LOG_ERR)
+    endif
+
+  end subroutine glc_export_moab
+
+#endif
 !=================================================================================
 
 
