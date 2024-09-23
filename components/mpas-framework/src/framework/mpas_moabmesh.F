@@ -58,6 +58,7 @@ module mpas_moabmesh
     character*100  tagname, lnum
     integer tagtype, numco, tag_sto_len, ent_type, tagindex, currentVertex
     real (kind=RKIND), pointer :: sphere_radius
+    real (kind=RKIND)   :: moab_radius
 
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
@@ -136,10 +137,15 @@ module mpas_moabmesh
          all_connects(i1) = indexUsed( all_connects(i1) )
        enddo
        allocate(moab_vert_coords(3*currentVertex))
+       if (sphere_radius .eq. 0.) then
+          moab_radius = 1.0
+       else
+          moab_radius = sphere_radius
+       endif
        do i1 =1, currentVertex
-         moab_vert_coords(3*i1-2) = xVertex(invMap(i1))/sphere_radius
-         moab_vert_coords(3*i1-1) = yVertex(invMap(i1))/sphere_radius
-         moab_vert_coords(3*i1  ) = zVertex(invMap(i1))/sphere_radius
+         moab_vert_coords(3*i1-2) = xVertex(invMap(i1))/moab_radius
+         moab_vert_coords(3*i1-1) = yVertex(invMap(i1))/moab_radius
+         moab_vert_coords(3*i1  ) = zVertex(invMap(i1))/moab_radius
          ! call mpas_log_write('i:: $i coords:: $r $r $r $r', intArgs=(/i1/), realArgs=(/moab_vert_coords(3*i1-2),moab_vert_coords(3*i1-1), moab_vert_coords(3*i1)/) )
        enddo
        dimcoord = 3*currentVertex
@@ -183,7 +189,7 @@ module mpas_moabmesh
        n=0
        do ic=1, nCellsSolve
          n= n+1
-         data(n)=areaCell(ic) / (sphere_radius * sphere_radius)
+         data(n)=areaCell(ic) / (moab_radius * moab_radius)
        enddo
 
        tagname='area'//C_NULL_CHAR
