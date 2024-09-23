@@ -1809,7 +1809,7 @@ contains
             ! icemask_coupled_fluxes for now should be the same as icemask
             ! If we add in the ability to prevent the ice sheet from evolving
             ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
-            g2x_gm (n, index_g2x_Sg_icemask_coupled_fluxes) = g2x_gm (index_g2x_Sg_icemask, n)
+            g2x_gm (n, index_g2x_Sg_icemask_coupled_fluxes) = g2x_gm (n, index_g2x_Sg_icemask)
 
             ! Add masks used for ice shelf basal melt calculation
             g2x_gm (n, index_g2x_Sg_icemask_floating) = li_mask_is_floating_ice_int(cellMask(i))
