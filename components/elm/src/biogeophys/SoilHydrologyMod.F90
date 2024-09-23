@@ -1865,9 +1865,9 @@ contains
           ! Lateral flow to ocean
           T1 = 0._r8
           if (col_pp%topo_slope(c) > 0.16_r8) then
-             f = 5._r8
+             f = 1._r8
           else
-             f = 120._r8/(1._r8 + 150._r8*col_pp%topo_slope(c))
+             f = 20._r8/(1._r8 + 125._r8*col_pp%topo_slope(c))
           endif
 
           if (ldomain%topo(g)-zwt(c) > ocn2lnd_vars%ssh_grc(g)) then
@@ -1961,15 +1961,15 @@ contains
 
                    lateral_tot   = lateral_tot - lateral_layer
                    if (lateral_tot >= 0.) then
-                      zwt(c) = zwt(c) - lateral_layer/s_y/1000._r8/rous
-                      qflx_lnd2ocn(c) = qflx_lnd2ocn(c) + lateral_tot/dtime
                       exit
                    else
                       zwt(c) = zi(c,j)
                    endif
 
                 enddo
-                !if (lateral_tot > 0.) zwt(c) = zwt(c) - lateral_tot/1000._r8/rous
+                if (lateral_tot > 0.) then
+                   zwt(c) = zwt(c) - lateral_tot/1000._r8/rous
+                endif
                 if (lateral_tot < -1.e-14_r8) then 
                    qflx_lnd2ocn(c) = qflx_lnd2ocn(c) + lateral_tot/dtime
                 endif 
