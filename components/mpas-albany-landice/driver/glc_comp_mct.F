@@ -576,7 +576,7 @@ contains
     if (MBGLID .ge. 0 ) then !  we are on glc comp pes
        outfile = 'GLC_mpas.h5m'//C_NULL_CHAR
        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-       ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+       ierr = iMOAB_WriteMesh(MBGLID, trim(outfile), trim(wopts))
     endif
 
 #endif
