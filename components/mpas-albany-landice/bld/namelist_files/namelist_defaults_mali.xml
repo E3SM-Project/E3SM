@@ -18,7 +18,7 @@
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
-<config_tracer_advection>'none'</config_tracer_advection>
+<config_tracer_advection>'fo'</config_tracer_advection>
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_advection_coef_3rd_order>0.25</config_advection_coef_3rd_order>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
