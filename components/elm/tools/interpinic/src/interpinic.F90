@@ -146,9 +146,19 @@ contains
     call check_ret (nf90_open(fin,  NF90_NOWRITE, ncidi ))
     call check_ret (nf90_open(fout, NF90_NOWRITE, ncido ))
     call check_ret (nf_inq_format( ncido, ncformat ))
-    if ( ncformat /= NF_FORMAT_64BIT )then
-       write (6,*) 'error: output file is NOT in NetCDF large-file format!'
-       stop
+
+    ! Allow any format for output dataset
+
+    if ( ncformat == NF_FORMAT_CLASSIC )then
+       write (6,*) 'info: output file is NF_FORMAT_CLASSIC'
+    else if ( ncformat == NF_FORMAT_64BIT_OFFSET )then
+       write (6,*) 'info: output file is NF_FORMAT_64BIT_OFFSET'
+    else if ( ncformat == NF_FORMAT_64BIT_DATA )then
+       write (6,*) 'info: output file is NF_FORMAT_64BIT_DATA'
+    else if ( ncformat == NF_FORMAT_NETCDF4 )then
+       write (6,*) 'info: output file is NF_FORMAT_NETCDF4'
+    else if ( ncformat == NF_FORMAT_NETCDF4_CLASSIC )then
+       write (6,*) 'info: output file is NF_FORMAT_NETCDF4_CLASSIC'
     end if
 
     call check_ret (nf90_inq_dimid(ncidi, "column", dimidcols ))
@@ -214,12 +224,25 @@ contains
     ret = nf90_inq_dimid(ncidi, "month", dimidmon)
     if (ret == NF90_NOERR) then
        call check_ret (nf90_inquire_dimension(ncidi, dimidmon, len=nlevmon))
-       call check_ret (nf90_inq_dimid(ncido, "month", dimid ))
-       call check_ret (nf90_inquire_dimension(ncido, dimid, len=dimlen))
-       if (dimlen/=nlevmon) then
-          write (6,*) 'error: input and output nlevmon values disagree'
-          write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
-          stop
+
+       ! Many restart files have "month" dimension in input dataset
+       ! It is only necessary that the output dataset contains "month" dimension
+       ! when a variable in the input dataset contains the "month" dimension
+       ! Otherwise, the "month" dimension will never be used
+       ! Warn rather than die when input has "month" and output does not
+
+       ret = nf90_inq_dimid(ncido, "month", dimid )
+       if ( ret == nf_ebaddim ) then
+          write (6,*) 'warning: input has "month" dimension and output does not'
+          write (6,*) 'warning: interpolation will fail if any input variable uses "month" dimension'
+          write (6,*) 'chill:   many times the "month" dimension is superfluous so this might work...'
+       else
+          call check_ret (nf90_inquire_dimension(ncido, dimid, len=dimlen))
+          if (dimlen/=nlevmon) then
+             write (6,*) 'error: input and output nlevmon values disagree'
+             write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
+             stop
+          end if
        end if
     else
        write (6,*) 'month dimension does NOT exist on the input dataset'
@@ -321,7 +344,9 @@ contains
     ! OK now, open the output file for writing
     !
     call check_ret(nf90_close( ncido))
-    call check_ret (nf90_open(fout, ior(NF90_WRITE,  NF_64BIT_OFFSET), ncido ))
+
+    ! Allow any format for output dataset
+    call check_ret (nf90_open(fout, NF90_WRITE, ncido ))
 
     call addglobal (ncido, cmdline)
 
@@ -1503,8 +1528,7 @@ contains
     character(len=10) :: time
     character(len= 5) :: zone
     character(len=18) :: datetime
-    character(len=256):: version = &
-         "$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/clm2/trunk_tags/clm4_5_1_r085/models/lnd/clm/tools/clm4_5/interpinic/src/interpinic.F90 $"
+    character(len=256):: version = ""
     character(len=256)  :: revision_id = "$Id: interpinic.F90 54953 2013-11-06 16:29:45Z sacks $"
     character(len=16)   :: logname
     character(len=16)   :: hostname
