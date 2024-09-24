@@ -353,12 +353,14 @@ contains
   end subroutine prim_init_elements_views
 
   subroutine prim_init_kokkos_functors (allocate_buffer)
-    use iso_c_binding, only : c_int
+    !todo-repo-unification Remove the use of c_bool here. It's used in purely
+    ! F90 code.
+    use iso_c_binding, only : c_int, c_bool
     use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
     !
     ! Optional Input
     !
-    logical, intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+    logical(kind=c_bool), intent(in), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
     integer(kind=c_int) :: ab
     ! Initialize the C++ functors in the C++ context
     ! If no argument allocate_buffer is present,
