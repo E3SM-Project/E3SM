@@ -382,25 +382,14 @@ void OceanState::updateTimeLevels() {
 
    int NewLevel = NTimeLevels - 1;
 
-   // Update time levels for layer thickness
-   copyToHost(NewLevel);
-   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[NewLevel], OnCell);
-   copyToDevice(NewLevel);
+   // Exchange halo
+   exchangeHalo(NewLevel);
 
-   Array2DR8 Temp;
-   HostArray2DR8 TempH;
-
+   // Update time levels for layer thickness and normal velocity
    for (int Level = 0; Level < NTimeLevels - 1; Level++) {
       std::swap(LayerThickness[Level + 1], LayerThickness[Level]);
       std::swap(LayerThicknessH[Level + 1], LayerThicknessH[Level]);
-   }
 
-   // Update time levels for normal velocity
-   copyToHost(NewLevel);
-   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[NewLevel], OnEdge);
-   copyToDevice(NewLevel);
-
-   for (int Level = 0; Level < NTimeLevels - 1; Level++) {
       std::swap(NormalVelocity[Level + 1], NormalVelocity[Level]);
       std::swap(NormalVelocityH[Level + 1], NormalVelocityH[Level]);
    }
