@@ -83,7 +83,8 @@
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP585_transient</value>
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
       <value compset="SSP370(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP370_transient</value>
-      <value compset="SSP245(?:SOI)?_EAM%CMIP6_ELM">2015-2100_SSP245_transient</value>
+      <value compset="SSP370(?:SOI)?_EAM%CMIP6_ELM.*_GCAM">2015-2100_SSP370_EHC_transient</value>
+      <value compset="SSP245(?:SOI)?_EAM%CMIP6_ELM.*_GCAM">2015-2100_SSP245_EHC_transient</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
