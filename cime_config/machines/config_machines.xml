@@ -3065,9 +3065,9 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
@@ -3076,8 +3076,16 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     </mpirun>
     <mpirun mpilib="default">
       <executable>srun</executable>
+      <arguments>
+        <arg name="pmi_layer">--mpi=pmi2</arg>
+        <arg name="export">--export=ALL</arg>
+        <arg name="num_tasks">-n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c 1</arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
       <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
@@ -3089,24 +3097,27 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <modules compiler="intel">
         <command name="load">python/3.9.12</command>
         <command name="load">git</command>
+        <command name="load">subversion</command>
+        <command name="load">cmake/3.19.2</command>
         <command name="load">mkl/2022.1.0</command>
         <command name="load">intel-classic/2021.6.0-magic</command>
-        <command name="load">mvapich2/2.3.7</command>
-        <command name="load">cmake/3.19.2</command>
-        <command name="use --append">/usr/workspace/e3sm/install/quartz/modulefiles</command>
-        <command name="load">hdf5/1.12.2</command>
-        <command name="load">netcdf-c/4.9.0</command>
-        <command name="load">netcdf-fortran/4.6.0</command>
-        <command name="load">parallel-netcdf/1.12.3</command>
-        <command name="load">screamML-venv/0.0.1</command>
-        <command name="load">subversion</command>
+        <command name="use --append">/usr/workspace/e3sm/spack/modules/ruby/linux-rhel8-x86_64/Core</command>
+        <command name="load">mvapich2/2.3.7-ll7cmqm</command>
+        <command name="load">hdf5/1.10.7-ewjpbjd</command>
+        <command name="load">netcdf-c/4.4.1.1-vaxofek</command>
+        <command name="load">netcdf-fortran/4.4.4-3pzbx2u</command>
+        <command name="load">parallel-netcdf/1.11.0-tzgdala</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/workspace/e3sm/install/quartz/netcdf-fortran/</env>
-      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="HDF5_ROOT">/usr/workspace/e3sm/spack/libs/linux-rhel8-cascadelake/intel-2021.6.0/hdf5-1.10.7-ewjpbjdhjgjzrzjcvwyjyuulaesbsjhg</env>
+      <env name="NETCDF_C_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-cascadelake/intel-2021.6.0/netcdf-c-4.4.1.1-vaxofekwvnvngh7wptmzkwdb7tkzvesn</env>
+      <env name="NETCDF_FORTRAN_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-cascadelake/intel-2021.6.0/netcdf-fortran-4.4.4-3pzbx2unddhladhubaahhhysjmprzqi2</env>
+      <env name="PNETCDF_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-cascadelake/intel-2021.6.0/parallel-netcdf-1.11.0-tzgdalakmem7tod6cruhqyeackeix5q5</env>
     </environment_variables>
   </machine>
 
@@ -3121,9 +3132,9 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/workspace/e3sm/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>224</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
@@ -3132,8 +3143,16 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     </mpirun>
     <mpirun mpilib="default">
       <executable>srun</executable>
+      <arguments>
+        <arg name="pmi_layer">--mpi=pmi2</arg>
+        <arg name="export">--export=ALL</arg>
+        <arg name="num_tasks">-n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c 1</arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
       <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
@@ -3145,24 +3164,27 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <modules compiler="intel">
         <command name="load">python/3.9.12</command>
         <command name="load">git</command>
+        <command name="load">subversion</command>
         <command name="load">mkl/2022.1.0</command>
         <command name="load">intel-classic/2021.6.0-magic</command>
-        <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
-        <command name="use --append">/usr/workspace/e3sm/install/quartz/modulefiles</command>
-        <command name="load">hdf5/1.12.2</command>
-        <command name="load">netcdf-c/4.9.0</command>
-        <command name="load">netcdf-fortran/4.6.0</command>
-        <command name="load">parallel-netcdf/1.12.3</command>
-        <command name="load">screamML-venv/0.0.1</command>
-        <command name="load">subversion</command>
+        <command name="use --append">/usr/workspace/e3sm/spack/modules/dane/linux-rhel8-x86_64/Core</command>
+        <command name="load">mvapich2/2.3.7-27jao34</command>
+        <command name="load">hdf5/1.10.7-766kapa</command>
+        <command name="load">netcdf-c/4.4.1.1-2uznnlw</command>
+        <command name="load">netcdf-fortran/4.4.4-itpstyo</command>
+        <command name="load">parallel-netcdf/1.11.0-26sxm4m</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/usr/workspace/e3sm/install/quartz/netcdf-fortran/</env>
-      <env name="PNETCDF_PATH">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="HDF5_ROOT">/usr/workspace/e3sm/spack/libs/linux-rhel8-sapphirerapids/intel-2021.6.0/hdf5-1.10.7-766kapalbrdntu2pcgdgbhg2ch26gsuv</env>
+      <env name="NETCDF_C_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-sapphirerapids/intel-2021.6.0/netcdf-c-4.4.1.1-2uznnlwgiezxute6iyqzqjrpolokeaib</env>
+      <env name="NETCDF_FORTRAN_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-sapphirerapids/intel-2021.6.0/netcdf-fortran-4.4.4-itpstyordbern7vlulmlnt47eeeokzfp</env>
+      <env name="PNETCDF_PATH">/usr/workspace/e3sm/spack/libs/linux-rhel8-sapphirerapids/intel-2021.6.0/parallel-netcdf-1.11.0-26sxm4mormsglmhi24poix7sugbigkck</env>
     </environment_variables>
   </machine>
 
