@@ -549,6 +549,14 @@ contains
     use gllfvremap_mod,    only: gfr_init
     use homme_context_mod, only: elem, par
     use dimensions_mod,    only: nelem, nelemd
+#ifdef HAVE_MOAB
+    use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
+    use seq_comm_mct,      only: ATMID
+    use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
+    use semoab_mod,        only: create_moab_meshes
+    use iMOAB, only : iMOAB_RegisterApplication
+    use iso_c_binding
+#endif
     !
     ! Input(s)
     !
@@ -561,6 +569,10 @@ contains
     character(2) :: str
     type(pg_specs_t), pointer :: pg
 
+#ifdef HAVE_MOAB
+    integer :: ATM_ID1
+    character*32  appname
+#endif
     pg => pg_specs(pgN)
 
     if (pg%inited) then
@@ -612,6 +624,48 @@ contains
     call compute_global_dofs (pg)
     call compute_global_coords (pg)
     call compute_global_area (pg)
+#ifdef HAVE_MOAB
+    if (pgN > 0) then
+       appname="HM_COARSE"//C_NULL_CHAR
+       ATM_ID1 = 120 !
+       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
+       if (ierr > 0 )  &
+       call abortmp('Error: cannot register moab app')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+           write(iulog,*) " "
+       endif
+       appname="HM_FINE"//C_NULL_CHAR
+       ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
+       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHFID)
+       if (ierr > 0 )  &
+       call abortmp('Error: cannot register moab app for fine mesh')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
+           write(iulog,*) " "
+       endif
+         appname="HM_PGX"//C_NULL_CHAR
+         ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
+         !
+         ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
+         ! still, need to be careful
+         ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
+         if (ierr > 0 )  &
+             call abortmp('Error: cannot register moab app for fine mesh')
+         if(par%masterproc) then
+             write(iulog,*) " "
+             write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
+             write(iulog,*) " "
+         endif
+! instance distributed moab meshes from elem structures
+!    1 ) spectral coarse mesh
+!    2 ) GLL fine quad mesh (used mostly for visualization)
+!    3 ) pgN FV type mesh, (most of the time pg2 mesh), used for coupling with other components;
+       call create_moab_meshes(par, elem, pgN)
+     endif
+#endif
   end subroutine phys_grid_init
 
 
