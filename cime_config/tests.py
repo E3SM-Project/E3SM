@@ -222,7 +222,7 @@ _TESTS = {
             "SMS_D_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010",
             "ERP_Ld3.ne30pg2_r05_IcoswISC30E3r5.F2010.allactive-pioroot1",
             "SMS_Ly1.ne4pg2_oQU480.F2010",
-	        "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
+	    "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-implicit_stress",
             "ERS_Ld5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-implicit_stress",
             "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
