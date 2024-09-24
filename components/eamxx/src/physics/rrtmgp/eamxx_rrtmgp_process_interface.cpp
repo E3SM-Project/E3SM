@@ -23,6 +23,48 @@ using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
 using MemberType = KT::MemberType;
 
+namespace {
+
+struct ConvertToRrtmgpSubview
+{
+  int beg;
+  int ncol;
+
+  template <typename View>
+  View subview1d(const View& v) const {
+    return View(v, std::make_pair(beg, beg+ncol));
+  }
+
+  template <typename View>
+  View subview2d_impl(const View& v, const int inner_dim) const {
+    return View(v, std::make_pair(beg, beg+ncol), std::make_pair(0, inner_dim));
+  }
+
+#ifdef RRTMGP_LAYOUT_LEFT
+  template <typename FieldView, typename BufferView>
+  BufferView subview2d(const FieldView&, const BufferView& buffer_view, const int inner_dim) const {
+    return BufferView(buffer_view, std::make_pair(0, ncol), Kokkos::ALL);
+  }
+#else
+  // Be sure to trim the excess
+  // items from the field manager views due to simd packs. If we don't trim, then
+  // check_range_k will fail due to looking at unused values. Once rrtmgp can handle
+  // packs, this won't be necessary.
+  template <typename FieldView, typename BufferView>
+  FieldView subview2d(const FieldView& field_view, const BufferView&, const int inner_dim) const {
+    return subview2d_impl(field_view, inner_dim);
+  }
+#endif
+
+  template <typename View>
+  View subview3d(const View& v) const {
+    // The range assumes these are buffer views, not fields
+    return View(v, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);
+  }
+};
+
+}
+
 RRTMGPRadiation::
 RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
@@ -258,7 +300,12 @@ size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
     Buffer::num_3d_nlay_nswbands*m_col_chunk_size*(m_nlay)*m_nswbands +
     Buffer::num_3d_nlay_nlwbands*m_col_chunk_size*(m_nlay)*m_nlwbands +
     Buffer::num_3d_nlay_nswgpts*m_col_chunk_size*(m_nlay)*m_nswgpts +
-    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts;
+    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts *
+#if defined(RRTMGP_ENABLE_YAKL) && defined(RRTMGP_ENABLE_KOKKOS)
+    2;
+#else
+    1;
+#endif
 
   return interface_request * sizeof(Real);
 } // RRTMGPRadiation::requested_buffer_size
@@ -412,13 +459,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_lw_bnd.totElems();
 #endif
 
-  // During the transition to kokkos, the buffer views/arrays will point to the same memory,
-  // so care is needed to avoid repeating calculations in such a way that answers change.
-  // Example: buff_view(x) += foo;
-  // Stuff like this cannot be done twice when both kokkos and yakl are enabled
 #ifdef RRTMGP_ENABLE_KOKKOS
-  mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-
   // 1d arrays
   m_buffer.mu0_k = decltype(m_buffer.mu0_k)(mem, m_col_chunk_size);
   mem += m_buffer.mu0_k.size();
@@ -850,7 +891,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
       this->log(LogLevel::debug,
                 "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) + ", " + std::to_string(beg+ncol) + "\n");
 
-
+      // d_tint and d_dz are used in eamxx calls and therefore
+      // must be layout right
+      ulrreal2dk d_tint = ulrreal2dk(m_buffer.d_tint.data(), m_col_chunk_size, m_nlay+1);
+      ulrreal2dk d_dz   = ulrreal2dk(m_buffer.d_dz.data(), m_col_chunk_size, m_nlay);
+      auto d_mu0 = m_buffer.cosine_zenith;
 #ifdef RRTMGP_ENABLE_YAKL
       // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
       // as the fastest index. For this reason we must copy the data.
@@ -923,123 +968,68 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      // If YAKL is on, we don't want aliased memory in both the yakl and kokos
-      // subviews, so make new views and deep_copy. Also, be sure to trim the excess
-      // items from the field manager views due to simd packs. If we don't trim, then
-      // check_range_k will fail due to looking at unused values. Once rrtmgp can handle
-      // packs, this won't be necessary.
-      auto subview_1dk = [&](const ureal1dk& v) -> ureal1dk {
-        ureal1dk subv(v, std::make_pair(beg, beg+ncol));
-#ifdef RRTMGP_ENABLE_YAKL
-        real1dk rv(v.label(), ncol);
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
-      auto subview_1dkc = [&](const cureal1dk& v) -> cureal1dk {
-        cureal1dk subv(v, std::make_pair(beg, beg+ncol));
-#ifdef RRTMGP_ENABLE_YAKL
-        creal1dk rv(v.label(), ncol);
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
-      auto subview_2dk = [&](const ureal2dk& v, const int inner_dim) -> ureal2dk {
-        ureal2dk subv(v, std::make_pair(beg, beg+ncol), std::make_pair(0, inner_dim));
-#ifdef RRTMGP_ENABLE_YAKL
-        real2dk rv(v.label(), ncol, v.extent(1));
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
-      auto subview_2dkc = [&](const cureal2dk& v, const int inner_dim) -> cureal2dk {
-        cureal2dk subv(v, std::make_pair(beg, beg+ncol), std::make_pair(0, inner_dim));
-#ifdef RRTMGP_ENABLE_YAKL
-        creal2dk rv(v.label(), ncol, v.extent(1));
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
-      auto subview_3dk = [&](const ureal3dk& v) -> ureal3dk {
-        ureal3dk subv(v, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL); // The range assumes these are buffer views, not fields
-#ifdef RRTMGP_ENABLE_YAKL
-        real3dk rv(v.label(), ncol, v.extent(1), v.extent(2));
-        Kokkos::deep_copy(rv, subv);
-        return rv;
-#else
-        return subv;
-#endif
-      };
+      ConvertToRrtmgpSubview conv = {beg, ncol};
 
       // Note, ncol will not necessary be m_col_chunk_size because the number of cols
       // will not always be evenly divided by m_col_chunk_size. In most cases, the
       // extra space will not cause any problems, but it does sometimes.
-      auto p_lay_k           = subview_2dkc(d_pmid, m_nlay);
-      auto t_lay_k           = subview_2dkc(d_tmid, m_nlay);
-      auto p_lev_k           = subview_2dkc(d_pint, m_nlay+1);
-      auto p_del_k           = subview_2dkc(d_pdel, m_nlay);
+      auto p_lay_k           = conv.subview2d(d_pmid, m_buffer.p_lay_k, m_nlay);
+      auto t_lay_k           = conv.subview2d(d_tmid, m_buffer.t_lay_k, m_nlay);
+      auto p_lev_k           = conv.subview2d(d_pint, m_buffer.p_lev_k, m_nlay+1);
+      auto z_del_k           = conv.subview2d(d_dz, m_buffer.z_del_k, m_nlay);
+      auto p_del_k           = conv.subview2d(d_pdel, m_buffer.p_del_k, m_nlay);
+      auto t_lev_k           = conv.subview2d(d_tint, m_buffer.t_lev_k, m_nlay+1);
       auto sfc_alb_dir_k     = m_buffer.sfc_alb_dir_k;
       auto sfc_alb_dif_k     = m_buffer.sfc_alb_dif_k;
-      auto sfc_alb_dir_vis_k = subview_1dkc(d_sfc_alb_dir_vis);
-      auto sfc_alb_dir_nir_k = subview_1dkc(d_sfc_alb_dir_nir);
-      auto sfc_alb_dif_vis_k = subview_1dkc(d_sfc_alb_dif_vis);
-      auto sfc_alb_dif_nir_k = subview_1dkc(d_sfc_alb_dif_nir);
-      auto qc_k              = subview_2dkc(d_qc, m_nlay);
-      auto nc_k              = subview_2dkc(d_nc, m_nlay);
-      auto qi_k              = subview_2dkc(d_qi, m_nlay);
+      auto sfc_alb_dir_vis_k = conv.subview1d(d_sfc_alb_dir_vis);
+      auto sfc_alb_dir_nir_k = conv.subview1d(d_sfc_alb_dir_nir);
+      auto sfc_alb_dif_vis_k = conv.subview1d(d_sfc_alb_dif_vis);
+      auto sfc_alb_dif_nir_k = conv.subview1d(d_sfc_alb_dif_nir);
+      auto qc_k              = conv.subview2d(d_qc, m_buffer.qc_k, m_nlay);
+      auto nc_k              = conv.subview2d(d_nc, m_buffer.nc_k, m_nlay);
+      auto qi_k              = conv.subview2d(d_qi, m_buffer.qi_k, m_nlay);
       auto cldfrac_tot_k     = m_buffer.cldfrac_tot_k;
-      auto rel_k             = subview_2dkc(d_rel, m_nlay);
-      auto rei_k             = subview_2dkc(d_rei, m_nlay);
-      auto sw_flux_up_k      = subview_2dk(d_sw_flux_up, m_nlay+1);
-      auto sw_flux_dn_k      = subview_2dk(d_sw_flux_dn, m_nlay+1);
-      auto sw_flux_dn_dir_k  = subview_2dk(d_sw_flux_dn_dir, m_nlay+1);
-      auto lw_flux_up_k      = subview_2dk(d_lw_flux_up, m_nlay+1);
-      auto lw_flux_dn_k      = subview_2dk(d_lw_flux_dn, m_nlay+1);
-      auto sw_clnclrsky_flux_up_k      = subview_2dk(d_sw_clnclrsky_flux_up, m_nlay+1);
-      auto sw_clnclrsky_flux_dn_k      = subview_2dk(d_sw_clnclrsky_flux_dn, m_nlay+1);
-      auto sw_clnclrsky_flux_dn_dir_k  = subview_2dk(d_sw_clnclrsky_flux_dn_dir, m_nlay+1);
-      auto sw_clrsky_flux_up_k      = subview_2dk(d_sw_clrsky_flux_up, m_nlay+1);
-      auto sw_clrsky_flux_dn_k      = subview_2dk(d_sw_clrsky_flux_dn, m_nlay+1);
-      auto sw_clrsky_flux_dn_dir_k  = subview_2dk(d_sw_clrsky_flux_dn_dir, m_nlay+1);
-      auto sw_clnsky_flux_up_k      = subview_2dk(d_sw_clnsky_flux_up, m_nlay+1);
-      auto sw_clnsky_flux_dn_k      = subview_2dk(d_sw_clnsky_flux_dn, m_nlay+1);
-      auto sw_clnsky_flux_dn_dir_k  = subview_2dk(d_sw_clnsky_flux_dn_dir, m_nlay+1);
-      auto lw_clnclrsky_flux_up_k   = subview_2dk(d_lw_clnclrsky_flux_up, m_nlay+1);
-      auto lw_clnclrsky_flux_dn_k   = subview_2dk(d_lw_clnclrsky_flux_dn, m_nlay+1);
-      auto lw_clrsky_flux_up_k      = subview_2dk(d_lw_clrsky_flux_up, m_nlay+1);
-      auto lw_clrsky_flux_dn_k      = subview_2dk(d_lw_clrsky_flux_dn, m_nlay+1);
-      auto lw_clnsky_flux_up_k      = subview_2dk(d_lw_clnsky_flux_up, m_nlay+1);
-      auto lw_clnsky_flux_dn_k      = subview_2dk(d_lw_clnsky_flux_dn, m_nlay+1);
+      auto rel_k             = conv.subview2d(d_rel, m_buffer.eff_radius_qc_k, m_nlay);
+      auto rei_k             = conv.subview2d(d_rei, m_buffer.eff_radius_qi_k, m_nlay);
+      auto sw_flux_up_k      = conv.subview2d(d_sw_flux_up, m_buffer.sw_flux_up_k, m_nlay+1);
+      auto sw_flux_dn_k      = conv.subview2d(d_sw_flux_dn, m_buffer.sw_flux_dn_k, m_nlay+1);
+      auto sw_flux_dn_dir_k  = conv.subview2d(d_sw_flux_dn_dir, m_buffer.sw_flux_dn_dir_k, m_nlay+1);
+      auto lw_flux_up_k      = conv.subview2d(d_lw_flux_up, m_buffer.lw_flux_up_k, m_nlay+1);
+      auto lw_flux_dn_k      = conv.subview2d(d_lw_flux_dn, m_buffer.lw_flux_dn_k, m_nlay+1);
+      auto sw_clnclrsky_flux_up_k      = conv.subview2d(d_sw_clnclrsky_flux_up, m_buffer.sw_clnclrsky_flux_up_k, m_nlay+1);
+      auto sw_clnclrsky_flux_dn_k      = conv.subview2d(d_sw_clnclrsky_flux_dn, m_buffer.sw_clnclrsky_flux_dn_k, m_nlay+1);
+      auto sw_clnclrsky_flux_dn_dir_k  = conv.subview2d(d_sw_clnclrsky_flux_dn_dir, m_buffer.sw_clnclrsky_flux_dn_dir_k, m_nlay+1);
+      auto sw_clrsky_flux_up_k      = conv.subview2d(d_sw_clrsky_flux_up, m_buffer.sw_clrsky_flux_up_k, m_nlay+1);
+      auto sw_clrsky_flux_dn_k      = conv.subview2d(d_sw_clrsky_flux_dn, m_buffer.sw_clrsky_flux_dn_k, m_nlay+1);
+      auto sw_clrsky_flux_dn_dir_k  = conv.subview2d(d_sw_clrsky_flux_dn_dir, m_buffer.sw_clrsky_flux_dn_dir_k, m_nlay+1);
+      auto sw_clnsky_flux_up_k      = conv.subview2d(d_sw_clnsky_flux_up, m_buffer.sw_clnsky_flux_up_k, m_nlay+1);
+      auto sw_clnsky_flux_dn_k      = conv.subview2d(d_sw_clnsky_flux_dn, m_buffer.sw_clnsky_flux_dn_k, m_nlay+1);
+      auto sw_clnsky_flux_dn_dir_k  = conv.subview2d(d_sw_clnsky_flux_dn_dir, m_buffer.sw_clnsky_flux_dn_dir_k, m_nlay+1);
+      auto lw_clnclrsky_flux_up_k   = conv.subview2d(d_lw_clnclrsky_flux_up, m_buffer.lw_clnclrsky_flux_up_k, m_nlay+1);
+      auto lw_clnclrsky_flux_dn_k   = conv.subview2d(d_lw_clnclrsky_flux_dn, m_buffer.lw_clnclrsky_flux_dn_k, m_nlay+1);
+      auto lw_clrsky_flux_up_k      = conv.subview2d(d_lw_clrsky_flux_up, m_buffer.lw_clrsky_flux_up_k, m_nlay+1);
+      auto lw_clrsky_flux_dn_k      = conv.subview2d(d_lw_clrsky_flux_dn, m_buffer.lw_clrsky_flux_dn_k, m_nlay+1);
+      auto lw_clnsky_flux_up_k      = conv.subview2d(d_lw_clnsky_flux_up, m_buffer.lw_clnsky_flux_up_k, m_nlay+1);
+      auto lw_clnsky_flux_dn_k      = conv.subview2d(d_lw_clnsky_flux_dn, m_buffer.lw_clnsky_flux_dn_k, m_nlay+1);
       auto sw_bnd_flux_up_k  = m_buffer.sw_bnd_flux_up_k;
       auto sw_bnd_flux_dn_k  = m_buffer.sw_bnd_flux_dn_k;
       auto sw_bnd_flux_dir_k = m_buffer.sw_bnd_flux_dir_k;
       auto sw_bnd_flux_dif_k = m_buffer.sw_bnd_flux_dif_k;
       auto lw_bnd_flux_up_k  = m_buffer.lw_bnd_flux_up_k;
       auto lw_bnd_flux_dn_k  = m_buffer.lw_bnd_flux_dn_k;
-      auto sfc_flux_dir_vis_k = subview_1dk(d_sfc_flux_dir_vis);
-      auto sfc_flux_dir_nir_k = subview_1dk(d_sfc_flux_dir_nir);
-      auto sfc_flux_dif_vis_k = subview_1dk(d_sfc_flux_dif_vis);
-      auto sfc_flux_dif_nir_k = subview_1dk(d_sfc_flux_dif_nir);
+      auto sfc_flux_dir_vis_k = conv.subview1d(d_sfc_flux_dir_vis);
+      auto sfc_flux_dir_nir_k = conv.subview1d(d_sfc_flux_dir_nir);
+      auto sfc_flux_dif_vis_k = conv.subview1d(d_sfc_flux_dif_vis);
+      auto sfc_flux_dif_nir_k = conv.subview1d(d_sfc_flux_dif_nir);
       auto aero_tau_sw_k     = m_buffer.aero_tau_sw_k;
       auto aero_ssa_sw_k     = m_buffer.aero_ssa_sw_k;
       auto aero_g_sw_k       = m_buffer.aero_g_sw_k;
       auto aero_tau_lw_k     = m_buffer.aero_tau_lw_k;
-      auto cld_tau_sw_bnd_k  = subview_3dk(m_buffer.cld_tau_sw_bnd_k);
-      auto cld_tau_lw_bnd_k  = subview_3dk(m_buffer.cld_tau_lw_bnd_k);
-      auto cld_tau_sw_gpt_k  = subview_3dk(m_buffer.cld_tau_sw_gpt_k);
-      auto cld_tau_lw_gpt_k  = subview_3dk(m_buffer.cld_tau_lw_gpt_k);
+      auto cld_tau_sw_bnd_k  = conv.subview3d(m_buffer.cld_tau_sw_bnd_k);
+      auto cld_tau_lw_bnd_k  = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
+      auto cld_tau_sw_gpt_k  = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
+      auto cld_tau_lw_gpt_k  = conv.subview3d(m_buffer.cld_tau_lw_gpt_k);
 #endif
-      auto d_tint = m_buffer.d_tint;
-      auto d_dz = m_buffer.d_dz;
-      auto d_mu0 = m_buffer.cosine_zenith;
 
       // Set gas concs to "view" only the first ncol columns
 #ifdef RRTMGP_ENABLE_YAKL
@@ -1048,7 +1038,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       m_gas_concs_k.ncol = ncol;
-      m_gas_concs_k.concs = subview_3dk(gas_concs_k);
+      m_gas_concs_k.concs = conv.subview3d(gas_concs_k);
 #endif
 
       // Copy data from the FieldManager to the YAKL arrays
@@ -1159,6 +1149,26 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+#ifdef RRTMGP_LAYOUT_LEFT
+          // Copy to layout left buffer views
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            p_lay_k(i,k)       = d_pmid(icol,k);
+            t_lay_k(i,k)       = d_tmid(icol,k);
+            z_del_k(i,k)       = d_dz(i,k);
+            p_del_k(i,k)       = d_pdel(icol,k);
+            qc_k(i,k)          = d_qc(icol,k);
+            nc_k(i,k)          = d_nc(icol,k);
+            qi_k(i,k)          = d_qi(icol,k);
+            rel_k(i,k)         = d_rel(icol,k);
+            rei_k(i,k)         = d_rei(icol,k);
+            p_lev_k(i,k)       = d_pint(icol,k);
+            t_lev_k(i,k)       = d_tint(i,k);
+          });
+
+          p_lev_k(i,nlay) = d_pint(icol,nlay);
+          t_lev_k(i,nlay) = d_tint(i,nlay);
+#endif
+
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
           if (do_aerosol_rad) {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
@@ -1218,7 +1228,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         auto f = name=="o3" ? get_field_in(full_name) : get_field_out(full_name);
         auto d_vmr = f.get_view<const Real**>();
 #ifdef RRTMGP_ENABLE_KOKKOS
-        auto tmp2d_k = subview_2dkc(d_vmr, m_nlay);
+        auto tmp2d_k = conv.subview2d_impl(d_vmr, m_nlay);
 #endif
 
 #ifdef RRTMGP_ENABLE_YAKL
@@ -1331,11 +1341,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
           iwp(i+1,k+1) *= 1e3;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-#ifndef RRTMGP_ENABLE_YAKL
-          // lwp and lwp_k point to the same memory
           lwp_k(i,k) *= 1e3;
           iwp_k(i,k) *= 1e3;
-#endif
 #endif
         });
       });
@@ -1388,7 +1395,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #ifdef RRTMGP_ENABLE_KOKKOS
       interface_t::rrtmgp_main(
         ncol, m_nlay,
-        p_lay_k, t_lay_k, p_lev_k, d_tint,
+        p_lay_k, t_lay_k, p_lev_k, t_lev_k,
         m_gas_concs_k,
         sfc_alb_dir_k, sfc_alb_dif_k, d_mu0,
         lwp_k, iwp_k, rel_k, rei_k, cldfrac_tot_k,
@@ -1595,7 +1602,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       real1dk eff_radius_qi_at_cldtop_k (d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
 
       interface_t::compute_aerocom_cloudtop(
-          ncol, nlay, t_lay_k, p_lay_k, p_del_k, d_dz, qc_k, qi_k, rel_k, rei_k, cldfrac_tot_k,
+          ncol, nlay, t_lay_k, p_lay_k, p_del_k, z_del_k, qc_k, qi_k, rel_k, rei_k, cldfrac_tot_k,
           nc_k, T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
           cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
           eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k);
@@ -1661,6 +1668,31 @@ void RRTMGPRadiation::run_impl (const double dt) {
         const int icol = i + beg;
         d_sfc_flux_sw_net(icol)  = sw_flux_dn_k(i,kbot_k) - sw_flux_up_k(i,kbot_k);
         d_sfc_flux_lw_dn(icol)   = lw_flux_dn_k(i,kbot_k);
+#ifdef RRTMGP_LAYOUT_LEFT
+        // Copy from layout left buffer views back to layout right fields
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
+          d_sw_flux_up(icol,k)            = sw_flux_up_k(i,k);
+          d_sw_flux_dn(icol,k)            = sw_flux_dn_k(i,k);
+          d_sw_flux_dn_dir(icol,k)        = sw_flux_dn_dir_k(i,k);
+          d_lw_flux_up(icol,k)            = lw_flux_up_k(i,k);
+          d_lw_flux_dn(icol,k)            = lw_flux_dn_k(i,k);
+          d_sw_clnclrsky_flux_up(icol,k)     = sw_clnclrsky_flux_up_k(i,k);
+          d_sw_clnclrsky_flux_dn(icol,k)     = sw_clnclrsky_flux_dn_k(i,k);
+          d_sw_clnclrsky_flux_dn_dir(icol,k) = sw_clnclrsky_flux_dn_dir_k(i,k);
+          d_sw_clrsky_flux_up(icol,k)     = sw_clrsky_flux_up_k(i,k);
+          d_sw_clrsky_flux_dn(icol,k)     = sw_clrsky_flux_dn_k(i,k);
+          d_sw_clrsky_flux_dn_dir(icol,k) = sw_clrsky_flux_dn_dir_k(i,k);
+          d_sw_clnsky_flux_up(icol,k)     = sw_clnsky_flux_up_k(i,k);
+          d_sw_clnsky_flux_dn(icol,k)     = sw_clnsky_flux_dn_k(i,k);
+          d_sw_clnsky_flux_dn_dir(icol,k) = sw_clnsky_flux_dn_dir_k(i,k);
+          d_lw_clnclrsky_flux_up(icol,k)     = lw_clnclrsky_flux_up_k(i,k);
+          d_lw_clnclrsky_flux_dn(icol,k)     = lw_clnclrsky_flux_dn_k(i,k);
+          d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up_k(i,k);
+          d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn_k(i,k);
+          d_lw_clnsky_flux_up(icol,k)     = lw_clnsky_flux_up_k(i,k);
+          d_lw_clnsky_flux_dn(icol,k)     = lw_clnsky_flux_dn_k(i,k);
+        });
+#endif
         // Extract optical properties for COSP
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
           d_dtau067(icol,k) = cld_tau_sw_bnd_k(i,k,idx_067_k);

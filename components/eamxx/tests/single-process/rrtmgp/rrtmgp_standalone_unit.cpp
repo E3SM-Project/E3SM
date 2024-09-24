@@ -422,9 +422,14 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 TEST_CASE("rrtmgp_scream_standalone_k", "") {
-  using interface_t = scream::rrtmgp::rrtmgp_interface<>;
+#ifdef RRTMGP_LAYOUT_LEFT
+  using layout_t   = Kokkos::LayoutLeft;
+#else
+  using layout_t   = typename ekat::KokkosTypes<DefaultDevice>::Layout;
+#endif
+  using interface_t = scream::rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
   using MDRP = interface_t::MDRP;
-  using utils_t = rrtmgpTest::rrtmgp_test_utils<>;
+  using utils_t = rrtmgpTest::rrtmgp_test_utils<Real, layout_t, DefaultDevice>;
   using real1dk = interface_t::view_t<Real*>;
   using real2dk = interface_t::view_t<Real**>;
   using real3dk = interface_t::view_t<Real***>;
