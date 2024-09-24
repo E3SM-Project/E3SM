@@ -187,6 +187,9 @@ contains
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
             tracersSurfaceFluxSubglacialRunoff, err)
+      elseif ( trim(groupName) == 'freshwaterTracers' ) then
+         call ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff(meshPool, forcingPool,  &
+            tracersSurfaceFluxSubglacialRunoff, err)!{{{
       end if
       call mpas_timer_stop("bulk_" // trim(groupName))
 
@@ -996,6 +999,80 @@ contains
       endif
 
    end subroutine ocn_surface_bulk_forcing_freshwater_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff
+!
+!> \brief   computes a tracer tendency due to CFC surface fluxes
+!> \author  Irena Vankova
+!> \date    July 2024
+!> \details
+!>  This routine computes a tracer tendency due to CFC surface fluxes
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff(meshPool, forcingPool,  &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(inout) :: forcingPool
+
+      ! two dimensional arrays
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxSubglacialRunoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
+
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+      integer, pointer :: indexSubglacialRunoff
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_subglacialRunoffFreshWaterSurfaceFlux', indexSubglacialRunoff)
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      nCells = nCellsArray( 3 )
+      if (associated(indexSubglacialRunoff) .and. associated(subglacialRunoffFlux)) then
+        do iCell=1,nCells
+          tracersSurfaceFluxSubglacialRunoff(indexSubglacialRunoff, iCell) = subglacialRunoffFlux(iCell) / rho_sw
+        enddo  !  iCell
+      else
+        call mpas_log_write('indexSubglacialRunoff or subglacialRunoffFlux is not associated')
+        tracersSurfaceFluxSubglacialRunoff(indexSubglacialRunoff, :) = 0.0_RKIND
+      endif
+
+   end subroutine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff!}}}
 
 end module ocn_surface_bulk_forcing
 
