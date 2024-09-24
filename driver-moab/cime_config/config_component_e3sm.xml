@@ -265,6 +265,18 @@
       TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
     </desc>
   </entry>
+  
+  <entry id="CPL_MOAB_MAPS">
+    <type>char</type>
+    <valid_values>online,offline</valid_values>
+    <default_value>online</default_value>
+    <values match="last">
+      <value/>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>User mods to compute maps online or precompute them offline </desc>
+  </entry>
 
   <entry id="CCSM_BGC">
     <type>char</type>

@@ -487,6 +487,7 @@ module cime_comp_mod
   logical  :: atm_aero               ! atm provides aerosol data
 
   character(CL) :: cpl_seq_option    ! coupler sequencing option
+  character(CL) :: cpl_moab_maps     ! moab maps flag (online or offline)
   logical  :: skip_ocean_run         ! skip the ocean model first pass
   logical  :: cpl2ocn_first          ! use to call initial cpl2ocn timer
   logical  :: run_barriers           ! barrier the component run calls
@@ -1158,6 +1159,7 @@ contains
          scm_ny=scm_ny                             , &
          aqua_planet=aqua_planet                   , &
          cpl_seq_option=cpl_seq_option             , &
+         cpl_moab_maps=cpl_moab_maps               , &
          drv_threading=drv_threading               , &
          do_histinit=do_histinit                   , &
          do_budgets=do_budgets                     , &

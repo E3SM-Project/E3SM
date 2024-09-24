@@ -1054,6 +1054,19 @@
     </values>
   </entry>
 
+  <entry id="cpl_moab_maps" modify_via_xml="CPL_MOAB_MAPS">
+    <type>char</type>
+    <category>expdef</category>
+    <group>seq_infodata_inparm</group>
+    <valid_values>online,offline</valid_values>
+    <desc>
+      Compute the moab maps online or precompute them offline and read.
+    </desc>
+    <values>
+      <value>$CPL_MOAB_MAPS</value>
+    </values>
+  </entry>
+
   <entry id="do_budgets" modify_via_xml="BUDGETS">
     <type>logical</type>
     <category>budget</category>
