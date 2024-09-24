@@ -6,20 +6,12 @@ on:
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-gh-ci-standalone.yml'
-      - 'cime_config/**'
-      - 'components/eam/**'
+      - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
-      - 'components/elm/**'
-      - 'driver-moab/**'
-      - 'driver-mct/**'
       - 'components/homme/**'
       # second, no to these
-      - '!components/eam/docs/**'
-      - '!components/eam/mkdocs.yml'
       - '!components/eamxx/docs/**'
       - '!components/eamxx/mkdocs.yml'
-      - '!components/elm/docs/**'
-      - '!components/elm/mkdocs.yml'
 
   workflow_dispatch:
 
@@ -31,12 +23,8 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          # TODO: add opt, dbg, etc. here once we stabilize testing
-          # TODO: note that currently, there is a fail in atm_proc test
-          # TODO: components/eamxx/src/share/tests/atm_process_tests.cpp
-          # TODO: REQUIRE (dag.has_unmet_dependencies());
-          # TODO: but only on some machines...
           - sp
+          - opt
     container: 
       image: ghcr.io/e3sm-project/containers-ghci:ghci-0.1.2
 
@@ -55,15 +43,11 @@ jobs:
           # TODO: get rid of this extra line if we can?
           git config --global safe.directory '*'
           ./components/eamxx/scripts/test-all-scream -m ghci-oci -t ${{ matrix.test }}
-    # TODO: add logging...
-    #   - 
-    #     name: Artifacts
-    #     uses: actions/upload-artifact@v4
-    #     if: ${{ always() }}
-    #     with:
-    #       name: ${{ matrix.test }}
-    #       path: |
-    #         /projects/e3sm/scratch/${{ matrix.test }}*/TestStatus.log
-    #         /projects/e3sm/scratch/${{ matrix.test }}*/bld/*.bldlog.*
-    #         /projects/e3sm/scratch/${{ matrix.test }}*/run/*.log.*
-    #         /projects/e3sm/scratch/${{ matrix.test }}*/run/*.cprnc.out
+      - 
+        name: Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ${{ matrix.test }}
+          path: |
+            components/eamxx/ctest-build/*/Testing/Temporary/Last*.log
