@@ -148,7 +148,7 @@ scoped name, which allows `atmchange` to uniquely identify the XML node to modif
 $ ./atmquery homme::number_of_subcycles
     namelist_defaults::atmosphere_processes::homme::number_of_subcycles: 1
 $ ./atmchange number_of_subcycles=10
-ERROR: number_of_subcycles is ambiguous (use --all to change all matches), matches:
+ERROR: internal_diagnostics_level is ambiguous. Use ANY in the node path to allow multiple matches. Matches:
   namelist_defaults::atmosphere_processes::number_of_subcycles
   namelist_defaults::atmosphere_processes::sc_import::number_of_subcycles
   namelist_defaults::atmosphere_processes::homme::number_of_subcycles
@@ -167,7 +167,7 @@ $ ./atmquery homme::number_of_subcycles
 ```
 
 In some cases, the user may be interested in changing _all_ nodes with a given name. In that case,
-the `--all` flag can be used:
+you can use 'ANY' as a node name:
 
 ```shell
 $ ./atmquery --grep number_of_subcycles
@@ -183,7 +183,7 @@ $ ./atmquery --grep number_of_subcycles
     p3::number_of_subcycles: 1
     rrtmgp::number_of_subcycles: 1
     sc_export::number_of_subcycles: 1
-$ ./atmchange --all number_of_subcycles=3
+$ ./atmchange ANY::number_of_subcycles=3
 Regenerating /path/to/namelist_scream.xml. Manual edits will be lost.
 $ ./atmquery --grep number_of_subcycles
     atmosphere_processes::number_of_subcycles: 3

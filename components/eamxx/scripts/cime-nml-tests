@@ -63,13 +63,13 @@ class TestBuildnml(unittest.TestCase):
         return cases[0] if len(cases) == 1 else cases
 
     ###########################################################################
-    def _get_values(self, case, name, value=None, expect_equal=True, all_matches=False):
+    def _get_values(self, case, name, value=None, expect_equal=True):
     ###########################################################################
         """
         Queries a name, optionally checking if the value matches or does not match the
         argument.
         """
-        if not all_matches:
+        if 'ANY' not in name:
             orig = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
             if value:
                 if expect_equal:
@@ -80,7 +80,7 @@ class TestBuildnml(unittest.TestCase):
             return [name]
 
         else:
-            output = run_cmd_assert_result(self, f"./atmquery {name} --grep", from_dir=case).splitlines()
+            output = run_cmd_assert_result(self, f"./atmquery {name}", from_dir=case).splitlines()
             names  = [line.rsplit(": ", maxsplit=1)[0].strip() for line in output]
             values = [line.rsplit(": ", maxsplit=1)[1].strip() for line in output]
 
@@ -96,17 +96,13 @@ class TestBuildnml(unittest.TestCase):
     ###########################################################################
     def _chg_atmconfig(self, changes, case, reset=False, expect_lost=None):
     ###########################################################################
-        changes = [(item[0], item[1], False) if len(item) == 2 else item for item in changes]
-
-        expect_lost     = reset if expect_lost is None else expect_lost
+        expect_lost = reset if expect_lost is None else expect_lost
 
         changes_unpacked = {}
-        for name, value, all_matches in changes:
-            all_matches_opt = "-a" if all_matches else ""
+        for name, value in changes:
+            names = self._get_values(case, name, value=value, expect_equal=False)
 
-            names = self._get_values(case, name, value=value, expect_equal=False, all_matches=all_matches)
-
-            run_cmd_assert_result(self, f"./atmchange {all_matches_opt} {name}='{value}'", from_dir=case)
+            run_cmd_assert_result(self, f"./atmchange {name}='{value}'", from_dir=case)
 
             for item in names:
                 changes_unpacked[item] = value
@@ -288,21 +284,21 @@ class TestBuildnml(unittest.TestCase):
     def test_atmchanges_on_all_matches(self):
     ###########################################################################
         """
-        Test that atmchange --all works
+        Test that atmchange works with ANY
         """
         case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        self._chg_atmconfig([("enable_precondition_checks", "false", True)], case)
+        self._chg_atmconfig([("ANY::enable_precondition_checks", "false")], case)
 
     ###########################################################################
     def test_atmchanges_on_all_matches_plus_spec(self):
     ###########################################################################
         """
-        Test atmchange --all followed by an atmchange of one of them
+        Test atmchange with ANY followed by an atmchange of one of them
         """
         case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        self._chg_atmconfig([("enable_precondition_checks", "false", True),
+        self._chg_atmconfig([("ANY::enable_precondition_checks", "false"),
                              ("p3::enable_precondition_checks", "true")], case)
 
     ###########################################################################
