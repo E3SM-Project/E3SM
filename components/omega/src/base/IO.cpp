@@ -297,8 +297,16 @@ int openFile(
 // Closes an open file using the fileID, returns an error code
 int closeFile(int &FileID /// [in] ID of the file to be closed
 ) {
-   // Just calls the PIO close routine
-   int Err = PIOc_closefile(FileID);
+   int Err = 0;
+
+   // Make sure all operations completed before closing
+   Err = PIOc_sync(FileID);
+   if (Err != PIO_NOERR) LOG_ERROR("Error syncing file before closing");
+
+   // Call the PIO close routine
+   Err = PIOc_closefile(FileID);
+   if (Err != PIO_NOERR) LOG_ERROR("Error closing file {} in PIO", FileID);
+
    return Err;
 
 } // End closeFile
@@ -454,9 +462,9 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
 
 } // End writeMeta (R8)
 
-int writeMeta(const std::string &MetaName, // [in] name of metadata
-              std::string MetaValue,       // [in] value of metadata
-              int FileID,                  // [in] ID of the file for writing
+int writeMeta(const std::string &MetaName,  // [in] name of metadata
+              const std::string &MetaValue, // [in] value of metadata
+              int FileID,                   // [in] ID of the file for writing
               int VarID // [in] ID for variable associated with metadata
 ) {
 
@@ -475,6 +483,28 @@ int writeMeta(const std::string &MetaName, // [in] name of metadata
    return Err;
 
 } // End writeMeta (str)
+
+int writeMeta(const std::string &MetaName, // [in] name of metadata
+              const char *MetaValue,       // [in] value of metadata
+              int FileID,                  // [in] ID of the file for writing
+              int VarID // [in] ID for variable associated with metadata
+) {
+
+   int Err             = 0;
+   IODataType MetaType = IOTypeChar;
+   PIO_Offset Length   = strlen(MetaValue) + 1;
+
+   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
+                      (void *)MetaValue);
+   if (Err != PIO_NOERR) {
+      LOG_ERROR("IO::writeMeta(char): PIO error while writing metadata to {}",
+                MetaName);
+      Err = -1;
+   }
+
+   return Err;
+
+} // End writeMeta (char)
 
 //------------------------------------------------------------------------------
 // Reads metadata (name, value) associated with a variable and/or file.
@@ -690,8 +720,10 @@ int readArray(void *Array,                // [out] array to be read
 
    // Find variable ID from file
    Err = PIOc_inq_varid(FileID, VarName.c_str(), &VarID);
-   if (Err != PIO_NOERR)
+   if (Err != PIO_NOERR) {
       LOG_ERROR("IO::readArray: Error finding varid for variable {}", VarName);
+      return Err;
+   }
 
    // PIO Read array call to read the distributed array
    PIO_Offset ASize = Size;
@@ -721,6 +753,19 @@ int writeArray(void *Array,     // [in] array to be written
    PIO_Offset Asize = Size;
 
    Err = PIOc_write_darray(FileID, VarID, DecompID, Asize, Array, FillValue);
+   if (Err != PIO_NOERR) {
+      LOG_ERROR("Error in PIO writing distributed array");
+      return Err;
+   }
+
+   // Make sure write is complete before returning
+   // We may be able to remove this for efficiency later but it was
+   // needed during testing
+   Err = PIOc_sync(FileID);
+   if (Err != PIO_NOERR) {
+      LOG_ERROR("Error in PIO sychronizing file after write");
+      return Err;
+   }
 
    return Err;
 

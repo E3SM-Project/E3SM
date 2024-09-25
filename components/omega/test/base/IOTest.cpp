@@ -345,6 +345,12 @@ int main(int argc, char *argv[]) {
          RetVal += 1;
          LOG_ERROR("IOTest: error writing global char metadata FAIL");
       }
+      Err = OMEGA::IO::writeMeta("StringLiteral", "MyString", OutFileID,
+                                 OMEGA::IO::GlobalID);
+      if (Err != 0) {
+         RetVal += 1;
+         LOG_ERROR("IOTest: error writing char literal metadata FAIL");
+      }
 
       // Define variables/arrays
       int VarIDCellI4;
@@ -709,6 +715,19 @@ int main(int argc, char *argv[]) {
          LOG_INFO("IOTest: read/write file metadata string test FAIL");
       }
 
+      std::string MyStringNew;
+      Err = OMEGA::IO::readMeta("StringLiteral", MyStringNew, InFileID,
+                                OMEGA::IO::GlobalID);
+      if (Err != 0) {
+         RetVal += 1;
+         LOG_ERROR("IOTest: error reading file string literal FAIL");
+      }
+      if (MyStringNew == "MyString") {
+         LOG_INFO("IOTest: read/write file metadata string literal test PASS");
+      } else {
+         RetVal += 1;
+         LOG_INFO("IOTest: read/write file metadata string literal test FAIL");
+      }
       // Read arrays
       OMEGA::HostArray2DI4 NewI4Cell("NewI4Cell", NCellsSize, NVertLevels);
       OMEGA::HostArray2DI8 NewI8Cell("NewI8Cell", NCellsSize, NVertLevels);
