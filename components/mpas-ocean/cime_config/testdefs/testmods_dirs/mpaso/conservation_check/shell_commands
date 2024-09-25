@@ -1,2 +1,3 @@
 # include mpas-ocean outputs in testing
-sed -i 's#compclass="ocn" exclude_testing="true"#compclass="ocn" exclude_testing="false"#g' env_archive.xml
+sed 's|compname="mpaso" exclude_testing="true"|compname="mpaso" exclude_testing="false"|' env_archive.xml > tmp_env_archive.xml
+mv tmp_env_archive.xml env_archive.xml
