@@ -125,7 +125,7 @@ contains
     ! set defaults
 
     sathist_track_infile = ' '
-    sathist_hfilename_spec = '%c.cam' // trim(inst_suffix) // '.hs.%y-%m-%d-%s.nc'
+    sathist_hfilename_spec = '%c.eam.hs.' // trim(inst_suffix) // '.%y-%m-%d-%s.nc'
     sathist_fincl(:) = ' '
     sathist_mfilt = 100000
     sathist_nclosest = 1
@@ -522,6 +522,13 @@ contains
   end subroutine sat_hist_write
 
 !-------------------------------------------------------------------------------
+! FIXME extra work > 
+!        dump_columns routine is doing unnecessary extra work serially
+!        this happens because there is an unneeded mpi_allreduce call
+!        and then the gathered data is written in a serial manner; this
+!        could be improved by avoiding the mpi_allreduce call, and then
+!        writing local data out using pio_write_darray, which is parallel
+! FIXME extra work <
   subroutine dump_columns( File, hitems, nflds, ncols, nlevs, nfils, fdims, ldims, owners, decomp )
     use cam_history_support, only: field_info, hentry, fillvalue
     use pio,                 only: pio_setframe, pio_offset_kind
@@ -565,9 +572,14 @@ contains
                    sbuf1d(i) = hitems(f)%hbuf( fdims(i), 1, ldims(i) )
                 endif
              enddo
+             ! FIXME extra work: unnecessary mpi call, then serial write
+             ! FIXME extra work: can use pio_write_darray on local data instead
              call mpi_allreduce(sbuf1d,rbuf1d,ncols,mpi_real8, mpi_sum, mpicom, ierr)
              buf1d(:) = real(rbuf1d(:),r4)
              ierr = pio_put_var(File, vardesc, (/nfils/),(/ncols/), buf1d(:))
+             if ( ierr /= PIO_NOERR ) then
+                call endrun('sat_hist::dump_columns: pio_put_var error')
+             endif
           else
              sbuf2d = 0.0_r8
              rbuf2d = 0.0_r8
@@ -578,9 +590,14 @@ contains
                    enddo
                 endif
              enddo
+             ! FIXME extra work: unnecessary mpi call, then serial write
+             ! FIXME extra work: can use pio_write_darray on local data instead
              call mpi_allreduce(sbuf2d,rbuf2d,ncols*nlevs,mpi_real8, mpi_sum, mpicom, ierr)
              buf2d(:,:) = real(rbuf2d(:,:),r4)
              ierr = pio_put_var(File, vardesc, (/1,nfils/),(/nlevs,ncols/), buf2d(:,:))
+             if ( ierr /= PIO_NOERR ) then
+                call endrun('sat_hist::dump_columns: pio_put_var error')
+             endif
           endif
 
        endif
