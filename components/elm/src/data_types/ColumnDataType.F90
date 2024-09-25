@@ -35,7 +35,7 @@ module ColumnDataType
   use soilorder_varcon, only : smax, ks_sorption
   use elm_time_manager, only : is_restart, get_nstep
   use elm_time_manager, only : is_first_step, get_step_size, is_first_restart_step
-  use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
+  use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec, istlowcenpoly, isthighcenpoly
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use histFileMod     , only : hist_addfld_decomp
@@ -110,7 +110,6 @@ module ColumnDataType
     real(r8), pointer :: h2osoi_liq         (:,:) => null() ! liquid water (-nlevsno+1:nlevgrnd) (kg/m2)
     real(r8), pointer :: h2osoi_ice         (:,:) => null() ! ice lens (-nlevsno+1:nlevgrnd) (kg/m2)
     real(r8), pointer :: h2osoi_vol         (:,:) => null() ! volumetric soil water (0<=h2osoi_vol<=watsat) (1:nlevgrnd) (m3/m3)
-    real(r8), pointer :: excess_ice         (:,:) => null() ! NGEE Arctic: excess ground ice in column (1:nlevgrnd) (0 to 1)
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
     real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (kg/m2)
@@ -170,11 +169,13 @@ module ColumnDataType
     real(r8), pointer :: vsfm_soilp_col_1d  (:)   => null() ! 1D soil liquid pressure from VSFM [Pa]
     real(r8), pointer :: h2orof             (:)   => null() ! floodplain inundation volume received from rof (mm)
     real(r8), pointer :: frac_h2orof        (:)   => null() ! floodplain inundation fraction received from rof (-)
-   ! polygonal tundra
-    real(r8), pointer :: iwp_microrel  (:) => null() ! ice wedge polygon microtopographic relief (m)
-    real(r8), pointer :: iwp_exclvol   (:) => null() ! ice wedge polygon excluded volume (m)
-    real(r8), pointer :: iwp_ddep      (:) => null() ! ice wedge polygon depression depth (m)
-    real(r8), pointer :: iwp_subsidence(:) => null() ! ice wedge polygon ground subsidence (m)
+   ! polygonal tundra (NGEE Arctic IM1)
+    real(r8), pointer :: iwp_microrel     (:) => null() ! ice wedge polygon microtopographic relief (m)
+    real(r8), pointer :: iwp_exclvol      (:) => null() ! ice wedge polygon excluded volume (m)
+    real(r8), pointer :: iwp_ddep         (:) => null() ! ice wedge polygon depression depth (m)
+    real(r8), pointer :: iwp_subsidence   (:) => null() ! ice wedge polygon ground subsidence (m)
+    real(r8), pointer :: excess_ice     (:,:) => null() ! excess ground ice in column (1:nlevgrnd) (0 to 1)
+    real(r8), pointer :: frac_melted    (:,:) => null() ! fraction of layer that has ever thawed (for tracking excess ice removal) (0 to 1)
 
   contains
     procedure, public :: Init    => col_ws_init
@@ -1403,7 +1404,6 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = spval
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = spval
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = spval
-    allocate(this%excess_ice         (begc:endc, 1:nlevgrnd))         ; this%excess_ice         (:,:) = spval
     allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval
     allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval
     allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = spval
@@ -1461,11 +1461,15 @@ contains
     allocate(this%vsfm_soilp_col_1d  (ncells))                        ; this%vsfm_soilp_col_1d  (:)   = spval
     allocate(this%h2orof             (begc:endc))                     ; this%h2orof             (:)   = spval
     allocate(this%frac_h2orof        (begc:endc))                     ; this%frac_h2orof        (:)   = spval
-    ! polygonal tundra/ice wedge polygons:
-    allocate(this%iwp_microrel       (begc:endc))                   ; this%iwp_microrel  (:) = spval
-    allocate(this%iwp_exclvol        (begc:endc))                   ; this%iwp_exclvol   (:) = spval
-    allocate(this%iwp_ddep           (begc:endc))                   ; this%iwp_ddep      (:) = spval
-    allocate(this%iwp_subsidence     (begc:endc))                   ; this%iwp_subsidence(:) = spval
+    if (use_polygonal_tundra) then
+      ! polygonal tundra/ice wedge polygons:
+      allocate(this%iwp_microrel       (begc:endc))                   ; this%iwp_microrel     (:) = spval
+      allocate(this%iwp_exclvol        (begc:endc))                   ; this%iwp_exclvol      (:) = spval
+      allocate(this%iwp_ddep           (begc:endc))                   ; this%iwp_ddep         (:) = spval
+      allocate(this%iwp_subsidence     (begc:endc))                   ; this%iwp_subsidence   (:) = spval
+      allocate(this%frac_melted        (begc:endc,1:nlevgrnd))        ; this%frac_melted    (:,:) = spval
+      allocate(this%excess_ice         (begc:endc,1:nlevgrnd))        ; this%excess_ice     (:,:) = spval
+    end if
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ws
@@ -1501,19 +1505,17 @@ contains
          avgflag='A', long_name='soil ice (ice landunits only)', &
          ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
 
-    ! RPF - polygonal tundra vars
-    this%excess_ice(begc:endc, :) = spval
     if (use_polygonal_tundra) then
+      this%iwp_subsidence(begc:endc)    = spval
+      this%iwp_ddep(begc:endc)          = spval
+      this%iwp_exclvol(begc:endc)       = spval
+      this%iwp_microrel(begc:endc)      = spval
+      this%frac_melted(begc:endc,:)     = spval
+      this%excess_ice(begc:endc,:)      = spval
+
       call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
            avgflag='A', long_name='Excess ground ice (0 to 1)', &
            ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
-    end if
-
-    this%iwp_subsidence(begc:endc) = spval
-    this%iwp_ddep(begc:endc)       = spval
-    this%iwp_exclvol(begc:endc)    = spval
-    this%iwp_microrel(begc:endc)   = spval
-    if (use_polygonal_tundra) then
       call hist_addfld1d (fname="SUBSIDENCE", units='m', avgflag='A', &
             long_name='ground subsidence (m)', ptr_col=this%iwp_subsidence)
       call hist_addfld1d (fname="DEPRESS_DEPTH", units='m', avgflag='A', &
@@ -1523,6 +1525,9 @@ contains
             ptr_col=this%iwp_exclvol)
       call hist_addfld1d (fname="MICROREL", units='m', avgflag='A', &
             long_name='microtopographic relief (m)', ptr_col=this%iwp_microrel)
+      call hist_addfld2d (fname="FRAC_MELTED", units='-', type2d='levgrnd', &
+            avgflag='A', long_name='fraction of layer that has melted (-)', &
+            ptr_col=this%frac_melted, l2g_scale_type='veg')
     endif
     !/polygonal tundra
 
@@ -1686,6 +1691,7 @@ contains
        this%h2orof(c)                 = 0._r8
        this%frac_h2orof(c)            = 0._r8
        this%iwp_subsidence(c)         = 0._r8
+       this%frac_melted(c,:)          = 0._r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)
@@ -1738,13 +1744,16 @@ contains
                 if (j > nlevbed) then
                    this%h2osoi_vol(c,j) = 0.0_r8
                 else
-		               if (use_fates .or. use_hydrstress) then
+		             if (use_fates .or. use_hydrstress) then
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES
                    else if (use_arctic_init) then
-                     this%h2osoi_vol(c,j) = watsat_input(c,j) ! start saturated for arctic
+                      this%h2osoi_vol(c,j) = watsat_input(c,j) ! start saturated for arctic
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8
                    endif
+                   if (use_polygonal_tundra) then
+                     this%frac_melted(c,j) = 0._r8
+                   end if
                 endif
              end do
           else if (lun_pp%urbpoi(l)) then
@@ -1845,23 +1854,14 @@ contains
              this%h2osoi_ice(c,j) = 0._r8
              this%h2osoi_liq(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol(c,j)
           endif
-          ! RPF 240713 - notes from Chuck: initialize all to 0.36_r8
-          this%excess_ice(c,j) = 0.36_r8
-          ! RPF - to do: a) apply to only polygonal ground
-          ! b) pull in ALT information to get starting point right.
-          ! for now, assuming no excess ice in top meter, 0.5 for 1-4 m,
-          ! 0.2 below 4 m. Also: need to check signs!
-          !if (col_pp%z(c,j) > -1._r8) then
-          !  this%excess_ice(c,j) = 0._r8
-          !else if (col_pp%z(c,j) > -4._r8 .and. col_pp%z(c,j) < -1._r8) then
-          !  this%excess_ice(c,j) = 0.5_r8
-          !else
-          !  this%excess_ice(c,j) = 0.2_r8
-          !end if
        end do
 
        this%h2osoi_liq_old(c,:) = this%h2osoi_liq(c,:)
        this%h2osoi_ice_old(c,:) = this%h2osoi_ice(c,:)
+       if (use_polygonal_tundra) then
+         ! RPF 240713 - notes from Chuck Abolt: initialize all to 0.36_r8
+         this%excess_ice(c,:) = 0.36_r8
+       end if
     end do
 
   end subroutine col_ws_init
@@ -1936,6 +1936,10 @@ contains
            dim1name='column', &
            long_name='microtopographic relief', units='m', &
            interpinic_flag='interp', readvar=readvar, data=this%iwp_microrel)
+      call restartvar(ncid=ncid, flag=flag, varname='FRAC_MELTED', xtype=ncd_double, &
+           dim1name='column', dim2name='levgrnd', switchdim=.true., &
+           long_name='fraction of layer that has ever melted', units='-', &
+           interpinic_flag='interp', readvar=readvar, data=this%frac_melted)
     end if
 
     call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &

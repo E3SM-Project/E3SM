@@ -49,7 +49,7 @@ contains
     use elm_varpar       , only : nlevgrnd
     use elm_time_manager , only : get_curr_date, get_step_size
     use elm_varctl       , only : iulog
-    use elm_varcon       , only : zsoi, dzsoi
+    use elm_varcon       , only : zsoi, dzsoi, zisoi
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -58,17 +58,17 @@ contains
     type(canopystate_type) , intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, j, fc, g                       ! counters
-    integer  :: alt_ind                           ! index of base of active layer
-    integer  :: year                              ! year (0, ...) for nstep+1
-    integer  :: mon                               ! month (1, ..., 12) for nstep+1
-    integer  :: day                               ! day of month (1, ..., 31) for nstep+1
-    integer  :: sec                               ! seconds into current date for nstep+1
-    integer  :: dtime                             ! time step length in seconds
-    integer  :: k_frz                             ! index of first nonfrozen soil layer
-    logical  :: found_thawlayer                   ! used to break loop when first unfrozen layer reached
-    real(r8) :: t1, t2, z1, z2                    ! temporary variables
-    real(r8), dimension(nlevgrnd) :: melt_profile ! profile of melted excess ice
+    integer  :: c, j, fc, g                             ! counters
+    integer  :: alt_ind                                 ! index of base of active layer
+    integer  :: year                                    ! year (0, ...) for nstep+1
+    integer  :: mon                                     ! month (1, ..., 12) for nstep+1
+    integer  :: day                                     ! day of month (1, ..., 31) for nstep+1
+    integer  :: sec                                     ! seconds into current date for nstep+1
+    integer  :: dtime                                   ! time step length in seconds
+    integer  :: k_frz                                   ! index of first nonfrozen soil layer
+    logical  :: found_thawlayer                         ! used to break loop when first unfrozen layer reached
+    real(r8) :: t1, t2, z1, z2, orig_excess, old_mfrac  ! temporary variables
+    real(r8), dimension(nlevgrnd) :: melt_profile       ! profile of melted excess ice
     !-----------------------------------------------------------------------
 
     ! RF NOTE: use of 1989 ALT in these parameterizations is somewhat of a placeholder used to compare against
@@ -87,11 +87,12 @@ contains
          altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col , & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw
          altmax_1989_indx     =>    canopystate_vars%altmax_1989_indx_col,      & ! Output:  [integer  (:)   ]  index of maximum ALT in 1989
          altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col,      & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
-         excess_ice           =>    col_ws%excess_ice                    ,      & ! Input:   [real(r8) (:,:) ]  depth variable excess ice content in soil column (-)
+         excess_ice           =>    col_ws%excess_ice                    ,      & ! Input/output:[real(r8) (:,:)]  depth variable excess ice content in soil column (-)
          rmax                 =>    col_ws%iwp_microrel                  ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
          vexc                 =>    col_ws%iwp_exclvol                   ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
          ddep                 =>    col_ws%iwp_ddep                      ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
-         subsidence           =>    col_ws%iwp_subsidence                       & ! Input/output:[real(r8) (:)   ]  ice wedge polygon subsidence (m)
+         subsidence           =>    col_ws%iwp_subsidence                ,      & ! Input/output:[real(r8)(:)]  ice wedge polygon subsidence (m)
+         frac_melted          =>    col_ws%frac_melted                          & ! Input/output:[real(r8)(:)]  fraction of layer that has ever melted (-)
          )
 
       ! on a set annual timestep, update annual maxima
@@ -184,15 +185,49 @@ contains
          ! update subsidence based on change in ALT
          ! melt_profile stores the amount of excess_ice
          ! melted in this timestep.
-         do j = 1,nlevgrnd
-            if (j < k_frz) then
-               melt_profile(j) = 0.0_r8
+         ! note that this may cause some unexpected results
+         ! for taliks
+
+         ! initialize melt_profile as zero
+         melt_profile(:) = 0._r8
+
+         do j = nlevgrnd,1,-1 ! note, this will go from bottom to top
+            !write(iulog,*) "processing level j,",j,k_frz,excess_ice(c,j)
+            if (j .gt. k_frz + 1) then ! all layers below k_frz + 1 remain frozen
+              melt_profile(j) = 0.0_r8
+            else if (j .eq. k_frz + 1) then ! first layer below the 'thawed' layer
+              ! need to check to see if the active layer thickness is is actually
+              ! in this layer (and not between the midpoint of j_frz and bottom interface
+              ! or else inferred melt will be negative
+              ! also note: only have ice to melt if alt has never been this deep, otherwise
+              ! ice will continue to be removed each time step the alt remains in this layer
+              if ((alt(c)-zisoi(j-1)) .ge. 0._r8 .and. (alt(c) .eq. altmax_ever(c)) .and. (frac_melted(c,j) .lt. 1._r8)) then
+                orig_excess = (1._r8/(1._r8-frac_melted(c,j))) * excess_ice(c,j)
+                old_mfrac = frac_melted(c,j)
+                ! update frac melted
+                frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zisoi(j-1))/dzsoi(j)),1._r8)
+                melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
+                excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
+                  ! DEBUG:
+                  write(iulog,*) "melt and excess ice here are for j and j+1", melt_profile(j), &
+                  melt_profile(j+1), excess_ice(c,j), &
+                  excess_ice(c,j+1),(alt(c)-zisoi(j-1))/dzsoi(j),c,j+1,alt(c),zisoi(j-1),dzsoi(j)
+              else
+                melt_profile(j) = 0._r8 ! no melt
+              end if
             else if (j .eq. k_frz) then
-               melt_profile(j) = excess_ice(c,j) + ((z2-alt(c))/(z2-z1))*excess_ice(c,j+1) ! TODO: check indices here!!
-               ! remove melted excess ice:
-               excess_ice(c,j) = 0._r8
-               excess_ice(c,j+1) = excess_ice(c,j+1)*(1._r8 - min(1._r8,(z2-alt(c))/(z2-z1)))
-            else
+              if (alt(c) .eq. altmax_ever(c) .and. (frac_melted(c,j) .lt. 1._r8)) then
+                orig_excess = (1._r8/(1._r8 - frac_melted(c,j))) * excess_ice(c,j)
+                old_mfrac = frac_melted(c,j)
+                ! update frac_melted:
+                frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zsoi(j-1))/dzsoi(j)),1._r8)
+                ! remove ice, only if alt has never been this deep before:
+                melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
+                excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
+              else
+                melt_profile(j) = 0._r8
+              end if
+            else !
                melt_profile(j) = excess_ice(c,j)
                ! remove melted excess ice
                excess_ice(c,j) = 0._r8
@@ -204,6 +239,10 @@ contains
          ! subsidence is integral of melt profile:
          if ((year .ge. 1989) .and. (altmax_ever(c) .ge. altmax_1989(c))) then
             subsidence(c) = subsidence(c) + sum(melt_profile)
+            if (sum(melt_profile) .lt. 0_r8) then
+              write(iulog,*) "subsidence(c) is",subsidence(c),sum(melt_profile),c,k_frz
+              write(iulog,*) "meltprofile is:", melt_profile
+            end if
          end if
 
          ! limit subsidence to 0.4 m

@@ -562,7 +562,7 @@ contains
              if (lun_pp%ispolygon(col_pp%landunit(c))) then
                 vdep = (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (iwp_ddep(c)/iwp_microrel(c))**3_r8 &
                        + (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (iwp_ddep(c)/iwp_microrel(c))**2_r8
-                phi_eff = min(iwp_subsidence(c), 0.4)  !fix this variable when available to pull from alt calculations
+                phi_eff = min(iwp_subsidence(c), 0.4_r8)  !fix this variable when available to pull from alt calculations
                 swc = h2osfc(c)/1000_r8 ! convert to m
                 
                 if (swc >= vdep) then
