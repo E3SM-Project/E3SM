@@ -1879,6 +1879,12 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
       do i = its,ite
          dudt(i,k)  = dudt(i,k) + utendform(i,k)
          dvdt(i,k)  = dvdt(i,k) + vtendform(i,k)
+         !!limit drag tendency Jinbo Xie
+         !utendform(i,k)  = sign(min(abs(utendform(i,k)),umcfac*abs(u1(i,k))/kdt),utendform(i,k))
+         !utendform(i,k)  = sign(min(abs(utendform(i,k)),tndmax),utendform(i,k))
+         !vtendform(i,k)  = sign(min(abs(vtendform(i,k)),umcfac*abs(v1(i,k))/kdt),vtendform(i,k))
+         !vtendform(i,k)  = sign(min(abs(vtendform(i,k)),tndmax),vtendform(i,k))
+         !!
          dtaux2d_fd(i,k) = utendform(i,k)
          dtauy2d_fd(i,k) = vtendform(i,k)
          dusfc_fd(i) = dusfc_fd(i) + utendform(i,k) * del(i,k)

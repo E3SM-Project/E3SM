@@ -1073,7 +1073,7 @@ end subroutine clubb_init_cnst
 
    subroutine clubb_tend_cam( &
                               state,   ptend_all,   pbuf,     hdtime, &
-                              cmfmc,   cam_in,   sgh30, &
+                              cmfmc,   cam_in,   sgh, sgh30, &
                               macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
 
 !-------------------------------------------------------------------------------
@@ -1164,7 +1164,9 @@ end subroutine clubb_init_cnst
    real(r8),            intent(in)    :: hdtime                   ! Host model timestep                     [s]
    real(r8),            intent(in)    :: dlf(pcols,pver)          ! Detraining cld H20 from deep convection [kg/ks/s]
    real(r8),            intent(in)    :: cmfmc(pcols,pverp)       ! convective mass flux--m sub c           [kg/m2/s]
-   real(r8),            intent(in)    :: sgh30(pcols)             ! std deviation of orography              [m]
+   real(r8),            intent(in)    :: sgh(pcols)             ! std deviation of orography              [m]
+   real(r8),            intent(in)    :: sgh30(pcols)             ! std deviation of orography            [m]
+   real(r8),               :: sgh_adj(pcols)           ! std deviation of orography            [m]
    integer,             intent(in)    :: cld_macmic_num_steps     ! number of mac-mic iterations
    integer,             intent(in)    :: macmic_it                ! number of mac-mic iterations
 
@@ -1974,6 +1976,10 @@ end subroutine clubb_init_cnst
         dvsfc_fd=0._r8
         !
         call grid_size(state,dx,dy)
+        !
+        do i=1,pcols
+        sgh_adj(i)=min(sgh30(i),0.3*sgh(i))
+        enddo
 	!
         call gwdo_gsd(&
         u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
@@ -1985,7 +1991,7 @@ end subroutine clubb_init_cnst
         dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
         dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
         xland=cam_in%landfrac,br=state%ribulk,&
-        var2d=sgh30(:ncol),&
+        var2d=sgh_adj(:ncol),&
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
         dx=dx,dy=dy,&
@@ -1994,6 +2000,8 @@ end subroutine clubb_init_cnst
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
         gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
+        !gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=0)
+        !gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
         !!=========Jinbo Xie=========
         call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
@@ -2171,8 +2179,8 @@ end subroutine clubb_init_cnst
       !Apply tofd
       !----------------------------------------------------!
       !tendency is flipped already
-        um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)
-        vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)
+        um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)!*0.5
+        vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)!*0.5
       !	Jinbo Xie
       !====================================================!
       
