@@ -122,7 +122,8 @@ OR
 
     parser.add_argument(
         "-a", "--all",
-        action=DeprecatedAction,
+        action=DeprecatedAllFlag,
+        default=argparse.SUPPRESS,
         help="This syntax is deprecated and should not be used. Use ANY:: scope instead."
     )
 
