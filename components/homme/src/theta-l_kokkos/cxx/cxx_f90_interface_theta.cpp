@@ -114,6 +114,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = (bool)disable_diagnostics;
   params.use_moisture                  = (bool)use_moisture;
+  params.moisture = params.use_moisture ? MoistDry::MOIST : MoistDry::DRY; //todo-repo-unification
   params.use_cpstar                    = (bool)use_cpstar;
   params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = (bool)theta_hydrostatic_mode;

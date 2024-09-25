@@ -91,6 +91,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = disable_diagnostics;
   params.use_moisture                  = use_moisture;
+  params.moisture = params.use_moisture ? MoistDry::MOIST : MoistDry::DRY; //todo-repo-unification
   params.use_cpstar                    = use_cpstar;
   params.transport_alg                 = transport_alg;
   // SphereOperators parameters; preqx supports only the sphere.

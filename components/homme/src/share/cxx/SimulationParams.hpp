@@ -24,6 +24,7 @@ struct SimulationParams
 
   TimeStepType  time_step_type;
   bool          use_moisture;
+  MoistDry moisture; //todo-repo-unification
   RemapAlg      remap_alg;
   TestCase      test_case;
   ForcingAlg    ftype = ForcingAlg::FORCING_OFF;
