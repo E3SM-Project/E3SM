@@ -967,27 +967,48 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       nCells = nCellsArray( 3 )
-      do iCell=1,nCells
+      if (associated(indexRain) .and. associated(rainFlux)) then
+        do iCell=1,nCells
           freshwaterSurfaceFlux(indexRain, iCell) = rainFlux(iCell) / rho_sw
+        enddo  !  iCell
+      else
+        call mpas_log_write('indexRain is not associated')
+      endif
+      if (associated(indexSnow) .and. associated(snowFlux)) then
+        do iCell=1,nCells
           freshwaterSurfaceFlux(indexSnow, iCell) = snowFlux(iCell) / rho_sw
+        enddo  !  iCell
+      else
+        call mpas_log_write('indexSnow is not associated')
+      endif
+      if (associated(indexIceRunoff) .and. associated(iceRunoffFlux)) then
+        do iCell=1,nCells
           freshwaterSurfaceFluxRunoff(indexIceRunoff, iCell) = iceRunoffFlux(iCell) / rho_sw
+        enddo  !  iCell
+      else
+        call mpas_log_write('indexIceRunoff is not associated')
+      endif
+      if (associated(indexRiverRunoff) .and. associated(riverRunoffFlux)) then
+        do iCell=1,nCells
           freshwaterSurfaceFluxRunoff(indexRiverRunoff, iCell) = riverRunoffFlux(iCell) / rho_sw
-      enddo  !  iCell
-      if (associated(indexSeaIceFreshWater)) then
+        enddo  !  iCell
+      else
+        if (.not. associated(indexRiverRunoff)) call mpas_log_write('indexRiverRunoff is not associated')
+        if (.not. associated(riverRunoffFlux)) call mpas_log_write('riverRunoffFlux is not associated')
+      endif
+      if (associated(indexSeaIceFreshWater) .and. associated(seaIceFreshWaterFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexSeaIceFreshWater, iCell) = seaIceFreshWaterFlux(iCell) / rho_sw
         enddo  !  iCell
       else
         call mpas_log_write('indexSeaIceFreshWater is not associated')
-        freshwaterSurfaceFlux(indexSeaIceFreshWater, :) = 0.0_RKIND
       endif
-      if (associated(indexIcebergFreshWater)) then
+      if (associated(indexIcebergFreshWater) .and. associated(icebergFreshWaterFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexIcebergFreshWater, iCell) = icebergFreshWaterFlux(iCell) / rho_sw
         enddo  !  iCell
       else
         call mpas_log_write('indexIcebergFreshWater is not associated')
-        freshwaterSurfaceFlux(indexIcebergFreshWater, :) = 0.0_RKIND
       endif
       if (associated(indexLandIceFreshwater) .and. associated(landIceFreshwaterFlux)) then
         do iCell=1,nCells
@@ -995,8 +1016,8 @@ contains
         enddo  !  iCell
       else
         call mpas_log_write('indexLandIceFreshwater or landIceFreshwaterFlux is not associated')
-        freshwaterSurfaceFlux(indexLandIceFreshwater, :) = 0.0_RKIND
       endif
+      call mpas_log_write('end fw assign sflux')
 
    end subroutine ocn_surface_bulk_forcing_freshwater_tracers!}}}
 
