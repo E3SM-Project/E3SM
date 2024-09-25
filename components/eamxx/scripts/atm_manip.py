@@ -14,7 +14,6 @@ from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
-ATMCHANGE_ALL = "__ALL__"
 ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 
 ###############################################################################
@@ -22,40 +21,32 @@ def apply_atm_procs_list_changes_from_buffer(case, xml):
 ###############################################################################
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
     if atmchg_buffer:
-        atmchgs, atmchgs_all = unbuffer_changes(case)
+        atmchgs = unbuffer_changes(case)
 
-        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
-        for chg, to_all in zip(atmchgs,atmchgs_all):
+        for chg in atmchgs:
             if "atm_procs_list" in chg:
-                expect (not to_all, "Makes no sense to change 'atm_procs_list' for all groups")
-                atm_config_chg_impl(xml, chg, all_matches=False)
+                atm_config_chg_impl(xml, chg)
 
 ###############################################################################
 def apply_non_atm_procs_list_changes_from_buffer(case, xml):
 ###############################################################################
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
     if atmchg_buffer:
-        atmchgs, atmchgs_all = unbuffer_changes(case)
+        atmchgs = unbuffer_changes(case)
 
-        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
-        for chg, to_all in zip(atmchgs,atmchgs_all):
+        for chg in atmchgs:
             if "atm_procs_list" not in chg:
-                atm_config_chg_impl(xml, chg, all_matches=to_all)
+                atm_config_chg_impl(xml, chg)
 
 ###############################################################################
-def buffer_changes(changes, all_matches=False):
+def buffer_changes(changes):
 ###############################################################################
     """
     Take a list of raw changes and buffer them in the XML case settings. Raw changes
     are what goes to atm_config_chg_impl.
     """
     # Commas confuse xmlchange and so need to be escaped.
-    if all_matches:
-        changes_temp = [c + ATMCHANGE_ALL for c in changes]
-        changes_str = ATMCHANGE_SEP.join(changes_temp).replace(",",r"\,")
-    else:
-        #  changes_str += f"{ATMCHANGE_SEP}--all"
-        changes_str = ATMCHANGE_SEP.join(changes).replace(",",r"\,")
+    changes_str = ATMCHANGE_SEP.join(changes).replace(",",r"\,")
 
     run_cmd_no_fail(f"./xmlchange --append {ATMCHANGE_BUFF_XML_NAME}='{changes_str}{ATMCHANGE_SEP}'")
 
@@ -63,18 +54,15 @@ def buffer_changes(changes, all_matches=False):
 def unbuffer_changes(case):
 ###############################################################################
     """
-    From a case, get a list of raw changes. Returns (changes, all_matches_flag)
+    From a case, get and return a list of raw changes
     """
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
     atmchgs = []
-    atmchgs_all = []
     for item in atmchg_buffer.split(ATMCHANGE_SEP):
         if item.strip():
-            atmchgs_all.append(ATMCHANGE_ALL in item)
-            atmchgs.append(item.replace(ATMCHANGE_ALL,"").replace(r"\,", ",").strip())
+            atmchgs.append(item.replace(r"\,", ",").strip())
 
-    return atmchgs, atmchgs_all
-
+    return atmchgs
 
 ###############################################################################
 def reset_buffer():
@@ -116,19 +104,63 @@ def get_xml_nodes(xml_root, name):
     >>> [p.tag for p in get_parents(item, parent_map)]
     ['root', 'sub']
     """
-    expect("::::" not in name, f"Invalid xml node name format, '{name}' contains ::::")
+    expect('::::' not in name,
+            "Badly formatted node name: found '::::'")
+
+    tokens = name.split("::")
+    expect (tokens[-1] != '', "Input query string ends with '::'. It should end with an actual node name")
+    if 'ANY' in tokens:
+        multiple_hits_ok = True
+
+        # Check there's only ONE 'ANY' token
+        expect(tokens.count('ANY') == 1, "Invalid xml node name format, multiple 'ANY' tokens found.")
+
+        # Split tokens list into two parts: before and after 'ANY'
+        before_any = tokens[:tokens.index('ANY')]
+        after_any = tokens[tokens.index('ANY') + 1:]
+        expect (after_any, "Input name should not end with ANY")
+
+        # The case where name starts with ::ANY is delicate, since before_any=[''], and this
+        # trips the call to get_xml_nodes. Since ANY and ::ANY are conceptually the same,
+        # we set before_any=[] if before_any==['']
+        if before_any == ['']:
+            before_any = []
+
+        # Call get_xml_nodes with '::'.join(before_any) to get the new root
+        new_root = get_xml_nodes(xml_root, '::'.join(before_any)) if before_any else [xml_root]
+
+        # Reset xml_root to new_root for the next search
+        xml_root = new_root[0]
+
+        # Use new_root to find all matches for whatever comes after 'ANY::'
+        name = '::'.join(after_any)
+    else:
+        multiple_hits_ok = False
 
     if name.startswith("::"):
         prefix = "./"  # search immediate children only
         name = name[2:]
     else:
-        prefix = ".//" # search entire tree
+        prefix = ".//"  # search entire tree
 
+
+    # Handle case without ANY
     try:
         xpath_str = prefix + name.replace("::", "/")
         result = xml_root.findall(xpath_str)
     except SyntaxError as e:
         expect(False, f"Invalid syntax '{name}' -> {e}")
+
+    # Note: don't check that len(result)>0, since user may be ok with 0 matches
+    if not multiple_hits_ok and len(result)>1:
+        parent_map = create_parent_map(xml_root)
+        error_str = f"{name} is ambiguous. Use ANY in the node path to allow multiple matches. Matches:\n"
+        for node in result:
+            parents = get_parents(node, parent_map)
+            name = "::".join(e.tag for e in parents) + "::" + node.tag
+            error_str += "  " + name + "\n"
+
+        expect(False, error_str)
 
     return result
 
@@ -303,7 +335,7 @@ def parse_change(change):
     return node_name,new_value,append_this
 
 ###############################################################################
-def atm_config_chg_impl(xml_root, change, all_matches=False):
+def atm_config_chg_impl(xml_root, change):
 ###############################################################################
     """
     >>> xml = '''
@@ -361,7 +393,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     >>> ################ AMBIGUOUS CHANGE #######################
     >>> atm_config_chg_impl(tree,'prop1=three')
     Traceback (most recent call last):
-    SystemExit: ERROR: prop1 is ambiguous (use --all to change all matches), matches:
+    SystemExit: ERROR: prop1 is ambiguous. Use ANY in the node path to allow multiple matches. Matches:
       root::prop1
       root::sub::prop1
     <BLANKLINE>
@@ -372,7 +404,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     False
     >>> atm_config_chg_impl(tree,'sub::prop1=one')
     True
-    >>> atm_config_chg_impl(tree,'prop1=three', all_matches=True)
+    >>> atm_config_chg_impl(tree,'ANY::prop1=three')
     True
     >>> [item.text for item in get_xml_nodes(tree,'prop1')]
     ['three', 'three']
@@ -412,16 +444,6 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     matches = get_xml_nodes(xml_root, node_name)
 
     expect(len(matches) > 0, f"{node_name} did not match any items")
-
-    if len(matches) > 1 and not all_matches:
-        parent_map = create_parent_map(xml_root)
-        error_str = ""
-        for node in matches:
-            parents = get_parents(node, parent_map)
-            name = "::".join(e.tag for e in parents) + "::" + node.tag
-            error_str += "  " + name + "\n"
-
-        expect(False, f"{node_name} is ambiguous (use --all to change all matches), matches:\n{error_str}")
 
     any_change = False
     for node in matches:
@@ -524,25 +546,11 @@ def print_var(xml_root,parent_map,var,full,dtype,value,valid_values,print_style=
     expect (print_style in ["short","full"],
             f"Invalid print_style '{print_style}' for print_var. Use 'full' or 'short'.")
 
-    # Get the shortest unique repr of the var name
-    tokens = var.split("::")
-    if tokens[0]=='':
-        tokens.pop(0)
-
-    while len(tokens)>1:
-        new_name = "::".join(tokens[1:])
-        matches = get_xml_nodes(xml_root, new_name)
-        if len(matches) > 1:
-            break
-        else:
-            tokens.pop(0)
-
-    # Get node, along with all its parents (which might be used for 'full' print style)
+    # Get matches
     matches = get_xml_nodes(xml_root,var)
-    expect(len(matches) == 1, f"Expected one match for {var}")
-    node = matches[0]
 
-    print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style,indent)
+    for node in matches:
+        print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style,indent)
 
 ###############################################################################
 def print_all_vars(xml_root,xml_node,parent_map,curr_namespace,full,dtype,value,valid_values,print_style,indent):

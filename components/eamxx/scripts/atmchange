@@ -31,7 +31,7 @@ def recreate_raw_xml_file():
         create_raw_xml_file(case, caseroot)
 
 ###############################################################################
-def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
+def atm_config_chg(changes, reset=False, buffer_only=False):
 ###############################################################################
     if not buffer_only:
         expect(os.path.exists("namelist_scream.xml"),
@@ -66,7 +66,7 @@ def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
             root = tree.getroot()
 
         for change in changes:
-            this_changed = atm_config_chg_impl(root, change, all_matches)
+            this_changed = atm_config_chg_impl(root, change)
             any_change |= this_changed
 
 
@@ -74,7 +74,7 @@ def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
         # NOTE: if a change is wrong (e.g., typo in param name), we are still buffering it.
         #       We have no way of checking this, unfortunately. If you get an error that is
         #       not just syntax, your best course of action is to run atmchange --reset.
-        buffer_changes(changes, all_matches=all_matches)
+        buffer_changes(changes)
 
         if not buffer_only:
             recreate_raw_xml_file()
@@ -103,13 +103,6 @@ OR
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument(
-        "-a", "--all",
-        default=False,
-        dest="all_matches",
-        action="store_true",
-        help="Apply change to all entries matching the name"
-    )
     parser.add_argument(
         "-r", "--reset",
         default=False,
