@@ -1,0 +1,8 @@
+This testdef is used to test the conservation check analysis member, which
+wasintroduced in MPAS-Ocean PR #4521 and has been made a stealth feature in
+#6643. This test turns on the consevation check analysis member by setting:
+
+    config_AM_conservationCheck_enable = .true.
+
+Then, it enables the use of MPAS-Ocean history files in testing by running
+a sed command to modify env_archive.xml.

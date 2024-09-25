@@ -1,0 +1,2 @@
+# include mpas-ocean outputs in testing
+sed -i 's#compclass="ocn" exclude_testing="true"#compclass="ocn" exclude_testing="false"#g' env_archive.xml
