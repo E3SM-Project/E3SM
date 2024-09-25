@@ -141,6 +141,8 @@ contains
       integer, dimension(:), pointer :: &
         maxLevelCell, minLevelCell, nEdgesOnCell, maxLevelEdgeTop, minLevelEdgeBot
 
+      integer, dimension(:), pointer :: landIceMask
+
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, fCell, &
         ssh, dcEdge, dvEdge, areaCell, iceFraction, &
@@ -241,6 +243,7 @@ contains
       ! set pointers for fields related to ocean forcing state
       !
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
       call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
@@ -489,7 +492,8 @@ contains
                                                  surfaceFrictionVelocity(iCell), &
                                                  boundaryLayerDepth(iCell), &
                                                  cvmix_global_params)
-              else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+              else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND &
+                       .and. landIceMask(iCell) .eq. 0) then
                  call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
                                                        windStressMeridional(iCell), &
                                                        surfaceFrictionVelocity(iCell), &
@@ -684,7 +688,8 @@ contains
                                                surfaceFrictionVelocity(iCell), &
                                                boundaryLayerDepth(iCell), &
                                                cvmix_global_params)
-            else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+            else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND &
+                     .and. landIceMask(iCell) .eq. 0) then
                  call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
                                                        windStressMeridional(iCell), &
                                                        surfaceFrictionVelocity(iCell), &
