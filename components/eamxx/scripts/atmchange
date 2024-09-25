@@ -23,6 +23,13 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.case import Case
 
+class DeprecatedAllFlag(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        error_msg  = f"Error: '{option_string}' has been deprecated and should not be used.\n"
+        error_msg +=  "  If you want to change ALL matches for a given var, use 'ANY::$varname=value' syntax instead."
+        print(error_msg, file=sys.stderr)
+        sys.exit(1)
+
 ###############################################################################
 def recreate_raw_xml_file():
 ###############################################################################
@@ -96,6 +103,9 @@ OR
     \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
     > {0} foo=hi
 
+    \033[1;32m# Change all matches of param foo to 'hi'\033[0m
+    > {0} ANY::foo=hi
+
     \033[1;32m# Change params foo to 'hi' and append 'there' to bar (only works if both are unambiguous)\033[0m
     > {0} foo=hi bar+=there
 """.format(pathlib.Path(args[0]).name),
@@ -108,6 +118,12 @@ OR
         default=False,
         action="store_true",
         help="Forget all previous atmchanges",
+    )
+
+    parser.add_argument(
+        "-a", "--all",
+        action=DeprecatedAction,
+        help="This syntax is deprecated and should not be used. Use ANY:: scope instead."
     )
 
     parser.add_argument(

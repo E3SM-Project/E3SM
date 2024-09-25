@@ -69,7 +69,7 @@ OR
         "--grep",
         default=False,
         action="store_true",
-        help="List all matching variables and their values.",
+        help="List all variables matching the input regex string and their values.",
     )
 
     parser.add_argument(
