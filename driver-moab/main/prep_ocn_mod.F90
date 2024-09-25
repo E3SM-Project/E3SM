@@ -253,7 +253,7 @@ contains
    character*32             :: appname, outfile, wopts, lnum
    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
    ! needed for online / offline maps
-   character(CX)            :: fmoabmap, smoabmap
+   character(CX)            :: cpl_moab_maps
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -285,6 +285,7 @@ contains
          atm_present=atm_present       , &
          ice_present=ice_present       , &
          flood_present=flood_present   , &
+         cpl_moab_maps=cpl_moab_maps   , &   ! decide if online or offline map
          vect_map=vect_map             , &
          atm_gnam=atm_gnam             , &
          ocn_gnam=ocn_gnam             , &
@@ -411,14 +412,11 @@ contains
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
-            ! need to decide first if we need to compute the map or read it from file
-            call shr_mct_queryConfigFile(mpicom_CPLID,'seq_maps.rc','atm2ocn_fmoabmap:',fmoabmap)
-
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model, we need to compute the map, or read the map
                ! we need the group in both cases, online or offline
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
-               if (fmoabmap == 'online') then
+               if (cpl_moab_maps == 'online') then
                   
                   appname = "ATM_OCN_COU"//C_NULL_CHAR
                   ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
@@ -526,7 +524,7 @@ contains
                      write(logunit,*) subname,' error in computing ao weights '
                      call shr_sys_abort(subname//' ERROR in computing ao weights ')
                   endif
-               else if (fmoabmap == 'offline') then
+               else if (cpl_moab_maps == 'offline') then
                   ! we need to read the map, then migrate map mesh 
                   ! start copy from rof 2 ocn logic
                   appname = "ATM_OCN_FMAP"//CHAR(0)
@@ -609,8 +607,8 @@ contains
                  !end copy
                   
                else
-                  write(logunit,*) subname, 'fmoabmap:', fmoabmap, ' wrong value'
-                  call shr_sys_abort(subname//' ERROR getting fmoabmap type')
+                  write(logunit,*) subname, 'cpl_moab_maps:', cpl_moab_maps, ' wrong value'
+                  call shr_sys_abort(subname//' ERROR getting cpl_moab_maps type')
                endif
 
 
@@ -677,8 +675,6 @@ contains
                'seq_maps.rc','atm2ocn_smapname:','atm2ocn_smaptype:',samegrid_ao, &
                'mapper_Sa2o initialization',esmf_map_flag)
 
-          ! need to decide first if we need to compute the map or read it from file
-          call shr_mct_queryConfigFile(mpicom_CPLID,'seq_maps.rc','atm2ocn_smoabmap:',smoabmap)
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Va2o'
