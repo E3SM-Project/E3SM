@@ -234,6 +234,17 @@ add_omega_test(
     "-n;8"
 )
 
+##################
+# IOStream test
+##################
+
+add_omega_test(
+    IOSTREAM_TEST
+    testIOStream.exe
+    infra/IOStreamTest.cpp
+    "-n;8"
+)
+
 #####################
 # TendencyTerms test
 #####################

@@ -28,3 +28,60 @@ Omega:
   Tracers:
     Base: [Temp, Salt]
     Debug: [Debug1, Debug2, Debug3]
+  IOStreams:
+    InitialState:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - Restart
+    RestartWrite:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Filename: ocn.restart.$Y-$M-$D_$h.$m.$s
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 6
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Restart
+    RestartReadTest:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Mode: read
+      Precision: double
+      Freq: 6
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Restart
+    History:
+      UsePointerFile: false
+      Filename: ocn.hist.$SimTime
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 1
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Tracers
+    Highfreq:
+      UsePointerFile: false
+      Filename: ocn.hifreq.$Y-$M-$D_$h.$m.$s
+      Mode: write
+      IfExists: replace
+      Precision: single
+      Freq: 10
+      FreqUnits: days
+      UseStartEnd: true
+      StartTime: 0001-06-01_00.00.00
+      EndTime: 0001-06-30_00.00.00
+      Contents:
+        - Tracers
