@@ -22,7 +22,6 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mbrmapfao ! iMOAB id for read map for flux var between atmosphere and ocean
   use seq_comm_mct,     only : mbaxoid ! iMOAB id for atm on coupler in ocean context;
   use seq_comm_mct,     only : mbrmapsao ! iMOAB id for read map for flux var between atmosphere and ocean
-  use seq_comm_mct,     only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   ! use dimensions_mod,   only : np     ! for atmosphere degree
@@ -587,7 +586,7 @@ contains
                   if (mbaxoid.ge.0) then  ! we are on coupler PEs
                      call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
                      if (rank_on_cpl .lt. 4) then
-                        prefix_output = "atm_cov"//CHAR(0)
+                        prefix_output = "atm_cov_ocn"//CHAR(0)
                         ierr = iMOAB_WriteLocalMesh(mbaxoid, prefix_output)
                         if (ierr .ne. 0) then
                            write(logunit,*) subname,' error in writing coverage mesh atm 2 ocn '
@@ -612,28 +611,29 @@ contains
                endif
 
 
-
+               
                ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, 'bilinear'//C_NULL_CHAR, 'bilinear_a2o.nc'//C_NULL_CHAR)
 
+               if (cpl_moab_maps == 'online') then ! this is for conservative fluxes ? who uses it ?
                ! Next compute the conservative map for projection of flux fields
-               if (iamroot_CPLID) then
-                  call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIdef, &
-                     trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
-                     fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
-               endif
-               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
-                                                trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
-                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                                noConserve, validate, &
-                                                trim(dofnameS), trim(dofnameT) )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing ao weights '
-                  call shr_sys_abort(subname//' ERROR in computing ao weights ')
-               endif
+                  if (iamroot_CPLID) then
+                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIdef, &
+                        trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
+                        fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
+                  endif
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
+                                                   trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                   noConserve, validate, &
+                                                   trim(dofnameS), trim(dofnameT) )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing ao weights '
+                     call shr_sys_abort(subname//' ERROR in computing ao weights ')
+                  endif
 
-               mapper_Fa2o%intx_context = idintx
+                  mapper_Fa2o%intx_context = idintx
                !! All done for mapper_Fa2o --
-
+               endif 
 
             else ! if (samegrid_ao)
 
