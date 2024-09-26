@@ -336,9 +336,10 @@ contains
     ! Initialize vegetated landunit with competition
     !
     ! !USES
-    use elm_varsur, only : wt_lunit, wt_nat_patch
+    use elm_varsur, only : wt_lunit, wt_nat_patch, wt_polygon
     use subgridMod, only : subgrid_get_topounitinfo
     use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub, natpft_size
+    use landunit_varcon, only: max_polygon
     !
     ! !ARGUMENTS:    
     integer , intent(in)    :: ltype             ! landunit type
@@ -356,6 +357,9 @@ contains
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
     real(r8) :: p_wt                             ! patch weight (0-1)
+    real(r8) :: wtpoly2lndunit                   ! weight of polygon type wrt nat. veg. landunit
+    real(r8) :: orig_wtlunit2topounit            ! keep original total wtlunit2topounit when
+                                                 ! adjusting to reallocate to polygon types.
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -366,6 +370,19 @@ contains
     ! Later, this information will come from new surface datasat.
     call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nveg=npfts)
     wtlunit2topounit = wt_lunit(gi,topo_ind, ltype)
+
+    ! for polygonal tundra, we need to adjust the weight of the landunit as
+    ! this wtlunit2topounit now corresponds to 4 landunits:
+    ! a) natural vegetation, no polygonal tundra
+    ! b) natural vegetation, high centered polygons
+    ! c) natural vegetation, flat centered polygons
+    ! d) natural vegetation, low centered polygons
+
+    if (use_polygonal_tundra) then
+      orig_wtlunit2topounit = wtlunit2topounit
+      ! adjust wtlunit2topounit to subtract fraction that is polygonal
+      wtlunit2topounit = wtlunit2topounit * (1._r8 - sum(wt_polygon(gi, topo_ind, :))) ! sum over polygon types
+    endif
 
     ! For FATES: the total number of patches may not match what is in the surface
     ! file, and therefor the weighting can't be used. The weightings in
@@ -394,8 +411,10 @@ contains
        ! continue to assume one column per landunit.
        if (use_polygonal_tundra) then
          ! loop over polygon types:
-         do z = 1,3
-           call add_polygon_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit, polytype = z)
+         do z = 1,max_polygon
+            ! get new weight for wttopounit:
+            wtpoly2lndunit = orig_wtlunit2topounit * wt_polygon(gi, topo_ind, z)
+           call add_polygon_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtpoly2lndunit, polytype = z)
            call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
            ! add patch:
            do m = natpft_lb,natpft_ub

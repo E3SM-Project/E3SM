@@ -29,9 +29,13 @@ module landunit_varcon
   integer, parameter, public :: isturb_hd  = 8  !urban hd     landunit type
   integer, parameter, public :: isturb_md  = 9  !urban md     landunit type
   integer, parameter, public :: isturb_MAX = 9  !maximum urban type index
+  integer, parameter, public :: istlowcenpoly  = 10 ! low centered polygon landunit type
+  integer, parameter, public :: istflatcenpoly = 11 ! flat cenetered polygon landunit type
+  integer, parameter, public :: isthighcenpoly = 12 ! high centered polygon landunit type
 
-  integer, parameter, public :: max_lunit  = 9  !maximum value that lun_pp%itype can have
+  integer, parameter, public :: max_lunit  = 12  !maximum value that lun_pp%itype can have
                                         !(i.e., largest value in the above list)
+  integer, parameter, public :: max_non_poly_lunit = 9 ! maximum non-polygonal tundra land unit
 
   integer, parameter, public                   :: landunit_name_length = 40  ! max length of landunit names
   character(len=landunit_name_length), public  :: landunit_names(max_lunit)  ! name of each landunit type
@@ -160,6 +164,9 @@ contains
     landunit_names(isturb_tbd) = 'urban_tbd'
     landunit_names(isturb_hd) = 'urban_hd'
     landunit_names(isturb_md) = 'urban_md'
+    landunit_names(istlowcenpoly) = 'low_centered_polygon'
+    landunit_names(istflatcenpoly) = 'flat_centered_polygon'
+    landunit_names(isthighcenpoly) = 'high_centered_polygon'
 
     if (any(landunit_names == not_set)) then
        call shr_sys_abort(trim(subname)//': Not all landunit names set')

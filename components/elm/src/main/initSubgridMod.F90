@@ -10,7 +10,7 @@ module initSubgridMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use elm_varctl     , only : iulog
+  use elm_varctl     , only : iulog, use_polygonal_tundra
   use elm_varcon     , only : namep, namec, namel, namet
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc_pp                
@@ -62,6 +62,7 @@ contains
     ! !USES
     use elm_varcon, only : ispval
     use topounit_varcon, only : max_topounits
+    use landunit_varcon, only : max_non_poly_lunit, istsoil
     !
     ! !ARGUMENTS
     implicit none
@@ -148,6 +149,9 @@ contains
     grc_pp%landunit_indices(:,bounds%begg:bounds%endg) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
+       if (use_polygonal_tundra .and. ltype == istsoil .and. lun_pp%ispolygon(l)) then
+         ltype = lun_pp%polygontype(l) + max_non_poly_lunit
+       endif
        curg = lun_pp%gridcell(l)
        if (curg < bounds%begg .or. curg > bounds%endg) then
           write(iulog,*) 'elm_ptrs_compdown ERROR: gridcell landunit_indices ', l,curg,bounds%begg,bounds%endg
@@ -171,6 +175,9 @@ contains
     top_pp%landunit_indices(:,bounds%begt:bounds%endt) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
+       if (use_polygonal_tundra .and. ltype == istsoil .and. lun_pp%ispolygon(l)) then
+         ltype = lun_pp%polygontype(l) + max_non_poly_lunit
+       endif
        curt = lun_pp%topounit(l)
        if (curt < bounds%begt .or. curg > bounds%endt) then
           write(iulog,*) 'elm_ptrs_compdown ERROR: topounit landunit_indices ', l,curt,bounds%begt,bounds%endt
@@ -196,7 +203,7 @@ contains
     !
     ! !USES
     use elm_varcon, only : ispval
-    use landunit_varcon, only : max_lunit
+    use landunit_varcon, only : max_lunit, istsoil
     use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
@@ -350,7 +357,10 @@ contains
 
           ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
           if (l /= ispval) then
-             if (lun_pp%itype(l) /= ltype) error = .true.
+             if (lun_pp%itype(l) /= ltype) then
+               if (lun_pp%ispolygon(l) .and. lun_pp%itype(l) /= istsoil) error = .true.
+               if (.not.lun_pp%ispolygon(l)) error = .true.
+             endif
              if (lun_pp%topounit(l) /= t) error = .true.
              if (lun_pp%gridcell(l) /= g) error = .true.
              if (error) then
@@ -515,6 +525,9 @@ contains
       lun_pp%ifspecial(li) = .false.
       lun_pp%ispolygon(li) = .true.
       lun_pp%polygontype(li) = polytype
+      lun_pp%urbpoi(li) = .false.
+      lun_pp%lakpoi(li) = .false.
+      lun_pp%glcmecpoi(li) = .false.
    else
       write (iulog, *) "ERROR: attempting to assign polygonal tundra landunit to special or crop landunit type"
       call endrun(msg=errMsg(__FILE__, __LINE__))
