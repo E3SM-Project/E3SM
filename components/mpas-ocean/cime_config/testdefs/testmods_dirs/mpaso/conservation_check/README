@@ -4,5 +4,7 @@ wasintroduced in MPAS-Ocean PR #4521 and has been made a stealth feature in
 
     config_AM_conservationCheck_enable = .true.
 
-Then, it enables the use of MPAS-Ocean history files in testing by running
-a sed command to modify env_archive.xml.
+However, it shoudl be noted that MPAS-Ocean history files are not currently
+included in E3SM testing so non-BFB results will not be detected unless one
+manually changes to 'compname="mpaso" exclude_testing="false"' in the file
+cime_config/config_archive.xml.
