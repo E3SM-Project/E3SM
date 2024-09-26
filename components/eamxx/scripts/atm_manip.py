@@ -454,7 +454,9 @@ def atm_config_chg_impl(xml_root, change):
 ###############################################################################
 def create_parent_map(root):
 ###############################################################################
-    return {c: p for p in root.iter() for c in p}
+    pmap = {c: p for p in root.iter() for c in p}
+    pmap[root] = None
+    return pmap
 
 ###############################################################################
 def get_parents(elem, parent_map):
@@ -464,9 +466,11 @@ def get_parents(elem, parent_map):
     be the furthest ancestor, last item will be direct parent)
     """
     results = []
-    if elem in parent_map:
+    if elem in parent_map and parent_map[elem] is not None:
         parent = parent_map[elem]
-        results = get_parents(parent, parent_map) + [parent]
+        results = get_parents(parent, parent_map)
+        if parent_map[parent] is not None:
+            results.append(parent)
 
     return results
 
