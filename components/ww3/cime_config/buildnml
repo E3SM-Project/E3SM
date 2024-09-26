@@ -66,8 +66,8 @@ def buildnml(case, caseroot, compname):
 
         input_list.write("mesh = {}/wav/ww3/{}.msh\n".format(din_loc_root,wav_grid))
         input_list.write("stations = {}/wav/ww3/stations.txt\n".format(din_loc_root))
-        input_list.write("uostfilelocal = {}/wav/ww3/obstructions_local.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
-        input_list.write("uostfileshadow = {}/wav/ww3/obstructions_shadow.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
+        input_list.write("uostfilelocal = {}/wav/ww3/obstructions_local.{}{}.rtd.in\n".format(din_loc_root,wav_grid,wav_spec))
+        input_list.write("uostfileshadow = {}/wav/ww3/obstructions_shadow.{}{}.rtd.in\n".format(din_loc_root,wav_grid,wav_spec))
 
     #--------------------------------------------------------------------
     # Invoke ww3 build-namelist - output will go in $CASEBUILD/ww3conf
