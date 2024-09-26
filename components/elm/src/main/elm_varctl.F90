@@ -399,6 +399,7 @@ module elm_varctl
   ! NGEE Arctic parameterizations
   !----------------------------------------------------------
   logical, public :: use_polygonal_tundra = .false.
+  logical, public :: use_arctic_init     = .false.
 
   !----------------------------------------------------------
   ! VSFM switches

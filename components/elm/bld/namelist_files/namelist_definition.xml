@@ -2176,6 +2176,16 @@ default: 0
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- NGEE Arctic Options                                                                       -->
+<!-- ========================================================================================  -->
+
+<entry id="use_arctic_init" type="logical" category="default_settings"
+	group="elm_inparm" value=".false.">
+Cold-start initialization conditions in tundra start saturated and frozen.
+<default>Default: .false.</default>
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options for soil erosion model                                                   -->
 <!-- ========================================================================================  -->
 

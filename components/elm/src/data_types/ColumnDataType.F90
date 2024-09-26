@@ -1094,7 +1094,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
-    use elm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
+    use elm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity, use_arctic_init
     use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
     use UrbanParamsType, only : urbanparams_vars
     !
@@ -1229,7 +1229,7 @@ contains
        ! Below snow temperatures - nonlake points (lake points are set below)
        if (.not. lun_pp%lakpoi(l)) then
 
-          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec .or. use_arctic_init) then
              this%t_soisno(c,1:nlevgrnd) = 250._r8
 
           else if (lun_pp%itype(l) == istwet) then
@@ -1371,7 +1371,7 @@ contains
   !------------------------------------------------------------------------
   subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
     !
-    use elm_varctl  , only : use_lake_wat_storage
+    use elm_varctl  , only : use_lake_wat_storage, use_arctic_init
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc
@@ -1713,6 +1713,8 @@ contains
                 else
 		               if (use_fates .or. use_hydrstress) then
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES
+                   else if (use_arctic_init) then
+                     this%h2osoi_vol(c,j) = watsat_input(c,j) ! start saturated for arctic
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8
                    endif

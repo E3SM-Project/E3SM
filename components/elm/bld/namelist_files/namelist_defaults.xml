@@ -2250,5 +2250,6 @@ this mask will have smb calculated over the entire global land surface
 
 <!-- NGEE Arctic Options -->
 <use_polygonal_tundra>.false.</use_polygonal_tundra>;
+<use_arctic_init>.false.</use_arctic_init>;
 
 </namelist_defaults>
