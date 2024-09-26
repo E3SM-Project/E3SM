@@ -4436,10 +4436,10 @@
     </gridmap>
 
     <gridmap atm_grid="ne0np4_CAx32v1.pg2" rof_grid="r0125">
-     <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-     <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-     <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-     <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_mono.20220430.nc</map>
+     <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
+     <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
+     <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
+     <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_traave.20220430.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
