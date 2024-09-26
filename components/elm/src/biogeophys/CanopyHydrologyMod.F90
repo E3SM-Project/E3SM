@@ -800,17 +800,18 @@ contains
      real(r8):: min_h2osfc
      !-----------------------------------------------------------------------
 
-     associate(                                 & 
-          micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
+     associate(                                 &
+          micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
 
-          h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
-          
-          h2osoi_liq   => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]                  
-          h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
-          frac_sno     => col_ws%frac_sno     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
-          frac_sno_eff => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
-          frac_h2osfc  => col_ws%frac_h2osfc  , & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
-          frac_h2osfc_act => col_ws%frac_h2osfc_act & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
+          h2osno       => col_ws%h2osno            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
+          excess_ice   => col_ws%excess_ice        , & ! Input:  [real(r8) (:,:)   ] excess ground ice [kg/m2]
+
+          h2osoi_liq   => col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]
+          h2osfc       => col_ws%h2osfc            , & ! Output: [real(r8) (:)   ] surface water (mm)
+          frac_sno     => col_ws%frac_sno          , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          frac_sno_eff => col_ws%frac_sno_eff      , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+          frac_h2osfc  => col_ws%frac_h2osfc       , & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
+          frac_h2osfc_act => col_ws%frac_h2osfc_act  & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
           )
 
        ! arbitrary lower limit on h2osfc for safer numerics...

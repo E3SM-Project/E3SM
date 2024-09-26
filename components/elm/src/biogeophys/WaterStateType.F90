@@ -35,7 +35,8 @@ module WaterstateType
      real(r8), pointer :: bw_col                 (:,:) ! col partial density of water in the snow pack (ice + liquid) [kg/m3] 
      real(r8), pointer :: finundated_col         (:)   ! fraction of column that is inundated, this is for bgc caclulation in betr
      real(r8), pointer :: h2osoi_tend_tsl_col    (:)   ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s)
- 
+     real(r8), pointer :: excess_ice             (:,:) ! excess ground ice in polygonal tundra areas [kg/m2]
+
      real(r8), pointer :: rhvap_soi_col          (:,:)
      real(r8), pointer :: rho_vap_col            (:,:)
      real(r8), pointer :: smp_l_col              (:,:) ! col liquid phase soil matric potential, mm
@@ -211,6 +212,7 @@ contains
     if (use_fan) then
        allocate(this%h2osoi_tend_tsl_col(begc:endc))                      ; this%h2osoi_tend_tsl_col    (:)   = nan
     end if
+    allocate(this%excess_ice             (begc:endc, 1:nlevgrnd))         ; this%excess_ice             (:,:) = nan
 
     allocate(this%h2osno_col             (begc:endc))                     ; this%h2osno_col             (:)   = nan   
     allocate(this%h2osno_old_col         (begc:endc))                     ; this%h2osno_old_col         (:)   = nan   

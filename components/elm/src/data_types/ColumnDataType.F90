@@ -109,6 +109,7 @@ module ColumnDataType
     real(r8), pointer :: h2osoi_liq         (:,:) => null() ! liquid water (-nlevsno+1:nlevgrnd) (kg/m2)
     real(r8), pointer :: h2osoi_ice         (:,:) => null() ! ice lens (-nlevsno+1:nlevgrnd) (kg/m2)
     real(r8), pointer :: h2osoi_vol         (:,:) => null() ! volumetric soil water (0<=h2osoi_vol<=watsat) (1:nlevgrnd) (m3/m3)
+    real(r8), pointer :: excess_ice         (:,:) => null() ! NGEE Arctic: excess ground ice in column (1:nlevgrnd) (0 to 1)
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
     real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (kg/m2)
@@ -144,7 +145,6 @@ module ColumnDataType
     real(r8), pointer :: snw_rds_top        (:)   => null() ! snow grain radius (top layer)  (m^-6, microns)
     logical , pointer :: do_capsnow         (:)   => null() ! true => do snow capping
     real(r8), pointer :: h2osoi_tend_tsl_col(:)   => null() ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s)
-    real(r8), pointer :: excess_ice         (:)   => null() ! NGEE-Arctic: tracking excess ground ice
     ! Area fractions
     real(r8), pointer :: frac_sno           (:)   => null() ! fraction of ground covered by snow (0 to 1)
     real(r8), pointer :: frac_sno_eff       (:)   => null() ! fraction of ground covered by snow (0 to 1)
@@ -1392,8 +1392,17 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = spval
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = spval
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = spval
+<<<<<<< HEAD
     allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval   
     allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval 
+||||||| parent of 88480f7699 (Update excess_ice from single column value to depth varying)
+    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval
+    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval
+=======
+    allocate(this%excess_ice         (begc:endc, 1:nlevgrnd))         ; this%excess_ice         (:,:) = spval
+    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval
+    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval
+>>>>>>> 88480f7699 (Update excess_ice from single column value to depth varying)
     allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = spval
     allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= spval  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = spval
@@ -1425,7 +1434,6 @@ contains
     if (use_fan) then
        allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = spval
     end if
-    allocate(this%excess_ice         (begc:endc))                     ; this%excess_ice         (:)   = spval
     allocate(this%snw_rds_top        (begc:endc))                     ; this%snw_rds_top        (:)   = spval
     allocate(this%do_capsnow         (begc:endc))
     allocate(this%frac_sno           (begc:endc))                     ; this%frac_sno           (:)   = spval
@@ -1481,9 +1489,14 @@ contains
          ptr_col=this%h2osoi_ice, l2g_scale_type='veg')
 
     this%h2osoi_ice(begc:endc,:) = spval
-        call hist_addfld2d (fname='SOILICE_ICE',  units='kg/m2', type2d='levgrnd', &
-        avgflag='A', long_name='soil ice (ice landunits only)', &
-        ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
+    call hist_addfld2d (fname='SOILICE_ICE',  units='kg/m2', type2d='levgrnd', &
+         avgflag='A', long_name='soil ice (ice landunits only)', &
+         ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
+
+    this%excess_ice(begc:endc, :) = spval
+    call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
+         avgflag='A', long_name='Excess ground ice (0 to 1)', &
+         ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
 
     this%h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='H2OSFC',  units='mm',  &
@@ -1573,11 +1586,6 @@ contains
          default='inactive')
     end if
 
-    this%excess_ice(begc:endc) = spval
-    call hist_addfld1d (fname='EXCESS_ICE', units = '1', &
-         avgflag='A', long_name='Excess ground ice (0 to 1)', &
-         ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
-
     this%frac_sno(begc:endc) = spval
     call hist_addfld1d (fname='FSNO',  units='1',  &
          avgflag='A', long_name='fraction of ground covered by snow', &
@@ -1649,7 +1657,6 @@ contains
        this%frac_h2osfc_act(c)        = 0._r8
        this%h2orof(c)                 = 0._r8
        this%frac_h2orof(c)            = 0._r8
-       this%excess_ice(c)             = 0.5_r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)
@@ -1807,6 +1814,17 @@ contains
              this%h2osoi_ice(c,j) = 0._r8
              this%h2osoi_liq(c,j) = col_pp%dz(c,j)*denh2o*this%h2osoi_vol(c,j)
           endif
+          ! RPF - to do: a) apply to only polygonal ground
+          ! b) pull in ALT information to get starting point right.
+          ! for now, assuming no excess ice in top meter, 0.5 for 1-4 m,
+          ! 0.2 below 4 m. Also: need to check signs!
+          if (col_pp%z(c,j) > -1._r8) then
+            this%excess_ice(c,j) = 0._r8
+          else if (col_pp%z(c,j) > -4._r8 .and. col_pp%z(c,j) < -1._r8) then
+            this%excess_ice(c,j) = 0.5_r8
+          else
+            this%excess_ice(c,j) = 0.2_r8
+          end if
        end do
 
        this%h2osoi_liq_old(c,:) = this%h2osoi_liq(c,:)
@@ -1863,6 +1881,11 @@ contains
          dim1name='column', dim2name='levtot', switchdim=.true., &
          long_name='ice lens', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2osoi_ice)
+
+    call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='excess ground ice (0 to 1)', units='1', &
+         interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
 
     call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
@@ -1926,11 +1949,6 @@ contains
     if (flag=='read' .and. .not. readvar) then
          this%snow_persistence(:) = 0.0_r8
     end if
-
-    call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
-         dim1name='column', &
-         long_name='excess ground ice (0 to 1)', units='1', &
-         interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
 
     call restartvar(ncid=ncid, flag=flag, varname='frac_sno', xtype=ncd_double,  &
          dim1name='column', &
