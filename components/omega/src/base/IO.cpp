@@ -301,11 +301,13 @@ int closeFile(int &FileID /// [in] ID of the file to be closed
 
    // Make sure all operations completed before closing
    Err = PIOc_sync(FileID);
-   if (Err != PIO_NOERR) LOG_ERROR("Error syncing file before closing");
+   if (Err != PIO_NOERR)
+      LOG_ERROR("Error syncing file before closing");
 
    // Call the PIO close routine
    Err = PIOc_closefile(FileID);
-   if (Err != PIO_NOERR) LOG_ERROR("Error closing file {} in PIO", FileID);
+   if (Err != PIO_NOERR)
+      LOG_ERROR("Error closing file {} in PIO", FileID);
 
    return Err;
 

@@ -8,26 +8,26 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "IOStream.h"
 #include "DataTypes.h"
 #include "Dimension.h"
-#include "Logging.h"
 #include "Field.h"
 #include "IO.h"
-#include "IOStream.h"
+#include "Logging.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
 #include <algorithm>
 #include <any>
 #include <cctype>
 #include <ctime>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
-#include <typeinfo>
 #include <typeindex>
+#include <typeinfo>
 
 namespace OMEGA {
 
@@ -38,8 +38,7 @@ std::map<std::string, std::shared_ptr<IOStream>> IOStream::AllStreams;
 // Initializes all streams defined in the input configuration file. This
 // does not validate the contents of the streams since the relevant Fields
 // may not have been defined yet. Returns an error code.
-int IOStream::init(
-   Clock &ModelClock              //< [inout] Omega model clock
+int IOStream::init(Clock &ModelClock //< [inout] Omega model clock
 ) {
 
    int Err = 0; // default return code
@@ -80,31 +79,30 @@ int IOStream::init(
 
 //------------------------------------------------------------------------------
 // Performs a final write of any streams that have the OnShutdown option and
-// then removes all streams to clean up. Returns an error code. 
+// then removes all streams to clean up. Returns an error code.
 int IOStream::finalize(
-   const Clock &ModelClock        // [in] Model clock needed for time stamps
-){
+    const Clock &ModelClock // [in] Model clock needed for time stamps
+) {
 
    int Err        = 0;
    bool FinalCall = true;
 
    // Loop over all streams and call write function for any write streams
    // with the OnShutdown flag
-   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++){
+   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++) {
 
-      std::string StreamName = Iter->first;
+      std::string StreamName               = Iter->first;
       std::shared_ptr<IOStream> ThisStream = Iter->second;
 
       int Err1 = 0;
       if (ThisStream->OnShutdown)
          Err1 = ThisStream->writeStream(ModelClock, FinalCall);
 
-      if (Err1 != 0) { 
+      if (Err1 != 0) {
          LOG_ERROR("Error trying to write stream {} at shutdown", StreamName);
          ++Err;
       }
    } // end loop over streams
-
 
    // Remove all streams
    AllStreams.clear();
@@ -113,9 +111,9 @@ int IOStream::finalize(
 
 //------------------------------------------------------------------------------
 // Retrieves a pointer to a previously defined stream.
-std::shared_ptr<IOStream> IOStream::get(
-         const std::string &StreamName ///< [in] name of stream to retrieve
-){
+std::shared_ptr<IOStream>
+IOStream::get(const std::string &StreamName ///< [in] name of stream to retrieve
+) {
    // Find stream in list of streams and return the pointer
    if (AllStreams.find(StreamName) != AllStreams.end()) {
       return AllStreams[StreamName];
@@ -133,7 +131,7 @@ std::shared_ptr<IOStream> IOStream::get(
 // is either checked during read/write or can be checked using the validate
 // function.
 void IOStream::addField(const std::string &FieldName ///< [in] Name of field
-){
+) {
    this->Contents.insert(FieldName);
 } // End addField
 
@@ -141,7 +139,7 @@ void IOStream::addField(const std::string &FieldName ///< [in] Name of field
 // Removes a field from the contents. Provided for symmetry, but not
 // typically used.
 void IOStream::removeField(const std::string &FieldName ///< [in] Name of field
-){
+) {
    this->Contents.erase(FieldName);
 } // End removeField
 
@@ -151,11 +149,12 @@ void IOStream::removeField(const std::string &FieldName ///< [in] Name of field
 // initialization. The routine also expands all group names to the individual
 // field names that are members of the group. Returns true if all contents and
 // variables are valid.
-bool IOStream::validate(){
+bool IOStream::validate() {
 
    bool ReturnVal = true;
    // Return if already validated
-   if (Validated) return ReturnVal;
+   if (Validated)
+      return ReturnVal;
 
    // Expand group names to list of individual fields
    // First identify any group names in the Contents
@@ -163,7 +162,8 @@ bool IOStream::validate(){
    for (auto IField = Contents.begin(); IField != Contents.end(); ++IField) {
       std::string FieldName = *IField;
       // If this name is a group name, add it to the list
-      if (FieldGroup::exists(FieldName)) GroupNames.insert(FieldName);
+      if (FieldGroup::exists(FieldName))
+         GroupNames.insert(FieldName);
    }
 
    // Now for each group, extract field names and add to contents if it
@@ -173,10 +173,10 @@ bool IOStream::validate(){
       std::string GrpName = *IGrp;
       // Get Fields from Group
       std::set<std::string> FieldList =
-         FieldGroup::getFieldListFromGroup(GrpName);
+          FieldGroup::getFieldListFromGroup(GrpName);
       // Insert field names into Contents
       for (auto IField = FieldList.begin(); IField != FieldList.end();
-            ++IField) {
+           ++IField) {
          Contents.insert(*IField);
       }
       // Remove group name from contents
@@ -195,28 +195,29 @@ bool IOStream::validate(){
       }
    }
 
-   if (ReturnVal) Validated = true;
+   if (ReturnVal)
+      Validated = true;
    return ReturnVal;
 
 } // End validate
 
 //------------------------------------------------------------------------------
 // Checks that a stream has been validated
-bool IOStream::isValidated(){ return Validated; }
+bool IOStream::isValidated() { return Validated; }
 
 //------------------------------------------------------------------------------
 // Validates all streams and their contents. If used, this must be called at
 // the end of initialization to ensure all Fields have been defined.
 // Returns true if all streams are valid.
-bool IOStream::validateAll(){
+bool IOStream::validateAll() {
 
    bool ReturnVal = true; // default is all valid
 
    // Loop over all streams and call validate function
-   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++){
-      std::string StreamName = Iter->first;
+   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++) {
+      std::string StreamName     = Iter->first;
       std::shared_ptr ThisStream = Iter->second;
-      bool Valid = ThisStream->validate();
+      bool Valid                 = ThisStream->validate();
       if (!Valid) {
          ReturnVal = false;
          LOG_ERROR("IOStream validateAll: stream {} has invalid entries",
@@ -231,10 +232,10 @@ bool IOStream::validateAll(){
 //------------------------------------------------------------------------------
 // Reads a single stream if it is time. Returns an error code.
 int IOStream::read(
-      const std::string &StreamName, // [in] Name of stream
-      const Clock &ModelClock,       // [in] Model clock for time info
-      Metadata &ReqMetadata // [inout] global metadata requested from file
-){
+    const std::string &StreamName, // [in] Name of stream
+    const Clock &ModelClock,       // [in] Model clock for time info
+    Metadata &ReqMetadata // [inout] global metadata requested from file
+) {
    int Err = 0; // default return code
 
    // Retrieve stream by name and make sure it exists
@@ -255,9 +256,9 @@ int IOStream::read(
 //------------------------------------------------------------------------------
 // Writes a single stream if it is time. Returns an error code.
 int IOStream::write(
-   const std::string &StreamName, // [in] Name of stream
-   const Clock &ModelClock        // [in] Model clock needed for time stamps
-){
+    const std::string &StreamName, // [in] Name of stream
+    const Clock &ModelClock        // [in] Model clock needed for time stamps
+) {
    int Err = 0; // default return code
 
    // Retrieve stream by name and make sure it exists
@@ -280,15 +281,15 @@ int IOStream::write(
 // Loops through all streams and writes them if it is time. This is
 // useful if most I/O is consolidated at one point (eg end of step).
 int IOStream::writeAll(
-   const Clock &ModelClock        // [in] Model clock needed for time stamps
-){
+    const Clock &ModelClock // [in] Model clock needed for time stamps
+) {
 
-   int Err  = 0; // accumulated error for return value
+   int Err = 0; // accumulated error for return value
 
    // Loop over all streams and call write function for any write streams
-   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++){
+   for (auto Iter = AllStreams.begin(); Iter != AllStreams.end(); Iter++) {
 
-      std::string StreamName = Iter->first;
+      std::string StreamName               = Iter->first;
       std::shared_ptr<IOStream> ThisStream = Iter->second;
 
       int Err1;
@@ -324,10 +325,9 @@ IOStream::IOStream() {
    UseStartEnd        = false;
    Validated          = false;
    Contents;
-   MyAlarm;    // empty alarms
+   MyAlarm; // empty alarms
    StartAlarm;
    EndAlarm;
-
 }
 
 //------------------------------------------------------------------------------
@@ -336,32 +336,31 @@ IOStream::IOStream() {
 // the IOStreams initialize function. It requires an initialized model
 // clock and stream alarms are attached to this clock during creation.
 
-int IOStream::create(
-   const std::string &StreamName, //< [in] name of stream
-   Config &StreamConfig,          //< [in] input stream configuration
-   Clock &ModelClock              //< [inout] Omega model clock
-){
+int IOStream::create(const std::string &StreamName, //< [in] name of stream
+                     Config &StreamConfig, //< [in] input stream configuration
+                     Clock &ModelClock     //< [inout] Omega model clock
+) {
 
    int Err = 0;
 
    // Check whether the stream already exists
-   if (AllStreams.find(StreamName) != AllStreams.end()){
+   if (AllStreams.find(StreamName) != AllStreams.end()) {
       // Stream already exists, return error
       Err = 1;
-      LOG_ERROR("Attempt to create stream {} that already exists",StreamName);
+      LOG_ERROR("Attempt to create stream {} that already exists", StreamName);
       return Err;
    }
 
    // Create a new pointer and set name
-   auto NewStream = std::make_shared<IOStream>();
+   auto NewStream  = std::make_shared<IOStream>();
    NewStream->Name = StreamName;
 
    // Set file mode (Read/Write)
    std::string StreamMode;
-   Err = StreamConfig.get("Mode",StreamMode);
+   Err             = StreamConfig.get("Mode", StreamMode);
    NewStream->Mode = IO::ModeFromString(StreamMode);
    if ((Err != 0) or (NewStream->Mode == IO::ModeUnknown)) {
-      LOG_ERROR("Bad or non-existent Mode for stream {}",StreamName);
+      LOG_ERROR("Bad or non-existent Mode for stream {}", StreamName);
       Err = 2;
       return Err;
    }
@@ -403,7 +402,6 @@ int IOStream::create(
       } else {
          NewStream->FilenameIsTemplate = false;
       }
-
    }
    // Add filename to stream
    NewStream->Filename = StreamFilename;
@@ -412,8 +410,9 @@ int IOStream::create(
    // present, assume full (double) precision
    std::string PrecisionString;
    Err = StreamConfig.get("Precision", PrecisionString);
-   if (Err != 0) PrecisionString = "double";
-   NewStream->setPrecisionFlag(PrecisionString); 
+   if (Err != 0)
+      PrecisionString = "double";
+   NewStream->setPrecisionFlag(PrecisionString);
 
    // Set the action to take if a file already exists
    // This is only needed for writes so only perform check for write mode
@@ -421,7 +420,8 @@ int IOStream::create(
    if (NewStream->Mode == IO::ModeWrite) {
       std::string ExistAct;
       Err = StreamConfig.get("IfExists", ExistAct);
-      if (Err == 0) NewStream->ExistAction = IO::IfExistsFromString(ExistAct);
+      if (Err == 0)
+         NewStream->ExistAction = IO::IfExistsFromString(ExistAct);
    }
 
    // Set alarm based on read/write frequency
@@ -440,7 +440,7 @@ int IOStream::create(
 
    // Read frequency of input/output
    int IOFreq;
-   Err  = StreamConfig.get("Freq", IOFreq);
+   Err = StreamConfig.get("Freq", IOFreq);
    if (Err != 0) {
       LOG_ERROR("Frequency missing for stream {}", StreamName);
       return Err;
@@ -459,7 +459,7 @@ int IOStream::create(
 
    // convert string to lower case for easier comparison
    std::transform(IOFreqUnits.begin(), IOFreqUnits.end(), IOFreqUnits.begin(),
-      [](unsigned char C){ return std::tolower(C); });
+                  [](unsigned char C) { return std::tolower(C); });
 
    // Based on input frequency and units, create the alarm or set flags
    bool HasAlarm         = false;
@@ -469,38 +469,38 @@ int IOStream::create(
    if (IOFreqUnits == "years") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Years);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "months") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Months);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "days") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Days);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "hours") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Hours);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "minutes") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Minutes);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "seconds") {
 
       TimeInterval AlarmInt(IOFreq, TimeUnits::Seconds);
-      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart); 
-      HasAlarm = true;
+      NewStream->MyAlarm = Alarm(AlarmName, AlarmInt, ClockStart);
+      HasAlarm           = true;
 
    } else if (IOFreqUnits == "onstartup") {
 
@@ -515,14 +515,15 @@ int IOStream::create(
       // A one-time event for this stream - use the StartTime string
       // as the time instant to use
       std::string StrtTime;
-      Err = StreamConfig.get("StartTime",StrtTime);
+      Err = StreamConfig.get("StartTime", StrtTime);
       if (Err == 0) {
          TimeInstant AlarmTime(CalendarPtr, StrtTime);
-         NewStream->MyAlarm = Alarm(AlarmName, AlarmTime); 
-         HasAlarm = true;
+         NewStream->MyAlarm = Alarm(AlarmName, AlarmTime);
+         HasAlarm           = true;
       } else {
          LOG_ERROR("Stream {} requests a one-time read/write but StartTime"
-                   "not provided", StreamName);
+                   "not provided",
+                   StreamName);
          return Err;
       }
 
@@ -535,12 +536,11 @@ int IOStream::create(
 
    } else {
 
-      if ( !NewStream->OnStartup and !NewStream->OnShutdown) {
+      if (!NewStream->OnStartup and !NewStream->OnShutdown) {
          LOG_ERROR("Unknown IOFreqUnits option for stream {}", StreamName);
          Err = 4;
          return Err;
       }
-
    }
    // If an alarm is set, attach it to the model clock
    if (HasAlarm) {
@@ -556,21 +556,21 @@ int IOStream::create(
    Err = StreamConfig.get("UseStartEnd", NewStream->UseStartEnd);
    if (Err != 0) { // Start end flag not in config, assume false
       NewStream->UseStartEnd = false;
-      Err = 0;
+      Err                    = 0;
    }
 
    // Set Alarms for start and end time
    if (NewStream->UseStartEnd) {
       std::string StartTimeStr;
       std::string EndTimeStr;
-      int Err = StreamConfig.get("StartTime",StartTimeStr);
-      if (Err != 0){
+      int Err = StreamConfig.get("StartTime", StartTimeStr);
+      if (Err != 0) {
          LOG_ERROR("Stream {} requests UseStartEnd but no start time provided",
                    StreamName);
          return Err;
       }
-      Err = StreamConfig.get("EndTime",EndTimeStr);
-      if (Err != 0){
+      Err = StreamConfig.get("EndTime", EndTimeStr);
+      if (Err != 0) {
          LOG_ERROR("Stream {} requests UseStartEnd but no end time provided",
                    StreamName);
          return Err;
@@ -578,10 +578,10 @@ int IOStream::create(
       TimeInstant Start(CalendarPtr, StartTimeStr);
       TimeInstant End(CalendarPtr, EndTimeStr);
       std::string StartName = StreamName + "Start";
-      std::string EndName = StreamName + "End";
-      NewStream->StartAlarm = Alarm(StartName, Start); 
-      NewStream->EndAlarm = Alarm(EndName, End); 
-      Err = ModelClock.attachAlarm(&(NewStream->StartAlarm));
+      std::string EndName   = StreamName + "End";
+      NewStream->StartAlarm = Alarm(StartName, Start);
+      NewStream->EndAlarm   = Alarm(EndName, End);
+      Err                   = ModelClock.attachAlarm(&(NewStream->StartAlarm));
       if (Err != 0) {
          LOG_ERROR("Error attaching start alarm to model clock for stream {}",
                    StreamName);
@@ -598,7 +598,7 @@ int IOStream::create(
    // Now we add the list of field names to the stream
    // First get the contents list
    std::vector<std::string> FieldContents;
-   Err = StreamConfig.get("Contents",FieldContents);
+   Err = StreamConfig.get("Contents", FieldContents);
    if (Err != 0) {
       LOG_ERROR("Can not find contents for stream {}", StreamName);
       return Err;
@@ -627,9 +627,9 @@ int IOStream::create(
 // Define all dimensions used. Returns an error code as well as a map
 // of dimension names to defined dimension IDs.
 int IOStream::defineAllDims(
-   int FileID,  ///< [in] id assigned to the IO file
-   std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
-){
+    int FileID,                           ///< [in] id assigned to the IO file
+    std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
+) {
 
    int Err = 0;
 
@@ -657,12 +657,12 @@ int IOStream::defineAllDims(
             // Try again using old name for back compatibility to MPAS
             Err = IO::getDimFromFile(FileID, OldDimName, DimID, Length);
             if (Err == 0) {
-               LOG_INFO("Ignore PIO Error for Dimension {}: ", DimName); 
-               LOG_INFO("Found under old dimension name {}: ", OldDimName); 
+               LOG_INFO("Ignore PIO Error for Dimension {}: ", DimName);
+               LOG_INFO("Found under old dimension name {}: ", OldDimName);
             } else {
-               if (Err != 0) LOG_WARN(
-                             "Dimension {} not found in input stream {}",
-                              DimName, Name);
+               if (Err != 0)
+                  LOG_WARN("Dimension {} not found in input stream {}", DimName,
+                           Name);
             }
             continue;
          }
@@ -686,7 +686,7 @@ int IOStream::defineAllDims(
          }
       } // end write case
 
-      // Add the DimID to map for later use 
+      // Add the DimID to map for later use
       AllDimIDs[DimName] = DimID;
 
    } // end loop over all dims
@@ -699,19 +699,19 @@ int IOStream::defineAllDims(
 // Computes the parallel decomposition (offsets) for a field needed for parallel
 // I/O. Return error code and also Decomp ID and array size for field.
 int IOStream::computeDecomp(
-      std::shared_ptr<Field> FieldPtr, // [in] pointer to Field
-      std::map<std::string, int> &AllDimIDs, // [in] dimension IDs
-      int &DecompID,               // [out] ID assigned to the decomposition
-      int &LocalSize,              // [out] size of local array
-      std::vector<int> &DimLengths // [out] vector of local dim lengths
+    std::shared_ptr<Field> FieldPtr,       // [in] pointer to Field
+    std::map<std::string, int> &AllDimIDs, // [in] dimension IDs
+    int &DecompID,               // [out] ID assigned to the decomposition
+    int &LocalSize,              // [out] size of local array
+    std::vector<int> &DimLengths // [out] vector of local dim lengths
 ) {
 
    int Err = 0;
 
    // Retrieve some basic field information
-   std::string FieldName = FieldPtr->getName();
+   std::string FieldName   = FieldPtr->getName();
    IO::IODataType MyIOType = getFieldIOType(FieldPtr);
-   int NDims = FieldPtr->getNumDims();
+   int NDims               = FieldPtr->getNumDims();
    if (NDims < 1) {
       LOG_ERROR("Invalid number of dimensions for Field {}", FieldName);
       Err = 1;
@@ -727,20 +727,20 @@ int IOStream::computeDecomp(
 
    // Get dimension and size information for each dimension
    I4 GlobalSize = 1;
-   LocalSize  = 1;
+   LocalSize     = 1;
    std::vector<I4> DimLengthGlobal(NDims);
    std::vector<I4> DimIDs(NDims);
    std::vector<HostArray1DI4> DimOffsets(NDims);
    constexpr I4 MaxDims = 5;
-   std::vector<I4> OffsetLoopLim(MaxDims,1); // loop limits for later offset
+   std::vector<I4> OffsetLoopLim(MaxDims, 1); // loop limits for later offset
 
    for (int IDim = 0; IDim < NDims; ++IDim) {
-      std::string DimName   = DimNames[IDim];
-      DimIDs[IDim]          = AllDimIDs[DimName];
+      std::string DimName                = DimNames[IDim];
+      DimIDs[IDim]                       = AllDimIDs[DimName];
       std::shared_ptr<Dimension> ThisDim = Dimension::get(DimName);
-      DimLengths[IDim]      = ThisDim->getLengthLocal();
-      DimLengthGlobal[IDim] = ThisDim->getLengthGlobal();
-      DimOffsets[IDim]      = ThisDim->getOffset();
+      DimLengths[IDim]                   = ThisDim->getLengthLocal();
+      DimLengthGlobal[IDim]              = ThisDim->getLengthGlobal();
+      DimOffsets[IDim]                   = ThisDim->getOffset();
       LocalSize *= DimLengths[IDim];
       GlobalSize *= DimLengthGlobal[IDim];
       OffsetLoopLim[IDim] = DimLengths[IDim];
@@ -756,32 +756,34 @@ int IOStream::computeDecomp(
    std::vector<I4> Offset(LocalSize);
 
    // Compute strides in linear space for each dimension
-   std::vector<I4> Strides(MaxDims,1);
+   std::vector<I4> Strides(MaxDims, 1);
    for (int IDim = 1; IDim < NDims; ++IDim) {
-      Strides[IDim] = Strides[IDim-1]*DimLengthGlobal[IDim - 1];
+      Strides[IDim] = Strides[IDim - 1] * DimLengthGlobal[IDim - 1];
    }
 
    // Compute full array offsets based on each dimensions linear offset
    I4 Add = 0; // linear address of offset vector
    for (int N = 0; N < OffsetLoopLim[4]; ++N) {
       I4 NGlob = 0;
-      if (NDims >= 5) NGlob = (DimOffsets[4])(N); 
+      if (NDims >= 5)
+         NGlob = (DimOffsets[4])(N);
       for (int M = 0; M < OffsetLoopLim[3]; ++M) {
          I4 MGlob = 0;
-         if (NDims >= 4) MGlob = (DimOffsets[3])(M); 
+         if (NDims >= 4)
+            MGlob = (DimOffsets[3])(M);
          for (int K = 0; K < OffsetLoopLim[2]; ++K) {
             I4 KGlob = 0;
-            if (NDims >= 3) KGlob = (DimOffsets[2])(K); 
+            if (NDims >= 3)
+               KGlob = (DimOffsets[2])(K);
             for (int J = 0; J < OffsetLoopLim[1]; ++J) {
                I4 JGlob = 0;
-               if (NDims >= 2) JGlob = (DimOffsets[1])(J); 
+               if (NDims >= 2)
+                  JGlob = (DimOffsets[1])(J);
                for (int I = 0; I < OffsetLoopLim[0]; ++I) {
-                  I4 IGlob = (DimOffsets[0])(I); 
-                  Offset[Add] = IGlob*Strides[0]
-                              + JGlob*Strides[1]
-                              + KGlob*Strides[2]
-                              + MGlob*Strides[3]
-                              + NGlob*Strides[4];
+                  I4 IGlob    = (DimOffsets[0])(I);
+                  Offset[Add] = IGlob * Strides[0] + JGlob * Strides[1] +
+                                KGlob * Strides[2] + MGlob * Strides[3] +
+                                NGlob * Strides[4];
                   ++Add;
                }
             }
@@ -789,12 +791,11 @@ int IOStream::computeDecomp(
       }
    }
 
-   Err = OMEGA::IO::createDecomp(DecompID, MyIOType, NDims,
-                                 DimLengthGlobal, LocalSize, Offset,
-                                 OMEGA::IO::DefaultRearr);
+   Err = OMEGA::IO::createDecomp(DecompID, MyIOType, NDims, DimLengthGlobal,
+                                 LocalSize, Offset, OMEGA::IO::DefaultRearr);
    if (Err != 0) {
-      LOG_ERROR("Error creating decomp for field {} in stream {}",
-                FieldName, Name);
+      LOG_ERROR("Error creating decomp for field {} in stream {}", FieldName,
+                Name);
       return Err;
    }
 
@@ -805,17 +806,17 @@ int IOStream::computeDecomp(
 //------------------------------------------------------------------------------
 // Write all metadata associated with a field
 int IOStream::writeFieldMeta(
-   const std::string  FieldName, // [in] metadata for field
-   int                FileID,    // [in] id assigned to open file
-   int                FieldID    // [in] id assigned to the field
-){
+    const std::string FieldName, // [in] metadata for field
+    int FileID,                  // [in] id assigned to open file
+    int FieldID                  // [in] id assigned to the field
+) {
    int Err = 0; // default return code
 
    // Get the field metadata entries
    std::shared_ptr<Metadata> AllMeta = Field::getFieldMetadata(FieldName);
 
    // Loop through all metadata - the Metadata type is an alias for a std::map
-   // so we can use map iterators for the loop 
+   // so we can use map iterators for the loop
    for (auto IMeta = AllMeta->begin(); IMeta != AllMeta->end(); ++IMeta) {
 
       // Get name
@@ -824,25 +825,25 @@ int IOStream::writeFieldMeta(
       std::any MetaVal = IMeta->second;
       if (MetaVal.type() == typeid(I8)) {
          I8 MetaValI8 = std::any_cast<I8>(MetaVal);
-         Err = IO::writeMeta(MetaName, MetaValI8, FileID, FieldID);
+         Err          = IO::writeMeta(MetaName, MetaValI8, FileID, FieldID);
 
       } else if (MetaVal.type() == typeid(I4)) {
          I4 MetaValI4 = std::any_cast<I4>(MetaVal);
-         Err = IO::writeMeta(MetaName, MetaValI4, FileID, FieldID);
+         Err          = IO::writeMeta(MetaName, MetaValI4, FileID, FieldID);
 
       } else if (MetaVal.type() == typeid(R8)) {
          R8 MetaValR8 = std::any_cast<R8>(MetaVal);
-         // if reduced precision is desired, convert to single (R4) 
+         // if reduced precision is desired, convert to single (R4)
          if (ReducePrecision) {
             R4 MetaValR4 = MetaValR8;
-            Err = IO::writeMeta(MetaName, MetaValR4, FileID, FieldID);
+            Err          = IO::writeMeta(MetaName, MetaValR4, FileID, FieldID);
          } else {
             Err = IO::writeMeta(MetaName, MetaValR8, FileID, FieldID);
          }
 
       } else if (MetaVal.type() == typeid(R4)) {
          R4 MetaValR4 = std::any_cast<R4>(MetaVal);
-         Err = IO::writeMeta(MetaName, MetaValR4, FileID, FieldID);
+         Err          = IO::writeMeta(MetaName, MetaValR4, FileID, FieldID);
 
       } else if (MetaVal.type() == typeid(bool)) {
          bool MetaValBool = std::any_cast<bool>(MetaVal);
@@ -852,21 +853,21 @@ int IOStream::writeFieldMeta(
          std::string MetaValStr = std::any_cast<std::string>(MetaVal);
          Err = IO::writeMeta(MetaName, MetaValStr, FileID, FieldID);
 
-      // If the metadata was assigned using a string literal, std::any
-      // stores it as a char pointer so we need to convert it differently
-      } else if (MetaVal.type() == typeid(const char*)) {
-         const char* MetaValChar = std::any_cast<const char*>(MetaVal);
+         // If the metadata was assigned using a string literal, std::any
+         // stores it as a char pointer so we need to convert it differently
+      } else if (MetaVal.type() == typeid(const char *)) {
+         const char *MetaValChar = std::any_cast<const char *>(MetaVal);
          Err = IO::writeMeta(MetaName, MetaValChar, FileID, FieldID);
 
       } else { // unknown data type
          Err = 2;
-         LOG_ERROR("Unknown data type for Metadata {} in Field {}",
-                   MetaName, FieldName);
+         LOG_ERROR("Unknown data type for Metadata {} in Field {}", MetaName,
+                   FieldName);
          return Err;
       }
       if (Err != 0) {
-         LOG_ERROR("Error trying to write Metadata {} for Field {}",
-                   MetaName, FieldName);
+         LOG_ERROR("Error trying to write Metadata {} for Field {}", MetaName,
+                   FieldName);
          return Err;
       }
 
@@ -878,19 +879,19 @@ int IOStream::writeFieldMeta(
 // Write a field's data array, performing any manipulations to reduce
 // precision or move data between host and device
 int IOStream::writeFieldData(
-   std::shared_ptr<Field> FieldPtr,  // [in] field to write
-   int                    FileID,    // [in] id assigned to open file
-   int                    FieldID,   // [in] id assigned to the field
-   std::map<std::string, int>  &AllDimIDs // [in] dimension IDs
+    std::shared_ptr<Field> FieldPtr,      // [in] field to write
+    int FileID,                           // [in] id assigned to open file
+    int FieldID,                          // [in] id assigned to the field
+    std::map<std::string, int> &AllDimIDs // [in] dimension IDs
 ) {
 
    int Err = 0;
 
    // Retrieve some basic field information
    std::string FieldName = FieldPtr->getName();
-   bool OnHost = FieldPtr->isOnHost();
-   FieldType MyType = FieldPtr->getType();
-   int NDims = FieldPtr->getNumDims();
+   bool OnHost           = FieldPtr->isOnHost();
+   FieldType MyType      = FieldPtr->getType();
+   int NDims             = FieldPtr->getNumDims();
    if (NDims < 1) {
       LOG_ERROR("Invalid number of dimensions for Field {}", FieldName);
       Err = 2;
@@ -928,616 +929,616 @@ int IOStream::writeFieldData(
 
    switch (MyType) {
 
-      // I4 Fields
-      case FieldType::I4:
+   // I4 Fields
+   case FieldType::I4:
 
-         DataI4.resize(LocSize);
-         DataPtr = DataI4.data();
-         // get fill value
-         Err = FieldPtr->getMetadata("FillValue",FillValI4);
-         if (Err != 0) {
-            LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
-            Err = 4;
-            return Err;
-         }
-         FillValPtr = &FillValI4;
+      DataI4.resize(LocSize);
+      DataPtr = DataI4.data();
+      // get fill value
+      Err = FieldPtr->getMetadata("FillValue", FillValI4);
+      if (Err != 0) {
+         LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
+         Err = 4;
+         return Err;
+      }
+      FillValPtr = &FillValI4;
 
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DI4 Data = FieldPtr->getDataArray<HostArray1DI4>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataI4[I] = Data(I);
-                  }
-               } else {
-                  Array1DI4 DataTmp  = FieldPtr->getDataArray<Array1DI4>();
-                  HostArray1DI4 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataI4[I] = Data(I);
-                  }
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DI4 Data = FieldPtr->getDataArray<HostArray2DI4>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataI4[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DI4 DataTmp  = FieldPtr->getDataArray<Array2DI4>();
-                  HostArray2DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataI4[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DI4 Data = FieldPtr->getDataArray<HostArray3DI4>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataI4[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DI4 DataTmp  = FieldPtr->getDataArray<Array3DI4>();
-                  HostArray3DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataI4[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DI4 Data = FieldPtr->getDataArray<HostArray4DI4>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataI4[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DI4 DataTmp  = FieldPtr->getDataArray<Array4DI4>();
-                  HostArray4DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataI4[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DI4 Data = FieldPtr->getDataArray<HostArray5DI4>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataI4[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DI4 DataTmp  = FieldPtr->getDataArray<Array5DI4>();
-                  HostArray5DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataI4[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-
-         } // end switch NDims
-         break; // end I4 type
-
-      // I8 Fields
-      case FieldType::I8:
-
-         DataI8.resize(LocSize);
-         DataPtr = DataI8.data();
-         // Get fill value
-         Err = FieldPtr->getMetadata("FillValue",FillValI8);
-         if (Err != 0) {
-            LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
-            Err = 4;
-            return Err;
-         }
-         FillValPtr = &FillValI8;
-
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DI8 Data = FieldPtr->getDataArray<HostArray1DI8>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataI8[I] = Data(I);
-                  }
-               } else {
-                  Array1DI8 DataTmp  = FieldPtr->getDataArray<Array1DI8>();
-                  HostArray1DI8 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataI8[I] = Data(I);
-                  }
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DI8 Data = FieldPtr->getDataArray<HostArray2DI8>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataI8[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DI8 DataTmp  = FieldPtr->getDataArray<Array2DI8>();
-                  HostArray2DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataI8[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DI8 Data = FieldPtr->getDataArray<HostArray3DI8>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataI8[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DI8 DataTmp = FieldPtr->getDataArray<Array3DI8>();
-                  HostArray3DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataI8[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DI8 Data = FieldPtr->getDataArray<HostArray4DI8>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataI8[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DI8 DataTmp  = FieldPtr->getDataArray<Array4DI8>();
-                  HostArray4DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataI8[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DI8 Data = FieldPtr->getDataArray<HostArray5DI8>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataI8[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DI8 DataTmp  = FieldPtr->getDataArray<Array5DI8>();
-                  HostArray5DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataI8[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-         } // end switch NDims
-         break; // end I8 type
-
-      // R4 Fields
-      case FieldType::R4:
-
-         DataR4.resize(LocSize);
-         DataPtr = DataR4.data();
-         // Get fill value
-         Err = FieldPtr->getMetadata("FillValue",FillValR4);
-         if (Err != 0) {
-            LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
-            Err = 4;
-            return Err;
-         }
-         FillValPtr = &FillValR4;
-
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DR4 Data = FieldPtr->getDataArray<HostArray1DR4>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataR4[I] = Data(I);
-                  }
-               } else {
-                  Array1DR4 DataTmp  = FieldPtr->getDataArray<Array1DR4>();
-                  HostArray1DR4 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataR4[I] = Data(I);
-                  }
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DR4 Data = FieldPtr->getDataArray<HostArray2DR4>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataR4[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DR4 DataTmp  = FieldPtr->getDataArray<Array2DR4>();
-                  HostArray2DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataR4[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DR4 Data = FieldPtr->getDataArray<HostArray3DR4>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataR4[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DR4 DataTmp  = FieldPtr->getDataArray<Array3DR4>();
-                  HostArray3DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataR4[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DR4 Data = FieldPtr->getDataArray<HostArray4DR4>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataR4[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DR4 DataTmp  = FieldPtr->getDataArray<Array4DR4>();
-                  HostArray4DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataR4[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DR4 Data = FieldPtr->getDataArray<HostArray5DR4>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataR4[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DR4 DataTmp  = FieldPtr->getDataArray<Array5DR4>();
-                  HostArray5DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataR4[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-         } // end switch NDims
-         break; // end R4 type
-
-      // R8 Fields
-      case FieldType::R8:
-
-         // Get fill value
-         Err = FieldPtr->getMetadata("FillValue",FillValR8);
-         if (Err != 0) {
-            LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
-            Err = 4;
-            return Err;
-         }
-         DataR8.resize(LocSize);
-         if (ReducePrecision) {
-            FillValR4 = FillValR8;
-            FillValPtr = &FillValR4;
-            DataR4.resize(LocSize);
-            DataPtr = DataR4.data();
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DI4 Data = FieldPtr->getDataArray<HostArray1DI4>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataI4[I] = Data(I);
+            }
          } else {
-            FillValPtr = &FillValR8;
-            DataPtr = DataR8.data();
-         }
-
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DR8 Data = FieldPtr->getDataArray<HostArray1DR8>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataR8[I] = Data(I);
-                  }
-               } else {
-                  Array1DR8 DataTmp  = FieldPtr->getDataArray<Array1DR8>();
-                  HostArray1DR8 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     DataR8[I] = Data(I);
-                  }
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DR8 Data = FieldPtr->getDataArray<HostArray2DR8>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataR8[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DR8 DataTmp  = FieldPtr->getDataArray<Array2DR8>();
-                  HostArray2DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     DataR8[VecAdd] = Data(J,I);
-                     ++VecAdd;
-                  }
-                  }
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DR8 Data = FieldPtr->getDataArray<HostArray3DR8>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataR8[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DR8 DataTmp  = FieldPtr->getDataArray<Array3DR8>();
-                  HostArray3DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     DataR8[VecAdd] = Data(K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DR8 Data = FieldPtr->getDataArray<HostArray4DR8>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataR8[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DR8 DataTmp  = FieldPtr->getDataArray<Array4DR8>();
-                  HostArray4DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     DataR8[VecAdd] = Data(L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DR8 Data = FieldPtr->getDataArray<HostArray5DR8>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataR8[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DR8 DataTmp  = FieldPtr->getDataArray<Array5DR8>();
-                  HostArray5DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     DataR8[VecAdd] = Data(M,L,K,J,I);
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               }
-               break;
-         } // end switch NDims
-         if (ReducePrecision) {
-            for (int I = 0; I < LocSize; ++I) {
-               DataR4[I] = DataR8[I];
+            Array1DI4 DataTmp  = FieldPtr->getDataArray<Array1DI4>();
+            HostArray1DI4 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataI4[I] = Data(I);
             }
          }
-         break; // end R8 type
-
-      default:
-         LOG_ERROR("Cannot determine data type for field {}", FieldName);
-         Err = 3;
          break;
+      case 2:
+         if (OnHost) {
+            HostArray2DI4 Data = FieldPtr->getDataArray<HostArray2DI4>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataI4[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DI4 DataTmp  = FieldPtr->getDataArray<Array2DI4>();
+            HostArray2DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataI4[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DI4 Data = FieldPtr->getDataArray<HostArray3DI4>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataI4[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DI4 DataTmp  = FieldPtr->getDataArray<Array3DI4>();
+            HostArray3DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataI4[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DI4 Data = FieldPtr->getDataArray<HostArray4DI4>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataI4[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DI4 DataTmp  = FieldPtr->getDataArray<Array4DI4>();
+            HostArray4DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataI4[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DI4 Data = FieldPtr->getDataArray<HostArray5DI4>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataI4[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DI4 DataTmp  = FieldPtr->getDataArray<Array5DI4>();
+            HostArray5DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataI4[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         break;
+
+      } // end switch NDims
+      break; // end I4 type
+
+   // I8 Fields
+   case FieldType::I8:
+
+      DataI8.resize(LocSize);
+      DataPtr = DataI8.data();
+      // Get fill value
+      Err = FieldPtr->getMetadata("FillValue", FillValI8);
+      if (Err != 0) {
+         LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
+         Err = 4;
+         return Err;
+      }
+      FillValPtr = &FillValI8;
+
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DI8 Data = FieldPtr->getDataArray<HostArray1DI8>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataI8[I] = Data(I);
+            }
+         } else {
+            Array1DI8 DataTmp  = FieldPtr->getDataArray<Array1DI8>();
+            HostArray1DI8 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataI8[I] = Data(I);
+            }
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DI8 Data = FieldPtr->getDataArray<HostArray2DI8>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataI8[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DI8 DataTmp  = FieldPtr->getDataArray<Array2DI8>();
+            HostArray2DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataI8[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DI8 Data = FieldPtr->getDataArray<HostArray3DI8>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataI8[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DI8 DataTmp  = FieldPtr->getDataArray<Array3DI8>();
+            HostArray3DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataI8[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DI8 Data = FieldPtr->getDataArray<HostArray4DI8>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataI8[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DI8 DataTmp  = FieldPtr->getDataArray<Array4DI8>();
+            HostArray4DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataI8[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DI8 Data = FieldPtr->getDataArray<HostArray5DI8>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataI8[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DI8 DataTmp  = FieldPtr->getDataArray<Array5DI8>();
+            HostArray5DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataI8[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      } // end switch NDims
+      break; // end I8 type
+
+   // R4 Fields
+   case FieldType::R4:
+
+      DataR4.resize(LocSize);
+      DataPtr = DataR4.data();
+      // Get fill value
+      Err = FieldPtr->getMetadata("FillValue", FillValR4);
+      if (Err != 0) {
+         LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
+         Err = 4;
+         return Err;
+      }
+      FillValPtr = &FillValR4;
+
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DR4 Data = FieldPtr->getDataArray<HostArray1DR4>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataR4[I] = Data(I);
+            }
+         } else {
+            Array1DR4 DataTmp  = FieldPtr->getDataArray<Array1DR4>();
+            HostArray1DR4 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataR4[I] = Data(I);
+            }
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DR4 Data = FieldPtr->getDataArray<HostArray2DR4>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataR4[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DR4 DataTmp  = FieldPtr->getDataArray<Array2DR4>();
+            HostArray2DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataR4[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DR4 Data = FieldPtr->getDataArray<HostArray3DR4>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataR4[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DR4 DataTmp  = FieldPtr->getDataArray<Array3DR4>();
+            HostArray3DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataR4[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DR4 Data = FieldPtr->getDataArray<HostArray4DR4>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataR4[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DR4 DataTmp  = FieldPtr->getDataArray<Array4DR4>();
+            HostArray4DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataR4[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DR4 Data = FieldPtr->getDataArray<HostArray5DR4>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataR4[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DR4 DataTmp  = FieldPtr->getDataArray<Array5DR4>();
+            HostArray5DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataR4[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      } // end switch NDims
+      break; // end R4 type
+
+   // R8 Fields
+   case FieldType::R8:
+
+      // Get fill value
+      Err = FieldPtr->getMetadata("FillValue", FillValR8);
+      if (Err != 0) {
+         LOG_ERROR("Error retrieving FillValue for Field {}", FieldName);
+         Err = 4;
+         return Err;
+      }
+      DataR8.resize(LocSize);
+      if (ReducePrecision) {
+         FillValR4  = FillValR8;
+         FillValPtr = &FillValR4;
+         DataR4.resize(LocSize);
+         DataPtr = DataR4.data();
+      } else {
+         FillValPtr = &FillValR8;
+         DataPtr    = DataR8.data();
+      }
+
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DR8 Data = FieldPtr->getDataArray<HostArray1DR8>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataR8[I] = Data(I);
+            }
+         } else {
+            Array1DR8 DataTmp  = FieldPtr->getDataArray<Array1DR8>();
+            HostArray1DR8 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               DataR8[I] = Data(I);
+            }
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DR8 Data = FieldPtr->getDataArray<HostArray2DR8>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataR8[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DR8 DataTmp  = FieldPtr->getDataArray<Array2DR8>();
+            HostArray2DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  DataR8[VecAdd] = Data(J, I);
+                  ++VecAdd;
+               }
+            }
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DR8 Data = FieldPtr->getDataArray<HostArray3DR8>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataR8[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DR8 DataTmp  = FieldPtr->getDataArray<Array3DR8>();
+            HostArray3DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     DataR8[VecAdd] = Data(K, J, I);
+                     ++VecAdd;
+                  }
+               }
+            }
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DR8 Data = FieldPtr->getDataArray<HostArray4DR8>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataR8[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DR8 DataTmp  = FieldPtr->getDataArray<Array4DR8>();
+            HostArray4DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        DataR8[VecAdd] = Data(L, K, J, I);
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DR8 Data = FieldPtr->getDataArray<HostArray5DR8>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataR8[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DR8 DataTmp  = FieldPtr->getDataArray<Array5DR8>();
+            HostArray5DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           DataR8[VecAdd] = Data(M, L, K, J, I);
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         break;
+      } // end switch NDims
+      if (ReducePrecision) {
+         for (int I = 0; I < LocSize; ++I) {
+            DataR4[I] = DataR8[I];
+         }
+      }
+      break; // end R8 type
+
+   default:
+      LOG_ERROR("Cannot determine data type for field {}", FieldName);
+      Err = 3;
+      break;
 
    } // end switch data type
 
    // Write the data
-   Err = OMEGA::IO::writeArray(DataPtr, LocSize, FillValPtr, FileID,
-                               MyDecompID, FieldID);
+   Err = OMEGA::IO::writeArray(DataPtr, LocSize, FillValPtr, FileID, MyDecompID,
+                               FieldID);
    if (Err != 0) {
-      LOG_ERROR("Error writing data array for field {} in stream {}",
-                FieldName, Name);
+      LOG_ERROR("Error writing data array for field {} in stream {}", FieldName,
+                Name);
       return Err;
    }
 
    // Clean up the decomp
    Err = OMEGA::IO::destroyDecomp(MyDecompID);
    if (Err != 0) {
-      LOG_ERROR("Error destroying decomp for field {} in stream {}",
-                FieldName, Name);
+      LOG_ERROR("Error destroying decomp for field {} in stream {}", FieldName,
+                Name);
       return Err;
    }
 
@@ -1549,11 +1550,11 @@ int IOStream::writeFieldData(
 // Read a field's data array, performing any manipulations to reduce
 // precision or move data between host and device
 int IOStream::readFieldData(
-   std::shared_ptr<Field>      FieldPtr,   // [in] field to read
-   int                         FileID,     // [in] id assigned to open file
-   std::map<std::string, int>  &AllDimIDs, // [in] dimension IDs
-   int                         &FieldID    // [out] id assigned to the field
-){
+    std::shared_ptr<Field> FieldPtr,       // [in] field to read
+    int FileID,                            // [in] id assigned to open file
+    std::map<std::string, int> &AllDimIDs, // [in] dimension IDs
+    int &FieldID                           // [out] id assigned to the field
+) {
 
    int Err = 0;
 
@@ -1562,10 +1563,10 @@ int IOStream::readFieldData(
    // For MPAS back compatibility, the old name has a first letter that is
    // lower case
    std::string OldFieldName = FieldName;
-   OldFieldName[0] = std::tolower(OldFieldName[0]);
-   bool OnHost = FieldPtr->isOnHost();
-   FieldType MyType = FieldPtr->getType();
-   int NDims = FieldPtr->getNumDims();
+   OldFieldName[0]          = std::tolower(OldFieldName[0]);
+   bool OnHost              = FieldPtr->isOnHost();
+   FieldType MyType         = FieldPtr->getType();
+   int NDims                = FieldPtr->getNumDims();
    if (NDims < 1) {
       LOG_ERROR("Invalid number of dimensions for Field {}", FieldName);
       Err = 1;
@@ -1592,18 +1593,18 @@ int IOStream::readFieldData(
    std::vector<R8> DataR8(1);
 
    switch (MyType) {
-      case FieldType::I4:
-         DataI4.resize(LocSize);
-         DataPtr = DataI4.data();
-      case FieldType::I8:
-         DataI8.resize(LocSize);
-         DataPtr = DataI8.data();
-      case FieldType::R4:
-         DataR4.resize(LocSize);
-         DataPtr = DataR4.data();
-      case FieldType::R8:
-         DataR8.resize(LocSize);
-         DataPtr = DataR8.data();
+   case FieldType::I4:
+      DataI4.resize(LocSize);
+      DataPtr = DataI4.data();
+   case FieldType::I8:
+      DataI8.resize(LocSize);
+      DataPtr = DataI8.data();
+   case FieldType::R4:
+      DataR4.resize(LocSize);
+      DataPtr = DataR4.data();
+   case FieldType::R8:
+      DataR8.resize(LocSize);
+      DataPtr = DataR8.data();
    }
 
    // read data into vector
@@ -1625,563 +1626,562 @@ int IOStream::readFieldData(
    // Unpack vector into array based on type, dims and location
    switch (MyType) {
 
-      // I4 Fields
-      case FieldType::I4:
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DI4 Data = FieldPtr->getDataArray<HostArray1DI4>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataI4[I];
-                  }
-               } else {
-                  Array1DI4 DataTmp  = FieldPtr->getDataArray<Array1DI4>();
-                  HostArray1DI4 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataI4[I];
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DI4 Data = FieldPtr->getDataArray<HostArray2DI4>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DI4 DataTmp  = FieldPtr->getDataArray<Array2DI4>();
-                  HostArray2DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DI4 Data = FieldPtr->getDataArray<HostArray3DI4>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DI4 DataTmp  = FieldPtr->getDataArray<Array3DI4>();
-                  HostArray3DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DI4 Data = FieldPtr->getDataArray<HostArray4DI4>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DI4 DataTmp  = FieldPtr->getDataArray<Array4DI4>();
-                  HostArray4DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DI4 Data = FieldPtr->getDataArray<HostArray5DI4>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DI4 DataTmp  = FieldPtr->getDataArray<Array5DI4>();
-                  HostArray5DI4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataI4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-         } // end switch NDims
-         break; // end I4 fields
-
-      // I8 Fields
-      case FieldType::I8:
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DI8 Data = FieldPtr->getDataArray<HostArray1DI8>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataI8[I];
-                  }
-               } else {
-                  Array1DI8 DataTmp  = FieldPtr->getDataArray<Array1DI8>();
-                  HostArray1DI8 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataI8[I];
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DI8 Data = FieldPtr->getDataArray<HostArray2DI8>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DI8 DataTmp  = FieldPtr->getDataArray<Array2DI8>();
-                  HostArray2DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DI8 Data = FieldPtr->getDataArray<HostArray3DI8>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DI8 DataTmp  = FieldPtr->getDataArray<Array3DI8>();
-                  HostArray3DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DI8 Data = FieldPtr->getDataArray<HostArray4DI8>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DI8 DataTmp  = FieldPtr->getDataArray<Array4DI8>();
-                  HostArray4DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DI8 Data = FieldPtr->getDataArray<HostArray5DI8>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DI8 DataTmp  = FieldPtr->getDataArray<Array5DI8>();
-                  HostArray5DI8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataI8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-         } // end switch NDims
-         break; // end I8 fields
-
-      // R4 Fields
-      case FieldType::R4:
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DR4 Data = FieldPtr->getDataArray<HostArray1DR4>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataR4[I];
-                  }
-               } else {
-                  Array1DR4 DataTmp  = FieldPtr->getDataArray<Array1DR4>();
-                  HostArray1DR4 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataR4[I];
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DR4 Data = FieldPtr->getDataArray<HostArray2DR4>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DR4 DataTmp  = FieldPtr->getDataArray<Array2DR4>();
-                  HostArray2DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DR4 Data = FieldPtr->getDataArray<HostArray3DR4>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DR4 DataTmp  = FieldPtr->getDataArray<Array3DR4>();
-                  HostArray3DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DR4 Data = FieldPtr->getDataArray<HostArray4DR4>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DR4 DataTmp  = FieldPtr->getDataArray<Array4DR4>();
-                  HostArray4DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DR4 Data = FieldPtr->getDataArray<HostArray5DR4>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DR4 DataTmp  = FieldPtr->getDataArray<Array5DR4>();
-                  HostArray5DR4 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataR4[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-         } // end switch NDims
-         break; // end R4 fields
-
-      // R8 Fields
-      case FieldType::R8:
-         switch (NDims) {
-            case 1:
-               if (OnHost) {
-                  HostArray1DR8 Data = FieldPtr->getDataArray<HostArray1DR8>();
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataR8[I];
-                  }
-               } else {
-                  Array1DR8 DataTmp  = FieldPtr->getDataArray<Array1DR8>();
-                  HostArray1DR8 Data = createHostMirrorCopy(DataTmp);
-                  for (int I = 0; I < DimLengths[0]; ++I) {
-                     Data(I) = DataR8[I];
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 2:
-               if (OnHost) {
-                  HostArray2DR8 Data = FieldPtr->getDataArray<HostArray2DR8>();
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-               } else {
-                  Array2DR8 DataTmp  = FieldPtr->getDataArray<Array2DR8>();
-                  HostArray2DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int J = 0; J < DimLengths[0]; ++J) {
-                  for (int I = 0; I < DimLengths[1]; ++I) {
-                     Data(J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 3:
-               if (OnHost) {
-                  HostArray3DR8 Data = FieldPtr->getDataArray<HostArray3DR8>();
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-               } else {
-                  Array3DR8 DataTmp  = FieldPtr->getDataArray<Array3DR8>();
-                  HostArray3DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int K = 0; K < DimLengths[0]; ++K) {
-                  for (int J = 0; J < DimLengths[1]; ++J) {
-                  for (int I = 0; I < DimLengths[2]; ++I) {
-                     Data(K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 4:
-               if (OnHost) {
-                  HostArray4DR8 Data = FieldPtr->getDataArray<HostArray4DR8>();
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array4DR8 DataTmp  = FieldPtr->getDataArray<Array4DR8>();
-                  HostArray4DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int L = 0; L < DimLengths[0]; ++L) {
-                  for (int K = 0; K < DimLengths[1]; ++K) {
-                  for (int J = 0; J < DimLengths[2]; ++J) {
-                  for (int I = 0; I < DimLengths[3]; ++I) {
-                     Data(L,K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-            case 5:
-               if (OnHost) {
-                  HostArray5DR8 Data = FieldPtr->getDataArray<HostArray5DR8>();
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-               } else {
-                  Array5DR8 DataTmp  = FieldPtr->getDataArray<Array5DR8>();
-                  HostArray5DR8 Data = createHostMirrorCopy(DataTmp);
-                  int VecAdd = 0;
-                  for (int M = 0; M < DimLengths[0]; ++M) {
-                  for (int L = 0; L < DimLengths[1]; ++L) {
-                  for (int K = 0; K < DimLengths[2]; ++K) {
-                  for (int J = 0; J < DimLengths[3]; ++J) {
-                  for (int I = 0; I < DimLengths[4]; ++I) {
-                     Data(M,L,K,J,I) = DataR8[VecAdd];
-                     ++VecAdd;
-                  }
-                  }
-                  }
-                  }
-                  }
-                  deepCopy(DataTmp, Data);
-               }
-               break;
-         } // end switch NDims
-         break; // end R8 fields
-
-      default:
-         LOG_ERROR("Invalid data type while reading field {} for stream {}",
-                   FieldName, Name);
-         Err = 3;
-         return Err;
+   // I4 Fields
+   case FieldType::I4:
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DI4 Data = FieldPtr->getDataArray<HostArray1DI4>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataI4[I];
+            }
+         } else {
+            Array1DI4 DataTmp  = FieldPtr->getDataArray<Array1DI4>();
+            HostArray1DI4 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataI4[I];
+            }
+            deepCopy(DataTmp, Data);
+         }
          break;
+      case 2:
+         if (OnHost) {
+            HostArray2DI4 Data = FieldPtr->getDataArray<HostArray2DI4>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataI4[VecAdd];
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DI4 DataTmp  = FieldPtr->getDataArray<Array2DI4>();
+            HostArray2DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataI4[VecAdd];
+                  ++VecAdd;
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DI4 Data = FieldPtr->getDataArray<HostArray3DI4>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataI4[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DI4 DataTmp  = FieldPtr->getDataArray<Array3DI4>();
+            HostArray3DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataI4[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DI4 Data = FieldPtr->getDataArray<HostArray4DI4>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataI4[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DI4 DataTmp  = FieldPtr->getDataArray<Array4DI4>();
+            HostArray4DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataI4[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DI4 Data = FieldPtr->getDataArray<HostArray5DI4>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataI4[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DI4 DataTmp  = FieldPtr->getDataArray<Array5DI4>();
+            HostArray5DI4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataI4[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      } // end switch NDims
+      break; // end I4 fields
+
+   // I8 Fields
+   case FieldType::I8:
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DI8 Data = FieldPtr->getDataArray<HostArray1DI8>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataI8[I];
+            }
+         } else {
+            Array1DI8 DataTmp  = FieldPtr->getDataArray<Array1DI8>();
+            HostArray1DI8 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataI8[I];
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DI8 Data = FieldPtr->getDataArray<HostArray2DI8>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataI8[VecAdd];
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DI8 DataTmp  = FieldPtr->getDataArray<Array2DI8>();
+            HostArray2DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataI8[VecAdd];
+                  ++VecAdd;
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DI8 Data = FieldPtr->getDataArray<HostArray3DI8>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataI8[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DI8 DataTmp  = FieldPtr->getDataArray<Array3DI8>();
+            HostArray3DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataI8[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DI8 Data = FieldPtr->getDataArray<HostArray4DI8>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataI8[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DI8 DataTmp  = FieldPtr->getDataArray<Array4DI8>();
+            HostArray4DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataI8[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DI8 Data = FieldPtr->getDataArray<HostArray5DI8>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataI8[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DI8 DataTmp  = FieldPtr->getDataArray<Array5DI8>();
+            HostArray5DI8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataI8[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      } // end switch NDims
+      break; // end I8 fields
+
+   // R4 Fields
+   case FieldType::R4:
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DR4 Data = FieldPtr->getDataArray<HostArray1DR4>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataR4[I];
+            }
+         } else {
+            Array1DR4 DataTmp  = FieldPtr->getDataArray<Array1DR4>();
+            HostArray1DR4 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataR4[I];
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DR4 Data = FieldPtr->getDataArray<HostArray2DR4>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataR4[VecAdd];
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DR4 DataTmp  = FieldPtr->getDataArray<Array2DR4>();
+            HostArray2DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataR4[VecAdd];
+                  ++VecAdd;
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DR4 Data = FieldPtr->getDataArray<HostArray3DR4>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataR4[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DR4 DataTmp  = FieldPtr->getDataArray<Array3DR4>();
+            HostArray3DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataR4[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DR4 Data = FieldPtr->getDataArray<HostArray4DR4>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataR4[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DR4 DataTmp  = FieldPtr->getDataArray<Array4DR4>();
+            HostArray4DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataR4[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DR4 Data = FieldPtr->getDataArray<HostArray5DR4>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataR4[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DR4 DataTmp  = FieldPtr->getDataArray<Array5DR4>();
+            HostArray5DR4 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataR4[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      } // end switch NDims
+      break; // end R4 fields
+
+   // R8 Fields
+   case FieldType::R8:
+      switch (NDims) {
+      case 1:
+         if (OnHost) {
+            HostArray1DR8 Data = FieldPtr->getDataArray<HostArray1DR8>();
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataR8[I];
+            }
+         } else {
+            Array1DR8 DataTmp  = FieldPtr->getDataArray<Array1DR8>();
+            HostArray1DR8 Data = createHostMirrorCopy(DataTmp);
+            for (int I = 0; I < DimLengths[0]; ++I) {
+               Data(I) = DataR8[I];
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 2:
+         if (OnHost) {
+            HostArray2DR8 Data = FieldPtr->getDataArray<HostArray2DR8>();
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataR8[VecAdd];
+                  ++VecAdd;
+               }
+            }
+         } else {
+            Array2DR8 DataTmp  = FieldPtr->getDataArray<Array2DR8>();
+            HostArray2DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int J = 0; J < DimLengths[0]; ++J) {
+               for (int I = 0; I < DimLengths[1]; ++I) {
+                  Data(J, I) = DataR8[VecAdd];
+                  ++VecAdd;
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 3:
+         if (OnHost) {
+            HostArray3DR8 Data = FieldPtr->getDataArray<HostArray3DR8>();
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataR8[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+         } else {
+            Array3DR8 DataTmp  = FieldPtr->getDataArray<Array3DR8>();
+            HostArray3DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int K = 0; K < DimLengths[0]; ++K) {
+               for (int J = 0; J < DimLengths[1]; ++J) {
+                  for (int I = 0; I < DimLengths[2]; ++I) {
+                     Data(K, J, I) = DataR8[VecAdd];
+                     ++VecAdd;
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 4:
+         if (OnHost) {
+            HostArray4DR8 Data = FieldPtr->getDataArray<HostArray4DR8>();
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataR8[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+         } else {
+            Array4DR8 DataTmp  = FieldPtr->getDataArray<Array4DR8>();
+            HostArray4DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int L = 0; L < DimLengths[0]; ++L) {
+               for (int K = 0; K < DimLengths[1]; ++K) {
+                  for (int J = 0; J < DimLengths[2]; ++J) {
+                     for (int I = 0; I < DimLengths[3]; ++I) {
+                        Data(L, K, J, I) = DataR8[VecAdd];
+                        ++VecAdd;
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      case 5:
+         if (OnHost) {
+            HostArray5DR8 Data = FieldPtr->getDataArray<HostArray5DR8>();
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataR8[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+         } else {
+            Array5DR8 DataTmp  = FieldPtr->getDataArray<Array5DR8>();
+            HostArray5DR8 Data = createHostMirrorCopy(DataTmp);
+            int VecAdd         = 0;
+            for (int M = 0; M < DimLengths[0]; ++M) {
+               for (int L = 0; L < DimLengths[1]; ++L) {
+                  for (int K = 0; K < DimLengths[2]; ++K) {
+                     for (int J = 0; J < DimLengths[3]; ++J) {
+                        for (int I = 0; I < DimLengths[4]; ++I) {
+                           Data(M, L, K, J, I) = DataR8[VecAdd];
+                           ++VecAdd;
+                        }
+                     }
+                  }
+               }
+            }
+            deepCopy(DataTmp, Data);
+         }
+         break;
+      } // end switch NDims
+      break; // end R8 fields
+
+   default:
+      LOG_ERROR("Invalid data type while reading field {} for stream {}",
+                FieldName, Name);
+      Err = 3;
+      return Err;
+      break;
 
    } // end switch data type
-
 
    // Clean up the decomp
    Err = OMEGA::IO::destroyDecomp(DecompID);
@@ -2199,9 +2199,9 @@ int IOStream::readFieldData(
 // Reads a stream if it is time. Returns an error code. This is the internal
 // read function used by the public read interface.
 int IOStream::readStream(
-      const Clock &ModelClock, // [in] model clock for getting time
-      Metadata &ReqMetadata // [inout] global metadata to extract from file
-){
+    const Clock &ModelClock, // [in] model clock for getting time
+    Metadata &ReqMetadata    // [inout] global metadata to extract from file
+) {
    int Err = 0; // default return code
 
    // First check that this is an input stream
@@ -2212,19 +2212,24 @@ int IOStream::readStream(
    }
 
    // If it is not time to read, return
-   if (!MyAlarm.isRinging() and !OnStartup) return Err;
+   if (!MyAlarm.isRinging() and !OnStartup)
+      return Err;
    if (UseStartEnd) { // If time outside interval, return
-      if (!StartAlarm.isRinging()) return Err;
-      if (EndAlarm.isRinging()) return Err;
+      if (!StartAlarm.isRinging())
+         return Err;
+      if (EndAlarm.isRinging())
+         return Err;
    }
 
    // Get current simulation time and time string
-   TimeInstant SimTime = ModelClock.getCurrentTime();
+   TimeInstant SimTime    = ModelClock.getCurrentTime();
    std::string SimTimeStr = SimTime.getString(5, 0, "_");
 
    // Reset alarms and flags
-   if (OnStartup) OnStartup = false;
-   if (MyAlarm.isRinging()) MyAlarm.reset(SimTime);
+   if (OnStartup)
+      OnStartup = false;
+   if (MyAlarm.isRinging())
+      MyAlarm.reset(SimTime);
 
    // Create filename
    std::string InFileName;
@@ -2239,7 +2244,7 @@ int IOStream::readStream(
    } else {
       InFileName = Filename;
    }
-      
+
    // Open input file
    int InFileID;
    Err = OMEGA::IO::openFile(InFileID, InFileName, Mode, IO::FmtDefault,
@@ -2250,9 +2255,9 @@ int IOStream::readStream(
    }
 
    // Read any requested global metadata
-   for (auto Iter = ReqMetadata.begin(); Iter != ReqMetadata.end(); ++Iter){
+   for (auto Iter = ReqMetadata.begin(); Iter != ReqMetadata.end(); ++Iter) {
       std::string MetaName = Iter->first;
-      std::any MetaTmp = Iter->second;
+      std::any MetaTmp     = Iter->second;
 
       I4 MetaValI4;
       I8 MetaValI8;
@@ -2278,9 +2283,9 @@ int IOStream::readStream(
       } else if (MetaTmp.type() == typeid(std::string)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
          ReqMetadata[MetaName] = MetaValStr;
-      // If ReqMetadata was initialized with a string literal, we detect
-      // the type but replace it with a std::string
-      } else if (MetaTmp.type() == typeid(const char*)) {
+         // If ReqMetadata was initialized with a string literal, we detect
+         // the type but replace it with a std::string
+      } else if (MetaTmp.type() == typeid(const char *)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
          ReqMetadata[MetaName] = MetaValStr;
       } else {
@@ -2307,7 +2312,7 @@ int IOStream::readStream(
    for (auto IFld = Contents.begin(); IFld != Contents.end(); ++IFld) {
 
       // Retrieve the field name and pointer
-      std::string FieldName = *IFld;
+      std::string FieldName            = *IFld;
       std::shared_ptr<Field> ThisField = Field::get(FieldName);
 
       // Extract the data pointer and read the data array
@@ -2339,8 +2344,8 @@ int IOStream::readStream(
 // Writes stream. This is the internal member write function used by the
 // public write interfaces.
 int IOStream::writeStream(
-   const Clock &ModelClock, // [in] Model clock needed for time stamps
-   bool FinalCall           // [in] Optional flag if called from finalize
+    const Clock &ModelClock, // [in] Model clock needed for time stamps
+    bool FinalCall           // [in] Optional flag if called from finalize
 ) {
 
    int Err = 0; // default return code
@@ -2353,20 +2358,25 @@ int IOStream::writeStream(
    }
 
    // If it is not time to write, return
-   bool StartupShutdown = OnStartup or (OnShutdown and FinalCall); 
-   if (!MyAlarm.isRinging() and !StartupShutdown) return Err;
+   bool StartupShutdown = OnStartup or (OnShutdown and FinalCall);
+   if (!MyAlarm.isRinging() and !StartupShutdown)
+      return Err;
    if (UseStartEnd) { // If time outside interval, return
-      if (!StartAlarm.isRinging()) return Err;
-      if (EndAlarm.isRinging()) return Err;
+      if (!StartAlarm.isRinging())
+         return Err;
+      if (EndAlarm.isRinging())
+         return Err;
    }
 
    // Get current simulation time and time string
-   TimeInstant SimTime = ModelClock.getCurrentTime();
+   TimeInstant SimTime    = ModelClock.getCurrentTime();
    std::string SimTimeStr = SimTime.getString(4, 0, "_");
 
    // Reset alarms and flags
-   if (OnStartup) OnStartup = false;
-   if (MyAlarm.isRinging()) MyAlarm.reset(SimTime);
+   if (OnStartup)
+      OnStartup = false;
+   if (MyAlarm.isRinging())
+      MyAlarm.reset(SimTime);
 
    // Create filename
    std::string OutFileName;
@@ -2376,7 +2386,7 @@ int IOStream::writeStream(
    } else {
       OutFileName = Filename;
    }
-      
+
    // Open output file
    int OutFileID;
    Err = OMEGA::IO::openFile(OutFileID, OutFileName, Mode, IO::FmtDefault,
@@ -2394,12 +2404,12 @@ int IOStream::writeStream(
       LOG_ERROR("Error writing Code Metadata to file {}", OutFileName);
       return Err;
    }
-   std::shared_ptr<Field> SimField  = Field::get(SimMeta);
+   std::shared_ptr<Field> SimField = Field::get(SimMeta);
    // Add the simulation time - if it was added previously, remove and
    // re-add the current time
    if (SimField->hasMetadata("SimulationTime"))
       Err = SimField->removeMetadata("SimulationTime");
-   Err = SimField -> addMetadata("SimulationTime", SimTimeStr);
+   Err = SimField->addMetadata("SimulationTime", SimTimeStr);
    if (Err != 0) {
       LOG_ERROR("Error adding current sim time to output {}", OutFileName);
       return Err;
@@ -2426,10 +2436,10 @@ int IOStream::writeStream(
    for (auto IFld = Contents.begin(); IFld != Contents.end(); ++IFld) {
 
       // Retrieve the field pointer
-      std::string FieldName = *IFld;
+      std::string FieldName            = *IFld;
       std::shared_ptr<Field> ThisField = Field::get(FieldName);
 
-      // Retrieve the dimensions for this field and determine dim IDs 
+      // Retrieve the dimensions for this field and determine dim IDs
       NDims = ThisField->getNumDims();
       if (NDims < 1) {
          LOG_ERROR("Invalid number of dimensions for Field {}", FieldName);
@@ -2445,7 +2455,7 @@ int IOStream::writeStream(
       }
       for (int IDim = 0; IDim < NDims; ++IDim) {
          std::string DimName = DimNames[IDim];
-         FieldDims[IDim] = AllDimIDs[DimName];
+         FieldDims[IDim]     = AllDimIDs[DimName];
       }
 
       // Determine the data type and convert to IODataType
@@ -2457,8 +2467,7 @@ int IOStream::writeStream(
       Err = defineVar(OutFileID, FieldName, MyIOType, NDims, FieldDims.data(),
                       FieldID);
       if (Err != 0) {
-         LOG_ERROR("Error defining field {} in stream {}",
-                   FieldName, Name);
+         LOG_ERROR("Error defining field {} in stream {}", FieldName, Name);
          return Err;
       }
       FieldIDs[FieldName] = FieldID;
@@ -2470,7 +2479,6 @@ int IOStream::writeStream(
                    FieldName, Name);
          return Err;
       }
-
    }
 
    // End define mode
@@ -2484,9 +2492,9 @@ int IOStream::writeStream(
    for (auto IFld = Contents.begin(); IFld != Contents.end(); ++IFld) {
 
       // Retrieve the field pointer and FieldID
-      std::string FieldName = *IFld;
+      std::string FieldName            = *IFld;
       std::shared_ptr<Field> ThisField = Field::get(FieldName);
-      int FieldID = FieldIDs[FieldName];
+      int FieldID                      = FieldIDs[FieldName];
 
       // Extract and write the data array
       Err = this->writeFieldData(ThisField, OutFileID, FieldID, AllDimIDs);
@@ -2495,7 +2503,6 @@ int IOStream::writeStream(
                    FieldName, Name);
          return Err;
       }
-
    }
 
    // Close output file
@@ -2523,7 +2530,7 @@ int IOStream::writeStream(
 //------------------------------------------------------------------------------
 // Removes a single IOStream from the list of all streams.
 void IOStream::erase(const std::string &StreamName // Name of IOStream to remove
-){
+) {
    AllStreams.erase(StreamName); // use the map erase function to remove
 } // End erase
 
@@ -2534,7 +2541,7 @@ void IOStream::erase(const std::string &StreamName // Name of IOStream to remove
 // Determines the IO Data type to use for a given field, taking into
 // account the field's type and any reduced precision conversion
 IO::IODataType IOStream::getFieldIOType(
-     std::shared_ptr<Field> FieldPtr  // [in] pointer to Field
+    std::shared_ptr<Field> FieldPtr // [in] pointer to Field
 ) {
 
    IO::IODataType ReturnType;
@@ -2545,26 +2552,26 @@ IO::IODataType IOStream::getFieldIOType(
    // Determine IO data type based on field type and any reduced precision
    // conversion
    switch (MyType) {
-      case FieldType::I4:
-         ReturnType = IO::IOTypeI4;
-         break;
-      case FieldType::I8:
-         ReturnType = IO::IOTypeI8;
-         break;
-      case FieldType::R4:
+   case FieldType::I4:
+      ReturnType = IO::IOTypeI4;
+      break;
+   case FieldType::I8:
+      ReturnType = IO::IOTypeI8;
+      break;
+   case FieldType::R4:
+      ReturnType = IO::IOTypeR4;
+      break;
+   case FieldType::R8:
+      if (ReducePrecision) {
          ReturnType = IO::IOTypeR4;
-         break;
-      case FieldType::R8:
-         if (ReducePrecision) {
-            ReturnType = IO::IOTypeR4;
-         } else {
-            ReturnType = IO::IOTypeR8;
-         }
-         break;
-      default:
-         std::string FieldName = FieldPtr->getName();
-         LOG_ERROR("Cannot determine data type for field {}", FieldName);
-         break;
+      } else {
+         ReturnType = IO::IOTypeR8;
+      }
+      break;
+   default:
+      std::string FieldName = FieldPtr->getName();
+      LOG_ERROR("Cannot determine data type for field {}", FieldName);
+      break;
    }
 
    return ReturnType;
@@ -2585,8 +2592,8 @@ IO::IODataType IOStream::getFieldIOType(
 //    $m = minute  part of simulation time stamp
 //    $s = seconds part of simulation time stamp
 std::string IOStream::buildFilename(
-   const std::string &FilenameTemplate, // [in] template string for name
-   const Clock &ModelClock              // [in] model clock for sim time
+    const std::string &FilenameTemplate, // [in] template string for name
+    const Clock &ModelClock              // [in] model clock for sim time
 ) {
 
    // Start with input template
@@ -2595,15 +2602,18 @@ std::string IOStream::buildFilename(
    // Check if wallclock time is requested in the template - check for
    // multiple variations
    size_t Pos = Outfile.find("$WallTime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$Walltime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$walltime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$WALLTIME");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$Walltime");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$walltime");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$WALLTIME");
    // If wallclock time is requested, replace with wallclock string
    // in format YYYY-MM-DD_HH.MM.SS
    if (Pos != std::string::npos) { // wallclock string was found
       // Get wallclock time and convert to string
-      std::time_t Walltime = std::time(nullptr);
-      std::tm* WalltimeInfo = std::localtime(&Walltime);
+      std::time_t Walltime  = std::time(nullptr);
+      std::tm *WalltimeInfo = std::localtime(&Walltime);
       char Walltimestamp[20];
       std::strftime(Walltimestamp, sizeof(Walltimestamp), "%Y-%m-%d_%H.%M.%S",
                     WalltimeInfo);
@@ -2640,21 +2650,24 @@ std::string IOStream::buildFilename(
 
    // Now check for the $SimTime token and replace with a sim time string
    Pos = Outfile.find("$SimTime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$Simtime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$simtime");
-   if (Pos == std::string::npos) Pos = Outfile.find("$SIMTIME");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$Simtime");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$simtime");
+   if (Pos == std::string::npos)
+      Pos = Outfile.find("$SIMTIME");
    if (Pos != std::string::npos) { // Found the sim time token
-     // Convert the SimTime to a string
-     int YearLength = SYear.length();
-     int MinWidth = 4;
-     int YearWidth = std::max(YearLength, MinWidth);
-     std::string SimTimeStr = SimTime.getString(YearWidth, 0, "_");
-     Outfile.replace(Pos, 8, SimTimeStr);
+      // Convert the SimTime to a string
+      int YearLength         = SYear.length();
+      int MinWidth           = 4;
+      int YearWidth          = std::max(YearLength, MinWidth);
+      std::string SimTimeStr = SimTime.getString(YearWidth, 0, "_");
+      Outfile.replace(Pos, 8, SimTimeStr);
    }
 
    // Check for each of the other standard tokens and replace with
    // appropriate strings with padding as necessary
-   int NPad = 0;
+   int NPad    = 0;
    int SLength = 0;
 
    // Year is requested. The length is assumed to be at least 4 and
@@ -2731,8 +2744,8 @@ std::string IOStream::buildFilename(
 // manipulation for case insensitive comparison
 
 void IOStream::setPrecisionFlag(
-      const std::string &PrecisionString ///< [in] precision from input YAML
-){
+    const std::string &PrecisionString ///< [in] precision from input YAML
+) {
 
    // Set default value
    ReducePrecision = false;
@@ -2753,5 +2766,5 @@ void IOStream::setPrecisionFlag(
 
 } // End setPrecisionFlag
 
-} // Namespace Omega
+} // namespace OMEGA
 //===----------------------------------------------------------------------===//

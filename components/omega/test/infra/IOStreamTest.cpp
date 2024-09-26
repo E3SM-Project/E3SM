@@ -9,13 +9,13 @@
 //
 //===-----------------------------------------------------------------------===/
 
+#include "IOStream.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Field.h"
 #include "Halo.h"
 #include "HorzMesh.h"
-#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanState.h"
@@ -29,10 +29,10 @@ using namespace OMEGA;
 
 //------------------------------------------------------------------------------
 // Set some constant reference values for simplicity
-const I4 RefI4 = 3;
-const I8 RefI8 = 400000000;
-const R4 RefR4 = 5.1;
-const R8 RefR8 = 6.123456789;
+const I4 RefI4           = 3;
+const I8 RefI8           = 400000000;
+const R4 RefR4           = 5.1;
+const R8 RefR8           = 6.123456789;
 const std::string RefStr = "Reference String";
 
 //------------------------------------------------------------------------------
@@ -46,14 +46,11 @@ void TestEval(const std::string &TestName, T TestVal, T ExpectVal, int &Error) {
       LOG_ERROR("{}: FAIL", TestName);
       ++Error;
    }
-
 }
 //------------------------------------------------------------------------------
 // Initialization routine to create reference Fields
-int initIOStreamTest(
-      std::shared_ptr<Clock> &ModelClock,  // Model clock
-      Calendar &ModelCalendar
-) {
+int initIOStreamTest(std::shared_ptr<Clock> &ModelClock, // Model clock
+                     Calendar &ModelCalendar) {
 
    int Err    = 0;
    int Err1   = 0;
@@ -61,10 +58,10 @@ int initIOStreamTest(
 
    // Initialize maching environment and logging
    MachEnv::init(MPI_COMM_WORLD);
-   MachEnv *DefEnv = MachEnv::getDefault();
+   MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
    initLogging(DefEnv);
-             
+
    // Read the model configuration
    Config Config("omega");
    Err1 = Config::readAll("omega.yml");
@@ -99,18 +96,18 @@ int initIOStreamTest(
    Err1 = HorzMesh::init();
    TestEval("Horizontal mesh initialization", Err1, ErrRef, Err);
    HorzMesh *DefMesh = HorzMesh::getDefault();
-   I4 NCellsSize  = DefMesh->NCellsSize;
+   I4 NCellsSize     = DefMesh->NCellsSize;
 
    // Set vertical levels and time levels
    I4 NVertLevels = 60;
    std::shared_ptr<Dimension> VertDim =
        Dimension::create("NVertLevels", NVertLevels);
 
-   //Err1 = AuxiliaryState::init();
-   //TestEval("Ocean auxiliary state initialization", Err1, ErrRef, Err);
+   // Err1 = AuxiliaryState::init();
+   // TestEval("Ocean auxiliary state initialization", Err1, ErrRef, Err);
 
-   //Err1 = Tendencies::init();
-   //TestEval("Ocean tendency initialization", Err1, ErrRef, Err);
+   // Err1 = Tendencies::init();
+   // TestEval("Ocean tendency initialization", Err1, ErrRef, Err);
 
    // Initialize time stepper needed before ocean state (for time levels)
    Err1 = TimeStepper::init();
@@ -124,25 +121,25 @@ int initIOStreamTest(
    std::shared_ptr<Field> CodeField = Field::get(CodeMeta);
    std::shared_ptr<Field> SimField  = Field::get(SimMeta);
 
-   Err1 = CodeField -> addMetadata("CodeIntTest", 3);
+   Err1 = CodeField->addMetadata("CodeIntTest", 3);
    TestEval("Add code metadata int", Err1, ErrRef, Err);
-   Err1 = CodeField -> addMetadata("CodeRealTest", 4.567);
+   Err1 = CodeField->addMetadata("CodeRealTest", 4.567);
    TestEval("Add code metadata real", Err1, ErrRef, Err);
-   Err1 = CodeField -> addMetadata("CodeBoolTest", true);
+   Err1 = CodeField->addMetadata("CodeBoolTest", true);
    TestEval("Add code metadata bool", Err1, ErrRef, Err);
-   std::string CodeStrVal  = "ASampleString";
-   Err1 = CodeField -> addMetadata("CodeStrTest", CodeStrVal);
+   std::string CodeStrVal = "ASampleString";
+   Err1                   = CodeField->addMetadata("CodeStrTest", CodeStrVal);
    TestEval("Add code metadata str", Err1, ErrRef, Err);
-   Err1 = CodeField -> addMetadata("CodeVersion", "V0.0");
+   Err1 = CodeField->addMetadata("CodeVersion", "V0.0");
    TestEval("Add code metadata str literal", Err1, ErrRef, Err);
-   Err1 = SimField -> addMetadata("ExpName", "IOStreamsTest");
+   Err1 = SimField->addMetadata("ExpName", "IOStreamsTest");
    TestEval("Add ExpName metadata", Err1, ErrRef, Err);
    std::string StartTimeStr = SimStartTime.getString(4, 2, "_");
-   Err1 = SimField -> addMetadata("SimStartTime", StartTimeStr);
+   Err1 = SimField->addMetadata("SimStartTime", StartTimeStr);
    TestEval("Add SimStartTime metadata", Err1, ErrRef, Err);
 
    // Define temperature and salinity tracer fields and create a tracer
-   // group 
+   // group
 
    std::vector<std::string> DimNames(2);
    DimNames[0] = "NCells";
@@ -150,17 +147,15 @@ int initIOStreamTest(
 
    // 2D Fields on device
 
-   DimNames[0] = "NCells";
-   DimNames[1] = "NVertLevels";
+   DimNames[0]    = "NCells";
+   DimNames[1]    = "NVertLevels";
    Real FillValue = -1.2345e-30;
-   auto TempField = Field::create("Temperature",
-                           "Potential temperature at cell centers",
-                           "deg C", "sea_water_pot_tem", -3.0, 100.0,
-                           FillValue, 2, DimNames);
-   auto SaltField = Field::create("Salinity",
-                           "Salinity at cell centers",
-                           "", "sea_water_salinity", 0.0, 100.0,
-                           FillValue, 2, DimNames);
+   auto TempField = Field::create(
+       "Temperature", "Potential temperature at cell centers", "deg C",
+       "sea_water_pot_tem", -3.0, 100.0, FillValue, 2, DimNames);
+   auto SaltField =
+       Field::create("Salinity", "Salinity at cell centers", "",
+                     "sea_water_salinity", 0.0, 100.0, FillValue, 2, DimNames);
 
    // Create Tracer group
    auto TracerGroup = FieldGroup::create("Tracers");
@@ -214,14 +209,14 @@ int main(int argc, char **argv) {
 
       // Create data arrays
 
-      Array2DR8 Temp("Temp",NCellsSize,NVertLevels);
-      Array2DR8 Salt("Salt",NCellsSize,NVertLevels);
+      Array2DR8 Temp("Temp", NCellsSize, NVertLevels);
+      Array2DR8 Salt("Salt", NCellsSize, NVertLevels);
 
       // Attach data arrays to fields
 
-      Err1 = Field::attachFieldData<Array2DR8>("Temperature",Temp);
+      Err1 = Field::attachFieldData<Array2DR8>("Temperature", Temp);
       TestEval("Attach temperature data to field", Err1, ErrRef, Err);
-      Err1 = Field::attachFieldData<Array2DR8>("Salinity",Salt);
+      Err1 = Field::attachFieldData<Array2DR8>("Salinity", Salt);
       TestEval("Attach salinity data to field", Err1, ErrRef, Err);
 
       // Validate all streams (Mesh stream already validated in HorzMesh?)
@@ -238,21 +233,21 @@ int main(int argc, char **argv) {
       Alarm StopAlarm("Stop Time", StopTime);
       Err1 = ModelClock->attachAlarm(&StopAlarm);
       TestEval("Attach stop alarm", Err1, ErrRef, Err);
-      
+
       // Step forward in time and write files if it is time
       while (!StopAlarm.isRinging()) {
          ModelClock->advance();
-         TimeInstant CurTime = ModelClock->getCurrentTime();
+         TimeInstant CurTime    = ModelClock->getCurrentTime();
          std::string CurTimeStr = CurTime.getString(4, 2, " ");
 
-         Err1 = IOStream::writeAll(*ModelClock); 
+         Err1 = IOStream::writeAll(*ModelClock);
          if (Err1 != 0) // to prevent too much output in log
             TestEval("Write all streams " + CurTimeStr, Err1, ErrRef, Err);
       }
 
       // Read one of the written files and check results
       // Device arrays on edges
-      //parallelReduce(
+      // parallelReduce(
       //   {NEdgesSize}, KOKKOS_LAMBDA(int Edge, I4 &LCount) {
       //      if (Data1DI8(Edge) != RefI8 + Edge) ++LCount;
       //      if (*TPtr1DI8[Edge] != RefI8 + Edge) ++LCount;
@@ -266,7 +261,7 @@ int main(int argc, char **argv) {
       //   }
       //   DataReducer
       //);
-      //TestEval("Get data all edge device arrays, ptrs", DataCount1, 0, Err);
+      // TestEval("Get data all edge device arrays, ptrs", DataCount1, 0, Err);
 
       // Write final output and remove all streams
       IOStream::finalize(*ModelClock);

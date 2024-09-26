@@ -16,9 +16,9 @@
 #include "Config.h"
 #include "DataTypes.h"
 #include "Dimension.h"
-#include "Logging.h"
 #include "Field.h"
 #include "IO.h"
+#include "Logging.h"
 #include "TimeMgr.h" // need Alarms, TimeInstant
 #include <map>
 #include <memory>
@@ -30,21 +30,20 @@ namespace OMEGA {
 class IOStream {
 
  private:
-
    /// Store and maintain all defined streams
    static std::map<std::string, std::shared_ptr<IOStream>> AllStreams;
 
    /// Private variables specific to a stream
-   std::string Name;        ///< name of stream
-   std::string Filename;    ///< filename or filename template (with path)
-   bool FilenameIsTemplate; ///< true if the filename is a template
-   IO::IfExists ExistAction;///< action if file exists (write only)
+   std::string Name;         ///< name of stream
+   std::string Filename;     ///< filename or filename template (with path)
+   bool FilenameIsTemplate;  ///< true if the filename is a template
+   IO::IfExists ExistAction; ///< action if file exists (write only)
 
-   IO::Mode Mode;           ///< mode (read or write)
-   bool ReducePrecision;    ///< flag to use 32-bit precision for 64-bit floats
-   Alarm MyAlarm;           ///< time mgr alarm for read/write
-   bool OnStartup;          ///< flag to read/write on model startup
-   bool OnShutdown;         ///< flag to read/write on model shutdown
+   IO::Mode Mode;        ///< mode (read or write)
+   bool ReducePrecision; ///< flag to use 32-bit precision for 64-bit floats
+   Alarm MyAlarm;        ///< time mgr alarm for read/write
+   bool OnStartup;       ///< flag to read/write on model startup
+   bool OnShutdown;      ///< flag to read/write on model shutdown
 
    /// A pointer file is used if we wish OMEGA to read the name of the file
    /// from another file. This is useful for writing the name of a restart
@@ -55,9 +54,9 @@ class IOStream {
 
    /// Use a start and end time to define an interval in which stream is active
    /// The start is inclusive but the end time is not.
-   bool UseStartEnd;        ///< flag for using start, end times
-   Alarm StartAlarm;        ///< alarm ringing if equal to or past start time
-   Alarm EndAlarm;          ///< alarm ringing if equal to or past end time
+   bool UseStartEnd; ///< flag for using start, end times
+   Alarm StartAlarm; ///< alarm ringing if equal to or past start time
+   Alarm EndAlarm;   ///< alarm ringing if equal to or past end time
 
    /// Contents of stream in the form of a set of Field names
    std::set<std::string> Contents;
@@ -70,72 +69,70 @@ class IOStream {
    /// options in the input model configuration. This routine is called by
    /// the IOStreams initialize function. It requires an initialized model
    /// clock so that stream alarm can be attached to this clock during creation.
-   static int create(
-      const std::string &StreamName, ///< [in] name of stream
-      Config &StreamConfig,          ///< [in] input stream configuration
-      Clock &ModelClock              ///< [inout] Omega model clock
+   static int create(const std::string &StreamName, ///< [in] name of stream
+                     Config &StreamConfig, ///< [in] input stream configuration
+                     Clock &ModelClock     ///< [inout] Omega model clock
    );
 
    /// Define all dimensions used. Returns an error code as well as a map
    /// of dimension names to defined dimension IDs.
    int defineAllDims(
-         int FileID,  ///< [in] id assigned to the IO file
-         std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
+       int FileID, ///< [in] id assigned to the IO file
+       std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
    );
 
    /// Computes the parallel decomposition (offsets) for a field.
    /// Needed for parallel I/O
    int computeDecomp(
-         std::shared_ptr<Field> FieldPtr,       ///< [in] field
-         std::map<std::string, int> &AllDimIDs, ///< [in] dimension IDs
-         int &DecompID, ///< [out] ID assigned to the defined decomposition
-         I4 &LocalSize, ///< [out] size of the local array for this field
-         std::vector<int> &DimLengths // [out] local dim lengths
+       std::shared_ptr<Field> FieldPtr,       ///< [in] field
+       std::map<std::string, int> &AllDimIDs, ///< [in] dimension IDs
+       int &DecompID, ///< [out] ID assigned to the defined decomposition
+       I4 &LocalSize, ///< [out] size of the local array for this field
+       std::vector<int> &DimLengths // [out] local dim lengths
    );
 
    /// Private function that performs most of the stream read - called by the
    /// public read method
    int readStream(
-      const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
-      Metadata &ReqMetadata    ///< [inout] global metadata to extract from file
+       const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
+       Metadata &ReqMetadata ///< [inout] global metadata to extract from file
    );
 
    /// Private function that performs most of the stream write - called by the
    /// public write method
    int writeStream(
-         const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
-         bool FinalCall = false   ///< [in] Optional flag for shutdown
+       const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
+       bool FinalCall = false   ///< [in] Optional flag for shutdown
    );
 
    /// Write all metadata associated with a field
-   int writeFieldMeta(
-         std::string FieldName, ///< [in] metadata from field;
-         int         FileID,    ///< [in] id assigned to open file
-         int         FieldID    ///< [in] id assigned to the field
+   int writeFieldMeta(std::string FieldName, ///< [in] metadata from field;
+                      int FileID,            ///< [in] id assigned to open file
+                      int FieldID            ///< [in] id assigned to the field
    );
 
    /// Write a field's data array, performing any manipulations to reduce
    /// precision or move data between host and device
-   int writeFieldData(
-         std::shared_ptr<Field> FieldPtr, ///< [in] field to write
-         int                    FileID,   ///< [in] id assigned to open file
-         int                    FieldID,  ///< [in] id assigned to the field
-         std::map<std::string, int>  &AllDimIDs ///< [in] dimension IDs
+   int
+   writeFieldData(std::shared_ptr<Field> FieldPtr, ///< [in] field to write
+                  int FileID,  ///< [in] id assigned to open file
+                  int FieldID, ///< [in] id assigned to the field
+                  std::map<std::string, int> &AllDimIDs ///< [in] dimension IDs
    );
 
    /// Read a field's data array, performing any manipulations to reduce
    /// precision or move data between host and device
-   int readFieldData(
-         std::shared_ptr<Field> FieldPtr, ///< [in] field to read
-         int                    FileID,   ///< [in] id assigned to open file
-         std::map<std::string, int> &AllDimIDs, ///< [in] dimension IDs
-         int                    &FieldID   ///< [out] id assigned to the field
+   int
+   readFieldData(std::shared_ptr<Field> FieldPtr, ///< [in] field to read
+                 int FileID, ///< [in] id assigned to open file
+                 std::map<std::string, int> &AllDimIDs, ///< [in] dimension IDs
+                 int &FieldID ///< [out] id assigned to the field
    );
 
    /// Determines the IO Data type to use for a given field, taking into
    /// account the field's type and any reduced precision conversion
    IO::IODataType getFieldIOType(
-         std::shared_ptr<Field> FieldPtr ///< [in] field to extract type
+       std::shared_ptr<Field> FieldPtr ///< [in] field to extract type
    );
 
    /// Builds a filename based on time information and a filename template
@@ -151,18 +148,17 @@ class IOStream {
    ///    $m = minute  part of simulation time stamp
    ///    $s = seconds part of simulation time stamp
    static std::string buildFilename(
-      const std::string &FilenameTemplate, ///< [in] template string for name
-      const Clock &ModelClock              ///< [in] model clock for sim time
+       const std::string &FilenameTemplate, ///< [in] template string for name
+       const Clock &ModelClock              ///< [in] model clock for sim time
    );
 
    /// Sets ReducePrecision flag based on an input string, performing string
    /// manipulation for case insensitive comparison
    void setPrecisionFlag(
-      const std::string &PrecisionString ///< [in] precision from input YAML
+       const std::string &PrecisionString ///< [in] precision from input YAML
    );
 
  public:
-
    //---------------------------------------------------------------------------
    /// Default empty constructor
    IOStream();
@@ -176,15 +172,15 @@ class IOStream {
 
    //---------------------------------------------------------------------------
    /// Performs a final write of any streams that have the OnShutdown option and
-   /// then removes all streams to clean up. Returns an error code. 
-   static int finalize(
-      const Clock &ModelClock  ///< [in] Model clock needed for time stamps
+   /// then removes all streams to clean up. Returns an error code.
+   static int
+   finalize(const Clock &ModelClock ///< [in] Model clock needed for time stamps
    );
 
    //---------------------------------------------------------------------------
    /// Retrieves a previously defined stream by name.
-   static std::shared_ptr<IOStream> get(
-         const std::string &StreamName ///< [in] name of stream to retrieve
+   static std::shared_ptr<IOStream>
+   get(const std::string &StreamName ///< [in] name of stream to retrieve
    );
 
    //---------------------------------------------------------------------------
@@ -223,24 +219,23 @@ class IOStream {
 
    //---------------------------------------------------------------------------
    /// Reads a stream if it is time. Returns an error code.
-   static int read(
-         const std::string &StreamName, ///< [in] Name of stream
-         const Clock &ModelClock,       ///< [in] Model clock for time info
-         Metadata &ReqMetadata          ///< [inout] Metadata desired from file
+   static int read(const std::string &StreamName, ///< [in] Name of stream
+                   const Clock &ModelClock, ///< [in] Model clock for time info
+                   Metadata &ReqMetadata ///< [inout] Metadata desired from file
    );
 
    //---------------------------------------------------------------------------
    /// Writes a stream if it is time. Returns an error code.
-   static int write(
-         const std::string &StreamName, ///< [in] Name of stream
+   static int
+   write(const std::string &StreamName, ///< [in] Name of stream
          const Clock &ModelClock        ///< [in] Model clock for time stamps
    );
 
    //---------------------------------------------------------------------------
    /// Loops through all streams and writes them if it is time. This is
    /// useful if most I/O is consolidated at one point (eg end of step).
-   static int writeAll(
-         const Clock &ModelClock        ///< [in] Model clock for time stamps
+   static int
+   writeAll(const Clock &ModelClock ///< [in] Model clock for time stamps
    );
 
    //---------------------------------------------------------------------------
