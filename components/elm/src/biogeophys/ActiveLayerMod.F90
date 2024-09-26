@@ -71,16 +71,21 @@ contains
     real(r8), dimension(nlevgrnd) :: melt_profile ! profile of melted excess ice
     !-----------------------------------------------------------------------
 
+    ! RF NOTE: use of 1989 ALT in these parameterizations is somewhat of a placeholder used to compare against
+    ! ATS runs for NGEE Arctic Phase 3. It should ultimately be replaced by a more physically based threshold
+    ! later on.
     associate(                                                                &
          t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
          alt                  =>    canopystate_vars%alt_col             ,      & ! Output:  [real(r8) (:)   ]  current depth of thaw
          altmax               =>    canopystate_vars%altmax_col          ,      & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw
          altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,      & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
+         altmax_1989          =>    canopystate_vars%altmax_1989_col     ,      & ! Output:  [real(r8) (:)   ]  maximum ALT in 1989
          altmax_ever          =>    canopystate_vars%altmax_ever_col     ,      & ! Output:  [real(r8) (:)   ]  maximum thaw depth since initialization
          alt_indx             =>    canopystate_vars%alt_indx_col        ,      & ! Output:  [integer  (:)   ]  current depth of thaw
          altmax_indx          =>    canopystate_vars%altmax_indx_col     ,      & ! Output:  [integer  (:)   ]  maximum annual depth of thaw
          altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col , & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw
+         altmax_1989_indx     =>    canopystate_vars%altmax_1989_indx_col,      & ! Output:  [integer  (:)   ]  index of maximum ALT in 1989
          altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col,      & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
          excess_ice           =>    col_ws%excess_ice                    ,      & ! Input:   [real(r8) (:,:) ]  depth variable excess ice content in soil column (-)
          rmax                 =>    col_pp%iwp_microrel                  ,      & ! Output:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
@@ -154,7 +159,6 @@ contains
             endif
          endif
 
-
          ! if appropriate, update maximum annual active layer thickness
          if (alt(c) > altmax(c)) then
             altmax(c) = alt(c)
@@ -168,6 +172,13 @@ contains
                 altmax_ever(c) = 0._r8
                 altmax_ever_indx(c) = 0
             endif
+         endif
+
+         ! special loop for if year = 1989, see above note regarding
+         ! replacing with more physically based mechanism.
+         if (year .eq. 1989) then
+            altmax_1989(c) = altmax(c)
+            altmax_1989_indx(c) = altmax_indx(c)
          endif
 
          ! update subsidence based on change in ALT

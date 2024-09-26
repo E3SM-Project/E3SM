@@ -335,14 +335,17 @@ contains
          lnd_rof_coupling_nstep
 
     namelist /elm_inparm/ &
-         snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
-    
-    namelist /elm_inparm/ & 
+         snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+
+    namelist /elm_inparm/ &
          use_modified_infil
 
     namelist /elm_inparm/ &
          use_fan, fan_mode, fan_to_bgc_veg, nh4_ads_coef
 
+   ! NGEE Arctic options
+   namelist /elm_inparm/ &
+         use_polygonal_tundra
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -1007,6 +1010,8 @@ contains
     ! use modified infiltration scheme in surface water storage
     call mpi_bcast (use_modified_infil, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    !NGEE Arctic options
+    call mpi_bcast (use_polygonal_tundra, 1, MPI_LOGICAL, 0, mpicom, ier)
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -1288,6 +1293,8 @@ contains
        write(iulog,*) ' fan_to_bgc_veg = ', fan_to_bgc_veg
     end if
 
+    ! NGEE Arctic options
+    if (use_polygonal_tundra) write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
   end subroutine control_print
 
 end module controlMod

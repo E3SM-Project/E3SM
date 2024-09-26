@@ -394,7 +394,11 @@ module elm_varctl
   logical, public :: fan_nh3_to_atm      = .false.
   logical, public :: fan_to_bgc_crop     = .false.
   logical, public :: fan_to_bgc_veg      = .false.
- 
+
+  !----------------------------------------------------------
+  ! NGEE Arctic parameterizations
+  !----------------------------------------------------------
+  logical, public :: use_polygonal_tundra = .false.
 
   !----------------------------------------------------------
   ! VSFM switches

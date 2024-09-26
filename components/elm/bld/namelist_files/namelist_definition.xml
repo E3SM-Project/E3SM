@@ -2237,4 +2237,14 @@ not be called.
 <default>Default: 0</default>
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- NGEE Arctic Options                                                                       -->
+<!-- ========================================================================================  -->
+
+<entry id="use_polygonal_tundra" type="logical" category="default_settings"
+	group="elm_inparm" value=".false.">
+Use polygonal tundra parameterizations for ice wedge polygon microtopography and inindation fraction
+<default>Default: .false.</default>
+</entry>
+
 </namelist_definition>

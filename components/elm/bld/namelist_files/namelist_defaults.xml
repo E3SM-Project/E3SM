@@ -2248,4 +2248,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fan use_fates=".true." >.false.</use_fan>
 <use_fan fan_mode='disable'>.false.</use_fan>
 
+<!-- NGEE Arctic Options -->
+<use_polygonal_tundra>.false.</use_polygonal_tundra>;
+
 </namelist_defaults>

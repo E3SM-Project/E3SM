@@ -1068,12 +1068,12 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use elm_varctl      , only : create_crop_landunit, use_fates
+    use elm_varctl      , only : create_crop_landunit, use_fates, use_polygonal_tundra
     use elm_varctl      , only : irrigate
     use elm_varpar      , only : surfpft_lb, surfpft_ub, surfpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft
-    use landunit_varcon , only : istsoil, istcrop
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft, wt_polygon
+    use landunit_varcon , only : istsoil, istcrop, ilowcenpoly, iflatcenpoly, ihighcenpoly
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
@@ -1112,7 +1112,26 @@ contains
     call ncd_io(ncid=ncid, varname='PCT_NATVEG', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_NATVEG NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits) 
+    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits)
+
+    if (use_polygonal_tundra) then
+      call ncd_io(ncid=ncid, varname='PCT_HCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_HCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,ihighcenpoly) = arrayl(begg:endg,1:max_topounits)
+
+      call ncd_io(ncid=ncid, varname='PCT_FCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_FCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,iflatcenpoly) = arrayl(begg:endg,1:max_topounits)
+
+      call ncd_io(ncid=ncid, varname='PCT_LCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_LCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,ilowcenpoly) = arrayl(begg:endg,1:max_topounits)
+    endif
+
+    ! add two other types
 
     call ncd_io(ncid=ncid, varname='PCT_CROP', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
@@ -1184,6 +1203,9 @@ contains
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
+    wt_polygon(begg:endg,:,ihighcenpoly) = wt_polygon(begg:endg,:,ihighcenpoly) / 100._r8
+    wt_polygon(begg:endg,:,iflatcenpoly) = wt_polygon(begg:endg,:,iflatcenpoly) / 100._r8
+    wt_polygon(begg:endg,:,ilowcenpoly) = wt_polygon(begg:endg,:,ilowcenpoly) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
     !call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
     call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
