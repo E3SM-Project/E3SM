@@ -479,18 +479,21 @@ def print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style="in
 
     if len(node)>0:
         print (f"{indent}{node.tag}:")
-        # This is not a leaf, so print all nested nodes
+        # This is not a leaf, so print all nested nodes.
         for child in node:
-            print_var_impl(child,parent_map,full,dtype,value,valid_values,'short',indent+"  ")
-
+            # Since prints are nicely nested, use 'node-name' as print style
+            print_var_impl(child,{},full,dtype,value,valid_values,'node-name',indent+"  ")
         return
 
-    expect (print_style in ["short","full"],
+    #  print (f"printing leaf={node.tag}, len(parent_map)={len(parent_map)}")
+    expect (print_style in ["node-name","full-scope","parent-scope"],
             f"Invalid print_style '{print_style}' for print_var_impl. Use 'full' or 'short'.")
 
-    if print_style=="short":
+    if print_style=="node-name":
         # Just the inner most name
         name = node.tag
+    elif print_style=="parent-scope":
+        name = parent_map[node].tag + "::" + node.tag
     else:
         parents = get_parents(node, parent_map)
         name = "::".join(e.tag for e in parents) + "::" + node.tag
@@ -538,24 +541,24 @@ def print_var(xml_root,parent_map,var,full,dtype,value,valid_values,print_style=
     >>> tree = ET.fromstring(xml)
     >>> parent_map = create_parent_map(tree)
     >>> ################ Missing type data #######################
-    >>> print_var(tree,parent_map,'::prop1',False,True,False,False,"short")
+    >>> print_var(tree,parent_map,'::prop1',False,True,False,False,"node-name")
     Traceback (most recent call last):
     SystemExit: ERROR: Error! Missing type information for prop1
-    >>> print_var(tree,parent_map,'prop2',True,False,False,False,"short")
+    >>> print_var(tree,parent_map,'prop2',True,False,False,False,"node-name")
     prop2
         value: 2
         type: integer
         valid values: ['1', '2']
-    >>> print_var(tree,parent_map,'prop2',False,True,False,False,"short")
+    >>> print_var(tree,parent_map,'prop2',False,True,False,False,"node-name")
     prop2: integer
-    >>> print_var(tree,parent_map,'prop2',False,False,True,False,"short")
+    >>> print_var(tree,parent_map,'prop2',False,False,True,False,"node-name")
     2
-    >>> print_var(tree,parent_map,'prop2',False,False,False,True,"short","    ")
+    >>> print_var(tree,parent_map,'prop2',False,False,False,True,"node-name","    ")
         prop2: ['1', '2']
     """
 
-    expect (print_style in ["short","full"],
-            f"Invalid print_style '{print_style}' for print_var. Use 'full' or 'short'.")
+    expect (print_style in ["node-name","full-scope","parent-scope"],
+            f"Invalid print_style '{print_style}' for print_var. Use 'node-name', 'full-scope', or 'parent-scope'.")
 
     # Get matches
     matches = get_xml_nodes(xml_root,var)
@@ -564,19 +567,8 @@ def print_var(xml_root,parent_map,var,full,dtype,value,valid_values,print_style=
         print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style,indent)
 
 ###############################################################################
-def print_all_vars(xml_root,xml_node,parent_map,curr_namespace,full,dtype,value,valid_values,print_style,indent):
-###############################################################################
-
-    print (f"{indent}{xml_node.tag}")
-    for c in xml_node:
-        if len(c)>0:
-            print_all_vars(xml_root,c,parent_map,curr_namespace+c.tag+"::",full,dtype,value,valid_values,print_style,indent+"    ")
-        else:
-            print_var(xml_root,parent_map,curr_namespace+c.tag,full,dtype,value,valid_values,print_style,indent+"    ")
-
-###############################################################################
 def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
-                   dtype=False, valid_values=False, grep=False):
+                   dtype=False, valid_values=False, grep=False,parent_map=None):
 ###############################################################################
     """
     >>> xml = '''
@@ -605,28 +597,33 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
         sub::prop1: two
     """
 
-    parent_map = create_parent_map(xml_root)
+    if not parent_map:
+        parent_map = create_parent_map(xml_root)
     if listall:
-        print_all_vars(xml_root,xml_root,parent_map,"::",full,dtype,value,valid_values,"short","    ")
+        print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","  ")
 
     elif grep:
         for regex in variables:
             expect("::" not in regex, "query --grep does not support including parent info")
             var_re = re.compile(f'{regex}')
             if var_re.search(xml_root.tag):
-                print_all_vars(xml_root,xml_root,parent_map,"::",full,dtype,value,valid_values,"short","  ")
+                if len(xml_root)>0:
+                    parents = get_parents(xml_root,parent_map)
+                    print (f"{'::'.join([p.tag for p in parents]) + '::' + xml_root.tag}:")
+                print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","  ")
             else:
                 for elem in xml_root:
                     if len(elem)>0:
-                        atm_query_impl(elem,variables,listall,full,value,dtype,valid_values,grep)
+                        atm_query_impl(elem,variables,listall,full,value,dtype,valid_values,grep,parent_map)
                     else:
                         if var_re.search(elem.tag):
                             nodes = get_xml_nodes(xml_root, "::"+elem.tag)
                             expect(len(nodes) == 1, "No matches?")
-                            print_var_impl(nodes[0],parent_map,full,dtype,value,valid_values,"full","    ")
+                            print_var_impl(nodes[0],parent_map,full,dtype,value,valid_values,"full-scope","    ")
 
     else:
         for var in variables:
-            print_var(xml_root,parent_map,var,full,dtype,value,valid_values,"full","  ")
+            pmap = {} if var=='ANY' else parent_map
+            print_var(xml_root,pmap,var,full,dtype,value,valid_values,"parent-scope","  ")
 
     return True
