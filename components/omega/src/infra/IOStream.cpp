@@ -107,6 +107,8 @@ int IOStream::finalize(
    // Remove all streams
    AllStreams.clear();
 
+   return Err;
+
 } // End finalize
 
 //------------------------------------------------------------------------------
@@ -872,6 +874,8 @@ int IOStream::writeFieldMeta(
       }
 
    } // end loop over metadata
+
+   return Err;
 
 } // End writeFieldMeta
 
