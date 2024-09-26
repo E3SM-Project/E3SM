@@ -1751,6 +1751,7 @@ module advance_clubb_core_module
         edsclrm(:,edsclr_dim)=rtm(:)
       endif
 
+
       call advance_windm_edsclrm( dt, wm_zt, Km_zm, Kmh_zm, ug, vg, um_ref, vm_ref, & ! intent(in)
                                   wp2, up2, vp2, um_forcing, vm_forcing,        & ! intent(in)
                                   edsclrm_forcing,                              & ! intent(in)
