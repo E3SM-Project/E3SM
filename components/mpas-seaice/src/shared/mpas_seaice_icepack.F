@@ -15002,7 +15002,8 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          biogeochemistryPool, &
-         diagnostics_biogeochemistryPool
+         diagnostics_biogeochemistryPool, &
+         tracers_aggregatePool
 
     ! biogeochemistry
     real(kind=RKIND), dimension(:), pointer :: &
@@ -15050,7 +15051,12 @@ contains
          totalVerticalBiologySnow, &
          bgridPorosityIceCell, &
          bgridSalinityIceCell, &
-         bgridTemperatureIceCell
+         bgridTemperatureIceCell, &
+         verticalBCTotalIceCell, &
+         verticalDustTotalIceCell, &
+         verticalBCTotalSnowCell, &
+         verticalDustTotalSnowCell
+
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          bioTracerShortwave
@@ -15080,6 +15086,7 @@ contains
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
              call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistryPool)
+             call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregatePool)
 
              if (config_use_vertical_tracers) then
                 call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
@@ -15132,6 +15139,10 @@ contains
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBCSnow", totalVerticalBCSnow)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalAlgaeCarbonIce", totalVerticalAlgaeCarbonIce)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalDOCLabileIce", totalVerticalDOCLabileIce)
+             call MPAS_pool_get_array(tracers_aggregatePool, "verticalBCTotalIceCell", verticalBCTotalIceCell)
+             call MPAS_pool_get_array(tracers_aggregatePool, "verticalDustTotalIceCell", verticalDustTotalIceCell)
+             call MPAS_pool_get_array(tracers_aggregatePool, "verticalDustTotalSnowCell", verticalDustTotalSnowCell)
+             call MPAS_pool_get_array(tracers_aggregatePool, "verticalBCTotalSnowCell", verticalBCTotalSnowCell)
 
 
              netBrineHeight             = 0.0_RKIND
@@ -15165,10 +15176,14 @@ contains
              totalVerticalBC1Snow          = 0.0_RKIND
              totalVerticalBC2Snow          = 0.0_RKIND
              totalVerticalBCSnow           = 0.0_RKIND
-             totalVerticalBCSnow           = 0.0_RKIND
+             totalVerticalBCIce            = 0.0_RKIND
              totalVerticalDustSnow         = 0.0_RKIND
              totalVerticalAlgaeCarbonIce   = 0.0_RKIND
              totalVerticalDOCLabileIce     = 0.0_RKIND
+             verticalBCTotalIceCell        = 0.0_RKIND
+             verticalDustTotalIceCell      = 0.0_RKIND
+             verticalBCTotalSnowCell       = 0.0_RKIND
+             verticalDustTotalSnowCell     = 0.0_RKIND
 
           endif
 
