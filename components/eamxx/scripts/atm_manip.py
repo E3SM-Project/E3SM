@@ -89,11 +89,11 @@ def get_xml_nodes(xml_root, name):
     >>> ################ INVALID SYNTAX #######################
     >>> get_xml_nodes(tree,'sub::::prop1')
     Traceback (most recent call last):
-    SystemExit: ERROR: Invalid xml node name format, 'sub::::prop1' contains ::::
+    SystemExit: ERROR: Invalid xml node name format, 'sub::::prop1' contains '::::'
     >>> ################ VALID USAGE #######################
     >>> get_xml_nodes(tree,'invalid::prop1')
     []
-    >>> [item.text for item in get_xml_nodes(tree,'prop1')]
+    >>> [item.text for item in get_xml_nodes(tree,'ANY::prop1')]
     ['one', 'two']
     >>> [item.text for item in get_xml_nodes(tree,'::prop1')]
     ['one']
@@ -102,10 +102,10 @@ def get_xml_nodes(xml_root, name):
     >>> item = get_xml_nodes(tree,'prop2')[0]
     >>> parent_map = create_parent_map(tree)
     >>> [p.tag for p in get_parents(item, parent_map)]
-    ['root', 'sub']
+    ['sub']
     """
     expect('::::' not in name,
-            "Badly formatted node name: found '::::'")
+            f"Invalid xml node name format, '{name}' contains '::::'")
 
     tokens = name.split("::")
     expect (tokens[-1] != '', "Input query string ends with '::'. It should end with an actual node name")
@@ -156,7 +156,8 @@ def get_xml_nodes(xml_root, name):
         error_str = f"{name} is ambiguous. Use ANY in the node path to allow multiple matches. Matches:\n"
         for node in result:
             parents = get_parents(node, parent_map)
-            name = "::".join(e.tag for e in parents) + "::" + node.tag
+            name = "::".join(e.tag for e in parents)
+            name = node.tag if name=="" else name + "::" + node.tag
             error_str += "  " + name + "\n"
 
         expect(False, error_str)
@@ -393,8 +394,8 @@ def atm_config_chg_impl(xml_root, change):
     >>> atm_config_chg_impl(tree,'prop1=three')
     Traceback (most recent call last):
     SystemExit: ERROR: prop1 is ambiguous. Use ANY in the node path to allow multiple matches. Matches:
-      root::prop1
-      root::sub::prop1
+      prop1
+      sub::prop1
     <BLANKLINE>
     >>> ################ VALID USAGE #######################
     >>> atm_config_chg_impl(tree,'::prop1=two')
@@ -405,7 +406,7 @@ def atm_config_chg_impl(xml_root, change):
     True
     >>> atm_config_chg_impl(tree,'ANY::prop1=three')
     True
-    >>> [item.text for item in get_xml_nodes(tree,'prop1')]
+    >>> [item.text for item in get_xml_nodes(tree,'ANY::prop1')]
     ['three', 'three']
     >>> ################ TEST APPEND += #################
     >>> atm_config_chg_impl(tree,'a+=4')
@@ -465,13 +466,48 @@ def get_parents(elem, parent_map):
     be the furthest ancestor, last item will be direct parent)
     """
     results = []
-    if elem in parent_map and parent_map[elem] is not None:
+    if not is_root(elem,parent_map):
         parent = parent_map[elem]
         results = get_parents(parent, parent_map)
-        if parent_map[parent] is not None:
+        if not is_root(parent,parent_map):
             results.append(parent)
 
     return results
+
+###############################################################################
+def is_anchestor_of(parent,child,parent_map):
+###############################################################################
+    """
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> parent_map = create_parent_map(tree)
+    >>> sub = get_xml_nodes(tree,'sub')[0]
+    >>> sub_prop1 = get_xml_nodes(tree,'sub::prop1')[0]
+    >>> is_anchestor_of(sub,sub_prop1,parent_map)
+    True
+    >>> is_anchestor_of(sub_prop1,sub,parent_map)
+    False
+    """
+    curr = child
+    while curr is not None:
+        if curr is parent:
+            return True
+        curr = parent_map[curr]
+    return False
+
+###############################################################################
+def is_root (node,parent_map):
+###############################################################################
+    return parent_map[node] is None
 
 ###############################################################################
 def print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style="invalid",indent=""):
@@ -482,10 +518,9 @@ def print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style="in
         # This is not a leaf, so print all nested nodes.
         for child in node:
             # Since prints are nicely nested, use 'node-name' as print style
-            print_var_impl(child,{},full,dtype,value,valid_values,'node-name',indent+"  ")
+            print_var_impl(child,{},full,dtype,value,valid_values,'node-name',indent+"    ")
         return
 
-    #  print (f"printing leaf={node.tag}, len(parent_map)={len(parent_map)}")
     expect (print_style in ["node-name","full-scope","parent-scope"],
             f"Invalid print_style '{print_style}' for print_var_impl. Use 'full' or 'short'.")
 
@@ -493,10 +528,13 @@ def print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style="in
         # Just the inner most name
         name = node.tag
     elif print_style=="parent-scope":
-        name = parent_map[node].tag + "::" + node.tag
+        parent = parent_map[node]
+        name = node.tag if is_root(parent,parent_map) else parent.tag + "::" + node.tag
     else:
         parents = get_parents(node, parent_map)
-        name = "::".join(e.tag for e in parents) + "::" + node.tag
+        name = "::".join(e.tag for e in parents)
+        name += "::" if parents else ""
+        name += node.tag
 
     if full:
         expect ("type" in node.attrib.keys(),
@@ -563,7 +601,19 @@ def print_var(xml_root,parent_map,var,full,dtype,value,valid_values,print_style=
     # Get matches
     matches = get_xml_nodes(xml_root,var)
 
-    for node in matches:
+    # If ANY is in the var name, we may hit the case where one of the matches
+    # is a parent of another match. In this case, we want to get rid of 
+    unique_matches = []
+    for i in matches:
+        add_this = True
+        for j in matches:
+            if i is not j and is_anchestor_of(j,i,parent_map):
+                add_this = False
+            
+        if add_this:
+            unique_matches.append(i)
+
+    for node in unique_matches:
         print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style,indent)
 
 ###############################################################################
@@ -584,23 +634,22 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
     >>> tree = ET.fromstring(xml)
     >>> vars = ['prop2','::prop1']
     >>> success = atm_query_impl(tree, vars)
-        root::sub::prop2: 2
-        root::prop1: one
+        sub::prop2: 2
+        prop1: one
     >>> success = atm_query_impl(tree, [], listall=True, valid_values=True)
-        root
+        prop1: <valid values not provided>
+        sub:
             prop1: <valid values not provided>
-            sub
-                prop1: <valid values not provided>
-                prop2: ['1', '2']
+            prop2: ['1', '2']
     >>> success = atm_query_impl(tree,['prop1'], grep=True)
-        root::prop1: one
+        prop1: one
         sub::prop1: two
     """
 
     if not parent_map:
         parent_map = create_parent_map(xml_root)
     if listall:
-        print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","  ")
+        print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","    ")
 
     elif grep:
         for regex in variables:
@@ -610,7 +659,7 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
                 if len(xml_root)>0:
                     parents = get_parents(xml_root,parent_map)
                     print (f"{'::'.join([p.tag for p in parents]) + '::' + xml_root.tag}:")
-                print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","  ")
+                print_var(xml_root,parent_map,'ANY',full,dtype,value,valid_values,"node-name","    ")
             else:
                 for elem in xml_root:
                     if len(elem)>0:
@@ -624,6 +673,6 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
     else:
         for var in variables:
             pmap = {} if var=='ANY' else parent_map
-            print_var(xml_root,pmap,var,full,dtype,value,valid_values,"parent-scope","  ")
+            print_var(xml_root,pmap,var,full,dtype,value,valid_values,"parent-scope","    ")
 
     return True
