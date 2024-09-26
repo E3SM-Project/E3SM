@@ -25,9 +25,9 @@ module VerticalProfileMod
   logical , public :: exponential_rooting_profile = .true.
   logical , public :: pftspecific_rootingprofile = .true.
   ! how steep profile is for root C inputs (1/ e-folding depth) (1/m)
-  real(r8), public :: rootprof_exp  = 3.       
+  real(r8), public :: rootprof_exp  = 3._r8 
   ! how steep profile is for surface components (1/ e_folding depth) (1/m)
-  real(r8), public :: surfprof_exp  = 10.      
+  real(r8), public :: surfprof_exp  = 10._r8      
   !-----------------------------------------------------------------------
 
 contains
@@ -83,7 +83,7 @@ contains
     real(r8) :: ndep_prof_sum
     real(r8) :: nfixation_prof_sum
     real(r8) :: pdep_prof_sum
-    real(r8) :: delta = 1.e-10
+    real(r8) :: delta = 1.e-10_r8
     character(len=32) :: subname = 'decomp_vertprofiles'
     !-----------------------------------------------------------------------
 
@@ -294,9 +294,9 @@ contains
       ! check to make sure integral of all profiles = 1.
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         ndep_prof_sum = 0.
-         nfixation_prof_sum = 0.
-         pdep_prof_sum = 0.
+         ndep_prof_sum = 0._r8
+         nfixation_prof_sum = 0._r8
+         pdep_prof_sum = 0._r8
          do j = 1, nlevdecomp
             ndep_prof_sum = ndep_prof_sum + ndep_prof(c,j) *  dzsoi_decomp(j)
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
@@ -324,10 +324,10 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         froot_prof_sum = 0.
-         croot_prof_sum = 0.
-         leaf_prof_sum = 0.
-         stem_prof_sum = 0.
+         froot_prof_sum = 0._r8
+         croot_prof_sum = 0._r8
+         leaf_prof_sum = 0._r8
+         stem_prof_sum = 0._r8
          do j = 1, nlevdecomp
             froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
             croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
