@@ -118,7 +118,6 @@ def get_xml_nodes(xml_root, name):
         # Split tokens list into two parts: before and after 'ANY'
         before_any = tokens[:tokens.index('ANY')]
         after_any = tokens[tokens.index('ANY') + 1:]
-        expect (after_any, "Input name should not end with ANY")
 
         # The case where name starts with ::ANY is delicate, since before_any=[''], and this
         # trips the call to get_xml_nodes. Since ANY and ::ANY are conceptually the same,
@@ -133,7 +132,7 @@ def get_xml_nodes(xml_root, name):
         xml_root = new_root[0]
 
         # Use new_root to find all matches for whatever comes after 'ANY::'
-        name = '::'.join(after_any)
+        name = '*' if not after_any else '::'.join(after_any)
     else:
         multiple_hits_ok = False
 
