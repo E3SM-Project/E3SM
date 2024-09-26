@@ -143,7 +143,8 @@ module ColumnDataType
     real(r8), pointer :: snow_persistence   (:)   => null() ! length of time that ground has had non-zero snow thickness (sec)
     real(r8), pointer :: snw_rds_top        (:)   => null() ! snow grain radius (top layer)  (m^-6, microns)
     logical , pointer :: do_capsnow         (:)   => null() ! true => do snow capping
-    real(r8), pointer :: h2osoi_tend_tsl_col(:)   => null() ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s) 
+    real(r8), pointer :: h2osoi_tend_tsl_col(:)   => null() ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s)
+    real(r8), pointer :: excess_ice         (:)   => null() ! NGEE-Arctic: tracking excess ground ice
     ! Area fractions
     real(r8), pointer :: frac_sno           (:)   => null() ! fraction of ground covered by snow (0 to 1)
     real(r8), pointer :: frac_sno_eff       (:)   => null() ! fraction of ground covered by snow (0 to 1)
@@ -1424,6 +1425,7 @@ contains
     if (use_fan) then
        allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = spval
     end if
+    allocate(this%excess_ice         (begc:endc))                     ; this%excess_ice         (:)   = spval
     allocate(this%snw_rds_top        (begc:endc))                     ; this%snw_rds_top        (:)   = spval
     allocate(this%do_capsnow         (begc:endc))
     allocate(this%frac_sno           (begc:endc))                     ; this%frac_sno           (:)   = spval
@@ -1570,7 +1572,12 @@ contains
          ptr_col=this%h2osoi_tend_tsl_col, l2g_scale_type='veg', &
          default='inactive')
     end if
- 
+
+    this%excess_ice(begc:endc) = spval
+    call hist_addfld1d (fname='EXCESS_ICE', units = 'kg/m2', &
+         avgflag='A', long_name='Excess ground ice', &
+         ptr_col=this$excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
+
     this%frac_sno(begc:endc) = spval
     call hist_addfld1d (fname='FSNO',  units='1',  &
          avgflag='A', long_name='fraction of ground covered by snow', &
@@ -1918,6 +1925,11 @@ contains
     if (flag=='read' .and. .not. readvar) then
          this%snow_persistence(:) = 0.0_r8
     end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='EXCESS_ICE', xtype=ncd_double, &
+         dim1name='column', &
+         long_name='excess ground ice', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%excess_ice)
 
     call restartvar(ncid=ncid, flag=flag, varname='frac_sno', xtype=ncd_double,  &
          dim1name='column', &

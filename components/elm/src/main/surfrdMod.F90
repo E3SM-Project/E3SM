@@ -30,7 +30,7 @@ module surfrdMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: surfrd_get_globmask  ! Reads global land mask (needed for setting domain decomp)
-  public :: surfrd_get_grid      ! Read grid/ladnfrac data into domain (after domain decomp)
+  public :: surfrd_get_grid      ! Read grid/landfrac data into domain (after domain decomp)
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
   public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
