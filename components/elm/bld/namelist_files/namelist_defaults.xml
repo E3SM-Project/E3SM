@@ -242,6 +242,10 @@ lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr1950_c221017.nc</fsurdat>
 <fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr1850_c210707.nc</fsurdat>
 
+<!-- ne0np4_vr28natlref -->
+<finidat hgrid="ne0np4_vr28natlref">lnd/clm2/initdata/clmi.F2010C5.ne0np4natlanticref.ne30x4.L71.clm2.2011-08-27-00000.c20220811nc</finidat>
+<fsurdat hgrid="ne0np4_vr28natlref" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0np4natlanticref.ne30x4_simyr2000_c201018.nc</fsurdat>
 
 <!-- f10 resolution -->
 

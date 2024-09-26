@@ -2,6 +2,7 @@
 
 <namelist_defaults>
 
+
 <!-- Timestep size (this is the dynamics/physics coupling interval) -->
 <dtime dyn="eul"                   >1200</dtime>
 
@@ -25,6 +26,7 @@
 <dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_enax4v1">900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_vr28natlref">900</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -117,6 +119,7 @@
 <!-- (starting from initial file interpolated using interpic) -->
 <ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne0np4_vr28natlref" nlev="71" >atm/cam/inic/homme/t37_v1.2-NATL-F2010C5-v2_L71_INIC.nc</ncdata>
 
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
@@ -153,6 +156,7 @@
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_vr28natlref" >atm/cam/topo/topo_ne0np4natlanticref.ne30x4_smooth.nc</bnd_topo>
 
 <!-- ieflx_opt 0: atmonly, 3: coupled -->
 <ieflx_opt  ocn="socn"  >0</ieflx_opt>
@@ -706,6 +710,7 @@
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_vr28natlref">atm/cam/chem/trop_mam/atmsrf_ne0np4natlanticref.ne30x4_190829.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
@@ -1244,6 +1249,7 @@
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
+<se_ne hgrid="ne0np4_vr28natlref" > 0 </se_ne>
 
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
@@ -1254,7 +1260,7 @@
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_enax4v1">atm/cam/inic/homme/enax4v1.g</mesh_file>
-<mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_vr28natlref" >atm/cam/inic/homme/ne0np4natlanticref.ne30x4.g</mesh_file>
 
 <!-- viscosity  -->
 
@@ -1336,6 +1342,14 @@
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 8     </dt_tracer_factor>
 <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8     </hypervis_subcycle_q>
 
+<se_tstep            dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  1 </hypervis_subcycle_q>
+<dt_remap_factor     dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </dt_remap_factor>
+<se_limiter_option   dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  8 </se_limiter_option>
+<qsplit              dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  1 </qsplit>
+<rsplit              dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  2 </rsplit>
+<nu_p                dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > 8.0e-8 </nu_p>
 
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
@@ -1343,6 +1357,7 @@
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_conus_x4v1"      > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_exan4v1"      > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_twpx4v1"      > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > 0 </hypervis_subcycle_tom>
 
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
@@ -1350,6 +1365,7 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_arcticx4v1"       > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_vr28natlref"      > 7 </hypervis_subcycle>
 
 
 <!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
@@ -1397,6 +1413,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_enax4v1">8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
+<nu dyn_target="preqx" hgrid="ne0np4_vr28natlref" >8.0e-8</nu>
 
 <!-- preqx uses nu_div = 2.5*nu -->
 <nu_div dyn_target="preqx" hgrid="ne4np4" >  1.25e18 </nu_div>
@@ -1418,6 +1435,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu_div dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_vr28natlref" >20.0e-8</nu_div>
 
 <hypervis_scaling dyn_target="preqx" > 0 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
@@ -1429,6 +1447,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_enax4v1">3.2</hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_twpx4v1" > 3.2 </hypervis_scaling>
+<hypervis_scaling dyn_target="preqx" hgrid="ne0np4_vr28natlref" > 3.2 </hypervis_scaling>
 
 
 <!-- old interface, used by preqx.  timesteps controlled by se_nsplit, rsplit, qsplit -->
@@ -1451,6 +1470,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <rsplit dyn_target="preqx" hgrid="ne4np4" >  1 </rsplit>
 <rsplit dyn_target="preqx" hgrid="ne11np4">  2 </rsplit>
 <rsplit dyn_target="preqx" hgrid="ne45np4"> -1 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne0np4_vr28natlref">  2 </rsplit>
 
 <se_nsplit dyn_target="preqx"> 2 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne4np4" >   4 </se_nsplit>
@@ -1472,6 +1492,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_enax4v1">4</se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_twpx4v1" > 4 </se_nsplit>
+<se_nsplit dyn_target="preqx" hgrid="ne0np4_vr28natlref" > 5 </se_nsplit>
 
 
 <hypervis_subcycle hgrid="ne4np4" dyn_target="preqx">   3 </hypervis_subcycle>

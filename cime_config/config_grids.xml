@@ -913,6 +913,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne0vr28natlref_ne0vr28natlref_t12" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_vr28natlref</grid>
+      <grid name="lnd">ne0np4_vr28natlref</grid>
+      <grid name="ocnice">ne0np4_vr28natlref</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>tx0.1v2</mask>
+    </model_grid>
+
     <model_grid alias="conusx4v1_conusx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_conus_x4v1_lowcon</grid>
       <grid name="lnd">ne0np4_conus_x4v1_lowcon</grid>
@@ -2686,6 +2696,8 @@
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <file grid="atm" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oARRM60to10.210630.nc</file>
       <file grid="lnd" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oARRM60to10.210630.nc</file>
+      <file grid="lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
+      <file grid="atm" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
@@ -2772,6 +2784,15 @@
       <desc>1-deg with 1/4-deg over Tropical West Pacific (version 1):</desc>
     </domain>
 
+    <domain name="ne0np4_vr28natlref">
+      <nx>119603</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
+      <file grid="ocnice"  mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
+      <desc>ne0np4VR28.NATLREF is a Spectral Elem 1-deg grid with a 1/4 deg refined region over the Atlantic Ocean:</desc>
+      <support>Test support only</support>
+    </domain>
+    
     <domain name="ne0np4_conus_x4v1_lowcon">
       <nx>89147</nx>
       <ny>1</ny>
@@ -3146,6 +3167,13 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_ECwISC30to60E1r2-nomask_to_ne30np4_aave.200408.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne0np4_vr28natlref" lnd_grid="r0125">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref.ne30x4_TO_r0125_aave.210126.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref.ne30x4_TO_r0125_aave.210126.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne0np4natlanticref.ne30x4_aave.210126.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne0np4natlanticref.ne30x4_aave.210126.nc</map>
+    </gridmap>
+    
     <gridmap atm_grid="ne30np4" lnd_grid="0.9x1.25">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_fv0.9x1.25_aave.120712.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_fv0.9x1.25_aave.120712.nc</map>
@@ -3935,6 +3963,11 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne0np4_vr28natlref" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref.ne30x4_TO_r0125_aave.210126.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref.ne30x4_TO_r0125_aave.210126.nc</map>
+    </gridmap>
+    
     <gridmap atm_grid="ne4np4" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne4np4/map_ne4np4_TO_r05_aave.160621.nc</map>
       <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne4np4/map_ne4np4_TO_r05_aave.160621.nc</map>
@@ -4150,6 +4183,11 @@
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
     </gridmap>
 
+    <gridmap lnd_grid="ne0np4_vr28natlref" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref.ne30x4_TO_r0125_aave.210126.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne0np4natlanticref.ne30x4_aave.210126.nc</map>
+    </gridmap>
+    
     <gridmap lnd_grid="0.23x0.31" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/0.23x0.31/map_0.23x0.31_nomask_to_0.5x0.5_nomask_aave_da_c110920.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/0.23x0.31/map_0.5x0.5_nomask_to_0.23x0.31_nomask_aave_da_c110920.nc</map>

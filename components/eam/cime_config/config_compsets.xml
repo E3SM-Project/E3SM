@@ -61,6 +61,16 @@
     <lname>2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F2010C5-CMIP6-LR-ROF</alias>
+    <lname>2010_EAM%CMIP6-LR_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F2010C5-CMIP6-HR-ROF</alias>
+    <lname>2010_EAM%CMIP6-HR_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- Single column model -->
   <!-- *********************************** -->
@@ -68,6 +78,56 @@
   <compset>
     <alias>FSCM</alias>
     <lname>SCM_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5ATMMODCOSP</alias>
+    <lname>2000_EAM%ATMMODCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F1850PDC5L45BGC</alias>
+    <lname>20TR_EAM_ELM%BGC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5L45BGC</alias>
+    <lname>2000_EAM_ELM%BGC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2BCL72</alias>
+    <lname>2000_EAM%CLBMG2L72_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2LINMAM4RESUSBC</alias>
+    <lname>2000_EAM%CLBMG2LINMAM4RESUS_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2MAM4RESUSBC</alias>
+    <lname>2000_EAM%CLBMG2MAM4RESUS_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2MAM4RESUSMOMBC</alias>
+    <lname>2000_EAM%CLBMG2MAM4RESUSMOM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2MAM4RESUSCOSPBC</alias>
+    <lname>2000_EAM%CLBMG2MAM4RESUSCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2MAM4RESUSMOMCOSPBC</alias>
+    <lname>2000_EAM%CLBMG2MAM4RESUSMOMCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5CLBMG2LINMAM4RESUSMOMCOSPBC</alias>
+    <lname>2000_EAM%CLBMG2MAM4RESUSMOMCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>

@@ -1940,7 +1940,8 @@ subroutine tphysbc (ztodt,               &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld, fieldname_len
-    use physconst,       only: cpair, latvap, gravit, rga
+    !+cmz add rair
+    use physconst,       only: cpair, latvap, gravit, rga, rair
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
@@ -1988,8 +1989,10 @@ subroutine tphysbc (ztodt,               &
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(cam_out_t),     intent(inout) :: cam_out
-    type(cam_in_t),      intent(in)    :: cam_in
-
+   !++cmz
+    !type(cam_in_t),      intent(in)    :: cam_in
+    type(cam_in_t),      intent(inout)    :: cam_in
+    !--cmz
 
     !
     !---------------------------Local workspace-----------------------------
@@ -2538,6 +2541,19 @@ end if
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
+ !++cmz 
+             if (macmic_it > 0 .and. nstep > 1) then
+               !print *,'nstep: ',nstep,' macmic: ',macmic_it,' .. WSX: ',cam_in%wsx(1),'  PMID: ',state%pmid(1,pver),'  U: ',state%u(1,pver),'  T: ',state%t(1,pver),'  RAM: ',cam_in%ram1(1)
+               where (cam_in%ram1(:ncol) > 0.0001_r8)  ! only update when RAM is not zero
+                 !print *,'BEFORE: ',cam_in%wsx
+                 cam_in%wsx(:ncol) = -state%pmid(:ncol,pver) * state%u(:ncol,pver) / cam_in%ram1(:ncol) / rair / state%t(:ncol,pver)
+                 cam_in%wsy(:ncol) = -state%pmid(:ncol,pver) * state%v(:ncol,pver) / cam_in%ram1(:ncol) / rair / state%t(:ncol,pver)
+                 !print *,'AFTER: ',cam_in%wsx
+                 !print *,'... ',cam_in%wsx,' ',state%pmid(:,pver),' ',state%u(:,pver),' ',state%t(:,pver),' ',cam_in%ram1
+               end where
+             end if
+             !--cmz
+
    
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
