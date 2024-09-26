@@ -48,7 +48,8 @@ module ColumnDataType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnType      , only : col_pp
   use LandunitType    , only : lun_pp
-  use timeInfoMod , only : nstep_mod 
+  use GridcellType    , only : grc_pp
+  use timeInfoMod , only : nstep_mod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -1109,7 +1110,7 @@ contains
     !------------------------------------------------------------------------
     !
     ! !LOCAL VARIABLES:
-    integer           :: c,l,j                        ! indices
+    integer           :: c,l,j,g                        ! indices
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
 
     !------------------------------------------------------------------------------
@@ -1234,8 +1235,13 @@ contains
        ! Below snow temperatures - nonlake points (lake points are set below)
        if (.not. lun_pp%lakpoi(l)) then
 
-          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec .or. use_arctic_init) then
-             this%t_soisno(c,1:nlevgrnd) = 250._r8
+          if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+            if (use_arctic_init) then
+              g = lun_pp%gridcell(l)
+              this%t_soisnow(c,1:nlevgrnd) = 250._r8 + 40._r8 * cos(grc_pp%lat(g)) ! vary between 250 and 290 based on cos(lat)
+            else
+              this%t_soisno(c,1:nlevgrnd) = 250._r8
+            end if
 
           else if (lun_pp%itype(l) == istwet) then
              this%t_soisno(c,1:nlevgrnd) = 277._r8
@@ -1397,17 +1403,9 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = spval
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = spval
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = spval
-<<<<<<< HEAD
-    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval   
-    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval 
-||||||| parent of 88480f7699 (Update excess_ice from single column value to depth varying)
-    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval
-    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval
-=======
     allocate(this%excess_ice         (begc:endc, 1:nlevgrnd))         ; this%excess_ice         (:,:) = spval
     allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = spval
     allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = spval
->>>>>>> 88480f7699 (Update excess_ice from single column value to depth varying)
     allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = spval
     allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= spval  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = spval
