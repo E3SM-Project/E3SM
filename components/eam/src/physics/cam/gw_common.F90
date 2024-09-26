@@ -1880,10 +1880,15 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
          dudt(i,k)  = dudt(i,k) + utendform(i,k)
          dvdt(i,k)  = dvdt(i,k) + vtendform(i,k)
          !!limit drag tendency Jinbo Xie
-         !utendform(i,k)  = sign(min(abs(utendform(i,k)),umcfac*abs(u1(i,k))/kdt),utendform(i,k))
-         !utendform(i,k)  = sign(min(abs(utendform(i,k)),tndmax),utendform(i,k))
-         !vtendform(i,k)  = sign(min(abs(vtendform(i,k)),umcfac*abs(v1(i,k))/kdt),vtendform(i,k))
-         !vtendform(i,k)  = sign(min(abs(vtendform(i,k)),tndmax),vtendform(i,k))
+         !!some tendency is likely to even overturn the wind
+         !!making wind reverse in 1 timestep and 
+         !!reverse again in next
+         !!this limitation may help to make model stable
+         !!and no more wind reversal due to drag
+         !!which is suppose to decelerate
+         !!not accelerate
+         utendform(i,k)  = sign(min(abs(utendform(i,k)),abs(u1(i,k))/kdt),utendform(i,k))
+         vtendform(i,k)  = sign(min(abs(vtendform(i,k)),abs(v1(i,k))/kdt),vtendform(i,k))
          !!
          dtaux2d_fd(i,k) = utendform(i,k)
          dtauy2d_fd(i,k) = vtendform(i,k)

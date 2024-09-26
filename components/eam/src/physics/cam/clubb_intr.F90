@@ -1166,7 +1166,7 @@ end subroutine clubb_init_cnst
    real(r8),            intent(in)    :: cmfmc(pcols,pverp)       ! convective mass flux--m sub c           [kg/m2/s]
    real(r8),            intent(in)    :: sgh(pcols)             ! std deviation of orography              [m]
    real(r8),            intent(in)    :: sgh30(pcols)             ! std deviation of orography            [m]
-   real(r8),               :: sgh_adj(pcols)           ! std deviation of orography            [m]
+   real(r8)   :: sgh_adj(pcols)           ! std deviation of orography            [m]
    integer,             intent(in)    :: cld_macmic_num_steps     ! number of mac-mic iterations
    integer,             intent(in)    :: macmic_it                ! number of mac-mic iterations
 
@@ -1976,9 +1976,10 @@ end subroutine clubb_init_cnst
         dvsfc_fd=0._r8
         !
         call grid_size(state,dx,dy)
-        !
+        !limit the Small-scale-Drag to 30% the Large Scale-Drag
         do i=1,pcols
-        sgh_adj(i)=min(sgh30(i),0.3*sgh(i))
+        !sgh_adj(i)=min(sgh30(i),0.3*sgh(i))
+        sgh_adj(i)=sgh30(i)
         enddo
 	!
         call gwdo_gsd(&
@@ -1995,7 +1996,7 @@ end subroutine clubb_init_cnst
         znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
         cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
         dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=0._r8,gwd_opt=0,&
+        kpbl2d=kpbl2d_in,itimestep=hdtime,gwd_opt=0,&
         ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
