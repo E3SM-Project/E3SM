@@ -810,7 +810,10 @@ _TESTS = {
     "e3sm_wav_developer" : {
         "time"    : "0:45:00",
         "tests"   : (
-            "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
+            "ERS.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "PEM.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "PET.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
     },
 
