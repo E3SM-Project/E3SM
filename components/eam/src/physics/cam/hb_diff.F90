@@ -817,7 +817,7 @@ subroutine pblintd_ri(ncol    ,                            &
     do i=1,ncol
        check(i)     = .true.
        rino(i,pver) = 0.0_r8
-       rino_bulk    = 0.0_r8
+       rino_bulk(i)    = 0.0_r8
        pblh(i)      = z(i,pver)
     end do
     !
