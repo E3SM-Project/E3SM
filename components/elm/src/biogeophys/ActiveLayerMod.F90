@@ -7,7 +7,7 @@ module ActiveLayerMod
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_const_mod   , only : SHR_CONST_TKFRZ
-  use elm_varctl      , only : iulog
+  use elm_varctl      , only : iulog, spinup_state
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
@@ -68,15 +68,17 @@ contains
     real(r8) :: t1, t2, z1, z2                  ! temporary variables
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
-         t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
-         
-         alt                  =>    canopystate_vars%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw                                                 
-         altmax               =>    canopystate_vars%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
-         altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,    & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
-         alt_indx             =>    canopystate_vars%alt_indx_col        ,    & ! Output:  [integer  (:)   ]  current depth of thaw                                                  
-         altmax_indx          =>    canopystate_vars%altmax_indx_col     ,    & ! Output:  [integer  (:)   ]  maximum annual depth of thaw                                           
-         altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw                                
+    associate(                                                                &
+         t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+
+         alt                  =>    canopystate_vars%alt_col             ,      & ! Output:  [real(r8) (:)   ]  current depth of thaw
+         altmax               =>    canopystate_vars%altmax_col          ,      & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw
+         altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,      & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
+         altmax_ever          =>    canopystate_vars%altmax_ever_col     ,      & ! Output:  [real(r8) (:)   ]  maximum thaw depth since initialization
+         alt_indx             =>    canopystate_vars%alt_indx_col        ,      & ! Output:  [integer  (:)   ]  current depth of thaw
+         altmax_indx          =>    canopystate_vars%altmax_indx_col     ,      & ! Output:  [integer  (:)   ]  maximum annual depth of thaw
+         altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col , & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw
+         altmax_ever_indx     =>    canopystate_vars%altmax_ever_indx_col       & ! Output:  [integer  (:)   ]  maximum thaw depth since initialization
          )
 
       ! on a set annual timestep, update annual maxima
@@ -149,6 +151,15 @@ contains
          if (alt(c) > altmax(c)) then
             altmax(c) = alt(c)
             altmax_indx(c) = alt_indx(c)
+         endif
+         if (alt(c) > altmax_ever(c)) then
+            if (spinup_state .eq. 0) then !overwrite if in spinup
+                altmax_ever(c) = alt(c)
+                altmax_ever_indx(c) = alt_indx(c)
+            else
+                altmax_ever(c) = 0._r8
+                altmax_ever_indx(c) = 0
+            endif
          endif
 
       end do
