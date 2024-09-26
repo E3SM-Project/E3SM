@@ -478,6 +478,14 @@ def get_parents(elem, parent_map):
 def print_var_impl(node,parent_map,full,dtype,value,valid_values,print_style="invalid",indent=""):
 ###############################################################################
 
+    if len(node)>0:
+        print (f"{indent}{node.tag}:")
+        # This is not a leaf, so print all nested nodes
+        for child in node:
+            print_var_impl(child,parent_map,full,dtype,value,valid_values,'short',indent+"  ")
+
+        return
+
     expect (print_style in ["short","full"],
             f"Invalid print_style '{print_style}' for print_var_impl. Use 'full' or 'short'.")
 
@@ -597,6 +605,7 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
         root::prop1: one
         sub::prop1: two
     """
+
     parent_map = create_parent_map(xml_root)
     if listall:
         print_all_vars(xml_root,xml_root,parent_map,"::",full,dtype,value,valid_values,"short","    ")
@@ -619,6 +628,6 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
 
     else:
         for var in variables:
-            print_var(xml_root,parent_map,var,full,dtype,value,valid_values,"full","    ")
+            print_var(xml_root,parent_map,var,full,dtype,value,valid_values,"full","  ")
 
     return True
