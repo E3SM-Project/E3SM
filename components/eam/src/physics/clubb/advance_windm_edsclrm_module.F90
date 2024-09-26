@@ -1569,11 +1569,16 @@ module advance_windm_edsclrm_module
         ! xm term F
         call stat_update_var( ixm_f, xm_forcing, stats_zt )
       endif
+            !print*,"Jinbo Xie xm_tndcy in update"
 
     else   ! implemented in a host model.
 
-      xm_tndcy = 0.0_core_rknd
+            !print*,"Jinbo Xie xm_tndcy in 0.0"
 
+      !!xm_tndcy = 0.0_core_rknd
+!!Jinbo Xie set forcing only
+xm_tndcy(1:gr%nz) = xm_forcing(1:gr%nz)
+!!Jinbo Xie set forcing only
     endif
 
 
