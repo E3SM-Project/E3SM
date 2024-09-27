@@ -3231,6 +3231,9 @@
       <env name="CRAY_ACCEL_TARGET">host</env>
       <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
+    <environment_variables compiler="gnu.*">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
     <environment_variables compiler=".*gpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="CRAY_ACCEL_TARGET">nvidia80</env>
