@@ -139,6 +139,12 @@ If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
+<entry id="balance_check_tolerance" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+BGC balance check tolerance
+Default 1.0e-7 hardwired
+</entry>
+
 <entry id="startdate_add_temperature" type="char*8" category="elm_physics"
        group="elm_inparm" valid_values="" >
 Set date for beginning of adding temperature to atmospheric forcing
