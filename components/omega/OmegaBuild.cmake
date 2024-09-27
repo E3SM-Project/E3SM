@@ -27,7 +27,7 @@ set(CASEROOT                      "${OMEGA_BUILD_DIR}/e3smcase")
 macro(common)
 
   option(OMEGA_DEBUG "Turn on error message throwing (default OFF)." OFF)
-  option(OMEGA_LOG_UNBUFFERED "Turn on unbuffered logging (default OFF)." OFF)
+  option(OMEGA_LOG_FLUSH "Turn on unbuffered logging (default OFF)." OFF)
 
   if(NOT DEFINED OMEGA_CXX_FLAGS)
     set(OMEGA_CXX_FLAGS "")
@@ -521,6 +521,7 @@ macro(update_variables)
   endif()
 
   if(OMEGA_DEBUG)
+    set(OMEGA_LOG_FLUSH ON)
     add_definitions(-DOMEGA_DEBUG -DOMEGA_LOG_LEVEL=1)
   else()
     string(TOUPPER "${OMEGA_LOG_LEVEL}" _LOG_LEVEL)
@@ -543,8 +544,8 @@ macro(update_variables)
     endif()
   endif()
 
-  if(OMEGA_LOG_UNBUFFERED)
-    add_definitions(-DOMEGA_LOG_UNBUFFERED)
+  if(OMEGA_LOG_FLUSH)
+    add_definitions(-DOMEGA_LOG_FLUSH)
   endif()
 
   if(OMEGA_LOG_TASKS)

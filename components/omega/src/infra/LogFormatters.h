@@ -12,47 +12,40 @@
 #include "DataTypes.h"
 #include <spdlog/spdlog.h>
 
-// TODO:
-// 1. Use template to create formatter for various array types
-// 2. Consider using some of the following for formatting
-// View.rank()
-// View.rank_dynamic()
-// View.stride_(0, 1,2,3...)()
-// View.span()
-// View.size()
-// View.span_is_contiguous()
-// View.use_count()
-// View.label()
-// View.is_allocated()
-// ExecSpace.name()
-// ExecSpace.print_configuration(ostr);
-// ExecSpace.print_configuration(ostr, detail);
-// MemSpace.name()
-
-template <>
-struct fmt::formatter<OMEGA::HostArray1DReal> : fmt::formatter<std::string> {
-   auto format(OMEGA::HostArray1DReal my,
-               format_context &ctx) -> decltype(ctx.out()) {
 #ifdef OMEGA_DEBUG
-      return fmt::format_to(
-          ctx.out(), "[data type of '{}' is HostArray1DReal.]", my.label());
+#define GENERATE_FORMATTER(D, T)                                               \
+   template <>                                                                 \
+   struct fmt::formatter<OMEGA::Array##D##T> : fmt::formatter<std::string> {   \
+      auto format(OMEGA::Array##D##T my,                                       \
+                  format_context &ctx) -> decltype(ctx.out()) {                \
+         return fmt::format_to(ctx.out(), "{}({}D:{})", my.label(), my.rank(), \
+                               my.size());                                     \
+      }                                                                        \
+   };
 #else
-      return fmt::format_to(ctx.out(), "[data type of '' is HostArray1DReal.]");
+#define GENERATE_FORMATTER(D, T)                                             \
+   template <>                                                               \
+   struct fmt::formatter<OMEGA::Array##D##T> : fmt::formatter<std::string> { \
+      auto format(OMEGA::Array##D##T my,                                     \
+                  format_context &ctx) -> decltype(ctx.out()) {              \
+         return fmt::format_to(ctx.out(), "{}", my.label());                 \
+      }                                                                      \
+   };
 #endif
-   }
-};
 
-template <>
-struct fmt::formatter<OMEGA::HostArray2DReal> : fmt::formatter<std::string> {
-   auto format(OMEGA::HostArray2DReal my,
-               format_context &ctx) -> decltype(ctx.out()) {
-#ifdef OMEGA_DEBUG
-      return fmt::format_to(
-          ctx.out(), "[data type of '{}' is HostArray2DReal.]", my.label());
-#else
-      return fmt::format_to(ctx.out(), "[data type of '' is HostArray2DReal.]");
-#endif
-   }
-};
+#define GENERATE_FORMATTER_DIM(D) \
+   GENERATE_FORMATTER(D, I4)      \
+   GENERATE_FORMATTER(D, I8)      \
+   GENERATE_FORMATTER(D, R4)      \
+   GENERATE_FORMATTER(D, R8)
+
+GENERATE_FORMATTER_DIM(1D)
+GENERATE_FORMATTER_DIM(2D)
+GENERATE_FORMATTER_DIM(3D)
+GENERATE_FORMATTER_DIM(4D)
+GENERATE_FORMATTER_DIM(5D)
+
+#undef GENERATE_FORMATTER_DIM
+#undef GENERATE_FORMATTER
 
 #endif // OMEGA_LOG_FORMATTERS_H
