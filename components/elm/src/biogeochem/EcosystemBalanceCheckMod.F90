@@ -65,8 +65,6 @@ module EcosystemBalanceCheckMod
   public :: EndGridCBalanceAfterDynSubgridDriver
   public :: EndGridNBalanceAfterDynSubgridDriver
   public :: EndGridPBalanceAfterDynSubgridDriver
-
-
   !-----------------------------------------------------------------------
 
 contains
