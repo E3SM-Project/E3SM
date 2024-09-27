@@ -24,6 +24,7 @@ grids_manager:
     number_of_vertical_levels:  128
 
 initial_conditions:
-  cldfrac_liq: 0.0
-  qi: 0.0
+  constant_fields:
+    - cldfrac_liq = 0.0
+    - qi          = 0.0
 ...

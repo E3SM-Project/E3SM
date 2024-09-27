@@ -23,17 +23,18 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  # Some fields needed for the exports (not in ic file)
-  precip_ice_surf_mass: 1.0
-  precip_liq_surf_mass: 2.0
-  sfc_flux_sw_net:      3.0
-  # These fields are needed for the export,
-  # but will be computed for the import
-  sfc_flux_dif_nir:     0.0
-  sfc_flux_dif_vis:     0.0
-  sfc_flux_dir_nir:     0.0
-  sfc_flux_dir_vis:     0.0
-  sfc_flux_lw_dn:       0.0
+  constant_fields:
+    # Some fields needed for the exports (not in ic file)
+    - precip_ice_surf_mass = 1.0
+    - precip_liq_surf_mass = 2.0
+    - sfc_flux_sw_net      = 3.0
+    # These fields are needed for the export,
+    # but will be computed for the import
+    - sfc_flux_dif_nir     = 0.0
+    - sfc_flux_dif_vis     = 0.0
+    - sfc_flux_dir_nir     = 0.0
+    - sfc_flux_dir_vis     = 0.0
+    - sfc_flux_lw_dn       = 0.0
 
 # The parameters for I/O control
 Scorpio:

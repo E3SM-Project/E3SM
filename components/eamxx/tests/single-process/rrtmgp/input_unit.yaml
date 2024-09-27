@@ -34,32 +34,22 @@ grids_manager:
 
 # Specifications for setting initial conditions
 initial_conditions:
-  p_mid: 0.0
-  p_int: 0.0
-  pseudo_density: 0.0
-  T_mid: 0.0
-  surf_lw_flux_up: 0.0
-  sfc_alb_dir_vis: 0.0
-  sfc_alb_dir_nir: 0.0
-  sfc_alb_dif_vis: 0.0
-  sfc_alb_dif_nir: 0.0
-  cos_zenith: 0.0
-  qc: 0.0
-  nc: 0.0
-  qi: 0.0
-  cldfrac_tot: 0.0
-  eff_radius_qc: 0.0
-  eff_radius_qi: 0.0
-  qv: 0.0
-  co2: 0.0
-  o3: 0.0
-  n2o: 0.0
-  co: 0.0
-  ch4: 0.0
-  o2: 0.0
-  n2: 0.0
-  aero_g_sw: 0.0
-  aero_ssa_sw: 0.0
-  aero_tau_sw: 0.0
-  aero_tau_lw: 0.0
+  constant_fields:
+    - p_mid = 0.0
+    - p_int = 0.0
+    - pseudo_density = 0.0
+    - T_mid = 0.0
+    - surf_lw_flux_up = 0.0
+    - sfc_alb_dir_vis = 0.0
+    - sfc_alb_dir_nir = 0.0
+    - sfc_alb_dif_vis = 0.0
+    - sfc_alb_dif_nir = 0.0
+    - qc = 0.0
+    - nc = 0.0
+    - qi = 0.0
+    - cldfrac_tot = 0.0
+    - eff_radius_qc = 0.0
+    - eff_radius_qi = 0.0
+    - qv = 0.0
+    - o3_volume_mix_ratio = 0.0
 ...

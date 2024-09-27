@@ -508,77 +508,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
 
     <restart_casename>${CASE}.scream</restart_casename>
-    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
-    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
-    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
-    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
-    <cldfrac_liq       >0.0</cldfrac_liq>
-    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
-    <eddy_diff_mom     >0.0</eddy_diff_mom>
-    <T_prev_micro_step >0.0</T_prev_micro_step>
-    <qv_prev_micro_step>0.0</qv_prev_micro_step>
-    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
-    <qr                >0.0</qr>
-    <nr                >0.0</nr>
-    <qm                >0.0</qm>
-    <bm                >0.0</bm>
-    <ni_activated      >0.0</ni_activated>
-    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
-    <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
-    <tke               >0.0</tke>
-    <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
-    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
-    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
-    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
-    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_sens_flux    >0.0</surf_sens_flux>
-    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
-    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="real" doc="Dry aerosol particles diameter [m]">2.6e-08</dgnum>
-    <dgnumwet type="real" doc="Wet aerosol particles diameter [m]">0.41417721820867320E-007</dgnumwet>
-    <wetdens type="real" doc="Wet density of interstitial aerosol [kg/m3]">0.15100083211582764E+004</wetdens>
-    <bc_c1 type="real">0.0</bc_c1>
-    <bc_c3 type="real">0.0</bc_c3>
-    <bc_c4 type="real">0.0</bc_c4>
-    <dst_c1 type="real">0.0</dst_c1>
-    <dst_c3 type="real">0.0</dst_c3>
-    <so4_c1 type="real">0.0</so4_c1>
-    <so4_c2 type="real">0.0</so4_c2>
-    <so4_c3 type="real">0.0</so4_c3>
-    <pom_c1 type="real">0.0</pom_c1>
-    <pom_c3 type="real">0.0</pom_c3>
-    <pom_c4 type="real">0.0</pom_c4>
-    <soa_c1 type="real">0.0</soa_c1>
-    <soa_c2 type="real">0.0</soa_c2>
-    <soa_c3 type="real">0.0</soa_c3>
-    <nacl_c1 type="real">0.0</nacl_c1>
-    <nacl_c2 type="real">0.0</nacl_c2>
-    <nacl_c3 type="real">0.0</nacl_c3>
-    <mom_c1 type="real">0.0</mom_c1>
-    <mom_c2 type="real">0.0</mom_c2>
-    <mom_c3 type="real">0.0</mom_c3>
-    <mom_c4 type="real">0.0</mom_c4>
-    <num_c1 type="real">0.0</num_c1>
-    <num_c2 type="real">0.0</num_c2>
-    <num_c3 type="real">0.0</num_c3>
-    <num_c4 type="real">0.0</num_c4>
-    <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
-    <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
-    <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
-    <wetdep_hydrophilic_oc type="real">1e-5</wetdep_hydrophilic_oc>
-    <drydep_hydrophilic_oc type="real">1e-5</drydep_hydrophilic_oc>
-    <wetdep_dust_bin1 type="real">1e-5</wetdep_dust_bin1>
-    <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
-    <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
-    <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
-    <!-- default ne1024 initial condition files do not have these, so init to zero here -->
-    <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne512np4|ne1024np4">0.0</nc>
-    <ni hgrid="ne256np4|ne512np4|ne1024np4">0.0</ni>
-    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
@@ -587,6 +516,87 @@ be lost if SCREAM_HACK_XML is not enabled.
     <perturbation_random_seed type="integer" doc="Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.">0</perturbation_random_seed>
     <perturbation_limit type="real" doc="Defines a range [1-x, 1+x] which perturbation will be taken from.">0.001</perturbation_limit>
     <perturbation_minimum_pressure type="real" doc="Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.">900.0</perturbation_minimum_pressure>
+
+    <!-- Fields that we need to initialize, but are not in an initial condition file (or whose value we want to manually set) need to be inited here -->
+    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
+    <!-- NOTE: SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
+    <!-- NOTE: sfc_alb_XYZ and surf_XYZ should be provided by surface models, but we init here to keep AD from reading from file -->
+    <!-- NODE: wetdep_*/drydep_* are surface fluxes for the land model from MAM4xx wet scavenging-->
+    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+    <constant_fields
+      type="array(string)"
+      doc="List of fields to be inited to constant value. The syntax for each field is 'field_name=field_value'"
+    >
+      surf_evap            = 0,
+      precip_liq_surf_mass = 0,
+      precip_ice_surf_mass = 0,
+      cldfrac_liq          = 0,
+      sgs_buoy_flux        = 0,
+      eddy_diff_mom        = 0,
+      T_prev_micro_step    = 0,
+      qv_prev_micro_step   = 0,
+      qr                   = 0,
+      nr                   = 0,
+      qm                   = 0,
+      bm                   = 0,
+      ni_activated         = 0,
+      nc_nuceat_tend       = 0,
+      tke                  = 0,
+      sfc_alb_dir_vis      = 0,
+      sfc_alb_dir_nir      = 0,
+      sfc_alb_dif_vis      = 0,
+      sfc_alb_dif_nir      = 0,
+      surf_sens_flux       = 0,
+      surf_lw_flux_up      = 0,
+      surf_mom_flux        = 0
+      bc_c1   = 0,
+      bc_c3   = 0,
+      bc_c4   = 0,
+      dst_c1  = 0,
+      dst_c3  = 0,
+      so4_c1  = 0,
+      so4_c2  = 0,
+      so4_c3  = 0,
+      pom_c1  = 0,
+      pom_c3  = 0,
+      pom_c4  = 0,
+      soa_c1  = 0,
+      soa_c2  = 0,
+      soa_c3  = 0,
+      nacl_c1 = 0,
+      nacl_c2 = 0,
+      nacl_c3 = 0,
+      mom_c1  = 0,
+      mom_c2  = 0,
+      mom_c3  = 0,
+      mom_c4  = 0,
+      num_c1  = 0,
+      num_c2  = 0,
+      num_c3  = 0,
+      num_c4  = 0,
+      wetdep_hydrophilic_bc = 1e-5,
+      drydep_hydrophilic_bc = 1e-5,
+      wetdep_hydrophilic_oc = 1e-5,
+      drydep_hydrophilic_oc = 1e-5,
+      wetdep_dust_bin1      = 1e-5,
+      wetdep_dust_bin2      = 1e-5,
+      wetdep_dust_bin3      = 1e-5,
+      wetdep_dust_bin4      = 1e-5.
+      dgnum    = 2.6e-08,
+      dgnumwet = 0.41417721820867320E-007,
+      wetdens  = 0.15100083211582764E+004
+    </constant_fields>
+    <!-- NOTE: default ne1024 initial condition files do not have qc,qi,nc,ni, so init to zero here -->
+    <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
+    <constant_fields hgrid="ne256np4|ne1024np4" append="base">
+      qc = 0,
+      qi = 0,
+      nc = 0,
+      ni = 0
+    </constant_fields>
+    <constant_fields hgrid="ne0np4_conus_x4v1_lowcon" append="base">
+      o3_volume_mix_ratio  = 0
+    </constant_fields>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->

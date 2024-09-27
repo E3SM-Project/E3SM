@@ -5,9 +5,10 @@ driver_options:
 
 initial_conditions:
   Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
-  A: 1.0
-  V: [2.0, 3.0]
-  Z: "A"
+  constant_fields:
+    - A = 1
+    - V = (2,3)
+    - Z = 1.0e0
 
 atmosphere_processes:
   atm_procs_list: [dummy1, dummy2, dummy3]

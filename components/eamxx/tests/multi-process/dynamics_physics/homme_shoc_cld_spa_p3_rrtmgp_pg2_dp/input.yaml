@@ -23,16 +23,13 @@ time_stepping:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  surf_evap: 0.0
-  surf_sens_flux: 0.0
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
   perturbation_minimum_pressure: 900.0 # in millibar
-  surf_lw_flux_up: 400.0
-  eddy_diff_mom: 0.02
-  sgs_buoy_flux: -0.001
+  constant_fields:
+    surf_lw_flux_up = 400.0
+    eddy_diff_mom   = 0.02
+    sgs_buoy_flux   = -0.001
 
 atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]

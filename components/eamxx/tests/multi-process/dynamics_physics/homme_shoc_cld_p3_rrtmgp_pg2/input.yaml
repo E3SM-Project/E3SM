@@ -11,21 +11,22 @@ time_stepping:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  surf_evap: 0.0
-  surf_sens_flux: 0.0
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
-  surf_lw_flux_up: 400.0
-  eddy_diff_mom: 0.02
-  sgs_buoy_flux: -0.001
-  tke: 0.0
-  qm: 0.0
-  bm: 0.0
-  sfc_alb_dir_vis: 0.0
-  sfc_alb_dir_nir: 0.0
-  sfc_alb_dif_vis: 0.0
-  sfc_alb_dif_nir: 0.0
-  landfrac: 0.5
+  constant_fields:
+    - surf_evap            = 0.0
+    - surf_sens_flux       = 0.0
+    - precip_liq_surf_mass = 0.0
+    - precip_ice_surf_mass = 0.0
+    - surf_lw_flux_up      = 400.0
+    - eddy_diff_mom        = 0.02
+    - sgs_buoy_flux        = -0.001
+    - tke                  = 0.0
+    - qm                   = 0.0
+    - bm                   = 0.0
+    - sfc_alb_dir_vis      = 0.0
+    - sfc_alb_dir_nir      = 0.0
+    - sfc_alb_dif_vis      = 0.0
+    - sfc_alb_dif_nir      = 0.0
+    - landfrac             = 0.5
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]

@@ -166,12 +166,8 @@ public:
 
   const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
-#ifndef KOKKOS_ENABLE_CUDA
-  // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
-#endif
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
-protected:
+  std::set<std::string> initialize_constant_fields(const ekat::ParameterList& ic_pl);
 
   void report_res_dep_memory_footprint () const;
 

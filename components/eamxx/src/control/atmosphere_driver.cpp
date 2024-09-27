@@ -1008,31 +1008,20 @@ void AtmosphereDriver::set_initial_conditions ()
   std::map<std::string,std::vector<std::string>> topography_file_fields_names;
   std::map<std::string,std::vector<std::string>> topography_eamxx_fields_names;
 
+  auto const_fields = initialize_constant_fields (ic_pl);
+
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
-    const auto& fname = fid.name();
     const auto& grid_name = fid.get_grid_name();
-
-    if (ic_pl.isParameter(fname)) {
-      // This is the case that the user provided an initialization
-      // for this field in the parameter file.
-      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
-        // Initial condition is a constant
-        initialize_constant_field(fid, ic_pl);
-
-        // Note: f is const, so we can't modify the tracking. So get the same field from the fm
-        auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
-        f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
-      } else if (ic_pl.isType<std::string>(fname)) {
-        // Initial condition is a string
-        ic_fields_to_copy.push_back(fid);
-      } else {
-        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                        "double or string, or vector double arguments are allowed");
-      }
+    const auto& fname = fid.name();
+    if (const_fields.count(fname)>0) {
+      // This field was already taken care of
       fields_inited[grid_name].push_back(fname);
-    } else if (fname == "phis" or fname == "sgh30") {
+      return;
+    }
+
+    if (fname == "phis" or fname == "sgh30") {
       // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
@@ -1059,7 +1048,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         " topo file only has sgh30 for Physics PG2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
-	fields_inited[grid_name].push_back(fname);
+        fields_inited[grid_name].push_back(fname);
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
       // The IC file is written for the GLL grid, so we only load
@@ -1071,7 +1060,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
-	  fields_inited[grid_name].push_back(fname);
+          fields_inited[grid_name].push_back(fname);
         }
       } else if (fvphyshack and grid_name == "Physics GLL") {
         // [CGLL ICs in pg2] I tried doing something like this in
@@ -1083,12 +1072,10 @@ void AtmosphereDriver::set_initial_conditions ()
           const auto f = e.lock();
           const auto& fid = f->get_identifier();
           const auto& fname = fid.name();
-          if (ic_pl.isParameter(fname) and ic_pl.isType<double>(fname)) {
-            initialize_constant_field(fid, ic_pl);
-          } else {
+          if (not ekat::contains(fields_inited[grid_name],fname)) {
             this_grid_ic_fnames.push_back(fname);
           }
-	  fields_inited[grid_name].push_back(fname);
+          fields_inited[grid_name].push_back(fname);
         }
       }
     }
@@ -1117,7 +1104,7 @@ void AtmosphereDriver::set_initial_conditions ()
   // we only need to init one: either the bundled field, or all the individual subfields.
   // So loop over the fields that appear to require loading from file, and remove
   // them from the list if they are the subfield of a bundled field already inited
-  // (perhaps via initialize_constant_field, or copied from another field).
+  // (perhaps via initialize_constant_fields, or copied from another field).
   for (auto& it1 : ic_fields_names) {
     const auto& grid_name =  it1.first;
     auto fm = m_field_mgrs.at(grid_name);
@@ -1452,63 +1439,99 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   }
 }
 
-void AtmosphereDriver::
-initialize_constant_field(const FieldIdentifier& fid,
-                          const ekat::ParameterList& ic_pl)
+std::set<std::string> AtmosphereDriver::
+initialize_constant_fields(const ekat::ParameterList& ic_pl)
 {
-  const auto& name = fid.name();
-  const auto& grid = fid.get_grid_name();
-  auto f = get_field_mgr(grid)->get_field(name);
-  // The user provided a constant value for this field. Simply use that.
-  const auto& layout = f.get_header().get_identifier().get_layout();
+  std::set<std::string> const_fields;
+  if (not ic_pl.isParameter("constant_fields"))
+    return const_fields;
 
-  // For vector fields, we allow either single value init or vector value init.
-  // That is, both these are ok
-  //   fname: val
-  //   fname: [val1,...,valN]
-  // In the first case, all entries of the field are inited to val, while in the latter,
-  // each component is inited to the corresponding entry of the array.
-  if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
-    const auto idim = layout.get_vector_component_idx();
-    const auto vec_dim = layout.get_vector_dim();
-    const auto& values = ic_pl.get<std::vector<double>>(name);
-    EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
-        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-        "       Field dimension: " + std::to_string(vec_dim) + "\n"
-        "       Array dimenions: " + std::to_string(values.size()) + "\n");
+  const auto& const_fields_vec = ic_pl.get<std::vector<std::string>>("constant_fields");
 
-    if (layout.rank()==2 && idim==1) {
-      // We cannot use 'get_component' for views of rank 2 with vector dimension
-      // striding fastest, since we would not get a LayoutRight view. For these views,
-      // simply do a manual loop
-      using kt = Field::kt_dev;
-      typename kt::view_1d<double> data("data",vec_dim);
-      auto data_h = Kokkos::create_mirror_view(data);
-      for (int i=0; i<vec_dim; ++i) {
-        data_h(i) = values[i];
-      }
-      Kokkos::deep_copy(data,data_h);
-
-      const int n = layout.dim(0);
-      auto v = f.get_view<double**>();
-      Kokkos::parallel_for(typename kt::RangePolicy(0,n),
-                           KOKKOS_LAMBDA(const int i) {
-        for (int j=0; j<vec_dim; ++j) {
-          v(i,j) = data(j);
-        }
-      });
-    } else {
-      // Extract a subfield for each component. This is not "too" expensive, expecially
-      // considering that this code is executed during initialization only.
-      for (int comp=0; comp<vec_dim; ++comp) {
-        auto f_i = f.get_component(comp);
-        f_i.deep_copy(values[comp]);
-      }
+  // Wrap exception so that we can print a better error message
+  auto str2double = [&] (const std::string& fname, const std::string& val_str) {
+    double val; 
+    try {
+      val = std::stod (val_str);
+    } catch (std::exception& e) {
+      EKAT_ERROR_MSG (
+        "Error! Bad value specification for constant field initialization.\n"
+        " Field name: " + fname + "\n"
+        "Could not convert the string '" + val_str + "' to double.\n"
+        "Original error: " + std::string(e.what()) + "\n");
+        throw; // Rethrow the caught exception
     }
-  } else {
-    const auto& value = ic_pl.get<double>(name);
-    f.deep_copy(value);
+    return val;
+  };
+
+  m_atm_logger->info("    [EAMxx] Initializing constant fields ...");
+  for (const auto& s : const_fields_vec) {
+    m_atm_logger->info("      " + s);
+    
+    // Split input string FNAME = VALUE(S)
+    auto tokens = ekat::split(s,"=");
+    EKAT_REQUIRE_MSG (tokens.size()==2,
+        "Error! Bad syntax specifying constant input fields.\n"
+        "  Valid syntax: 'field_name = field_value(s)'\n"
+        "  Input string: '" + s + "'\n");
+    const auto fname   = ekat::trim(tokens[0]);
+    const auto val_str = ekat::trim(tokens[1]);
+    EKAT_REQUIRE_MSG (fname.size()>0,
+        "Error! Bad syntax specifying constant input fields (empty field name).\n"
+        " Input string: '" + s + "'\n");
+    EKAT_REQUIRE_MSG (val_str.size()>0,
+        "Error! Bad syntax specifying constant input fields (empty value).\n"
+        " Input string: '" + s + "'\n");
+    
+    bool valid_fname = false;
+    for (const auto& [grid_name,fm] : m_field_mgrs) {
+      if (not fm->has_field(fname))
+        continue;
+
+      valid_fname = true;
+      const_fields.insert(fname);
+      auto& f = fm->get_field(fname);
+
+      // Check if we are attempting to init a vec field with f=(v1,v2,...,vN) syntax
+      bool vector_values = val_str.front()=='(' and val_str.back()==')';
+      if (vector_values) {
+        const auto& fl = f.get_header().get_identifier().get_layout();
+        EKAT_REQUIRE_MSG (fl.is_vector_layout(),
+            "Error! Attempt to assign a vector of values to a non-vector field.\n"
+            "  - field name: " + fname + "\n"
+            "  - field layout: " + to_string(fl) + "\n"
+            "  - input string: " + s + "\n");
+        const auto vals = ekat::split(val_str.substr(1,val_str.size()-2),",");
+        const int vec_dim = fl.get_vector_dim();
+        EKAT_REQUIRE_MSG (static_cast<int>(vals.size())==fl.dim(vec_dim),
+            "Error! Vector of values does not match vector field extent.\n"
+            "  - field name: " + fname + "\n"
+            "  - field layout: " + to_string(fl) + "\n"
+            "  - input string: " + s + "\n");
+        for (int icmp=0; icmp<fl.dim(vec_dim); ++icmp) {
+          auto f_i = f.subfield(vec_dim,icmp);
+          auto val = str2double(fname,vals[icmp]);
+          f_i.deep_copy(val);
+        }
+      } else {
+        // Not a vector assignment, so just init the whole field
+        // NOTE: if user had a typo, like "f=(v1,v2", notice missing ')',
+        //       this fcn will throw, cause "(v1,v2" cannot be converted to double
+        // NOTE: this does not mean that the field is not a vector, but just that the
+        //       same scalar is used for all entries of the field, regardless of rank
+        auto val = str2double(fname,val_str);
+        f.deep_copy(val);
+      }
+      f.get_header().get_tracking().update_time_stamp(m_run_t0);
+    }
+    EKAT_REQUIRE_MSG (valid_fname,
+        "Error! Non-existent field found in initial_conditions::constant_fields input param."
+        " - field name: " + fname + "\n"
+        " - constant_fields: [" + ekat::join(const_fields_vec,",") + "]\n");
   }
+
+  m_atm_logger->info("    [EAMxx] Initializing constant fields ... done!");
+  return const_fields;
 }
 
 void AtmosphereDriver::initialize_atm_procs ()

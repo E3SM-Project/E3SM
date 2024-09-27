@@ -56,14 +56,11 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  surf_sens_flux: 0.0
-  surf_evap: 0.0
-  precip_ice_surf_mass: 0.0
-  precip_liq_surf_mass: 0.0
-  aero_g_sw: 0.0
-  aero_ssa_sw: 0.0
-  aero_tau_sw: 0.0
-  aero_tau_lw: 0.0
+  constant_fields:
+    - surf_evap            = 0.0
+    - surf_sens_flux       = 0.0
+    - precip_liq_surf_mass = 0.0
+    - precip_ice_surf_mass = 0.0
 
 # The parameters for I/O control
 Scorpio:

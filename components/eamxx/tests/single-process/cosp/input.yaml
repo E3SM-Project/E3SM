@@ -25,14 +25,15 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  dtau067: 1.0
-  dtau105: 1.0
-  cldfrac_rad: 0.5
-  eff_radius_qc: 10.0
-  eff_radius_qi: 10.0
-  sunlit: 1.0
-  surf_radiative_T: 288.0
-  pseudo_density: 1.0
+  constant_fields:
+    - dtau067          = 1
+    - dtau105          = 1
+    - cldfrac_rad      = 0.5
+    - eff_radius_qc    = 0
+    - eff_radius_qi    = 0
+    - sunlit           = 1
+    - surf_radiative_T = 288
+    - pseudo_density   = 1
 
 # The parameters for I/O control
 Scorpio:

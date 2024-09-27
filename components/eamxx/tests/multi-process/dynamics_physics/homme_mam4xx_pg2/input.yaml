@@ -11,8 +11,9 @@ time_stepping:
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/homme_mam4xx_ne4_init.nc
   topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
-  cldfrac_tot : 0.0
-  pbl_height : 1000.0
+  constant_fields:
+    - cldfrac_tot = 0.0
+    - pbl_height  = 1000.0
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
