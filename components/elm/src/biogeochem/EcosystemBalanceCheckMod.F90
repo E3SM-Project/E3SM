@@ -49,7 +49,9 @@ module EcosystemBalanceCheckMod
   save
   private
 
+  ! This corersponds to namelist variable bgc_balance_check_tolerance
   real(r8), public  :: balance_check_tolerance = 1e-7_r8
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BeginColCBalance

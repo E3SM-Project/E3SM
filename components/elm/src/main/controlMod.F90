@@ -55,7 +55,7 @@ module controlMod
   use elm_varctl              , only: const_climate_hist
   use elm_varctl              , only: use_top_solar_rad
   use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
-  use EcosystemBalanceCheckMod, only: balance_check_tolerance
+  use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
   !
   ! !PUBLIC TYPES:
@@ -184,7 +184,7 @@ contains
 
     ! BGC balance check
     namelist /elm_inparm/ &
-         balance_check_tolerance
+         bgc_balance_check_tolerance
 
     ! For experimental manipulations
     namelist /elm_inparm/ &
@@ -801,7 +801,7 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (balance_check_tolerance, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (bgc_balance_check_tolerance, 1, MPI_REAL8, 0, mpicom, ier)
     call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
