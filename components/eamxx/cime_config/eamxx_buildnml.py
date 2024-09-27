@@ -126,7 +126,7 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
      Please, ensure restart happens on a step when rad is ON
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
@@ -970,7 +970,7 @@ def create_input_data_list_file(case,caseroot):
                             permissions = stat.filemode(file_stat.st_mode)
 
                         except Exception as e:
-                            raise RuntimeError(f"Error retrieving file info for '{file_path}': {e}")
+                            raise RuntimeError(f"Error retrieving file info for '{file_path}': {e}") from e
 
                         curr_user = getpass.getuser()
                         user_info = pwd.getpwnam(curr_user)

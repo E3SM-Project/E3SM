@@ -1,2 +1,2 @@
 ./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_SHOC_SMALL_KERNELS On'
-$CIMEROOT/../components/eamxx/scripts/atmchange --all internal_diagnostics_level=1 atmosphere_processes::internal_diagnostics_level=0 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange ANY::internal_diagnostics_level=1 atmosphere_processes::internal_diagnostics_level=0 -b
