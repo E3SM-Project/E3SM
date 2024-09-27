@@ -722,8 +722,14 @@ contains
 
        call read_buffered_datetime( datetime, i )
 
-       if ( datetime>begdatetime .and. beg_ndx<0 ) beg_ndx = i
-       if ( datetime>enddatetime ) exit bnds_loop
+       if (datetime > begdatetime .and. beg_ndx < 0) then
+          beg_ndx = i
+       end if
+
+       if (datetime > enddatetime) then
+          exit bnds_loop
+       end if
+
        end_ndx = i
 
     enddo bnds_loop

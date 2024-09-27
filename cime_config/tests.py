@@ -207,6 +207,7 @@ _TESTS = {
             "REP_Ln5.ne4pg2_oQU480.F2010",
             "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
+            "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
             )
         },
 
