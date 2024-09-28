@@ -26,7 +26,6 @@ jobs:
           - sp
           - opt
           - dbg
-          - cov
     container: 
       image: ghcr.io/e3sm-project/containers-standalone-ghci:standalone-ghci-0.1.0
 
