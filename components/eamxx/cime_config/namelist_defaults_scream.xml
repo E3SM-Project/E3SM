@@ -659,7 +659,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
-    <dt_remap_factor COMPSET=".*DP-EAMxx" constraints="ge 1">1</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
