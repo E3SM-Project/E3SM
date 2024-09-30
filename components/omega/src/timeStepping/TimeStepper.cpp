@@ -24,6 +24,10 @@ TimeStepperType getTimeStepperFromStr(const std::string &InString) {
       TimeStepperChoice = TimeStepperType::RungeKutta4;
    } else if (InString == "RungeKutta2") {
       TimeStepperChoice = TimeStepperType::RungeKutta2;
+   } else {
+      LOG_CRITICAL("TimeStepper should be one of 'Forward-Backward', "
+                   "'RungeKutta4' or 'RungeKutta2' but got {}:",
+                   InString);
    }
 
    return TimeStepperChoice;
