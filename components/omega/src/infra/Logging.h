@@ -17,12 +17,15 @@
 #define SPDLOG_ACTIVE_LEVEL 2
 #endif
 
-#include "LogFormatters.h"
+#include "DataTypes.h"
 #include <spdlog/spdlog.h>
 #include <string>
 
-#if defined(OMEGA_LOG_UNBUFFERED)
-#define _LOG_FLUSH spdlog::logger::flush()
+#include "LogFormatters.h"
+
+#if defined(OMEGA_LOG_FLUSH)
+#define _LOG_FLUSH \
+   spdlog::apply_all([](std::shared_ptr<spdlog::logger> l) { l->flush(); })
 #else
 #define _LOG_FLUSH (void)0
 #endif
@@ -77,10 +80,14 @@ class MachEnv;
 
 const std::string OmegaDefaultLogfile = "omega.log";
 
-int initLogging(std::shared_ptr<spdlog::logger> Logger);
+int initLogging(const OMEGA::MachEnv *DefEnv,
+                std::shared_ptr<spdlog::logger> Logger);
+
 int initLogging(const OMEGA::MachEnv *DefEnv,
                 std::string const &LogFilePath = OmegaDefaultLogfile);
+
 std::string _PackLogMsg(const char *file, int line, const std::string &msg);
+
 } // namespace OMEGA
 
 #endif // OMEGA_LOG_H

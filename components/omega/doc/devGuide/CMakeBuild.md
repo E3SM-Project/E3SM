@@ -66,7 +66,7 @@ OMEGA_HIP_FLAGS: HIP compiler flags
 OMEGA_MEMORY_LAYOUT: Kokkos memory layout ("LEFT" or "RIGHT"). "RIGHT" is a default value.
 OMEGA_TILE_LENGTH: a length of one "side" of a Kokkos tile. 64 is a default value.
 OMEGA_LOG_LEVEL: a default logging level. "OMEGA_LOG_INFO" is a default value.
-OMEGA_LOG_UNBUFFERED: turn on the unbuffered logging. "OFF" is a default value.
+OMEGA_LOG_FLUSH: turn on the unbuffered logging. "OFF" is a default value.
 OMEGA_LOG_TASKS: set the tasks that generate log file. "0" is a default value.
 ```
 
