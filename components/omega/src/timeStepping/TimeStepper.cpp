@@ -17,13 +17,19 @@ std::map<std::string, std::unique_ptr<TimeStepper>>
 // convert string into TimeStepperType enum
 TimeStepperType getTimeStepperFromStr(const std::string &InString) {
 
-   TimeStepperType TimeStepperChoice;
+   // Initialize TimeStepperChoice with Invalid
+   TimeStepperType TimeStepperChoice = TimeStepperType::Invalid;
+
    if (InString == "Forward-Backward") {
       TimeStepperChoice = TimeStepperType::ForwardBackward;
    } else if (InString == "RungeKutta4") {
       TimeStepperChoice = TimeStepperType::RungeKutta4;
    } else if (InString == "RungeKutta2") {
       TimeStepperChoice = TimeStepperType::RungeKutta2;
+   } else {
+      LOG_CRITICAL("TimeStepper should be one of 'Forward-Backward', "
+                   "'RungeKutta4' or 'RungeKutta2' but got {}:",
+                   InString);
    }
 
    return TimeStepperChoice;

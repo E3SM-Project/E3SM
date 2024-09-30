@@ -27,7 +27,12 @@ namespace OMEGA {
 
 /// An enum for every time stepper type
 /// needs to extended every time a new time stepper is added
-enum class TimeStepperType { ForwardBackward, RungeKutta4, RungeKutta2 };
+enum class TimeStepperType {
+   ForwardBackward,
+   RungeKutta4,
+   RungeKutta2,
+   Invalid
+};
 
 /// Translate string for time stepper type into enum
 TimeStepperType getTimeStepperFromStr(
