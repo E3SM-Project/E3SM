@@ -48,3 +48,9 @@ repos:
         args: ["--config=components/omega/python_lint.cfg", "--show-error-codes"]
         verbose: true
         additional_dependencies: ['types-requests']
+
+
+# https://pre-commit.ci/#configuration
+ci:
+  autofix_prs: false
+  autoupdate_schedule: monthly
