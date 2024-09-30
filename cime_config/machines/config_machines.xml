@@ -1140,6 +1140,7 @@
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
         <command name="load">PrgEnv-gnu</command>
         <command name="load">cpe/24.07</command>
+        <command name="load">libfabric/1.15.2.0</command>
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/6.2.0</command>
         <command name="load">libunwind</command>
@@ -1196,7 +1197,7 @@
     </environment_variables>
 
     <environment_variables compiler="craygnuamdgpu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /sw/frontier/spack-envs/cpe24.07-gpu/opt/gcc-13.2/adios2-2.10.0-cyq7kvlfq5nixmw5unih2gjdkhvitava; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10/install/craygnuamdgppu/cpe-24.07/libfabric-1.15.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="crayclang-scream" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
