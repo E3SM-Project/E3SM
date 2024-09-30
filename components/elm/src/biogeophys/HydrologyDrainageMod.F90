@@ -49,15 +49,16 @@ contains
       !$acc routine seq
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
-    use elm_varcon       , only : denh2o, denice, secspday
+    use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill
     use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
     !use domainMod        , only : ldomain
     use elm_varsur         , only : f_surf
     use TopounitType       , only : top_pp
+    use TopounitDataType   , only : top_ws
     use atm2lndType      , only : atm2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use SoilHydrologyMod , only : ELMVICMap, Drainage
-    use elm_varctl       , only : use_vsfm
+    use elm_varctl       , only : use_vsfm, use_IM2_hillslope_hydrology
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -77,7 +78,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8) :: dtime
-    integer  :: g,t,l,c,j,fc,tpu_ind               ! indices
+    real(r8) :: temp_to_downhill, temp_mass
+    integer  :: g,t,l,c,j,fc,tpu_ind, downhill_t              ! indices
     !-----------------------------------------------------------------------
 
     associate(                                                                  &
@@ -120,7 +122,8 @@ contains
          qflx_runoff_r          => col_wf%qflx_runoff_r           , & ! Output: [real(r8) (:)   ]  Rural total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_snwcp_ice         => col_wf%qflx_snwcp_ice          , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
          qflx_glcice            => col_wf%qflx_glcice             , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s)
-         qflx_glcice_frz        => col_wf%qflx_glcice_frz           & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)
+         qflx_glcice_frz        => col_wf%qflx_glcice_frz         , & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)
+         qflx_to_downhill       => col_wf%qflx_to_downhill          & ! Output: [real(r8) (:)   ]  flux transferred to downhill topounit (mm H2O/s)
          )
 
       ! Determine time step and step size
@@ -280,6 +283,38 @@ contains
             qflx_rsub_sat(c)      = spval
 
          end if
+
+         ! if using topounit hillslope hydrology, fractions of qflx_surf, qflx_drain_perched, and qflx_h2osfc
+         ! are passed to the from_uphill water state on the downhill topounit, via qflx_to_downhill
+         ! only shift positive fluxes, and only set fluxes if there is a downhill topounit
+         if (use_IM2_hillslope_hydrology) then
+            downhill_t = top_pp%downhill_ti(t)
+            if (downhill_t /= -1) then
+               ! shift a fixed fraction of qflx_surf
+               temp_to_downhill = max(0._r8, frac_to_downhill * qflx_surf(c))
+               qflx_to_downhill(c) = temp_to_downhill
+               qflx_surf(c) = qflx_surf(c) - temp_to_downhill
+               
+               ! shift a fixed fraction of qflx_drain_perched
+               temp_to_downhill = max(0._r8, frac_to_downhill * qflx_drain_perched(c))
+               qflx_to_downhill(c) = qflx_to_downhill(c) + temp_to_downhill
+               qflx_drain_perched(c) = qflx_drain_perched(c) - temp_to_downhill
+               
+               ! shift a fixed fraction of qflx_h2osfc_surf
+               temp_to_downhill = max(0._r8, frac_to_downhill * qflx_h2osfc_surf(c))
+               qflx_to_downhill(c) = qflx_to_downhill(c) + temp_to_downhill
+               qflx_h2osfc_surf(c) = qflx_h2osfc_surf(c) - temp_to_downhill
+
+               ! update the downhill topounit water state
+               ! relative weight of this column to downhill topounit on the gridcell is used to 
+               ! scale the mass of water from this column to a potentially larger or smaller 
+               ! downhill topounit
+               temp_mass = (qflx_to_downhill(c) * dtime) * (col_pp%wtgcell(c) / top_pp%wtgcell(downhill_t))
+               top_ws%from_uphill(downhill_t) = top_ws%from_uphill(downhill_t) + temp_mass
+            else
+               qflx_to_downhill(c) = 0._r8
+            endif
+         endif 
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 

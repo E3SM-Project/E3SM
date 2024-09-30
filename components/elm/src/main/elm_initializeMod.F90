@@ -29,7 +29,7 @@ module elm_initializeMod
   !-----------------------------------------
   use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp
-  use TopounitDataType       , only : top_as, top_af, top_es
+  use TopounitDataType       , only : top_as, top_af, top_es, top_ws
   use LandunitType           , only : lun_pp
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es
@@ -360,6 +360,7 @@ contains
     call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
     call top_af%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric flux variables (forcings)
     call top_es%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! energy state
+    call top_ws%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! water state
 
     ! Initialize the landunit data types
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)

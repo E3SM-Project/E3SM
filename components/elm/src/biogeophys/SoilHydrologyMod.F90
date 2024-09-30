@@ -15,6 +15,8 @@ module SoilHydrologyMod
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
+  use TopounitType      , only : top_pp
+  use TopounitDataType  , only : top_ws
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws, col_wf
@@ -47,12 +49,12 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use elm_varcon      , only : denice, denh2o, wimp, pondmx_urban
+    use elm_varcon      , only : denice, denh2o, wimp, pondmx_urban, frac_from_uphill
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_imperv, icol_road_perv
     use elm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
     use elm_varpar      , only : nlayer, nlayert
-    use elm_varctl      , only : use_var_soil_thick
+    use elm_varctl      , only : use_var_soil_thick, use_IM2_hillslope_hydrology
     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
     !
     ! !ARGUMENTS:
@@ -66,7 +68,7 @@ contains
     real(r8), intent(in)  :: dtime
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,j,fc,g,l,i                               !indices
+    integer  :: c,j,fc,g,l,t,i                             !indices
     integer  :: nlevbed                                    !# levels to bedrock
     real(r8) :: xs(bounds%begc:bounds%endc)                !excess soil water above urban ponding limit
     real(r8) :: vol_ice(bounds%begc:bounds%endc,1:nlevgrnd) !partial volume of ice lens in layer
@@ -101,6 +103,7 @@ contains
          qflx_floodc      =>    col_wf%qflx_floodc      , & ! Input:  [real(r8) (:)   ]  column flux of flood water from RTM
          qflx_evap_grnd   =>    col_wf%qflx_evap_grnd   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
          qflx_top_soil    =>    col_wf%qflx_top_soil    , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)
+         qflx_from_uphill =>    col_wf%qflx_from_uphill , & ! Output: [real(r8) (:)   ]  water received from uphill topounit (mm/s)
          qflx_surf        =>    col_wf%qflx_surf        , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)
          qflx_irrig       =>    col_wf%qflx_irrig       , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
          irrig_rate       =>    veg_wf%irrig_rate       , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if !n_irrig_steps_left > 0) [mm/s]
@@ -241,11 +244,34 @@ contains
 
       end do
 
+      ! calculate the sum of column weights on each topounit for columns in the hydrologyc filter
+      ! This will be the istsoil, istcrop, and icol_road_perv subset of urban columns
+      ! First zero the topounit sum of weights. This zeros some multiple times, but no harm done.
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         t = col_pp%topounit(c)
+         top_pp%uphill_wt(t) = 0._r8
+      end do
+      ! Next sum the weights
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         t = col_pp%topounit(c)
+         top_pp%uphill_wt(t) = top_pp%uphill_wt(t) + col_pp%wttopounit(c)
+      end do
+
       ! remove stormflow and snow on h2osfc from qflx_top_soil
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
+         t = col_pp%topounit(c)
          ! add flood water flux to qflx_top_soil
          qflx_top_soil(c) = qflx_top_soil(c) + qflx_snow_h2osfc(c) + qflx_floodc(c)
+         
+         ! flow from uphill topounit goes to top of soil for soil, crop, and pervious road columns
+         if (use_IM2_hillslope_hydrology) then
+            qflx_from_uphill(c) = (col_pp%wttopounit(c)/top_pp%uphill_wt(t)) * (frac_from_uphill * top_ws%from_uphill(t)) / dtime
+            qflx_top_soil(c) = qflx_top_soil(c) + qflx_from_uphill(c)
+        endif
+
       end do
 
     end associate

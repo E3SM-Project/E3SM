@@ -254,6 +254,7 @@ contains
     !
     ! !USES
     use elm_varsur , only : wt_tunit, elv_tunit, slp_tunit, asp_tunit, num_tunit_per_grd 
+    use elm_varctl , only : use_IM2_hillslope_hydrology
     use topounit_varcon   , only : max_topounits, has_topounit 
     ! !ARGUMENTS
     integer, intent(in) :: gdc
@@ -263,6 +264,8 @@ contains
     integer :: topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu
     real(r8) :: wttopounit2gridcell, elv, slp                  ! topounit weight on gridcell, elevation and slope
     integer :: asp                                             ! aspect
+    integer :: t1, t2, begt, endt, dn_index, min_index         ! local topounit indexing
+    real(r8):: t1_elev, t2_elev, min_elev, dn_elev             ! for finding downhill neighbor
     logical :: is_tpu_active                                   ! Check if topounit is active
      
     tmp_tpu = num_tunits_per_grd       ! Actual number of topounits per grid
@@ -271,6 +274,9 @@ contains
     else 
        ntopos = max_topounits
     endif
+
+    begt = ti+1
+    endt = begt + ntopos - 1
     
     do topounit = 1, ntopos                    ! use actual/valid # of topounits per grid intead of max_topounits
        if (max_topounits == 1) then
@@ -291,6 +297,34 @@ contains
        topo_ind = topounit
        call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
     end do
+
+    ! Loop through topounits again to find its nearest downhill topounit on this gridcell
+    ! part of the IM2 hillslope hydrology implementation
+    if (ntopos > 1 .and. use_IM2_hillslope_hydrology) then
+      ! find the minimum elevation over all topounits on the gridcell
+      min_elev = top_pp%elevation(begt)
+      min_index = begt
+      do t1 = begt+1, endt
+         if (top_pp%elevation(t1) < min_elev) then
+            min_elev = top_pp%elevation(t1)
+            min_index = t1
+         endif
+      end do
+      ! find the closest downhill neighbor for each topounit
+      dn_index = -1  ! value of -1 indicates no downhill neighbor
+      do t1 = begt, endt
+         t1_elev = top_pp%elevation(t1)
+         dn_elev = min_elev
+         do t2 = begt, endt
+            t2_elev = top_pp%elevation(t2)
+            if ((t2_elev < t1_elev) .and. (t2_elev >= dn_elev)) then
+               dn_elev = t2_elev
+               dn_index = t2
+            endif
+         end do
+         top_pp%downhill_ti(t1)=dn_index
+      end do
+   endif
  
   end subroutine set_topounit  
  
