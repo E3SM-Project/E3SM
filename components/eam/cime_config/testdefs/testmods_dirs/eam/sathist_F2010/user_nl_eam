@@ -1,0 +1,7 @@
+&satellite_options_nl
+ sathist_mfilt          = 10000,
+ sathist_track_infile   = '$DIN_LOC_ROOT/atm/waccm/sat/satellite_profilelist_orcas_to_socrates_c190208.nc'
+ sathist_hfilename_spec = '%c.eam.h9.sathist.%y-%m-%d-%s.nc'
+ sathist_nclosest       = 1
+ sathist_ntimestep      = 1
+ sathist_fincl          = 'T', 'PS'

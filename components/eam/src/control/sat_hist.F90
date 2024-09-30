@@ -6,18 +6,20 @@
 module sat_hist
 
   use perf_mod,      only: t_startf, t_stopf
-  use shr_kind_mod,  only: r8 => shr_kind_r8
+  use shr_kind_mod,  only: r4 => shr_kind_r4
+  use shr_kind_mod,  only: r8 => shr_kind_r8, cl=>shr_kind_cl
   use cam_logfile,   only: iulog
-  use ppgrid,        only: pcols, pver, begchunk, endchunk
+  use ppgrid,        only: pcols, pver, pverp, begchunk, endchunk
   use cam_history_support, only: fieldname_lenp2, max_string_len, ptapes
   use spmd_utils,    only: masterproc, iam
   use cam_abortutils,    only: endrun
 
-  use pio,           only: file_desc_t, iosystem_desc_t, iosystem_desc_t, var_desc_t, io_desc_t
-  use pio,           only: pio_openfile, pio_redef, pio_enddef, pio_inq_dimid, pio_inq_varid, pio_seterrorhandling, pio_def_var
+  use pio,           only: file_desc_t,iosystem_desc_t, var_desc_t, io_desc_t
+  use pio,           only: pio_inq_dimid, pio_inq_varid
+  use pio,           only: pio_seterrorhandling, pio_def_var
   use pio,           only: pio_inq_dimlen, pio_get_att, pio_put_att, pio_get_var, pio_put_var, pio_write_darray
-  use pio,           only: pio_real, pio_int, pio_double
-  use pio,           only: PIO_WRITE,PIO_NOWRITE, PIO_NOERR, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_Rearr_box, PIO_GLOBAL
+  use pio,           only: pio_real,pio_double
+  use pio,           only: PIO_NOWRITE, PIO_NOERR, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_GLOBAL
   use spmd_utils,    only: mpicom
 #ifdef SPMD
   use mpishorthand,  only: mpichar, mpiint
@@ -82,6 +84,7 @@ module sat_hist
 
   real(r8), parameter :: rad2deg = 180._r8/pi            ! degrees per radian
 
+
 contains
   
 !-------------------------------------------------------------------------------
@@ -122,7 +125,7 @@ contains
     ! set defaults
 
     sathist_track_infile = ' '
-    sathist_hfilename_spec = '%c.cam' // trim(inst_suffix) // '.hs.%y-%m-%d-%s.nc'
+    sathist_hfilename_spec = '%c.eam.hs.' // trim(inst_suffix) // '.%y-%m-%d-%s.nc'
     sathist_fincl(:) = ' '
     sathist_mfilt = 100000
     sathist_nclosest = 1
@@ -189,14 +192,13 @@ contains
   subroutine sat_hist_init
     use cam_pio_utils, only: cam_pio_openfile
     use ioFileMod,     only: getfil
-    use spmd_utils,    only: npes
     use time_manager,  only: get_step_size
     use string_utils,  only: to_lower, GLC
 
     implicit none
 
     character(len=max_string_len)  :: locfn       ! Local filename
-    integer :: ierr, dimid, i
+    integer :: ierr, dimid
 
     character(len=128) :: date_format
 
@@ -406,17 +408,15 @@ contains
 !-------------------------------------------------------------------------------
   subroutine sat_hist_write( tape , nflds, nfils)
 
-    use ppgrid,   only : pcols, begchunk, endchunk
     use phys_grid, only: phys_decomp
     use dyn_grid, only: dyn_decomp
     use cam_history_support, only : active_entry
-    use pio, only : pio_file_is_open
-    implicit none
+    use pio, only : pio_file_is_open, pio_syncfile
     type(active_entry) :: tape
     integer, intent(in) :: nflds
     integer, intent(inout) :: nfils
 
-    integer :: t, f, i, ncols, nocols    
+    integer :: ncols, nocols
     integer :: ierr
 
     integer, allocatable :: col_ndxs(:)
@@ -430,9 +430,13 @@ contains
     real(r8),allocatable :: phs_dists(:)
 
     integer :: coldim
-
-    integer :: io_type
-    logical :: has_dyn_flds
+    logical :: has_dyn_flds = .false.
+    logical :: has_phys_srf_flds = .false.
+    logical :: has_phys_lev_flds = .false.
+    logical :: has_phys_ilev_flds = .false.
+    logical :: has_dyn_srf_flds = .false.
+    logical :: has_dyn_lev_flds = .false.
+    logical :: has_dyn_ilev_flds = .false.
 
     if (.not.has_sat_hist) return
 
@@ -456,13 +460,11 @@ contains
     allocate( mlons(nocols) )
     allocate( phs_dists(nocols) )
 
-    has_dyn_flds = .false.
-    dyn_flds_loop: do f=1,nflds
-       if ( tape%hlist(f)%field%decomp_type == dyn_decomp ) then
-          has_dyn_flds = .true.
-          exit dyn_flds_loop
-       endif
-    enddo dyn_flds_loop
+    call scan_flds( tape, nflds & 
+       , has_phys_srf_flds, has_phys_lev_flds, has_phys_ilev_flds &
+       , has_dyn_srf_flds, has_dyn_lev_flds, has_dyn_ilev_flds )
+
+    has_dyn_flds = has_dyn_srf_flds .or. has_dyn_lev_flds .or. has_dyn_ilev_flds
 
     call get_indices( obs_lats, obs_lons, ncols, nocols, has_dyn_flds, col_ndxs, chk_ndxs, &
          fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners, mlats, mlons, phs_dists )
@@ -479,16 +481,35 @@ contains
 
     call write_record_coord( tape, mlats(:), mlons(:), phs_dists(:), ncols, nfils )
 
-    do f=1,nflds
+   ! dump columns of 2D fields
+    if (has_phys_srf_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, 1, nfils, &
+                          col_ndxs, chk_ndxs, phs_owners, phys_decomp )
+    endif
+    if (has_dyn_srf_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, 1, nfils, &
+                          fdyn_ndxs, ldyn_ndxs, dyn_owners, dyn_decomp )
+    endif
 
-       select case (tape%hlist(f)%field%decomp_type)
-       case (phys_decomp)
-          call dump_columns(tape%File, tape%hlist(f), nocols, nfils, col_ndxs(:), chk_ndxs(:), phs_owners(:) )
-       case (dyn_decomp)
-          call dump_columns(tape%File, tape%hlist(f), nocols, nfils, fdyn_ndxs(:), ldyn_ndxs(:), dyn_owners(:) )
-       end select
+   ! dump columns of 3D fields defined on mid pres levels
+    if (has_phys_lev_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, pver, nfils, &
+                          col_ndxs, chk_ndxs, phs_owners, phys_decomp )
+    endif
+    if (has_dyn_lev_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, pver, nfils, &
+                          fdyn_ndxs, ldyn_ndxs, dyn_owners, dyn_decomp )
+    endif
 
-    enddo
+   ! dump columns of 3D fields defined on interface pres levels
+    if (has_phys_ilev_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, pverp, nfils, &
+                          col_ndxs, chk_ndxs, phs_owners, phys_decomp )
+    endif
+    if (has_dyn_ilev_flds) then
+       call dump_columns( tape%File, tape%hlist, nflds, nocols, pverp, nfils, &
+                          fdyn_ndxs, ldyn_ndxs, dyn_owners, dyn_decomp )
+    endif
 
     deallocate( col_ndxs, chk_ndxs, fdyn_ndxs, ldyn_ndxs, phs_owners, dyn_owners )
     deallocate( mlons, mlats, phs_dists )
@@ -501,92 +522,167 @@ contains
   end subroutine sat_hist_write
 
 !-------------------------------------------------------------------------------
-  subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
-    use cam_history_support,  only: field_info, hentry, hist_coords, fillvalue
-    use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_iam_iotask, pio_setdebuglevel, pio_offset_kind
+! FIXME extra work > 
+!        dump_columns routine is doing unnecessary extra work serially
+!        this happens because there is an unneeded mpi_allreduce call
+!        and then the gathered data is written in a serial manner; this
+!        could be improved by avoiding the mpi_allreduce call, and then
+!        writing local data out using pio_write_darray, which is parallel
+! FIXME extra work <
+  subroutine dump_columns( File, hitems, nflds, ncols, nlevs, nfils, fdims, ldims, owners, decomp )
+    use cam_history_support, only: field_info, hentry, fillvalue
+    use pio,                 only: pio_setframe, pio_offset_kind
+    use spmd_utils, only:  mpi_real4, mpi_real8, mpicom, mpi_sum
 
     type(File_desc_t),intent(inout)  :: File
-    type(hentry),     intent(in), target     :: hitem
+    type(hentry),     intent(in), target     :: hitems(:)
+    integer,          intent(in)     :: nflds
     integer,          intent(in)     :: ncols
+    integer,          intent(in)     :: nlevs
     integer,          intent(in)     :: nfils
     integer,          intent(in)     :: fdims(:)
     integer,          intent(in)     :: ldims(:)
     integer,          intent(in)     :: owners(:)
+    integer,          intent(in)     :: decomp
+
 
     type(field_info), pointer :: field
     type(var_desc_t) :: vardesc
-    type(iosystem_desc_t), pointer :: sat_iosystem
-    type(io_desc_t) :: iodesc
-    integer :: t, ierr, ndims
-    integer, allocatable :: dimlens(:)
+    integer :: ierr
 
-    real(r8), allocatable :: buf(:)
-    integer,  allocatable :: dof(:)
-    integer :: i,k, cnt
+    real(r8) :: sbuf1d(ncols),rbuf1d(ncols)
+    real(r4) :: buf1d(ncols)
+    real(r8) :: sbuf2d(nlevs,ncols), rbuf2d(nlevs,ncols)
+    real(r4) :: buf2d(nlevs,ncols)
+    integer :: i,k,f, cnt
 
     call t_startf ('sat_hist::dump_columns')
 
-    sat_iosystem => File%iosystem
-    field => hitem%field
-    vardesc = hitem%varid(1)
+    do f = 1,nflds
+       field => hitems(f)%field
 
+       if (field%numlev==nlevs .and. field%decomp_type==decomp) then
+          vardesc = hitems(f)%varid(1)
 
-    ndims=1
-    if(associated(field%mdims)) then
-       ndims = size(field%mdims)+1
-    else if(field%numlev>1) then
-       ndims=2
-    end if
-    allocate(dimlens(ndims))
-    dimlens(ndims)=ncols
-    if(ndims>2) then
-       do i=1,ndims-1
-          dimlens(i)=hist_coords(field%mdims(i))%dimsize
-       enddo
-    else if(field%numlev>1) then
-       dimlens(1) = field%numlev
-    end if
-   
-
-    allocate( buf( product(dimlens) ) )
-    allocate( dof( product(dimlens) ) )
-
-    cnt = 0
-    buf = fillvalue
-    dof = 0
-
-    do i = 1,ncols
-       do k = 1,field%numlev
-          cnt = cnt+1
-          if ( iam == owners(i) ) then
-             buf(cnt) = hitem%hbuf( fdims(i), k, ldims(i) )
-             dof(cnt) = cnt
+          if (nlevs==1) then
+             sbuf1d = 0.0_r8
+             rbuf1d = 0.0_r8
+             do i=1,ncols
+                if ( iam == owners(i) ) then
+                   sbuf1d(i) = hitems(f)%hbuf( fdims(i), 1, ldims(i) )
+                endif
+             enddo
+             ! FIXME extra work: unnecessary mpi call, then serial write
+             ! FIXME extra work: can use pio_write_darray on local data instead
+             call mpi_allreduce(sbuf1d,rbuf1d,ncols,mpi_real8, mpi_sum, mpicom, ierr)
+             buf1d(:) = real(rbuf1d(:),r4)
+             ierr = pio_put_var(File, vardesc, (/nfils/),(/ncols/), buf1d(:))
+             if ( ierr /= PIO_NOERR ) then
+                call endrun('sat_hist::dump_columns: pio_put_var error')
+             endif
+          else
+             sbuf2d = 0.0_r8
+             rbuf2d = 0.0_r8
+             do i=1,ncols
+                if ( iam == owners(i) ) then
+                   do k = 1,nlevs
+                      sbuf2d(k,i) = hitems(f)%hbuf( fdims(i), k, ldims(i) )
+                   enddo
+                endif
+             enddo
+             ! FIXME extra work: unnecessary mpi call, then serial write
+             ! FIXME extra work: can use pio_write_darray on local data instead
+             call mpi_allreduce(sbuf2d,rbuf2d,ncols*nlevs,mpi_real8, mpi_sum, mpicom, ierr)
+             buf2d(:,:) = real(rbuf2d(:,:),r4)
+             ierr = pio_put_var(File, vardesc, (/1,nfils/),(/nlevs,ncols/), buf2d(:,:))
+             if ( ierr /= PIO_NOERR ) then
+                call endrun('sat_hist::dump_columns: pio_put_var error')
+             endif
           endif
-       enddo
+
+       endif
+
     enddo
-
-    call pio_setframe(File, vardesc, int(-1,kind=PIO_OFFSET_KIND))
-
-    call pio_initdecomp(sat_iosystem, pio_double, dimlens, dof, iodesc )
-
-    call pio_setframe(File, vardesc, int(nfils,kind=PIO_OFFSET_KIND))
-
-    call pio_write_darray(File, vardesc, iodesc, buf, ierr, fillval=fillvalue)
-
-    call pio_freedecomp(sat_iosystem, iodesc)
-
-    deallocate( buf )
-    deallocate( dof )
-    deallocate( dimlens )
 
     call t_stopf ('sat_hist::dump_columns')
 
   end subroutine dump_columns
 
 !-------------------------------------------------------------------------------
+! scan the fields for possible different decompositions
+!-------------------------------------------------------------------------------
+  subroutine scan_flds( tape, nflds & 
+       , has_phys_srf_flds, has_phys_lev_flds, has_phys_ilev_flds &
+       , has_dyn_srf_flds, has_dyn_lev_flds, has_dyn_ilev_flds )
+    use cam_history_support, only : active_entry
+    use phys_grid, only: phys_decomp
+    use dyn_grid,  only: dyn_decomp
+
+    type(active_entry), intent(in) :: tape
+    integer, intent(in) :: nflds
+    logical, save :: flds_scanned
+    logical, intent(out) :: has_phys_srf_flds
+    logical, intent(out) :: has_phys_lev_flds
+    logical, intent(out) :: has_phys_ilev_flds
+    logical, intent(out) :: has_dyn_srf_flds
+    logical, intent(out) :: has_dyn_lev_flds
+    logical, intent(out) :: has_dyn_ilev_flds
+
+    integer :: f
+    character(len=cl) :: msg1, msg2
+
+    if (flds_scanned) return
+
+    do f = 1,nflds
+       if ( tape%hlist(f)%field%decomp_type == phys_decomp ) then
+          if ( tape%hlist(f)%field%numlev == 1 ) then
+             has_phys_srf_flds = .true.
+          elseif ( tape%hlist(f)%field%numlev == pver ) then
+             has_phys_lev_flds = .true.
+          elseif ( tape%hlist(f)%field%numlev == pverp ) then
+             has_phys_ilev_flds = .true.
+          else
+             call endrun('sat_hist::scan_flds numlev error : '//tape%hlist(f)%field%name)
+          endif
+       elseif ( tape%hlist(f)%field%decomp_type == dyn_decomp ) then
+          if ( tape%hlist(f)%field%numlev == 1 ) then
+             has_dyn_srf_flds = .true.
+          elseif ( tape%hlist(f)%field%numlev == pver ) then
+             has_dyn_lev_flds = .true.
+          elseif ( tape%hlist(f)%field%numlev == pverp ) then
+             has_dyn_ilev_flds = .true.
+          else
+             call endrun('sat_hist::scan_flds numlev error : '//tape%hlist(f)%field%name)
+          endif
+       else
+          call endrun('sat_hist::scan_flds decomp_type error : '//tape%hlist(f)%field%name)
+       endif
+
+       ! Check that the only "mdim" is the vertical coordinate.
+       if (has_phys_srf_flds .or. has_phys_lev_flds .or. has_phys_ilev_flds .or. &
+           has_dyn_srf_flds .or. has_dyn_lev_flds .or. has_dyn_ilev_flds) then
+          ! The mdims pointer is unassociated on a restart.  The restart initialization
+          ! should be fixed rather than requiring the check to make sure it is associated.
+          if (associated(tape%hlist(f)%field%mdims)) then
+             if (size(tape%hlist(f)%field%mdims) > 1) then
+                msg1 = 'sat_hist::scan_flds mdims error :'//tape%hlist(f)%field%name
+                msg2 = trim(msg1)//' has mdims in addition to the vertical coordinate.'//&
+                   new_line('a')//'  This is not currently supported.'
+                write(iulog,*) msg2
+                call endrun(msg1)
+             end if
+          end if
+       end if
+
+    enddo
+
+    flds_scanned = .true.
+  end subroutine scan_flds
+
+!-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
   subroutine read_next_position( ncols )
-    use time_manager, only: get_curr_date, get_prev_date
+    use time_manager, only: get_curr_date
     use time_manager, only: set_time_float_from_date
    
     implicit none
@@ -626,8 +722,14 @@ contains
 
        call read_buffered_datetime( datetime, i )
 
-       if ( datetime>begdatetime .and. beg_ndx<0 ) beg_ndx = i
-       if ( datetime>enddatetime ) exit bnds_loop
+       if (datetime > begdatetime .and. beg_ndx < 0) then
+          beg_ndx = i
+       end if
+
+       if (datetime > enddatetime) then
+          exit bnds_loop
+       end if
+
        end_ndx = i
 
     enddo bnds_loop
@@ -660,7 +762,7 @@ contains
 !-------------------------------------------------------------------------------
   subroutine write_record_coord( tape, mod_lats, mod_lons, mod_dists, ncols, nfils )
 
-    use time_manager,  only: get_nstep, get_curr_date, get_curr_time
+    use time_manager,  only: get_curr_date, get_curr_time
     use cam_history_support, only : active_entry
     implicit none
     type(active_entry), intent(inout) :: tape
@@ -671,9 +773,8 @@ contains
     real(r8), intent(in) :: mod_dists(ncols * sathist_nclosest)
     integer,  intent(in) ::  nfils
 
-    integer :: t, ierr, i
+    integer :: ierr, i
     integer :: yr, mon, day      ! year, month, and day components of a date
-    integer :: nstep             ! current timestep number
     integer :: ncdate            ! current date in integer format [yyyymmdd]
     integer :: ncsec             ! current time of day [seconds]
     integer :: ndcur             ! day component of current time
@@ -686,7 +787,6 @@ contains
 
     call t_startf ('sat_hist::write_record_coord')
 
-    nstep = get_nstep()
     call get_curr_date(yr, mon, day, ncsec)
     ncdate = yr*10000 + mon*100 + day
     call get_curr_time(ndcur, nscur)
