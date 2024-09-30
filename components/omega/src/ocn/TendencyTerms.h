@@ -271,6 +271,152 @@ class VelocityHyperDiffOnEdge {
    Array2DR8 EdgeMask;
 };
 
+// Tracer horizontal advection term
+class TracerHorzAdvOnCell {
+ public:
+   bool Enabled;
+
+   TracerHorzAdvOnCell(const HorzMesh *Mesh);
+
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
+                                   I4 KChunk, const Array2DR8 &NormVelEdge,
+                                   const Array3DR8 &HTracersOnEdge) const {
+
+      const I4 KStart  = KChunk * VecLength;
+      Real InvAreaCell = 1._Real / AreaCell(ICell);
+
+      Real HAdvTmp[VecLength] = {0};
+
+      for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+         const I4 JEdge = EdgesOnCell(ICell, J);
+
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const I4 K = KStart + KVec;
+            HAdvTmp[KVec] -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
+                             HTracersOnEdge(L, JEdge, K) *
+                             NormVelEdge(JEdge, K) * InvAreaCell;
+         }
+      }
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         Tend(L, ICell, K) -= HAdvTmp[KVec];
+      }
+   }
+
+ private:
+   Array1DI4 NEdgesOnCell;
+   Array2DI4 EdgesOnCell;
+   Array2DI4 CellsOnEdge;
+   Array2DR8 EdgeSignOnCell;
+   Array1DR8 DvEdge;
+   Array1DR8 AreaCell;
+};
+
+// Tracer horizontal diffusion term
+class TracerDiffOnCell {
+ public:
+   bool Enabled;
+
+   Real EddyDiff2;
+
+   TracerDiffOnCell(const HorzMesh *Mesh);
+
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
+                                   I4 KChunk, const Array3DR8 &TracerCell,
+                                   const Array2DR8 &MeanLayerThickEdge) const {
+
+      const I4 KStart  = KChunk * VecLength;
+      Real InvAreaCell = 1. / AreaCell(ICell);
+
+      Real DiffTmp[VecLength] = {0};
+
+      for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+         const I4 JEdge = EdgesOnCell(ICell, J);
+
+         const I4 JCell0 = CellsOnEdge(JEdge, 0);
+         const I4 JCell1 = CellsOnEdge(JEdge, 1);
+
+         const Real RTemp =
+             MeshScalingDel2(JEdge) * DvEdge(JEdge) / DcEdge(JEdge);
+
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const I4 K = KStart + KVec;
+            const Real TracerGrad =
+                (TracerCell(L, JCell1, K) - TracerCell(L, JCell0, K));
+
+            DiffTmp[KVec] -= EdgeSignOnCell(ICell, J) * RTemp *
+                             MeanLayerThickEdge(JEdge, K) * TracerGrad;
+         }
+      }
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         Tend(L, ICell, K) += EddyDiff2 * DiffTmp[KVec] * InvAreaCell;
+      }
+   }
+
+ private:
+   Array1DI4 NEdgesOnCell;
+   Array2DI4 EdgesOnCell;
+   Array2DI4 CellsOnEdge;
+   Array2DR8 EdgeSignOnCell;
+   Array1DR8 DvEdge;
+   Array1DR8 DcEdge;
+   Array1DR8 AreaCell;
+   Array1DR8 MeshScalingDel2;
+};
+
+// Tracer biharmonic horizontal mixing term
+class TracerHyperDiffOnCell {
+ public:
+   bool Enabled;
+
+   Real EddyDiff4;
+
+   TracerHyperDiffOnCell(const HorzMesh *Mesh);
+
+   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
+                                   I4 KChunk,
+                                   const Array3DR8 &TrDel2Cell) const {
+
+      const I4 KStart  = KChunk * VecLength;
+      Real InvAreaCell = 1. / AreaCell(ICell);
+
+      Real HypTmp[VecLength] = {0};
+
+      for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+         const I4 JEdge = EdgesOnCell(ICell, J);
+
+         const I4 JCell0 = CellsOnEdge(JEdge, 0);
+         const I4 JCell1 = CellsOnEdge(JEdge, 1);
+
+         const Real RTemp =
+             MeshScalingDel4(JEdge) * DvEdge(JEdge) / DcEdge(JEdge);
+
+         for (int KVec = 0; KVec < VecLength; ++KVec) {
+            const I4 K = KStart + KVec;
+            const Real Del2TrGrad =
+                (TrDel2Cell(L, JCell1, K) - TrDel2Cell(L, JCell0, K));
+
+            HypTmp[KVec] -= EdgeSignOnCell(ICell, J) * RTemp * Del2TrGrad;
+         }
+      }
+      for (int KVec = 0; KVec < VecLength; ++KVec) {
+         const I4 K = KStart + KVec;
+         Tend(L, ICell, K) -= EddyDiff4 * HypTmp[KVec] * InvAreaCell;
+      }
+   }
+
+ private:
+   Array1DI4 NEdgesOnCell;
+   Array2DI4 EdgesOnCell;
+   Array2DI4 CellsOnEdge;
+   Array2DR8 EdgeSignOnCell;
+   Array1DR8 DvEdge;
+   Array1DR8 DcEdge;
+   Array1DR8 AreaCell;
+   Array1DR8 MeshScalingDel4;
+};
+
 /// A class that can be used to calculate the thickness and
 /// velocity tendencies within the timestepping algorithm.
 class Tendencies {

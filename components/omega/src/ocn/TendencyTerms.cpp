@@ -384,6 +384,23 @@ VelocityHyperDiffOnEdge::VelocityHyperDiffOnEdge(const HorzMesh *Mesh)
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge),
       MeshScalingDel4(Mesh->MeshScalingDel4), EdgeMask(Mesh->EdgeMask) {}
 
+TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh)
+    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
+
+TracerDiffOnCell::TracerDiffOnCell(const HorzMesh *Mesh)
+    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell),
+      MeshScalingDel2(Mesh->MeshScalingDel2) {}
+
+TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh)
+    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AreaCell(Mesh->AreaCell),
+      MeshScalingDel4(Mesh->MeshScalingDel4) {}
+
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//
