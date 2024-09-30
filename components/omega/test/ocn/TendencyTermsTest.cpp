@@ -44,6 +44,12 @@ struct TestSetupPlane {
    Real ExpectedGradErrorL2      = 0.00134354611117262161;
    Real ExpectedLaplaceErrorLInf = 0.00113090174765822192;
    Real ExpectedLaplaceErrorL2   = 0.00134324628763667899;
+   Real ExpectedTrHAdvErrorLInf  = 0.00205864372747571571;
+   Real ExpectedTrHAdvErrorL2    = 0.00172418025417940784;
+   Real ExpectedTrDel2ErrorLInf  = 0.00334357193650093847;
+   Real ExpectedTrDel2ErrorL2    = 0.00290978146207349032;
+   Real ExpectedTrDel4ErrorLInf  = 0.00508833446725232875;
+   Real ExpectedTrDel4ErrorL2    = 0.00523080740758275625;
 
    KOKKOS_FUNCTION Real vectorX(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
@@ -102,12 +108,51 @@ struct TestSetupPlane {
       return planetaryVort(X, Y) / layerThick(X, Y);
    }
 
+   KOKKOS_FUNCTION Real tracerFluxDiv(Real X, Real Y) const {
+      return (2 * Pi / (Lx * Ly)) *
+             (std::cos(2 * Pi * X / Lx) *
+              (2 * (Lx + Ly) * std::cos(2 * Pi * Y / Ly) +
+               (Lx + 2 * Ly) * std::sin(2 * Pi * X / Lx) *
+                   std::pow(std::cos(2 * Pi * Y / Ly), 2) -
+               Lx * std::sin(2 * Pi * X / Lx) *
+                   std::pow(std::sin(2 * Pi * Y / Ly), 2)));
+   }
+
+   KOKKOS_FUNCTION Real scalarA(Real X, Real Y) const {
+      return std::cos(2 * Pi * X / Lx) * std::sin(2 * Pi * Y / Ly);
+   }
+
+   KOKKOS_FUNCTION Real scalarB(Real X, Real Y) const {
+      return 2. + std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+   }
+
+   KOKKOS_FUNCTION Real tracerDiff(Real X, Real Y) const {
+      return -4 * Pi * Pi * std::sin(2 * Pi * Y / Ly) *
+             (2 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(2 * Pi * X / Lx) +
+              (1 / Ly / Ly +
+               (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(4 * Pi * X / Lx)) *
+                  std::cos(2 * Pi * Y / Ly));
+   }
+
+   KOKKOS_FUNCTION Real scalarC(Real X, Real Y) const {
+      return std::pow(std::cos(2 * Pi * X / Lx), 2) -
+             std::pow(std::sin(2 * Pi * Y / Ly), 2);
+   }
+
+   KOKKOS_FUNCTION Real tracerHyperDiff(Real X, Real Y) const {
+      return -8 * Pi * Pi *
+             (std::cos(4 * Pi * X / Lx) / Lx / Lx +
+              std::cos(4 * Pi * Y / Ly) / Ly / Ly);
+   }
+
 }; // end TestSetupPlane
 
 struct TestSetupSphere {
    // radius of spherical mesh
    // TODO: get this from the mesh
    Real Radius = 6371220;
+
+   Real Pi = M_PI;
 
    Real ExpectedDivErrorLInf     = 0.0136595773989796766;
    Real ExpectedDivErrorL2       = 0.00367052484586384131;
@@ -117,6 +162,12 @@ struct TestSetupSphere {
    Real ExpectedGradErrorL2      = 0.00149841802817334935;
    Real ExpectedLaplaceErrorLInf = 0.281930203304510130;
    Real ExpectedLaplaceErrorL2   = 0.270530313560271740;
+   Real ExpectedTrHAdvErrorLInf  = 0.0132310202299444034;
+   Real ExpectedTrHAdvErrorL2    = 0.0038523368564029538;
+   Real ExpectedTrDel2ErrorLInf  = 0.0486107109846934185;
+   Real ExpectedTrDel2ErrorL2    = 0.00507514214194892694;
+   Real ExpectedTrDel4ErrorLInf  = 0.000819552466009620408;
+   Real ExpectedTrDel4ErrorL2    = 0.00064700084412871962;
 
    KOKKOS_FUNCTION Real vectorX(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
@@ -176,6 +227,40 @@ struct TestSetupSphere {
 
    KOKKOS_FUNCTION Real normPlanetVort(Real Lon, Real Lat) const {
       return planetaryVort(Lon, Lat) / layerThick(Lon, Lat);
+   }
+
+   KOKKOS_FUNCTION Real tracerFluxDiv(Real Lon, Real Lat) const {
+      return std::sin(Lon) * std::pow(std::cos(Lat), 2) *
+             (std::cos(Lon) * (8 - 20 * std::cos(2 * Lat)) -
+              6 * std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 4) *
+                  (-2 + 3 * std::cos(2 * Lat)) +
+              std::pow(std::cos(Lat), 4) * std::pow(std::sin(Lon), 2));
+   }
+
+   KOKKOS_FUNCTION Real scalarA(Real Lon, Real Lat) const {
+      return Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 2);
+   }
+
+   KOKKOS_FUNCTION Real scalarB(Real Lon, Real Lat) const {
+      return 2. + std::cos(Lon) * std::sin(Lat);
+   }
+
+   KOKKOS_FUNCTION Real tracerDiff(Real Lon, Real Lat) const {
+      return (4 * std::pow(std::cos(Lon), 2) -
+              2 * (1. + 3 * std::cos(2 * Lat)) * std::pow(std::sin(Lon), 2) +
+              2 * std::pow(std::cos(Lon), 3) * std::sin(Lat) -
+              8 * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
+                  std::pow(std::sin(Lon), 2) * std::sin(Lat)) /
+             Radius;
+   }
+
+   KOKKOS_FUNCTION Real scalarC(Real Lon, Real Lat) const {
+      return -(Radius / 2) * std::sqrt(3 / 2 / Pi) * std::cos(Lat) *
+             std::cos(Lon);
+   }
+
+   KOKKOS_FUNCTION Real tracerHyperDiff(Real Lon, Real Lat) const {
+      return std::sqrt(3 / 2 / Pi) * std::cos(Lat) * std::cos(Lon) / Radius;
    }
 
 }; // end TestSetupSphere
@@ -603,6 +688,189 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
    return Err;
 } // end testVelHyperDiff
 
+int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
+
+   I4 Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh = HorzMesh::getDefault();
+
+   // Compute exact result
+   Array3DReal ExactTrFluxDiv("ExactTrFluxDiv", NTracers, Mesh->NCellsOwned,
+                              NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracerFluxDiv(X, Y); },
+       ExactTrFluxDiv, Geom, Mesh, OnCell, NVertLevels, NTracers,
+       ExchangeHalos::No);
+
+   // Set input arrays
+   Array2DR8 NormalVelocity("NormalVelocity", Mesh->NEdgesSize, NVertLevels);
+
+   Err += setVectorEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.vectorX(X, Y);
+          VecField[1] = Setup.vectorY(X, Y);
+       },
+       NormalVelocity, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
+
+   Array3DR8 HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.layerThick(X, Y); },
+       HTrOnEdge, Geom, Mesh, OnEdge, NVertLevels, NTracers);
+
+   // Compute numerical result
+   Array3DReal NumTrFluxDiv("NumTrFluxDiv", NTracers, Mesh->NCellsOwned,
+                            NVertLevels);
+   TracerHorzAdvOnCell TrHorzAdvOnC(Mesh);
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int KLevel) {
+          TrHorzAdvOnC(NumTrFluxDiv, L, ICell, KLevel, NormalVelocity,
+                       HTrOnEdge);
+       });
+
+   ErrorMeasures TrHAdvErrors;
+   Err += computeErrors(TrHAdvErrors, NumTrFluxDiv, ExactTrFluxDiv, Mesh,
+                        OnCell, NVertLevels, NTracers);
+
+   if (!isApprox(TrHAdvErrors.LInf, Setup.ExpectedTrHAdvErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerHorzAdv LInf FAIL");
+   }
+
+   if (!isApprox(TrHAdvErrors.L2, Setup.ExpectedTrHAdvErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerHorzAdv L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: TracerHorzAdv PASS");
+   }
+
+   return Err;
+} // end testTracerHorzAdvOnCell
+
+int testTracerDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
+
+   I4 Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh = HorzMesh::getDefault();
+
+   // Compute exact result
+   Array3DReal ExactTracerDiff("ExactTracerDiff", NTracers, Mesh->NCellsOwned,
+                               NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracerDiff(X, Y); },
+       ExactTracerDiff, Geom, Mesh, OnCell, NVertLevels, NTracers,
+       ExchangeHalos::No);
+
+   // Set input arrays
+   Array3DR8 TracerCell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
+       TracerCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
+
+   Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
+       LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
+
+   // Compute numerical result
+   Array3DReal NumTracerDiff("NumTracerDiff", NTracers, Mesh->NCellsOwned,
+                             NVertLevels);
+   TracerDiffOnCell TrDiffOnC(Mesh);
+   TrDiffOnC.EddyDiff2 = 1._Real;
+
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int KLevel) {
+          TrDiffOnC(NumTracerDiff, L, ICell, KLevel, TracerCell,
+                    LayerThickEdge);
+       });
+
+   ErrorMeasures TrDiffErrors;
+   Err += computeErrors(TrDiffErrors, NumTracerDiff, ExactTracerDiff, Mesh,
+                        OnCell, NVertLevels, NTracers);
+
+   if (!isApprox(TrDiffErrors.LInf, Setup.ExpectedTrDel2ErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerDiff LInf FAIL");
+   }
+
+   if (!isApprox(TrDiffErrors.L2, Setup.ExpectedTrDel2ErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerDiff L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: TracerDiff PASS");
+   }
+
+   return Err;
+} // end testTracerDiffOnCell
+
+int testTracerHyperDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
+
+   I4 Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh = HorzMesh::getDefault();
+
+   // Compute exact result
+   Array3DReal ExactTracerHyperDiff("ExactTracerHyperDiff", NTracers,
+                                    Mesh->NCellsOwned, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.tracerHyperDiff(X, Y); },
+       ExactTracerHyperDiff, Geom, Mesh, OnCell, NVertLevels, NTracers,
+       ExchangeHalos::No);
+
+   // Set input arrays
+   Array3DR8 TrDel2Cell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarC(X, Y); },
+       TrDel2Cell, Geom, Mesh, OnCell, NVertLevels, NTracers);
+
+   // Compute numerical result
+   Array3DReal NumTracerHyperDiff("NumTracerHyperDiff", NTracers,
+                                  Mesh->NCellsOwned, NVertLevels);
+   TracerHyperDiffOnCell TrHypDiffOnC(Mesh);
+   TrHypDiffOnC.EddyDiff4 = 1._Real;
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int KLevel) {
+          TrHypDiffOnC(NumTracerHyperDiff, L, ICell, KLevel, TrDel2Cell);
+       });
+
+   ErrorMeasures TrHyperDiffErrors;
+   Err +=
+       computeErrors(TrHyperDiffErrors, NumTracerHyperDiff,
+                     ExactTracerHyperDiff, Mesh, OnCell, NVertLevels, NTracers);
+
+   if (!isApprox(TrHyperDiffErrors.LInf, Setup.ExpectedTrDel4ErrorLInf, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerHyperDiff LInf FAIL");
+   }
+
+   if (!isApprox(TrHyperDiffErrors.L2, Setup.ExpectedTrDel4ErrorL2, RTol)) {
+      Err++;
+      LOG_ERROR("TendencyTermsTest: TracerHyperDiff L2 FAIL");
+   }
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: TracerHyperDiff PASS");
+   }
+
+   return Err;
+} // end testTracerHyperDiffOnCell
+
 int initTendTest(const std::string &mesh) {
 
    I4 Err = 0;
@@ -668,6 +936,7 @@ int tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
 
    const auto &Mesh = HorzMesh::getDefault();
    int NVertLevels  = 16;
+   int NTracers     = 3;
 
    const Real RTol = sizeof(Real) == 4 ? 1e-2 : 1e-10;
 
@@ -682,6 +951,12 @@ int tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
    Err += testVelDiff(NVertLevels, RTol);
 
    Err += testVelHyperDiff(NVertLevels, RTol);
+
+   Err += testTracerHorzAdvOnCell(NVertLevels, NTracers, RTol);
+
+   Err += testTracerDiffOnCell(NVertLevels, NTracers, RTol);
+
+   Err += testTracerHyperDiffOnCell(NVertLevels, NTracers, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: Successful completion");
