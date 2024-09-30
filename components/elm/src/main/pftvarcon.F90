@@ -21,6 +21,8 @@ module pftvarcon
   use elm_varpar  , only : surfpft_size, surfpft_lb, surfpft_ub
   use elm_varpar  , only : numpft, numcft, maxpatch_pft, max_patch_per_col, maxpatch_urb
   use elm_varctl  , only : create_crop_landunit
+  !
+  use elm_varctl  , only : nfix_npp_patch
   !-------------------------------------------------------------------------------------------
   !
   ! !PUBLIC TYPES:
@@ -752,9 +754,17 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
     call ncd_io('Nfix_NPP_c1',Nfix_NPP_c1, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) Nfix_NPP_c1(:) = 1.8_r8 ! Default value in equation, previously hard-coded
+    if ( .not. readv ) then
+      Nfix_NPP_c1(:) = 1.8_r8 ! Default value in equation, previously hard-coded
+    else
+      nfix_npp_patch = .true.
+    end if
     call ncd_io('Nfix_NPP_c2',Nfix_NPP_c2, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) Nfix_NPP_c2(:) = 0.003_r8 ! Default value in equation, previously hard-coded
+    if ( .not. readv ) then
+      Nfix_NPP_c2(:) = 0.003_r8 ! Default value in equation, previously hard-coded
+    else
+      nfix_npp_patch = .true.
+    end if
 
     call ncd_io('grperc',grperc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
