@@ -520,6 +520,11 @@ module elm_varctl
   !$acc declare copyin(pf_clmnstep0 )
 
   !-----------------------------------------------------------------------
+  ! N fixation parameters are assigned for individual pft
+  logical, public :: nfix_npp_patch = .false.
+  !$acc declare create(nfix_npp_patch)
+
+  !-----------------------------------------------------------------------
   ! onset_gdd summation ending switch in phenology
   ! by default, onset_gdd will reset to zero passing summer-solstice
   ! This may cause non-growing if heavy winter snowing which results in
