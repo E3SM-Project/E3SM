@@ -546,7 +546,7 @@ contains
 
     ! Close file
 
-    !call ncd_pio_closefile(ncid)
+    call ncd_pio_closefile(ncid)
 
     ! --------------------------------------------------------------------
     ! get original soil depths to be used in interpolation of sand and clay
