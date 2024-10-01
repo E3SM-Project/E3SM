@@ -2,6 +2,7 @@
 
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/scream_config.hpp"
 
 #include <fstream>
 #include <regex>
@@ -34,6 +35,9 @@ std::string find_filename_in_rpointer (
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
         " - filename prefix: " + filename_prefix + "\n");
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
+  }
+  if (is_scream_standalone()) {
+    pattern_str += ".np" + std::to_string(comm.size());
   }
   pattern_str += "." + run_t0.to_string() + ".nc";
   std::regex pattern (pattern_str);

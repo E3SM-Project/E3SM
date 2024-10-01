@@ -611,8 +611,10 @@ compute_filename (const IOFileSpecs& file_specs,
   filename += "." + e2str(m_avg_type);
   filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
 
-  // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
-  if (m_params.get<bool>("MPI Ranks in Filename")) {
+  // For standalone EAMxx, we may have 2+ versions of the same test running with two
+  // different choices of ranks. To avoid name clashing for the output files,
+  // add the comm size to the output file name.
+  if (is_scream_standalone()) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
 
@@ -667,7 +669,6 @@ set_params (const ekat::ParameterList& params,
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
     // Hard code some parameters in case we access them later
-    m_params.set("MPI Ranks in Filename",false);
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
@@ -703,12 +704,6 @@ set_params (const ekat::ParameterList& params,
         "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
-
-    // If not set, hard code to false for CIME cases, and true for standalone,
-    // since standalone may be running multiple versions of the same test at once
-    if (not m_params.isParameter("MPI Ranks in Filename")) {
-      m_params.set("MPI Ranks in Filename",is_scream_standalone());
-    }
   }
 
   // Output control
