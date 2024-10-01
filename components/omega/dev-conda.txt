@@ -1,7 +1,7 @@
 # This file may be used to create an environment for linting Omega with
 # pre-commit using:
-# $ mamba create -n omega_dev --file <this file>
-# $ mamba activate omega_dev
+# $ conda create -n omega_dev --file <this file>
+# $ conda activate omega_dev
 # $ pre-commit install
 
 # linting
