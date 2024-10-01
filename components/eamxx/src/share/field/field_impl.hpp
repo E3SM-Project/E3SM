@@ -654,9 +654,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
   auto policy = RangePolicy(0,x_l.size());
 
-  auto ext = layout.extents();
+  auto ext = x_l.extents();
 
-  auto policy = RangePolicy(0,x_l.size());
   switch (x_l.rank()) {
     case 0:
       {
