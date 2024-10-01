@@ -7,7 +7,7 @@ module ActiveLayerMod
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_const_mod   , only : SHR_CONST_TKFRZ
-  use elm_varctl      , only : iulog, spinup_state
+  use elm_varctl      , only : iulog, spinup_state, use_polygonal_tundra
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
@@ -182,93 +182,90 @@ contains
             altmax_1989_indx(c) = altmax_indx(c)
          endif
 
-         ! update subsidence based on change in ALT
-         ! melt_profile stores the amount of excess_ice
-         ! melted in this timestep.
-         ! note that this may cause some unexpected results
-         ! for taliks
+         if (use_polygonal_tundra) then
+           ! update subsidence based on change in ALT
+           ! melt_profile stores the amount of excess_ice
+           ! melted in this timestep.
+           ! note that this may cause some unexpected results
+           ! for taliks
 
-         ! initialize melt_profile as zero
-         melt_profile(:) = 0._r8
+           ! initialize melt_profile as zero
+           melt_profile(:) = 0._r8
 
-         do j = nlevgrnd,1,-1 ! note, this will go from bottom to top
-            !write(iulog,*) "processing level j,",j,k_frz,excess_ice(c,j)
-            if (j .gt. k_frz + 1) then ! all layers below k_frz + 1 remain frozen
-              melt_profile(j) = 0.0_r8
-            else if (j .eq. k_frz + 1) then ! first layer below the 'thawed' layer
-              ! need to check to see if the active layer thickness is is actually
-              ! in this layer (and not between the midpoint of j_frz and bottom interface
-              ! or else inferred melt will be negative
-              ! also note: only have ice to melt if alt has never been this deep, otherwise
-              ! ice will continue to be removed each time step the alt remains in this layer
-              if ((alt(c)-zisoi(j-1)) .ge. 0._r8 .and. (alt(c) .eq. altmax_ever(c)) .and. (frac_melted(c,j) .lt. 1._r8)) then
-                orig_excess = (1._r8/(1._r8-frac_melted(c,j))) * excess_ice(c,j)
-                old_mfrac = frac_melted(c,j)
-                ! update frac melted
-                frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zisoi(j-1))/dzsoi(j)),1._r8)
-                melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
-                excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
-                  ! DEBUG:
-                  write(iulog,*) "melt and excess ice here are for j and j+1", melt_profile(j), &
-                  melt_profile(j+1), excess_ice(c,j), &
-                  excess_ice(c,j+1),(alt(c)-zisoi(j-1))/dzsoi(j),c,j+1,alt(c),zisoi(j-1),dzsoi(j)
-              else
-                melt_profile(j) = 0._r8 ! no melt
+           do j = nlevgrnd,1,-1 ! note, this will go from bottom to top
+              !write(iulog,*) "processing level j,",j,k_frz,excess_ice(c,j)
+              if (j .gt. k_frz + 1) then ! all layers below k_frz + 1 remain frozen
+                melt_profile(j) = 0.0_r8
+              else if (j .eq. k_frz + 1) then ! first layer below the 'thawed' layer
+                ! need to check to see if the active layer thickness is is actually
+                ! in this layer (and not between the midpoint of j_frz and bottom interface
+                ! or else inferred melt will be negative
+                ! also note: only have ice to melt if alt has never been this deep, otherwise
+                ! ice will continue to be removed each time step the alt remains in this layer
+                if ((alt(c)-zisoi(j-1)) .ge. 0._r8 .and. (alt(c) .eq. altmax_ever(c)) .and. (frac_melted(c,j) .lt. 1._r8)) then
+                  orig_excess = (1._r8/(1._r8-frac_melted(c,j))) * excess_ice(c,j)
+                  old_mfrac = frac_melted(c,j)
+                  ! update frac melted
+                  frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zisoi(j-1))/dzsoi(j)),1._r8)
+                  melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
+                  excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
+                else
+                  melt_profile(j) = 0._r8 ! no melt
+                end if
+              else if (j .eq. k_frz) then
+                if (alt(c) .eq. altmax_ever(c) .and. (frac_melted(c,j) .lt. 1._r8)) then
+                  orig_excess = (1._r8/(1._r8 - frac_melted(c,j))) * excess_ice(c,j)
+                  old_mfrac = frac_melted(c,j)
+                  ! update frac_melted:
+                  frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zsoi(j-1))/dzsoi(j)),1._r8)
+                  ! remove ice, only if alt has never been this deep before:
+                  melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
+                  excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
+                else
+                  melt_profile(j) = 0._r8
+                end if
+              else !
+                 melt_profile(j) = excess_ice(c,j)
+                 ! remove melted excess ice
+                 excess_ice(c,j) = 0._r8
               end if
-            else if (j .eq. k_frz) then
-              if (alt(c) .eq. altmax_ever(c) .and. (frac_melted(c,j) .lt. 1._r8)) then
-                orig_excess = (1._r8/(1._r8 - frac_melted(c,j))) * excess_ice(c,j)
-                old_mfrac = frac_melted(c,j)
-                ! update frac_melted:
-                frac_melted(c,j) = min(max(frac_melted(c,j), (alt(c)-zsoi(j-1))/dzsoi(j)),1._r8)
-                ! remove ice, only if alt has never been this deep before:
-                melt_profile(j) = orig_excess*(frac_melted(c,j) - old_mfrac)
-                excess_ice(c,j) = excess_ice(c,j) - melt_profile(j)
-              else
-                melt_profile(j) = 0._r8
-              end if
-            else !
-               melt_profile(j) = excess_ice(c,j)
-               ! remove melted excess ice
-               excess_ice(c,j) = 0._r8
-            end if
-            ! calculate subsidence at this layer:
-            melt_profile(j) = melt_profile(j) * dzsoi(j)
-         end do
+              ! calculate subsidence at this layer:
+              melt_profile(j) = melt_profile(j) * dzsoi(j)
+           end do
 
-         ! subsidence is integral of melt profile:
-         if ((year .ge. 1989) .and. (altmax_ever(c) .ge. altmax_1989(c))) then
-            subsidence(c) = subsidence(c) + sum(melt_profile)
-            if (sum(melt_profile) .lt. 0_r8) then
-              write(iulog,*) "subsidence(c) is",subsidence(c),sum(melt_profile),c,k_frz
-              write(iulog,*) "meltprofile is:", melt_profile
-            end if
-         end if
+           ! subsidence is integral of melt profile:
+           if ((year .ge. 1989) .and. (altmax_ever(c) .ge. altmax_1989(c))) then
+              subsidence(c) = subsidence(c) + sum(melt_profile)
+           end if
 
-         ! limit subsidence to 0.4 m
-         subsidence(c) = min(0.4_r8, subsidence(c))
+           ! limit subsidence to 0.4 m
+           subsidence(c) = min(0.4_r8, subsidence(c))
 
-         ! update ice wedge polygon microtopographic parameters if in polygonal ground
-         !rf - min/max logic may be redunant w/ subsidence limiter above
-         if (lun_pp%ispolygon(col_pp%landunit(c))) then
-            if (lun_pp%polygontype(col_pp%landunit(c)) .eq. ilowcenpoly) then
+           ! update ice wedge polygon microtopographic parameters if in polygonal ground
+           !rpf - min/max logic may be redunant w/ subsidence limiter above
+           !rpf - TODO: many of these (particularly the invariant ones) should be
+           ! moved to data_types/ColumnDataType.F90 to avoid the highcenpoly elseif condition
+           ! each time step.
+           if (lun_pp%ispolygon(col_pp%landunit(c))) then
+             if (lun_pp%polygontype(col_pp%landunit(c)) .eq. ilowcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
                ddep(c) = max(0.05_r8, 0.15_r8 - 0.25_r8*subsidence(c))
-            elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. iflatcenpoly) then
+             elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. iflatcenpoly) then
                rmax(c) = min(0.4_r8, 0.1_r8 + 0.75_r8*subsidence(c))
                vexc(c) = min(0.2_r8, 0.05_r8 + 0.375_r8*subsidence(c))
                ddep(c) = min(0.05_r8, 0.01_r8 + 0.1_r8*subsidence(c))
-            elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. ihighcenpoly) then
+             elseif (lun_pp%polygontype(col_pp%landunit(c)) .eq. ihighcenpoly) then
                rmax(c) = 0.4_r8
                vexc(c) = 0.2_r8
                ddep(c) = 0.05_r8
-            else
+             else
                !call endrun !<- TODO: needed? Potential way to prevent unintended updating of microtopography
                ! if polygonal ground is misspecified on surface file.
-            endif
+             endif
+           endif
          endif
-      end do
+       end do
 
     end associate 
 
