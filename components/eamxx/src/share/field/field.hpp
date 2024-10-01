@@ -344,7 +344,7 @@ protected:
   dual_view_t<char*> m_data;
 
   // Whether this field is read-only
-  bool m_is_read_only = false;
+  mutable bool m_is_read_only = false;
 };
 
 // We use this to find a Field in a std container.

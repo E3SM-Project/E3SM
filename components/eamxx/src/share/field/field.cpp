@@ -68,6 +68,10 @@ sync_to_host () const {
   // Check for early return if Host and Device are the same memory space
   if (m_data.h_view.data() == m_data.d_view.data()) return;
 
+  // We allow sync_to_host for constant fields. Temporarily disable read only flag.
+  const bool original_read_only = m_is_read_only;
+  m_is_read_only = false;
+
   switch (data_type()) {
     case DataType::IntType:
       sync_to_host_impl<int>();
@@ -81,6 +85,9 @@ sync_to_host () const {
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_host.\n");
   }
+
+  // Return field to read-only state
+  m_is_read_only = original_read_only;
 }
 
 void Field::
