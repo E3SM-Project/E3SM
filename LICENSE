@@ -2,7 +2,7 @@ Except for the separable pieces descibed below, E3SM is released
 under the following 3-Clause BSD Open Source license.
 
 *******************************************************************************
-Copyright ©2023, UChicago Argonne, LLC All Rights Reserved
+Copyright ©2043, UChicago Argonne, LLC All Rights Reserved
 
 Software Name: Energy Exascale Earth System Model (E3SM)
 
@@ -55,15 +55,21 @@ GPTL            share/timing                    author              non-commeric
 MCT             externals/mct                   ANL                 BSD
 YAKL		externals/YAKL			author              BSD
 cub		externals/cub                   author, NVIDIA      BSD
-kokkos          externals/kokkos                SNL                 BSD
+kokkos          externals/ekat                  SNL                 BSD
+haero           externals/haero                 SNL/Battelle        BSD
+mam4xx          externals/mam4xx                SNL/Battelle        BSD
 
 Ocean/Ice       under components/
 -----------     -----------------
 CICE            cice                            LANL                BSD
 MPAS Framework  mpas-framework                  LANL                BSD
-MPAS Ocean      mpas-ocean                      LANL                BSD
-MPAS SeaIce     mpas-seaice                     LANL                BSD
-MPAS-Albany LandIce   mpas-albany-landice       LANL, SNL           BSD
+FFTW            mpas-ocean/src/FFTW             author/MIT          GPL
+MARBL           mpas-ocean/src/MARBL            NCAR                BSD
+SHTNS           mpas-ocean/src/SHTNS            CeCILL              GPL
+
+Land-ice        under components/mpas-albany-landice
+-----------     ------------------------------------
+SeaLevelModel   src/SeaLevelModel               author              MIT
 
 Land            under components/elm/src
 -----------     ------------------------
