@@ -193,7 +193,6 @@ contains
            melt_profile(:) = 0._r8
 
            do j = nlevgrnd,1,-1 ! note, this will go from bottom to top
-              !write(iulog,*) "processing level j,",j,k_frz,excess_ice(c,j)
               if (j .gt. k_frz + 1) then ! all layers below k_frz + 1 remain frozen
                 melt_profile(j) = 0.0_r8
               else if (j .eq. k_frz + 1) then ! first layer below the 'thawed' layer
