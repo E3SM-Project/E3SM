@@ -52,10 +52,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: "omega_ci"
-          miniforge-variant: Mambaforge
           miniforge-version: latest
-          use-mamba: true
-          mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: strict
           auto-update-conda: true
@@ -64,10 +61,10 @@ jobs:
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Install dependencies
         run: |
-          mamba create -n omega_dev --file components/omega/dev-conda.txt \
+          conda create -n omega_dev --file components/omega/dev-conda.txt \
               python=${{ matrix.python-version }}
           conda activate omega_dev
-          mamba list
+          conda list
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         id: file_changes
