@@ -212,10 +212,10 @@ contains
                end do
             else
                ! if fully frozen, or no roots, put everything in the top layer
-               froot_prof(p,1) = 1./dzsoi_decomp(1)
-               croot_prof(p,1) = 1./dzsoi_decomp(1)
-               leaf_prof(p,1) = 1./dzsoi_decomp(1)
-               stem_prof(p,1) = 1./dzsoi_decomp(1)
+               froot_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               croot_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               leaf_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               stem_prof(p,1) = 1._r8/dzsoi_decomp(1)
             endif
 
          end do
@@ -257,9 +257,9 @@ contains
                      pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
                   end do
                else
-                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
-                  pdep_prof(c,1) = 1./dzsoi_decomp(1)
+                  nfixation_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1._r8/dzsoi_decomp(1)
                endif
             else
                if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
@@ -271,9 +271,9 @@ contains
                      end if
                   end do
                else
-                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
-                  pdep_prof(c,1) = 1./dzsoi_decomp(1) 
+                  nfixation_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1._r8/dzsoi_decomp(1) 
                endif
             end if
          end do
