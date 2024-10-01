@@ -282,6 +282,9 @@ public:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
+  template<typename ST>
+  void sync_to_host_impl () const;
+
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const ST value);
 
