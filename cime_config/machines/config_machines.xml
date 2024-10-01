@@ -1099,306 +1099,11 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
 -->
   </machine>
 
-  <machine MACH="crusher">
-    <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
-    <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>Linux</OS>
-    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <PROJECT>cli115</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/crusher</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/orion/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/orion/cli115/world-shared/e3sm/baselines/crusher/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">8</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="crayclanggpu">8</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="amdclanggpu">8</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
-        <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="crayclang.*">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/15.0.1</command>
-        <!-- craype module to address tcmalloc runtime errors at startup -->
-        <!-- tcmalloc.cc:647 Attempt to free invalid pointer -->
-        <command name="switch">craype craype/2.7.20</command>
-      </modules>
-      <modules compiler="crayclanggpu">
-        <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.0</command>
-      </modules>
-      <modules compiler="amdclang.*">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-        <command name="switch">amd amd/5.4.0</command>
-      </modules>
-      <modules compiler="amdclanggpu">
-        <command name="load">craype-accel-amd-gfx90a</command>
-      </modules>
-      <modules compiler="gnu.*">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-        <command name="switch">gcc gcc/11.2.0</command>
-      </modules>
-      <modules compiler="gnugpu">
-        <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.0</command>
-      </modules>
-      <modules>
-        <command name="load">cray-python/3.9.13.1</command>
-        <command name="load">subversion/1.14.1</command>
-        <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <TEST_MEMLEAK_TOLERANCE>0.25</TEST_MEMLEAK_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
-    <environment_variables>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="NTASKS_PER_GPU"> </env>
-      <env name="GPU_BIND_ARGS"> </env>
-    </environment_variables>
-    <environment_variables compiler="amdclang">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
-    <environment_variables compiler=".*gpu.*">
-      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
-      <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-    </environment_variables>
-    <environment_variables compiler=".*gpu.*" DEBUG="TRUE">
-      <env name="AMD_LOG_LEVEL">10</env>
-      <env name="CRAY_ACC_DEBUG">3</env>
-    </environment_variables>
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="crusher-scream-cpu">
-    <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
-    <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>Linux</OS>
-    <COMPILERS>crayclang-scream</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <PROJECT>CLI115</PROJECT>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/orion/cli133/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <!-- <arg name="binding">cpu_bind=cores</arg>  -->
-        <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
-        <arg name="binding">--threads-per-core=1</arg>
-        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m *:block</arg>
-        <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
-      </arguments>
-    </mpirun>
-
-    <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-
-      <modules compiler="crayclang-scream">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/14.0.0</command>
-      </modules>
-
-      <modules compiler="amdclang">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-        <command name="switch">amd amd/5.1.0</command>
-      </modules>
-
-      <modules compiler="gnu">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-      </modules>
-      <modules>
-        <command name="load">cray-mpich/8.1.12</command>
-        <command name="load">cray-python/3.9.4.2</command>
-        <command name="load">subversion/1.14.0</command>
-        <command name="load">git/2.31.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-libsci/21.08.1.2</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
-      </modules>
-
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <environment_variables>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-    </environment_variables>
-
-    <environment_variables compiler="amdclang">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
-
-    <environment_variables>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-    </environment_variables>
-
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="crusher-scream-gpu">
-    <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
-    <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>Linux</OS>
-    <COMPILERS>crayclang-scream</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <PROJECT>CLI115</PROJECT>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/orion/cli133/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <!-- <arg name="binding">cpu_bind=cores</arg>  -->
-        <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
-        <arg name="binding">--gpus-per-node=8 --gpu-bind=closest</arg>
-        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <!-- <arg name="placement">-m *:block</arg> -->
-        <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
-      </arguments>
-    </mpirun>
-
-    <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="crayclang-scream">
-        <command name="reset"></command>
-        <command name="load">PrgEnv-cray</command>
-        <!-- See SCREAM issue #2080. -->
-        <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
-        <!-- Work around tcmalloc crash. -->
-        <command name="load">cce/14.0.3</command>
-      </modules>
-      <modules>
-        <command name="load">cray-python/3.9.4.2</command>
-        <command name="load">subversion/1.14.0</command>
-        <command name="load">git/2.31.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-      </modules>
-
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
-    <environment_variables>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
-      <!-- See SCREAM issue #2080. -->
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
-    </environment_variables>
-
-    <environment_variables BUILD_THREADED="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-  </machine>
-
   <machine MACH="frontier-scream-gpu">
     <DESC>Frontier. AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs.</DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>crayclang-scream</COMPILERS>
+    <COMPILERS>craygnuamdgpu,crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/proj-shared/cli115</SAVE_TIMING_DIR>
@@ -1435,6 +1140,24 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules compiler="craygnuamdgpu">
+        <command name="reset"></command>
+        <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
+        <command name="load">PrgEnv-gnu</command>
+        <command name="load">cpe/24.07</command>
+        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/6.2.0</command>
+        <command name="load">libunwind</command>
+        <command name="load">cray-python</command>
+        <command name="load">subversion</command>
+        <command name="load">git</command>
+        <command name="load">cmake</command>
+        <command name="load">cray-hdf5-parallel</command>
+        <command name="load">cray-netcdf-hdf5parallel</command>
+        <command name="load">cray-parallel-netcdf</command>
+        <command name="unload">darshan-runtime</command>
+      </modules>
       <modules compiler="crayclang-scream">
         <command name="reset"></command>
         <command name="load">cpe/22.12</command>
@@ -1478,9 +1201,13 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
 
+    <environment_variables compiler="craygnuamdgpu" mpilib="mpich">
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10/install/craygnuamdgppu/cpe-24.07/libfabric-1.15.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+    </environment_variables>
     <environment_variables compiler="crayclang-scream" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
+
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->

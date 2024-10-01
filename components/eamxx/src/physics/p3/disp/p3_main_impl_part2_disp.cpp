@@ -10,6 +10,9 @@ namespace p3 {
  * this file, #include p3_functions.hpp instead.
  */
 
+#ifdef SCREAM_SYSTEM_WORKAROUND_P3_PART2
+#pragma clang optimize off
+#endif
 template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_part2_disp(
@@ -127,7 +130,9 @@ void Functions<Real,DefaultDevice>
     if (!hydrometeorsPresent(i)) return;
   });
 }
-
+#ifdef SCREAM_SYSTEM_WORKAROUND_P3_PART2
+#pragma clang optimize on
+#endif
 } // namespace p3
 } // namespace scream
 
