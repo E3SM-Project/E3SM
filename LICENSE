@@ -66,6 +66,14 @@ MPAS Framework  mpas-framework                  LANL                BSD
 FFTW            mpas-ocean/src/FFTW             author/MIT          GPL
 MARBL           mpas-ocean/src/MARBL            NCAR                BSD
 SHTNS           mpas-ocean/src/SHTNS            CeCILL              GPL
+cvmix           mpas-ocean/src/cvmix            NCAR                LGPL
+gotm            mpas-ocean/src/gotm             authors             GPL
+ppr             mpas-ocean/src/ppr              author              custom
+Icepack         mpas-seaice/src/icepack         LANL                BSD
+
+Waves           under components/ww3
+-----------     --------------------
+WW3             src/WW3                         NWS/NOAA            custom
 
 Land-ice        under components/mpas-albany-landice
 -----------     ------------------------------------
@@ -97,7 +105,7 @@ HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
 
 Actual copyright holder for above Institutions:
 NCAR =  University Corporation for Atmospheric Research
-LANL =  Los Alamos National Security, LLC
+LANL =  Los Alamos National Security, LLC, Triad National Security, LLC
 SNL  =  National Technology & Engineering Solutions of Sandia, LLC 
 LBNL =  The Regents of the University of California, 
         through Lawrence Berkeley National Laboratory
