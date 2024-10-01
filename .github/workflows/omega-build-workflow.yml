@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  CANCEL_OTHERS: true
+  CANCEL_OTHERS: false
   PATHS_IGNORE: '["**/README.md", "**/doc/**"]'
 
 jobs:
