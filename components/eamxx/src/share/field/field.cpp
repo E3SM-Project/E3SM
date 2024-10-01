@@ -89,8 +89,22 @@ sync_to_dev () const {
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
-  // Ensure host view was created (lazy construction)
-  Kokkos::deep_copy(m_data.d_view,m_data.h_view);
+  // Check for early return if Host and Device are the same memory space
+  if (m_data.h_view.data() == m_data.d_view.data()) return;
+
+  switch (data_type()) {
+    case DataType::IntType:
+      sync_to_dev_impl<int>();
+      break;
+    case DataType::FloatType:
+      sync_to_dev_impl<float>();
+      break;
+    case DataType::DoubleType:
+      sync_to_dev_impl<double>();
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_dev.\n");
+  }
 }
 
 Field Field::

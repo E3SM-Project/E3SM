@@ -285,6 +285,9 @@ protected:
   template<typename ST>
   void sync_to_host_impl () const;
 
+  template<typename ST>
+  void sync_to_dev_impl () const;
+
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const ST value);
 

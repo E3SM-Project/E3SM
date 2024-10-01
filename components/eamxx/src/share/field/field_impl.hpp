@@ -318,6 +318,102 @@ void Field::sync_to_host_impl () const {
   }
 }
 
+template<typename ST>
+void Field::sync_to_dev_impl () const {
+  const auto alloc_props = get_header().get_alloc_properties();
+  switch (rank()) {
+    case 0:
+      Kokkos::deep_copy(get_view<ST, Device>(), get_view<const ST, Host>());
+      break;
+    case 1:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST*, Device>(), get_view<const ST*, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST*, Device>();
+        auto host_view = get_strided_view<const ST*, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i);
+          auto host_view_i = Kokkos::subview(host_view, i);
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    case 2:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST**, Device>(), get_view<const ST**, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST**, Device>();
+        auto host_view = get_strided_view<const ST**, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i, Kokkos::ALL());
+          auto host_view_i = Kokkos::subview(host_view, i, Kokkos::ALL());
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    case 3:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST***, Device>(), get_view<const ST***, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST***, Device>();
+        auto host_view = get_strided_view<const ST***, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i, Kokkos::ALL(), Kokkos::ALL());
+          auto host_view_i = Kokkos::subview(host_view, i, Kokkos::ALL(), Kokkos::ALL());
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    case 4:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST****, Device>(), get_view<const ST****, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST****, Device>();
+        auto host_view = get_strided_view<const ST****, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          auto host_view_i = Kokkos::subview(host_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    case 5:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST*****, Device>(), get_view<const ST*****, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST*****, Device>();
+        auto host_view = get_strided_view<const ST*****, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          auto host_view_i = Kokkos::subview(host_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    case 6:
+      if (alloc_props.contiguous()) {
+        Kokkos::deep_copy(get_view<ST******, Device>(), get_view<const ST******, Host>());
+      } else {
+        auto dev_view  = get_strided_view<      ST******, Device>();
+        auto host_view = get_strided_view<const ST******, Host>();
+        for (size_t i=0; i<dev_view.extent(0); ++i) {
+          auto dev_view_i  = Kokkos::subview(dev_view,  i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          auto host_view_i = Kokkos::subview(host_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+          EKAT_REQUIRE_MSG(dev_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
+          Kokkos::deep_copy(dev_view_i, host_view_i);
+        }
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'sync_to_dev'.\n");
+  }
+}
+
 template<HostOrDevice HD>
 void Field::
 deep_copy (const Field& src) {
