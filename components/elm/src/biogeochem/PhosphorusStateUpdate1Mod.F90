@@ -244,16 +244,18 @@ contains
               veg_ps%frootp(p)      = veg_ps%frootp(p)      + veg_pf%frootp_xfer_to_frootp(p)*dt
               veg_ps%frootp_xfer(p) = veg_ps%frootp_xfer(p) - veg_pf%frootp_xfer_to_frootp(p)*dt
 
-              ! B Sulman: Allow graminoid rhizomes
-              veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
-              veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
               if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ps%livestemp(p)       = veg_ps%livestemp(p)       + veg_pf%livestemp_xfer_to_livestemp(p)*dt
                   veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p)  - veg_pf%livestemp_xfer_to_livestemp(p)*dt
                   veg_ps%deadstemp(p)       = veg_ps%deadstemp(p)       + veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
                   veg_ps%deadstemp_xfer(p)  = veg_ps%deadstemp_xfer(p)  - veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
+                  veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
+                  veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
                   veg_ps%deadcrootp(p)      = veg_ps%deadcrootp(p)      + veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
                   veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
+              else ! Nonwoody rhizome (B Sulman)
+                  veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
+                  veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
               end if
 
               if (iscft(ivt(p))) then ! skip 2 generic crops
@@ -316,10 +318,6 @@ contains
               veg_ps%frootp(p)          = veg_ps%frootp(p)         + veg_pf%ppool_to_frootp(p)*dt
               veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_frootp_storage(p)*dt
               veg_ps%frootp_storage(p)  = veg_ps%frootp_storage(p) + veg_pf%ppool_to_frootp_storage(p)*dt
-              veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp(p)*dt
-              veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + veg_pf%ppool_to_livecrootp(p)*dt
-              veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp_storage(p)*dt
-              veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + veg_pf%ppool_to_livecrootp_storage(p)*dt
 
               if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
@@ -330,10 +328,19 @@ contains
                   veg_ps%deadstemp(p)          = veg_ps%deadstemp(p)          + veg_pf%ppool_to_deadstemp(p)*dt
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadstemp_storage(p)*dt
                   veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  + veg_pf%ppool_to_deadstemp_storage(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp_storage(p)*dt
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + veg_pf%ppool_to_livecrootp_storage(p)*dt
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp(p)*dt
                   veg_ps%deadcrootp(p)         = veg_ps%deadcrootp(p)         + veg_pf%ppool_to_deadcrootp(p)*dt
                   veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp_storage(p)*dt
                   veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + veg_pf%ppool_to_deadcrootp_storage(p)*dt
+              else ! Nonwoody rhizome (B Sulman)
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp_storage(p)*dt
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + veg_pf%ppool_to_livecrootp_storage(p)*dt
               end if
 
               if (iscft(ivt(p))) then ! skip 2 generic crops
@@ -352,16 +359,19 @@ contains
               veg_ps%leafp_xfer(p)     = veg_ps%leafp_xfer(p)     + veg_pf%leafp_storage_to_xfer(p)*dt
               veg_ps%frootp_storage(p) = veg_ps%frootp_storage(p) - veg_pf%frootp_storage_to_xfer(p)*dt
               veg_ps%frootp_xfer(p)    = veg_ps%frootp_xfer(p)    + veg_pf%frootp_storage_to_xfer(p)*dt
-              veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - veg_pf%livecrootp_storage_to_xfer(p)*dt
-              veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + veg_pf%livecrootp_storage_to_xfer(p)*dt
 
               if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  - veg_pf%livestemp_storage_to_xfer(p)*dt
                   veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)     + veg_pf%livestemp_storage_to_xfer(p)*dt
                   veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  - veg_pf%deadstemp_storage_to_xfer(p)*dt
                   veg_ps%deadstemp_xfer(p)     = veg_ps%deadstemp_xfer(p)     + veg_pf%deadstemp_storage_to_xfer(p)*dt
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - veg_pf%livecrootp_storage_to_xfer(p)*dt
+                  veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + veg_pf%livecrootp_storage_to_xfer(p)*dt
                   veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) - veg_pf%deadcrootp_storage_to_xfer(p)*dt
                   veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + veg_pf%deadcrootp_storage_to_xfer(p)*dt
+              else ! Nonwoody rhizome (B Sulman)
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - veg_pf%livecrootp_storage_to_xfer(p)*dt
+                  veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + veg_pf%livecrootp_storage_to_xfer(p)*dt
               end if
 
               if (iscft(ivt(p))) then ! skip 2 generic crops
