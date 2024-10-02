@@ -103,12 +103,6 @@ int initIOStreamTest(std::shared_ptr<Clock> &ModelClock, // Model clock
    std::shared_ptr<Dimension> VertDim =
        Dimension::create("NVertLevels", NVertLevels);
 
-   // Err1 = AuxiliaryState::init();
-   // TestEval("Ocean auxiliary state initialization", Err1, ErrRef, Err);
-
-   // Err1 = Tendencies::init();
-   // TestEval("Ocean tendency initialization", Err1, ErrRef, Err);
-
    // Initialize time stepper needed before ocean state (for time levels)
    Err1 = TimeStepper::init();
    TestEval("Ocean time step initialization", Err1, ErrRef, Err);
@@ -244,24 +238,6 @@ int main(int argc, char **argv) {
          if (Err1 != 0) // to prevent too much output in log
             TestEval("Write all streams " + CurTimeStr, Err1, ErrRef, Err);
       }
-
-      // Read one of the written files and check results
-      // Device arrays on edges
-      // parallelReduce(
-      //   {NEdgesSize}, KOKKOS_LAMBDA(int Edge, I4 &LCount) {
-      //      if (Data1DI8(Edge) != RefI8 + Edge) ++LCount;
-      //      if (*TPtr1DI8[Edge] != RefI8 + Edge) ++LCount;
-      //      for (int K = 0; K < NVertLevels; ++K) {
-      //         int Add = Edge*NVertLevels + K;
-      //         if (Data2DI8(Edge,K) != RefI8 + Edge + K) ++LCount;
-      //         if (Data2DR8(Edge,K) != RefR8 + Edge + K) ++LCount;
-      //         if (*Tptr2DI8[Add] != RefI8 + Edge + K) ++LCount;
-      //         if (*Tptr2DR8[Add] != RefR8 + Edge + K) ++LCount;
-      //      }
-      //   }
-      //   DataReducer
-      //);
-      // TestEval("Get data all edge device arrays, ptrs", DataCount1, 0, Err);
 
       // Write final output and remove all streams
       IOStream::finalize(*ModelClock);
