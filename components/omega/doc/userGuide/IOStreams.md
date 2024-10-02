@@ -106,6 +106,8 @@ a template can be:
    - OnShutdown for files read/written only once on model exit
    - AtTime or OnTime or Time or TimeInstant for a one-time read or write
      at the time specified in the StartTime entry
+   - Never if the stream should not be used but you wish to retain the
+     entry in the config file (a warning will be output to log file)
    - Years for a frequency every Freq years (*not* Freq times per year)
    - Months for a frequency every Freq months (*not* Freq times per month)
    - Days for a frequency every Freq days (*not* Freq times per day)
