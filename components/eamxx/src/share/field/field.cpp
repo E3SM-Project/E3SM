@@ -74,13 +74,13 @@ sync_to_host () const {
 
   switch (data_type()) {
     case DataType::IntType:
-      sync_to_host_impl<int>();
+      sync_views_impl<int, Device, Host>();
       break;
     case DataType::FloatType:
-      sync_to_host_impl<float>();
+      sync_views_impl<float, Device, Host>();
       break;
     case DataType::DoubleType:
-      sync_to_host_impl<double>();
+      sync_views_impl<double, Device, Host>();
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_host.\n");
@@ -101,13 +101,13 @@ sync_to_dev () const {
 
   switch (data_type()) {
     case DataType::IntType:
-      sync_to_dev_impl<int>();
+      sync_views_impl<int, Host, Device>();
       break;
     case DataType::FloatType:
-      sync_to_dev_impl<float>();
+      sync_views_impl<float, Host, Device>();
       break;
     case DataType::DoubleType:
-      sync_to_dev_impl<double>();
+      sync_views_impl<double, Host, Device>();
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_dev.\n");
