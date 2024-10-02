@@ -343,7 +343,9 @@ protected:
   // Actual data.
   dual_view_t<char*> m_data;
 
-  // Whether this field is read-only
+  // Whether this field is read-only. This is given
+  // mutable keyword since it needs to be turned off/on
+  // to allow sync_to_host for constant, read-only fields.
   mutable bool m_is_read_only = false;
 };
 
