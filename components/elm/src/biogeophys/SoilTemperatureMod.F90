@@ -1316,7 +1316,7 @@ contains
     use elm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
-    use landunit_varcon  , only : istsoil, istcrop, istice_mec
+    use landunit_varcon  , only : istsoil, istcrop, istice_mec,istice
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
