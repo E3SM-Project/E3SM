@@ -129,8 +129,8 @@ I4 Tracers::init() {
                           NCellsSize, NVertLevels);
    }
 
-// Read tracer definitions from file
-#include "TracerDefs.inc"
+   // Define tracers
+   defineAllTracers();
 
    // Check if all tracers defined in config file are loaded
    if (TracerIndexes.size() != TracerNames.size()) {
@@ -183,7 +183,7 @@ I4 Tracers::init() {
 I4 Tracers::define(const std::string &Name, const std::string &Description,
                    const std::string &Units, const std::string &StdName,
                    const Real ValidMin, const Real ValidMax,
-                   const Real FillValue) {
+                   const Real FillValue, I4 &Index) {
 
    // Do nothing if this tracer is not selected
    if (TracerIndexes.find(Name) == TracerIndexes.end()) {
@@ -200,6 +200,9 @@ I4 Tracers::define(const std::string &Name, const std::string &Description,
 
    // set tracer index to name mapping
    TracerNames[TracerIndex] = Name;
+
+   if (&Index != &IndxInvalid)
+      Index = TracerIndex;
 
    // create a tracer field
    std::string TracerFieldName = Name;

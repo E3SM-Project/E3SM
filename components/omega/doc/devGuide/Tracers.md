@@ -10,19 +10,21 @@ located in the `omega/src/ocn` directory of E3SM. The file contains
 `define` C++ function calls, each of which defines a tracer as shown below:
 
 ```c++
-define(
-       "Temp",                  // Name of variable
-       "Potential Temperature", // Long name or description
-       "degree_C",              // Units
-       "sea_water_potential_temperature", // CF standard name
-       -273.15,                 // Min valid field value
-       100.0,                   // Max valid field value
-       1.e33                    // Fill value for undefined entries
+static I4
+define(const std::string &Name,        ///< [in] Name of tracer
+       const std::string &Description, ///< [in] Long name or description
+       const std::string &Units,       ///< [in] Units
+       const std::string &StdName,     ///< [in] CF standard Name
+       const Real ValidMin,            ///< [in] min valid field value
+       const Real ValidMax,            ///< [in] max valid field value
+       const Real FillValue,           ///< [in] value for undef entries
+       I4 &Index = IndxInvalid         ///< [out] (optional) index value
 );
 ```
 
 To add a new tracer, simply call the `define` function with the appropriate
-arguments.
+arguments. Index argument is optional one that allows to access the tracer
+data using the given tracer index variable.
 
 The following sections explain the concept and implementation of OMEGA tracers.
 

@@ -106,10 +106,12 @@ configuration file.
 
 #### 4.1.1 Definition
 
-All supported tracers are defined in a file called `TracerDefs.inc`, which
-includes the code blocks needed to define each tracer and its metadata. This
-file must include all tracers potentially used in the model. The file will
-look something like this:
+All supported tracers are defined in a file called TracerDefs.inc, which
+includes the code blocks needed to define each tracer, its metadata, and
+tracer index variables. Tracer index variables keep the index value for
+each tracer, allowing users to easily access the corresponding tracer data
+using the variable. This file must include all tracers that might potentially
+be used in the model. The file will look something like this:
 
 ```c++
 // At the top of the file, list all available tracers in a comment
@@ -119,15 +121,37 @@ look something like this:
 //   Salt
 //   [Others...]
 
-define(
-       "Temp",                  // Name of variable
-       "Potential Temperature", // Long name or description
-       "degree_C",              // Units
-       "sea_water_potential_temperature", // CF standard name
-       -273.15,                 // Min valid field value
-       100.0,                   // Max valid field value
-       1.e33                    // Fill value for undefined entries
-);
+// Index defined for each tracer. The value of these tracer indices are still
+// set in Tracers::init()  and tracers that have not been selected would have
+// standard invalid value: Tracers::IndxInvalid = -1
+inline static I4 IndxTemp             = Tracers::IndxInvalid;
+inline static I4 IndxSalt             = Tracers::IndxInvalid;
+inline static I4 IndxMyBGCTracer      = Tracers::IndxInvalid;
+inline static I4 IndxAnotherBGCTracer = Tracers::IndxInvalid;
+inline static I4 IndxDebug1           = Tracers::IndxInvalid;
+inline static I4 IndxDebug2           = Tracers::IndxInvalid;
+
+// Tracer definitions packaged in a defineAllTracers function
+static void defineAllTracers() {
+
+   define("Temp",                            ///< [in] Name of tracer
+          "Potential Temperature",           ///< [in] Long name or description
+          "degree_C",                        ///< [in] Units
+          "sea_water_potential_temperature", ///< [in] CF standard Name
+          -273.15,                           ///< [in] min valid field value
+          100.0,                             ///< [in] max valid field value
+          1.e33,                             ///< [in] value for undef entries
+          IndxTemp);                         ///< [out] (optional) static index
+
+   define("Salt", "Salinity", "psu", "sea_water_salinity", 0.0, 50.0, 1.e33,
+          IndxSalt);
+   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33,
+          IndxDebug1);
+   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33,
+          IndxDebug2);
+   define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, 1.e33);
+}
+
 ```
 
 #### 4.1.2 Configuration
@@ -208,15 +232,16 @@ class Tracers {
    // Pack tracer field name
    static std::string packTracerFieldName(const std::string &TracerName);
 
-   // Defines all tracers locally without allocating memory
+   // locally defines all tracers but do not allocates memory
    static I4
-   define(const std::string &Name,        ///< [in] Name of the tracer
+   define(const std::string &Name,        ///< [in] Name of tracer
           const std::string &Description, ///< [in] Long name or description
           const std::string &Units,       ///< [in] Units
-          const std::string &StdName,     ///< [in] CF standard name
-          const Real ValidMin,            ///< [in] Min valid field value
-          const Real ValidMax,            ///< [in] Max valid field value
-          const Real FillValue            ///< [in] Value for undefined entries
+          const std::string &StdName,     ///< [in] CF standard Name
+          const Real ValidMin,            ///< [in] min valid field value
+          const Real ValidMax,            ///< [in] max valid field value
+          const Real FillValue,           ///< [in] value for undef entries
+          I4 &Index = IndxInvalid         ///< [out] (optional) index value
    );
 
   public:
@@ -255,14 +280,15 @@ returns a non-zero error code if any of several possible error conditions
 are encountered.
 
 ```c++
-static int define(
-   const std::string &Name,        ///< [in] Name of the tracer
-   const std::string &Description, ///< [in] Long name or description
-   const std::string &Units,       ///< [in] Units
-   const std::string &StdName,     ///< [in] CF standard name
-   OMEGA::Real ValidMin,           ///< [in] Minimum valid field value
-   OMEGA::Real ValidMax,           ///< [in] Maximum valid field value
-   OMEGA::Real FillValue           ///< [in] Fill value for undefined entries
+static I4
+define(const std::string &Name,        ///< [in] Name of tracer
+       const std::string &Description, ///< [in] Long name or description
+       const std::string &Units,       ///< [in] Units
+       const std::string &StdName,     ///< [in] CF standard Name
+       const Real ValidMin,            ///< [in] min valid field value
+       const Real ValidMax,            ///< [in] max valid field value
+       const Real FillValue,           ///< [in] value for undef entries
+       I4 &Index = IndxInvalid         ///< [out] (optional) index value
 );
 ```
 

@@ -24,6 +24,16 @@ class Tracers {
    // total number of tracers defined at intialization
    static I4 NumTracers;
 
+   static I4 NTimeLevels; ///< Number of time levels in tracer variable arrays
+   static I4
+       NVertLevels; ///< Number of vertical levels in tracer variable arrays
+   static I4 NCellsOwned; ///< Number of cells owned by this task
+   static I4 NCellsAll;   ///< Total number of local cells (owned + all halo)
+   static I4
+       NCellsSize; ///< Array size (incl padding, bndy cell) for cell arrays
+
+   inline static I4 IndxInvalid = -1;
+
    // static storage of the tracer arrays for device and host memory spaces
    // The arrays are 3 dimensional arrays with Tracer, Cell, and Vertical
    // dimensions in order
@@ -60,24 +70,19 @@ class Tracers {
           const std::string &StdName,     ///< [in] CF standard Name
           const Real ValidMin,            ///< [in] min valid field value
           const Real ValidMax,            ///< [in] max valid field value
-          const Real FillValue            ///< [in] value for undef entries
+          const Real FillValue,           ///< [in] value for undef entries
+          I4 &Index = IndxInvalid         ///< [out] (optional) index value
    );
 
  public:
-   static I4 NTimeLevels; ///< Number of time levels in tracer variable arrays
-   static I4
-       NVertLevels; ///< Number of vertical levels in tracer variable arrays
-   static I4 NCellsOwned; ///< Number of cells owned by this task
-   static I4 NCellsAll;   ///< Total number of local cells (owned + all halo)
-   static I4
-       NCellsSize; ///< Array size (incl padding, bndy cell) for cell arrays
-
    //---------------------------------------------------------------------------
    // Initialization
    //---------------------------------------------------------------------------
    /// read tracer defintions, allocate tracer arrays and initializes the
    /// tracers
    static I4 init();
+
+#include "TracerDefs.inc"
 
    /// deallocates tracer arrays
    static I4 clear();

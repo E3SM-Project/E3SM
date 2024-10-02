@@ -89,6 +89,7 @@ I4 initTracersTest() {
       LOG_ERROR("Tracers: error initializing default time stepper");
       return Err;
    }
+
    return 0;
 }
 
@@ -118,9 +119,10 @@ int main(int argc, char *argv[]) {
       I4 NumTasks     = DefEnv->getNumTasks();
       bool IsMaster   = DefEnv->isMasterTask();
 
-      HorzMesh *DefHorzMesh = HorzMesh::getDefault();
-      Decomp *DefDecomp     = Decomp::getDefault();
-      Halo *DefHalo         = Halo::getDefault();
+      HorzMesh *DefHorzMesh       = HorzMesh::getDefault();
+      Decomp *DefDecomp           = Decomp::getDefault();
+      Halo *DefHalo               = Halo::getDefault();
+      TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
       // initialize Tracers infrastructure
       Err = Tracers::init();
@@ -128,6 +130,12 @@ int main(int argc, char *argv[]) {
          RetVal += 1;
          LOG_ERROR("Tracers: initialzation FAIL");
       }
+
+      I4 NTracers    = Tracers::getNumTracers();
+      I4 NCellsOwned = DefHorzMesh->NCellsOwned;
+      I4 NCellsSize  = DefHorzMesh->NCellsSize;
+      I4 NVertLevels = DefHorzMesh->NVertLevels;
+      I4 NTimeLevels = DefTimeStepper->getNTimeLevels();
 
       // Get group names
       std::vector<std::string> GroupNames = Tracers::getGroupNames();
@@ -230,12 +238,6 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      I4 NTracers    = Tracers::getNumTracers();
-      I4 NCellsOwned = Tracers::NCellsOwned;
-      I4 NCellsAll   = Tracers::NCellsAll;
-      I4 NCellsSize  = Tracers::NCellsSize;
-      I4 NVertLevels = Tracers::NVertLevels;
-
       // Check if total number of tracers is correct
       if (TotalLength == NTracers) {
          LOG_INFO("Tracers: getNumTracers() returns correct tracer size PASS");
@@ -250,8 +252,7 @@ int main(int argc, char *argv[]) {
           HostArray3DReal("RefHostArray", NTracers, NCellsSize, NVertLevels);
 
       // intialize tracer elements of all time levels
-      for (I4 TimeLevel = 0; TimeLevel + Tracers::NTimeLevels > 0;
-           --TimeLevel) {
+      for (I4 TimeLevel = 0; TimeLevel + NTimeLevels > 0; --TimeLevel) {
          HostArray3DReal TempHostArray;
          Err = Tracers::getAllHost(TempHostArray, TimeLevel);
          if (Err != 0) {
@@ -397,8 +398,7 @@ int main(int argc, char *argv[]) {
       }
 
       // update time levels to cycle back to original index
-      for (I4 TimeLevel = -1; TimeLevel + Tracers::NTimeLevels > 0;
-           --TimeLevel) {
+      for (I4 TimeLevel = -1; TimeLevel + NTimeLevels > 0; --TimeLevel) {
          // update time levels
          Tracers::updateTimeLevels();
       }
@@ -431,6 +431,35 @@ int main(int argc, char *argv[]) {
             LOG_ERROR("Tracers: Not all tracer data match after "
                       "updateTimeLevels() back to original index FAIL");
          }
+      }
+
+      count = 0;
+
+      Array2DReal SaltTracerByName;
+      Err = Tracers::getByName(SaltTracerByName, 0, "Salt");
+
+      Array2DReal SaltTracerByIndexVar;
+      Err = Tracers::getByIndex(SaltTracerByIndexVar, 0, Tracers::IndxSalt);
+
+      count = -1;
+
+      parallelReduce(
+          "reduce5", {NCellsOwned, NVertLevels},
+          KOKKOS_LAMBDA(I4 Cell, I4 Vert, I4 & Accum) {
+             if (std::abs(SaltTracerByName(Cell, Vert) -
+                          SaltTracerByIndexVar(Cell, Vert)) > 1e-9) {
+                Accum++;
+             }
+          },
+          count);
+
+      if (count == 0) {
+         LOG_INFO("Tracers: Index variable IndxSalt correctly retrieves Tracer "
+                  "data PASS");
+      } else {
+         RetVal += 1;
+         LOG_ERROR("Tracers: Index variable IndxSalt incorrectly retrieves "
+                   "Tracer data FAIL");
       }
 
       count = 0;

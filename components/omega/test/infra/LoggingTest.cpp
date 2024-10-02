@@ -141,8 +141,8 @@ int testKokkosDataTypes(bool LogEnabled) {
 
    Kokkos::initialize();
    {
-      HostArray1DReal test1d("test1d", d1);
-      HostArray2DReal test2d("test2d", d1, d2);
+      Array1DReal test1d("test1d", d1);
+      Array2DReal test2d("test2d", d1, d2);
 
       TestRun = true;
 
