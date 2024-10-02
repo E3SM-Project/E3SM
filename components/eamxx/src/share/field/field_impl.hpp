@@ -306,10 +306,19 @@ deep_copy_impl (const Field& src) {
   auto src_alloc_props = src.get_header().get_alloc_properties();
   auto tgt_alloc_props =     get_header().get_alloc_properties();
 
-  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
+  using device_t = typename Field::get_device<HD>;
+  using exec_space = typename device_t::execution_space;
+  using RangePolicy = Kokkos::RangePolicy<exec_space>;
+
   auto policy = RangePolicy(0,layout.size());
 
-  auto ext = layout.extents();
+  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
+  extents_type ext;
+  if constexpr (HD==Device) {
+    ext = layout.extents();
+  } else {
+    ext = layout.extents_h();
+  }
   switch (rank) {
     case 1:
       {
@@ -651,10 +660,18 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       " - x layout: " + x_l.to_string() + "\n"
       " - y layout: " + y_l.to_string() + "\n");
 
-  using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
+  using device_t = typename Field::get_device<HD>;
+  using exec_space = typename device_t::execution_space;
+  using RangePolicy = Kokkos::RangePolicy<exec_space>;
   auto policy = RangePolicy(0,x_l.size());
 
-  auto ext = x_l.extents();
+  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
+  extents_type ext;
+  if constexpr (HD==Device) {
+    ext = x_l.extents();
+  } else {
+    ext = x_l.extents_h();
+  }
 
   switch (x_l.rank()) {
     case 0:

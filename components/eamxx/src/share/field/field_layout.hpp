@@ -97,6 +97,7 @@ public:
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
   const extents_type& extents () const { return m_extents; }
+  const extents_type::HostMirror& extents_h () const { return m_extents_h; }
 
   long long  size () const;
 
@@ -156,6 +157,7 @@ protected:
   std::vector<std::string>  m_names;
   std::vector<int>          m_dims;
   extents_type              m_extents;
+  extents_type::HostMirror  m_extents_h;
 
   LayoutType                m_type;
 };
