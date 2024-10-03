@@ -565,6 +565,44 @@ static void rrtmgp_sw(
   int ngpt = k_dist.get_ngpt();
   int ngas = gas_concs.get_num_gases();
 
+  // Allocate temporaries from pool
+  const int size1 = nday;
+  const int size2 = nday*nlay; // 4
+  const int size3 = nday*(nlay+1); // 5
+  const int size4 = ncol*nlay;
+  const int size5 = nbnd*nday; //2
+  const int size6 = nday*ngpt;
+  const int size7 = nday*(nlay+1)*nbnd; // 3
+  const int size8 = ncol*nlay*(k_dist.get_ngas()+1);
+
+  RealT* data = pool_t::template alloc_raw<RealT>(size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8), *dcurr = data;
+
+  auto mu0_day             = view_t<RealT*>  (dcurr, nday); dcurr += size1;
+
+  auto p_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
+  auto t_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
+  auto vmr_day             = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
+  auto t_lay_limited       = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
+
+  auto p_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+  auto t_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+  auto flux_up_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+  auto flux_dn_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+  auto flux_dn_dir_day     = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+
+  auto vmr                 = view_t<RealT**> (dcurr, ncol, nlay); dcurr += size4;
+
+  auto sfc_alb_dir_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
+  auto sfc_alb_dif_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
+
+  auto toa_flux            = view_t<RealT**> (dcurr, nday, ngpt); dcurr += size6;
+
+  auto bnd_flux_up_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
+  auto bnd_flux_dn_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
+  auto bnd_flux_dn_dir_day = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
+
+  auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
+
   // Associate local pointers for fluxes
   auto &flux_up = fluxes.flux_up;
   auto &flux_dn = fluxes.flux_dn;
@@ -623,20 +661,15 @@ static void rrtmgp_sw(
   }
 
   // Subset mu0
-  auto mu0_day = view_t<RealT*>("mu0_day", nday);
   Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
     mu0_day(iday) = mu0(dayIndices(iday));
   });
 
   // subset state variables
-  auto p_lay_day = view_t<RealT**>("p_lay_day", nday, nlay);
-  auto t_lay_day = view_t<RealT**>("t_lay_day", nday, nlay);
   Kokkos::parallel_for(MDRP::template get<2>({nlay,nday}), KOKKOS_LAMBDA(int ilay, int iday) {
     p_lay_day(iday,ilay) = p_lay(dayIndices(iday),ilay);
     t_lay_day(iday,ilay) = t_lay(dayIndices(iday),ilay);
   });
-  auto p_lev_day = view_t<RealT**>("p_lev_day", nday, nlay+1);
-  auto t_lev_day = view_t<RealT**>("t_lev_day", nday, nlay+1);
   Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
     p_lev_day(iday,ilev) = p_lev(dayIndices(iday),ilev);
     t_lev_day(iday,ilev) = t_lev(dayIndices(iday),ilev);
@@ -647,8 +680,6 @@ static void rrtmgp_sw(
   gas_concs_t gas_concs_day;
   gas_concs_day.init(gas_names, nday, nlay);
   for (int igas = 0; igas < ngas; igas++) {
-    auto vmr_day = view_t<RealT**>("vmr_day", nday, nlay);
-    auto vmr     = view_t<RealT**>("vmr"    , ncol, nlay);
     gas_concs.get_vmr(gas_names[igas], vmr);
     Kokkos::parallel_for(MDRP::template get<2>({nlay,nday}), KOKKOS_LAMBDA(int ilay, int iday) {
       vmr_day(iday,ilay) = vmr(dayIndices(iday),ilay);
@@ -680,20 +711,12 @@ static void rrtmgp_sw(
   // RRTMGP assumes surface albedos have a screwy dimension ordering
   // for some strange reason, so we need to transpose these; also do
   // daytime subsetting in the same kernel
-  view_t<RealT**> sfc_alb_dir_T("sfc_alb_dir", nbnd, nday);
-  view_t<RealT**> sfc_alb_dif_T("sfc_alb_dif", nbnd, nday);
   Kokkos::parallel_for(MDRP::template get<2>({nbnd,nday}), KOKKOS_LAMBDA(int ibnd, int icol) {
     sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(dayIndices(icol),ibnd);
     sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
   });
 
   // Temporaries we need for daytime-only fluxes
-  auto flux_up_day = view_t<RealT**>("flux_up_day", nday, nlay+1);
-  auto flux_dn_day = view_t<RealT**>("flux_dn_day", nday, nlay+1);
-  auto flux_dn_dir_day = view_t<RealT**>("flux_dn_dir_day", nday, nlay+1);
-  auto bnd_flux_up_day = view_t<RealT***>("bnd_flux_up_day", nday, nlay+1, nbnd);
-  auto bnd_flux_dn_day = view_t<RealT***>("bnd_flux_dn_day", nday, nlay+1, nbnd);
-  auto bnd_flux_dn_dir_day = view_t<RealT***>("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
   fluxes_t fluxes_day;
   fluxes_day.flux_up         = flux_up_day;
   fluxes_day.flux_dn         = flux_dn_day;
@@ -713,17 +736,13 @@ static void rrtmgp_sw(
   }
 
   // Limit temperatures for gas optics look-up tables
-  auto t_lay_limited = view_t<RealT**>("t_lay_limited", nday, nlay);
   limit_to_bounds_k(t_lay_day, k_dist_sw_k.get_temp_min(), k_dist_sw_k.get_temp_max(), t_lay_limited);
 
   // Do gas optics
-  view_t<RealT**> toa_flux("toa_flux", nday, ngpt);
   bool top_at_1 = false;
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(int, bool& val) {
     val |= p_lay(0, 0) < p_lay(0, nlay-1);
   }, Kokkos::LOr<bool>(top_at_1));
-
-  oview_t<RealT***> col_gas("col_gas", std::make_pair(0, ncol-1), std::make_pair(0, nlay-1), std::make_pair(-1, k_dist.get_ngas()-1));
 
   k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_limited, gas_concs_day, col_gas, optics, toa_flux);
   if (extra_clnsky_diag) {
@@ -803,6 +822,8 @@ static void rrtmgp_sw(
       clnsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
     });
   }
+
+  pool_t::dealloc(data, dcurr - data);
 }
 
 /*
@@ -819,6 +840,24 @@ static void rrtmgp_lw(
 {
   // Problem size
   int nbnd = k_dist.get_nband();
+  int constexpr max_gauss_pts = 4;
+
+  const int size1 = ncol;
+  const int size2 = nbnd*ncol;
+  const int size3 = max_gauss_pts*max_gauss_pts;
+  const int size4 = ncol*nlay;
+  const int size5 = ncol*(nlay+1);
+  const int size6 = ncol*nlay*(k_dist.get_ngas()+1);
+
+  RealT* data = pool_t::template alloc_raw<RealT>(size1 + size2 + size3*2 + size4 + size5 + size6), *dcurr = data;
+
+  view_t<RealT*>   t_sfc        (dcurr, ncol); dcurr += size1;
+  view_t<RealT**>  emis_sfc     (dcurr, nbnd,ncol); dcurr += size2;
+  view_t<RealT**>  gauss_Ds     (dcurr, max_gauss_pts,max_gauss_pts); dcurr += size3;
+  view_t<RealT**>  gauss_wts    (dcurr, max_gauss_pts,max_gauss_pts); dcurr += size3;
+  view_t<RealT**>  t_lay_limited(dcurr, ncol, nlay); dcurr += size4;
+  view_t<RealT**>  t_lev_limited(dcurr, ncol, nlay+1); dcurr += size5;
+  view_t<RealT***> col_gas      (dcurr, std::make_pair(0, ncol-1), std::make_pair(0, nlay-1), std::make_pair(-1, k_dist.get_ngas()-1)); dcurr += size6;
 
   // Associate local pointers for fluxes
   auto &flux_up           = fluxes.flux_up;
@@ -863,8 +902,6 @@ static void rrtmgp_lw(
   // Boundary conditions
   source_func_t lw_sources;
   lw_sources.alloc(ncol, nlay, k_dist);
-  view_t<RealT*> t_sfc   ("t_sfc"        ,ncol);
-  view_t<RealT**> emis_sfc("emis_sfc",nbnd,ncol);
 
   bool top_at_1 = false;
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(int, bool& val) {
@@ -882,32 +919,31 @@ static void rrtmgp_lw(
   // Weights and angle secants for first order (k=1) Gaussian quadrature.
   //   Values from Table 2, Clough et al, 1992, doi:10.1029/92JD01419
   //   after Abramowitz & Stegun 1972, page 921
-  int constexpr max_gauss_pts = 4;
-  hview_t<RealT**> gauss_Ds_host ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
-  gauss_Ds_host(0,0) = 1.66      ; gauss_Ds_host(1,0) =         0.; gauss_Ds_host(2,0) =         0.; gauss_Ds_host(3,0) =         0.;
-  gauss_Ds_host(0,1) = 1.18350343; gauss_Ds_host(1,1) = 2.81649655; gauss_Ds_host(2,1) =         0.; gauss_Ds_host(3,1) =         0.;
-  gauss_Ds_host(0,2) = 1.09719858; gauss_Ds_host(1,2) = 1.69338507; gauss_Ds_host(2,2) = 4.70941630; gauss_Ds_host(3,2) =         0.;
-  gauss_Ds_host(0,3) = 1.06056257; gauss_Ds_host(1,3) = 1.38282560; gauss_Ds_host(2,3) = 2.40148179; gauss_Ds_host(3,3) = 7.15513024;
+  RealT gauss_Ds_host_raw[max_gauss_pts][max_gauss_pts] = {
+    {1.66, 1.18350343, 1.09719858, 1.06056257},
+    {0., 2.81649655, 1.69338507, 1.38282560},
+    {0., 0., 4.70941630, 2.40148179},
+    {0., 0., 0., 7.15513024}
+  };
+  hview_t<RealT**> gauss_Ds_host (&gauss_Ds_host_raw[0][0], max_gauss_pts, max_gauss_pts);
 
-  hview_t<RealT**> gauss_wts_host("gauss_wts",max_gauss_pts,max_gauss_pts);
-  gauss_wts_host(0,0) = 0.5         ; gauss_wts_host(1,0) = 0.          ; gauss_wts_host(2,0) = 0.          ; gauss_wts_host(3,0) = 0.          ;
-  gauss_wts_host(0,1) = 0.3180413817; gauss_wts_host(1,1) = 0.1819586183; gauss_wts_host(2,1) = 0.          ; gauss_wts_host(3,1) = 0.          ;
-  gauss_wts_host(0,2) = 0.2009319137; gauss_wts_host(1,2) = 0.2292411064; gauss_wts_host(2,2) = 0.0698269799; gauss_wts_host(3,2) = 0.          ;
-  gauss_wts_host(0,3) = 0.1355069134; gauss_wts_host(1,3) = 0.2034645680; gauss_wts_host(2,3) = 0.1298475476; gauss_wts_host(3,3) = 0.0311809710;
+  RealT gauss_wts_host_raw[max_gauss_pts][max_gauss_pts] = {
+    {0.5, 0.3180413817, 0.2009319137, 0.1355069134},
+    {0., 0.1819586183, 0.2292411064, 0.2034645680},
+    {0., 0., 0.0698269799, 0.1298475476},
+    {0., 0., 0., 0.0311809710}
+  };
 
-  view_t<RealT**> gauss_Ds ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
-  view_t<RealT**> gauss_wts("gauss_wts",max_gauss_pts,max_gauss_pts);
+  hview_t<RealT**> gauss_wts_host(&gauss_wts_host_raw[0][0],max_gauss_pts,max_gauss_pts);
+
   Kokkos::deep_copy(gauss_Ds,  gauss_Ds_host);
   Kokkos::deep_copy(gauss_wts, gauss_wts_host);
 
   // Limit temperatures for gas optics look-up tables
-  auto t_lay_limited = view_t<RealT**>("t_lay_limited", ncol, nlay);
-  auto t_lev_limited = view_t<RealT**>("t_lev_limited", ncol, nlay+1);
   limit_to_bounds_k(t_lay, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lay_limited);
   limit_to_bounds_k(t_lev, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lev_limited);
 
   // Do gas optics
-  oview_t<RealT***> col_gas("col_gas", std::make_pair(0, ncol-1), std::make_pair(0, nlay-1), std::make_pair(-1, k_dist.get_ngas()-1));
   k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, col_gas, optics, lw_sources, view_t<RealT**>(), t_lev_limited);
   if (extra_clnsky_diag) {
     k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, col_gas, optics_no_aerosols, lw_sources, view_t<RealT**>(), t_lev_limited);
@@ -941,23 +977,22 @@ static void rrtmgp_lw(
     // Compute clean-sky fluxes
     rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
   }
+
+  pool_t::dealloc(data, dcurr - data);
 }
 
 /*
  * Return a subcolumn mask consistent with a specified overlap assumption
  */
-static int3dk get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, const real2dk &cldf, const int overlap_option, int1dk &seeds)
+static void get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, const real2dk &cldf, const int overlap_option, int1dk &seeds, int3dk& subcolumn_mask)
 {
-  // Routine will return subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
-  int3dk subcolumn_mask = int3dk("subcolumn_mask", ncol, nlay, ngpt);
-
   // Subcolumn generators are a means for producing a variable x(i,j,k), where
   //
   //     c(i,j,k) = 1 for x(i,j,k) >  1 - cldf(i,j)
   //     c(i,j,k) = 0 for x(i,j,k) <= 1 - cldf(i,j)
   //
   // I am going to call this "cldx" to be just slightly less ambiguous
-  auto cldx = view_t<RealT***>("cldx", ncol, nlay, ngpt);
+  auto cldx = pool_t::template alloc<RealT>(ncol, nlay, ngpt);
 
   // Apply overlap assumption to set cldx
   if (overlap_option == 0) {  // Dummy mask, always cloudy
@@ -1017,6 +1052,9 @@ static int3dk get_subcolumn_mask(const int ncol, const int nlay, const int ngpt,
       subcolumn_mask(icol,ilay,igpt) = 0;
     }
   });
+
+  pool_t::dealloc(cldx);
+
   return subcolumn_mask;
 }
 
@@ -1029,7 +1067,7 @@ static void compute_cloud_area(
 {
   // Subcolumn binary cld mask; if any layers with pressure between pmin and pmax are cloudy
   // then 2d subcol mask is 1, otherwise it is 0
-  auto subcol_mask = view_t<RealT**>("subcol_mask", ncol, ngpt);
+  auto subcol_mask = pool_t::template alloc<RealT>(ncol, ngpt);
   Kokkos::parallel_for(MDRP::template get<3>({ngpt, nlay, ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
     // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
     // using play/pmid does not
@@ -1046,6 +1084,8 @@ static void compute_cloud_area(
       cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;
     }
   });
+
+  pool_t::dealloc(subcol_mask);
 }
 
 /*
@@ -1078,7 +1118,7 @@ static void compute_aerocom_cloudtop(
   Kokkos::deep_copy(eff_radius_qi_at_cldtop, 0.0);
 
   // Initialize the 1D "clear fraction" as 1 (totally clear)
-  auto aerocom_clr = view_t<RealT*>("aerocom_clr", ncol);
+  auto aerocom_clr = pool_t::template alloc<RealT>(ncol);
   Kokkos::deep_copy(aerocom_clr, 1.0);
 
   // Get gravity acceleration constant from constants
@@ -1151,6 +1191,8 @@ static void compute_aerocom_cloudtop(
     // (their products)
     cldfrac_tot_at_cldtop(icol) = 1.0 - aerocom_clr(icol);
   });
+
+  pool_t::dealloc(aerocom_clr);
 }
 
 /*
@@ -1253,13 +1295,16 @@ static optical_props2_t get_cloud_optics_sw(
   cloud_optics.set_ice_roughness(2);
 
   // Limit effective radii to be within bounds of lookup table
-  auto rel_limited = view_t<RealT**>("rel_limited", ncol, nlay);
-  auto rei_limited = view_t<RealT**>("rei_limited", ncol, nlay);
+  auto rel_limited = pool_t::template alloc<RealT>(ncol, nlay);
+  auto rei_limited = pool_t::template alloc<RealT>(ncol, nlay);
   limit_to_bounds_k(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
   limit_to_bounds_k(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
 
   // Calculate cloud optics
   cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
+
+  pool_t::dealloc(rel_limited);
+  pool_t::dealloc(rei_limited);
 
   // Return optics
   return clouds;
@@ -1279,13 +1324,16 @@ static optical_props1_t get_cloud_optics_lw(
   cloud_optics.set_ice_roughness(2);
 
   // Limit effective radii to be within bounds of lookup table
-  auto rel_limited = view_t<RealT**>("rel_limited", ncol, nlay);
-  auto rei_limited = view_t<RealT**>("rei_limited", ncol, nlay);
+  auto rel_limited = pool_t::alloc(ncol, nlay);
+  auto rei_limited = pool_t::alloc(ncol, nlay);
   limit_to_bounds_k(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
   limit_to_bounds_k(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
 
   // Calculate cloud optics
   cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
+
+  pool_t::dealloc(rel_limited);
+  pool_t::dealloc(rei_limited);
 
   // Return optics
   return clouds;
@@ -1298,6 +1346,10 @@ static optical_props2_t get_subsampled_clouds(
   optical_props2_t subsampled_optics;
   subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
   subsampled_optics.alloc_2str(ncol, nlay);
+
+  // Subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
+  auto cldmask = pool_t::alloc<int>(ncol, nlay, ngpt);
+
   // Check that we do not have clouds with no optical properties; this would get corrected
   // when we assign optical props, but we want to use a "radiative cloud fraction"
   // for the subcolumn sampling too because otherwise we can get vertically-contiguous cloud
@@ -1305,7 +1357,7 @@ static optical_props2_t get_subsampled_clouds(
   // the vertical correlation of cloudy layers. I.e., cloudy layers might look maximally overlapped
   // even when separated by layers with no cloud properties, when in fact those layers should be
   // randomly overlapped.
-  auto cldfrac_rad = view_t<RealT**>("cldfrac_rad", ncol, nlay);
+  auto cldfrac_rad = pool_t::alloc<RealT>(ncol, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,ncol}), KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
     if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
       cldfrac_rad(icol,ilay) = cld(icol,ilay);
@@ -1319,11 +1371,11 @@ static optical_props2_t get_subsampled_clouds(
   int overlap = 1;
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM
-  auto seeds = view_t<int*>("seeds", ncol);
+  auto seeds = pool_t::alloc<int>(ncol);
   Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
   });
-  auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
+  get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds, cldmask);
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
   Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
@@ -1338,6 +1390,11 @@ static optical_props2_t get_subsampled_clouds(
       subsampled_optics.g  (icol,ilay,igpt) = 0;
     }
   });
+
+  pool_t::dealloc(cldmask);
+  pool_t::dealloc(cldfrac_rad);
+  pool_t::dealloc(seeds);
+
   return subsampled_optics;
 }
 
@@ -1349,6 +1406,10 @@ static optical_props1_t get_subsampled_clouds(
   optical_props1_t subsampled_optics;
   subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
   subsampled_optics.alloc_1scl(ncol, nlay);
+
+  // Subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
+  auto cldmask = pool_t::alloc<int>(ncol, nlay, ngpt);
+
   // Check that we do not have clouds with no optical properties; this would get corrected
   // when we assign optical props, but we want to use a "radiative cloud fraction"
   // for the subcolumn sampling too because otherwise we can get vertically-contiguous cloud
@@ -1356,7 +1417,7 @@ static optical_props1_t get_subsampled_clouds(
   // the vertical correlation of cloudy layers. I.e., cloudy layers might look maximally overlapped
   // even when separated by layers with no cloud properties, when in fact those layers should be
   // randomly overlapped.
-  auto cldfrac_rad = view_t<RealT**>("cldfrac_rad", ncol, nlay);
+  auto cldfrac_rad = pool_t::alloc<RealT>(ncol, nlay);
   Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,ncol}), KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
     if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
       cldfrac_rad(icol,ilay) = cld(icol,ilay);
@@ -1367,11 +1428,11 @@ static optical_props1_t get_subsampled_clouds(
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM; use different
   // seed values for longwave and shortwave
-  auto seeds = view_t<int*>("seeds", ncol);
+  auto seeds = pool_t::alloc<int>(ncol);
   Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     seeds(icol) = 1e9 * (p_lay(icol,nlay-2) - int(p_lay(icol,nlay-2)));
   });
-  auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
+  get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds, cldmask);
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
   Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
@@ -1382,6 +1443,11 @@ static optical_props1_t get_subsampled_clouds(
         subsampled_optics.tau(icol,ilay,igpt) = 0;
       }
     });
+
+  pool_t::dealloc(cldmask);
+  pool_t::dealloc(cldfrac_rad);
+  pool_t::dealloc(seeds);
+
   return subsampled_optics;
 }
 
