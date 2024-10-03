@@ -141,8 +141,8 @@ int testKokkosDataTypes(bool LogEnabled) {
 
    Kokkos::initialize();
    {
-      HostArray1DReal test1d("test1d", d1);
-      HostArray2DReal test2d("test2d", d1, d2);
+      Array1DReal test1d("test1dD", d1);
+      Array2DReal test2d("test2dD", d1, d2);
 
       TestRun = true;
 
@@ -164,7 +164,7 @@ int testKokkosDataTypes(bool LogEnabled) {
 
       // check if HostArray1DReal is detected
       if (LogEnabled && TestRun)
-         RetVal += outputTestResult("Kokkos data type 1", "test1d", Contains);
+         RetVal += outputTestResult("Kokkos data type 1", "test1dD", Contains);
 
       TestRun = true;
 
@@ -186,7 +186,52 @@ int testKokkosDataTypes(bool LogEnabled) {
 
       // check if HostArray2DReal is detected
       if (LogEnabled && TestRun)
-         RetVal += outputTestResult("Kokkos data type 2", "test2d", Contains);
+         RetVal += outputTestResult("Kokkos data type 2", "test2dD", Contains);
+
+      HostArray1DReal test1dH("test1dH", d1);
+      HostArray2DReal test2dH("test2dH", d1, d2);
+
+      if (OMEGA_LOG_LEVEL == 0) {
+         LOG_INFO("1d var {}", test1dH);
+      } else if (OMEGA_LOG_LEVEL == 1) {
+         LOG_DEBUG("1d var {}", test1dH);
+      } else if (OMEGA_LOG_LEVEL == 2) {
+         LOG_INFO("1d var {}", test1dH);
+      } else if (OMEGA_LOG_LEVEL == 3) {
+         LOG_WARN("1d var {}", test1dH);
+      } else if (OMEGA_LOG_LEVEL == 4) {
+         LOG_ERROR("1d var {}", test1dH);
+      } else if (OMEGA_LOG_LEVEL == 5) {
+         LOG_CRITICAL("1d var {}", test1dH);
+      } else {
+         TestRun = false; // off
+      }
+
+      // check if HostArray1DReal is detected
+      if (LogEnabled && TestRun)
+         RetVal += outputTestResult("Kokkos data type 1", "test1dH", Contains);
+
+      TestRun = true;
+
+      if (OMEGA_LOG_LEVEL == 0) {
+         LOG_INFO("2d var {}", test2dH);
+      } else if (OMEGA_LOG_LEVEL == 1) {
+         LOG_DEBUG("2d var {}", test2dH);
+      } else if (OMEGA_LOG_LEVEL == 2) {
+         LOG_INFO("2d var {}", test2dH);
+      } else if (OMEGA_LOG_LEVEL == 3) {
+         LOG_WARN("2d var {}", test2dH);
+      } else if (OMEGA_LOG_LEVEL == 4) {
+         LOG_ERROR("2d var {}", test2dH);
+      } else if (OMEGA_LOG_LEVEL == 5) {
+         LOG_CRITICAL("2d var {}", test2dH);
+      } else {
+         TestRun = false; // off
+      }
+
+      // check if HostArray2DReal is detected
+      if (LogEnabled && TestRun)
+         RetVal += outputTestResult("Kokkos data type 2", "test2dH", Contains);
    }
    Kokkos::finalize();
 

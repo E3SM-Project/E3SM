@@ -13,38 +13,48 @@
 #include <spdlog/spdlog.h>
 
 #ifdef OMEGA_DEBUG
-#define GENERATE_FORMATTER(D, T)                                               \
+#define GENERATE_FORMATTER(ARR, DIM, TYPE)                                     \
    template <>                                                                 \
-   struct fmt::formatter<OMEGA::Array##D##T> : fmt::formatter<std::string> {   \
-      auto format(OMEGA::Array##D##T my,                                       \
+   struct fmt::formatter<OMEGA::ARR##DIM##TYPE>                                \
+       : fmt::formatter<std::string> {                                         \
+      auto format(OMEGA::ARR##DIM##TYPE my,                                    \
                   format_context &ctx) -> decltype(ctx.out()) {                \
          return fmt::format_to(ctx.out(), "{}({}D:{})", my.label(), my.rank(), \
                                my.size());                                     \
       }                                                                        \
    };
 #else
-#define GENERATE_FORMATTER(D, T)                                             \
-   template <>                                                               \
-   struct fmt::formatter<OMEGA::Array##D##T> : fmt::formatter<std::string> { \
-      auto format(OMEGA::Array##D##T my,                                     \
-                  format_context &ctx) -> decltype(ctx.out()) {              \
-         return fmt::format_to(ctx.out(), "{}", my.label());                 \
-      }                                                                      \
+#define GENERATE_FORMATTER(ARR, DIM, TYPE)                      \
+   template <>                                                  \
+   struct fmt::formatter<OMEGA::ARR##DIM##TYPE>                 \
+       : fmt::formatter<std::string> {                          \
+      auto format(OMEGA::ARR##DIM##TYPE my,                     \
+                  format_context &ctx) -> decltype(ctx.out()) { \
+         return fmt::format_to(ctx.out(), "{}", my.label());    \
+      }                                                         \
    };
 #endif
 
-#define GENERATE_FORMATTER_DIM(D) \
-   GENERATE_FORMATTER(D, I4)      \
-   GENERATE_FORMATTER(D, I8)      \
-   GENERATE_FORMATTER(D, R4)      \
-   GENERATE_FORMATTER(D, R8)
+#define GENERATE_FORMATTER_DIM(ARR, DIM) \
+   GENERATE_FORMATTER(ARR, DIM, I4)      \
+   GENERATE_FORMATTER(ARR, DIM, I8)      \
+   GENERATE_FORMATTER(ARR, DIM, R4)      \
+   GENERATE_FORMATTER(ARR, DIM, R8)
 
-GENERATE_FORMATTER_DIM(1D)
-GENERATE_FORMATTER_DIM(2D)
-GENERATE_FORMATTER_DIM(3D)
-GENERATE_FORMATTER_DIM(4D)
-GENERATE_FORMATTER_DIM(5D)
+#define GENERATE_FORMATTER_ARR(ARR) \
+   GENERATE_FORMATTER_DIM(ARR, 1D)  \
+   GENERATE_FORMATTER_DIM(ARR, 2D)  \
+   GENERATE_FORMATTER_DIM(ARR, 3D)  \
+   GENERATE_FORMATTER_DIM(ARR, 4D)  \
+   GENERATE_FORMATTER_DIM(ARR, 5D)
 
+GENERATE_FORMATTER_ARR(HostArray)
+
+#ifdef OMEGA_TARGET_DEVICE
+GENERATE_FORMATTER_ARR(Array)
+#endif
+
+#undef GENERATE_FORMATTER_ARR
 #undef GENERATE_FORMATTER_DIM
 #undef GENERATE_FORMATTER
 
