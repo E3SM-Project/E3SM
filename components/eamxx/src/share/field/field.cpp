@@ -177,7 +177,7 @@ Field Field::subfield(const std::string& sf_name,
   auto sf_layout = lt.clone();
   sf_layout.reset_dim(idim, index_end - index_beg);
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name());
+  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
