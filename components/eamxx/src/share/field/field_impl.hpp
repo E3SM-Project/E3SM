@@ -224,14 +224,16 @@ get_strided_view_type<DT, HD> {
 
 template<typename ST, HostOrDevice From, HostOrDevice To>
 void Field::sync_views_impl () const {
+  using ExecSpace = typename Field::get_device<Device>::execution_space;
+  
   const auto alloc_props = get_header().get_alloc_properties();
   switch (rank()) {
     case 0:
-      Kokkos::deep_copy(get_view<ST, To>(), get_view<const ST, From>());
+      Kokkos::deep_copy(ExecSpace(), get_view<ST, To>(), get_view<const ST, From>());
       break;
     case 1:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST*, To>(), get_view<const ST*, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST*, To>(), get_view<const ST*, From>());
       } else {
         auto to_view   = get_strided_view<      ST*, To  >();
         auto from_view = get_strided_view<const ST*, From>();
@@ -239,13 +241,13 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i);
           auto from_view_i = Kokkos::subview(from_view, i);
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     case 2:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST**, To>(), get_view<const ST**, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST**, To>(), get_view<const ST**, From>());
       } else {
         auto to_view   = get_strided_view<      ST**, To  >();
         auto from_view = get_strided_view<const ST**, From>();
@@ -253,13 +255,13 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i, Kokkos::ALL());
           auto from_view_i = Kokkos::subview(from_view, i, Kokkos::ALL());
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     case 3:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST***, To>(), get_view<const ST***, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST***, To>(), get_view<const ST***, From>());
       } else {
         auto to_view   = get_strided_view<      ST***, To  >();
         auto from_view = get_strided_view<const ST***, From>();
@@ -267,13 +269,13 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i, Kokkos::ALL(), Kokkos::ALL());
           auto from_view_i = Kokkos::subview(from_view, i, Kokkos::ALL(), Kokkos::ALL());
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     case 4:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST****, To>(), get_view<const ST****, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST****, To>(), get_view<const ST****, From>());
       } else {
         auto to_view   = get_strided_view<      ST****, To  >();
         auto from_view = get_strided_view<const ST****, From>();
@@ -281,13 +283,13 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           auto from_view_i = Kokkos::subview(from_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     case 5:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST*****, To>(), get_view<const ST*****, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST*****, To>(), get_view<const ST*****, From>());
       } else {
         auto to_view   = get_strided_view<      ST*****, To  >();
         auto from_view = get_strided_view<const ST*****, From>();
@@ -295,13 +297,13 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           auto from_view_i = Kokkos::subview(from_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     case 6:
       if (alloc_props.contiguous()) {
-        Kokkos::deep_copy(get_view<ST******, To>(), get_view<const ST******, From>());
+        Kokkos::deep_copy(ExecSpace(), get_view<ST******, To>(), get_view<const ST******, From>());
       } else {
         auto to_view   = get_strided_view<      ST******, To  >();
         auto from_view = get_strided_view<const ST******, From>();
@@ -309,12 +311,16 @@ void Field::sync_views_impl () const {
           auto to_view_i   = Kokkos::subview(to_view,   i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           auto from_view_i = Kokkos::subview(from_view, i, Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
           EKAT_REQUIRE_MSG(to_view_i.span_is_contiguous(), "Error! EAMxx field must be contiguous after the first dimension.\n");
-          Kokkos::deep_copy(to_view_i, from_view_i);
+          Kokkos::deep_copy(ExecSpace(), to_view_i, from_view_i);
         }
       }
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
+  }
+  // Since deep_copy are all async wrt host, we need to fence before returning
+  if constexpr (To == Host) { 
+    Kokkos::fence();
   }
 }
 
