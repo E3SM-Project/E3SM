@@ -108,10 +108,11 @@ configuration file.
 
 All supported tracers are defined in a file called TracerDefs.inc, which
 includes the code blocks needed to define each tracer, its metadata, and
-tracer index variables. Tracer index variables keep the index value for
-each tracer, allowing users to easily access the corresponding tracer data
-using the variable. This file must include all tracers that might potentially
-be used in the model. The file will look something like this:
+tracer index variables. Tracer index variables, such as IndxTemp and
+IndxSalt shown below, keep the index value for each tracer, allowing users
+to easily access the corresponding tracer data using the variable. This
+file must include all tracers that might potentially be used in the model.
+The file will look something like this:
 
 ```c++
 // At the top of the file, list all available tracers in a comment
@@ -127,9 +128,6 @@ be used in the model. The file will look something like this:
 inline static I4 IndxTemp             = Tracers::IndxInvalid;
 inline static I4 IndxSalt             = Tracers::IndxInvalid;
 inline static I4 IndxMyBGCTracer      = Tracers::IndxInvalid;
-inline static I4 IndxAnotherBGCTracer = Tracers::IndxInvalid;
-inline static I4 IndxDebug1           = Tracers::IndxInvalid;
-inline static I4 IndxDebug2           = Tracers::IndxInvalid;
 
 // Tracer definitions packaged in a defineAllTracers function
 static void defineAllTracers() {
@@ -145,13 +143,10 @@ static void defineAllTracers() {
 
    define("Salt", "Salinity", "psu", "sea_water_salinity", 0.0, 50.0, 1.e33,
           IndxSalt);
-   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug1);
-   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug2);
+   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33);
+   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33);
    define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, 1.e33);
 }
-
 ```
 
 #### 4.1.2 Configuration

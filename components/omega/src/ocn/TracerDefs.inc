@@ -12,12 +12,9 @@
 // Index defined for each tracer. The value of these tracer indices are still
 // set in Tracers::init()  and tracers that have not been selected would have
 // standard invalid value: Tracers::IndxInvalid = -1
-inline static I4 IndxTemp             = Tracers::IndxInvalid;
-inline static I4 IndxSalt             = Tracers::IndxInvalid;
-inline static I4 IndxMyBGCTracer      = Tracers::IndxInvalid;
-inline static I4 IndxAnotherBGCTracer = Tracers::IndxInvalid;
-inline static I4 IndxDebug1           = Tracers::IndxInvalid;
-inline static I4 IndxDebug2           = Tracers::IndxInvalid;
+inline static I4 IndxTemp        = Tracers::IndxInvalid;
+inline static I4 IndxSalt        = Tracers::IndxInvalid;
+inline static I4 IndxMyBGCTracer = Tracers::IndxInvalid;
 
 // Tracer definitions packaged in a defineAllTracers function
 static void defineAllTracers() {
@@ -34,9 +31,7 @@ static void defineAllTracers() {
    define("Salt", "Salinity", "psu", "sea_water_salinity", 0.0, 50.0, 1.e33,
           IndxSalt);
 
-   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug1);
-   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug2);
+   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33);
+   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33);
    define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, 1.e33);
 }
