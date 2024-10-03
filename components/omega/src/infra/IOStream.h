@@ -104,7 +104,7 @@ class IOStream {
    int writeStream(
        const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
        bool ForceWrite = false, ///< [in] Optional: write even if not time
-       bool FinalCall = false   ///< [in] Optional flag for shutdown
+       bool FinalCall  = false  ///< [in] Optional flag for shutdown
    );
 
    /// Write all metadata associated with a field

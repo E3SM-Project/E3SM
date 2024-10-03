@@ -198,8 +198,8 @@ int main(int argc, char **argv) {
       TestEval("Initialize IOStream test", Err1, ErrRef, Err);
 
       // Retrieve dimension lengths and some mesh info
-      I4 NCellsSize  = Dimension::getDimLengthLocal("NCells");
-      I4 NVertLevels = Dimension::getDimLengthLocal("NVertLevels");
+      I4 NCellsSize     = Dimension::getDimLengthLocal("NCells");
+      I4 NVertLevels    = Dimension::getDimLengthLocal("NVertLevels");
       Decomp *DefDecomp = Decomp::getDefault();
       I4 NCellsOwned    = DefDecomp->NCellsOwned;
       Array1DI4 CellID  = DefDecomp->CellID;
@@ -228,10 +228,11 @@ int main(int argc, char **argv) {
 
       // Overwrite salinity array with values associated with global cell
       // ID to test proper indexing of IO
-      parallelFor( {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int K) {
-            Salt(Cell, K) = 0.0001_Real*(CellID(Cell) + K);
-            Test(Cell, K) = Salt(Cell, K);
-      });
+      parallelFor(
+          {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int K) {
+             Salt(Cell, K) = 0.0001_Real * (CellID(Cell) + K);
+             Test(Cell, K) = Salt(Cell, K);
+          });
 
       // Create a stop alarm at 1 year for time stepping
       TimeInstant StopTime(&CalGreg, 0002, 1, 1, 0, 0, 0.0);
@@ -256,13 +257,13 @@ int main(int argc, char **argv) {
       Err1 = IOStream::read("RestartRead", *ModelClock, ReqMetadata, ForceRead);
       TestEval("Restart force read", Err1, ErrRef, Err);
 
-      Err1 = 0;
+      Err1             = 0;
       auto DataReducer = Kokkos::Sum<I4>(Err1);
 
       parallelReduce(
           {NCellsOwned, NVertLevels},
           KOKKOS_LAMBDA(int Cell, int K, I4 &Err1) {
-             if (Salt(Cell,K) != Test(Cell,K))
+             if (Salt(Cell, K) != Test(Cell, K))
                 ++Err1;
           },
           DataReducer);

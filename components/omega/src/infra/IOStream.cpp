@@ -93,7 +93,7 @@ int IOStream::finalize(
 
       std::string StreamName               = Iter->first;
       std::shared_ptr<IOStream> ThisStream = Iter->second;
-      bool ForceWrite = false;
+      bool ForceWrite                      = false;
 
       int Err1 = 0;
       if (ThisStream->OnShutdown)
@@ -237,8 +237,8 @@ bool IOStream::validateAll() {
 int IOStream::read(
     const std::string &StreamName, // [in] Name of stream
     const Clock &ModelClock,       // [in] Model clock for time info
-    Metadata &ReqMetadata,      // [inout] global metadata requested from file
-    bool ForceRead              // [in] optional: read even if not time
+    Metadata &ReqMetadata, // [inout] global metadata requested from file
+    bool ForceRead         // [in] optional: read even if not time
 ) {
    int Err = 0; // default return code
 
