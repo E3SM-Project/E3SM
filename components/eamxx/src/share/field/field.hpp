@@ -278,6 +278,13 @@ public:
   // Allocate the actual view
   void allocate_view ();
 
+  inline bool host_and_device_share_memory_space() const {
+    EKAT_REQUIRE_MSG(is_allocated(),
+                     "Error! Must allocate view before querying "
+                     "host_and_device_share_memory_space().\n");
+    return m_data.h_view.data() == m_data.d_view.data();
+  }
+
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:

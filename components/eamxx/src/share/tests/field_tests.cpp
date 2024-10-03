@@ -835,8 +835,7 @@ TEST_CASE ("sync_subfields") {
   f.allocate_view();
 
   // Store whether mem space for host and device are the same for testing subfield values
-  const bool shared_mem_space =
-      f.get_view<int***,Device>().data() == f.get_view<int***, Host>().data();
+  const bool shared_mem_space = f.host_and_device_share_memory_space();
 
   // Deep copy all values to ndims on device and host
   f.deep_copy(ndims);

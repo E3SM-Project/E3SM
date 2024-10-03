@@ -66,7 +66,7 @@ sync_to_host () const {
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
-  if (m_data.h_view.data() == m_data.d_view.data()) return;
+  if (host_and_device_share_memory_space()) return;
 
   // We allow sync_to_host for constant fields. Temporarily disable read only flag.
   const bool original_read_only = m_is_read_only;
@@ -97,7 +97,7 @@ sync_to_dev () const {
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
-  if (m_data.h_view.data() == m_data.d_view.data()) return;
+  if (host_and_device_share_memory_space()) return;
 
   switch (data_type()) {
     case DataType::IntType:
