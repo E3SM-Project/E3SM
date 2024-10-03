@@ -288,6 +288,18 @@ def buildnml(case, caseroot, compname):
 
         lines.append('</stream>')
         lines.append('')
+        if not mali_dynamic:
+            # in MALI data mode, read an input stream with ice thickness monthly
+            lines.append('    <stream name="data-mode-input"')
+            lines.append('            type="input"')
+            lines.append(f'            filename_template="{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.nc"')
+            lines.append('            reference_time="2000-01-01_00:00:00"')
+            lines.append('            input_interval="0000-01-00_00:00:00">')
+            lines.append('')
+            lines.append('    <var name="thickness"/>')
+            lines.append('')
+            lines.append('</stream>')
+        lines.append('')
         lines.append('<!--')
         lines.append('All streams below this line are auxiliary streams. They are provided as')
         lines.append('groupings of fields that one might be interested in. You can either enable the')
