@@ -336,7 +336,15 @@ contains
          end do
          if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
               ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+            c = veg_pp%column(p)
             write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
+            write(iulog, *) 'c: ',c
+            write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
+            write(iulog, *) 'cinput_rootfr: ', col_cinput_rootfr(c,:)
+            write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
+            write(iulog, *) 'surface_prof: ', surface_prof(:)
+            write(iulog, *) 'p, itype(p), wtcol(p): ', p, veg_pp%itype(p), veg_pp%wtcol(p)
+            write(iulog, *) 'cinput_rootfr(p,:): ', cinput_rootfr(p,:)
             call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
          endif
       end do
