@@ -200,12 +200,6 @@ int writeMeta(const std::string &MetaName,  ///< [in] name of metadata
               int VarID ///< [in] ID for variable associated with metadata
 );
 
-int writeMeta(const std::string &MetaName, ///< [in] name of metadata
-              const char *MetaValue,       ///< [in] value of metadata
-              int FileID,                  ///< [in] ID of the file for writing
-              int VarID ///< [in] ID for variable associated with metadata
-);
-
 /// Reads metadata (name, value) associated with a variable and/or file.
 /// The variable ID can be GlobalID for global file and/or simulation
 /// metadata. Specific interfaces for each supported type are aliased

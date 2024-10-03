@@ -326,10 +326,6 @@ IOStream::IOStream() {
    PtrFilename        = " ";
    UseStartEnd        = false;
    Validated          = false;
-   Contents;
-   MyAlarm; // empty alarms
-   StartAlarm;
-   EndAlarm;
 }
 
 //------------------------------------------------------------------------------
