@@ -443,7 +443,7 @@ TEST_CASE("atm_proc_dag", "") {
 
     using strvec_t = std::vector<std::string>;
     auto params = create_test_params();
-    auto p1 = params.sublist("BarBaz");
+    auto& p1 = params.sublist("BarBaz");
 
     // Make sure there's a missing piece (whatever Baz computes);
     p1.set<strvec_t>("atm_procs_list",{"Bar"});
