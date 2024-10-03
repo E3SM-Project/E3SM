@@ -2047,7 +2047,7 @@
 
 <h1 id="add-new-grid-configuration-to-e3sm">Add New Grid Configuration to E3SM</h1>
 <p>In addition to generating input data to support a new grid, several code modifications are required before E3SM can run with the grid. However, the specific changes will depend on how the grid will be used. The intendend model configuration for the new grid will change which files need to be modified. For instance, a grid intended for aquaplanet experiments does not require as many changes as a historical AMIP-style run.</p>
-<p>The guidelines here are meant to outline various possible changes the user should consider when adding support for a new grid. This document cannot be exhaustive, and it is important that the user understands the changes they are making. It is often useful to use a pre-existing grid configuration as a template. Note that the guidelines here are only relevant for "horizontal" grids. Similar considerations are needed to support a new vertical grid. </p>
+<p>The guidelines here are meant to outline various possible changes the user should consider when adding support for a new grid. This document cannot be exhaustive, and it is important that the user understands the changes they are making. It is often useful to use a pre-existing grid configuration as a template. Note that the guidelines here are only relevant for "horizontal" grids. Similar considerations are needed to support a new vertical grid.</p>
 <p>When setting up a new grid you will need to edit some or all of these files:</p>
 <ul>
 <li><code>cime_config/config_grids.xml</code></li>
@@ -2061,89 +2061,89 @@
 <p>The mono-bi-tri grid options in E3SM can be confusing, but it's important to understand what these terms mean when adding a new grid to E3SM. At the surface these terms mean that the whole model either using a single grid for all componennt models, or a combination of 2 or 3 grids shared among the component models. Note that mono-grid and bi-grid terms often ignore that the river model needs to be on i/ts own regular lat-lon grid (for now).</p>
 <p>Historically, climate models would use a single grid for all components (i.e. mono-grid), but this is often not the case anymore. In E3SM the ocean and sea-ice components often use targeted regional refinement with special consideration of ocean mesoscale eddies, whereas the atmosphere will generally use a globally homogenous grid. In practice, the main difference between "bi" and "tri" grids often comes down to whether the land surface model shares a grid with the atmosphere or not. The component coupler is in charge of facilitating communication between component models, primarily through fluxes, and so mapping files are needed to support a combination of different grids. E3SMv3 uses a tri-grid configuration for production simulations.</p>
 <h2 id="grid-naming-conventions">Grid Naming Conventions</h2>
-<p>The atmosphere grid name should always indicate the "ne" value and add "pg2" to indicate that the physgrid is being used. For a regionally refined mesh (RRM) the grid name should always start with <code>ne0</code> followed a descriptive string that includes the region being refined and the degree of refinement. </p>
-<p><strong>Example</strong>: <code>ne0np4_northamericax4v1</code> </p>
+<p>The atmosphere grid name should always indicate the "ne" value and add "pg2" to indicate that the physgrid is being used. For a regionally refined mesh (RRM) the grid name should always start with <code>ne0</code> followed a descriptive string that includes the region being refined and the degree of refinement.</p>
+<p><strong>Example</strong>: <code>ne0np4_northamericax4v1</code></p>
 <p>Note that the example indicates a <code>4x</code> refinement, but does indicate the base resolution, which is useful to know. A better grid name would be <code>ne0np4_northamerica30x4v1</code>, because this tells us that the grid is consistent with <code>ne30</code> in the unrefined regions.</p>
-<p>For a rectilinear lat-lon grid used by the land and/or river models the grid name should start with "r" and typically use spacing less than one degree, so they indicate the nominal grid spacing, starting with "0" and omitting the decimal. </p>
+<p>For a rectilinear lat-lon grid used by the land and/or river models the grid name should start with "r" and typically use spacing less than one degree, so they indicate the nominal grid spacing, starting with "0" and omitting the decimal.</p>
 <p><strong>Examples</strong>: <code>r05</code> is 0.5 degree spacing and <code>r0125</code> is 1/8 or 0.125 degree spacing.</p>
-<p>For a mono-grid, which can only be used for idealized simulations such as aqua planet and RCE, the grid is written twice to indicate that both atmosphere/land and ocean/sea-ice models are on the same grid. </p>
+<p>For a mono-grid, which can only be used for idealized simulations such as aqua planet and RCE, the grid is written twice to indicate that both atmosphere/land and ocean/sea-ice models are on the same grid.</p>
 <p><strong>Example</strong>: <code>ne30pg2_ne30pg2</code></p>
-<p>Bi-grid options should indicate two different grids used for atmosphere/land and ocean/sea-ice models. </p>
+<p>Bi-grid options should indicate two different grids used for atmosphere/land and ocean/sea-ice models.</p>
 <p><strong>Example</strong>: <code>ne30pg2_IcoswISC30E3r5</code></p>
-<p>Tri-grid options should indicate three different grids used for atmosphere, land, and ocean/sea-ice models, with the land grid appearing in the middle. </p>
+<p>Tri-grid options should indicate three different grids used for atmosphere, land, and ocean/sea-ice models, with the land grid appearing in the middle.</p>
 <p><strong>Example</strong>: <code>ne30pg2_r05_IcoswISC30E3r5</code></p>
 <h2 id="grid-definition">Grid Definition</h2>
 <h3 id="adding-a-new-grid-alias">Adding a New Grid Alias</h3>
 <p>Grid aliases are defined in specified in <code>cime_config/config_grids.xml</code> and are used to specify the grid for a case when calling <code>create_newcase</code> via the <code>--res</code> argument. Below is an example grid alias for the <code>ne30pg2_r05_IcoswISC30E3r5</code> grid used in E3SMv3 production simulations.</p>
-<div class="highlight"><pre><span></span><code>    &lt;model_grid alias=&quot;ne30pg2_r05_IcoswISC30E3r5&quot;&gt;
-      &lt;grid name=&quot;atm&quot;&gt;ne30np4.pg2&lt;/grid&gt;
-      &lt;grid name=&quot;lnd&quot;&gt;r05&lt;/grid&gt;
-      &lt;grid name=&quot;ocnice&quot;&gt;IcoswISC30E3r5&lt;/grid&gt;
-      &lt;grid name=&quot;rof&quot;&gt;r05&lt;/grid&gt;
-      &lt;grid name=&quot;glc&quot;&gt;null&lt;/grid&gt;
-      &lt;grid name=&quot;wav&quot;&gt;null&lt;/grid&gt;
-      &lt;mask&gt;IcoswISC30E3r5&lt;/mask&gt;
-    &lt;/model_grid&gt;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&lt;model_grid</span><span class="w"> </span><span class="na">alias=</span><span class="s">&quot;ne30pg2_r05_IcoswISC30E3r5&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;atm&quot;</span><span class="nt">&gt;</span>ne30np4.pg2<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;lnd&quot;</span><span class="nt">&gt;</span>r05<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ocnice&quot;</span><span class="nt">&gt;</span>IcoswISC30E3r5<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;rof&quot;</span><span class="nt">&gt;</span>r05<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;glc&quot;</span><span class="nt">&gt;</span>null<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;grid</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wav&quot;</span><span class="nt">&gt;</span>null<span class="nt">&lt;/grid&gt;</span>
+<span class="w">      </span><span class="nt">&lt;mask&gt;</span>IcoswISC30E3r5<span class="nt">&lt;/mask&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/model_grid&gt;</span>
 </code></pre></div>
 <h3 id="domain-files">Domain Files</h3>
 <p>Domain files are needed for each grid and are specified in the <code>&lt;domains&gt;</code> section of <code>cime_config/config_grids.xml</code>. The default domain files are grouped by the atmosphere grid. The section for the typical <code>ne30pg2</code> grid looks as follows:</p>
-<div class="highlight"><pre><span></span><code>    &lt;domain name=&quot;ne30np4.pg2&quot;&gt;
-      &lt;nx&gt;21600&lt;/nx&gt;
-      &lt;ny&gt;1&lt;/ny&gt;
-      ...
-      &lt;file grid=&quot;atm|lnd&quot; mask=&quot;IcoswISC30E3r5&quot;&gt;$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_IcoswISC30E3r5.231121.nc&lt;/file&gt;
-      &lt;file grid=&quot;ice|ocn&quot; mask=&quot;IcoswISC30E3r5&quot;&gt;$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_IcoswISC30E3r5.231121.nc&lt;/file&gt;
-      ...
-      &lt;desc&gt;ne30np4.pg2 is Spectral Elem 1-deg grid w/ 2x2 FV physics grid per element:&lt;/desc&gt;
-    &lt;/domain&gt;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&lt;domain</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ne30np4.pg2&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;nx&gt;</span>21600<span class="nt">&lt;/nx&gt;</span>
+<span class="w">      </span><span class="nt">&lt;ny&gt;</span>1<span class="nt">&lt;/ny&gt;</span>
+<span class="w">      </span>...
+<span class="w">      </span><span class="nt">&lt;file</span><span class="w"> </span><span class="na">grid=</span><span class="s">&quot;atm|lnd&quot;</span><span class="w"> </span><span class="na">mask=</span><span class="s">&quot;IcoswISC30E3r5&quot;</span><span class="nt">&gt;</span>$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg2_IcoswISC30E3r5.231121.nc<span class="nt">&lt;/file&gt;</span>
+<span class="w">      </span><span class="nt">&lt;file</span><span class="w"> </span><span class="na">grid=</span><span class="s">&quot;ice|ocn&quot;</span><span class="w"> </span><span class="na">mask=</span><span class="s">&quot;IcoswISC30E3r5&quot;</span><span class="nt">&gt;</span>$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg2_IcoswISC30E3r5.231121.nc<span class="nt">&lt;/file&gt;</span>
+<span class="w">      </span>...
+<span class="w">      </span><span class="nt">&lt;desc&gt;</span>ne30np4.pg2<span class="w"> </span>is<span class="w"> </span>Spectral<span class="w"> </span>Elem<span class="w"> </span>1-deg<span class="w"> </span>grid<span class="w"> </span>w/<span class="w"> </span>2x2<span class="w"> </span>FV<span class="w"> </span>physics<span class="w"> </span>grid<span class="w"> </span>per<span class="w"> </span>element:<span class="nt">&lt;/desc&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/domain&gt;</span>
 </code></pre></div>
 <p>Notice where I've used ellipses <code>...</code> to omit all entires except the lines relevant to the <code>ne30pg2_r05_IcoswISC30E3r5</code> grid. Also, note that all of these paths are relative to the input data path set as <code>DIN_LOC_ROOT</code> which has a default for each machine. See <a href="/generate_domain_files/">Generating Domain Files</a> for information about creating domain files.</p>
 <h3 id="coupler-mapping-files">Coupler Mapping Files</h3>
 <p>The mapping files used by the component coupler to communicate fluxes between the component models must be specified in the <code>&lt;gridmaps&gt;</code> section of <code>cime_config/config_grids.xml</code>. these are organized for specific pairs of grids, such that tri-grids will require multiple sections. The entries relevant for <code>ne30pg2_r05_IcoswISC30E3r5</code> are shown below.</p>
-<div class="highlight"><pre><span></span><code>    &lt;gridmap atm_grid=&quot;ne30np4.pg2&quot; ocn_grid=&quot;IcoswISC30E3r5&quot;&gt;
-      &lt;map name=&quot;ATM2OCN_FMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_traave.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2OCN_VMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trbilin.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2OCN_SMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5-nomask_trbilin.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;OCN2ATM_FMAPNAME&quot;&gt;cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;OCN2ATM_SMAPNAME&quot;&gt;cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2ICE_FMAPNAME_NONLINEAR&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2OCN_FMAPNAME_NONLINEAR&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc&lt;/map&gt;
-    &lt;/gridmap&gt;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&lt;gridmap</span><span class="w"> </span><span class="na">atm_grid=</span><span class="s">&quot;ne30np4.pg2&quot;</span><span class="w"> </span><span class="na">ocn_grid=</span><span class="s">&quot;IcoswISC30E3r5&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2OCN_FMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_traave.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2OCN_VMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trbilin.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2OCN_SMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5-nomask_trbilin.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;OCN2ATM_FMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;OCN2ATM_SMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ne30pg2_traave.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2ICE_FMAPNAME_NONLINEAR&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2OCN_FMAPNAME_NONLINEAR&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_IcoswISC30E3r5_trfvnp2.20231121.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/gridmap&gt;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>    &lt;gridmap atm_grid=&quot;ne30np4.pg2&quot; lnd_grid=&quot;r05&quot;&gt;
-      &lt;map name=&quot;ATM2LND_FMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2LND_FMAPNAME_NONLINEAR&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2LND_SMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc&lt;/map&gt;
-      &lt;map name=&quot;LND2ATM_FMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc&lt;/map&gt;
-      &lt;map name=&quot;LND2ATM_SMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc&lt;/map&gt;
-    &lt;/gridmap&gt;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&lt;gridmap</span><span class="w"> </span><span class="na">atm_grid=</span><span class="s">&quot;ne30np4.pg2&quot;</span><span class="w"> </span><span class="na">lnd_grid=</span><span class="s">&quot;r05&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2LND_FMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2LND_FMAPNAME_NONLINEAR&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2LND_SMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;LND2ATM_FMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;LND2ATM_SMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_traave.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/gridmap&gt;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>    &lt;gridmap atm_grid=&quot;ne30np4.pg2&quot; rof_grid=&quot;r05&quot;&gt;
-      &lt;map name=&quot;ATM2ROF_FMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2ROF_FMAPNAME_NONLINEAR&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc&lt;/map&gt;
-      &lt;map name=&quot;ATM2ROF_SMAPNAME&quot;&gt;cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc&lt;/map&gt;
-    &lt;/gridmap&gt;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&lt;gridmap</span><span class="w"> </span><span class="na">atm_grid=</span><span class="s">&quot;ne30np4.pg2&quot;</span><span class="w"> </span><span class="na">rof_grid=</span><span class="s">&quot;r05&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2ROF_FMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_traave.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2ROF_FMAPNAME_NONLINEAR&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trfvnp2.230516.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">      </span><span class="nt">&lt;map</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;ATM2ROF_SMAPNAME&quot;</span><span class="nt">&gt;</span>cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_trbilin.20231130.nc<span class="nt">&lt;/map&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/gridmap&gt;</span>
 </code></pre></div>
 <p>Note that all of these paths are relative to the input data path set as <code>DIN_LOC_ROOT</code> which has a default for each machine.</p>
 <h3 id="defining-a-new-atmosphere-grid">Defining a New Atmosphere Grid</h3>
-<p>When defining a new atmosphere grid, information needs to be provided on how the grid is constructed. </p>
-<p>To define a new atmosphere grid a line must be added to <code>components/eam/bld/config_files/horiz_grid.xml</code> that indicates the numebr of elements and physics columns. In the lines below for <code>ne30np4</code> (without the physgrid) and <code>ne30pg2</code> (with the physgrid) you can see the value of <code>ne</code> is the same (number of elements along a cube edge), but the number of physics columns is different. </p>
-<div class="highlight"><pre><span></span><code>&lt;horiz_grid dyn=&quot;se&quot;    hgrid=&quot;ne30np4&quot;      ncol=&quot;48602&quot;   csne=&quot;30&quot;  csnp=&quot;4&quot; npg=&quot;0&quot; /&gt;
-&lt;horiz_grid dyn=&quot;se&quot;    hgrid=&quot;ne30np4.pg2&quot;  ncol=&quot;21600&quot;   csne=&quot;30&quot;  csnp=&quot;4&quot; npg=&quot;2&quot; /&gt;
+<p>When defining a new atmosphere grid, information needs to be provided on how the grid is constructed.</p>
+<p>To define a new atmosphere grid a line must be added to <code>components/eam/bld/config_files/horiz_grid.xml</code> that indicates the numebr of elements and physics columns. In the lines below for <code>ne30np4</code> (without the physgrid) and <code>ne30pg2</code> (with the physgrid) you can see the value of <code>ne</code> is the same (number of elements along a cube edge), but the number of physics columns is different.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;horiz_grid</span><span class="w"> </span><span class="na">dyn=</span><span class="s">&quot;se&quot;</span><span class="w">    </span><span class="na">hgrid=</span><span class="s">&quot;ne30np4&quot;</span><span class="w">      </span><span class="na">ncol=</span><span class="s">&quot;48602&quot;</span><span class="w">   </span><span class="na">csne=</span><span class="s">&quot;30&quot;</span><span class="w">  </span><span class="na">csnp=</span><span class="s">&quot;4&quot;</span><span class="w"> </span><span class="na">npg=</span><span class="s">&quot;0&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="nt">&lt;horiz_grid</span><span class="w"> </span><span class="na">dyn=</span><span class="s">&quot;se&quot;</span><span class="w">    </span><span class="na">hgrid=</span><span class="s">&quot;ne30np4.pg2&quot;</span><span class="w">  </span><span class="na">ncol=</span><span class="s">&quot;21600&quot;</span><span class="w">   </span><span class="na">csne=</span><span class="s">&quot;30&quot;</span><span class="w">  </span><span class="na">csnp=</span><span class="s">&quot;4&quot;</span><span class="w"> </span><span class="na">npg=</span><span class="s">&quot;2&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
 </code></pre></div>
-<p>An explanation of how to calculate the number of physics columns can be found here: <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/">Atmosphere Grid Overview</a>. </p>
+<p>An explanation of how to calculate the number of physics columns can be found here: <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/">Atmosphere Grid Overview</a>.</p>
 <p>For a grid with regional refinement, follow the conventions of other grids in this file. There is no formula to calculate the number of columns for RRM grids, but the value can be obtained from the grid files used for mapping.</p>
-<div class="highlight"><pre><span></span><code>&lt;horiz_grid dyn=&quot;se&quot; hgrid=&quot;ne0np4_antarcticax4v1.pg2&quot;        ncol=&quot;48836&quot;  csne=&quot;0&quot; csnp=&quot;4&quot; npg=&quot;2&quot; /&gt;
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;horiz_grid</span><span class="w"> </span><span class="na">dyn=</span><span class="s">&quot;se&quot;</span><span class="w"> </span><span class="na">hgrid=</span><span class="s">&quot;ne0np4_antarcticax4v1.pg2&quot;</span><span class="w">        </span><span class="na">ncol=</span><span class="s">&quot;48836&quot;</span><span class="w">  </span><span class="na">csne=</span><span class="s">&quot;0&quot;</span><span class="w"> </span><span class="na">csnp=</span><span class="s">&quot;4&quot;</span><span class="w"> </span><span class="na">npg=</span><span class="s">&quot;2&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
 </code></pre></div>
 <h3 id="defining-a-new-land-grid">Defining a New Land Grid</h3>
-<p>If you are creating a new grid that will be used by the land model the grid name needs to be added to the list <code>valid_values</code> associated with the <code>res</code> entry in the file <code>components/elm/bld/namelist_files/namelist_definition.xml</code> that holds the definition of namelist variables used by the land model. </p>
-<div class="highlight"><pre><span></span><code>&lt;entry id=&quot;res&quot; type=&quot;char*30&quot; category=&quot;default_settings&quot;
-       group=&quot;default_settings&quot;
-       valid_values=
-&quot;512x1024,360x720cru,128x256,64x128,...&quot;&gt;
-Horizontal resolutions
-Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
-&lt;/entry&gt;
+<p>If you are creating a new grid that will be used by the land model the grid name needs to be added to the list <code>valid_values</code> associated with the <code>res</code> entry in the file <code>components/elm/bld/namelist_files/namelist_definition.xml</code> that holds the definition of namelist variables used by the land model.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;entry</span><span class="w"> </span><span class="na">id=</span><span class="s">&quot;res&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;char*30&quot;</span><span class="w"> </span><span class="na">category=</span><span class="s">&quot;default_settings&quot;</span>
+<span class="w">       </span><span class="na">group=</span><span class="s">&quot;default_settings&quot;</span>
+<span class="w">       </span><span class="na">valid_values=</span>
+<span class="s">&quot;512x1024,360x720cru,128x256,64x128,...&quot;</span><span class="nt">&gt;</span>
+Horizontal<span class="w"> </span>resolutions
+Note:<span class="w"> </span>0.1x0.1,<span class="w"> </span>0.5x0.5,<span class="w"> </span>5x5min,<span class="w"> </span>10x10min,<span class="w"> </span>3x3min<span class="w"> </span>and<span class="w"> </span>0.33x0.33<span class="w"> </span>are<span class="w"> </span>only<span class="w"> </span>used<span class="w"> </span>for<span class="w"> </span>CLM<span class="w"> </span>tools
+<span class="nt">&lt;/entry&gt;</span>
 </code></pre></div>
 <p>Simply add the name of your new grid to the list of <code>valid_values</code>.</p>
 <h2 id="namelist-variable-defaults">Namelist Variable Defaults</h2>
