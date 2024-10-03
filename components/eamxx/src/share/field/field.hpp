@@ -278,6 +278,27 @@ public:
   // Allocate the actual view
   void allocate_view ();
 
+  // Create contiguous helper field for running sync_to_host
+  // and sync_to_device with non-contiguous fields
+  void initialize_contiguous_helper_field () {
+    EKAT_REQUIRE_MSG(not m_header->get_alloc_properties().contiguous(),
+                     "Error! We should not setup contiguous helper field "
+                     "for an already contiguous field.\n");
+    EKAT_REQUIRE_MSG(not host_and_device_share_memory_space(),
+                     "Error! We should not setup contiguous helper field for a field "
+                     "when host and device share a memory space.\n");
+
+    auto id = m_header->get_identifier();
+    Field contig(id.alias(name()+std::string("_contiguous")));
+    contig.allocate_view();
+
+    // Sanity check
+    EKAT_REQUIRE_MSG(contig.get_header().get_alloc_properties().contiguous(),
+                     "Error! Contiguous helper field must be contiguous.\n");
+
+    m_contiguous_field = std::make_shared<Field>(contig);
+  }
+
   inline bool host_and_device_share_memory_space() const {
     EKAT_REQUIRE_MSG(is_allocated(),
                      "Error! Must allocate view before querying "
@@ -346,6 +367,10 @@ protected:
 
   // Actual data.
   dual_view_t<char*> m_data;
+
+  // Field needed for sync host/device in case of non-contiguous
+  // field when host and device do not share a memory space.
+  std::shared_ptr<Field> m_contiguous_field;
 
   // Whether this field is read-only. This is given
   // mutable keyword since it needs to be turned off/on

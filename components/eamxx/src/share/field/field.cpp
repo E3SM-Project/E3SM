@@ -137,6 +137,14 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   sf.m_data = m_data;
   sf.m_is_read_only = m_is_read_only;
 
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
+
   return sf;
 }
 
@@ -177,6 +185,14 @@ Field Field::subfield(const std::string& sf_name,
   sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg,
                                        index_end);
   sf.m_data = m_data;
+
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
 
   return sf;
 }
