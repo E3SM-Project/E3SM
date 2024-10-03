@@ -93,10 +93,11 @@ int IOStream::finalize(
 
       std::string StreamName               = Iter->first;
       std::shared_ptr<IOStream> ThisStream = Iter->second;
+      bool ForceWrite = false;
 
       int Err1 = 0;
       if (ThisStream->OnShutdown)
-         Err1 = ThisStream->writeStream(ModelClock, FinalCall);
+         Err1 = ThisStream->writeStream(ModelClock, ForceWrite, FinalCall);
 
       if (Err1 != 0) {
          LOG_ERROR("Error trying to write stream {} at shutdown", StreamName);
@@ -236,7 +237,8 @@ bool IOStream::validateAll() {
 int IOStream::read(
     const std::string &StreamName, // [in] Name of stream
     const Clock &ModelClock,       // [in] Model clock for time info
-    Metadata &ReqMetadata // [inout] global metadata requested from file
+    Metadata &ReqMetadata,      // [inout] global metadata requested from file
+    bool ForceRead              // [in] optional: read even if not time
 ) {
    int Err = 0; // default return code
 
@@ -245,7 +247,7 @@ int IOStream::read(
    if (StreamItr != AllStreams.end()) {
       // Stream found, call the read function
       std::shared_ptr<IOStream> ThisStream = StreamItr->second;
-      Err = ThisStream->readStream(ModelClock, ReqMetadata);
+      Err = ThisStream->readStream(ModelClock, ReqMetadata, ForceRead);
    } else { // Stream not found, return error
       LOG_ERROR("Unable to read stream {}. Stream not defined", StreamName);
       Err = 1;
@@ -259,7 +261,8 @@ int IOStream::read(
 // Writes a single stream if it is time. Returns an error code.
 int IOStream::write(
     const std::string &StreamName, // [in] Name of stream
-    const Clock &ModelClock        // [in] Model clock needed for time stamps
+    const Clock &ModelClock,       // [in] Model clock needed for time stamps
+    bool ForceWrite                // [in] optional: write even if not time
 ) {
    int Err = 0; // default return code
 
@@ -268,7 +271,7 @@ int IOStream::write(
    if (StreamItr != AllStreams.end()) {
       // Stream found, call the write function
       std::shared_ptr<IOStream> ThisStream = StreamItr->second;
-      Err = ThisStream->writeStream(ModelClock);
+      Err = ThisStream->writeStream(ModelClock, ForceWrite);
    } else {
       // Stream not found, return error
       LOG_ERROR("Unable to write stream {}. Stream not defined", StreamName);
@@ -650,10 +653,10 @@ int IOStream::defineAllDims(
          // If dimension not found, only generate a warning since there
          // may be some dimensions that are not required
          I4 InLength;
-         Err = IO::getDimFromFile(FileID, DimName, DimID, Length);
+         Err = IO::getDimFromFile(FileID, DimName, DimID, InLength);
          if (Err != 0) { // can't find dim in file
             // Try again using old name for back compatibility to MPAS
-            Err = IO::getDimFromFile(FileID, OldDimName, DimID, Length);
+            Err = IO::getDimFromFile(FileID, OldDimName, DimID, InLength);
             if (Err == 0) {
                LOG_INFO("Ignore PIO Error for Dimension {}: ", DimName);
                LOG_INFO("Found under old dimension name {}: ", OldDimName);
@@ -2200,7 +2203,8 @@ int IOStream::readFieldData(
 // read function used by the public read interface.
 int IOStream::readStream(
     const Clock &ModelClock, // [in] model clock for getting time
-    Metadata &ReqMetadata    // [inout] global metadata to extract from file
+    Metadata &ReqMetadata,   // [inout] global metadata to extract from file
+    bool ForceRead           // [in] optional: read even if not time
 ) {
    int Err = 0; // default return code
 
@@ -2212,13 +2216,15 @@ int IOStream::readStream(
    }
 
    // If it is not time to read, return
-   if (!MyAlarm.isRinging() and !OnStartup)
-      return Err;
-   if (UseStartEnd) { // If time outside interval, return
-      if (!StartAlarm.isRinging())
+   if (!ForceRead) {
+      if (!MyAlarm.isRinging() and !OnStartup)
          return Err;
-      if (EndAlarm.isRinging())
-         return Err;
+      if (UseStartEnd) { // If time outside interval, return
+         if (!StartAlarm.isRinging())
+            return Err;
+         if (EndAlarm.isRinging())
+            return Err;
+      }
    }
 
    // Get current simulation time and time string
@@ -2345,6 +2351,7 @@ int IOStream::readStream(
 // public write interfaces.
 int IOStream::writeStream(
     const Clock &ModelClock, // [in] Model clock needed for time stamps
+    bool ForceWrite,         // [in] Optional: write even if not time
     bool FinalCall           // [in] Optional flag if called from finalize
 ) {
 
@@ -2358,14 +2365,16 @@ int IOStream::writeStream(
    }
 
    // If it is not time to write, return
-   bool StartupShutdown = OnStartup or (OnShutdown and FinalCall);
-   if (!MyAlarm.isRinging() and !StartupShutdown)
-      return Err;
-   if (UseStartEnd) { // If time outside interval, return
-      if (!StartAlarm.isRinging())
+   if (!ForceWrite) {
+      bool StartupShutdown = OnStartup or (OnShutdown and FinalCall);
+      if (!MyAlarm.isRinging() and !StartupShutdown)
          return Err;
-      if (EndAlarm.isRinging())
-         return Err;
+      if (UseStartEnd) { // If time outside interval, return
+         if (!StartAlarm.isRinging())
+            return Err;
+         if (EndAlarm.isRinging())
+            return Err;
+      }
    }
 
    // Get current simulation time and time string

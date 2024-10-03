@@ -197,14 +197,18 @@ int main(int argc, char **argv) {
       Err1 = initIOStreamTest(ModelClock, CalGreg);
       TestEval("Initialize IOStream test", Err1, ErrRef, Err);
 
-      // Retrieve dimension lengths
+      // Retrieve dimension lengths and some mesh info
       I4 NCellsSize  = Dimension::getDimLengthLocal("NCells");
       I4 NVertLevels = Dimension::getDimLengthLocal("NVertLevels");
+      Decomp *DefDecomp = Decomp::getDefault();
+      I4 NCellsOwned    = DefDecomp->NCellsOwned;
+      Array1DI4 CellID  = DefDecomp->CellID;
 
       // Create data arrays
 
       Array2DR8 Temp("Temp", NCellsSize, NVertLevels);
       Array2DR8 Salt("Salt", NCellsSize, NVertLevels);
+      Array2DR8 Test("Test", NCellsSize, NVertLevels);
 
       // Attach data arrays to fields
 
@@ -222,12 +226,20 @@ int main(int argc, char **argv) {
       Err1 = IOStream::read("InitialState", *ModelClock, ReqMetadata);
       TestEval("Read restart file", Err1, ErrRef, Err);
 
+      // Overwrite salinity array with values associated with global cell
+      // ID to test proper indexing of IO
+      parallelFor( {NCellsSize, NVertLevels}, KOKKOS_LAMBDA(int Cell, int K) {
+            Salt(Cell, K) = 0.0001_Real*(CellID(Cell) + K);
+            Test(Cell, K) = Salt(Cell, K);
+      });
+
       // Create a stop alarm at 1 year for time stepping
       TimeInstant StopTime(&CalGreg, 0002, 1, 1, 0, 0, 0.0);
       Alarm StopAlarm("Stop Time", StopTime);
       Err1 = ModelClock->attachAlarm(&StopAlarm);
       TestEval("Attach stop alarm", Err1, ErrRef, Err);
 
+      // Overwrite
       // Step forward in time and write files if it is time
       while (!StopAlarm.isRinging()) {
          ModelClock->advance();
@@ -238,6 +250,23 @@ int main(int argc, char **argv) {
          if (Err1 != 0) // to prevent too much output in log
             TestEval("Write all streams " + CurTimeStr, Err1, ErrRef, Err);
       }
+
+      // Force read the latest restart and check the results
+      bool ForceRead = true;
+      Err1 = IOStream::read("RestartRead", *ModelClock, ReqMetadata, ForceRead);
+      TestEval("Restart force read", Err1, ErrRef, Err);
+
+      Err1 = 0;
+      auto DataReducer = Kokkos::Sum<I4>(Err1);
+
+      parallelReduce(
+          {NCellsOwned, NVertLevels},
+          KOKKOS_LAMBDA(int Cell, int K, I4 &Err1) {
+             if (Salt(Cell,K) != Test(Cell,K))
+                ++Err1;
+          },
+          DataReducer);
+      TestEval("Check Salt array ", Err1, ErrRef, Err);
 
       // Write final output and remove all streams
       IOStream::finalize(*ModelClock);

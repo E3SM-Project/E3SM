@@ -95,13 +95,15 @@ class IOStream {
    /// public read method
    int readStream(
        const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
-       Metadata &ReqMetadata ///< [inout] global metadata to extract from file
+       Metadata &ReqMetadata, ///< [inout] global metadata to extract from file
+       bool ForceRead = false ///< [in] Optional: read even if not time
    );
 
    /// Private function that performs most of the stream write - called by the
    /// public write method
    int writeStream(
        const Clock &ModelClock, ///< [in] Model clock for alarms, time stamp
+       bool ForceWrite = false, ///< [in] Optional: write even if not time
        bool FinalCall = false   ///< [in] Optional flag for shutdown
    );
 
@@ -221,14 +223,16 @@ class IOStream {
    /// Reads a stream if it is time. Returns an error code.
    static int read(const std::string &StreamName, ///< [in] Name of stream
                    const Clock &ModelClock, ///< [in] Model clock for time info
-                   Metadata &ReqMetadata ///< [inout] Metadata desired from file
+                   Metadata &ReqMetadata, ///< [inout] Metadata desired in file
+                   bool ForceRead = false ///< [in] opt: read even if not time
    );
 
    //---------------------------------------------------------------------------
    /// Writes a stream if it is time. Returns an error code.
    static int
    write(const std::string &StreamName, ///< [in] Name of stream
-         const Clock &ModelClock        ///< [in] Model clock for time stamps
+         const Clock &ModelClock,       ///< [in] Model clock for time stamps
+         bool ForceWrite = false        ///< [in] opt: write even if not time
    );
 
    //---------------------------------------------------------------------------
