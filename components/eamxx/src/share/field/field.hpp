@@ -198,11 +198,11 @@ public:
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value);
+  void deep_copy (const T value) const;
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src);
+  void deep_copy (const Field& src) const;
 
   // Updates this field y as y=alpha*x+beta*y
   // NOTE: ST=void is just so we can give a default to HD,
@@ -314,10 +314,10 @@ protected:
   void sync_views_impl () const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value);
+  void deep_copy_impl (const ST value) const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src);
+  void deep_copy_impl (const Field& src) const;
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
   void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);

@@ -326,7 +326,7 @@ void Field::sync_views_impl () const {
 
 template<HostOrDevice HD>
 void Field::
-deep_copy (const Field& src) {
+deep_copy (const Field& src) const {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -350,7 +350,7 @@ deep_copy (const Field& src) {
 
 template<typename ST, HostOrDevice HD>
 void Field::
-deep_copy (const ST value) {
+deep_copy (const ST value) const {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -384,7 +384,7 @@ deep_copy (const ST value) {
 
 template<HostOrDevice HD, typename ST>
 void Field::
-deep_copy_impl (const Field& src) {
+deep_copy_impl (const Field& src) const {
 
   const auto& layout     =     get_header().get_identifier().get_layout();
   const auto& layout_src = src.get_header().get_identifier().get_layout();
@@ -528,7 +528,7 @@ deep_copy_impl (const Field& src) {
 }
 
 template<HostOrDevice HD, typename ST>
-void Field::deep_copy_impl (const ST value) {
+void Field::deep_copy_impl (const ST value) const {
 
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. Instead, get the
