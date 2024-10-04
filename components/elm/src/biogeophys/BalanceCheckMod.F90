@@ -503,7 +503,11 @@ contains
                 if (glc_dyn_runoff_routing(g)) then
                    ! Need to add qflx_glcice_frz to snow_sinks for the same reason as it is
                    ! added to errh2o above - see the comment above for details.
-                   snow_sinks(c) = snow_sinks(c) + qflx_glcice_frz(c)
+                   if (lun_pp%itype(l) == istice) then 
+                        snow_sinks(c) = snow_sinks(c)
+                   else 
+                        snow_sinks(c) = snow_sinks(c) + qflx_glcice_frz(c)
+                   end if
                 end if
 
                 errh2osno(c) = (h2osno(c) - h2osno_old(c)) - (snow_sources(c) - snow_sinks(c)) * dtime
