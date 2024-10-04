@@ -193,8 +193,11 @@ public:
   // Note: this class takes no responsibility in keeping track of whether
   //       a sync is required in either direction. Mainly because we expect
   //       host views to be seldom used, and even less frequently modified.
-  void sync_to_host () const;
-  void sync_to_dev () const;
+  // The fence input controls whether a fence is done at the end of the sync.
+  // If multiple syncs are performed in a row on different data, the user may
+  // want to run them asynchronously and fence the final sync_to call.
+  void sync_to_host (const bool fence = true) const;
+  void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>

@@ -224,48 +224,103 @@ get_strided_view_type<DT, HD> {
 
 template<typename ST, HostOrDevice From, HostOrDevice To>
 void Field::sync_views_impl () const {
+  // All deep_copy call we want to be async for host.
+  using DeviceExecSpace = typename Field::get_device<Device>::execution_space;
+
+  // Rank 0 will always be contiguous. Copy and return early.
+  if (rank() == 0) {
+    Kokkos::deep_copy(DeviceExecSpace(), get_view<ST, To>(), get_view<const ST, From>());
+    return;
+  }
 
   const bool is_contiguous = get_header().get_alloc_properties().contiguous();
   if (is_contiguous) {
-    // For contiguous fields, simply use Kokkos::deep_copy()
+    // For contiguous fields, simply use Kokkos::deep_copy().
     switch (rank()) {
-      case 0:
-        Kokkos::deep_copy(get_view<ST, To>(), get_view<const ST, From>());
-        break;
       case 1:
-        Kokkos::deep_copy(get_view<ST*, To>(), get_view<const ST*, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST*, To>(), get_view<const ST*, From>());
         break;
       case 2:
-        Kokkos::deep_copy(get_view<ST**, To>(), get_view<const ST**, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST**, To>(), get_view<const ST**, From>());
         break;
       case 3:
-        Kokkos::deep_copy(get_view<ST***, To>(), get_view<const ST***, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST***, To>(), get_view<const ST***, From>());
         break;
       case 4:
-        Kokkos::deep_copy(get_view<ST****, To>(), get_view<const ST****, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST****, To>(), get_view<const ST****, From>());
         break;
       case 5:
-        Kokkos::deep_copy(get_view<ST*****, To>(), get_view<const ST*****, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST*****, To>(), get_view<const ST*****, From>());
         break;
       case 6:
-        Kokkos::deep_copy(get_view<ST******, To>(), get_view<const ST******, From>());
+        Kokkos::deep_copy(DeviceExecSpace(), get_view<ST******, To>(), get_view<const ST******, From>());
         break;
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
     }
   } else {
-    // Store values in contiguous helper field
-    m_contiguous_field->deep_copy<From>(*this);
-
-    // Sync helper field
-    if constexpr (To==Host) {
-      m_contiguous_field->sync_to_host();
-    } else {
-      m_contiguous_field->sync_to_dev();
+    auto sync_helper = [this] () {
+      if constexpr (To==Host) m_contiguous_field->sync_to_host();
+      else                    m_contiguous_field->sync_to_dev();
+    };
+    switch (rank()) {
+      case 1:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST*, From>(),
+                          get_strided_view<const ST*, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST*, To>(),
+                          m_contiguous_field->get_view<const ST*, To>());
+        break;
+      case 2:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST**, From>(),
+                          get_strided_view<const ST**, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST**, To>(),
+                          m_contiguous_field->get_view<const ST**, To>());
+        break;
+      case 3:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST***, From>(),
+                          get_strided_view<const ST***, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST***, To>(),
+                          m_contiguous_field->get_view<const ST***, To>());
+        break;
+      case 4:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST****, From>(),
+                          get_strided_view<const ST****, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST****, To>(),
+                          m_contiguous_field->get_view<const ST****, To>());
+        break;
+      case 5:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST*****, From>(),
+                          get_strided_view<const ST*****, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST*****, To>(),
+                          m_contiguous_field->get_view<const ST*****, To>());
+        break;
+      case 6:
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          m_contiguous_field->get_view<ST******, From>(),
+                          get_strided_view<const ST******, From>());
+        sync_helper();
+        Kokkos::deep_copy(DeviceExecSpace(),
+                          get_strided_view<ST******, To>(),
+                          m_contiguous_field->get_view<const ST******, To>());
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
     }
-
-    // Copy values back to this field
-    deep_copy<To>(*m_contiguous_field);
   }
 }
 

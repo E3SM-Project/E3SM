@@ -60,7 +60,7 @@ Field::clone(const std::string& name) const {
 }
 
 void Field::
-sync_to_host () const {
+sync_to_host (const bool fence) const {
   // Sanity check
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
@@ -86,12 +86,14 @@ sync_to_host () const {
       EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_host.\n");
   }
 
+  if (fence) Kokkos::fence();
+
   // Return field to read-only state
   m_is_read_only = original_read_only;
 }
 
 void Field::
-sync_to_dev () const {
+sync_to_dev (const bool fence) const {
   // Sanity check
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
@@ -112,6 +114,8 @@ sync_to_dev () const {
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_dev.\n");
   }
+
+  if (fence) Kokkos::fence();
 }
 
 Field Field::
