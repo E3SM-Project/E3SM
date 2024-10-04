@@ -604,6 +604,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- driver_options options for scream -->
   <driver_options>
+    <step_to_fail type="integer">-9999</step_to_fail>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
     <atm_log_level type="string"
                    valid_values="trace,debug,info,warn,error"

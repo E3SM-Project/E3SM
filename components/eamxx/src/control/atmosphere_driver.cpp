@@ -1594,6 +1594,10 @@ initialize (const ekat::Comm& atm_comm,
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
+  int dtf = m_atm_params.sublist("driver_options").get("step_to_fail", -9999);
+  if (m_current_ts.get_num_steps()==dtf) {
+    abort(); 
+  }
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
