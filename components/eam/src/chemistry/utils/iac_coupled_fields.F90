@@ -68,7 +68,7 @@ contains
 
     ! FIXMEB: Hardwire it true for now - I don't know if this is an infodata or namelist
     ! variable or some other way of setting this for non-iac coupled runs.
-    iac_present=.true.
+    iac_present=.false.
     if (.not. iac_present) return
 
     ! Register the co2 field with the pbuf
