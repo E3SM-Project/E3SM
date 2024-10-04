@@ -1369,6 +1369,8 @@ contains
          qflx_snofrz_col  =>    col_wf%qflx_snofrz      , & ! Output: [real(r8) (:)   ] column-integrated snow freezing rate (positive definite) [kg m-2 s-1]
          qflx_glcice      =>    col_wf%qflx_glcice      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
          qflx_glcice_melt =>    col_wf%qflx_glcice_melt , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)
+         qflx_glcice_diag      =>    col_wf%qflx_glcice_diag      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
+         qflx_glcice_melt_diag =>    col_wf%qflx_glcice_melt_diag , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)
          qflx_snomelt     =>    col_wf%qflx_snomelt     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)
 
          eflx_snomelt     =>    col_ef%eflx_snomelt    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)
@@ -1660,8 +1662,8 @@ contains
             if ( lun_pp%itype(l)==istice) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
-                  qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
-                  qflx_glcice(c) = qflx_glcice(c) - h2osoi_liq(c,j)/dtime
+                  qflx_glcice_melt_diags(c) = qflx_glcice_melt_diags(c) + h2osoi_liq(c,j)/dtime
+                  qflx_glcice_diags(c) = qflx_glcice_daigs(c) - h2osoi_liq(c,j)/dtime
                endif  ! liquid water is present
             endif     ! istice_mec
 

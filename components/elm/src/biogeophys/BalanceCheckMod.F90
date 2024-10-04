@@ -167,7 +167,7 @@ contains
      use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
-     use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
+     use landunit_varcon   , only : istice_mec, istice, istdlak, istsoil,istcrop,istwet
      use elm_varctl        , only : create_glacier_mec_landunit
      use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type
@@ -503,11 +503,7 @@ contains
                 if (glc_dyn_runoff_routing(g)) then
                    ! Need to add qflx_glcice_frz to snow_sinks for the same reason as it is
                    ! added to errh2o above - see the comment above for details.
-                   if (lun_pp%itype(l) == istice) then 
-                        snow_sinks(c) = snow_sinks(c)
-                   else 
-                        snow_sinks(c) = snow_sinks(c) + qflx_glcice_frz(c)
-                   end if
+                   snow_sinks(c) = snow_sinks(c) + qflx_glcice_frz(c)
                 end if
 
                 errh2osno(c) = (h2osno(c) - h2osno_old(c)) - (snow_sources(c) - snow_sinks(c)) * dtime
