@@ -48,7 +48,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -602,9 +602,20 @@ be lost if SCREAM_HACK_XML is not enabled.
     </model_restart>
   </Scorpio>
 
+  <!-- driver debug options for eamxx -->
+  <!--
+       These options are meant for power users to debug the code.
+       They are not meant to be used for typical eamxx simulations.
+  --> 
+  <driver_debug_options>
+    <force_crash_nsteps type="integer"
+		  doc="Force simulation to fail at a specific atmosphere timestep">
+      -9999
+    </force_crash_nsteps>
+  </driver_debug_options>
+
   <!-- driver_options options for scream -->
   <driver_options>
-    <step_to_fail type="integer">-9999</step_to_fail>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
     <atm_log_level type="string"
                    valid_values="trace,debug,info,warn,error"
