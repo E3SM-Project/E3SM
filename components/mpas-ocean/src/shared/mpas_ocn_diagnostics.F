@@ -3540,6 +3540,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(kmin, fracAbsorbed, fracAbsorbedRunoff, fracAbsorbedSubglacialRunoff, &
+      !$omp         zTop, k, zBot, transmissionCoeffTop, transmissionCoeffBot, &
       !$omp         sumSurfaceStressSquared, i, iEdge)
       do iCell = 1, nCells
 
