@@ -224,7 +224,8 @@ get_strided_view_type<DT, HD> {
 
 template<typename ST, HostOrDevice From, HostOrDevice To>
 void Field::sync_views_impl () const {
-  // All deep_copy call we want to be async for host.
+  // For all Kokkos::deep_copy() calls we will pass in an instance of the
+  // device execution space so that we are asynchronous w.r.t. host.
   using DeviceExecSpace = typename Field::get_device<Device>::execution_space;
 
   // Rank 0 will always be contiguous. Copy and return early.
