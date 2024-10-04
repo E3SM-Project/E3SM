@@ -171,7 +171,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     if (perform_history_restart) {
       using namespace scorpio;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
+      IOFileSpecs hist_restart_specs;
+      hist_restart_specs.ftype = FileType::HistoryRestart;
+      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,m_avg_type,m_output_control);
 
       scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
@@ -196,22 +198,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       // We do NOT allow changing output specs across restart. If you do want to change
       // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
-      auto old_freq = scorpio::get_attribute<int>(rhist_file,"GLOBAL","averaging_frequency");
-      EKAT_REQUIRE_MSG (old_freq == m_output_control.frequency,
-          "Error! Cannot change frequency when performing history restart.\n"
-          "  - old freq: " << old_freq << "\n"
-          "  - new freq: " << m_output_control.frequency << "\n");
-      auto old_freq_units = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_frequency_units");
-      EKAT_REQUIRE_MSG (old_freq_units == m_output_control.frequency_units,
-          "Error! Cannot change frequency units when performing history restart.\n"
-          "  - old freq units: " << old_freq_units << "\n"
-          "  - new freq units: " << m_output_control.frequency_units << "\n");
-      auto old_avg_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_type");
-      EKAT_REQUIRE_MSG (old_avg_type == e2str(m_avg_type),
-          "Error! Cannot change avg type when performing history restart.\n"
-          "  - old avg type: " << old_avg_type + "\n"
-          "  - new avg type: " << e2str(m_avg_type) << "\n");
-
+      // NOTE: we do not check that freq/freq_units/avg_type are not changed: since we used
+      //       that info to find the correct rhist file, we already know that they match!
       auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","file_max_storage_type");
       EKAT_REQUIRE_MSG (old_storage_type == e2str(m_output_file_specs.storage.type),
           "Error! Cannot change file storage type when performing history restart.\n"
@@ -400,7 +388,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      filespecs.filename = compute_filename (control,filespecs,timestamp);
+      filespecs.filename = compute_filename (filespecs,timestamp);
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control);
     }
@@ -613,18 +601,20 @@ long long OutputManager::res_dep_memory_footprint () const {
 }
 
 std::string OutputManager::
-compute_filename (const IOControl& control,
-                  const IOFileSpecs& file_specs,
+compute_filename (const IOFileSpecs& file_specs,
                   const util::TimeStamp& timestamp) const
 {
   auto filename = m_filename_prefix + file_specs.suffix();
+  const auto& control = m_output_control;
 
   // Always add avg type and frequency info
   filename += "." + e2str(m_avg_type);
   filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
 
-  // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
-  if (m_params.get<bool>("MPI Ranks in Filename")) {
+  // For standalone EAMxx, we may have 2+ versions of the same test running with two
+  // different choices of ranks. To avoid name clashing for the output files,
+  // add the comm size to the output file name.
+  if (is_scream_standalone()) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
 
@@ -679,7 +669,6 @@ set_params (const ekat::ParameterList& params,
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
     // Hard code some parameters in case we access them later
-    m_params.set("MPI Ranks in Filename",false);
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
@@ -715,12 +704,6 @@ set_params (const ekat::ParameterList& params,
         "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
-
-    // If not set, hard code to false for CIME cases, and true for standalone,
-    // since standalone may be running multiple versions of the same test at once
-    if (not m_params.isParameter("MPI Ranks in Filename")) {
-      m_params.set("MPI Ranks in Filename",is_scream_standalone());
-    }
   }
 
   // Output control
