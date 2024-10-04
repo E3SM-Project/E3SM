@@ -25,3 +25,6 @@ Omega:
     ViscDel2: 1.0e3
     VelHyperDiffTendencyEnable: true
     ViscDel4: 1.2e11
+  Tracers:
+    Base: [Temp, Salt]
+    Debug: [Debug1, Debug2, Debug3]
