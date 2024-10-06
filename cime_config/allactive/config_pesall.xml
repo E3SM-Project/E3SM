@@ -848,17 +848,17 @@
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
         <comment> -compset WCYCL*/CRYO* -res SOwISC12to30E3r3* on 52 nodes pure-MPI, ~8.5 sypd </comment>
         <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
-          <ntasks_lnd>128</ntasks_lnd>
-          <ntasks_rof>128</ntasks_rof>
-          <ntasks_ice>1280</ntasks_ice>
+          <ntasks_atm>1408</ntasks_atm>
+          <ntasks_lnd>384</ntasks_lnd>
+          <ntasks_rof>384</ntasks_rof>
+          <ntasks_ice>1024</ntasks_ice>
           <ntasks_ocn>1920</ntasks_ocn>
           <ntasks_cpl>1408</ntasks_cpl>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>1280</rootpe_lnd>
-          <rootpe_rof>1280</rootpe_rof>
+          <rootpe_lnd>1024</rootpe_lnd>
+          <rootpe_rof>1024</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>1408</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
