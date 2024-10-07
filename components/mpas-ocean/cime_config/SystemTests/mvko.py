@@ -18,6 +18,7 @@ import numpy as np
 import netCDF4 as nc
 
 import CIME.test_status
+from CIME.status import append_testlog
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
@@ -394,4 +395,4 @@ class MVKO(SystemTestsCommon):
                 f"        {viewing}"
             )
 
-            CIME.utils.append_testlog(comments, self._orig_caseroot)
+            append_testlog(comments, self._orig_caseroot)
