@@ -1595,12 +1595,12 @@ void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
   // DEBUG option: Check if user has set the run to fail at a specific timestep.
-  if (m_atm_params.isSublist("driver_debug_options")) {
-    bool force_fail_nstep = m_atm_params.sublist("driver_debug_options").get<int>("force_crash_nsteps", -9999)==m_current_ts.get_num_steps();
-    if (force_fail_nstep) {
-      abort();
-    }
+  auto& debug = m_atm_params.sublist("driver_debug_options"); 
+  auto fail_step = debug.get<int>("force_crash_nsteps",-1); 
+  if (fail_step==m_current_ts.get_num_steps()) { 
+    std::abort(); 
   }
+
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
