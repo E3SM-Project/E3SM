@@ -393,10 +393,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       snapshot_start = m_case_t0;
       snapshot_start += m_time_bnds[0];
     }
-    if (filespecs.is_open and not filespecs.storage.snapshot_fits(snapshot_start)) {
-      release_file(filespecs.filename);
-      filespecs.close();
-    }
 
     // Check if we need to open a new file
     if (not filespecs.is_open) {
