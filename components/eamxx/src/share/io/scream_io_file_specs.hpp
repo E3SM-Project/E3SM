@@ -86,7 +86,10 @@ struct IOFileSpecs {
   // If positive, flush the output file every these many snapshots
   int flush_frequency = std::numeric_limits<int>::max();
 
-  // bool file_is_full () const { return num_snapshots_in_file>=max_snapshots_in_file; }
+  bool file_is_full () const { 
+    return storage.num_snapshots_in_file>=storage.max_snapshots_in_file; 
+  }
+
   bool file_needs_flush () const {
     return storage.num_snapshots_in_file%flush_frequency==0;
   }

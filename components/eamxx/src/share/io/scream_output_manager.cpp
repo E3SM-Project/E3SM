@@ -550,6 +550,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (filespecs.file_needs_flush()) {
         flush_file (filespecs.filename);
       }
+
+      // Check if we have hit the max number of snapshots and need to close the file
+      if (filespecs.file_is_full()) {
+        release_file (filespecs.filename);
+        filespecs.close();
+      }
     };
 
     start_timer(timer_root+"::update_snapshot_tally");
