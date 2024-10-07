@@ -5,15 +5,27 @@ module startup_initialconds
 ! 
 !-----------------------------------------------------------------------
 
+use pio,          only: file_desc_t
+
 implicit none
 private
 save
 
 public :: initial_conds ! Read in initial conditions (dycore dependent)
+!added for orographic drag
+public topoGWD_file_get_id
+public setup_initialGWD
+public close_initial_fileGWD
+type(file_desc_t), pointer :: ncid_topoGWD
 
 !======================================================================= 
 contains
 !======================================================================= 
+
+function topoGWD_file_get_id()
+        type(file_desc_t), pointer :: topoGWD_file_get_id
+        topoGWD_file_get_id => ncid_topoGWD
+end function topoGWD_file_get_id
 
 subroutine initial_conds(dyn_in)
 
@@ -61,5 +73,34 @@ subroutine initial_conds(dyn_in)
 end subroutine initial_conds
 
 !======================================================================= 
+
+subroutine setup_initialGWD()
+   use filenames,        only: bnd_topo
+   use ioFileMod,        only: getfil
+   use cam_pio_utils,    only: cam_pio_openfile
+   use pio,              only: pio_nowrite
+!
+! Input arguments
+!
+!-----------------------------------------------------------------------
+   include 'netcdf.inc'
+!-----------------------------------------------------------------------
+   character(len=256) :: bnd_topo_loc   ! filepath of topo file on local disk
+      allocate(ncid_topoGWD)
+      call getfil(bnd_topo, bnd_topo_loc)
+      call cam_pio_openfile(ncid_topoGWD, bnd_topo_loc, PIO_NOWRITE)
+end subroutine setup_initialGWD
+
+subroutine close_initial_fileGWD
+  use pio,          only: pio_closefile
+        call pio_closefile(ncid_topoGWD)
+        deallocate(ncid_topoGWD)
+        nullify(ncid_topoGWD)
+end subroutine close_initial_fileGWD
+!======================================================================= 
+
+
+
+
 
 end module startup_initialconds
