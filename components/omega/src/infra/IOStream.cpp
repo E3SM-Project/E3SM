@@ -727,24 +727,28 @@ int IOStream::computeDecomp(
    }
 
    // Get dimension and size information for each dimension
-   I4 GlobalSize = 1;
-   LocalSize     = 1;
-   std::vector<I4> DimLengthGlobal(NDims);
-   std::vector<I4> DimIDs(NDims);
-   std::vector<HostArray1DI4> DimOffsets(NDims);
+   // For the offset calculation, we also create dimension and dimension offsets
+   // in index order up to the max of 5 dimensions. The active indices are
+   // at the end in array index order.
+   I4 GlobalSize        = 1;
+   LocalSize            = 1;
    constexpr I4 MaxDims = 5;
-   std::vector<I4> OffsetLoopLim(MaxDims, 1); // loop limits for later offset
+   std::vector<I4> DimLengthsGlob(NDims, 1);
+   std::vector<HostArray1DI4> DimOffsets(MaxDims);
+   std::vector<I4> DimLengthGlob(MaxDims, 1); // lengths padded to MaxDims
+   std::vector<I4> DimLengthLoc(MaxDims, 1);  // lengths padded to MaxDims
 
    for (int IDim = 0; IDim < NDims; ++IDim) {
+      I4 StartDim                        = MaxDims - NDims;
       std::string DimName                = DimNames[IDim];
-      DimIDs[IDim]                       = AllDimIDs[DimName];
       std::shared_ptr<Dimension> ThisDim = Dimension::get(DimName);
       DimLengths[IDim]                   = ThisDim->getLengthLocal();
-      DimLengthGlobal[IDim]              = ThisDim->getLengthGlobal();
-      DimOffsets[IDim]                   = ThisDim->getOffset();
+      DimLengthsGlob[IDim]               = ThisDim->getLengthGlobal();
+      DimOffsets[StartDim + IDim]        = ThisDim->getOffset();
+      DimLengthLoc[StartDim + IDim]      = DimLengths[IDim];
+      DimLengthGlob[StartDim + IDim]     = DimLengthsGlob[IDim];
       LocalSize *= DimLengths[IDim];
-      GlobalSize *= DimLengthGlobal[IDim];
-      OffsetLoopLim[IDim] = DimLengths[IDim];
+      GlobalSize *= DimLengthsGlob[IDim];
    }
 
    // Create the data decomposition based on dimension information
@@ -754,45 +758,61 @@ int IOStream::computeDecomp(
    // The linear offset along each dimension has already been computed
    // by the dimension class.
 
-   std::vector<I4> Offset(LocalSize);
+   std::vector<I4> Offset(LocalSize, -1);
 
    // Compute strides in linear space for each dimension
-   std::vector<I4> Strides(MaxDims, 1);
-   for (int IDim = 1; IDim < NDims; ++IDim) {
-      Strides[IDim] = Strides[IDim - 1] * DimLengthGlobal[IDim - 1];
+   // For the proper stride in storage order, we start from the rightmost
+   // index in index order.
+   std::vector<I4> StrideGlob(MaxDims, 1);
+   std::vector<I4> StrideLoc(MaxDims, 1);
+   for (int IDim = MaxDims - 2; IDim >= 0; --IDim) {
+      StrideGlob[IDim] = StrideGlob[IDim + 1] * DimLengthGlob[IDim + 1];
+      StrideLoc[IDim]  = StrideLoc[IDim + 1] * DimLengthLoc[IDim + 1];
    }
 
    // Compute full array offsets based on each dimensions linear offset
-   I4 Add = 0; // linear address of offset vector
-   for (int N = 0; N < OffsetLoopLim[4]; ++N) {
+   // Skip -1 entries that are outside owned domain
+   for (int N = 0; N < DimLengthLoc[0]; ++N) {
       I4 NGlob = 0;
       if (NDims >= 5)
-         NGlob = (DimOffsets[4])(N);
-      for (int M = 0; M < OffsetLoopLim[3]; ++M) {
+         NGlob = (DimOffsets[0])(N);
+      if (NGlob < 0)
+         continue; // index outside owned domain
+      for (int M = 0; M < DimLengthLoc[1]; ++M) {
          I4 MGlob = 0;
          if (NDims >= 4)
-            MGlob = (DimOffsets[3])(M);
-         for (int K = 0; K < OffsetLoopLim[2]; ++K) {
+            MGlob = (DimOffsets[1])(M);
+         if (MGlob < 0)
+            continue;
+         for (int K = 0; K < DimLengthLoc[2]; ++K) {
             I4 KGlob = 0;
             if (NDims >= 3)
                KGlob = (DimOffsets[2])(K);
-            for (int J = 0; J < OffsetLoopLim[1]; ++J) {
+            if (KGlob < 0)
+               continue;
+            for (int J = 0; J < DimLengthLoc[3]; ++J) {
                I4 JGlob = 0;
                if (NDims >= 2)
-                  JGlob = (DimOffsets[1])(J);
-               for (int I = 0; I < OffsetLoopLim[0]; ++I) {
-                  I4 IGlob    = (DimOffsets[0])(I);
-                  Offset[Add] = IGlob * Strides[0] + JGlob * Strides[1] +
-                                KGlob * Strides[2] + MGlob * Strides[3] +
-                                NGlob * Strides[4];
-                  ++Add;
+                  JGlob = (DimOffsets[3])(J);
+               if (JGlob < 0)
+                  continue;
+               for (int I = 0; I < DimLengthLoc[4]; ++I) {
+                  I4 IGlob = (DimOffsets[4])(I);
+                  if (IGlob < 0)
+                     continue;
+                  int Add = I * StrideLoc[4] + J * StrideLoc[3] +
+                            K * StrideLoc[2] + M * StrideLoc[1] +
+                            N * StrideLoc[0];
+                  Offset[Add] = IGlob * StrideGlob[4] + JGlob * StrideGlob[3] +
+                                KGlob * StrideGlob[2] + MGlob * StrideGlob[1] +
+                                NGlob * StrideGlob[0];
                }
             }
          }
       }
    }
 
-   Err = OMEGA::IO::createDecomp(DecompID, MyIOType, NDims, DimLengthGlobal,
+   Err = OMEGA::IO::createDecomp(DecompID, MyIOType, NDims, DimLengthsGlob,
                                  LocalSize, Offset, OMEGA::IO::DefaultRearr);
    if (Err != 0) {
       LOG_ERROR("Error creating decomp for field {} in stream {}", FieldName,
