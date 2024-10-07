@@ -1662,8 +1662,8 @@ contains
             if ( lun_pp%itype(l)==istice) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
-                  qflx_glcice_melt_diags(c) = qflx_glcice_melt_diags(c) + h2osoi_liq(c,j)/dtime
-                  qflx_glcice_diags(c) = qflx_glcice_daigs(c) - h2osoi_liq(c,j)/dtime
+                  qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime
+                  qflx_glcice_diag(c) = qflx_glcice_diag(c) - h2osoi_liq(c,j)/dtime
                endif  ! liquid water is present
             endif     ! istice_mec
 

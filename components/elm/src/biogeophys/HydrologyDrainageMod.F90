@@ -123,6 +123,7 @@ contains
          qflx_glcice_frz        => col_wf%qflx_glcice_frz         , & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)
          qflx_glcice_diag       => col_wf%qflx_glcice_diag        , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) - diagnostic, no MECs or GLC
          qflx_glcice_frz_diag   => col_wf%qflx_glcice_frz_diag      & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)) - diagnostic, no MECs or GLC
+         )
 
       ! Determine time step and step size
 
@@ -230,8 +231,8 @@ contains
          end if
 
          if (lun_pp%itype(l)==istice) then
-               qflx_glcice_frz_diags(c) = qflx_snwcp_ice(c)
-               qflx_glcice_diags(c) = qflx_glcice_diags(c) + qflx_glcice_frz_diags(c)
+               qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
+               qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          endif
 
       end do

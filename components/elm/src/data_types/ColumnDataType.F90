@@ -504,7 +504,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_glcice_melt     (:)   => null() ! ice melt (positive definite) (mm H2O/s)
     real(r8), pointer :: qflx_glcice_diag     (:)   => null() ! net flux of new glacial ice (growth - melt) (mm H2O/s), passed to GLC
     real(r8), pointer :: qflx_glcice_frz_diag (:)   => null() ! ice growth (positive definite) (mm H2O/s)
-    real(r8), pointer :: qflx_glcice_melt_daig(:)   => null() ! ice melt (positive definite) (mm H2O/s)
+    real(r8), pointer :: qflx_glcice_melt_diag(:)   => null() ! ice melt (positive definite) (mm H2O/s)
     real(r8), pointer :: qflx_drain_vr        (:,:) => null() ! liquid water lost as drainage (m /time step)
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
@@ -5728,7 +5728,7 @@ contains
     allocate(this%qflx_glcice            (begc:endc))             ; this%qflx_glcice          (:)   = spval
     allocate(this%qflx_glcice_frz        (begc:endc))             ; this%qflx_glcice_frz      (:)   = spval
     allocate(this%qflx_glcice_melt       (begc:endc))             ; this%qflx_glcice_melt     (:)   = spval
-    allocate(this%qflx_glcice_diag       (begc:endc))             ; this%qflx_glcice_daig     (:)   = spval
+    allocate(this%qflx_glcice_diag       (begc:endc))             ; this%qflx_glcice_diag     (:)   = spval
     allocate(this%qflx_glcice_frz_diag   (begc:endc))             ; this%qflx_glcice_frz_diag (:)   = spval
     allocate(this%qflx_glcice_melt_diag  (begc:endc))             ; this%qflx_glcice_melt_diag(:)   = spval
     allocate(this%qflx_drain_vr          (begc:endc,1:nlevgrnd))  ; this%qflx_drain_vr        (:,:) = spval
