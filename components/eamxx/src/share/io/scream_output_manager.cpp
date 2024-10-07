@@ -552,7 +552,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
 
       // Check if we have hit the max number of snapshots and need to close the file
-      if (filespecs.file_is_full()) {
+      bool file_is_full = not filespecs.storage.snapshot_fits(m_output_control.next_write_ts);
+      if (file_is_full) {
         release_file (filespecs.filename);
         filespecs.close();
       }
