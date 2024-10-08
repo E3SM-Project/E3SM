@@ -1181,6 +1181,7 @@ module li_time_integration_fe_rk
 
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
 
          allocate( masktmp(nCells + 1) )
          masktmp = 0
@@ -1189,6 +1190,7 @@ module li_time_integration_fe_rk
             masktmp = 1
             thickness = 0.0_RKIND
          end where
+         call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
          if (config_print_thickness_advection_info) then
 
