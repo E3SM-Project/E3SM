@@ -84,10 +84,10 @@ OceanState::OceanState(
 
    // Allocate state host arrays
    for (int I = 0; I < NTimeLevels; I++) {
-      LayerThicknessH[I] = HostArray2DR8("LayerThickness" + std::to_string(I),
-                                         NCellsSize, NVertLevels);
-      NormalVelocityH[I] = HostArray2DR8("NormalVelocity" + std::to_string(I),
-                                         NEdgesSize, NVertLevels);
+      LayerThicknessH[I] = HostArray2DReal("LayerThickness" + std::to_string(I),
+                                           NCellsSize, NVertLevels);
+      NormalVelocityH[I] = HostArray2DReal("NormalVelocity" + std::to_string(I),
+                                           NEdgesSize, NVertLevels);
    }
 
    // Create device arrays and copy host data
@@ -296,11 +296,11 @@ void OceanState::defineFields() {
                 StateGroupName);
 
    // Associate Field with data
-   Err = NormalVelocityField->attachData<Array2DR8>(NormalVelocity[CurLevel]);
+   Err = NormalVelocityField->attachData<Array2DReal>(NormalVelocity[CurLevel]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 NormalVelocityFldName);
-   Err = LayerThicknessField->attachData<Array2DR8>(LayerThickness[CurLevel]);
+   Err = LayerThicknessField->attachData<Array2DReal>(LayerThickness[CurLevel]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 LayerThicknessFldName);
@@ -331,21 +331,31 @@ void OceanState::read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8) {
 
    I4 Err;
 
-   // Read LayerThickness
+   // Read LayerThickness into a temporary double-precision array
    int LayerThicknessID;
-   Err = IO::readArray(LayerThicknessH[CurLevel].data(), NCellsAll,
-                       "layerThickness", StateFileID, CellDecompR8,
-                       LayerThicknessID);
+   HostArray2DR8 TmpLayerThicknessR8("TmpLayerThicknessR8", NCellsSize,
+                                     NVertLevels);
+   Err = IO::readArray(TmpLayerThicknessR8.data(), NCellsAll, "layerThickness",
+                       StateFileID, CellDecompR8, LayerThicknessID);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error reading layerThickness");
 
-   // Read NormalVelocity
+   // Copy the thickness data into the final state array of user-specified
+   // precision
+   deepCopy(LayerThicknessH[CurLevel], TmpLayerThicknessR8);
+
+   // Read NormalVelocity  into a temporary double-precision array
    int NormalVelocityID;
-   Err = IO::readArray(NormalVelocityH[CurLevel].data(), NEdgesAll,
-                       "normalVelocity", StateFileID, EdgeDecompR8,
-                       NormalVelocityID);
+   HostArray2DR8 TmpNormalVelocityR8("TmpNormalVelocityR8", NEdgesSize,
+                                     NVertLevels);
+   Err = IO::readArray(TmpNormalVelocityR8.data(), NEdgesAll, "normalVelocity",
+                       StateFileID, EdgeDecompR8, NormalVelocityID);
    if (Err != 0)
       LOG_CRITICAL("OceanState: error reading normalVelocity");
+
+   // Copy the velocity data into the final state array of user-specified
+   // precision
+   deepCopy(NormalVelocityH[CurLevel], TmpNormalVelocityR8);
 
 } // end read
 
@@ -397,10 +407,10 @@ void OceanState::updateTimeLevels() {
    // Update IOField data associations
    int Err = 0;
 
-   Err = Field::attachFieldData<Array2DR8>(NormalVelocityFldName,
-                                           NormalVelocity[CurLevel]);
-   Err = Field::attachFieldData<Array2DR8>(LayerThicknessFldName,
-                                           LayerThickness[CurLevel]);
+   Err = Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
+                                             NormalVelocity[CurLevel]);
+   Err = Field::attachFieldData<Array2DReal>(LayerThicknessFldName,
+                                             LayerThickness[CurLevel]);
 
 } // end updateTimeLevels
 

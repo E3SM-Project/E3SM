@@ -291,10 +291,10 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
        ExactThickFluxDiv, Geom, Mesh, OnCell, NVertLevels, ExchangeHalos::No);
 
    // Set input array
-   Array2DR8 ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
 
    // TODO(mwarusz) temporary fix for this test
-   Array2DR8 OnesEdge("OnesEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal OnesEdge("OnesEdge", Mesh->NEdgesSize, NVertLevels);
    deepCopy(OnesEdge, 1);
 
    Err += setVectorEdge(
@@ -359,25 +359,26 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array2DR8 NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize,
+                               NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normRelVort(X, Y); },
        NormRelVortEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize,
-                                NVertLevels);
+   Array2DReal NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize,
+                                  NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normPlanetVort(X, Y); },
        NormPlanetVortEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThick(X, Y); },
        LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {

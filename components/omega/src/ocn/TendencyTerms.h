@@ -35,7 +35,7 @@ class ThicknessFluxDivOnCell {
    /// The functor takes cell index, vertical chunk index, and thickness flux
    /// array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 ICell, I4 KChunk,
-                                   const Array2DR8 &ThicknessFlux,
+                                   const Array2DReal &ThicknessFlux,
                                    const Array2DReal &NormalVelEdge) const {
 
       const I4 KStart        = KChunk * VecLength;
@@ -81,10 +81,10 @@ class PotentialVortHAdvOnEdge {
    /// thickness on edges, and normal velocity on edges as inputs,
    /// outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &NormRVortEdge,
-                                   const Array2DR8 &NormFEdge,
-                                   const Array2DR8 &FluxLayerThickEdge,
-                                   const Array2DR8 &NormVelEdge) const {
+                                   const Array2DReal &NormRVortEdge,
+                                   const Array2DReal &NormFEdge,
+                                   const Array2DReal &FluxLayerThickEdge,
+                                   const Array2DReal &NormVelEdge) const {
 
       const I4 KStart         = KChunk * VecLength;
       Real VortTmp[VecLength] = {0};
@@ -126,7 +126,7 @@ class KEGradOnEdge {
    /// The functor takes edge index, vertical chunk index, and kinetic energy
    /// array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &KECell) const {
+                                   const Array2DReal &KECell) const {
 
       const I4 KStart      = KChunk * VecLength;
       const I4 JCell0      = CellsOnEdge(IEdge, 0);
@@ -190,8 +190,8 @@ class VelocityDiffusionOnEdge {
    /// divergence of horizontal velocity (defined at cell centers) and relative
    /// vorticity (defined at vertices), outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &DivCell,
-                                   const Array2DR8 &RVortVertex) const {
+                                   const Array2DReal &DivCell,
+                                   const Array2DReal &RVortVertex) const {
 
       const I4 KStart = KChunk * VecLength;
       const I4 ICell0 = CellsOnEdge(IEdge, 0);
@@ -238,8 +238,8 @@ class VelocityHyperDiffOnEdge {
    /// the laplacian of divergence of horizontal velocity and the laplacian of
    /// the relative vorticity, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &Del2DivCell,
-                                   const Array2DR8 &Del2RVortVertex) const {
+                                   const Array2DReal &Del2DivCell,
+                                   const Array2DReal &Del2RVortVertex) const {
 
       const I4 KStart = KChunk * VecLength;
       const I4 ICell0 = CellsOnEdge(IEdge, 0);

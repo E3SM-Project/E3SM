@@ -71,8 +71,8 @@ int setScalar(const Functor &Fun, const Array2DReal &ScalarElement,
    int Err = 0;
 
    int NElementsOwned;
-   Array1DReal XElement, YElement;
-   Array1DReal LonElement, LatElement;
+   Array1DR8 XElement, YElement;
+   Array1DR8 LonElement, LatElement;
 
    switch (Element) {
    case OnCell:
@@ -400,7 +400,7 @@ inline int computeErrors(ErrorMeasures &ErrorMeasures,
    int Err = 0;
 
    int NElementsOwned;
-   Array1DReal AreaElement;
+   Array1DR8 AreaElement;
 
    switch (Element) {
    case OnCell:
@@ -418,7 +418,7 @@ inline int computeErrors(ErrorMeasures &ErrorMeasures,
       {
          auto &DcEdge = Mesh->DcEdge;
          auto &DvEdge = Mesh->DvEdge;
-         AreaElement  = Array1DReal("AreaEdge", Mesh->NEdgesOwned);
+         AreaElement  = Array1DR8("AreaEdge", Mesh->NEdgesOwned);
          parallelFor(
              {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
                 AreaElement(IEdge) = DcEdge(IEdge) * DvEdge(IEdge) / 2;
