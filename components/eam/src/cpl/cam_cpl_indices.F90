@@ -98,10 +98,13 @@ contains
 
   subroutine cam_cpl_indices_set( )
 
+    use iac_coupled_fields, only: iac_present
+
     type(mct_aVect) :: a2x      ! temporary
     type(mct_aVect) :: x2a      ! temporary
 
-    integer :: m, ier
+    integer, parameter :: tot_mon_in_year = 12
+    integer :: imon, ier
     character(len=2) :: monstr ! month string
 
     ! Determine attribute vector indices
@@ -158,16 +161,24 @@ contains
     allocate(index_x2a_Fazz_co2airlo_iac(12), stat=ier)
     allocate(index_x2a_Fazz_co2airhi_iac(12), stat=ier)
 
-    do m=1,12
-       write(monstr,'(I0)') m
+      if (iac_present) then
+         !if IAC is active, associate monthly index for fetching values for each month
+         do imon = 1, tot_mon_in_year
+            write(monstr,'(I0)') imon
        monstr=trim(monstr)
-       index_x2a_Fazz_co2sfc_iac(m) = &
+            index_x2a_Fazz_co2sfc_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2sfc_mon' // monstr))
-       index_x2a_Fazz_co2airlo_iac(m) = &
+            index_x2a_Fazz_co2airlo_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2airlo_mon' // monstr))
-       index_x2a_Fazz_co2airhi_iac(m) = &
+            index_x2a_Fazz_co2airhi_iac(imon) = &
             mct_avect_indexra(x2a,trim('Fazz_co2airhi_mon' // monstr))
     end do
+      else
+         !if IAC is not active, assign zeros for the indices
+         index_x2a_Fazz_co2sfc_iac(:)   = 0
+         index_x2a_Fazz_co2airlo_iac(:) = 0
+         index_x2a_Fazz_co2airhi_iac(:) = 0
+      endif
 
     if (shr_megan_mechcomps_n>0) then
        index_x2a_Fall_flxvoc = mct_avect_indexra(x2a,trim(shr_megan_fields_token))
