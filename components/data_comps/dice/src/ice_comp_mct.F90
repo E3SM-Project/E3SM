@@ -79,16 +79,6 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
-#ifdef HAVE_MOAB
-    character(CL)        :: filePath ! generic file path
-    character(CL)        :: fileName ! generic file name
-    character(CS)        :: timeName ! domain file: time variable name
-    character(CS)        :: lonName  ! domain file: lon  variable name
-    character(CS)        :: latName  ! domain file: lat  variable name
-    character(CS)        :: hgtName  ! domain file: hgt  variable name
-    character(CS)        :: maskName ! domain file: mask variable name
-    character(CS)        :: areaName ! domain file: area variable name
-#endif
     character(*), parameter :: subName = "(ice_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -171,12 +161,9 @@ CONTAINS
 
 #ifdef HAVE_MOAB
     if (my_task == master_task) then
-       call shr_stream_getDomainInfo(SDICE%stream(1), filePath,fileName,timeName,lonName, &
-               latName,hgtName,maskName,areaName)
-       call shr_stream_getFile(filePath,fileName)
        ! send path of ice domain to MOAB coupler.
-       call seq_infodata_PutData( infodata, ice_domain=fileName)
-       write(logunit,*), ' filename: ', filename
+       write(logunit,*), ' file used for ice domain ', SDICE%domainFile
+       call seq_infodata_PutData( infodata, ice_domain=SDICE%domainFile)
     endif
 #endif
     !----------------------------------------------------------------------------
