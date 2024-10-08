@@ -234,8 +234,6 @@ contains
          if (lun_pp%itype(l)==istice) then
                qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
                qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
-               !write(iulog,*) 'CAW lun_pp%itype(l)==istice',lun_pp%itype(l)==istice
-               !write(iulog,*) 'qflx_snwcp_ice(c)',qflx_snwcp_ice(c)
          endif
 
       end do
