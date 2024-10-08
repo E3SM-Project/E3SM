@@ -26,13 +26,13 @@ module CNAllocationBeTRMod
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
   use VegetationPropertiesType, only : veg_vp
-  use LandunitType        , only : lun_pp                
+  use LandunitType        , only : lun_pp
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_cf, col_ns, col_nf, col_ps, col_pf  
+  use ColumnDataType      , only : col_cf, col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf, veg_ps, veg_pf
-  use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
-  
+  use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
+
   ! bgc interface & pflotran module switches
   use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
@@ -359,7 +359,7 @@ contains
     associate(                                                                                   &
          ivt                          => veg_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         woody                        => veg_vp%woody                                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                        => veg_vp%woody                                      , & ! Input:  [real(r8) (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          froot_leaf                   => veg_vp%froot_leaf                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
          croot_stem                   => veg_vp%croot_stem                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
          stem_leaf                    => veg_vp%stem_leaf                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
@@ -1167,7 +1167,7 @@ contains
     associate(                                                                                 &
          ivt                          => veg_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type
 !
-         woody                        => veg_vp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                        => veg_vp%woody                                    , & ! Input:  [real(r8) (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          froot_leaf                   => veg_vp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
          croot_stem                   => veg_vp%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
          stem_leaf                    => veg_vp%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
