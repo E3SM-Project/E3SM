@@ -132,7 +132,7 @@ class Halo {
       /// index space. 0 = OnCell, 1 = OnEdge, 2 = OnVertex
       ExchList SendLists[3], RecvLists[3];
       /// Buffers for MPI communication
-      std::vector<Real> SendBuffer, RecvBuffer;
+      std::vector<R8> SendBuffer, RecvBuffer;
       /// MPI request handles for non-blocking MPI communication
       MPI_Request RReq, SReq;
 
