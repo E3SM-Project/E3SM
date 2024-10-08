@@ -217,6 +217,7 @@ contains
 
       do c = bounds%begc,bounds%endc
          qflx_glcice_frz(c) = 0._r8
+         qflx_glcice_frz_diag(c) = 0._r8
       end do
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
@@ -233,6 +234,8 @@ contains
          if (lun_pp%itype(l)==istice) then
                qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
                qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
+               !write(iulog,*) 'CAW lun_pp%itype(l)==istice',lun_pp%itype(l)==istice
+               !write(iulog,*) 'qflx_snwcp_ice(c)',qflx_snwcp_ice(c)
          endif
 
       end do
