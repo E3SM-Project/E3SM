@@ -10,6 +10,7 @@ on:
       - 'components/eam/**'
       - 'components/eamxx/**'
       - 'components/elm/**'
+      - 'components/homme/**'
       - 'driver-moab/**'
       - 'driver-mct/**'
       # second, no to these
