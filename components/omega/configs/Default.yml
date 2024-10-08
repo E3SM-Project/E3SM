@@ -90,7 +90,7 @@ Omega:
       Freq: 10
       FreqUnits: days
       UseStartEnd: true
-      StartTime: 0001-06-01_00.00.00
-      EndTime: 0001-06-30_00.00.00
+      StartTime: 0001-06-01_00:00:00
+      EndTime: 0001-06-30_00:00:00
       Contents:
         - Tracers
