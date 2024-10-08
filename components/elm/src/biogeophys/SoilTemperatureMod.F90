@@ -1668,9 +1668,6 @@ contains
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime
                   qflx_glcice_diag(c) = qflx_glcice_diag(c) - h2osoi_liq(c,j)/dtime
-                  !write(iulog,*) 'CAW lun_pp%itype(l)==istice',lun_pp%itype(l)==istice
-                  !write(iulog,*) 'CAW j',j
-                  !write(iulog,*) 'CAW h2osoi_liq(c,j) ',h2osoi_liq(c,j)   
                endif  ! liquid water is present
             endif     ! istice_mec
 
