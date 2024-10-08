@@ -484,7 +484,7 @@ contains
 
                ! Compute the speed of the first baroclinic mode from the Brunt-Vaisala frequency.
                cGMphaseSpeed(iEdge) = max(c_min,                          &
-                                          sum_hN/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
+                                          sum_hN/(config_GM_spatially_variable_baroclinic_mode*pi))
 
             end do
             !$omp end do
@@ -615,7 +615,7 @@ contains
                ! for the first-mode (m=1) baroclinic gravity wave speed in m/s
                ! c_m = 1/pi integral(N dz )
 
-               c_mode1 = max(1.0E-5_RKIND, sum_hN/3.141592_RKIND)
+               c_mode1 = max(1.0E-5_RKIND, sum_hN/pi)
 
                ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
                ! just after eqn 4 the defines the deformation
