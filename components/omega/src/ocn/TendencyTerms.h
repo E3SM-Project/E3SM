@@ -62,9 +62,9 @@ class ThicknessFluxDivOnCell {
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
-   Array1DR8 DvEdge;
-   Array1DR8 AreaCell;
-   Array2DR8 EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal AreaCell;
+   Array2DReal EdgeSignOnCell;
 };
 
 /// Horizontal advection of potential vorticity defined on edges, for
@@ -112,7 +112,7 @@ class PotentialVortHAdvOnEdge {
  private:
    Array1DI4 NEdgesOnEdge;
    Array2DI4 EdgesOnEdge;
-   Array2DR8 WeightsOnEdge;
+   Array2DReal WeightsOnEdge;
 };
 
 /// Gradient of kinetic energy defined on edges, for momentum equation
@@ -141,7 +141,7 @@ class KEGradOnEdge {
 
  private:
    Array2DI4 CellsOnEdge;
-   Array1DR8 DcEdge;
+   Array1DReal DcEdge;
 };
 
 /// Gradient of sea surface height defined on edges multipled by gravitational
@@ -173,7 +173,7 @@ class SSHGradOnEdge {
  private:
    R8 Grav = 9.80665_Real;
    Array2DI4 CellsOnEdge;
-   Array1DR8 DcEdge;
+   Array1DReal DcEdge;
 };
 
 /// Laplacian horizontal mixing, for momentum equation
@@ -218,10 +218,10 @@ class VelocityDiffusionOnEdge {
  private:
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 DvEdge;
-   Array1DR8 MeshScalingDel2;
-   Array2DR8 EdgeMask;
+   Array1DReal DcEdge;
+   Array1DReal DvEdge;
+   Array1DReal MeshScalingDel2;
+   Array2DReal EdgeMask;
 };
 
 /// Biharmonic horizontal mixing, for momentum equation
@@ -266,10 +266,10 @@ class VelocityHyperDiffOnEdge {
  private:
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 DvEdge;
-   Array1DR8 MeshScalingDel4;
-   Array2DR8 EdgeMask;
+   Array1DReal DcEdge;
+   Array1DReal DvEdge;
+   Array1DReal MeshScalingDel4;
+   Array2DReal EdgeMask;
 };
 
 // Tracer horizontal advection term
