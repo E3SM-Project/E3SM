@@ -890,8 +890,8 @@ contains
     endif
 
     ! next define MOAB app for the ghosted one
+    ! We do this so that coupling does not have to deal with halos
     appname="LNDMBGHOST"//C_NULL_CHAR
-    ! first land instance, should be 9
     ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, (LNDID*7), mlnghid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app')
@@ -901,7 +901,7 @@ contains
        write(iulog,*) " "
     endif
 
-    ! start describing the mesh to MOAB
+    ! start describing the mesh to MOAB using ELMs existing description
 
     dims  =3 ! store as 3d mesh
     ! number the local grid
@@ -913,9 +913,9 @@ contains
        vgids(n) = ldecomp%gdc2glo(bounds%begg+n-1) ! local to global !
     end do
     gsize = ldomain%ni * ldomain%nj ! size of the total grid
-    ! if ldomain%nv > 3 , create mesh
 
     ! Case where land and river share mesh (tri-grid)
+    ! This is the case of a "true" mesh.
     if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
         ! number of vertices is nv * lsz !
         allocate(moab_vert_coords(lsz*dims*ldomain%nv))
@@ -934,9 +934,12 @@ contains
                moabconn(i) = i
             enddo
         enddo
+        ! create the mesh verticies for ELM to coupler app
         ierr = iMOAB_CreateVertices(mlnid, lsz * 3 * ldomain%nv, dims, moab_vert_coords)
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB vertices in land model')
+
+        ! create the mesh verticies for internal ELM app which will have halos
         ierr = iMOAB_CreateVertices(mlnghid, lsz * 3 * ldomain%nv, dims, moab_vert_coords)
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB vertices in land model')
@@ -945,13 +948,18 @@ contains
         if (ldomain%nv .eq. 4) mbtype = 3 ! quad
         if (ldomain%nv .gt. 4) mbtype = 4 ! polygon
         block_ID = 100 !some value
+
+        ! create the mesh elements for ELM to coupler app
         ierr = iMOAB_CreateElements( mlnid, lsz, mbtype, ldomain%nv, moabconn, block_ID );
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB elements in land model')
+
+        ! create the mesh elements for internal ELM app which will have halos
         ierr = iMOAB_CreateElements( mlnghid, lsz, mbtype, ldomain%nv, moabconn, block_ID );
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB elements in land model')
 
+        ! Define halo (ghost) region
         ! set a default of one ghost layers
         nghostlayers = 1 ! TODO: change to what ELM needs
         if (masterproc) &
@@ -973,58 +981,73 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
+        ! load the integer data on the mesh from the vgids array
         ent_type = 1 ! element type
         ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
+
         ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz , ent_type, vgids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 
-        ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
-        !   on the vertices; do not allocate other data array
-        !  Define and Set Fraction
+        !  Define and Set Fraction on each mesh
         tagname='frac'//C_NULL_CHAR
         tagtype = 1 ! dense, double
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create frac tag ')
+
         ierr = iMOAB_DefineTagStorage(mlnghid, tagname, tagtype, numco,  tag_indices(2) )
         if (ierr > 0 )  &
           call endrun('Error: fail to create frac tag ')
 
+        ! use moab_vert_coords as a data holder
+        ! Note that loop bounds are typical for locally owned points
         do i = 1, lsz
           n = i-1 + bounds%begg
           moab_vert_coords(i) = ldomain%frac(n)
         enddo
+
+        ! set the values on the coupling mesh
         ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
+
+        ! set the values on the internal mesh, halo values aren't set
         ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz , ent_type, moab_vert_coords)
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 
         !  Define and Set area
         tagname='area'//C_NULL_CHAR
+        ! define the values on the coupling mesh
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
+
+        ! define the values on the internal mesh
         ierr = iMOAB_DefineTagStorage(mlnghid, tagname, tagtype, numco,  tag_indices(3) )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
+
         do i = 1, lsz
           n = i-1 + bounds%begg
           moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
         enddo
 
+        ! set the values on the coupling mesh
         ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
+
+        ! set the values on the internal mesh
         ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz , ent_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
 
         !  Define aream
+        ! but don't set any values yet. Coupler will send them
         tagname='aream'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
@@ -1046,12 +1069,15 @@ contains
         end do
         ent_type = 0 ! vertices now
         tagname = 'GLOBAL_ID'//C_NULL_CHAR
+        ! the coupling mesh
         ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids )
         if (ierr > 0 )  &
           call endrun('Error: fail to set global ID tag on vertices in land mesh ')
         ierr = iMOAB_UpdateMeshInfo( mlnid )
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')
+
+        ! the internal mesh
         ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz , ent_type, vgids )
         if (ierr > 0 )  &
           call endrun('Error: fail to set global ID tag on vertices in land mesh ')
@@ -1059,16 +1085,16 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')
 
+        ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
         entity_type(:) = 1 ! default: Element-based tags
         entity_type(1) = 0 ! Vertex-based tags
-        ! synchronize: GLOBAL_ID on vertices in the ghost layers
         ierr = iMOAB_SynchronizeTags(mlnghid, 1, tag_indices, entity_type)
         if (ierr > 0 )  &
           call endrun('Error: fail to synchronize vertex tags for ELM ')
 
-        entity_type(1) = 1 ! Element-based tags
         ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
         ! in the ghost layers
+        entity_type(1) = 1 ! Element-based tags
         ierr = iMOAB_SynchronizeTags(mlnghid, 4, tag_indices, entity_type)
         if (ierr > 0 )  &
           call endrun('Error: fail to synchronize element tags for ELM ')
@@ -1081,8 +1107,8 @@ contains
           call endrun('Error: fail to write ELM local meshes in h5m format')
 #endif
 
-
     ! Case where land and atmosphere share mesh
+    ! mesh is a "point cloud" without connectivity
     else ! old point cloud mesh
         allocate(moab_vert_coords(lsz*dims))
         do i = 1, lsz
