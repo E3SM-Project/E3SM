@@ -122,6 +122,7 @@ struct Functions
     Scalar p3_dep_nucleation_exponent = 0.304;
     Scalar p3_ice_sed_knob = 1.0;
     Scalar p3_d_breakup_cutoff = 0.00028;
+    bool p3_do_ice_production = true;
   };
 
   // This struct stores prognostic variables evolved by P3.

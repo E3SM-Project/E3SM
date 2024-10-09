@@ -123,6 +123,8 @@ Int Functions<Real,DefaultDevice>
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
 
+  const bool do_ice_production = runtime_options.p3_do_ice_production;
+
   // per-column bools
   view_1d<bool> nucleationPossible("nucleationPossible", nj);
   view_1d<bool> hydrometeorsPresent("hydrometeorsPresent", nj);
@@ -294,9 +296,11 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain
-  homogeneous_freezing_disp(
-      T_atm, inv_exner, nj, nk, ktop, kbot, kdir, qc, nc, qr, nr, qi,
-      ni, qm, bm, th, nucleationPossible, hydrometeorsPresent);
+  if(do_ice_production) {
+    homogeneous_freezing_disp(T_atm, inv_exner, nj, nk, ktop, kbot, kdir, qc,
+                              nc, qr, nr, qi, ni, qm, bm, th,
+                              nucleationPossible, hydrometeorsPresent);
+  }
 
   //
   // final checks to ensure consistency of mass/number
@@ -334,4 +338,3 @@ Int Functions<Real,DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-
