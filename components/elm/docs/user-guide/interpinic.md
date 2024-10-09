@@ -47,6 +47,8 @@ cd components/elm/tools/interpinic/src
 export USER_LDFLAGS="-L$NETCDF_C_DIR/lib -lnetcdf -L$NETCDF_F_DIR/lib -lnetcdff  -L$HDF5_DIR/lib -lhdf5"
 
 USER_FC=ifort LIB_NETCDF="`nc-config --flibs`" INC_NETCDF="`nf-config --includedir`" make VERBOSE=1
+
+cd ../
 ```
 
 ## 4. Run `interpinic`
@@ -66,10 +68,10 @@ The `interpinic` can then be run via the following batch job (e.g., `remap.r025_
 
 # Load relevant modules.
 cd <e3sm-dir>
-eval $(./cime/CIME/Tools/get_case_env/get_case_env)
+eval $(./cime/CIME/Tools/get_case_env)
 
 # Change dir to `interpinic`
-cd components/elm/tools/interpinic/src
+cd components/elm/tools/interpinic/
 
 srun -n 1 ./interpinic \
 -i /lcrc/group/e3sm2/ac.golaz/E3SMv3/v3.LR.piControl/archive/rest/0101-01-01-00000/v3.LR.piControl.elm.r.0101-01-01-00000.nc \
