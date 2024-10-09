@@ -17,7 +17,7 @@ void Functions<S,D>
 ::rain_immersion_freezing(const Spack& T_atm, const Spack& lamr,
                           const Spack& mu_r, const Spack& cdistr,
                           const Spack& qr_incld, Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
-                          const physics::P3_Constants<S> & p3constants,
+                          const P3Runtime& runtime_options,
 			  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
@@ -26,7 +26,7 @@ void Functions<S,D>
   constexpr Scalar CONS5 = C::CONS5;
   constexpr Scalar CONS6 = C::CONS6;
 
-  const Scalar p3_a_imm = p3constants.p3_a_imm;
+  const Scalar p3_a_imm = runtime_options.p3_a_imm;
 
   const auto qr_not_small_and_t_freezing = (qr_incld >= qsmall) &&
                                            (T_atm <= T_rainfrz) && context;

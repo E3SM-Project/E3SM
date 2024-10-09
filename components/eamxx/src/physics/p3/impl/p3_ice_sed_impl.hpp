@@ -17,13 +17,13 @@ typename Functions<S,D>::Spack
 Functions<S,D>
 ::calc_bulk_rho_rime(
   const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar bsmall       = C::BSMALL;
   constexpr Scalar qsmall       = C::QSMALL;
-  const Scalar p3_rho_rime_min = p3constants.p3_rho_rime_min;
-  const Scalar p3_rho_rime_max = p3constants.p3_rho_rime_max;
+  const Scalar p3_rho_rime_min = runtime_options.p3_rho_rime_min;
+  const Scalar p3_rho_rime_max = runtime_options.p3_rho_rime_max;
 
   Spack rho_rime(0);
 
@@ -87,7 +87,7 @@ void Functions<S,D>
   const uview_1d<Spack>& ni_tend,
   const view_ice_table& ice_table_vals,
   Scalar& precip_ice_surf,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
@@ -105,7 +105,7 @@ void Functions<S,D>
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
 
-  const Scalar p3_ice_sed_knob = p3constants.p3_ice_sed_knob;
+  const Scalar p3_ice_sed_knob = runtime_options.p3_ice_sed_knob;
 
   bool log_qxpresent;
   const Int k_qxtop = find_top(team, sqi, qsmall, kbot, ktop, kdir, log_qxpresent);
@@ -145,7 +145,7 @@ void Functions<S,D>
           // impose lower limits to prevent log(<0)
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
-          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), p3constants, qi_gt_small);
+          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), runtime_options, qi_gt_small);
           qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
           bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 

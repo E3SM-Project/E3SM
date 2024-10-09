@@ -15,7 +15,7 @@ void Functions<S,D>
   const Spack& qi_incld, const Spack& qc_incld,
   const Spack& ni_incld, const Spack& nc_incld,
   Spack& qc2qi_collect_tend, Spack& nc_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& ncshdc,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
@@ -28,7 +28,7 @@ void Functions<S,D>
   const auto both_ge_small        = qi_incld_ge_small && qc_incld_ge_small && context;
   const auto both_ge_small_pos_t  = both_ge_small && !t_is_negative;
 
-  const Scalar p3_eci = p3constants.p3_eci;
+  const Scalar p3_eci = runtime_options.p3_eci;
   constexpr auto inv_dropmass = C::ONE/C::dropmass;
 
   qc2qi_collect_tend.set(both_ge_small && t_is_negative,
@@ -53,7 +53,7 @@ void Functions<S,D>
   const Spack& qi_incld, const Spack& ni_incld,
   const Spack& qr_incld,
   Spack& qr2qi_collect_tend, Spack& nr_collect_tend,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
@@ -67,7 +67,7 @@ void Functions<S,D>
   const auto both_ge_small_neg_t  = both_ge_small && t_is_negative;
 
   constexpr Scalar ten = 10.0;
-  const Scalar p3_eri = p3constants.p3_eri;
+  const Scalar p3_eri = runtime_options.p3_eri;
 
   // note: table_val_qr2qi_collect and logn0r are already calculated as log_10
   qr2qi_collect_tend.set(both_ge_small_neg_t, pow(ten, table_val_qr2qi_collect+logn0r)*rho*rhofaci*p3_eri*ni_incld);

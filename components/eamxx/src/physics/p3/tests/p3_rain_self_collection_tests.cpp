@@ -75,7 +75,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
       }
 
       Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local,
-		      physics::P3_Constants<Real>());
+		      P3Runtime());
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
