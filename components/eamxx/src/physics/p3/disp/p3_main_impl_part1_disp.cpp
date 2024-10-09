@@ -31,9 +31,6 @@ void Functions<Real,DefaultDevice>
   const uview_2d<const Spack>& inv_cld_frac_l,
   const uview_2d<const Spack>& inv_cld_frac_i,
   const uview_2d<const Spack>& inv_cld_frac_r,
-  const uview_2d<const Spack>& latent_heat_vapor,
-  const uview_2d<const Spack>& latent_heat_sublim,
-  const uview_2d<const Spack>& latent_heat_fusion,
   const uview_2d<Spack>& T_atm,
   const uview_2d<Spack>& rho,
   const uview_2d<Spack>& inv_rho,
@@ -73,17 +70,17 @@ void Functions<Real,DefaultDevice>
       policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     const Int i = team.league_rank();
-    
+
     p3_main_part1(
       team, nk, predictNc, prescribedCCN, dt,
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i),
       ekat::subview(nccn_prescribed, i), ekat::subview(inv_exner, i), ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i),
-      ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i), ekat::subview(latent_heat_vapor, i), ekat::subview(latent_heat_sublim, i),
-      ekat::subview(latent_heat_fusion, i), ekat::subview(T_atm, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(qv_sat_l, i),
+      ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i),
+      ekat::subview(T_atm, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(qv_sat_l, i),
       ekat::subview(qv_sat_i, i), ekat::subview(qv_supersat_i, i), ekat::subview(rhofacr, i), ekat::subview(rhofaci, i), ekat::subview(acn, i),
       ekat::subview(qv, i), ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i),
       ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i), ekat::subview(qc_incld, i), ekat::subview(qr_incld, i), ekat::subview(qi_incld, i),
-      ekat::subview(qm_incld, i), ekat::subview(nc_incld, i), ekat::subview(nr_incld, i), ekat::subview(ni_incld, i), ekat::subview(bm_incld, i), 
+      ekat::subview(qm_incld, i), ekat::subview(nc_incld, i), ekat::subview(nr_incld, i), ekat::subview(ni_incld, i), ekat::subview(bm_incld, i),
       nucleationPossible(i), hydrometeorsPresent(i), p3constants);
 
   });

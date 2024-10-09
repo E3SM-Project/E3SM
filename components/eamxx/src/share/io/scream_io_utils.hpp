@@ -1,6 +1,7 @@
 #ifndef SCREAM_IO_UTILS_HPP
 #define SCREAM_IO_UTILS_HPP
 
+#include "scream_io_control.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
 #include <ekat/util/ekat_string_utils.hpp>
@@ -59,11 +60,17 @@ inline OutputAvgType str2avg (const std::string& s) {
   return OAT::Invalid;
 }
 
+// The AD will pass a default constructed control, since it doesn't know the values
+// of REST_N/REST_OPTION used in the previous run
+// Output streams MUST pass a valid control structure, cause we need to differentiate
+// between, e.g., streams with same filename prefix, but different output freq specs
 std::string find_filename_in_rpointer (
-    const std::string& casename,
+    const std::string& filename_prefix,
     const bool model_restart,
     const ekat::Comm& comm,
-    const util::TimeStamp& run_t0);
+    const util::TimeStamp& run_t0,
+    const OutputAvgType avg_type = OutputAvgType::Instant,
+    const IOControl& control = {});
 
 struct LongNames {
 

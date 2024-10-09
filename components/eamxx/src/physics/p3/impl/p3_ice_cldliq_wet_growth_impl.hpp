@@ -13,7 +13,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_cldliq_wet_growth(
   const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& table_val_qi2qr_melting,
-  const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion, const Spack& dv,
+  const Spack& table_val_qi2qr_vent_melt, const Spack& dv,
   const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
   const Spack& qi_incld, const Spack& ni_incld, const Spack& qr_incld,
   Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate, Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend, const Smask& context)
@@ -26,6 +26,8 @@ void Functions<S,D>
   constexpr Scalar zero   = C::ZERO;
   constexpr Scalar one    = C::ONE;
   constexpr Scalar cpw    = C::CpLiq;
+  constexpr Scalar latvap = C::LatVap;
+  constexpr Scalar latice = C::LatIce;
 
   const auto t_is_negative = temp < tmelt;
   const auto qi_incld_ge_small = qi_incld >= qsmall;
@@ -46,8 +48,8 @@ void Functions<S,D>
 
     qc_growth_rate.set(any_if,
                ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*
-                twopi*(rho*latent_heat_vapor*dv*(qsat0-qv)-(temp-tmelt)*kap)/
-                (latent_heat_fusion+cpw*(temp-tmelt)))*ni_incld);
+                twopi*(rho*latvap*dv*(qsat0-qv)-(temp-tmelt)*kap)/
+                (latice+cpw*(temp-tmelt)))*ni_incld);
 
     qc_growth_rate.set(any_if,
                max(qc_growth_rate, zero));

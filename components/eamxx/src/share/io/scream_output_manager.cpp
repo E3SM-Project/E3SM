@@ -171,7 +171,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     if (perform_history_restart) {
       using namespace scorpio;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
+      IOFileSpecs hist_restart_specs;
+      hist_restart_specs.ftype = FileType::HistoryRestart;
+      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,m_avg_type,m_output_control);
 
       scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
@@ -196,22 +198,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       // We do NOT allow changing output specs across restart. If you do want to change
       // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
-      auto old_freq = scorpio::get_attribute<int>(rhist_file,"GLOBAL","averaging_frequency");
-      EKAT_REQUIRE_MSG (old_freq == m_output_control.frequency,
-          "Error! Cannot change frequency when performing history restart.\n"
-          "  - old freq: " << old_freq << "\n"
-          "  - new freq: " << m_output_control.frequency << "\n");
-      auto old_freq_units = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_frequency_units");
-      EKAT_REQUIRE_MSG (old_freq_units == m_output_control.frequency_units,
-          "Error! Cannot change frequency units when performing history restart.\n"
-          "  - old freq units: " << old_freq_units << "\n"
-          "  - new freq units: " << m_output_control.frequency_units << "\n");
-      auto old_avg_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","averaging_type");
-      EKAT_REQUIRE_MSG (old_avg_type == e2str(m_avg_type),
-          "Error! Cannot change avg type when performing history restart.\n"
-          "  - old avg type: " << old_avg_type + "\n"
-          "  - new avg type: " << e2str(m_avg_type) << "\n");
-
+      // NOTE: we do not check that freq/freq_units/avg_type are not changed: since we used
+      //       that info to find the correct rhist file, we already know that they match!
       auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","file_max_storage_type");
       EKAT_REQUIRE_MSG (old_storage_type == e2str(m_output_file_specs.storage.type),
           "Error! Cannot change file storage type when performing history restart.\n"
@@ -242,17 +230,18 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
       if (m_resume_output_file) {
-        scorpio::register_file(last_output_filename,scorpio::Read,m_output_file_specs.iotype);
-        int num_snaps = scorpio::get_dimlen(last_output_filename,"time");
-        scorpio::release_file(last_output_filename);
+        int num_snaps = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
         m_output_file_specs.filename = last_output_filename;
         m_output_file_specs.is_open = true;
         m_output_file_specs.storage.num_snapshots_in_file = num_snaps;
-        // The setup_file call will not register any new variable (the file is in Append mode,
-        // so all dims/vars must already be in the file). However, it will register decompositions,
-        // since those are a property of the run, not of the file.
-        setup_file(m_output_file_specs,m_output_control);
+
+        if (m_output_file_specs.storage.snapshot_fits(m_output_control.next_write_ts)) {
+          // The setup_file call will not register any new variable (the file is in Append mode,
+          // so all dims/vars must already be in the file). However, it will register decompositions,
+          // since those are a property of the run, not of the file.
+          setup_file(m_output_file_specs,m_output_control);
+        }
       }
       scorpio::release_file(rhist_file);
     }
@@ -328,6 +317,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     return;
   }
 
+  // Ensure we did not go past the scheduled write time without hitting it
+  EKAT_REQUIRE_MSG (
+      (m_output_control.frequency_units=="nsteps"
+          ? timestamp.get_num_steps()<=m_output_control.next_write_ts.get_num_steps()
+          : timestamp<=m_output_control.next_write_ts),
+      "Error! The input timestamp is past the next scheduled write timestamp.\n"
+      "  - current time stamp   : " + timestamp.to_string() + "\n"
+      "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
+      "The most likely cause is an output frequency that is faster than the atm timestep.\n"
+      "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
+
   // Update counters
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;
@@ -381,14 +381,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       snapshot_start = m_case_t0;
       snapshot_start += m_time_bnds[0];
     }
-    if (not filespecs.storage.snapshot_fits(snapshot_start)) {
+    if (filespecs.is_open and not filespecs.storage.snapshot_fits(snapshot_start)) {
       release_file(filespecs.filename);
       filespecs.close();
     }
 
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      filespecs.filename = compute_filename (control,filespecs,timestamp);
+      filespecs.filename = compute_filename (filespecs,timestamp);
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control);
     }
@@ -483,6 +483,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
           write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
+
+          int nsnaps = m_output_file_specs.is_open
+                     ? scorpio::get_dimlen(m_output_file_specs.filename,"time") : 0;
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",nsnaps);
         }
         // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
         // output, and the latter b/c we want to make sure these params don't change across restarts
@@ -597,18 +601,20 @@ long long OutputManager::res_dep_memory_footprint () const {
 }
 
 std::string OutputManager::
-compute_filename (const IOControl& control,
-                  const IOFileSpecs& file_specs,
+compute_filename (const IOFileSpecs& file_specs,
                   const util::TimeStamp& timestamp) const
 {
   auto filename = m_filename_prefix + file_specs.suffix();
+  const auto& control = m_output_control;
 
   // Always add avg type and frequency info
   filename += "." + e2str(m_avg_type);
   filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
 
-  // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
-  if (m_params.get<bool>("MPI Ranks in Filename")) {
+  // For standalone EAMxx, we may have 2+ versions of the same test running with two
+  // different choices of ranks. To avoid name clashing for the output files,
+  // add the comm size to the output file name.
+  if (is_scream_standalone()) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
 
@@ -663,7 +669,6 @@ set_params (const ekat::ParameterList& params,
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
     // Hard code some parameters in case we access them later
-    m_params.set("MPI Ranks in Filename",false);
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
@@ -699,12 +704,6 @@ set_params (const ekat::ParameterList& params,
         "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
-
-    // If not set, hard code to false for CIME cases, and true for standalone,
-    // since standalone may be running multiple versions of the same test at once
-    if (not m_params.isParameter("MPI Ranks in Filename")) {
-      m_params.set("MPI Ranks in Filename",is_scream_standalone());
-    }
   }
 
   // Output control
@@ -778,6 +777,24 @@ setup_file (      IOFileSpecs& filespecs,
   auto mode = m_resume_output_file ? scorpio::Append : scorpio::Write;
   scorpio::register_file(filename,mode,filespecs.iotype);
   if (m_resume_output_file) {
+    // We may have resumed an output file that contains extra snapshots *after* the restart time.
+    // E.g., if we output every step and the run crashed a few steps after writing the restart.
+    // In that case, we need to reset the time dimension in the output file, so that the extra
+    // snapshots will be overwritten.
+    const auto all_times = scorpio::get_all_times(filename);
+    int ntimes = all_times.size();
+    int ngood  = 0;
+    for (const auto& t : all_times) {
+      auto keep = t<=m_output_control.last_write_ts.days_from(m_case_t0);
+      if (keep) {
+        ++ngood;
+      } else {
+        break;
+      }
+    }
+    if (ngood<ntimes) {
+      scorpio::reset_unlimited_dim_len(filename,ngood);
+    }
     scorpio::redef(filename);
   } else {
     // Register time (and possibly time_bnds) var(s)

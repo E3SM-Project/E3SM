@@ -88,13 +88,10 @@ public:
         
         cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
 
-        const auto range = ekat::range<IntSmallPack>(k*Spack::n);
-        const Smask in_nlev_range = (range < nlev);
-
-        // Inverse of Exner. Assert that exner != 0 when in range before computing.
+        // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
         const Spack exner = PF::exner_function(p_mid(i,k));
         const Smask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
+        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Spack::n) < nlev)).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(mintke, tke(i,k));
@@ -385,13 +382,13 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
     static constexpr int num_1d_scalar_ncol = 4;
 #else
-    static constexpr int num_1d_scalar_ncol = 17;
+    static constexpr int num_1d_scalar_ncol = 15;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
     static constexpr int num_2d_vector_mid  = 18;
     static constexpr int num_2d_vector_int  = 12;
 #else
@@ -404,7 +401,7 @@ public:
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_1d<Real> se_b;
     uview_1d<Real> ke_b;
     uview_1d<Real> wv_b;
@@ -413,9 +410,7 @@ public:
     uview_1d<Real> ke_a;
     uview_1d<Real> wv_a;
     uview_1d<Real> wl_a;
-    uview_1d<Real> ustar;
     uview_1d<Real> kbfs;
-    uview_1d<Real> obklen;
     uview_1d<Real> ustar2;
     uview_1d<Real> wstar;
 #endif
@@ -453,7 +448,7 @@ public:
     uview_2d<Spack> w3;
     uview_2d<Spack> wqls_sec;
     uview_2d<Spack> brunt;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_2d<Spack> rho_zt;
     uview_2d<Spack> shoc_qv;
     uview_2d<Spack> tabs;
@@ -511,7 +506,7 @@ protected:
   SHF::SHOCOutput output;
   SHF::SHOCHistoryOutput history_output;
   SHF::SHOCRuntime runtime_options;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   SHF::SHOCTemporaries temporaries;
 #endif
 

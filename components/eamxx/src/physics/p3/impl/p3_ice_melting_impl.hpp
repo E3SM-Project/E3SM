@@ -13,7 +13,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_melting(
   const Spack& rho, const Spack& T_atm, const Spack& pres, const Spack& rhofaci,
-  const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion,
+  const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt,
   const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
   const Spack& qv, const Spack& qi_incld, const Spack& ni_incld,
   Spack& qi2qr_melt_tend, Spack& ni2nr_melt_tend, const Smask& context)
@@ -29,6 +29,8 @@ void Functions<S,D>
   const auto Pi     = C::Pi;
   const auto QSMALL = C::QSMALL;
   const auto Tmelt  = C::Tmelt;
+  const auto latvap = C::LatVap;
+  const auto latice = C::LatIce;
 
   //Find cells above freezing AND which have ice
   const auto has_melt_qi = (qi_incld >= QSMALL ) && (T_atm > Tmelt) && context;
@@ -38,8 +40,8 @@ void Functions<S,D>
     const auto qsat0 = physics::qv_sat_dry(Spack(Tmelt), pres, false, context, physics::MurphyKoop, "p3::ice_melting"); //"false" here means NOT saturation w/ respect to ice.
 
     qi2qr_melt_tend.set(has_melt_qi, ( (table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))
-			     *((T_atm-Tmelt)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))
-			     * 2 * Pi /latent_heat_fusion)*ni_incld );
+			     *((T_atm-Tmelt)*kap-rho*latvap*dv*(qsat0-qv))
+			     * 2 * Pi /latice)*ni_incld );
 
     //make sure qi2qr_melt_tend is always negative
     qi2qr_melt_tend = max(qi2qr_melt_tend, 0);
