@@ -63,7 +63,7 @@ void Functions<S,D>
   const uview_1d<Spack>& bm_incld,
   bool& nucleationPossible,
   bool& hydrometeorsPresent,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   // Get access to saturation functions
   using physics = scream::physics::Functions<Scalar, Device>;
@@ -80,7 +80,7 @@ void Functions<S,D>
   constexpr Scalar latvap       = C::LatVap;
   constexpr Scalar latice       = C::LatIce;
 
-  const Scalar p3_spa_to_nc = p3constants.p3_spa_to_nc;
+  const Scalar p3_spa_to_nc = runtime_options.p3_spa_to_nc;
 
   nucleationPossible = false;
   hydrometeorsPresent = false;

@@ -3,7 +3,6 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
 #include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -221,12 +220,19 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Gather runtime options
-  runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
-
-  // setting P3 constants in a struct
-  m_p3constants.set_p3_from_namelist(m_params);
-  m_p3constants.print_p3constants(m_atm_logger);
-  // done setting P3 constants
+  runtime_options.max_total_ni = m_params.get<double>("max_total_ni", 740.0e3);
+  runtime_options.p3_autoconversion_prefactor = m_params.get<double>("p3_autoconversion_prefactor", 1350.0);
+  runtime_options.p3_mu_r_constant = m_params.get<double>("p3_mu_r_constant", 1.0);
+  runtime_options.p3_spa_to_nc = m_params.get<double>("p3_spa_to_nc", 1.0);
+  runtime_options.p3_k_accretion = m_params.get<double>("p3_k_accretion", 67.0);
+  runtime_options.p3_eci = m_params.get<double>("p3_eci", 0.5);
+  runtime_options.p3_eri = m_params.get<double>("p3_eri", 1.0);
+  runtime_options.p3_rho_rime_min = m_params.get<double>("p3_rho_rime_min", 50.0);
+  runtime_options.p3_rho_rime_max = m_params.get<double>("p3_rho_rime_max", 900.0);
+  runtime_options.p3_a_imm = m_params.get<double>("p3_a_imm", 0.65);
+  runtime_options.p3_dep_nucleation_exponent = m_params.get<double>("p3_dep_nucleation_exponent", 0.304);
+  runtime_options.p3_ice_sed_knob = m_params.get<double>("p3_ice_sed_knob", 1.0);
+  runtime_options.p3_d_breakup_cutoff = m_params.get<double>("p3_d_breakup_cutoff", 0.00028);
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);

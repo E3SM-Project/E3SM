@@ -98,7 +98,9 @@ static void run_bfb_calc_bulk_rhime()
     }
 
     Smask gt_small(qi_tot > qsmall);
-    Spack rho_rime = Functions::calc_bulk_rho_rime(qi_tot, qi_rim, bi_rim, physics::P3_Constants<Real>(), gt_small);
+    Spack rho_rime = Functions::calc_bulk_rho_rime(
+        qi_tot, qi_rim, bi_rim, p3::Functions<Real, DefaultDevice>::P3Runtime(),
+        gt_small);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

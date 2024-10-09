@@ -20,12 +20,12 @@ void Functions<S,D>
   const Spack& qc_incld, const Spack& nc_incld,
   const Spack& qr_incld, const Spack& inv_qc_relvar,
   Spack& qc2qr_accret_tend, Spack& nc_accret_tend,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 
-  const Scalar p3_k_accretion = p3constants.p3_k_accretion;;
+  const Scalar p3_k_accretion = runtime_options.p3_k_accretion;;
 
   Spack sgs_var_coef;
   // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );

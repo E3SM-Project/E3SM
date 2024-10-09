@@ -90,9 +90,11 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       Spack qc2qr_ice_shed_tend{0.0};
       Spack ncshdc{0.0};
 
-      Functions::ice_cldliq_collection(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld,
-                                       qc_incld, ni_incld, nc_incld,
-                                       qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, physics::P3_Constants<Real>());
+      Functions::ice_cldliq_collection(
+          rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld,
+          ni_incld, nc_incld, qc2qi_collect_tend, nc_collect_tend,
+          qc2qr_ice_shed_tend, ncshdc,
+          p3::Functions<Real,DefaultDevice>::P3Runtime());
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -179,9 +181,11 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       }
 
       Spack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
-      Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect,
-                                     qi_incld, ni_incld, qr_incld,
-                                     qr2qi_collect_tend, nr_collect_tend, physics::P3_Constants<Real>());
+      Functions::ice_rain_collection(
+          rho, temp, rhofaci, logn0r, table_val_nr_collect,
+          table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld,
+          qr2qi_collect_tend, nr_collect_tend,
+          p3::Functions<Real, DefaultDevice>::P3Runtime());
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
