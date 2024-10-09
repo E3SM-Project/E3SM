@@ -810,26 +810,6 @@ void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
         });
       });
  }
-// FIXME: check if we have ported these function in mam4xx. If no, let's move them there.
-KOKKOS_INLINE_FUNCTION
-void mmr2vmr(const Real q[gas_pcnst()],//in
-             const Real mw[gas_pcnst()],//in
-             Real vmr[gas_pcnst()])// out
-{
-for (int i = 0; i < gas_pcnst(); ++i) {
-   vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw[i]);
-}
-}//mmr2vmr
-// FIXME: check if we have ported these function in mam4xx. If no, let's move there.
-KOKKOS_INLINE_FUNCTION
-void vmr2mmr(const Real vmr[gas_pcnst()], //in
-             const Real mw[gas_pcnst()], // in
-            Real q[gas_pcnst()]) // out
-{
-for (int i = 0; i < gas_pcnst(); ++i) {
-   q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw[i]);
-}
-}//mmr2vmr
 
 } // namespace scream::mam_coupling
 

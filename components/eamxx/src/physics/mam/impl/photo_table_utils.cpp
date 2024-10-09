@@ -2,33 +2,8 @@
 
 namespace scream::impl {
 
-using mam4::utils::min_max_bound;
-
-// The following variables are chemistry mechanism dependent! See
-// mam4xx/src/mam4xx/gas_chem_mechanism.hpp)
-
-// number of gases+aerosols species
-using mam4::gas_chemistry::gas_pcnst;
-// number of species with external forcing
-using mam4::gas_chemistry::extcnt;
-// index of total atm density in invariant array
-using mam4::gas_chemistry::indexm;
-// number of chemical reactions
-using mam4::gas_chemistry::rxntot;
 // number of photolysis reactions
 using mam4::mo_photo::phtcnt;
-// number of invariants
-using mam4::gas_chemistry::nfs;
-
-// FIXME: Hardwired indices, should be obtained from a config file
-constexpr int ndx_h2so4 = 2;
-constexpr int synoz_ndx = -1;
-
-// Following (indices (ndxes?) are taken from mam4 validation data and
-// translated from
-// 1-based indices to 0-based indices)
-constexpr int usr_HO2_HO2_ndx = 1, usr_DMS_OH_ndx = 5, usr_SO2_OH_ndx = 3,
-              inv_h2o_ndx = 3;
 
 using HostView1D    = haero::DeviceType::view_1d<Real>::HostMirror;
 using HostViewInt1D = haero::DeviceType::view_1d<int>::HostMirror;
@@ -66,7 +41,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(
     const std::string &rsf_file, const std::string &xs_long_file) {
   // set up the lng_indexer and pht_alias_mult_1 views based on our
   // (hardwired) chemical mechanism
-  HostViewInt1D lng_indexer_h("lng_indexer(host)", mam4::mo_photo::phtcnt);
+  HostViewInt1D lng_indexer_h("lng_indexer(host)", phtcnt);
 
   int nw, nump, numsza, numcolo3, numalb, nt, np_xs;  // table dimensions
   scorpio::register_file(rsf_file, scorpio::Read);
@@ -112,7 +87,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(
 
   // read xsqy data (using lng_indexer_h for the first index)
   // FIXME: hard-coded for only one photo reaction.
-  for(int m = 0; m < mam4::mo_photo::phtcnt; ++m) {
+  for(int m = 0; m < phtcnt; ++m) {
     auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
     scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
   }
@@ -171,96 +146,6 @@ mam4::mo_photo::PhotoTableData read_photo_table(
       });
 
   return table;
-}
-
-// ================================================================
-//  Gas Phase Chemistry
-// ================================================================
-
-// performs gas phase chemistry calculations on a single level of a single
-// atmospheric column
-KOKKOS_INLINE_FUNCTION
-void gas_phase_chemistry(
-    // in
-    const Real temp, const Real dt,
-    const Real photo_rates[mam4::mo_photo::phtcnt], const Real extfrc[extcnt],
-    const Real invariants[nfs], const int (&clsmap_4)[gas_pcnst],
-    const int (&permute_4)[gas_pcnst],
-    // out
-    Real (&qq)[gas_pcnst], Real (&vmr0)[gas_pcnst]) {
-  //=====================================================================
-  // ... set rates for "tabular" and user specified reactions
-  //=====================================================================
-  Real reaction_rates[rxntot];
-  mam4::gas_chemistry::setrxt(reaction_rates,  // out
-                              temp);           // in
-
-  // set reaction rates based on chemical invariants
-  mam4::gas_chemistry::usrrxt(reaction_rates,                        // out
-                              temp, invariants, invariants[indexm],  // in
-                              usr_HO2_HO2_ndx, usr_DMS_OH_ndx,       // in
-                              usr_SO2_OH_ndx,                        // in
-                              inv_h2o_ndx);                          // in
-
-  mam4::gas_chemistry::adjrxt(reaction_rates,                   // out
-                              invariants, invariants[indexm]);  // in
-
-  //===================================
-  // Photolysis rates at time = t(n+1)
-  //===================================
-
-  // compute the rate of change from forcing
-  Real extfrc_rates[extcnt];  // [1/cm^3/s]
-  for(int mm = 0; mm < extcnt; ++mm) {
-    if(mm != synoz_ndx) {
-      extfrc_rates[mm] = extfrc[mm] / invariants[indexm];
-    }
-  }
-
-  // ... Form the washout rates
-  // FIXME: het_rates will be provided by sethet routine to be called before
-  // the vertical level parallel_for in the interface
-  Real het_rates[gas_pcnst] = {0};
-  // save h2so4 before gas phase chem (for later new particle nucleation)
-  Real del_h2so4_gasprod = qq[ndx_h2so4];
-
-  //===========================
-  // Class solution algorithms
-  //===========================
-
-  // copy photolysis rates into reaction_rates (assumes photolysis rates come
-  // first)
-  for(int i = 0; i < phtcnt; ++i) {
-    reaction_rates[i] = photo_rates[i];
-  }
-
-  // ... solve for "Implicit" species
-  using mam4::gas_chemistry::itermax;
-  bool factor[itermax];
-  for(int i = 0; i < itermax; ++i) {
-    factor[i] = true;
-  }
-
-  // initialize error tolerances
-  using mam4::gas_chemistry::clscnt4;
-  Real epsilon[clscnt4];
-  mam4::gas_chemistry::imp_slv_inti(epsilon);
-
-  // Mixing ratios before chemistry changes
-  for(int i = 0; i < gas_pcnst; ++i) {
-    vmr0[i] = qq[i];
-  }
-
-  // solve chemical system implicitly
-  Real prod_out[clscnt4], loss_out[clscnt4];
-  mam4::gas_chemistry::imp_sol(qq, reaction_rates, het_rates, extfrc_rates, dt,
-                               permute_4, clsmap_4, factor, epsilon, prod_out,
-                               loss_out);
-
-  // save h2so4 change by gas phase chem (for later new particle nucleation)
-  if(ndx_h2so4 > 0) {
-    del_h2so4_gasprod = qq[ndx_h2so4] - del_h2so4_gasprod;
-  }
 }
 
 }  // namespace scream::impl

@@ -395,15 +395,19 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
     EKAT_REQUIRE_MSG(tracer_data.ncols_data <= ncols_model,
-                     "Error! We do not allow to coarsen spa data to fit the "
+                     "Error! We do not allow to coarsen tracer external "
+                     "forcing data to fit the "
                      "model. We only allow\n"
-                     "       spa data to be at the same or coarser resolution "
+                     "       tracer external forcing data to be at the same or "
+                     "coarser resolution "
                      "as the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG(
         map_file != "",
-        "ERROR: Spa data is on a different grid than the model one,\n"
-        "       but spa_remap_file is missing from SPA parameter list.");
+        "ERROR: tracer external forcing data is on a different grid than the "
+        "model one,\n"
+        "       but tracer external forcing data remap file is missing from "
+        "tracer external forcing data parameter list.");
 
     remapper =
         std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
@@ -447,13 +451,13 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
 }  // create_tracer_data_reader
 
 inline void update_tracer_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader,
+    const std::shared_ptr<AtmosphereInput> &scorpio_reader,
     const int time_index,  // zero-based
     AbstractRemapper &tracer_horiz_interp, TracerData &tracer_data) {
   // 1. read from field
   scorpio_reader->read_variables(time_index);
-  // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same
-  // grid as model)
+  // 2. Run the horiz remapper (it is a do-nothing op if tracer external forcing
+  // data is on same grid as model)
   tracer_horiz_interp.remap(/*forward = */ true);
   //
   const int nvars = tracer_data.nvars_;
@@ -472,11 +476,12 @@ inline void update_tracer_data_from_file(
 
 }  // update_tracer_data_from_file
 inline void update_tracer_timestate(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &tracer_horiz_interp, TracerTimeState &time_state,
-    TracerData &data_tracer) {
+    const std::shared_ptr<AtmosphereInput> &scorpio_reader,
+    const util::TimeStamp &ts, AbstractRemapper &tracer_horiz_interp,
+    TracerTimeState &time_state, TracerData &data_tracer) {
   // Now we check if we have to update the data that changes monthly
-  // NOTE:  This means that SPA assumes monthly data to update.  Not
+  // NOTE:  This means that tracer external forcing assumes monthly data to
+  // update.  Not
   //        any other frequency.
   const auto month = ts.get_month() - 1;  // Make it 0-based
   if(month != time_state.current_month) {
@@ -484,7 +489,7 @@ inline void update_tracer_timestate(
     const int nvars        = data_tracer.nvars_;
     const auto ps          = data_tracer.ps;
 
-    // Update the SPA time state information
+    // Update the tracer external forcing time state information
     time_state.current_month = month;
     time_state.t_beg_month =
         util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
@@ -505,7 +510,7 @@ inline void update_tracer_timestate(
     // Assume the data is saved monthly and cycles in one year
     // Add offset_time_index to support cases where data is saved
     // from other periods of time.
-    // Update the SPA forcing data for this month and next month
+    // Update the tracer external forcing data for this month and next month
     // Start by copying next months data to this months data structure.
     // NOTE: If the timestep is bigger than monthly this could cause the wrong
     // values
@@ -685,11 +690,12 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
 }
 
 inline void advance_tracer_data(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader,
-    AbstractRemapper &tracer_horiz_interp, const util::TimeStamp &ts,
-    TracerTimeState &time_state, TracerData &data_tracer,
-    const const_view_2d &p_tgt, const const_view_2d &zi_tgt,
-    const view_2d output[]) {
+    const std::shared_ptr<AtmosphereInput> &scorpio_reader,   // in
+    AbstractRemapper &tracer_horiz_interp,                    // out
+    const util::TimeStamp &ts,                                // in
+    TracerTimeState &time_state, TracerData &data_tracer,     // out
+    const const_view_2d &p_tgt, const const_view_2d &zi_tgt,  // in
+    const view_2d output[]) {                                 // out
   /* Update the TracerTimeState to reflect the current time, note the addition
    * of dt */
   time_state.t_now = ts.frac_of_year_in_days();
