@@ -959,7 +959,8 @@ contains
         ierr = iMOAB_DetermineGhostEntities(mlnghid, 2, &   ! topological dimension
                                             nghostlayers, & ! number of ghost layers
                                             0 )             ! bridge dimension (vertex=0)
-        call errorout(ierr, 'failed to determine the ghost layer entities')
+        if (ierr > 0 )  &
+            call endrun('Error: failed to determine the ghost layer entities')
 
         ! define some useful tags on cells 
         tagtype = 0  ! dense, integer
@@ -1071,6 +1072,15 @@ contains
         ierr = iMOAB_SynchronizeTags(mlnghid, 4, tag_indices, entity_type)
         if (ierr > 0 )  &
           call endrun('Error: fail to synchronize element tags for ELM ')
+
+#ifdef MOABDEBUG
+        ! write out the local mesh file to disk (np tasks produce np files)
+        outfile = 'elm_local_mesh'//CHAR(0)
+        ierr = iMOAB_WriteLocalMesh(mlnghid, trim(outfile))
+        if (ierr > 0 )  &
+          call endrun('Error: fail to write ELM local meshes in h5m format')
+#endif
+
 
     ! Case where land and atmosphere share mesh
     else ! old point cloud mesh
