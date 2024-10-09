@@ -3777,7 +3777,7 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND} -envall</arg>
+          <arg name="ranks_bind">--no-vni --cpu-bind $ENV{RANKS_BIND} -envall</arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
