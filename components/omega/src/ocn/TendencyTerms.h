@@ -283,7 +283,7 @@ class TracerHorzAdvOnCell {
                                    const Array3DR8 &HTracersOnEdge) const {
 
       const I4 KStart  = KChunk * VecLength;
-      Real InvAreaCell = 1._Real / AreaCell(ICell);
+      const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real HAdvTmp[VecLength] = {0};
 
@@ -326,7 +326,7 @@ class TracerDiffOnCell {
                                    const Array2DR8 &MeanLayerThickEdge) const {
 
       const I4 KStart  = KChunk * VecLength;
-      Real InvAreaCell = 1. / AreaCell(ICell);
+      const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real DiffTmp[VecLength] = {0};
 
@@ -379,7 +379,7 @@ class TracerHyperDiffOnCell {
                                    const Array3DR8 &TrDel2Cell) const {
 
       const I4 KStart  = KChunk * VecLength;
-      Real InvAreaCell = 1. / AreaCell(ICell);
+      const Real InvAreaCell = 1._Real / AreaCell(ICell);
 
       Real HypTmp[VecLength] = {0};
 
