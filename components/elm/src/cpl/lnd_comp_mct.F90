@@ -846,7 +846,7 @@ contains
      use spmdmod          , only: masterproc
     use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_UpdateMeshInfo
 
     type(bounds_type) , intent(in)  :: bounds
     integer , intent(in) :: LNDID ! id of the land app

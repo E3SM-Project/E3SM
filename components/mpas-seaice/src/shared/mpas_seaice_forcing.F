@@ -74,11 +74,17 @@ contains
     logical, pointer :: &
          config_use_forcing, &
          config_use_data_icebergs, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols, &
+         config_use_atm_dust_file, &
+         config_use_iron_solubility_file
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_atm_dust_file", config_use_atm_dust_file)
+    call MPAS_pool_get_config(domain % configs, "config_use_iron_solubility_file", config_use_iron_solubility_file)
 
     if (config_use_forcing) then
 
@@ -93,6 +99,10 @@ contains
           call init_oceanic_bgc_forcing(domain)
 
     endif
+
+    if (config_use_zaerosols .and. (config_use_iron_solubility_file .or. &
+       config_use_atm_dust_file) )  &
+       call init_atm_iron_bgc_forcing(domain, clock)
 
     ! init the data iceberg forcing
     if (config_use_data_icebergs) call init_data_iceberg_forcing(domain, clock)
@@ -597,10 +607,16 @@ contains
 
     logical, pointer :: &
          config_use_forcing, &
-         config_use_data_icebergs
+         config_use_data_icebergs, &
+         config_use_zaerosols, &
+         config_use_atm_dust_file, &
+         config_use_iron_solubility_file
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_atm_dust_file", config_use_atm_dust_file)
+    call MPAS_pool_get_config(domain % configs, "config_use_iron_solubility_file", config_use_iron_solubility_file)
 
     if (config_use_forcing) then
 
@@ -616,6 +632,14 @@ contains
             firstTimeStep)
 
     endif
+
+    if (config_use_zaerosols .and. (config_use_iron_solubility_file .or. &
+      config_use_atm_dust_file) ) &
+       call atmospheric_aerosols_forcing(&
+            streamManager, &
+            domain, &
+            simulationClock, &
+            firstTimeStep)
 
     ! data iceberg forcing
     if (config_use_data_icebergs) then
@@ -657,7 +681,7 @@ contains
          config_dt
 
     character(len=strKIND), pointer :: &
-         config_atmospheric_forcing_type
+      config_atmospheric_forcing_type
 
     ! configurations
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
@@ -723,6 +747,55 @@ contains
     end do
 
   end subroutine atmospheric_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  atmospheric_aerosols_forcing
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date
+!> \details: reads data file for dust fluxes and dust-iron solubility
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine atmospheric_aerosols_forcing(&
+       streamManager, &
+       domain, &
+       simulationClock, &
+       firstTimeStep)
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock
+
+    logical, intent(in) :: &
+         firstTimeStep
+
+    type (block_type), pointer :: block
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    ! configurations
+    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
+    call MPAS_forcing_get_forcing(seaiceForcingGroups, &
+        'seaice_atm_bgc_forcing_monthly', streamManager, config_dt)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       ! convert the input forcing variables to the coupling variables
+       call prepare_atmospheric_dust_coupling_variables(block)
+
+       block => block % next
+    end do
+
+  end subroutine atmospheric_aerosols_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1043,6 +1116,74 @@ contains
     enddo ! iCell
 
   end subroutine prepare_atmospheric_coupling_variables_ISPOL
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_atmospheric_dust_coupling_variables
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date
+!> \details
+!> Defines the atm flux fields for dust if reading from a file
+!
+!-----------------------------------------------------------------------
+
+  subroutine prepare_atmospheric_dust_coupling_variables(block)
+
+    type (block_type), pointer :: block
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         atmosCoupling, &
+         atmosForcing, &
+         biogeochemistry
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         atmosDustFlux, &
+         atmosWetDustFlux, &
+         atmosDryDustFlux
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         dust_FLUZ_WET, &
+         dust_FLUZ_DRY
+
+    integer, pointer :: &
+         nCellsSolve, &
+         maxBCType, &
+         nzAerosols
+
+    integer :: &
+         iCell, &
+         iBioTracers, &
+         nDust
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+    ! zaerosols
+
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+    call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
+    call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
+    call MPAS_pool_get_array(biogeochemistry, "atmosWetDustFlux", atmosWetDustFlux)
+    call MPAS_pool_get_array(biogeochemistry, "atmosDryDustFlux", atmosDryDustFlux)
+    call MPAS_pool_get_array(atmosForcing, "dust_FLUZ_WET", dust_FLUZ_WET)
+    call MPAS_pool_get_array(atmosForcing, "dust_FLUZ_DRY", dust_FLUZ_DRY)
+
+    nDust = MAX(1,nzAerosols - maxBCType)
+    do iCell = 1, nCellsSolve
+       do iBioTracers = maxBCType + 1, nzAerosols
+          atmosDustFlux(iBioTracers,iCell) = (dust_FLUZ_WET(iCell) + dust_FLUZ_DRY(iCell))/nDust
+          atmosWetDustFlux(iBioTracers,iCell) = dust_FLUZ_WET(iCell)/nDust
+          atmosDryDustFlux(iBiotracers,iCell) = dust_FLUZ_DRY(iCell)/nDust
+      enddo
+    end do
+
+  end subroutine prepare_atmospheric_dust_coupling_variables
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1674,6 +1815,122 @@ contains
     end select
 
   end subroutine init_oceanic_bgc_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_atm_iron_bgc_forcing
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 5th April 2024
+!> \details
+!> Uses monthly iron solubility maps from CAM6-MIMI (Yan Feng)
+!  to convert dust to dissolved iron for bgc.
+!-----------------------------------------------------------------------
+
+  subroutine init_atm_iron_bgc_forcing(domain, clock)
+
+    type (domain_type) :: domain
+
+    type (MPAS_Clock_type) :: clock
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the dust iron solubility forcing group
+
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_atm_bgc_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! iron solubility fraction of wet dust iron
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         'IRON_Zolubility_wet', &
+         'DustIronMonthlyForcing', &
+         'atmos_forcing', &
+         'IRON_Zolubility_wet', &
+         'linear', &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! iron solubility fraction of dry dust iron
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         'IRON_Zolubility_dry', &
+         'DustIronMonthlyForcing', &
+         'atmos_forcing', &
+         'IRON_Zolubility_dry', &
+         'linear', &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! atmospheric wet dust flux
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         'dust_FLUZ_WET', &
+         'DustIronMonthlyForcing', &
+         'atmos_forcing', &
+         'dust_FLUZ_WET', &
+         'linear', &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! atmospheric dry dust flux
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         'dust_FLUZ_DRY', &
+         'DustIronMonthlyForcing', &
+         'atmos_forcing', &
+         'dust_FLUZ_DRY', &
+         'linear', &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! iron fraction in dust
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         'IRON_in_duzt_fraction', &
+         'DustIronMonthlyForcing', &
+         'atmos_forcing', &
+         'IRON_in_duzt_fraction', &
+         'linear', &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         'seaice_atm_bgc_forcing_monthly', &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_atm_iron_bgc_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -3177,10 +3434,12 @@ contains
     real(kind=RKIND), dimension(:,:), pointer :: &
          atmosBioFluxes, &
          atmosBlackCarbonFlux, &
-         atmosDustFlux
+         atmosDustFlux, &
+         atmosWetDustFlux, &
+         atmosDryDustFlux
 
     logical, pointer :: &
-         config_use_column_biogeochemistry
+         config_use_zaerosols
 
     block => domain % blocklist
     do while (associated(block))
@@ -3219,20 +3478,24 @@ contains
        atmosReferenceTemperature2m = 0.0_RKIND
        atmosReferenceHumidity2m    = 0.0_RKIND
 
-       ! biogeochemistry
-       call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       ! zaerosols
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols", config_use_zaerosols)
 
-       if (config_use_column_biogeochemistry) then
+       if (config_use_zaerosols) then
 
           call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 
           call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
           call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
           call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
+          call MPAS_pool_get_array(biogeochemistry, "atmosWetDustFlux", atmosWetDustFlux)
+          call MPAS_pool_get_array(biogeochemistry, "atmosDryDustFlux", atmosDryDustFlux)
 
           atmosBioFluxes              = 0.0_RKIND
           atmosBlackCarbonFlux        = 0.0_RKIND
           atmosDustFlux               = 0.0_RKIND
+          atmosWetDustFlux            = 0.0_RKIND
+          atmosDryDustFlux            = 0.0_RKIND
 
        endif
 
@@ -3396,16 +3659,21 @@ contains
          config_use_forcing, &
          config_use_prescribed_ice, &
          config_use_prescribed_ice_forcing, &
-         config_use_data_icebergs
+         config_use_data_icebergs, &
+         config_use_atm_dust_file, &
+         config_use_iron_solubility_file
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice_forcing", config_use_prescribed_ice_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
+    call MPAS_pool_get_config(domain % configs, "config_use_atm_dust_file", config_use_atm_dust_file)
+    call MPAS_pool_get_config(domain % configs, "config_use_iron_solubility_file", config_use_iron_solubility_file)
 
     if (config_use_forcing .or. &
         (config_use_prescribed_ice .and. config_use_prescribed_ice_forcing) .or. &
-        config_use_data_icebergs) then
+        config_use_data_icebergs .or. &
+        config_use_atm_dust_file .or. config_use_iron_solubility_file) then
 
        call MPAS_forcing_write_restart_times(seaiceForcingGroups)
 

@@ -129,7 +129,7 @@ void AtmosphereProcess
   if (m_comm.am_i_root())
     for (int i = 0; i < nslot; ++i)
       if (show[i])
-        fprintf(stderr, "exxhash> %4d-%9.5f %1d %16lx (%s)\n",
+        fprintf(stderr, "exxhash> %4d-%9.5f %1d %16" PRIx64 " (%s)\n",
                 timestamp().get_year(), timestamp().frac_of_year_in_days(),
                 i, gaccum[i], label.c_str());
 }
@@ -140,7 +140,7 @@ void AtmosphereProcess::print_fast_global_state_hash (const std::string& label) 
   HashType gaccum;
   bfbhash::all_reduce_HashType(m_comm.mpi_comm(), &laccum, &gaccum, 1);
   if (m_comm.am_i_root())
-    fprintf(stderr, "bfbhash> %14d %16lx (%s)\n",
+    fprintf(stderr, "bfbhash> %14d %16" PRIx64 " (%s)\n",
             timestamp().get_num_steps(), gaccum, label.c_str());
 }
 

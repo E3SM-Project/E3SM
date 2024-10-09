@@ -12,7 +12,7 @@ module PhosphorusStateUpdate2Mod
   !use PhosphorusStateType , only : phosphorusstate_type
   !use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
-  use pftvarcon           , only : npcropmin
+  use pftvarcon           , only : iscft
   use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
@@ -182,7 +182,7 @@ contains
          veg_ps%retransp(p)   = veg_ps%retransp(p)   - veg_pf%hrv_retransp_to_litter(p)   * dt
          veg_ps%ppool(p)      = veg_ps%ppool(p)      - veg_pf%hrv_ppool_to_litter(p)      * dt
 
-       if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+       if (iscft(ivt(p))) then ! skip 2 generic crops
            veg_ps%livestemp(p)= veg_ps%livestemp(p)  - veg_pf%hrv_livestemp_to_prod1p(p)  * dt
            veg_ps%leafp(p)    = veg_ps%leafp(p)      - veg_pf%hrv_leafp_to_prod1p(p)      * dt
            veg_ps%grainp(p)   = veg_ps%grainp(p)     - veg_pf%hrv_grainp_to_prod1p(p)     * dt

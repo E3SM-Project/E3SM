@@ -1,0 +1,68 @@
+%YAML 1.1
+---
+filename_prefix: scream_output.decadal.3hourlyINST_coarse.h
+iotype: pnetcdf
+Averaging Type: Instant
+Max Snapshots Per File: 8  # one file per day
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+Fields:
+  Physics PG2:
+    Field Names:
+    # 2D vars for storm analysis
+    - SeaLevelPressure
+    - U_at_model_bot
+    - V_at_model_bot
+    - wind_speed_10m
+    - U_at_925hPa
+    - V_at_925hPa
+    - U_at_850hPa
+    - V_at_850hPa
+    - U_at_700hPa
+    - V_at_700hPa
+    - U_at_500hPa
+    - V_at_500hPa
+    - U_at_300hPa
+    - V_at_300hPa
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    - T_2m
+    - qv_2m
+    - T_mid_at_925hPa
+    - T_mid_at_850hPa
+    - T_mid_at_700hPa
+    - T_mid_at_500hPa
+    - T_mid_at_300hPa
+    - RelativeHumidity_at_925hPa
+    - RelativeHumidity_at_850hPa
+    - RelativeHumidity_at_700hPa
+    - RelativeHumidity_at_500hPa
+    - RelativeHumidity_at_300hPa
+    - z_mid_at_925hPa
+    - z_mid_at_850hPa
+    - z_mid_at_700hPa
+    - z_mid_at_500hPa
+    - z_mid_at_300hPa
+    # 2D vars For ACI diagnostics
+    - SW_clrsky_flux_up_at_model_top
+    - SW_flux_up_at_model_top
+    - SW_flux_dn_at_model_top
+    - LiqWaterPath
+    - precip_liq_surf_mass_flux
+    - precip_ice_surf_mass_flux
+    - IceWaterPath
+    - cldfrac_tot_for_analysis
+    - cldfrac_liq
+    - omega_at_500hPa
+    - omega_at_700hPa
+    - omega_at_850hPa
+    - PotentialTemperature_at_700hPa
+    - PotentialTemperature_at_1000hPa
+    # 3D vars for nudging
+    - U
+    - V
+output_control:
+  Frequency: 3
+  frequency_units: nhours
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true

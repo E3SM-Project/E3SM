@@ -194,11 +194,11 @@ Valid values: 'none', 'data', 'sealevelmodel'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_slm_coupling_interval" type="char*1024"
+<entry id="config_slm_coupling_interval" type="integer"
 	category="solidearth" group="solidearth">
-Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval
+Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval.
 
-Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'
+Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1218,7 +1218,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_tangent_slope_calculation" type="char*1024"
 	category="subglacial_hydro" group="subglacial_hydro">
-Selection of the method for calculating the tangent component of slope at edges. 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes. 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles. 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method.
+Selection of the method for calculating the tangent component of slope at edges. 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes. 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles. 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration. 'from_normal_slope' uses a larger stencil, so may therefore produce a smoother 'gradMagPhiEdge' field. Detailed testing yielded nearly identical results between 'from_normal_slope' and 'from_vertex_barycentric' methods, but 'from_normal_slope' seemed to produce slightly more stable results at the grounding line.
 
 Valid values: 'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'
 Default: Defined in namelist_defaults.xml
@@ -1320,6 +1320,14 @@ Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_SGH_use_iceThicknessHydro" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_SGH_chnl_active" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
 activate channels in subglacial hydrology model
@@ -1397,6 +1405,14 @@ Default: Defined in namelist_defaults.xml
 source for the basalMeltInput term.  'file' takes whatever field was input and performs no calculation.  'thermal' uses the groundedBasalMassBal field calculated by the thermal model.  'basal_heat' calculates a melt rate assuming the entirety of the basal heat flux (basalFrictionFlux+basalHeatFlux) goes to melting ice at the bed.  This is calculated in the SGH module and is independent of any calculations in the thermal model.
 
 Valid values: 'file', 'thermal', 'basal_heat'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_iter_smooth_waterPressureSlopeNormal" type="integer"
+	category="subglacial_hydro" group="subglacial_hydro">
+number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure.
+
+Valid values: positive integer or zero
 Default: Defined in namelist_defaults.xml
 </entry>
 

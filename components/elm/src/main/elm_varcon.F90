@@ -249,7 +249,7 @@ contains
     allocate( dzsoifl(1:nlevsoifl            ))
 
     if (use_extrasnowlayers) then
-       h2osno_max = 30000._r8
+        h2osno_max = 30000._r8
     end if
 
   end subroutine elm_varcon_init

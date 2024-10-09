@@ -95,6 +95,15 @@
 					description="Dimethyl Sulfoniopropionate Surface Flux Due to Runoff"
 				/>
 			</var_array>
+			<var_array name="DMSTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFluxSubglacialRunoff" array_group="DMSSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux Due to Subglacial Runoff"
+				/>
+				<var name="DMSPSurfaceFluxSubglacialRunoff" array_group="DMSSurfaceFluxSubglacialRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux Due to Subglacial Runoff"
+				/>
+			</var_array>
 			<var_array name="DMSTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="DMSSurfaceFluxRemoved" array_group="DMSSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"

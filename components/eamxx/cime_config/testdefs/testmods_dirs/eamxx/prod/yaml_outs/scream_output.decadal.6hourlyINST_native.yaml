@@ -1,0 +1,28 @@
+%YAML 1.1
+---
+filename_prefix: scream_output.decadal.6hourlyINST_native.h
+iotype: pnetcdf
+Averaging Type: Instant
+Max Snapshots Per File: 4  # one file per day
+Fields:
+  Physics PG2:
+    Field Names:
+    # For storm analysis
+    - SeaLevelPressure
+    - wind_speed_10m
+    - z_mid_at_500hPa
+    - z_mid_at_200hPa
+    # For wind turbine study
+    - wind_speed_at_100m_above_surface
+    # For atmospheric rivers
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    # Others
+    - omega_at_500hPa
+    - omega_at_850hPa
+output_control:
+  Frequency: 6
+  frequency_units: nhours
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true

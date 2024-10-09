@@ -75,8 +75,11 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
       REQUIRE(SDS.ustar2[s] >= 0);
     }
 
-    // Call the fortran implementation
-    diag_second_moments_lbycond(SDS);
+    // Call the C++ implementation
+    diag_second_moments_lbycond_f(SDS.shcol, SDS.wthl_sfc, SDS.wqw_sfc, SDS.uw_sfc,
+                                  SDS.vw_sfc, SDS.ustar2, SDS.wstar, SDS.wthl_sec,
+                                  SDS.wqw_sec, SDS.uw_sec, SDS.vw_sec, SDS.wtke_sec,
+                                  SDS.thl_sec, SDS.qw_sec, SDS.qwthl_sec);
 
     // Verify output is as expected
     for (Int s = 0; s < shcol; ++s){

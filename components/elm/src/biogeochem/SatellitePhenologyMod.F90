@@ -304,7 +304,7 @@ contains
     ! Calculates leaf areas (tlai, elai),  stem areas (tsai, esai) and height (htop).
     !
     ! !USES:
-    use pftvarcon,  only : noveg, nbrdlf_dcd_brl_shrub
+    use pftvarcon,  only : woody
     use elm_varctl, only : use_fates_sp
     !
     ! !ARGUMENTS:
@@ -371,7 +371,7 @@ contains
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007.
 
-         if (veg_pp%itype(p) > noveg .and. veg_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (woody(veg_pp%itype(p)) >= 1.0_r8) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else

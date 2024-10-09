@@ -17,7 +17,7 @@ module VegetationPropertiesType
   ! !PUBLIC TYPES:
   type, public :: vegetation_properties_type
      integer , pointer :: noveg         (:)   => null() ! value for not vegetated
-     integer , pointer :: tree          (:)   => null() ! tree or not?
+     !integer , pointer :: tree          (:)   => null() ! tree or not?
      real(r8), pointer :: smpso         (:)   => null() ! soil water potential at full stomatal opening (mm)
      real(r8), pointer :: smpsc         (:)   => null() ! soil water potential at full stomatal closure (mm)
      real(r8), pointer :: fnitr         (:)   => null() ! foliage nitrogen limitation factor (-)
@@ -143,6 +143,13 @@ module VegetationPropertiesType
      real(r8), pointer :: nstor(:)         => null()   !Nitrogen storage pool timescale
      real(r8), pointer :: br_xr(:)         => null()   !Base rate for excess respiration
      real(r8), pointer :: tc_stress        => null()   !Critial temperature for moisture stress
+     ! new properties for flexible PFT
+     real(r8), pointer :: climatezone(:)   => null()   !climate zone adapted
+     real(r8), pointer :: nonvascular(:)   => null()   !nonvascular type or vascular
+     real(r8), pointer :: graminoid(:)     => null()   !graminoid or not
+     logical,  pointer :: iscft(:)         => null()   !.false. = generic crop, .true. = prognostic crop
+     real(r8), pointer :: needleleaf(:)    => null()   !needleleaf or broadleaf
+     real(r8), pointer :: nfixer(:)        => null()   !cablity of nitrogen fixation from atm. N2
 
 
    contains
@@ -159,7 +166,7 @@ contains
     !
     ! !USES:
     use elm_varpar, only : numrad, numpft
-    use pftvarcon , only : ntree, smpso, smpsc, fnitr
+    use pftvarcon , only : smpso, smpsc, fnitr
     use pftvarcon , only : z0mr, displar, dleaf, rhol, rhos, taul, taus, xl
     use pftvarcon , only : c3psn, slatop, dsladlai, leafcn, flnr, woody
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
@@ -181,6 +188,8 @@ contains
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
     use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd
+    ! new properties for flexible PFT
+    use pftvarcon , only : climatezone, nonvascular, graminoid, iscft,needleleaf, nfixer
     !
 
     class (vegetation_properties_type) :: this
@@ -190,7 +199,7 @@ contains
     !------------------------------------------------------------------------
 
     allocate(this%noveg         (0:numpft))        ; this%noveg        (:)   =huge(1)
-    allocate(this%tree          (0:numpft))        ; this%tree         (:)   =huge(1)
+    !allocate(this%tree          (0:numpft))        ; this%tree         (:)   =huge(1)
     allocate(this%smpso         (0:numpft))        ; this%smpso        (:)   =spval
     allocate(this%smpsc         (0:numpft))        ; this%smpsc        (:)   =spval
     allocate(this%fnitr         (0:numpft))        ; this%fnitr        (:)   =spval
@@ -305,14 +314,23 @@ contains
     allocate(this%tc_stress    )
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    ! new properties for flexible PFT
+    allocate( this%climatezone(0:numpft))                        ; this%climatezone(:)           =spval
+    allocate( this%nonvascular(0:numpft))                        ; this%nonvascular(:)           =spval
+    allocate( this%graminoid(0:numpft))                          ; this%graminoid(:)             =spval
+    allocate( this%iscft(0:numpft))                              ; this%iscft(:)                 =.false.
+    allocate( this%needleleaf(0:numpft))                         ; this%needleleaf(:)            =spval
+    allocate( this%nfixer(0:numpft))                             ; this%nfixer(:)                =spval
+    ! -----------------------------------------------------------------------------------------------------------
 
     do m = 0,numpft
 
-       if (m <= ntree) then
-          this%tree(m) = 1
-       else
-          this%tree(m) = 0
-       end if
+       ! not needed anymore: woody(m)=1 for tree, 2 for shrub, or 0 for any other
+       !if (woody(m) == 1) then
+       !   this%tree(m) = 1
+       !else
+       !   this%tree(m) = 0
+       !end if
 
        do ib = 1,numrad
           this%rhol(m,ib)   = rhol(m,ib)
@@ -392,6 +410,13 @@ contains
        this%mbbopt(m)       = mbbopt(m)
        this%nstor(m)        = nstor(m)
        this%br_xr(m)        = br_xr(m)
+       ! new properties for flexible PFT
+       this%climatezone(m)  = climatezone(m)
+       this%nonvascular(m)  = nonvascular(m)
+       this%graminoid(m)    = graminoid(m)
+       this%iscft(m)        = iscft(m)
+       this%needleleaf(m)   = needleleaf(m)
+       this%nfixer(m)       = nfixer(m)
 
     end do
 

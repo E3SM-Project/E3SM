@@ -3,7 +3,11 @@ Post run I/O processing
 """
 import os
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import new_lid, run_and_log_case_status
+try:
+    from CIME.utils                 import new_lid, run_and_log_case_status
+except ImportError:
+    from CIME.utils                 import new_lid
+    from CIME.status                import run_and_log_case_status
 
 logger = logging.getLogger(__name__)
 

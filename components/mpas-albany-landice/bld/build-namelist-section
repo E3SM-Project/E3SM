@@ -225,6 +225,7 @@ add_default($nl, 'config_SGH_bed_roughness');
 add_default($nl, 'config_SGH_bed_roughness_max');
 add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
+add_default($nl, 'config_SGH_use_iceThicknessHydro');
 add_default($nl, 'config_SGH_chnl_active');
 add_default($nl, 'config_SGH_chnl_include_DCFL');
 add_default($nl, 'config_SGH_chnl_alpha');
@@ -235,6 +236,7 @@ add_default($nl, 'config_SGH_incipient_channel_width');
 add_default($nl, 'config_SGH_include_pressure_melt');
 add_default($nl, 'config_SGH_shmip_forcing');
 add_default($nl, 'config_SGH_basal_melt');
+add_default($nl, 'config_SGH_iter_smooth_waterPressureSlopeNormal');
 
 ##################################
 # Namelist group: AM_globalStats #

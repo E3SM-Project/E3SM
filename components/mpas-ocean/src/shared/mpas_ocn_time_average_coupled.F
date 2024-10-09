@@ -134,15 +134,25 @@ module ocn_time_average_coupled
            !$omp end parallel
         end if
 
-        if(config_remove_AIS_coupler_runoff) then
+        if(config_remove_ais_river_runoff) then
            call mpas_pool_get_array(forcingPool, 'avgRemovedRiverRunoffFlux', avgRemovedRiverRunoffFlux)
+
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgRemovedRiverRunoffFlux(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
+           !$omp end parallel
+        end if
+
+        if(config_remove_ais_ice_runoff) then
            call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
            call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
 
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-              avgRemovedRiverRunoffFlux(iCell) = 0.0_RKIND
               avgRemovedIceRunoffFlux(iCell) = 0.0_RKIND
               avgRemovedIceRunoffHeatFlux(iCell) = 0.0_RKIND
            end do
@@ -373,18 +383,29 @@ module ocn_time_average_coupled
 
         end if
 
-        if (config_remove_AIS_coupler_runoff) then
+        if (config_remove_ais_river_runoff) then
            call mpas_pool_get_array(forcingPool, 'avgRemovedRiverRunoffFlux', avgRemovedRiverRunoffFlux)
-           call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
-           call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
            call mpas_pool_get_array(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFlux)
-           call mpas_pool_get_array(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFlux)
 
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgRemovedRiverRunoffFlux(iCell) = ( avgRemovedRiverRunoffFlux(iCell) * nAccumulatedCoupled &
                                                + removedRiverRunoffFlux(iCell) ) / ( nAccumulatedCoupled + 1)
+           end do
+           !$omp end do
+           !$omp end parallel
+
+        end if
+
+        if (config_remove_ais_ice_runoff) then
+           call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
+           call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
+           call mpas_pool_get_array(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFlux)
+
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
               avgRemovedIceRunoffFlux(iCell) = ( avgRemovedIceRunoffFlux(iCell) * nAccumulatedCoupled &
                                              + removedIceRunoffFlux(iCell) ) / ( nAccumulatedCoupled + 1)
               avgRemovedIceRunoffHeatFlux(iCell) = ( avgRemovedIceRunoffHeatFlux(iCell) * nAccumulatedCoupled &

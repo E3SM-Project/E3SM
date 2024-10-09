@@ -11,6 +11,7 @@ if (SCREAM_DOUBLE_PRECISION)
       add_subdirectory(mam/shoc_cldfrac_mam4_aci_p3_mam4_optics_rrtmgp)
       add_subdirectory(mam/p3_mam4_wetscav)
       add_subdirectory(mam/shoc_cldfrac_p3_wetscav)
+      add_subdirectory(mam/mam4_srf_online_emiss_mam4_constituent_fluxes)
     endif()
 endif()
 

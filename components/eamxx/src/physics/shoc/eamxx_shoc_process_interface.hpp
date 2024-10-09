@@ -382,13 +382,13 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
     static constexpr int num_1d_scalar_ncol = 4;
 #else
     static constexpr int num_1d_scalar_ncol = 15;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
     static constexpr int num_2d_vector_mid  = 18;
     static constexpr int num_2d_vector_int  = 12;
 #else
@@ -401,7 +401,7 @@ public:
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_1d<Real> se_b;
     uview_1d<Real> ke_b;
     uview_1d<Real> wv_b;
@@ -448,7 +448,7 @@ public:
     uview_2d<Spack> w3;
     uview_2d<Spack> wqls_sec;
     uview_2d<Spack> brunt;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_2d<Spack> rho_zt;
     uview_2d<Spack> shoc_qv;
     uview_2d<Spack> tabs;
@@ -506,7 +506,7 @@ protected:
   SHF::SHOCOutput output;
   SHF::SHOCHistoryOutput history_output;
   SHF::SHOCRuntime runtime_options;
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   SHF::SHOCTemporaries temporaries;
 #endif
 

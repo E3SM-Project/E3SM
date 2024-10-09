@@ -124,7 +124,7 @@ contains
           if (pft_type /= noveg) then
              my_leaf_seed = leafc_seed_param * &
                   SpeciesTypeMultiplier(species, pft_type, COMPONENT_LEAF)
-             if (veg_vp%woody(pft_type) == 1._r8) then
+             if (veg_vp%woody(pft_type) >= 1.0_r8) then
                 my_deadstem_seed = deadstemc_seed_param * &
                      SpeciesTypeMultiplier(species, pft_type, COMPONENT_DEADWOOD)
              end if

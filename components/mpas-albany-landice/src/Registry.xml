@@ -145,9 +145,9 @@
 		            description="Selection of the method for bedrock uplift calculation."
 		            possible_values="'none', 'data', 'sealevelmodel'"
         />
-        <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
-            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
-            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
+        <nml_option name="config_slm_coupling_interval" type="integer" default_value="2" units="years"
+            description="Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval."
+            possible_values="Any positive integer"
 		/>
         <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
             description="File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model."
@@ -842,6 +842,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!-- If restart file sizes become too large, eigencalvingParameter,
                              groundedVonMisesThresholdStress, and floatingVonMisesThresholdStress
                              could be moved to packages. -->
@@ -869,7 +870,8 @@
                         <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
 			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
                         <var name="externalWaterInput" packages="hydro"/>
-                        <!-- SGH state variables: -->
+                        <!-- SGH variables: -->
+                        <var name="deltatSGH" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 			<var name="tillWaterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
@@ -935,6 +937,7 @@
                                 input_interval="initial_only"
                                 runtime_format="single_file">
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
                         <var name="nVerticesInRegion"/>
@@ -1125,10 +1128,10 @@ is the value of that variable from the *previous* time level!
                 />
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity;hydro"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity;hydro"
 		/>
 		<!-- Variables only needed by HO solver -->
 		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
@@ -1733,6 +1736,9 @@ is the value of that variable from the *previous* time level!
         <var_struct name="regions" time_levs="1">
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless" default_value="1"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <var name="regionEdgeMasks" type="integer" dimensions="nRegions nEdges" units="unitless" default_value="1"
+	       description="masks set to 1 in edges that fall within a given region and 0 otherwise"
 	       />
 	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"

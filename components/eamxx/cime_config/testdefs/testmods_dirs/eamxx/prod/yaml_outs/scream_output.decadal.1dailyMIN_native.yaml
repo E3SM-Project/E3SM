@@ -1,0 +1,16 @@
+%YAML 1.1
+---
+filename_prefix: scream_output.decadal.1dailyMIN_native.h
+iotype: pnetcdf
+Averaging Type: Min
+Max Snapshots Per File: 1
+Fields:
+  Physics PG2:
+    Field Names:
+    - T_2m
+output_control:
+  Frequency: 1
+  frequency_units: ndays
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true

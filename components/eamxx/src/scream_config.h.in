@@ -45,8 +45,12 @@
 // Whether or not to run RRTMGP debug checks
 #cmakedefine SCREAM_RRTMGP_DEBUG
 
-// Whether monolithic kernels are on
+// Whether or not small kernels are used in ALL targets that support them
 #cmakedefine SCREAM_SMALL_KERNELS
+// Whether or not small kernels are used in P3
+#cmakedefine SCREAM_P3_SMALL_KERNELS
+// Whether or not small kernels are used in SHOC
+#cmakedefine SCREAM_SHOC_SMALL_KERNELS
 
 // The sha of the last commit
 #define EAMXX_GIT_VERSION "${EAMXX_GIT_VERSION}"

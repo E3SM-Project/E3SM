@@ -14,15 +14,26 @@ namespace scream {
  * exactly ONE instance of this class in its list of subcomponents.
  */
 
+// rrtmgp is performance tuned for layout left views but will accept any
+// view. We probably want to stick with layout left views for performance
+// reasons even though this requires us to make copies of our fields (they
+// are layout right).
+#define RRTMGP_LAYOUT_LEFT
+
 class RRTMGPRadiation : public AtmosphereProcess {
 public:
-  using KT        = ekat::KokkosTypes<DefaultDevice>;
-  using real1dk   = typename KT::template view_1d<Real>;
-  using real2dk   = typename KT::template view_2d<Real>;
-  using real3dk   = typename KT::template view_3d<Real>;
-  using creal1dk   = typename KT::template view_1d<const Real>;
-  using creal2dk   = typename KT::template view_2d<const Real>;
-  using creal3dk   = typename KT::template view_3d<const Real>;
+  using KT         = ekat::KokkosTypes<DefaultDevice>;
+#ifdef RRTMGP_LAYOUT_LEFT
+  using layout_t   = Kokkos::LayoutLeft;
+#else
+  using layout_t   = typename ekat::KokkosTypes<DefaultDevice>::Layout;
+#endif
+  using real1dk    = Kokkos::View<Real*, DefaultDevice>;
+  using real2dk    = Kokkos::View<Real**, layout_t, DefaultDevice>;
+  using real3dk    = Kokkos::View<Real***, layout_t, DefaultDevice>;
+  using creal1dk   = Kokkos::View<const Real*, DefaultDevice>;
+  using creal2dk   = Kokkos::View<const Real**, layout_t, DefaultDevice>;
+  using creal3dk   = Kokkos::View<const Real***, layout_t, DefaultDevice>;
   using ureal1dk  = Unmanaged<real1dk>;
   using ureal2dk  = Unmanaged<real2dk>;
   using ureal3dk  = Unmanaged<real3dk>;
@@ -32,7 +43,8 @@ public:
 
   using ci_string = ekat::CaseInsensitiveString;
 
-  using layout_t = typename ekat::KokkosTypes<DefaultDevice>::Layout;
+  using lrreal2dk   = typename KT::template view_2d<Real>;
+  using ulrreal2dk  = Unmanaged<lrreal2dk>;
 
 #ifdef RRTMGP_ENABLE_KOKKOS
   using interface_t = rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
@@ -97,7 +109,7 @@ public:
   // These are the gases that we keep track of
   int m_ngas;
   std::vector<ci_string>   m_gas_names;
-  real1dk             m_gas_mol_weights;
+  real1dk                  m_gas_mol_weights;
 #ifdef RRTMGP_ENABLE_YAKL
   GasConcs                 m_gas_concs;
 #endif

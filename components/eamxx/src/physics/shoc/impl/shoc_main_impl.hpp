@@ -61,7 +61,7 @@ Int Functions<S,D>::shoc_init(
   return host_view(0);
 }
 
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::shoc_main_internal(
@@ -586,7 +586,7 @@ Int Functions<S,D>::shoc_main(
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
   const SHOCHistoryOutput& shoc_history_output  // Output (diagnostic)
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   , const SHOCTemporaries& shoc_temporaries     // Temporaries for small kernels
 #endif
                               )
@@ -608,7 +608,7 @@ Int Functions<S,D>::shoc_main(
   const Scalar Ckh           = shoc_runtime.Ckh;
   const Scalar Ckm           = shoc_runtime.Ckm;
 
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
 
   // SHOC main loop

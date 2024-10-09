@@ -553,7 +553,7 @@
             enddo
          enddo
          endif
-  
+
          call shift_ice (ntrcr,    ncat,        &
                          trcr_depend,           &
                          trcr_base,             &
@@ -913,7 +913,9 @@
          dvint       ! snow interior layer
 
       real (kind=dbl_kind), dimension (ncat) :: &
-         vicen_init   ! volume per unit area of ice (m)
+         vicen_init, &   ! initial volume per unit area of ice (m)
+         aicen_init, &   ! initial area
+         vsnon_init      ! initial volume of snow (m)
 
       if (rside > c0) then ! grid cells with lateral melting.
 
@@ -944,6 +946,8 @@
 
             ! state variables
             vicen_init(n) = vicen(n)
+            aicen_init(n) = aicen(n)
+            vsnon_init(n) = vsnon(n)
             aicen(n) = aicen(n) * (c1 - rside)
             vicen(n) = vicen(n) * (c1 - rside)
             vsnon(n) = vsnon(n) * (c1 - rside)
@@ -980,8 +984,8 @@
       !-----------------------------------------------------------------
 
             if (z_tracers) then   ! snow tracers
-               dvssl  = min(p5*vsnon(n)/real(nslyr,kind=dbl_kind), hs_ssl*aicen(n))       !snow surface layer
-               dvint  = vsnon(n)- dvssl                         !snow interior
+               dvssl  = min(p5*vsnon_init(n)/real(nslyr,kind=dbl_kind), hs_ssl*aicen_init(n))       !snow surface layer
+               dvint  = vsnon_init(n)- dvssl                         !snow interior
                do k = 1, nbtrcr
                   flux_bio(k) = flux_bio(k) &
                               + (trcrn(bio_index(k)+nblyr+1,n)*dvssl  &

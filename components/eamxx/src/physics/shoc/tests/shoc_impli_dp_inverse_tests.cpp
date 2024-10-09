@@ -73,8 +73,10 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
       }
     }
 
-    // Call the fortran implementation
-    dp_inverse(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    dp_inverse_f(SDS.nlev, SDS.shcol, SDS.rho_zt, SDS.dz_zt, SDS.rdp_zt);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Verify result
     for(Int s = 0; s < shcol; ++s) {

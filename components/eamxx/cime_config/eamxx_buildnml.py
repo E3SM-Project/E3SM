@@ -4,7 +4,7 @@
 Used by buildnml. See buildnml for documetation.
 """
 
-import os, sys, re
+import os, sys, re, pwd, grp, stat, getpass
 from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
@@ -126,7 +126,7 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
      Please, ensure restart happens on a step when rad is ON
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
@@ -181,7 +181,8 @@ def perform_consistency_checks(case, xml):
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
-                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
+                    f"restart frequency ({rest_n} steps).\n"
                     " Please, ensure restart happens on a step when rad is ON")
         elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
             if rest_opt in ["nseconds", "nsecond"]:
@@ -952,7 +953,37 @@ def create_input_data_list_file(case,caseroot):
             # Only add files whose full path starts with the CIME's input data location
             if file_path.startswith(din_loc_root):
                 fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+                if os.path.exists(file_path):
+                    if os.path.isdir(file_path):
+                        raise IsADirectoryError(f"Input file '{file_path}' is a directory, not a regular file.")
+                    if not os.path.isfile(file_path):
+                        raise OSError(f"Input file '{file_path}' exists but is not a regular file.")
+                    if not os.access(file_path,os.R_OK):
+                        try:
+                            file_stat = os.stat(file_path)
 
+                            # Get owner and group names
+                            owner = pwd.getpwuid(file_stat.st_uid).pw_name
+                            group = grp.getgrgid(file_stat.st_gid).gr_name
+
+                            # Get file permissions
+                            permissions = stat.filemode(file_stat.st_mode)
+
+                        except Exception as e:
+                            raise RuntimeError(f"Error retrieving file info for '{file_path}': {e}") from e
+
+                        curr_user = getpass.getuser()
+                        user_info = pwd.getpwnam(curr_user)
+                        group_ids = os.getgrouplist(curr_user, user_info.pw_gid)
+                        curr_groups = [grp.getgrgid(gid).gr_name for gid in group_ids]
+
+                        raise PermissionError ("Input file exists but it is not readable for current user\n"
+                            f" - file name: {file_path}\n"
+                            f" - file owner: {owner}\n"
+                            f" - file group: {group}\n"
+                            f" - permissions: {permissions}\n"
+                            f" - current user: {curr_user}\n"
+                            f" - current user groups: {curr_groups}\n")
 
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case, caseroot):

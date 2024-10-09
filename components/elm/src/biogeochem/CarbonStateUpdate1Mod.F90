@@ -11,7 +11,7 @@ module CarbonStateUpdate1Mod
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
   use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
-  use pftvarcon               , only : npcropmin, nc3crop
+  use pftvarcon               , only : iscft
   use CNDecompCascadeConType  , only : decomp_cascade_type
   use CNStateType             , only : cnstate_type
   use CNDecompCascadeConType  , only : decomp_cascade_con
@@ -274,7 +274,7 @@ contains
          veg_cs%leafc_xfer(p)      = veg_cs%leafc_xfer(p)  - veg_cf%leafc_xfer_to_leafc(p)*dt
          veg_cs%frootc(p)          = veg_cs%frootc(p)      + veg_cf%frootc_xfer_to_frootc(p)*dt
          veg_cs%frootc_xfer(p)     = veg_cs%frootc_xfer(p) - veg_cf%frootc_xfer_to_frootc(p)*dt
-             if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
                 veg_cs%livestemc(p)       = veg_cs%livestemc(p)       + veg_cf%livestemc_xfer_to_livestemc(p)*dt
                 veg_cs%livestemc_xfer(p)  = veg_cs%livestemc_xfer(p)  - veg_cf%livestemc_xfer_to_livestemc(p)*dt
                 veg_cs%deadstemc(p)       = veg_cs%deadstemc(p)       + veg_cf%deadstemc_xfer_to_deadstemc(p)*dt
@@ -284,7 +284,7 @@ contains
                 veg_cs%deadcrootc(p)      = veg_cs%deadcrootc(p)      + veg_cf%deadcrootc_xfer_to_deadcrootc(p)*dt
                 veg_cs%deadcrootc_xfer(p) = veg_cs%deadcrootc_xfer(p) - veg_cf%deadcrootc_xfer_to_deadcrootc(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
             veg_cs%livestemc(p)       = veg_cs%livestemc(p)      + veg_cf%livestemc_xfer_to_livestemc(p)*dt
             veg_cs%livestemc_xfer(p)  = veg_cs%livestemc_xfer(p) - veg_cf%livestemc_xfer_to_livestemc(p)*dt
@@ -297,13 +297,13 @@ contains
          veg_cs%frootc(p) = veg_cs%frootc(p) - veg_cf%frootc_to_litter(p)*dt
 
          ! livewood turnover fluxes
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%livestemc(p)  = veg_cs%livestemc(p)  - veg_cf%livestemc_to_deadstemc(p)*dt
             veg_cs%deadstemc(p)  = veg_cs%deadstemc(p)  + veg_cf%livestemc_to_deadstemc(p)*dt
             veg_cs%livecrootc(p) = veg_cs%livecrootc(p) - veg_cf%livecrootc_to_deadcrootc(p)*dt
             veg_cs%deadcrootc(p) = veg_cs%deadcrootc(p) + veg_cf%livecrootc_to_deadcrootc(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%livestemc(p)  = veg_cs%livestemc(p)  - veg_cf%livestemc_to_litter(p)*dt
             veg_cs%grainc(p)     = veg_cs%grainc(p)     - veg_cf%grainc_to_food(p)*dt
 
@@ -315,11 +315,11 @@ contains
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_to_xsmrpool(p)*dt
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%leaf_curmr(p)*dt
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%froot_curmr(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livestem_curmr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livecroot_curmr(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%livestem_curmr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%grain_curmr(p)*dt
          end if
@@ -333,11 +333,11 @@ contains
          if (nu_com .ne. 'RD') then
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%xsmrpool_turnover(p)*dt
          end if
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livestem_xsmr(p)*dt
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livecroot_xsmr(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%livestem_xsmr(p)*dt
             veg_cs%xsmrpool(p) = veg_cs%xsmrpool(p) - veg_cf%grain_xsmr(p)*dt
             if (harvdate(p) < 999) then ! beginning at harvest, send to atm
@@ -355,7 +355,7 @@ contains
          veg_cs%frootc(p)          = veg_cs%frootc(p)         + veg_cf%cpool_to_frootc(p)*dt
          veg_cs%cpool(p)           = veg_cs%cpool(p)          - veg_cf%cpool_to_frootc_storage(p)*dt
          veg_cs%frootc_storage(p)  = veg_cs%frootc_storage(p) + veg_cf%cpool_to_frootc_storage(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%livestemc(p)           = veg_cs%livestemc(p)          + veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc_storage(p)*dt
@@ -373,7 +373,7 @@ contains
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_deadcrootc_storage(p)*dt
             veg_cs%deadcrootc_storage(p)  = veg_cs%deadcrootc_storage(p) + veg_cf%cpool_to_deadcrootc_storage(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%livestemc(p)           = veg_cs%livestemc(p)          + veg_cf%cpool_to_livestemc(p)*dt
             veg_cs%cpool(p)               = veg_cs%cpool(p)              - veg_cf%cpool_to_livestemc_storage(p)*dt
@@ -387,13 +387,13 @@ contains
          ! growth respiration fluxes for current growth
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_leaf_gr(p)*dt
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_froot_gr(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadstem_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livecroot_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadcroot_gr(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_grain_gr(p)*dt
          end if
@@ -401,13 +401,13 @@ contains
          ! growth respiration for transfer growth
          veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_leaf_gr(p)*dt
          veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_froot_gr(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_livestem_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_deadstem_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_livecroot_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_deadcroot_gr(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_livestem_gr(p)*dt
             veg_cs%gresp_xfer(p) = veg_cs%gresp_xfer(p) - veg_cf%transfer_grain_gr(p)*dt
          end if
@@ -415,13 +415,13 @@ contains
          ! growth respiration at time of storage
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_leaf_storage_gr(p)*dt
          veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_froot_storage_gr(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadstem_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livecroot_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_deadcroot_storage_gr(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_livestem_storage_gr(p)*dt
             veg_cs%cpool(p) = veg_cs%cpool(p) - veg_cf%cpool_grain_storage_gr(p)*dt
          end if
@@ -435,7 +435,7 @@ contains
          veg_cs%leafc_xfer(p)     = veg_cs%leafc_xfer(p)     + veg_cf%leafc_storage_to_xfer(p)*dt
          veg_cs%frootc_storage(p) = veg_cs%frootc_storage(p) - veg_cf%frootc_storage_to_xfer(p)*dt
          veg_cs%frootc_xfer(p)    = veg_cs%frootc_xfer(p)    + veg_cf%frootc_storage_to_xfer(p)*dt
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             veg_cs%livestemc_storage(p)  = veg_cs%livestemc_storage(p) - veg_cf%livestemc_storage_to_xfer(p)*dt
             veg_cs%livestemc_xfer(p)     = veg_cs%livestemc_xfer(p)    + veg_cf%livestemc_storage_to_xfer(p)*dt
             veg_cs%deadstemc_storage(p)  = veg_cs%deadstemc_storage(p) - veg_cf%deadstemc_storage_to_xfer(p)*dt
@@ -447,7 +447,7 @@ contains
             veg_cs%gresp_storage(p)      = veg_cs%gresp_storage(p)     - veg_cf%gresp_storage_to_xfer(p)*dt
             veg_cs%gresp_xfer(p)         = veg_cs%gresp_xfer(p)        + veg_cf%gresp_storage_to_xfer(p)*dt
          end if
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if ( iscft(ivt(p))) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
             veg_cs%livestemc_storage(p)  = veg_cs%livestemc_storage(p) - veg_cf%livestemc_storage_to_xfer(p)*dt
             veg_cs%livestemc_xfer(p)     = veg_cs%livestemc_xfer(p)    + veg_cf%livestemc_storage_to_xfer(p)*dt

@@ -29,7 +29,9 @@ module li_time_integration_fe_rk
    use mpas_log
 
    use li_advection
-   use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_finalize_damage_after_advection
+   use li_calving, only: li_calve_ice, li_restore_calving_front, &
+                         li_remove_icebergs, li_calculate_damage, &
+                         li_finalize_damage_after_advection
    use li_thermal, only: li_thermal_solver, li_enthalpy_to_temperature_kelvin
    use li_iceshelf_melt
    use li_diagnostic_vars
@@ -481,6 +483,11 @@ module li_time_integration_fe_rk
                call li_restore_calving_front(domain, err_tmp)
                err = ior(err, err_tmp)
             endif
+            ! We need to remove icebergs between RK stages because the
+            ! main calving routine is not called until after the RK loop.
+            ! This frequently results in icebergs that causes intermediate
+            ! RK stage velocity solves to fail.
+            call li_remove_icebergs(domain)
 
             call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
             err = ior(err, err_tmp)

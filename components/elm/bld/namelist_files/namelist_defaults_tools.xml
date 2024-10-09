@@ -147,6 +147,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <lmask type="slp10"            >AVHRR</lmask>
 <lmask type="ero"              >AVHRR</lmask>
 <lmask type="fert"             >ISRIC-WISE</lmask>
+<lmask type="toprad"           >nomask</lmask>
 
 <!-- Grid resolutions for different types of mksurfdata_map input files -->
 <hgrid type="lak"              >3x3min</hgrid>
@@ -176,6 +177,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <hgrid type="slp10"            >0.5x0.5</hgrid>
 <hgrid type="ero"              >0.5x0.5</hgrid>
 <hgrid type="fert"             >5x5min</hgrid>
+<hgrid type="toprad"           >0.01x0.01</hgrid>
+
 
 <!-- namelist filenames for different types of mksurfdata_map input files -->
 <mksrf_filename type="lak" >mksrf_flakwat</mksrf_filename>
@@ -203,6 +206,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_filename type="slp10" >mksrf_fslp10</mksrf_filename>
 <mksrf_filename type="ero" >mksrf_fero</mksrf_filename>
 <mksrf_filename type="fert" >mksrf_ffert</mksrf_filename>
+<mksrf_filename type="toprad" >mksrf_ftoprad</mksrf_filename>
 
 <!-- mksrf_navyoro Orography -->
 <mksrf_fnavyoro hgrid="0.33x0.33" mask="navy" >lnd/clm2/rawdata/mksrf_navyoro_20min.c010129.nc</mksrf_fnavyoro>
@@ -312,6 +316,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- fert dataset -->
 <mksrf_ffert hgrid="5x5min" lmask="ISRIC-WISE"
 >lnd/clm2/rawdata/mksrf_fert.c220309.nc</mksrf_ffert>
+
+<mksrf_ftoprad hgrid="0.01x0.01" lmask="nomask"
+>lnd/clm2/rawdata/mksrf_toprad_0.01x0.01.c240422.nc</mksrf_ftoprad>
 
 <!-- mksrf_fvegtyp -->
 

@@ -162,8 +162,13 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
       }
     }
 
-    // Call the fortran implementation
-    diag_second_moments(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    diag_second_moments_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.u_wind, SDS.v_wind,
+                          SDS.tke, SDS.isotropy, SDS.tkh, SDS.tk, SDS.dz_zi, SDS.zt_grid, SDS.zi_grid, SDS.shoc_mix,
+                          SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.wqw_sec, SDS.qwthl_sec, SDS.uw_sec,
+                          SDS.vw_sec, SDS.wtke_sec, SDS.w_sec);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Verify output makes sense
     for(Int s = 0; s < shcol; ++s) {

@@ -10,7 +10,7 @@ module RootDynamicsMod
   use elm_varpar          , only : nlevsoi, nlevgrnd
   use elm_varctl          , only : use_vertsoilc
   use decompMod           , only : bounds_type
-  use pftvarcon           , only : noveg, npcropmin, roota_par, rootb_par, root_dmx, evergreen
+  use pftvarcon           , only : noveg, iscft, roota_par, rootb_par, root_dmx, evergreen
   use CanopyStateType     , only: canopystate_type
   use CNStateType         , only : cnstate_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -39,7 +39,7 @@ contains
   !
   subroutine RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars,  &
-       cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
+       cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars, dt)
     !
     ! !DESCRIPTION:
     ! This routine determine the fine root distribution
@@ -62,12 +62,12 @@ contains
     type(crop_type)          , intent(in)    :: crop_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
+    real(r8)                 , intent(in)    :: dt                 ! radiation time step delta t (seconds)
 
     !
     ! !LOCAL VARIABLES:
 
     integer  :: f,c,p,lev,j                                    ! indices
-    real(r8) :: dt                                             ! radiation time step delta t (seconds)
     real(r8) :: w_limit(bounds%begp:bounds%endp)               ! soil water weighting factor
     real(r8) :: rswa(bounds%begp:bounds%endp,1:nlevgrnd)       ! soil water availability in each soil layer
     real(r8) :: rsmn(bounds%begp:bounds%endp,1:nlevgrnd)       ! soil nitrogen availability in each soil layer
@@ -136,7 +136,7 @@ contains
          p = filter_soilp(f)
          c = pcolumn(p)
          if (ivt(p) /= noveg) then
-            if ((ivt(p)) >= npcropmin) then !skip generic crop types
+            if (iscft(ivt(p))) then !skip generic crop types
                if (huigrain(p) > 0._r8) then
                   root_depth(p) = max(zi(c,2), min(hui(p)/huigrain(p)* root_dmx(ivt(p)), root_dmx(ivt(p))))
                end if

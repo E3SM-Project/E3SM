@@ -6,7 +6,9 @@ nav:
     - 'index.md'
     - Installation: 'installation.md'
     - User Guide: 'user-guide/index.md'
-    - Development: 'development.md'
+    - Development:
+      - Introduction: 'dev-guide/index.md'
+      - Adding Support for New Grids: 'dev-guide/adding-grid-support/index.md'
   - Components: '*include ./components/*/mkdocs.yml'
   - Tools:      '*include ./tools/*/mkdocs.yml'
   - More Information:

@@ -72,6 +72,7 @@ def buildnml(case, caseroot, compname):
     decomp_prefix = ''
     data_iceberg_file = ''
     points_file = ''
+    dust_iron_file = ''
 
     if ice_grid == 'oEC60to30v3':
         decomp_date = '230424'
@@ -300,6 +301,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
+        dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac.IcoswISC30E3r5.20240511.nc'
         if ice_ic_mode == 'spunup':
             if iceberg_mode == 'data':
                 grid_date = '20240207'
@@ -317,6 +319,16 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             grid_date = '20240314'
             grid_prefix = 'mpassi.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
+
+    elif ice_grid == 'RRSwISC6to18E3r5':
+        decomp_date = '20240404'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20240327'
+        grid_prefix = 'mpassi.RRSwISC6to18E3r5'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.RRSwISC6to18E3r5.20240327.nc'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
@@ -347,6 +359,8 @@ def buildnml(case, caseroot, compname):
             input_list.write("points = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
             input_list.write("data_iceberg = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
+        if dust_iron_file != '':
+            input_list.write("dust_iron = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ice_mask, dust_iron_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
@@ -451,7 +465,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -460,7 +475,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -482,7 +498,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -498,8 +515,9 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS"):
-                    lines.append('                  io_type="pnetcdf,cdf5"')
+                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                        or ice_grid.startswith("RRSwISC6"):
+                        lines.append('                  io_type="pnetcdf,cdf5"')
                 else:
                     lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
@@ -588,10 +606,19 @@ def buildnml(case, caseroot, compname):
             lines.append('<immutable_stream name="ISPOLDailyWOAForcing"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/ISPOLDailyWOAForcing_10132022.nc"')
+            lines.append('                  filename_template="{}/ice/mpas-cice/general/ISPOLDailyWOAForcing_10132022.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="none" />')
             lines.append('')
+            if dust_iron_file != '':
+                lines.append('<immutable_stream name="DustIronMonthlyForcing"')
+                lines.append('                  type="input"')
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+                lines.append('                  filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ice_mask, dust_iron_file))
+                lines.append('                  filename_interval="none"')
+                lines.append('                  input_interval="none" />')
+                lines.append('')
+
             lines.append('<immutable_stream name="abort_contents"')
             lines.append('                  type="none"')
             lines.append('                  filename_template="abort_variables.nc" />')
@@ -734,6 +761,15 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="netCarbonFlux"/>')
             lines.append('    <var name="absoluteCarbonError"/>')
             lines.append('    <var name="relativeCarbonError"/>')
+            lines.append('    <var name="initialBlackCarbon"/>')
+            lines.append('    <var name="finalBlackCarbon"/>')
+            lines.append('    <var name="blackCarbonChange"/>')
+            lines.append('    <var name="blackCarbonChangeFlux"/>')
+            lines.append('    <var name="blackCarbonConsAtmBlackCarbonFlux"/>')
+            lines.append('    <var name="blackCarbonConsOceanBlackCarbonFlux"/>')
+            lines.append('    <var name="netBlackCarbonFlux"/>')
+            lines.append('    <var name="absoluteBlackCarbonError"/>')
+            lines.append('    <var name="relativeBlackCarbonError"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<immutable_stream name="conservationCheckRestart"')

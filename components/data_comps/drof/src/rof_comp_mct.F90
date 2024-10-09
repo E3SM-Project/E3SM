@@ -16,7 +16,11 @@ module rof_comp_mct
   use drof_comp_mod   , only: drof_comp_init, drof_comp_run, drof_comp_final
   use drof_shr_mod    , only: drof_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_x2r_fields, seq_flds_r2x_fields
-
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mrofid !            iMOAB app id for rof
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -53,6 +57,9 @@ CONTAINS
   !===============================================================================
   subroutine rof_init_mct( EClock, cdata, x2r, r2x, NLFilename )
 
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
     ! !DESCRIPTION:  initialize drof model
     implicit none
 
@@ -74,6 +81,16 @@ CONTAINS
     integer(IN)       :: shrloglev                 ! original log level
     logical           :: read_restart              ! start from restart
     integer(IN)       :: ierr                      ! error code
+
+    character(CL)        :: filePath ! generic file path
+    character(CL)        :: fileName ! generic file name
+    character(CS)        :: timeName ! domain file: time variable name
+    character(CS)        :: lonName  ! domain file: lon  variable name
+    character(CS)        :: latName  ! domain file: lat  variable name
+    character(CS)        :: hgtName  ! domain file: hgt  variable name
+    character(CS)        :: maskName ! domain file: mask variable name
+    character(CS)        :: areaName ! domain file: area variable name
+
     character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -140,11 +157,28 @@ CONTAINS
     ! Initialize drof
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("DROF")//C_NULL_CHAR, mpicom, compid, mrofid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data rof comp'
+      call shr_sys_abort(subname//' ERROR in registering data rof comp')
+    endif
+#endif
+
     call drof_comp_init(Eclock, x2r, r2x, &
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
          SDROF, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart)
-
+#ifdef HAVE_MOAB
+    if (my_task == master_task) then
+       call shr_stream_getDomainInfo(SDROF%stream(1), filePath,fileName,timeName,lonName, &
+               latName,hgtName,maskName,areaName)
+       call shr_stream_getFile(filePath,fileName)
+       ! send path of river domain to MOAB coupler.
+       call seq_infodata_PutData( infodata, rof_domain=fileName)
+       write(logunit,*), ' filename: ', filename
+    endif
+#endif
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from drof
     !----------------------------------------------------------------------------

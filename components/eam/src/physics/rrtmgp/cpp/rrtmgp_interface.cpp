@@ -49,7 +49,7 @@ GasOpticsRRTMGP k_dist_sw;
 GasOpticsRRTMGP k_dist_lw;
 
 // Vector of strings to hold active gas names. 
-string1d active_gases;
+string1dv active_gases;
 
 extern "C" void rrtmgp_initialize_cxx(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
     // First, make sure yakl has been initialized
@@ -66,9 +66,9 @@ extern "C" void rrtmgp_initialize_cxx(int ngas, char *gas_names[], char const *c
     // impossible from this initialization routine because I do not think the
     // rad_cnst objects are setup yet.
     // the other tasks!
-    active_gases = string1d("active_gases", ngas);
+    active_gases = string1dv(ngas);
     for (int igas=0; igas<ngas; igas++) {
-        active_gases(igas+1) = gas_names[igas];
+        active_gases[igas] = gas_names[igas];
     }
     GasConcs available_gases;
     available_gases.init(active_gases, 1, 1);
@@ -236,11 +236,11 @@ extern "C" void rrtmgp_run_sw (
     gas_concs.init(active_gases, ncol, nlay);
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
-    for (int igas = 1; igas <= ngas; igas++) {
+    for (int igas = 0; igas < ngas; igas++) {
         parallel_for(SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
-            tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
+            tmp2d(icol,ilay) = gas_vmr(igas+1,icol,ilay);
         });
-        gas_concs.set_vmr(active_gases(igas), tmp2d);
+        gas_concs.set_vmr(active_gases[igas], tmp2d);
     }
 
     // Do gas optics
@@ -460,11 +460,11 @@ extern "C" void rrtmgp_run_lw (
     gas_concs.init(active_gases, ncol, nlay);
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
-    for (int igas = 1; igas <= ngas; igas++) {
+    for (int igas = 0; igas < ngas; igas++) {
         parallel_for(SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
-            tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
+            tmp2d(icol,ilay) = gas_vmr(igas+1,icol,ilay);
         });
-        gas_concs.set_vmr(active_gases(igas), tmp2d);
+        gas_concs.set_vmr(active_gases[igas], tmp2d);
     }
 
     //  Boundary conditions

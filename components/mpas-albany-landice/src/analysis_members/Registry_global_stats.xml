@@ -100,6 +100,41 @@
                 <var name="basalSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
                         description="maximum basal speed in the domain"
                 />
+                <!-- stats related to subglacial hydrology -->
+                <var name="totalSubglacialWaterVolume" type="real" dimensions="Time" units="m^3"
+                        description="total subglacial water volume"
+                />
+                <var name="totalSubglacialLakeVolume" type="real" dimensions="Time" units="m^3"
+                        description="total volume of subglacial lakes, defined as water volume exceeding bed bump height"
+                />
+                <var name="totalSubglacialLakeArea" type="real" dimensions="Time" units="m^2"
+                        description="total area of subglacial lakes"
+                />
+                <var name="totalBasalMeltInput" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total basal meltwater contributing to the subglacial hydrologic system"
+                />
+                <var name="totalExternalWaterInput" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total external meltwater contributing to the subglacial hydrologic system"
+                />
+                <var name="totalChannelMelt" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total melt rate in the subglacial hydrologic system "
+                />
+                <var name="totalDistWaterFluxMarineMargin" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total distributed subglacial water flux across marine boundaries (grounding lines or grounded marine margins)"
+                />
+                <var name="totalDistWaterFluxTerrestrialMargin" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total distributed subglacial water flux across terrestrial margins"
+                />
+                <var name="totalChnlWaterFluxMarineMargin" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total channelized subglacial water flux across marine boundaries (grounding lines or grounded marine margins)"
+                />
+                <var name="totalChnlWaterFluxTerrestrialMargin" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total channelized subglacial water flux across terrestrial margins"
+                />
+                <var name="avgFlotationFraction" type="real" dimensions="Time" units="none"
+                        description="area-weighted average of the flotation fraction under grounded ice"
+                />
+
  	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"

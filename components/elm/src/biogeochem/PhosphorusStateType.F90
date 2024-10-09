@@ -12,7 +12,7 @@ module PhosphorusStateType
   use elm_varctl             , only : use_vertsoilc, use_century_decomp
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
-  use pftvarcon              , only : npcropmin, nstor
+  use pftvarcon              , only : iscft, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
@@ -254,7 +254,7 @@ contains
     ! !USES:
     use elm_varpar     , only : crop_prog
     use decompMod      , only : bounds_type
-    use pftvarcon      , only : noveg, npcropmin
+    use pftvarcon      , only : noveg, iscft
     !
     ! !ARGUMENTS:
     class(phosphorusstate_type)      :: this
