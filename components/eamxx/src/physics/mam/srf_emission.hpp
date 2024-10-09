@@ -4,8 +4,6 @@
 #include "share/util/scream_timing.hpp"
 
 namespace scream::mam_coupling {
-namespace {
-
 template <typename ScalarType, typename DeviceType>
 struct srfEmissFunctions {
   using Device = DeviceType;
@@ -131,7 +129,6 @@ struct srfEmissFunctions {
       std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
 
 };  // struct srfEmissFunctions
-}  // namespace
 }  // namespace scream::mam_coupling
 #endif  // SRF_EMISSION_HPP
 

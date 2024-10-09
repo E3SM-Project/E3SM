@@ -4,8 +4,6 @@
 #include "share/util/scream_timing.hpp"
 
 namespace scream::mam_coupling {
-namespace {
-
 template <typename ScalarType, typename DeviceType> struct onlineEmissions {
   using Device = DeviceType;
 
@@ -88,14 +86,7 @@ template <typename ScalarType, typename DeviceType> struct onlineEmissions {
   transfer_to_cflux(const onlineEmissData &data,
                        const std::map<std::string, int> idx_map,
                        view_2d &fluxes);
-  // static void update_onlineEmiss_timestate(
-  //     std::shared_ptr<AtmosphereInput> &scorpio_reader,
-  //     const util::TimeStamp &ts, AbstractRemapper &onlineEmiss_horiz_interp,
-  //     onlineEmissTimeState &time_state, onlineEmissInput &onlineEmiss_beg,
-  //     onlineEmissInput &onlineEmiss_end);
-
 }; // struct onlineEmissions
-} // namespace
 } // namespace scream::mam_coupling
 #endif // ONLINE_EMISSION_HPP
 

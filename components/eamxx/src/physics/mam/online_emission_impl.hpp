@@ -2,8 +2,6 @@
 #define ONLINE_EMISSION_IMPL_HPP
 
 namespace scream::mam_coupling {
-namespace {
-
 template <typename S, typename D>
 void onlineEmissions<S, D>::init_from_input_file(
     const ekat::ParameterList &params, onlineEmissData &data) {
@@ -53,8 +51,6 @@ void onlineEmissions<S, D>::transfer_to_cflux(
             });
       });
 }
-
-} // namespace
 } // namespace scream::mam_coupling
 
 #endif // ONLINE_EMISSION_IMPL_HPP

@@ -6,8 +6,6 @@
 #include "share/io/scream_scorpio_interface.hpp"
 
 namespace scream::mam_coupling {
-namespace {
-
 template <typename S, typename D>
 std::shared_ptr<AbstractRemapper>
 srfEmissFunctions<S, D>::create_horiz_remapper(
@@ -104,6 +102,9 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
 
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+
   // Gather time stamp info
   auto &t_now   = time_state.t_now;
   auto &t_beg   = time_state.t_beg_month;
@@ -181,6 +182,9 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     const int time_index,  // zero-based
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
+  // NOTE: these are currently unused
+  // using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
+  // using Member = typename KokkosTypes<DefaultDevice>::MemberType;
 
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
 
@@ -201,10 +205,13 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
 
-  const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
-                           .get_header()
-                           .get_identifier()
-                           .get_layout();
+  // NOTE: these are currently unused
+  // const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
+  //                          .get_header()
+  //                          .get_identifier()
+  //                          .get_layout();
+
+  const int ncols = layout.dim(COL);
 
   // Read fields from the file
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
@@ -279,8 +286,6 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   SrfEmissDataReader =
       create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
 }  // init_srf_emiss_objects
-
-}  // namespace
 }  // namespace scream::mam_coupling
 
 #endif  // SRF_EMISSION_IMPL_HPP
