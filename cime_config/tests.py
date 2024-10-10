@@ -113,6 +113,7 @@ _TESTS = {
             "SMS_Ln5.ne4pg2_oQU480.F2010",
             "ERS_D.ne4pg2_oQU480.F2010.eam-hommexx",
             "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             )
         },
 
@@ -209,6 +210,7 @@ _TESTS = {
             "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
             "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
+            "ERS_Ld5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-prod",
             )
         },
 
@@ -240,6 +242,7 @@ _TESTS = {
         "tests" : (
             "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
+            "SMS_Ld1.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod"
             )
         },
 
