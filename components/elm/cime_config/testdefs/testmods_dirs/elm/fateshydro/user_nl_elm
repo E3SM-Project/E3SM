@@ -5,6 +5,7 @@ hist_nhtfrq       = -24
 hist_empty_htapes = .true.
 use_fates_planthydro = .true.
 fates_spitfire_mode = 1
+fates_paramfile = '$CASEROOT/fates_params_hydrograsstempfix.nc'
 hist_fincl1       = 'FATES_ERRH2O_SZPF', 'FATES_TRAN_SZPF',
 'FATES_SAPFLOW_SZPF', 'FATES_ITERH1_SZPF','FATES_ABSROOT_H2O_SZPF',
 'FATES_TRANSROOT_H2O_SZPF','FATES_STEM_H2O_SZPF','FATES_LEAF_H2O_SZPF',
