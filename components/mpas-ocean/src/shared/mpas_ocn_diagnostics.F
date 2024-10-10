@@ -3574,8 +3574,8 @@ contains
                    do k = maxLevelCell(iCell), minLevelCell(iCell), -1
                       zBot = zTop - layerThickness(k,iCell)
                       if (k == minLevelCell(iCell)) then
-                        transmissionCoeffTop = exp( max(zTop / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
-                        transmissionCoeffBot = exp( max(zBot / config_flux_attenuation_coefficient_runoff, -100.0_RKIND) )
+                        transmissionCoeffTop = exp( max(zTop / config_flux_attenuation_coefficient_subglacial_runoff, -100.0_RKIND) )
+                        transmissionCoeffBot = exp( max(zBot / config_flux_attenuation_coefficient_subglacial_runoff, -100.0_RKIND) )
                         fracAbsorbedSubglacialRunoff = transmissionCoeffTop - transmissionCoeffBot
                       end if
                       zTop = zBot
