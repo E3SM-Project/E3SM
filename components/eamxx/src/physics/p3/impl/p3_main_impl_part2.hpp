@@ -291,13 +291,15 @@ void Functions<S,D>
         ice_self_collection(rho(k), rhofaci(k), table_val_ni_self_collect, eii,
                             qm_incld(k), qi_incld(k), ni_incld(k),
                             ni_selfcollect_tend, not_skip_micro);
+      }
 
-        // melting
-        ice_melting(rho(k), T_atm(k), pres(k), rhofaci(k),
-                    table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, sc,
-                    mu, kap, qv(k), qi_incld(k), ni_incld(k), qi2qr_melt_tend,
-                    ni2nr_melt_tend, not_skip_micro);
+      // melting
+      ice_melting(rho(k), T_atm(k), pres(k), rhofaci(k),
+                  table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, sc,
+                  mu, kap, qv(k), qi_incld(k), ni_incld(k), qi2qr_melt_tend,
+                  ni2nr_melt_tend, not_skip_micro);
 
+      if(do_ice_production) {
         // calculate wet growth
         ice_cldliq_wet_growth(
             rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting,
@@ -305,20 +307,22 @@ void Functions<S,D>
             qi_incld(k), ni_incld(k), qr_incld(k), wetgrowth,
             qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate,
             nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
+      }
 
-        // calculate total inverse ice relaxation timescale combined for all ice
-        // categories note 'f1pr' values are normalized, so we need to multiply
-        // by N
-        ice_relaxation_timescale(
-            rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting,
-            table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k),
-            epsi, epsi_tot, not_skip_micro);
+      // calculate total inverse ice relaxation timescale combined for all ice
+      // categories note 'f1pr' values are normalized, so we need to multiply
+      // by N
+      ice_relaxation_timescale(
+          rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting,
+          table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k), epsi,
+          epsi_tot, not_skip_micro);
 
-        // calculate rime density
-        calc_rime_density(T_atm(k), rhofaci(k), table_val_qi_fallspd, acn(k),
-                          lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
-                          vtrmi1, rho_qm_cloud, not_skip_micro);
+      // calculate rime density
+      calc_rime_density(T_atm(k), rhofaci(k), table_val_qi_fallspd, acn(k),
+                        lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
+                        vtrmi1, rho_qm_cloud, not_skip_micro);
 
+      if(do_ice_production) {
         // contact and immersion freezing droplets
         cldliq_immersion_freezing(
             T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k),
@@ -349,6 +353,7 @@ void Functions<S,D>
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,
 		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
+
       if(do_ice_production) {
         ice_deposition_sublimation(
             qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi,
