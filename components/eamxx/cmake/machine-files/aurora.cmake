@@ -1,7 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
-<<<<<<< HEAD
 include (${EKAT_MACH_FILES_PATH}/kokkos/intel-pvc.cmake)
 include (${EKAT_MACH_FILES_PATH}/mpi/other.cmake)
 set(EKAT_MPIRUN_EXE "mpiexec" CACHE STRING "" FORCE)
