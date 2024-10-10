@@ -194,9 +194,9 @@ int writeMeta(const std::string &MetaName, ///< [in] name of metadata
               int FileID,                  ///< [in] ID of the file for writing
               int VarID ///< [in] ID for variable associated with metadata
 );
-int writeMeta(const std::string &MetaName, ///< [in] name of metadata
-              std::string MetaValue,       ///< [in] value of metadata
-              int FileID,                  ///< [in] ID of the file for writing
+int writeMeta(const std::string &MetaName,  ///< [in] name of metadata
+              const std::string &MetaValue, ///< [in] value of metadata
+              int FileID,                   ///< [in] ID of the file for writing
               int VarID ///< [in] ID for variable associated with metadata
 );
 
