@@ -106,6 +106,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/planar_mod.F90
     ${SRC_SHARE_DIR}/geometry_mod.F90
     ${SRC_SHARE_DIR}/planar_mesh_mod.F90
+    ${SRC_SHARE_DIR}/semoab_mod.F90
   )
 
   IF (NOT HOMME_ENABLE_COMPOSE)

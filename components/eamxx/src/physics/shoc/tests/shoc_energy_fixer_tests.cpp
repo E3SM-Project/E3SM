@@ -157,8 +157,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
       }
     }
 
-    // Call the fortran implementation
-    shoc_energy_fixer(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_energy_fixer_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv,
+                        SDS.zt_grid, SDS.zi_grid, SDS.se_b, SDS.ke_b, SDS.wv_b,
+                        SDS.wl_b, SDS.se_a, SDS.ke_a, SDS.wv_a, SDS.wl_a, SDS.wthl_sfc,
+                        SDS.wqw_sfc, SDS.rho_zt, SDS.tke, SDS.pint,
+                        SDS.host_dse);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check test
     // Verify that the dry static energy has not changed if surface
@@ -231,8 +238,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
       }
     }
 
-    // Call the fortran implementation
-    shoc_energy_fixer(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_energy_fixer_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv,
+                        SDS.zt_grid, SDS.zi_grid, SDS.se_b, SDS.ke_b, SDS.wv_b,
+                        SDS.wl_b, SDS.se_a, SDS.ke_a, SDS.wv_a, SDS.wl_a, SDS.wthl_sfc,
+                        SDS.wqw_sfc, SDS.rho_zt, SDS.tke, SDS.pint,
+                        SDS.host_dse);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Verify the result
     for(Int s = 0; s < shcol; ++s) {

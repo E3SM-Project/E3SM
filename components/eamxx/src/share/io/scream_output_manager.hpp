@@ -120,8 +120,7 @@ public:
   long long res_dep_memory_footprint () const;
 protected:
 
-  std::string compute_filename (const IOControl& control,
-                                const IOFileSpecs& file_specs,
+  std::string compute_filename (const IOFileSpecs& file_specs,
                                 const util::TimeStamp& timestamp) const;
 
   void set_file_header(const IOFileSpecs& file_specs);

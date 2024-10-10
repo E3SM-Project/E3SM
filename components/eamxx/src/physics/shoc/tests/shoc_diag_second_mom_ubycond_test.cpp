@@ -42,8 +42,9 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
     REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 0);
 
-    // Call the fortran implementation
-    diag_second_moments_ubycond(SDS);
+    // Call the C++ implementation
+    shoc_diag_second_moments_ubycond_f(SDS.shcol, SDS.thl_sec, SDS.qw_sec, SDS.qwthl_sec, SDS.wthl_sec,
+                                       SDS.wqw_sec, SDS.uw_sec, SDS.vw_sec, SDS.wtke_sec);
 
     // Verify the result
     //  all output should be zero.

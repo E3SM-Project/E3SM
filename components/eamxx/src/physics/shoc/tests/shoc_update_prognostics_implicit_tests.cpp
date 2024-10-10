@@ -258,10 +258,18 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       }
     }
 
-    // Call the fortran implementation
-    update_prognostics_implicit(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    update_prognostics_implicit_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.num_tracer, SDS.dtime,
+                                  SDS.dz_zt, SDS.dz_zi, SDS.rho_zt, SDS.zt_grid, SDS.zi_grid,
+                                  SDS.tk, SDS.tkh, SDS.uw_sfc, SDS.vw_sfc, SDS.wthl_sfc, SDS.wqw_sfc,
+                                  SDS.wtracer_sfc, SDS.thetal, SDS.qw, SDS.tracer, SDS.tke, SDS.u_wind, SDS.v_wind);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+
     // Call linear interp to get rho value at surface for checking
-    linear_interp(SDSL);
+    SDSL.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    linear_interp_f(SDSL.x1, SDSL.x2, SDSL.y1, SDSL.y2, SDSL.km1, SDSL.km2, SDSL.ncol, SDSL.minthresh);
+    SDSL.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
 

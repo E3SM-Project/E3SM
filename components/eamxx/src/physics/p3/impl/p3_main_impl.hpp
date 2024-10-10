@@ -87,13 +87,11 @@ Int Functions<S,D>
   const physics::P3_Constants<S> & p3constants)
 {
   using ExeSpace = typename KT::ExeSpace;
-
-  view_2d<Spack> latent_heat_sublim("latent_heat_sublim", nj, nk), latent_heat_vapor("latent_heat_vapor", nj, nk), latent_heat_fusion("latent_heat_fusion", nj, nk);
-
-  get_latent_heat(nj, nk, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion);
+  using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
 
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto scratch_size = ScratchViewType::shmem_size(2);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;
@@ -101,9 +99,6 @@ Int Functions<S,D>
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
-
-  // per-column bools
-  view_2d<bool> bools("bools", nj, 2);
 
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
@@ -142,9 +137,9 @@ Int Functions<S,D>
       qtend_ignore, ntend_ignore,
 
       // Variables still used in F90 but removed from C++ interface
-      mu_c, lamc, precip_total_tend, nevapr, qr_evap_tend;
+      mu_c, lamc, qr_evap_tend;
 
-    workspace.template take_many_and_reset<46>(
+    workspace.template take_many_and_reset<44>(
       {
         "mu_r", "T_atm", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_cld_frac_i", "inv_cld_frac_l", "inv_cld_frac_r", "qc_incld", "qr_incld", "qi_incld", "qm_incld",
@@ -153,7 +148,7 @@ Int Functions<S,D>
         "rhofacr", "rhofaci", "acn", "qv_sat_l", "qv_sat_i", "sup", "qv_supersat_i",
         "tmparr1", "exner", "diag_equiv_reflectivity", "diag_vm_qi", "diag_diam_qi",
         "pratot", "prctot", "qtend_ignore", "ntend_ignore",
-        "mu_c", "lamc", "precip_total_tend", "nevapr", "qr_evap_tend"
+        "mu_c", "lamc", "qr_evap_tend"
       },
       {
         &mu_r, &T_atm, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
@@ -162,10 +157,10 @@ Int Functions<S,D>
         &inv_dz, &inv_rho, &ze_ice, &ze_rain, &prec, &rho,
         &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
         &tmparr1, &exner, &diag_equiv_reflectivity, &diag_vm_qi, &diag_diam_qi,
-        &pratot, &prctot, &qtend_ignore, &ntend_ignore, 
-        &mu_c, &lamc, &precip_total_tend, &nevapr, &qr_evap_tend
+        &pratot, &prctot, &qtend_ignore, &ntend_ignore,
+        &mu_c, &lamc, &qr_evap_tend
       });
-      
+
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
     const auto opres               = ekat::subview(diagnostic_inputs.pres, i);
@@ -197,18 +192,19 @@ Int Functions<S,D>
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
+    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
+    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
     const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
     const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
-    const auto olatent_heat_vapor  = ekat::subview(latent_heat_vapor, i);
-    const auto olatent_heat_sublim = ekat::subview(latent_heat_sublim, i);
-    const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
-    // Need to watch out for race conditions with these shared variables
-    bool &nucleationPossible  = bools(i, 0);
-    bool &hydrometeorsPresent = bools(i, 1);
+    // Use Kokkos' scratch pad for allocating 2 bools
+    // per team to determine early exits
+    ScratchViewType bools(team.team_scratch(0), 2);
+    bool &nucleationPossible  = bools(0);
+    bool &hydrometeorsPresent = bools(1);
 
     view_1d_ptr_array<Spack, 36> zero_init = {
       &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
@@ -216,7 +212,7 @@ Int Functions<S,D>
       &nc_incld, &nr_incld, &ni_incld, &bm_incld,
       &inv_rho, &prec, &rho, &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
       &tmparr1, &qtend_ignore, &ntend_ignore,
-      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &precip_total_tend, &nevapr, &oprecip_liq_flux, &oprecip_ice_flux
+      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &oprecip_total_tend, &onevapr, &oprecip_liq_flux, &oprecip_ice_flux
     };
 
     // initialize
@@ -230,7 +226,7 @@ Int Functions<S,D>
     p3_main_part1(
       team, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
       opres, odpres, odz, onc_nuceat_tend, onccn_prescribed, oinv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion,
+      inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
@@ -249,10 +245,10 @@ Int Functions<S,D>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
-      olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
+      qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
-      mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
+      mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       pratot, prctot, hydrometeorsPresent, nk, p3constants);
 
@@ -293,7 +289,7 @@ Int Functions<S,D>
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
-      T_atm, oinv_exner, olatent_heat_fusion, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
+      T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
       oni, oqm, obm, oth);
 
     //
@@ -303,7 +299,7 @@ Int Functions<S,D>
     p3_main_part3(
       team, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
-      oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
+      oqm, obm, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
       orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, p3constants);
 
@@ -342,22 +338,15 @@ Int Functions<S,D>
   const P3Infrastructure& infrastructure,
   const P3HistoryOnly& history_only,
   const P3LookupTables& lookup_tables,
+#ifdef SCREAM_P3_SMALL_KERNELS
+  const P3Temporaries& temporaries,
+#endif
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk,
   const physics::P3_Constants<S> & p3constants)
 {
-#ifndef SCREAM_SMALL_KERNELS
-  return p3_main_internal(runtime_options,
-                         prognostic_state,
-                         diagnostic_inputs,
-                         diagnostic_outputs,
-                         infrastructure,
-                         history_only,
-                         lookup_tables,
-                         workspace_mgr,
-                         nj, nk, p3constants);
-#else 
+#ifdef SCREAM_P3_SMALL_KERNELS
   return p3_main_internal_disp(runtime_options,
                                prognostic_state,
                                diagnostic_inputs,
@@ -365,8 +354,19 @@ Int Functions<S,D>
                                infrastructure,
                                history_only,
                                lookup_tables,
+                               temporaries,
                                workspace_mgr,
                                nj, nk, p3constants);
+#else
+  return p3_main_internal(runtime_options,
+                          prognostic_state,
+                          diagnostic_inputs,
+                          diagnostic_outputs,
+                          infrastructure,
+                          history_only,
+                          lookup_tables,
+                          workspace_mgr,
+                          nj, nk, p3constants);
 #endif
 }
 } // namespace p3

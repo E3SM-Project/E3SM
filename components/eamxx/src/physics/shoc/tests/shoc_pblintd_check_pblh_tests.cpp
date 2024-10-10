@@ -67,8 +67,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
       }
     }
 
-    // Call the fortran implementation
-    pblintd_check_pblh(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_check_pblh_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.nlev, SDS.z, SDS.ustar, SDS.check, SDS.pblh);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
     // Check that PBL height is greater than zero.  This is an

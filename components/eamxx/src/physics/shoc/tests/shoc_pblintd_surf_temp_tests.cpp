@@ -83,8 +83,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
       }
     }
 
-    // Call the fortran implementation
-    pblintd_surf_temp(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_surf_temp_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.z, SDS.ustar, SDS.obklen,
+                        SDS.kbfs, SDS.thv, SDS.tlv, SDS.pblh, SDS.check, SDS.rino);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {

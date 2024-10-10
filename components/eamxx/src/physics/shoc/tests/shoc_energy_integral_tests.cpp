@@ -107,8 +107,13 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
       }
     }
 
-    // Call the fortran implementation
-    shoc_energy_integrals(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    shoc_energy_integrals_f(SDS.shcol, SDS.nlev, SDS.host_dse, SDS.pdel,
+                            SDS.rtm, SDS.rcm, SDS.u_wind, SDS.v_wind,
+                            SDS.se_int, SDS.ke_int, SDS.wv_int, SDS.wl_int);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check test
     for(Int s = 0; s < shcol; ++s) {

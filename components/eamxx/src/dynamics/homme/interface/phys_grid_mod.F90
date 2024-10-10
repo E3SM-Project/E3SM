@@ -325,6 +325,7 @@ contains
   subroutine get_my_phys_data (gids, lat, lon, area, pg_type)
     use homme_context_mod, only: iam
     use shr_const_mod,     only: pi=>SHR_CONST_PI
+    use control_mod,       only: geometry
     !
     ! Input(s)
     !
@@ -336,6 +337,7 @@ contains
     !
     integer :: pgN, load_bal, idof, ndofs
     type(pg_specs_t), pointer :: pgs
+    logical :: is_sphere
 
     ! Possible values for pg_type:
     !   0 : physics grid on GLL nodes
@@ -364,10 +366,15 @@ contains
       ! TODO: when you enable twin columns, you'll have to manually
       !       do the search, since you can't just grab the offset-ed entries
       ndofs = get_num_local_columns (pgN)
+      is_sphere = trim(geometry) /= 'plane'
       do idof=1,ndofs
         gids(idof) = pgs%g_dofs(pgs%g_dofs_offsets(iam+1) + idof)
-        lat(idof)  = pgs%g_lat (pgs%g_dofs_offsets(iam+1) + idof) * 180.0_c_double / pi
-        lon(idof)  = pgs%g_lon (pgs%g_dofs_offsets(iam+1) + idof) * 180.0_c_double / pi
+        lat(idof)  = pgs%g_lat (pgs%g_dofs_offsets(iam+1) + idof)
+        lon(idof)  = pgs%g_lon (pgs%g_dofs_offsets(iam+1) + idof)
+        if (is_sphere) then
+          lat(idof) = lat(idof) * 180.0_c_double / pi
+          lon(idof) = lon(idof) * 180.0_c_double / pi
+        end if
         area(idof) = pgs%g_area(pgs%g_dofs_offsets(iam+1) + idof)
       enddo
 
@@ -542,6 +549,14 @@ contains
     use gllfvremap_mod,    only: gfr_init
     use homme_context_mod, only: elem, par
     use dimensions_mod,    only: nelem, nelemd
+#ifdef HAVE_MOAB
+    use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
+    use seq_comm_mct,      only: ATMID
+    use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
+    use semoab_mod,        only: create_moab_meshes
+    use iMOAB, only : iMOAB_RegisterApplication
+    use iso_c_binding
+#endif
     !
     ! Input(s)
     !
@@ -554,6 +569,10 @@ contains
     character(2) :: str
     type(pg_specs_t), pointer :: pg
 
+#ifdef HAVE_MOAB
+    integer :: ATM_ID1
+    character*32  appname
+#endif
     pg => pg_specs(pgN)
 
     if (pg%inited) then
@@ -605,6 +624,48 @@ contains
     call compute_global_dofs (pg)
     call compute_global_coords (pg)
     call compute_global_area (pg)
+#ifdef HAVE_MOAB
+    if (pgN > 0) then
+       appname="HM_COARSE"//C_NULL_CHAR
+       ATM_ID1 = 120 !
+       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
+       if (ierr > 0 )  &
+       call abortmp('Error: cannot register moab app')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+           write(iulog,*) " "
+       endif
+       appname="HM_FINE"//C_NULL_CHAR
+       ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
+       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHFID)
+       if (ierr > 0 )  &
+       call abortmp('Error: cannot register moab app for fine mesh')
+       if(par%masterproc) then
+           write(iulog,*) " "
+           write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
+           write(iulog,*) " "
+       endif
+         appname="HM_PGX"//C_NULL_CHAR
+         ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
+         !
+         ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
+         ! still, need to be careful
+         ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
+         if (ierr > 0 )  &
+             call abortmp('Error: cannot register moab app for fine mesh')
+         if(par%masterproc) then
+             write(iulog,*) " "
+             write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
+             write(iulog,*) " "
+         endif
+! instance distributed moab meshes from elem structures
+!    1 ) spectral coarse mesh
+!    2 ) GLL fine quad mesh (used mostly for visualization)
+!    3 ) pgN FV type mesh, (most of the time pg2 mesh), used for coupling with other components;
+       call create_moab_meshes(par, elem, pgN)
+     endif
+#endif
   end subroutine phys_grid_init
 
 

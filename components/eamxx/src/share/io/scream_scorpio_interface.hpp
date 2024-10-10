@@ -108,6 +108,7 @@ bool is_dim_unlimited (const std::string& filename,
 // NOTE: these throw if time dim is not present. Use has_dim to check first.
 int get_time_len (const std::string& filename);
 std::string get_time_name (const std::string& filename);
+void reset_unlimited_dim_len(const std::string& filename, const int new_length);
 
 // =================== Decompositions operations ==================== //
 

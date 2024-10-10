@@ -26,5 +26,4 @@ Field Names:
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
-  MPI Ranks in Filename: true
 ...

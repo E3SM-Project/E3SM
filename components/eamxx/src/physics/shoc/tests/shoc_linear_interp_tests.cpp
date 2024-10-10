@@ -99,8 +99,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       }
     }
 
-    // Call the fortran implementation
-    linear_interp(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    linear_interp_f(SDS.x1, SDS.x2, SDS.y1, SDS.y2, SDS.km1, SDS.km2, SDS.ncol, SDS.minthresh);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // First check that all output temperatures are greater than zero
 
@@ -191,7 +193,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       }
     }
 
-    linear_interp(SDS2);
+    // Call the C++ implementation
+    SDS2.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    linear_interp_f(SDS2.x1, SDS2.x2, SDS2.y1, SDS2.y2, SDS2.km1, SDS2.km2, SDS2.ncol, SDS2.minthresh);
+    SDS2.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result, make sure output is bounded correctly
 
@@ -275,7 +280,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       }
     }
 
-    linear_interp(d);
+    // Call the C++ implementation
+    d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
+    d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // The combination of single-precision and randomness generating points
     // close together can result in larger error margins.

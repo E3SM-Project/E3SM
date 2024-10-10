@@ -28,25 +28,29 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-archive-env acme-env acme-cmake/3.26.3 acme-gcc/11.2.0 sems-archive-git/2.10.1 acme-openmpi/4.1.4 acme-netcdf/4.7.4/acme",
+    "mappy"   : (["source /projects/sems/modulefiles/utils/sems-modules-init.sh",
+                  "module purge", "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
                   "export GATOR_INITIAL_MB=4000MB",
-                  "export PATH=/ascldap/users/jgfouca/packages/valgrind-3.22.0/bin:$PATH",
                  ],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'",
-                 "export PATH=/usr/gdata/e3sm/netcdf/bin:$PATH",
-                 "export LD_LIBRARY_PATH=/usr/gdata/e3sm/netcdf/lib:$LD_LIBRARY_PATH",
+                 "export PATH=/usr/workspace/e3sm/netcdf/bin:$PATH",
+                 "export LD_LIBRARY_PATH=/usr/workspace/e3sm/netcdf/lib:$LD_LIBRARY_PATH",
                 ],
                 ["mpicxx","mpifort","mpicc"],
                  "bsub -Ip -qpdebug",
                  ""),
-    "ruby-intel" : (["module --force purge", "module use --append /usr/gdata/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
+    "ruby-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
-    "quartz-intel" : (["module --force purge", "module use --append /usr/gdata/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
+    "dane-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "salloc --partition=pdebug",
+                  ""),
+    "quartz-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
@@ -86,9 +90,18 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                  "",
                  ""),
+    "anlgce-ub22" : ([". /nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/sh", "module purge", "module load gcc/12.1.0", "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$LD_LIBRARY_PATH", "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0/bin:$PATH", "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0", "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "",
+                  ""),
     "linux-generic" :        ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-debug" :  ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", ""),
+    "ghci-snl-openmp" : ([],
+                         ["mpicxx","mpifort","mpicc"],
+                         "",
+                         "/projects/e3sm/baselines/scream/master-baselines"
+                        ),
 }
 
 if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
@@ -229,9 +242,9 @@ def is_cuda_machine(machine):
     assert_machine_supported(machine)
 
     env_setup_raw = MACHINE_METADATA[machine][0]
-    env_setup_str = " ".join(env_setup_raw)
+    env_setup_str = " ".join(env_setup_raw).lower()
 
-    return "cuda" in env_setup_str.lower()
+    return ("no-cuda" not in env_setup_str and "cuda" in env_setup_str)
 
 ###############################################################################
 def setup_mach_env(machine, ctest_j=None):

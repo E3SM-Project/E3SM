@@ -65,9 +65,6 @@ void Functions<S,D>
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
   const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& latent_heat_vapor,
-  const uview_1d<Spack>& latent_heat_sublim,
-  const uview_1d<Spack>& latent_heat_fusion,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
   const uview_1d<Spack>& qi_incld,
@@ -104,6 +101,8 @@ void Functions<S,D>
   constexpr Scalar f2r          = C::f2r;
   constexpr Scalar nmltratio    = C::nmltratio;
   constexpr Scalar inv_cp       = C::INV_CP;
+  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar latice       = C::LatIce;
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -115,12 +114,12 @@ void Functions<S,D>
     //compute mask to identify padded values in packs, which shouldn't be used in calculations
     const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
-      
+
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
     const auto skip_all = ( !range_mask ||
         (qc(k)<qsmall && qr(k)<qsmall && qi(k)<qsmall &&
          T_atm(k)<T_zerodegc && qv_supersat_i(k)< -0.05) );
-    
+
     if (skip_all.all()) {
       return; // skip all process rates
     }
@@ -209,7 +208,7 @@ void Functions<S,D>
     if (not_skip_micro.any()) {
       // time/space varying physical variables
       get_time_space_phys_variables(
-        T_atm(k), pres(k), rho(k), latent_heat_vapor(k), latent_heat_sublim(k), qv_sat_l(k), qv_sat_i(k),
+        T_atm(k), pres(k), rho(k), qv_sat_l(k), qv_sat_i(k),
         mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii, not_skip_micro);
 
       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
@@ -288,13 +287,13 @@ void Functions<S,D>
 
       // melting
       ice_melting(
-        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), latent_heat_fusion(k), dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
+        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
         qi2qr_melt_tend, ni2nr_melt_tend, not_skip_micro);
 
       // calculate wet growth
       ice_cldliq_wet_growth(
-        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k),
-        latent_heat_fusion(k), dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
+        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt,
+        dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
         wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
 
       // calculate total inverse ice relaxation timescale combined for all ice categories
@@ -334,7 +333,7 @@ void Functions<S,D>
 
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
-		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,
+		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,
 		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
 
       ice_deposition_sublimation(
@@ -399,7 +398,7 @@ void Functions<S,D>
 
     // ice
     ice_water_conservation(
-      qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, 
+      qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
       qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
 
@@ -412,9 +411,9 @@ void Functions<S,D>
 
     // make sure procs don't inappropriately push qv beyond ice saturation
     ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),
-			      latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
+			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
-    prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), latent_heat_vapor(k), latent_heat_sublim(k),dt,
+    prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
 				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
 				not_skip_all);
 
@@ -426,14 +425,14 @@ void Functions<S,D>
     update_prognostic_ice(
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
-      qc2qi_berg_tend, inv_exner(k), latent_heat_sublim(k), latent_heat_fusion(k), predictNc, wetgrowth, dt, nmltratio,
+      qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
       rho_qm_cloud, th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
       nc(k), qr(k), nr(k), not_skip_all);
 
     //-- warm-phase only processes:
     update_prognostic_liquid(
       qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,
-      predictNc, do_prescribed_CCN, inv_rho(k), inv_exner(k), latent_heat_vapor(k), dt, th_atm(k), qv(k), qc(k), nc(k),
+      predictNc, do_prescribed_CCN, inv_rho(k), inv_exner(k), dt, th_atm(k), qv(k), qc(k), nc(k),
       qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
@@ -455,7 +454,7 @@ void Functions<S,D>
     const auto qi_not_small = qi(k) >= qsmall && not_skip_all;
 
     qv(k).set(qc_small, qv(k) + qc(k));
-    th_atm(k).set(qc_small, th_atm(k) - inv_exner(k) * qc(k) * latent_heat_vapor(k) * inv_cp);
+    th_atm(k).set(qc_small, th_atm(k) - inv_exner(k) * qc(k) * latvap * inv_cp);
     qc(k).set(qc_small, 0);
     nc(k).set(qc_small, 0);
 
@@ -464,7 +463,7 @@ void Functions<S,D>
     }
 
     qv(k).set(qr_small, qv(k) + qr(k));
-    th_atm(k).set(qr_small, th_atm(k) - inv_exner(k) * qr(k) * latent_heat_vapor(k) * inv_cp);
+    th_atm(k).set(qr_small, th_atm(k) - inv_exner(k) * qr(k) * latvap * inv_cp);
     qr(k).set(qr_small, 0);
     nr(k).set(qr_small, 0);
 
@@ -473,7 +472,7 @@ void Functions<S,D>
     }
 
     qv(k).set(qi_small, qv(k) + qi(k));
-    th_atm(k).set(qi_small, th_atm(k) - inv_exner(k) * qi(k) * latent_heat_sublim(k) * inv_cp);
+    th_atm(k).set(qi_small, th_atm(k) - inv_exner(k) * qi(k) * (latvap+latice) * inv_cp);
     qi(k).set(qi_small, 0);
     ni(k).set(qi_small, 0);
     qm(k).set(qi_small, 0);

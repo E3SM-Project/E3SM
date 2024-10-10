@@ -97,8 +97,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       }
     }
 
-    // Call the fortran implementation
-    eddy_diffusivities(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
+                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check to make sure the answers in the columns are different
     for(Int s = 0; s < shcol-1; ++s) {
@@ -164,8 +167,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       }
     }
 
-    // Call the fortran implementation
-    eddy_diffusivities(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
+                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check to make sure the answers in the columns are larger
     //   when the length scale and shear term are larger
@@ -234,8 +240,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       }
     }
 
-    // Call the fortran implementation
-    eddy_diffusivities(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
+                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check to make sure the diffusivities are smaller
     //  in the columns where isotropy and tke are smaller

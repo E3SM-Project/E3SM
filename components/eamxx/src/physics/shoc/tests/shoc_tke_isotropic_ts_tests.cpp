@@ -81,8 +81,10 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
       }
     }
 
-    // Call the fortran implementation
-    isotropic_ts(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    isotropic_ts_f(SDS.nlev, SDS.shcol, SDS.brunt_int, SDS.tke, SDS.a_diss, SDS.brunt, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check that output falls within reasonable bounds
     for(Int s = 0; s < shcol; ++s) {
@@ -145,8 +147,10 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
       }
     }
 
-    // Call the fortran implementation
-    isotropic_ts(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    isotropic_ts_f(SDS.nlev, SDS.shcol, SDS.brunt_int, SDS.tke, SDS.a_diss, SDS.brunt, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check that output falls within reasonable bounds
     for(Int s = 0; s < shcol; ++s) {

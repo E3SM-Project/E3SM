@@ -81,3 +81,9 @@ CreateUnitTest(io_remap_test "io_remap_test.cpp"
   LIBS scream_io diagnostics LABELS io remap
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
+
+## Test single-column reader
+CreateUnitTest(io_scm_reader "io_scm_reader.cpp"
+  LIBS scream_io LABELS io
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)

@@ -67,8 +67,10 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
       }
     }
 
-    // Call the fortran implementation
-    compute_shoc_temperature(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Require that absolute temperature is equal to thetal
     for(Int s = 0; s < shcol; ++s) {
@@ -113,8 +115,10 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
       }
     }
 
-    // Call the fortran implementation
-    compute_shoc_temperature(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Require that absolute temperature is greather than thetal
     for(Int s = 0; s < shcol; ++s) {
@@ -172,8 +176,10 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
       }
     }
 
-    // Call the fortran implementation
-    compute_shoc_temperature(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Require that absolute temperature be less than thetal
     for(Int s = 0; s < shcol; ++s) {

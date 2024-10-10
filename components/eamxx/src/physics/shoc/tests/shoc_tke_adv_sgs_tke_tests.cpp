@@ -94,8 +94,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
       }
     }
 
-    // Call the fortran implementation
-    adv_sgs_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    adv_sgs_tke_f(SDS.nlev, SDS.shcol, SDS.dtime, SDS.shoc_mix, SDS.wthv_sec, SDS.sterm_zt, SDS.tk, SDS.tke, SDS.a_diss);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check to make sure that there has been
     //  TKE growth
@@ -159,8 +161,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
       }
     }
 
-    // Call the fortran implementation
-    adv_sgs_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    adv_sgs_tke_f(SDS.nlev, SDS.shcol, SDS.dtime, SDS.shoc_mix, SDS.wthv_sec, SDS.sterm_zt, SDS.tk, SDS.tke, SDS.a_diss);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check to make sure that the column with
     //  the smallest length scale has larger

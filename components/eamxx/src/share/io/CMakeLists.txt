@@ -54,6 +54,7 @@ endif()
 add_library(scream_io
   scream_output_manager.cpp
   scorpio_input.cpp
+  scorpio_scm_input.cpp
   scorpio_output.cpp
   scream_io_utils.cpp
 )

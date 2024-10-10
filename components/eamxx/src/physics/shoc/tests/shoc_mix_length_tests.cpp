@@ -90,8 +90,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
       }
     }
 
-    // Call the fortran implementation
-    compute_shoc_mix_shoc_length(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    compute_shoc_mix_shoc_length_f(SDS.nlev, SDS.shcol,
+                                   SDS.tke, SDS.brunt,
+                                   SDS.zt_grid,
+                                   SDS.l_inf, SDS.shoc_mix);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {

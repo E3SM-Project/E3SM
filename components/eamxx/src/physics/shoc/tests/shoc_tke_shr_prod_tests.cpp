@@ -93,8 +93,10 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       }
     }
 
-    // Call the fortran implementation
-    compute_shr_prod(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shr_prod_f(SDS.nlevi, SDS.nlev, SDS.shcol, SDS.dz_zi, SDS.u_wind, SDS.v_wind, SDS.sterm);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     for(Int s = 0; s < shcol; ++s) {
@@ -142,8 +144,10 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       }
     }
 
-    // Call the fortran implementation
-    compute_shr_prod(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shr_prod_f(SDS.nlevi, SDS.nlev, SDS.shcol, SDS.dz_zi, SDS.u_wind, SDS.v_wind, SDS.sterm);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     // Verify that shear term is zero everywhere

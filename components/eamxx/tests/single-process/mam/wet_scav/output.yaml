@@ -1,0 +1,42 @@
+%YAML 1.1
+---
+filename_prefix: mam4_wetscav_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+      - aerdepwetis
+      - aerdepwetcw
+      - dgnumwet
+      - dgncur_a
+      - wetdens
+      - qaerwat
+      - bc_c1
+      - bc_c3
+      - bc_c4
+      - dst_c1
+      - dst_c3
+      - mom_c1
+      - mom_c2
+      - mom_c3
+      - mom_c4
+      - nacl_c1
+      - nacl_c2
+      - nacl_c3
+      - num_c1
+      - num_c2
+      - num_c3
+      - num_c4
+      - pom_c1
+      - pom_c3
+      - pom_c4
+      - so4_c1
+      - so4_c2
+      - so4_c3
+      - soa_c1
+      - soa_c2
+      - soa_c3
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+...

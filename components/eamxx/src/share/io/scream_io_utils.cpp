@@ -2,8 +2,10 @@
 
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/scream_config.hpp"
 
 #include <fstream>
+#include <regex>
 
 namespace scream {
 
@@ -11,37 +13,49 @@ std::string find_filename_in_rpointer (
     const std::string& filename_prefix,
     const bool model_restart,
     const ekat::Comm& comm,
-    const util::TimeStamp& run_t0)
+    const util::TimeStamp& run_t0,
+    const OutputAvgType avg_type,
+    const IOControl& control)
 {
   std::string filename;
   bool found = false;
   std::string content;
   std::string suffix = model_restart ? ".r." : ".rhist.";
+  std::string pattern_str = filename_prefix + suffix;
+
+  // The AD will pass a default constructed control, since it doesn't know the values
+  // of REST_N/REST_OPTION used in the previous run. Also, model restart is *always* INSTANT.
+  if (model_restart) {
+    EKAT_REQUIRE_MSG (avg_type==OutputAvgType::Instant,
+        "Error! Model restart output should have INSTANT avg type.\n"
+        " - input avg_type: " + e2str(avg_type) + "\n");
+    pattern_str += e2str(OutputAvgType::Instant) + R"(.n(step|sec|min|hour|day|month|year)s_x\d+)";
+  } else {
+    EKAT_REQUIRE_MSG (control.output_enabled(),
+        "Error! When restarting an output stream, we need a valid IOControl structure.\n"
+        " - filename prefix: " + filename_prefix + "\n");
+    pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
+  }
+  if (is_scream_standalone()) {
+    pattern_str += ".np" + std::to_string(comm.size());
+  }
+  pattern_str += "." + run_t0.to_string() + ".nc";
+  std::regex pattern (pattern_str);
+
   if (comm.am_i_root()) {
     std::ifstream rpointer_file;
+
     std::string line;
     rpointer_file.open("rpointer.atm");
 
-    // If the timestamp is in the filename, then the filename ends with "S.nc",
-    // with S being the string representation of the timestamp
-    auto ts_len = run_t0.to_string().size();
-    auto extract_ts = [&] (const std::string& line) -> util::TimeStamp {
-      auto min_size = ts_len+3;
-      if (line.size()>=min_size) {
-        auto ts_str = line.substr(line.size()-min_size,ts_len);
-        auto ts = util::str_to_time_stamp(ts_str);
-        return ts;
-      } else {
-        return util::TimeStamp();
-      }
-    };
-
-    while ((rpointer_file >> line) and not found) {
+    while (std::getline(rpointer_file,line)) {
       content += line + "\n";
 
-      found = line.find(filename_prefix+suffix) != std::string::npos &&
-              extract_ts(line)==run_t0;
-      filename = line;
+      if (std::regex_search(line,pattern)) {
+        filename = line;
+        found = true;
+        break;
+      }
     }
   }
 
@@ -52,18 +66,29 @@ std::string find_filename_in_rpointer (
   if (not found) {
     broadcast_string(content,comm,comm.root_rank());
 
-    // If the history restart file is not found, it must be because the last
-    // model restart step coincided with a model output step, in which case
-    // a restart history file is not written.
-    // If that's the case, *disable* output restart, by setting
-    //   'Restart'->'Perform Restart' = false
-    // in the input parameter list
-    EKAT_ERROR_MSG (
-        "Error! Restart requested, but no restart file found in 'rpointer.atm'.\n"
-        "   restart filename prefix: " + filename_prefix + "\n"
-        "   restart file type: " + std::string(model_restart ? "model restart" : "history restart") + "\n"
-        "   run t0           : " + run_t0.to_string() + "\n"
-        "   rpointer content:\n" + content);
+    if (model_restart) {
+      EKAT_ERROR_MSG (
+          "Error! Restart requested, but no model restart file found in 'rpointer.atm'.\n"
+          "   model restart filename prefix: " + filename_prefix + "\n"
+          "   model restart filename pattern: " + pattern_str + "\n"
+          "   run t0           : " + run_t0.to_string() + "\n"
+          "   rpointer content:\n" + content + "\n\n");
+    } else {
+      EKAT_ERROR_MSG (
+          "Error! Restart requested, but no history restart file found in 'rpointer.atm'.\n"
+          "   hist restart filename prefix: " + filename_prefix + "\n"
+          "   hist restart filename pattern: " + pattern_str + "\n"
+          "   run t0           : " + run_t0.to_string() + "\n"
+          "   avg_type         : " + e2str(avg_type) + "\n"
+          "   output freq      : " + std::to_string(control.frequency) + "\n"
+          "   output freq units: " + control.frequency_units + "\n"
+          "   rpointer content:\n" + content + "\n\n"
+          " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n"
+          " It is also possible you are using a rhist file create before commit 6b7d441330d. That commit changed how rhist file names\n"
+          " are formed. In particular, we no longer use INSTANT.${REST_OPTION}_x${REST_N}, but we use the avg type, and freq/freq_option\n"
+          " of the output stream (to avoid name clashes if 2 streams only differ for one of those). If you want to use your rhist file,\n"
+          " please rename it, so that the avg-type, freq, and freq_option reflect those of the output stream.\n");
+    }
   }
 
   // Have the root rank communicate the nc filename

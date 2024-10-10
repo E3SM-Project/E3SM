@@ -88,8 +88,11 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
       }
     }
 
-    // Call the fortran implementation
-    compute_l_inf_shoc_length(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    compute_l_inf_shoc_length_f(SDS.nlev,SDS.shcol,SDS.zt_grid,SDS.dz_zt,SDS.tke,SDS.l_inf);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     // Make sure result is bounded correctly

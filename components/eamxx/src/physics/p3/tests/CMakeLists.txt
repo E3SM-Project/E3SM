@@ -26,7 +26,6 @@ set(P3_TESTS_SRCS
     p3_ice_melting_unit_tests.cpp
     p3_evaporate_rain_unit_tests.cpp
     p3_ice_cldliq_wet_growth_unit_tests.cpp
-    p3_get_latent_heat_unit_tests.cpp
     p3_subgrid_variance_scaling_unit_tests.cpp
     p3_check_values_unit_tests.cpp
     p3_incloud_mixingratios_unit_tests.cpp
@@ -60,7 +59,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
       LABELS "p3;physics;fail"
       ${FORCE_RUN_DIFF_FAILS})
 
-  if (NOT SCREAM_SMALL_KERNELS)
+  if (NOT SCREAM_P3_SMALL_KERNELS)
      CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
         LIBS p3_sk
         THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
