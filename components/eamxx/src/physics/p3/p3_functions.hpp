@@ -113,6 +113,7 @@ struct Functions
     Scalar p3_autoconversion_prefactor = 1350.0;
     Scalar p3_autoconversion_qc_exponent = 2.47;
     Scalar p3_autoconversion_nc_exponent = 1.79;
+    Scalar p3_autoconversion_radius = 25.0e-6;
     Scalar p3_accretion_prefactor = 67.0;
     Scalar p3_accretion_qc_exponent = 1.15;
     Scalar p3_accretion_qr_exponent = 1.15;

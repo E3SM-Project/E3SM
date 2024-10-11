@@ -19,11 +19,19 @@ void Functions<S,D>
 
   // Khroutdinov and Kogan (2000)
   const auto qc_not_small = qc_incld >= 1e-8 && context;
-  constexpr Scalar CONS3 = C::CONS3;
 
   const Scalar p3_autoconversion_prefactor = runtime_options.p3_autoconversion_prefactor;
   const Scalar p3_autoconversion_qc_exponent = runtime_options.p3_autoconversion_qc_exponent;
   const Scalar p3_autoconversion_nc_exponent = runtime_options.p3_autoconversion_nc_exponent;
+  const Scalar p3_autoconversion_radius = runtime_options.p3_autoconversion_radius;
+
+  // TODO: remove this conditional (and keep CONS3 defined as in else) once BFB reqs are satisfied
+  Scalar CONS3;
+  if(p3_autoconversion_radius == 25.0e-6) {
+    CONS3 = C::CONS3;
+  } else {
+    CONS3 = sp(1.0) / (C::CONS2 * pow(p3_autoconversion_radius, sp(3.0)));
+  }
 
   if(qc_not_small.any()) {
     Spack sgs_var_coef;
