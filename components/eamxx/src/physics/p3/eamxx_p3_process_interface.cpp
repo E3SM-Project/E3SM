@@ -227,6 +227,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   runtime_options.p3_accretion_prefactor = m_params.get<double>("p3_accretion_prefactor", 67.0);
   runtime_options.p3_accretion_qc_exponent = m_params.get<double>("p3_accretion_qc_exponent", 1.15);
   runtime_options.p3_accretion_qr_exponent = m_params.get<double>("p3_accretion_qr_exponent", 1.15);
+  runtime_options.p3_rain_selfcollection_prefactor = m_params.get<double>("p3_rain_selfcollection_prefactor", 5.78);
   runtime_options.p3_mu_r_constant = m_params.get<double>("p3_mu_r_constant", 1.0);
   runtime_options.p3_spa_to_nc = m_params.get<double>("p3_spa_to_nc", 1.0);
   runtime_options.p3_eci = m_params.get<double>("p3_eci", 0.5);

@@ -208,6 +208,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <p3_accretion_prefactor type="real" doc="Accretion linear prefactor in P3">67.0</p3_accretion_prefactor>
       <p3_accretion_qc_exponent type="real" doc="Accretion qc exponent in P3">1.15</p3_accretion_qc_exponent>
       <p3_accretion_qr_exponent type="real" doc="Accretion qr exponent in P3">1.15</p3_accretion_qr_exponent>
+      <p3_rain_selfcollection_prefactor type="real" doc="Rain selfcollection prefactor in P3">5.78</p3_rain_selfcollection_prefactor>
       <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
       <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
       <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>

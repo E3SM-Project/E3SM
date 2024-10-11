@@ -116,6 +116,7 @@ struct Functions
     Scalar p3_accretion_prefactor = 67.0;
     Scalar p3_accretion_qc_exponent = 1.15;
     Scalar p3_accretion_qr_exponent = 1.15;
+    Scalar p3_rain_selfcollection_prefactor = 5.78;
     Scalar p3_mu_r_constant = 1.0;
     Scalar p3_spa_to_nc = 1.0;
     Scalar p3_eci = 0.5;
