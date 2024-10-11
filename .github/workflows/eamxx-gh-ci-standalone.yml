@@ -44,7 +44,7 @@ jobs:
         run: |
           # TODO: get rid of this extra line if we can?
           git config --global safe.directory '*'
-          ./components/eamxx/scripts/test-all-scream -m ghci-oci -t ${{ matrix.test }}
+          ./components/eamxx/scripts/test-all-scream -m ghci-oci -t ${{ matrix.test }} -c BUILD_SHARED_LIBS=ON
       - 
         name: Artifacts
         uses: actions/upload-artifact@v4
