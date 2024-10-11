@@ -25,18 +25,23 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall = C::QSMALL;
 
-  const Scalar p3_k_accretion = runtime_options.p3_k_accretion;;
+  const Scalar p3_accretion_prefactor = runtime_options.p3_accretion_prefactor;
+  const Scalar p3_accretion_qc_exponent = runtime_options.p3_accretion_qc_exponent;
+  const Scalar p3_accretion_qr_exponent = runtime_options.p3_accretion_qr_exponent;
 
   Spack sgs_var_coef;
   // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
   sgs_var_coef = 1;
 
   const auto qr_and_qc_not_small = (qr_incld >= qsmall) && (qc_incld >= qsmall) && context;
-  if (qr_and_qc_not_small.any()) {
+  if(qr_and_qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
     qc2qr_accret_tend.set(qr_and_qc_not_small,
-              sgs_var_coef * sp(p3_k_accretion) * pow(qc_incld * qr_incld, sp(1.15)));
-    nc_accret_tend.set(qr_and_qc_not_small, qc2qr_accret_tend * nc_incld / qc_incld);
+                          sgs_var_coef * sp(p3_accretion_prefactor) *
+                              pow(qc_incld, sp(p3_accretion_qc_exponent)) *
+                              pow(qr_incld, sp(p3_accretion_qr_exponent)));
+    nc_accret_tend.set(qr_and_qc_not_small,
+                       qc2qr_accret_tend * nc_incld / qc_incld);
 
     qc2qr_accret_tend.set(nc_accret_tend == 0 && context, 0);
     nc_accret_tend.set(qc2qr_accret_tend == 0 && context, 0);

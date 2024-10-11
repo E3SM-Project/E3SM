@@ -111,9 +111,13 @@ struct Functions
   struct P3Runtime {
     Scalar max_total_ni = 740.0e3;
     Scalar p3_autoconversion_prefactor = 1350.0;
+    Scalar p3_autoconversion_qc_exponent = 2.47;
+    Scalar p3_autoconversion_nc_exponent = 1.79;
+    Scalar p3_accretion_prefactor = 67.0;
+    Scalar p3_accretion_qc_exponent = 1.15;
+    Scalar p3_accretion_qr_exponent = 1.15;
     Scalar p3_mu_r_constant = 1.0;
     Scalar p3_spa_to_nc = 1.0;
-    Scalar p3_k_accretion = 67.0;
     Scalar p3_eci = 0.5;
     Scalar p3_eri = 1.0;
     Scalar p3_rho_rime_min = 50.0;

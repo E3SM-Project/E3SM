@@ -22,17 +22,23 @@ void Functions<S,D>
   constexpr Scalar CONS3 = C::CONS3;
 
   const Scalar p3_autoconversion_prefactor = runtime_options.p3_autoconversion_prefactor;
+  const Scalar p3_autoconversion_qc_exponent = runtime_options.p3_autoconversion_qc_exponent;
+  const Scalar p3_autoconversion_nc_exponent = runtime_options.p3_autoconversion_nc_exponent;
 
-  if(qc_not_small.any()){
+  if(qc_not_small.any()) {
     Spack sgs_var_coef;
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );
     sgs_var_coef = 1;
 
-    qc2qr_autoconv_tend.set(qc_not_small,
-              sgs_var_coef*p3_autoconversion_prefactor*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
+    qc2qr_autoconv_tend.set(
+        qc_not_small, sgs_var_coef * p3_autoconversion_prefactor *
+                          pow(qc_incld, sp(p3_autoconversion_qc_exponent)) *
+                          pow(nc_incld * sp(1.e-6) * rho,
+                              sp(-1 * p3_autoconversion_nc_exponent)));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
-    ncautr.set(qc_not_small, qc2qr_autoconv_tend*CONS3);
-    nc2nr_autoconv_tend.set(qc_not_small, qc2qr_autoconv_tend*nc_incld/qc_incld);
+    ncautr.set(qc_not_small, qc2qr_autoconv_tend * CONS3);
+    nc2nr_autoconv_tend.set(qc_not_small,
+                            qc2qr_autoconv_tend * nc_incld / qc_incld);
   }
 
   nc2nr_autoconv_tend.set(qc2qr_autoconv_tend == 0 && context, 0);

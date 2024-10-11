@@ -202,10 +202,14 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
       </tables>
-      <p3_autoconversion_prefactor type="real" doc="P3 autoconversion_prefactor (scale factor in autoconversion)">1350.0</p3_autoconversion_prefactor>
+      <p3_autoconversion_prefactor type="real" doc="Autoconversion linear prefactor in P3">1350.0</p3_autoconversion_prefactor>
+      <p3_autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent in P3">2.47</p3_autoconversion_qc_exponent>
+      <p3_autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent in P3">1.79</p3_autoconversion_nc_exponent>
+      <p3_accretion_prefactor type="real" doc="Accretion linear prefactor in P3">67.0</p3_accretion_prefactor>
+      <p3_accretion_qc_exponent type="real" doc="Accretion qc exponent in P3">1.15</p3_accretion_qc_exponent>
+      <p3_accretion_qr_exponent type="real" doc="Accretion qr exponent in P3">1.15</p3_accretion_qr_exponent>
       <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
       <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
-      <p3_k_accretion type="real" doc="P3 k_accretion (scaling factor on accretion)">67.0</p3_k_accretion>
       <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>
       <p3_eri type="real" doc="P3 eri (ice/rain collision/collection coefficient)">1.0</p3_eri>
       <p3_rho_rime_min type="real" doc="P3 rho_rime_min (riming density maximum)">50.0</p3_rho_rime_min>
