@@ -99,6 +99,8 @@ Int Functions<S,D>
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
 
+  const bool do_ice_production = runtime_options.p3_do_ice_production;
+
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
 
@@ -287,9 +289,10 @@ Int Functions<S,D>
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), runtime_options);
 
     // homogeneous freezing of cloud and rain
-    homogeneous_freezing(
-      T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
-      oni, oqm, obm, oth);
+    if(do_ice_production) {
+      homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
+                           onc, oqr, onr, oqi, oni, oqm, obm, oth);
+    }
 
     //
     // final checks to ensure consistency of mass/number

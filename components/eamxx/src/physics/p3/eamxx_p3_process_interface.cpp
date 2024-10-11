@@ -233,6 +233,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   runtime_options.p3_dep_nucleation_exponent = m_params.get<double>("p3_dep_nucleation_exponent", 0.304);
   runtime_options.p3_ice_sed_knob = m_params.get<double>("p3_ice_sed_knob", 1.0);
   runtime_options.p3_d_breakup_cutoff = m_params.get<double>("p3_d_breakup_cutoff", 0.00028);
+  runtime_options.p3_do_ice_production = m_params.get<bool>("p3_do_ice_production", true);
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
