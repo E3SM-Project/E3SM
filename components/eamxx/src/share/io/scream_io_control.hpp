@@ -22,6 +22,11 @@ struct IOControl {
   util::TimeStamp next_write_ts;
   util::TimeStamp last_write_ts;
 
+  // At run time, set dt in the struct, so we can compute next_write_ts correctly,
+  // even if freq_units is "nsteps"
+  // NOTE: this ASSUMES dt is constant throughout the simulation. Error is thrown if it changes
+  double dt = 0;
+
   bool output_enabled () const {
     return frequency_units!="none" && frequency_units!="never";
   }
@@ -29,7 +34,15 @@ struct IOControl {
   bool is_write_step (const util::TimeStamp& ts) const {
     if (not output_enabled()) return false;
     return frequency_units=="nsteps" ? ts.get_num_steps()==next_write_ts.get_num_steps()
-                                     : ts==next_write_ts;
+                                     : (ts.get_date()==next_write_ts.get_date() and
+                                        ts.get_time()==next_write_ts.get_time());
+  }
+
+  void set_dt (const double dt_in) {
+    EKAT_REQUIRE_MSG (dt==0 or dt==dt_in,
+        "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
+
+    dt = dt_in;
   }
 
   // Computes next_write_ts from frequency and last_write_ts
@@ -37,8 +50,9 @@ struct IOControl {
     EKAT_REQUIRE_MSG (last_write_ts.is_valid(),
         "Error! Cannot compute next_write_ts, since last_write_ts was never set.\n");
     if (frequency_units=="nsteps") {
-      // This avoids having an invalid date/time in the above check next time this fcn runs
-      next_write_ts = last_write_ts;
+      // This avoids having an invalid/wrong date/time in StorageSpecs::snapshot_fits
+      // if storage type is NumSnaps
+      next_write_ts = last_write_ts + dt*frequency;
       next_write_ts.set_num_steps(last_write_ts.get_num_steps()+frequency);
     } else if (frequency_units=="nsecs") {
       next_write_ts = last_write_ts;

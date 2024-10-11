@@ -42,7 +42,7 @@ struct StorageSpecs {
   //  - type=NumSnaps: the number of stored snaps is less than the max allowed per file.
   //  - otherwise: the snapshot month/year index match the one currently stored in the file
   //               or the file has no snapshot stored yet
-  bool snapshot_fits (const util::TimeStamp& t) {
+  bool snapshot_fits (const util::TimeStamp& t) const {
     const auto& idx = type==Monthly ? t.get_month() : t.get_year();
     switch (type) {
       case Yearly:
@@ -87,7 +87,7 @@ struct IOFileSpecs {
   int flush_frequency = std::numeric_limits<int>::max();
 
   bool file_needs_flush () const {
-    return storage.num_snapshots_in_file%flush_frequency==0;
+    return storage.num_snapshots_in_file>0 and storage.num_snapshots_in_file%flush_frequency==0;
   }
 
   // Whether it is a model output, model restart, or history restart file

@@ -243,16 +243,17 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
       if (m_resume_output_file) {
         int num_snaps = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
-
-        m_output_file_specs.filename = last_output_filename;
-        m_output_file_specs.is_open = true;
         m_output_file_specs.storage.num_snapshots_in_file = num_snaps;
 
         if (m_output_file_specs.storage.snapshot_fits(m_output_control.next_write_ts)) {
           // The setup_file call will not register any new variable (the file is in Append mode,
           // so all dims/vars must already be in the file). However, it will register decompositions,
           // since those are a property of the run, not of the file.
+          m_output_file_specs.filename = last_output_filename;
+          m_output_file_specs.is_open = true;
           setup_file(m_output_file_specs,m_output_control);
+        } else {
+          m_output_file_specs.close();
         }
       }
       scorpio::release_file(rhist_file);
@@ -299,6 +300,24 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
+  // Make sure dt is in the control
+  m_output_control.set_dt(dt);
+
+  if (start_of_step==m_case_t0 and m_avg_type==OutputAvgType::Instant and
+      m_output_file_specs.storage.type!=NumSnaps and m_output_control.frequency_units=="nsteps") {
+    // This is the 1st step of the whole run, and a very sneaky corner case. Bear with me.
+    // When we call run, we also compute next_write_ts. Then, we use next_write_ts to see if the
+    // next output step will fit in the currently open file, and, if not, close it right away.
+    // For a storage type!=NumSnaps, we need to have a valid timestamp for next_write_ts, which
+    // for freq=nsteps requires to know dt. But at t=case_t0, we did NOT have dt, which means we
+    // computed next_write_ts=last_write_ts (in terms of date:time, the num_steps is correct).
+    // This means that at that time we deemed that the next_write_ts definitely fit in the same
+    // file as last_write_ts (date/time are the same!), which may or may not be true for non NumSnaps
+    // storage. To fix this, we recompute next_write_ts here, and close the file if it doesn't.
+    m_output_control.compute_next_write_ts();
+    close_or_flush_if_needed (m_output_file_specs,m_output_control);
+  }
+
   // Check if the end of this timestep will correspond to an output step. If not, there's nothing to do
   const auto& end_of_step = start_of_step+dt;
 
@@ -340,10 +359,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
       "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
 
-  // Update counters
-  ++m_output_control.nsamples_since_last_write;
-  ++m_checkpoint_control.nsamples_since_last_write;
-
   if (m_atm_logger) {
     m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
   }
@@ -372,6 +387,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant && not output_every_step;
   const bool is_full_checkpoint_step = is_checkpoint_step && has_checkpoint_data && not is_output_step;
   const bool is_write_step           = is_output_step || is_checkpoint_step;
+
+  // Update counters
+  ++m_output_control.nsamples_since_last_write;
+  if (not is_t0_output) {
+    // In case REST_OPT=nsteps, don't count t0 output as one of those steps
+    // NOTE: for m_output_control, it doesn't matter, since it'll be reset to 0 before we return
+    ++m_checkpoint_control.nsamples_since_last_write;
+  }
 
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
@@ -542,17 +565,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         scorpio::write_var(filespecs.filename, "time_bnds", m_time_bnds.data());
       }
 
-      // Check if we need to flush the output file
-      if (filespecs.file_needs_flush()) {
-        flush_file (filespecs.filename);
-      }
-
-      // Check if we have hit the max number of snapshots and need to close the file
-      bool file_is_full = not filespecs.storage.snapshot_fits(m_output_control.next_write_ts);
-      if (file_is_full) {
-        release_file (filespecs.filename);
-        filespecs.close();
-      }
+      close_or_flush_if_needed(filespecs,control);
     };
 
     start_timer(timer_root+"::update_snapshot_tally");
@@ -911,7 +924,18 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_str_att("Conventions","CF-1.8");
   set_str_att("product",e2str(file_specs.ftype));
 }
-/*===============================================================================================*/
+void OutputManager::
+close_or_flush_if_needed (      IOFileSpecs& file_specs,
+                          const IOControl&   control) const
+{
+  if (not file_specs.storage.snapshot_fits(control.next_write_ts)) {
+    scorpio::release_file(file_specs.filename);
+    file_specs.close();
+  } else if (file_specs.file_needs_flush()) {
+    scorpio::flush_file (file_specs.filename);
+  }
+}
+
 void OutputManager::
 push_to_logger()
 {

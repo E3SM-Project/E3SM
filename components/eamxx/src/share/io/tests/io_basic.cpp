@@ -153,6 +153,15 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ctrl_pl.set("Frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
+  // While setting this is in practice irrelevant (we would close
+  // the file anyways at the end of the run), we can test that the OM closes
+  // the file AS SOON as it's full (before calling finalize)
+  int max_snaps = num_output_steps;
+  if (avg_type=="INSTANT") {
+    ++max_snaps;
+  }
+  om_pl.set("Max Snapshots Per File", max_snaps);
+
   // Create Output manager
   OutputManager om;
 
@@ -179,6 +188,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Run output manager
     om.run (t);
   }
+
+  // Check that the file was closed, since we reached full capacity
+  const auto& file_specs = om.output_file_specs();
+  REQUIRE (not file_specs.is_open);
 
   // Close file and cleanup
   om.finalize();
