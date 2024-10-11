@@ -1,17 +1,2 @@
 #!/bin/bash
 if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAME --val netcdf; fi
-module load e4s
-spack env activate gcc
-spack load nco
-
-SRCDIR=`./xmlquery SRCROOT --value`
-CASEDIR=`./xmlquery CASEROOT --value`
-FATESDIR=$SRCDIR/src/fates
-FATESPARAMFILE=$CASEDIR/fates_params_hydrograsstempfix.nc
-
-ncgen -o $FATESPARAMFILE $FATESDIR/parameter_files/fates_params_default.cdl
-
-$FATESDIR/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_allom_smode --val 1 --allpfts
-
-spack unload nco
-module unload e4s
