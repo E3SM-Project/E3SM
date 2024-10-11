@@ -535,7 +535,7 @@ contains
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = 0.0_RKIND ! activeTracers(indexSalinity, k, iCell) !0.0_RKIND
+              frazilSalinity = activeTracers(indexSalinity, k, iCell) !0.0_RKIND
             else
               frazilSalinity = activeTracers(indexSalinity, k, iCell) !config_frazil_sea_ice_reference_salinity
             end if
