@@ -34,13 +34,14 @@ void Functions<S,D>
   sgs_var_coef = 1;
 
   const auto qr_and_qc_not_small = (qr_incld >= qsmall) && (qc_incld >= qsmall) && context;
-  if (qr_and_qc_not_small.any()) {
+  if(qr_and_qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
     qc2qr_accret_tend.set(
         qr_and_qc_not_small,
         sgs_var_coef * sp(p3_accretion_prefactor) *
             // TODO: split this pow into two in a later PR due to NBFB behavior
-            pow(qc_incld * qr_incld, sp(p3_accretion_qr_exponent)));
+            // pow(qc_incld, p3_accretion_qc_exponent) * pow(qr_incld, p3_accretion_qr_exponent));
+            pow(qc_incld * qr_incld, p3_accretion_qr_exponent));
     nc_accret_tend.set(qr_and_qc_not_small,
                        qc2qr_accret_tend * nc_incld / qc_incld);
 

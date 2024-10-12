@@ -210,6 +210,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <p3_accretion_qc_exponent type="real" doc="Accretion qc exponent in P3">1.15</p3_accretion_qc_exponent>
       <p3_accretion_qr_exponent type="real" doc="Accretion qr exponent in P3">1.15</p3_accretion_qr_exponent>
       <p3_rain_selfcollection_prefactor type="real" doc="Rain selfcollection prefactor in P3">5.78</p3_rain_selfcollection_prefactor>
+      <p3_rain_selfcollection_breakup_diameter type="real" doc="Rain selfcollection breakup diameter (meter) in P3">0.00028</p3_rain_selfcollection_breakup_diameter>
       <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
       <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
       <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>
@@ -219,7 +220,6 @@ be lost if SCREAM_HACK_XML is not enabled.
       <p3_a_imm type="real" doc="P3 a_imm (drop freezing exponent )">0.65</p3_a_imm>
       <p3_dep_nucleation_exponent type="real" doc="P3 dep_nucleation_exponent (deposition nucleation)">0.304</p3_dep_nucleation_exponent>
       <p3_ice_sed_knob type="real" doc="P3 ice_sed_knob (ice fall speed)">1.0</p3_ice_sed_knob>
-      <p3_d_breakup_cutoff type="real" doc="P3 d_breakup_cutoff (rain self collection and breakup)">0.00028</p3_d_breakup_cutoff>
       <p3_do_ice_production type="logical" doc="Flag to turn on ice production processes in P3 (loss processes unaffected by this flag)">true</p3_do_ice_production>
     </p3>
 

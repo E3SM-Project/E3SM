@@ -25,13 +25,8 @@ void Functions<S,D>
   const Scalar p3_autoconversion_nc_exponent = runtime_options.p3_autoconversion_nc_exponent;
   const Scalar p3_autoconversion_radius = runtime_options.p3_autoconversion_radius;
 
-  // TODO: remove this conditional (and keep CONS3 defined as in else) once BFB reqs are satisfied
-  Scalar CONS3;
-  if(p3_autoconversion_radius == 25.0e-6) {
-    CONS3 = C::CONS3;
-  } else {
-    CONS3 = sp(1.0) / (C::CONS2 * pow(p3_autoconversion_radius, sp(3.0)));
-  }
+  // TODO: correct this later (by keeping commented-out def) once BFB reqs are satisfied
+  const Scalar CONS3 = C::CONS3; // sp(1.0) / (C::CONS2 * pow(p3_autoconversion_radius, sp(3.0)));
 
   if(qc_not_small.any()) {
     Spack sgs_var_coef;
@@ -39,10 +34,10 @@ void Functions<S,D>
     sgs_var_coef = 1;
 
     qc2qr_autoconv_tend.set(
-        qc_not_small, sgs_var_coef * p3_autoconversion_prefactor *
-                          pow(qc_incld, sp(p3_autoconversion_qc_exponent)) *
-                          pow(nc_incld * sp(1.e-6) * rho,
-                              sp(-1 * p3_autoconversion_nc_exponent)));
+        qc_not_small,
+        sgs_var_coef * p3_autoconversion_prefactor *
+            pow(qc_incld, p3_autoconversion_qc_exponent) *
+            pow(nc_incld * sp(1.e-6) * rho, -p3_autoconversion_nc_exponent));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
     ncautr.set(qc_not_small, qc2qr_autoconv_tend * CONS3);
     nc2nr_autoconv_tend.set(qc_not_small,
