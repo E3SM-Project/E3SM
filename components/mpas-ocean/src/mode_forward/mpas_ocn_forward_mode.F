@@ -669,7 +669,7 @@ module ocn_forward_mode
 
       ! if not using RK4, calculate time varying forcing terms once per
       ! time-step as opposed at each RK substage as implemented in RK4 
-      if (timeIntegratorChoice /= 4) then
+      if (timeIntegratorChoice /= timeIntRK4) then
         call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
       endif
 
@@ -841,7 +841,7 @@ module ocn_forward_mode
          endif
 
          ! read in next time level data required for time-varying forcing
-         if (timeIntegratorChoice /= 4) then
+         if (timeIntegratorChoice /= timeIntRK4) then
            ! if not using RK4, calculate time varying forcing terms once per
            ! time-step as opposed at each RK substage as implemented in RK4
            call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
