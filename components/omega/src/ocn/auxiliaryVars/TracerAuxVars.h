@@ -87,6 +87,10 @@ class TracerAuxVars {
       }
    }
 
+   void registerFields(const std::string &AuxGroupName,
+                       const std::string &MeshName) const;
+   void unregisterFields() const;
+
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
