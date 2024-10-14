@@ -1797,6 +1797,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="pm-cpu|muller-cpu|alvarez">
+      <pes compset="any" pesize="any">
+        <comment>allactive+pm-cpu: default, 1 node, 96 tasks, 1 thread</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+          <ntasks_cpl>96</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4">
     <mach name="pm-gpu|muller-gpu">
