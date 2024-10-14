@@ -4068,6 +4068,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.9</command>
+        <command name="load">cmake/3.27.7</command>
       </modules>
 
       <modules compiler="!intel">
@@ -4077,6 +4078,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.27.7</command>
       </modules>
     </module_system>
 
@@ -4213,6 +4215,7 @@ AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100'</DESC>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.27.7</command>
       </modules>
     </module_system>
 
