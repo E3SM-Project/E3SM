@@ -2,6 +2,7 @@
 #define OMEGA_AUX_TRACER_H
 
 #include "DataTypes.h"
+#include "Field.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
 #include "auxiliaryVars/LayerThicknessAuxVars.h"

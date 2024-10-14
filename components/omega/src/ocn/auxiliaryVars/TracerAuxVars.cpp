@@ -39,7 +39,7 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
    auto HTracersEdgeField = Field::create(
        HTracersOnEdge.label(), // field name
        "thickness-weighted tracers at edges. May be centered, upwinded, or a "
-       "combination of the two."         // long name or description
+       "combination of the two.",        // long name or description
        "",                               // units
        "",                               // CF standard name
        0,                                // min valid value
@@ -65,36 +65,36 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
    );
 
    // Add fields to Aux Field group
-   Err = FieldGroup::addFieldToGroup(HTracersEdge.label(), AuxGroupName);
+   Err = FieldGroup::addFieldToGroup(HTracersOnEdge.label(), AuxGroupName);
    if (Err != 0)
-      LOG_ERROR("Error adding field {} to group {}", HTracersEdge.label(),
+      LOG_ERROR("Error adding field {} to group {}", HTracersOnEdge.label(),
                 AuxGroupName);
 
-   Err = FieldGroup::addFieldToGroup(Del2TracersCell.label(), AuxGroupName);
+   Err = FieldGroup::addFieldToGroup(Del2TracersOnCell.label(), AuxGroupName);
    if (Err != 0)
-      LOG_ERROR("Error adding field {} to group {}", Del2TracersCell.label(),
+      LOG_ERROR("Error adding field {} to group {}", Del2TracersOnCell.label(),
                 AuxGroupName);
 
    // Attach data to fields
-   Err = HTracersEdgeField->attachData<Array3DReal>(HTracersEdge);
+   Err = HTracersEdgeField->attachData<Array3DReal>(HTracersOnEdge);
    if (Err != 0)
-      LOG_ERROR("Error attaching data to field {}", HTracersEdge.label());
+      LOG_ERROR("Error attaching data to field {}", HTracersOnEdge.label());
 
-   Err = Del2TracersCellField->attachData<Array3DReal>(Del2TracersCell);
+   Err = Del2TracersCellField->attachData<Array3DReal>(Del2TracersOnCell);
    if (Err != 0)
-      LOG_ERROR("Error attaching data to field {}", Del2TracersCell.label());
+      LOG_ERROR("Error attaching data to field {}", Del2TracersOnCell.label());
 }
 
 void TracerAuxVars::unregisterFields() const {
    int Err = 0;
 
-   Err = Field::destroy(HTracersEdge.label());
+   Err = Field::destroy(HTracersOnEdge.label());
    if (Err != 0)
-      LOG_ERROR("Error destroying field {}", HTracersEdge.label());
+      LOG_ERROR("Error destroying field {}", HTracersOnEdge.label());
 
-   Err = Field::destroy(Del2TracersCell.label());
+   Err = Field::destroy(Del2TracersOnCell.label());
    if (Err != 0)
-      LOG_ERROR("Error destroying field {}", Del2TracersCell.label());
+      LOG_ERROR("Error destroying field {}", Del2TracersOnCell.label());
 }
 
 } // namespace OMEGA
