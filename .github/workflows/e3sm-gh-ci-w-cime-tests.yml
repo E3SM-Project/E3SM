@@ -1,4 +1,4 @@
-name: gh
+name: gh-w
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
 
-  ci-w:
+  ci:
     if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     strategy:
