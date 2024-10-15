@@ -590,10 +590,6 @@ class TestAllScream(object):
         print(f"Generating baselines using '{git_head}'")
         print("###############################################################################")
 
-        if self._work_dir.exists():
-            shutil.rmtree(self._work_dir)
-        self._work_dir.mkdir()
-
         success = True
         num_workers = len(tests_needing_baselines) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
