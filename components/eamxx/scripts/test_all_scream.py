@@ -2,7 +2,7 @@ from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
     SharedArea, safe_copy
 from git_utils import get_current_head, get_current_commit
 
-from test_factory import create_tests, COV
+from test_factory import create_tests, COV, CSR
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
@@ -386,10 +386,19 @@ class TestAllScream(object):
         if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
             result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
 
+        # For the compute-sanitizer tool 'racecheck', if no option --racecheck-num-workers
+        # is provided, it will attempt to use all threads available on node. This can cause
+        # issues if other test cases are being run in parallel. If the option was not specified,
+        # limit the number of threads availible to racecheck to the number of compile resources.
+        if self._parallel and isinstance(test, CSR) and not '--racecheck-num-workers' in result:
+            new_option = ' --racecheck-num-workers=' + str(test.compile_res_count)
+            index = result.index('--tool=racecheck') + len('--tool=racecheck')
+            result = result[:index] + new_option + result[index:]
+
         return result
 
     ###############################################################################
-    def get_taskset_range(self, test, for_compile=True):
+    def get_taskset_resources(self, test, for_compile=True):
     ###############################################################################
         res_name = "compile_res_count" if for_compile else "testing_res_count"
 
@@ -410,13 +419,11 @@ class TestAllScream(object):
 
         expect(offset < len(affinity_cp),
                f"Offset {offset} out of bounds (max={len(affinity_cp)}) for test {test}\naffinity_cp: {affinity_cp}")
-        start = affinity_cp[offset]
-        end = start
-        for i in range(1, getattr(test, res_name)):
-            expect(affinity_cp[offset+i] == start+i, f"Could not get contiguous range for test {test}")
-            end = affinity_cp[offset+i]
+        resources = []
+        for i in range(0, getattr(test, res_name)):
+            resources.append(affinity_cp[offset+i])
 
-        return start, end
+        return resources
 
     ###############################################################################
     def create_ctest_resource_file(self, test, build_dir):
@@ -429,7 +436,7 @@ class TestAllScream(object):
         # res group is where we usually bind an individual MPI rank.
         # The id of the res groups on is offset so that it is unique across all builds
 
-        start, end = self.get_taskset_range(test, for_compile=False)
+        resources = self.get_taskset_resources(test, for_compile=False)
 
         data = {}
 
@@ -439,7 +446,7 @@ class TestAllScream(object):
         # We add leading zeroes to ensure that ids will sort correctly
         # both alphabetically and numerically
         devices = []
-        for res_id in range(start,end+1):
+        for res_id in resources:
             devices.append({"id":f"{res_id:05d}"})
 
         # Add resource groups
@@ -448,7 +455,7 @@ class TestAllScream(object):
         with (build_dir/"ctest_resource_file.json").open("w", encoding="utf-8") as outfile:
             json.dump(data,outfile,indent=2)
 
-        return (end-start)+1
+        return len(resources)
 
     ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
@@ -489,11 +496,11 @@ class TestAllScream(object):
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
-        # taskset range even though the ctest script is also running the tests
+        # taskset resources even though the ctest script is also running the tests
         if self._parallel:
-            start, end = self.get_taskset_range(test)
+            resources = self.get_taskset_resources(test)
             result = result.replace("'", r"'\''") # handle nested quoting
-            result = f"taskset -c {start}-{end} sh -c '{result}'"
+            result = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{result}'"
 
         return result
 
@@ -530,8 +537,8 @@ class TestAllScream(object):
 
         cmd = f"make -j{test.compile_res_count}"
         if self._parallel:
-            start, end = self.get_taskset_range(test)
-            cmd = f"taskset -c {start}-{end} sh -c '{cmd}'"
+            resources = self.get_taskset_resources(test)
+            cmd = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{cmd}'"
 
         stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 

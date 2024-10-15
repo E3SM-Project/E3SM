@@ -47,11 +47,19 @@ interface
   ! responsible to handle import/export operation from/into the component
   ! coupler surface fluxes/state structures
   subroutine scream_setup_surface_coupling (import_field_names, import_cpl_indices, &
-                                            x2a_ptr, import_vector_components, &
+                                            x2a_ptr, &
+#ifdef HAVE_MOAB
+                                            x2a_moab_ptr, &
+#endif
+                                            import_vector_components, &
                                             import_constant_multiple, do_import_during_init, &
                                             num_cpl_imports, num_scream_imports, import_field_size, &
                                             export_field_names, export_cpl_indices, &
-                                            a2x_ptr, export_vector_components, &
+                                            a2x_ptr, &
+#ifdef HAVE_MOAB
+                                            a2x_moab_ptr, &
+#endif
+                                            export_vector_components, &
                                             export_constant_multiple, do_export_during_init, &
                                             num_cpl_exports, num_scream_exports, export_field_size) bind(c)
     use iso_c_binding, only: c_ptr, c_int
@@ -64,10 +72,18 @@ interface
     type(c_ptr),         intent(in) :: export_field_names, export_cpl_indices, &
                                        a2x_ptr, export_vector_components, &
                                        export_constant_multiple, do_export_during_init
+#ifdef HAVE_MOAB
+    type(c_ptr),         intent(in) :: x2a_moab_ptr, a2x_moab_ptr
+#endif
     integer(kind=c_int), intent(in) :: num_cpl_imports, num_scream_imports, &
                                        num_cpl_exports, num_scream_exports
     integer(kind=c_int), intent(in) :: import_field_size, export_field_size
   end subroutine scream_setup_surface_coupling
+
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+  subroutine scream_init_hip_atm () bind(c)
+  end subroutine scream_init_hip_atm
+#endif
 
   ! This subroutine performs completes the initialization of the atm instance.
   ! In particular, this routine must be called *after* scream_create_atm_instance,

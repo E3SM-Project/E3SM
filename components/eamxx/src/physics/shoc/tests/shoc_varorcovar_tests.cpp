@@ -115,8 +115,14 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
       }
     }
 
-    // Call the fortran implementation for variance
-    calc_shoc_varorcovar(SDS);
+    // Call the C++ implementation for variance
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
+                           SDS.tunefac, SDS.isotropy_zi,
+                           SDS.tkh_zi, SDS.dz_zi,
+                           SDS.invar1, SDS.invar2, SDS.varorcovar);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -172,8 +178,14 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
       }
     }
 
-    // Call the fortran implementation for covariance
-    calc_shoc_varorcovar(SDS);
+    // Call the C++ implementation for covariance
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
+                           SDS.tunefac, SDS.isotropy_zi,
+                           SDS.tkh_zi, SDS.dz_zi,
+                           SDS.invar1, SDS.invar2, SDS.varorcovar);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -250,8 +262,14 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
       }
     }
 
-    // Call the fortran implementation for variance
-    calc_shoc_varorcovar(SDS);
+    // Call the C++ implementation for variance
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
+                           SDS.tunefac, SDS.isotropy_zi,
+                           SDS.tkh_zi, SDS.dz_zi,
+                           SDS.invar1, SDS.invar2, SDS.varorcovar);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {

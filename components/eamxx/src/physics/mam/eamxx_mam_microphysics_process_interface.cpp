@@ -317,6 +317,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // FIXME: read relevant chlorine loading data from file based on time
 
   // loop over atmosphere columns and compute aerosol microphyscs
+  auto some_step = step_;
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const int icol = team.league_rank(); // column index
 

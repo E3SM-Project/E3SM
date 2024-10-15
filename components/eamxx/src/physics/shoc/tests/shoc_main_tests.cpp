@@ -258,8 +258,19 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
     }
 
-    // Call the fortran implementation
-    shoc_main(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    const int npbl = shoc_init_f(SDS.nlev, SDS.pref_mid, SDS.nbot_shoc, SDS.ntop_shoc);
+
+    shoc_main_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv, npbl, SDS.host_dx, SDS.host_dy,
+                SDS.thv, SDS.zt_grid, SDS.zi_grid, SDS.pres, SDS.presi, SDS.pdel, SDS.wthl_sfc,
+                SDS.wqw_sfc, SDS.uw_sfc, SDS.vw_sfc, SDS.wtracer_sfc, SDS.num_qtracers,
+                SDS.w_field, SDS.inv_exner, SDS.phis, SDS.host_dse, SDS.tke, SDS.thetal, SDS.qw,
+                SDS.u_wind, SDS.v_wind, SDS.qtracers, SDS.wthv_sec, SDS.tkh, SDS.tk, SDS.shoc_ql,
+                SDS.shoc_cldfrac, SDS.pblh, SDS.shoc_mix, SDS.isotropy, SDS.w_sec, SDS.thl_sec,
+                SDS.qw_sec, SDS.qwthl_sec, SDS.wthl_sec, SDS.wqw_sec, SDS.wtke_sec, SDS.uw_sec,
+                SDS.vw_sec, SDS.w3, SDS.wqls_sec, SDS.brunt, SDS.shoc_ql2);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Make sure output falls within reasonable bounds
     for(Int s = 0; s < shcol; ++s) {

@@ -13,6 +13,7 @@ on:
 
 jobs:
   scream-defaults:
+    if: ${{ github.event.repository.name == 'e3sm' }}
     runs-on: ubuntu-latest
     outputs:
       event_name: ${{ github.event_name }}

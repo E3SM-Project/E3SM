@@ -159,6 +159,10 @@ struct Functions
 
     // planetary boundary layer depth [m]
     view_1d<Scalar> pblh;
+    // surface friction velocity [m/s]
+    view_1d<Scalar> ustar;
+    // Monin Obukhov length [m]
+    view_1d<Scalar> obklen;
     // cloud liquid mixing ratio variance [kg^2/kg^2]
     view_2d<Spack>  shoc_ql2;
     // eddy coefficient for heat [m2/s]
@@ -199,7 +203,7 @@ struct Functions
     view_2d<Spack>  isotropy;
   };
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   struct SHOCTemporaries {
     SHOCTemporaries() = default;
 
@@ -211,9 +215,7 @@ struct Functions
     view_1d<Scalar> ke_a;
     view_1d<Scalar> wv_a;
     view_1d<Scalar> wl_a;
-    view_1d<Scalar> ustar;
     view_1d<Scalar> kbfs;
-    view_1d<Scalar> obklen;
     view_1d<Scalar> ustar2;
     view_1d<Scalar> wstar;
 
@@ -270,7 +272,7 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const Scalar& phis,
     const uview_1d<Spack>& host_dse);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void update_host_dse_disp(
     const Int& shcol,
     const Int& nlev,
@@ -322,7 +324,7 @@ struct Functions
     const MemberType& team,
     const Int& nlev,
     const uview_1d<Spack>& tke);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void check_tke_disp(
     const Int& schol,
     const Int& nlev,
@@ -361,7 +363,7 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_energy_integrals_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -407,12 +409,12 @@ struct Functions
      const Workspace& workspace, const uview_1d<Spack>& thl_sec,
      const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
      const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void diag_second_shoc_moments_disp(
     const Int& shcol, const Int& nlev, const Int& nlevi,
-    const Scalar& thl2tune, 
-    const Scalar& qw2tune, 
-    const Scalar& qwthl2tune, 
+    const Scalar& thl2tune,
+    const Scalar& qw2tune,
+    const Scalar& qwthl2tune,
     const Scalar& w2tune,
     const view_2d<const Spack>& thetal,
     const view_2d<const Spack>& qw,
@@ -483,7 +485,7 @@ struct Functions
     Scalar&       ustar,
     Scalar&       kbfs,
     Scalar&       obklen);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_diag_obklen_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -520,7 +522,7 @@ struct Functions
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_length_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -562,7 +564,7 @@ struct Functions
     const uview_1d<const Spack>& pint,
     const Workspace&             workspace,
     const uview_1d<Spack>&       host_dse);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_energy_fixer_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -595,7 +597,7 @@ struct Functions
     const uview_1d<const Spack>& qw,
     const uview_1d<const Spack>& ql,
     const uview_1d<Spack>&       qv);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void compute_shoc_vapor_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -612,7 +614,7 @@ struct Functions
     const uview_1d<const Spack>& ql,
     const uview_1d<const Spack>& inv_exner,
     const uview_1d<Spack>&       tabs);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void compute_shoc_temperature_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -648,7 +650,7 @@ struct Functions
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       u_wind,
     const uview_1d<Spack>&       v_wind);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void update_prognostics_implicit_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -695,7 +697,7 @@ struct Functions
     const uview_1d<const Spack>& zi_grid,
     const Workspace&             workspace,
     const uview_1d<Spack>&       w3);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void diag_third_shoc_moments_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -752,7 +754,7 @@ struct Functions
     const uview_1d<Spack>&       wqls,
     const uview_1d<Spack>&       wthv_sec,
     const uview_1d<Spack>&       shoc_ql2);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_assumed_pdf_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -777,6 +779,154 @@ struct Functions
     const view_2d<Spack>&       wthv_sec,
     const view_2d<Spack>&       shoc_ql2);
 #endif
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_buoyancy_flux(
+    const Spack& wthlsec,
+    const Spack& wqwsec,
+    const Spack& pval,
+    const Spack& wqls,
+    Spack&       wthv_sec);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_cloud_liquid_variance(
+    const Spack& a,
+    const Spack& s1,
+    const Spack& ql1,
+    const Spack& C1,
+    const Spack& std_s1,
+    const Spack& s2,
+    const Spack& ql2,
+    const Spack& C2,
+    const Spack& std_s2,
+    const Spack& shoc_ql,
+    Spack&       shoc_ql2);
+
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_liquid_water_flux(
+    const Spack& a,
+    const Spack& w1_1,
+    const Spack& w_first,
+    const Spack& ql1,
+    const Spack& w1_2,
+    const Spack& ql2,
+    Spack&       wqls);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_qs(
+    const Spack& Tl1_1,
+    const Spack& Tl1_2,
+    const Spack& pval,
+    const Smask& active_entries,
+    Spack&       qs1,
+    Spack&       beta1,
+    Spack&       qs2,
+    Spack&       beta2);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_s(
+    const Spack& qw1,
+    const Spack& qs,
+    const Spack& beta,
+    const Spack& pval,
+    const Spack& thl2,
+    const Spack& qw2,
+    const Spack& sqrtthl2,
+    const Spack& sqrtqw2,
+    const Spack& r_qwthl,
+    Spack&       s,
+    Spack&       std_s,
+    Spack&       qn,
+    Spack&       C);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_sgs_liquid(
+    const Spack& a,
+    const Spack& ql1,
+    const Spack& ql2,
+    Spack&       shoc_ql);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_compute_temperature(
+    const Spack& thl1,
+    const Spack& pval,
+    Spack&       Tl1);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_inplume_correlations(
+    const Spack& sqrtqw2_1,
+    const Spack& sqrtthl2_1,
+    const Spack& a,
+    const Spack& sqrtqw2_2,
+    const Spack& sqrtthl2_2,
+    const Spack& qwthlsec,
+    const Spack& qw1_1,
+    const Spack& qw_first,
+    const Spack& thl1_1,
+    const Spack& thl_first,
+    const Spack& qw1_2,
+    const Spack& thl1_2,
+    Spack&       r_qwthl_1);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_qw_parameters(
+    const Spack& wqwsec,
+    const Spack& sqrtw2,
+    const Spack& Skew_w,
+    const Spack& sqrtqt,
+    const Spack& qwsec,
+    const Spack& w1_2,
+    const Spack& w1_1,
+    const Spack& qw_first,
+    const Spack& a,
+    const Scalar rt_tol,
+    const Scalar w_thresh,
+    Spack&       qw1_1,
+    Spack&       qw1_2,
+    Spack&       qw2_1,
+    Spack&       qw2_2,
+    Spack&       sqrtqw2_1,
+    Spack&       sqrtqw2_2);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_thl_parameters(
+    const Spack& wthlsec,
+    const Spack& sqrtw2,
+    const Spack& sqrtthl,
+    const Spack& thlsec,
+    const Spack& thl_first,
+    const Spack& w1_1,
+    const Spack& w1_2,
+    const Spack& Skew_w,
+    const Spack& a,
+    const Scalar thl_tol,
+    const Scalar w_thresh,
+    Spack&       thl1_1,
+    Spack&       thl1_2,
+    Spack&       thl2_1,
+    Spack&       thl2_2,
+    Spack&       sqrtthl2_1,
+    Spack&       sqrtthl2_2);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_tilde_to_real(
+    const Spack& w_first,
+    const Spack& sqrtw2,
+    Spack&       w1);
+
+  KOKKOS_INLINE_FUNCTION
+  static void shoc_assumed_pdf_vv_parameters(
+    const Spack& w_first,
+    const Spack& w_sec,
+    const Spack& w3var,
+    const Scalar w_tol_sqd,
+    Spack&       Skew_w,
+    Spack&       w1_1,
+    Spack&       w1_2,
+    Spack&       w2_1,
+    Spack&       w2_2,
+    Spack&       a);
 
   KOKKOS_FUNCTION
   static void compute_shr_prod(
@@ -833,7 +983,7 @@ struct Functions
     const Int&                  ntop_shoc,
     const view_1d<const Spack>& pref_mid);
 
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
   KOKKOS_FUNCTION
   static void shoc_main_internal(
     const MemberType&            team,
@@ -889,6 +1039,8 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql,
     // Output Variables
     Scalar&                      pblh,
+    Scalar&                      ustar,
+    Scalar&                      obklen,
     const uview_1d<Spack>&       shoc_ql2,
     const uview_1d<Spack>&       tkh,
     // Diagnostic Output Variables
@@ -961,6 +1113,8 @@ struct Functions
     const view_2d<Spack>&       shoc_ql,
     // Output Variables
     const view_1d<Scalar>&      pblh,
+    const view_1d<Scalar>&      ustar,
+    const view_1d<Scalar>&      obklen,
     const view_2d<Spack>&       shoc_ql2,
     const view_2d<Spack>&       tkh,
     // Diagnostic Output Variables
@@ -987,9 +1141,7 @@ struct Functions
     const view_1d<Scalar>& ke_a,
     const view_1d<Scalar>& wv_a,
     const view_1d<Scalar>& wl_a,
-    const view_1d<Scalar>& ustar,
     const view_1d<Scalar>& kbfs,
-    const view_1d<Scalar>& obklen,
     const view_1d<Scalar>& ustar2,
     const view_1d<Scalar>& wstar,
     const view_2d<Spack>& rho_zt,
@@ -1014,7 +1166,7 @@ struct Functions
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output
     const SHOCHistoryOutput& shoc_history_output   // Output (diagnostic)
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     , const SHOCTemporaries& shoc_temporaries      // Temporaries for small kernels
 #endif
                        );
@@ -1085,7 +1237,7 @@ struct Functions
     const uview_1d<const Spack>& cldn,
     const Workspace&             workspace,
     Scalar&                      pblh);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void pblintd_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -1117,7 +1269,7 @@ struct Functions
     const uview_1d<Spack>&       dz_zt,
     const uview_1d<Spack>&       dz_zi,
     const uview_1d<Spack>&       rho_zt);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_grid_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -1175,7 +1327,7 @@ struct Functions
     const uview_1d<Spack>&       tk,
     const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       isotropy);
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_tke_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -1259,5 +1411,20 @@ struct Functions
 # include "shoc_compute_shoc_temperature_impl.hpp"
 
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
+
+// Some functions should be inlined, thus do not use ETI
+# include "shoc_assumed_pdf_compute_buoyancy_flux_impl.hpp"
+# include "shoc_assumed_pdf_compute_cloud_liquid_variance_impl.hpp"
+# include "shoc_assumed_pdf_compute_liquid_water_flux_impl.hpp"
+# include "shoc_assumed_pdf_compute_qs_impl.hpp"
+# include "shoc_assumed_pdf_compute_s_impl.hpp"
+# include "shoc_assumed_pdf_compute_sgs_liquid_impl.hpp"
+# include "shoc_assumed_pdf_compute_temperature_impl.hpp"
+# include "shoc_assumed_pdf_inplume_correlations_impl.hpp"
+# include "shoc_assumed_pdf_qw_parameters_impl.hpp"
+# include "shoc_assumed_pdf_compute_s_impl.hpp"
+# include "shoc_assumed_pdf_thl_parameters_impl.hpp"
+# include "shoc_assumed_pdf_tilde_to_real_impl.hpp"
+# include "shoc_assumed_pdf_vv_parameters_impl.hpp"
 
 #endif // SHOC_FUNCTIONS_HPP
