@@ -12,6 +12,7 @@
 #include "OmegaKokkos.h"
 #include "auxiliaryVars/KineticAuxVars.h"
 #include "auxiliaryVars/LayerThicknessAuxVars.h"
+#include "auxiliaryVars/TracerAuxVars.h"
 #include "auxiliaryVars/VelocityDel2AuxVars.h"
 #include "auxiliaryVars/VorticityAuxVars.h"
 #include "mpi.h"
@@ -55,6 +56,11 @@ struct TestSetupPlane {
                                               0.00249592582669975289};
    ErrorMeasures ExpectedDel2RelVortErrors = {0.0104455692965114266,
                                               0.0104135556263709097};
+
+   ErrorMeasures ExpectedHTracerErrors    = {0.017402432114157595,
+                                             0.00813360234680596434};
+   ErrorMeasures ExpectedDel2TracerErrors = {0.0033346711042859123,
+                                             0.0029202923731303323};
 
    KOKKOS_FUNCTION Real layerThickness(Real X, Real Y) const {
       return 2 + std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
@@ -112,6 +118,26 @@ struct TestSetupPlane {
               velocityY(X, Y) * velocityY(X, Y)) /
              2;
    }
+
+   KOKKOS_FUNCTION Real tracer(Real X, Real Y) const {
+      return 2 - std::cos(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
+   }
+
+   KOKKOS_FUNCTION Real thickTracer(Real X, Real Y) const {
+      return 4 - std::pow(std::cos(2 * Pi * X / Lx), 2) *
+                     std::pow(std::cos(2 * Pi * Y / Ly), 2);
+   }
+
+   KOKKOS_FUNCTION Real del2Tracer(Real X, Real Y) const {
+      return 2 * Pi * Pi *
+             (4 * (1 / Lx / Lx + 1 / Ly / Ly) * std::cos(2 * Pi * X / Lx) *
+                  std::cos(2 * Pi * Y / Ly) +
+              std::pow(std::cos(2 * Pi * X / Lx), 2) *
+                  (1 / Lx / Lx +
+                   (2 / Ly / Ly + 1 / Lx / Lx) * std::cos(4 * Pi * Y / Ly)) -
+              (2 / Lx / Lx) * std::pow(std::sin(2 * Pi * X / Lx), 2) *
+                  std::pow(std::cos(2 * Pi * Y / Ly), 2));
+   }
 };
 
 struct TestSetupSphere {
@@ -146,6 +172,11 @@ struct TestSetupSphere {
                                               0.00751922684420262138};
    ErrorMeasures ExpectedDel2RelVortErrors = {0.0915578492503972413,
                                               0.0246736311927726465};
+
+   ErrorMeasures ExpectedHTracerErrors    = {0.01603249913425972,
+                                             0.00546762028673672059};
+   ErrorMeasures ExpectedDel2TracerErrors = {0.0081206665417422382,
+                                             0.004917863312407276};
 
    KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
@@ -224,6 +255,23 @@ struct TestSetupSphere {
               velocityY(Lon, Lat) * velocityY(Lon, Lat)) /
              2;
    }
+
+   KOKKOS_FUNCTION Real tracer(Real Lon, Real Lat) const {
+      return (2 - std::cos(Lon) * std::pow(std::cos(Lat), 4));
+   }
+
+   KOKKOS_FUNCTION Real thickTracer(Real Lon, Real Lat) const {
+      return (4 - std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 8));
+   }
+
+   KOKKOS_FUNCTION Real del2Tracer(Real Lon, Real Lat) const {
+      return 1 / (Radius * Radius) *
+             (10 * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
+                  (-1 + 2 * std::cos(2 * Lat)) +
+              std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 6) *
+                  (-13 + 18 * std::cos(2 * Lat)) -
+              std::pow(std::cos(Lat), 6) * std::pow(std::sin(Lon), 2));
+   }
 };
 
 #ifdef AUXVARS_TEST_PLANE
@@ -237,6 +285,7 @@ using TestSetup                  = TestSetupSphere;
 #endif
 
 constexpr int NVertLevels = 16;
+constexpr int NTracers    = 3;
 
 int initState(const Array2DReal &LayerThickCell,
               const Array2DReal &NormalVelEdge, HorzMesh *Mesh) {
@@ -621,6 +670,92 @@ int testVelocityDel2AuxVars(Real RTol) {
    return Err;
 }
 
+int testTracerAuxVars(const Array2DReal &LayerThickCell,
+                      const Array2DReal &NormalVelEdge, Real RTol) {
+
+   TestSetup Setup;
+   int Err = 0;
+
+   const auto Mesh = HorzMesh::getDefault();
+
+   TracerAuxVars TracerAux("", Mesh, NVertLevels, NTracers);
+   TracerAux.TracersOnEdgeChoice = Upwind;
+
+   // Set input arrays
+
+   Array3DReal TracersOnCell("TracersOnCell", NTracers, Mesh->NCellsSize,
+                             NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracer(X, Y); },
+       TracersOnCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
+
+   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
+       LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
+
+   // Compute exact HTracerOnEdge
+
+   Array3DReal ExactHTrOnEdge("ExactHTrOnEdge", NTracers, Mesh->NEdgesOwned,
+                              NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.thickTracer(X, Y); },
+       ExactHTrOnEdge, Geom, Mesh, OnEdge, NVertLevels, NTracers,
+       ExchangeHalos::No);
+
+   // Compute numerical HTracersOnEdge
+
+   parallelFor(
+       {NTracers, Mesh->NEdgesOwned, NVertLevels},
+       KOKKOS_LAMBDA(int L, int IEdge, int KLevel) {
+          TracerAux.computeVarsOnEdge(L, IEdge, KLevel, NormalVelEdge,
+                                      LayerThickCell, TracersOnCell);
+       });
+
+   // Compute error measures and check errors for HTracersOnEdge
+
+   const auto &NumHTrOnEdge = TracerAux.HTracersOnEdge;
+
+   ErrorMeasures HTracerErrors;
+   Err += computeErrors(HTracerErrors, NumHTrOnEdge, ExactHTrOnEdge, Mesh,
+                        OnEdge, NVertLevels, NTracers);
+   Err += checkErrors("AuxVarsTest", "HTracers", HTracerErrors,
+                      Setup.ExpectedHTracerErrors, RTol);
+
+   // Compute exact Del2TracerOnCell
+
+   Array3DReal ExactDel2TrOnCell("ExactDel2TrOnCell", NTracers,
+                                 Mesh->NCellsOwned, NVertLevels);
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.del2Tracer(X, Y); },
+       ExactDel2TrOnCell, Geom, Mesh, OnCell, NVertLevels, NTracers,
+       ExchangeHalos::No);
+
+   // Compute numerical Del2TracerOnCell
+
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int KLevel) {
+          TracerAux.computeVarsOnCells(L, ICell, KLevel, LayerThickEdge,
+                                       TracersOnCell);
+       });
+
+   // Compute error measures and check errors for Del2TracersOnCell
+
+   const auto &NumDel2TrOnCell = TracerAux.Del2TracersOnCell;
+
+   ErrorMeasures Del2TracerErrors;
+   Err += computeErrors(Del2TracerErrors, NumDel2TrOnCell, ExactDel2TrOnCell,
+                        Mesh, OnCell, NVertLevels, NTracers);
+   Err += checkErrors("AuxVarsTest", "Del2Tracers", Del2TracerErrors,
+                      Setup.ExpectedDel2TracerErrors, RTol);
+
+   if (Err == 0) {
+      LOG_INFO("AuxVarsTest: TracerAuxVars PASS");
+   }
+
+   return Err;
+}
 //------------------------------------------------------------------------------
 // The initialization routine for aux vars testing
 int initAuxVarsTest(const std::string &mesh) {
@@ -698,6 +833,8 @@ int auxVarsTest(const std::string &mesh = DefaultMeshFile) {
    Err += testVorticityAuxVars(LayerThickCell, NormalVelEdge, RTol);
 
    Err += testVelocityDel2AuxVars(RTol);
+
+   Err += testTracerAuxVars(LayerThickCell, NormalVelEdge, RTol);
 
    if (Err == 0) {
       LOG_INFO("AuxVarsTest: Successful completion");
