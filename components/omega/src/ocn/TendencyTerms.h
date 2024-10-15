@@ -171,7 +171,7 @@ class SSHGradOnEdge {
    }
 
  private:
-   R8 Grav = 9.80665_Real;
+   Real Grav = 9.80665_Real;
    Array2DI4 CellsOnEdge;
    Array1DReal DcEdge;
 };
@@ -181,7 +181,7 @@ class VelocityDiffusionOnEdge {
  public:
    bool Enabled;
 
-   R8 ViscDel2;
+   Real ViscDel2;
 
    /// constructor declaration
    VelocityDiffusionOnEdge(const HorzMesh *Mesh);
