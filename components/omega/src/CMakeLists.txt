@@ -21,6 +21,14 @@ target_compile_definitions(
     OMEGA_ARCH=${OMEGA_ARCH}
 )
 
+if(OMEGA_SINGLE_PRECISION)
+  target_compile_definitions(
+      OmegaLibFlags
+      INTERFACE
+      OMEGA_SINGLE_PRECISION=1
+  )
+endif()
+
 target_link_options(
     OmegaLibFlags
     INTERFACE
