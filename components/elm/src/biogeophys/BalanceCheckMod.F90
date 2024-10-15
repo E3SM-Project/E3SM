@@ -553,6 +553,13 @@ contains
              write(iulog,*)'qflx_snwcp_ice   = ',qflx_snwcp_ice(indexc)*dtime
              write(iulog,*)'qflx_snwcp_liq   = ',qflx_snwcp_liq(indexc)*dtime
              write(iulog,*)'qflx_sl_top_soil = ',qflx_sl_top_soil(indexc)*dtime
+             write(iulog,*)'qflx_snow_melt   = ',qflx_snow_melt(indexc)*dtime
+             write(iulog,*)'frac_sno_eff     = ',frac_sno_eff(indexc)*dtime
+             write(iulog,*)'qflx_rain_grnd_col= ',qflx_rain_grnd_col(indexc)*dtime
+             write(iulog,*)'qflx_snow_grnd_col= ',qflx_snow_grnd_col(indexc)*dtime
+             write(iulog,*)'qflx_h2osfc_to_ice= ',qflx_h2osfc_to_ice(indexc)*dtime
+             write(iulog,*)'qflx_snow_h2osfc= ',qflx_snow_h2osfc(indexc)*dtime
+
              if (create_glacier_mec_landunit) then
                 write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime
              end if
