@@ -111,9 +111,16 @@ struct Functions
   struct P3Runtime {
     Scalar max_total_ni = 740.0e3;
     Scalar p3_autoconversion_prefactor = 1350.0;
+    Scalar p3_autoconversion_qc_exponent = 2.47;
+    Scalar p3_autoconversion_nc_exponent = 1.79;
+    Scalar p3_autoconversion_radius = 25.0e-6;
+    Scalar p3_accretion_prefactor = 67.0;
+    Scalar p3_accretion_qc_exponent = 1.15;
+    Scalar p3_accretion_qr_exponent = 1.15;
+    Scalar p3_rain_selfcollection_prefactor = 5.78;
+    Scalar p3_rain_selfcollection_breakup_diameter = 0.00028;
     Scalar p3_mu_r_constant = 1.0;
     Scalar p3_spa_to_nc = 1.0;
-    Scalar p3_k_accretion = 67.0;
     Scalar p3_eci = 0.5;
     Scalar p3_eri = 1.0;
     Scalar p3_rho_rime_min = 50.0;
@@ -121,7 +128,6 @@ struct Functions
     Scalar p3_a_imm = 0.65;
     Scalar p3_dep_nucleation_exponent = 0.304;
     Scalar p3_ice_sed_knob = 1.0;
-    Scalar p3_d_breakup_cutoff = 0.00028;
     bool p3_do_ice_production = true;
   };
 
