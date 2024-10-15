@@ -91,7 +91,8 @@ TEST_CASE("output_restart","io")
                  const util::TimeStamp& run_t0,
                  const int nsteps)
   {
-    OutputManager output_manager(comm, output_params, run_t0, case_t0, false);
+    OutputManager output_manager;
+    output_manager.initialize(comm, output_params, run_t0, case_t0, false);
     output_manager.setup(fm,gm);
 
     // We advance the fields, by adding dt to each entry of the fields at each time step

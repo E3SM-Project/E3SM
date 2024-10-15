@@ -31,10 +31,7 @@ Real test_func(const int col, const int t) {
 class OutputManager4Test : public scream::OutputManager
 {
 public:
-  OutputManager4Test(const ekat::Comm& io_comm,
-                     const ekat::ParameterList& params,
-                     const util::TimeStamp& run_t0)
-    : OutputManager(io_comm, params,run_t0, false) {}
+  OutputManager4Test() = default;
 
   void runme(const util::TimeStamp& ts) {
     run(ts);
@@ -102,7 +99,8 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("Frequency",1);
   ctrl_pl.set("save_grid_data",false);
-  OutputManager4Test om(comm,om_pl,t0);
+  OutputManager4Test om;
+  om.initialize(comm,om_pl,t0,false);
   om.setup(fm,gm);
   // Create output data:
   // T=3600, well above the max timestep for the test.

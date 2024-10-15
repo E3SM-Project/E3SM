@@ -229,17 +229,12 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Setup remapped output streams and run them
   print (" -> Create output ... \n",io_comm);
   register_diagnostics();
+  OutputManager om_source, om_vert, om_horiz, om_vert_horiz;
   const int p_ref = (int)set_pressure(p_top, p_bot, nlevs_src+1,nlevs_src-1);
-  auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
-  auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
-  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
-  auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
-  OutputManager om_source(io_comm,source_remap_control,t0,false),
-                om_vert(io_comm,vert_remap_control,t0,false),
-                om_horiz(io_comm,horiz_remap_control,t0,false),
-                om_vert_horiz(io_comm,vert_horiz_remap_control,t0,false);
 
   print ("    -> source data ... \n",io_comm);
+  auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
+  om_source.initialize(io_comm,source_remap_control,t0,false);
   om_source.setup(field_manager,gm);
   io_comm.barrier();
   om_source.init_timestep(t0,dt);
@@ -248,6 +243,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> source data ... done\n",io_comm);
 
   print ("    -> vertical remap ... \n",io_comm);
+  auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
+  om_vert.initialize(io_comm,vert_remap_control,t0,false);
   om_vert.setup(field_manager,gm);
   io_comm.barrier();
   om_vert.init_timestep(t0,dt);
@@ -256,6 +253,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical remap ... done\n",io_comm);
 
   print ("    -> horizontal remap ... \n",io_comm);
+  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+  om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
   om_horiz.setup(field_manager,gm);
   io_comm.barrier();
   om_horiz.init_timestep(t0,dt);
@@ -264,6 +263,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> horizontal remap ... done\n",io_comm);
 
   print ("    -> vertical-horizontal remap ... \n",io_comm);
+  auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
+  om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
   om_vert_horiz.setup(field_manager,gm);
   io_comm.barrier();
   om_vert_horiz.init_timestep(t0,dt);

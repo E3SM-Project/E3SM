@@ -158,7 +158,8 @@ create_om (const std::string& filename_prefix,
   ctrl_pl.set("Frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
-  auto om = std::make_shared<OutputManager>(comm,params,t0,false);
+  auto om = std::make_shared<OutputManager>();
+  om->initialize(comm,params,t0,false);
   om->setup(fm,gm);
   return om;
 }

@@ -162,15 +162,15 @@ void write (const std::string& avg_type, const std::string& freq_units,
   }
   om_pl.set("Max Snapshots Per File", max_snaps);
 
-  // Attempt to use invalid fp precision string
-  {
-    om_pl.set("Floating Point Precision",std::string("triple"));
-    OutputManager om(comm,om_pl,t0,false);
-    REQUIRE_THROWS (om.setup(fm,gm));
-  }
+  // Create Output manager
+  OutputManager om;
 
+  // Attempt to use invalid fp precision string
+  om_pl.set("Floating Point Precision",std::string("triple"));
+  om.initialize(comm,om_pl,t0,false);
+  REQUIRE_THROWS (om.setup(fm,gm));
   om_pl.set("Floating Point Precision",std::string("single"));
-  OutputManager om(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0,false);
   om.setup(fm,gm);
 
   // Time loop: ensure we always hit 3 output steps

@@ -68,7 +68,8 @@ TEST_CASE("se_grid_io")
   ctl_pl.set("Frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
-  OutputManager om(io_comm,params,t0,false);
+  OutputManager om;
+  om.initialize(io_comm,params,t0,false);
   om.setup(fm0,gm);
   om.init_timestep(t0,dt);
   om.run(t0+dt);

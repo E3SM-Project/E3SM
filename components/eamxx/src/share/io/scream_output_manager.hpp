@@ -67,25 +67,30 @@ public:
   using globals_map_t = std::map<std::string,ekat::any>;
 
   // Constructor(s) & Destructor
-  OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-                 const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-                 const bool is_model_restart_output);
-  OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-                 const util::TimeStamp& run_t0,
-                 const bool is_model_restart_output)
-    : OutputManager(io_comm, params, run_t0, run_t0, is_model_restart_output) {}
-
+  OutputManager() = default;
   virtual ~OutputManager ();
 
-  // Set up the manager, creating all output streams. Inputs:
+  // Initialize
   //  - params: the parameter list with file/fields info, as well as method of output options
-  //  - field_mgr/field_mgrs: field manager(s) storing fields to be outputed
-  //  - grids_mgr: grid manager to create remapping from field managers grids onto the IO grid.
-  //               This is needed, e.g., when outputing SEGrid fields without duplicating dofs.
   //  - run_t0: the timestamp of the start of the current simulation
   //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
   //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
   //  - is_model_restart_output: whether this output stream is to write a model restart file
+  void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+                   const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
+                   const bool is_model_restart_output);
+
+  void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+                   const util::TimeStamp& run_t0,
+                   const bool is_model_restart_output) {
+    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output);
+  }
+
+  // Set up the manager, creating all output streams.
+  // Inputs:
+  //  - field_mgr/field_mgrs: field manager(s) storing fields to be outputed
+  //  - grids_mgr: grid manager to create remapping from field managers grids onto the IO grid.
+  //               This is needed, e.g., when outputing SEGrid fields without duplicating dofs.
   void setup (const std::shared_ptr<fm_type>& field_mgr,
               const std::shared_ptr<const gm_type>& grids_mgr);
 

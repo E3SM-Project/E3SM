@@ -17,9 +17,15 @@
 namespace scream
 {
 OutputManager::
-OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-              const bool is_model_restart_output)
+~OutputManager ()
+{
+  finalize();
+}
+
+void OutputManager::
+initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
+           const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
+           const bool is_model_restart_output)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
@@ -37,12 +43,6 @@ OutputManager (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_case_t0 = case_t0;
   m_is_restarted_run = (case_t0<run_t0);
   m_is_model_restart_output = is_model_restart_output;
-}
-
-OutputManager::
-~OutputManager ()
-{
-  finalize();
 }
 
 void OutputManager::

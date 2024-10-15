@@ -153,7 +153,8 @@ TEST_CASE("dyn_grid_io")
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   out_params.set<std::string>("Floating Point Precision","real");
 
-  OutputManager output(comm, out_params, t0, false);
+  OutputManager output;
+  output.initialize(comm, out_params, t0, false);
   output.setup (fm_dyn, gm);
   output.run(t0);
   output.finalize();

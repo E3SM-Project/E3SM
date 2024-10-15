@@ -49,10 +49,8 @@ Real my_pdf(std::mt19937_64& engine) {
 class OutputManager4Test : public scream::OutputManager
 {
 public:
-  OutputManager4Test(const ekat::Comm& io_comm,
-                     const ekat::ParameterList& params,
-                     const util::TimeStamp& run_t0)
-    : OutputManager(io_comm, params,run_t0, false)
+  OutputManager4Test()
+    : OutputManager()
   {
     // Do Nothing
   }
@@ -397,7 +395,8 @@ std::vector<std::string> create_test_data_files(
   ctrl_pl.set("save_grid_data",false);
   // Create an output manager, note we use a subclass defined in this test so we can extract
   // the list of files created by the output manager.
-  OutputManager4Test om(comm,om_pl,t0);
+  OutputManager4Test om;
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm);
 
   // Time loop to create and write data

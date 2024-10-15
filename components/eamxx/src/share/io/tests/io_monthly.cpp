@@ -130,7 +130,8 @@ void write (const int seed, const ekat::Comm& comm)
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
-  OutputManager om(comm,om_pl,t0,false);
+  OutputManager om;
+  om.initialize(comm,om_pl,t0,false);
   om.setup(fm,gm);
 
   // Time loop: do 11 steps, since we already did Jan output at t0
