@@ -30,7 +30,7 @@ namespace OMEGA {
 
 // Set the default MPI real data type as single or double precision based on
 // the default real data type used by OMEGA.
-#ifdef SINGLE_PRECISION
+#ifdef OMEGA_SINGLE_PRECISION
 static const MPI_Datatype MPI_RealKind = MPI_FLOAT;
 #else
 static const MPI_Datatype MPI_RealKind = MPI_DOUBLE;
