@@ -202,25 +202,25 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
       </tables>
-      <p3_autoconversion_prefactor type="real" doc="Autoconversion linear prefactor in P3">1350.0</p3_autoconversion_prefactor>
-      <p3_autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent in P3">2.47</p3_autoconversion_qc_exponent>
-      <p3_autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent in P3">1.79</p3_autoconversion_nc_exponent>
-      <p3_autoconversion_radius type="real" doc="Autoconversion droplet radius (meter) in P3">25.0e-6</p3_autoconversion_radius>
-      <p3_accretion_prefactor type="real" doc="Accretion linear prefactor in P3">67.0</p3_accretion_prefactor>
-      <p3_accretion_qc_exponent type="real" doc="Accretion qc exponent in P3">1.15</p3_accretion_qc_exponent>
-      <p3_accretion_qr_exponent type="real" doc="Accretion qr exponent in P3">1.15</p3_accretion_qr_exponent>
-      <p3_rain_selfcollection_prefactor type="real" doc="Rain selfcollection prefactor in P3">5.78</p3_rain_selfcollection_prefactor>
-      <p3_rain_selfcollection_breakup_diameter type="real" doc="Rain selfcollection breakup diameter (meter) in P3">0.00028</p3_rain_selfcollection_breakup_diameter>
-      <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
-      <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
-      <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>
-      <p3_eri type="real" doc="P3 eri (ice/rain collision/collection coefficient)">1.0</p3_eri>
-      <p3_rho_rime_min type="real" doc="P3 rho_rime_min (riming density maximum)">50.0</p3_rho_rime_min>
-      <p3_rho_rime_max type="real" doc="P3 rho_rime_max (riming density minimum)">900.0</p3_rho_rime_max>
-      <p3_a_imm type="real" doc="P3 a_imm (drop freezing exponent )">0.65</p3_a_imm>
-      <p3_dep_nucleation_exponent type="real" doc="P3 dep_nucleation_exponent (deposition nucleation)">0.304</p3_dep_nucleation_exponent>
-      <p3_ice_sed_knob type="real" doc="P3 ice_sed_knob (ice fall speed)">1.0</p3_ice_sed_knob>
-      <p3_do_ice_production type="logical" doc="Flag to turn on ice production processes in P3 (loss processes unaffected by this flag)">true</p3_do_ice_production>
+      <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
+      <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
+      <autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent">1.79</autoconversion_nc_exponent>
+      <autoconversion_radius type="real" doc="Autoconversion droplet radius in meter">25.0e-6</autoconversion_radius>
+      <accretion_prefactor type="real" doc="Accretion linear prefactor">67.0</accretion_prefactor>
+      <accretion_qc_exponent type="real" doc="Accretion qc exponent">1.15</accretion_qc_exponent>
+      <accretion_qr_exponent type="real" doc="Accretion qr exponent">1.15</accretion_qr_exponent>
+      <rain_selfcollection_prefactor type="real" doc="Rain self-collection prefactor">5.78</rain_selfcollection_prefactor>
+      <rain_selfcollection_breakup_diameter type="real" doc="Rain self-collection breakup diameter in meter">0.00028</rain_selfcollection_breakup_diameter>
+      <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
+      <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_factor>
+      <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
+      <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
+      <min_rime_rho type="real" doc="Minimum rime density in kg/m3">50.0</min_rime_rho>
+      <max_rime_rho type="real" doc="Maximum rime density in kg/m3">900.0</max_rime_rho>
+      <immersion_freezing_exponent type="real" doc="Immersion freezing exponent for both rain and cloud liquid">0.65</immersion_freezing_exponent>
+      <deposition_nucleation_exponent type="real" doc="Deposition nucleation exponent factor">0.304</deposition_nucleation_exponent>
+      <ice_sedimentation_factor type="real" doc="Ice sedimentation fall speed factor">1.0</ice_sedimentation_factor>
+      <do_ice_production type="logical" doc="Flag to turn on ice production processes (loss processes unaffected)">true</do_ice_production>
     </p3>
 
     <!-- SHOC macrophysics -->

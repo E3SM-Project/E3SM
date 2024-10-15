@@ -20,13 +20,16 @@ void Functions<S,D>
   // Khroutdinov and Kogan (2000)
   const auto qc_not_small = qc_incld >= 1e-8 && context;
 
-  const Scalar p3_autoconversion_prefactor = runtime_options.p3_autoconversion_prefactor;
-  const Scalar p3_autoconversion_qc_exponent = runtime_options.p3_autoconversion_qc_exponent;
-  const Scalar p3_autoconversion_nc_exponent = runtime_options.p3_autoconversion_nc_exponent;
-  const Scalar p3_autoconversion_radius = runtime_options.p3_autoconversion_radius;
+  const Scalar autoconversion_prefactor =
+      runtime_options.autoconversion_prefactor;
+  const Scalar autoconversion_qc_exponent =
+      runtime_options.autoconversion_qc_exponent;
+  const Scalar autoconversion_nc_exponent =
+      runtime_options.autoconversion_nc_exponent;
+  const Scalar autoconversion_radius = runtime_options.autoconversion_radius;
 
   // TODO: correct this later (by keeping commented-out def) once BFB reqs are satisfied
-  const Scalar CONS3 = C::CONS3; // sp(1.0) / (C::CONS2 * pow(p3_autoconversion_radius, sp(3.0)));
+  const Scalar CONS3 = C::CONS3; // sp(1.0) / (C::CONS2 * pow(autoconversion_radius, sp(3.0)));
 
   if(qc_not_small.any()) {
     Spack sgs_var_coef;
@@ -35,9 +38,9 @@ void Functions<S,D>
 
     qc2qr_autoconv_tend.set(
         qc_not_small,
-        sgs_var_coef * p3_autoconversion_prefactor *
-            pow(qc_incld, p3_autoconversion_qc_exponent) *
-            pow(nc_incld * sp(1.e-6) * rho, -p3_autoconversion_nc_exponent));
+        sgs_var_coef * autoconversion_prefactor *
+            pow(qc_incld, autoconversion_qc_exponent) *
+            pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
     ncautr.set(qc_not_small, qc2qr_autoconv_tend * CONS3);
     nc2nr_autoconv_tend.set(qc_not_small,

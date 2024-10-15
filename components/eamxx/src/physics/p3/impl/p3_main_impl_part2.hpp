@@ -104,7 +104,7 @@ void Functions<S,D>
   constexpr Scalar latvap       = C::LatVap;
   constexpr Scalar latice       = C::LatIce;
 
-  const bool do_ice_production = runtime_options.p3_do_ice_production;
+  const bool do_ice_production = runtime_options.do_ice_production;
 
   team.team_barrier();
   hydrometeorsPresent = false;

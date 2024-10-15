@@ -99,7 +99,7 @@ Int Functions<S,D>
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
 
-  const bool do_ice_production = runtime_options.p3_do_ice_production;
+  const bool do_ice_production = runtime_options.do_ice_production;
 
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();

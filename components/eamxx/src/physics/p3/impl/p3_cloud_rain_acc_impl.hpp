@@ -25,9 +25,9 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall = C::QSMALL;
 
-  const Scalar p3_accretion_prefactor = runtime_options.p3_accretion_prefactor;
-  const Scalar p3_accretion_qc_exponent = runtime_options.p3_accretion_qc_exponent;
-  const Scalar p3_accretion_qr_exponent = runtime_options.p3_accretion_qr_exponent;
+  const Scalar accretion_prefactor   = runtime_options.accretion_prefactor;
+  const Scalar accretion_qc_exponent = runtime_options.accretion_qc_exponent;
+  const Scalar accretion_qr_exponent = runtime_options.accretion_qr_exponent;
 
   Spack sgs_var_coef;
   // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
@@ -38,10 +38,11 @@ void Functions<S,D>
     // Khroutdinov and Kogan (2000)
     qc2qr_accret_tend.set(
         qr_and_qc_not_small,
-        sgs_var_coef * sp(p3_accretion_prefactor) *
+        sgs_var_coef * accretion_prefactor *
             // TODO: split this pow into two in a later PR due to NBFB behavior
-            // pow(qc_incld, p3_accretion_qc_exponent) * pow(qr_incld, p3_accretion_qr_exponent));
-            pow(qc_incld * qr_incld, p3_accretion_qr_exponent));
+            // pow(qc_incld, accretion_qc_exponent) * pow(qr_incld,
+            // accretion_qr_exponent));
+            pow(qc_incld * qr_incld, accretion_qr_exponent));
     nc_accret_tend.set(qr_and_qc_not_small,
                        qc2qr_accret_tend * nc_incld / qc_incld);
 

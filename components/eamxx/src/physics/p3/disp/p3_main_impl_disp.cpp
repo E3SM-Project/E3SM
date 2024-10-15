@@ -123,7 +123,7 @@ Int Functions<Real,DefaultDevice>
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
 
-  const bool do_ice_production = runtime_options.p3_do_ice_production;
+  const bool do_ice_production = runtime_options.do_ice_production;
 
   // per-column bools
   view_1d<bool> nucleationPossible("nucleationPossible", nj);
