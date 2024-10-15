@@ -706,7 +706,7 @@ int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array2DR8 NormalVelocity("NormalVelocity", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormalVelocity("NormalVelocity", Mesh->NEdgesSize, NVertLevels);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
@@ -715,7 +715,7 @@ int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
        },
        NormalVelocity, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
 
-   Array3DR8 HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLevels);
+   Array3DReal HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.layerThick(X, Y); },
@@ -770,13 +770,14 @@ int testTracerDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array3DR8 TracerCell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+   Array3DReal TracerCell("TracerCell", NTracers, Mesh->NCellsSize,
+                          NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
        TracerCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
 
-   Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
@@ -833,7 +834,8 @@ int testTracerHyperDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array3DR8 TrDel2Cell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+   Array3DReal TrDel2Cell("TracerCell", NTracers, Mesh->NCellsSize,
+                          NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarC(X, Y); },
