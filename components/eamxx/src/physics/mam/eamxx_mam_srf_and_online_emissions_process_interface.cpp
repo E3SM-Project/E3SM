@@ -33,6 +33,9 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
+  // FIXME: check into whether this should be an "Updated" field because
+  //        I haven't yet determined if an updated field needs to be output
+  //        as a tendency, and thus the flux would need dt [s] factored out
   // -------------------------------------------------------------
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes of species in [kg/m2/s]
@@ -215,15 +218,13 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Initialize online emissions from file
   //--------------------------------------------------------------------
-  online_emis_data.init(ncol_);
-  onlineEmiss::init_from_input_file(m_params, online_emis_data);
+  online_emissions.online_emis_data.init(ncol_);
+  online_emissions.init_from_input_file(m_params);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
   preprocess_.initialize(constituent_fluxes_);
-  onlineEmiss::transfer_to_cflux(online_emis_data, spcIndex_in_pcnst_,
-                                    constituent_fluxes_);
 
 } // end initialize_impl()
 
@@ -233,54 +234,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Zero-out output
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
-  // copy current values to online-emissions-local version
-  Kokkos::deep_copy(online_emis_data.constituent_fluxes, constituent_fluxes_);
 
   // Gather time and state information for interpolation
   auto ts = timestamp() + dt;
-
-  // Parallel loop over all the columns to update units
-  Kokkos::parallel_for(
-      "fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        // need to initialize values for:
-        // SeasaltEmissionsData.{mpoly, mprot, mlip}
-        // DustEmissionsData.dust_dmt_vwr (done here for now)
-        // OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
-        //                      v_bottom, z_bottom, ocean_frac}
-        // NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
-        // which is a chunk-wise variable at this point
-        // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
-        // col-value once inside aero_model_emissions()
-
-        view_1d fluxes_col = Kokkos::subview(online_emis_data.constituent_fluxes,
-                                           icol, Kokkos::ALL());
-        mam4::aero_model_emissions::aero_model_emissions(fluxes_col);
-      });
-
-  // for (onlineEmissData &ispec_online : online_emis_data) {
-  //   //--------------------------------------------------------------------
-  //   // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)
-  //   //--------------------------------------------------------------------
-  //   // Get species index in array with pcnst dimension
-  //   // (e.g., state_q or constituent_fluxes_)
-  //   const int species_index =
-  //   spcIndex_in_pcnst_.at(ispec_online.species_name);
-
-  //   // modify units from molecules/cm2/s to kg/m2/s
-  //   auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-  //   auto constituent_fluxes = this->constituent_fluxes_;
-  //   const Real mfactor =
-  //       amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
-  //   // Parallel loop over all the columns to update units
-  //   Kokkos::parallel_for(
-  //       "fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-  //         fluxes_in_mks_units(icol) =
-  //             ispec_online.data_out_.emiss_sectors(0, icol) * mfactor;
-  //         constituent_fluxes(icol, species_index) =
-  //         fluxes_in_mks_units(icol);
-  //       });
-
-  // } // for loop for species
 
   //--------------------------------------------------------------------
   // Interpolate srf emiss data
@@ -314,13 +270,35 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
     // Parallel loop over all the columns to update units
     Kokkos::parallel_for(
-        "fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+        "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
           fluxes_in_mks_units(icol) =
               ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
 
   } // for loop for species
+
+  // TODO: check that units are consistent with srf emissions!
+  // copy current values to online-emissions-local version
+  Kokkos::deep_copy(online_emis_data.cfluxes, constituent_fluxes_);
+  // TODO: potentially combine with above parfor(icol) loop?
+  Kokkos::parallel_for(
+      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+        // need to initialize values for:
+        // SeasaltEmissionsData.{mpoly, mprot, mlip}
+        // DustEmissionsData.dust_dmt_vwr
+        // OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
+        //                      v_bottom, z_bottom, ocean_frac}
+        // NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
+        // which is a chunk-wise variable at this point
+        // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
+        // col-value once inside aero_model_emissions()
+
+        view_1d fluxes_col = Kokkos::subview(
+            online_emissions.online_emis_data.cfluxes, icol, Kokkos::ALL());
+        mam4::aero_model_emissions::aero_model_emissions(fluxes_col);
+      });
+  Kokkos::deep_copy(constituent_fluxes_, online_emis_data.cfluxes);
   Kokkos::fence();
 } // run_impl ends
 

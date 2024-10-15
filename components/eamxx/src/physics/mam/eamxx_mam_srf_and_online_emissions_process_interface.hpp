@@ -127,7 +127,7 @@ private:
   // A vector for carrying emissions for all the species
   std::vector<srf_emiss_> srf_emiss_species_;
 
-  onlineEmiss::onlineEmissData online_emis_data;
+  onlineEmiss online_emissions;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =

@@ -9,6 +9,7 @@ template <typename ScalarType, typename DeviceType> struct onlineEmissions {
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
+  static constexpr int pcnst = mam4::aero_model::pcnst;
 
   struct onlineEmissTimeState {
     onlineEmissTimeState() = default;
@@ -30,14 +31,14 @@ template <typename ScalarType, typename DeviceType> struct onlineEmissions {
     int ncols;
     view_2d flux_data;
     // local copy of main fluxes array
-    view_2d constituent_fluxes;
+    view_2d cfluxes;
     // FIXME: read this from input or get from mam4xx::aero_model_emissions?
-    const std::vector<std::string> spec_names = {"so2",    "soag",   "bc_a4",
-                                                 "num_a1", "num_a2", "num_a4",
-                                                 "pom_a4", "so4_a1", "so4_a2"};
+    const std::vector<std::string> spec_names = {
+        "ncl_a1", "ncl_a2", "ncl_a3", "mom_a1", "mom_a2", "mom_a4",
+        "num_a1", "num_a2", "num_a3", "num_a4", "dst_a1", "dst_a3"};
     // FIXME: change this when the above is dynamically-determined
-    int nspec = 9;
-    const std::string root_IC_str = "initial_condition_";
+    int nspec = spec_names.size();
+    const std::string root_IC_str = "online_emis_IC_";
 
     onlineEmissData() = default;
     onlineEmissData(const int ncol_, const int nspec_)
@@ -52,22 +53,29 @@ template <typename ScalarType, typename DeviceType> struct onlineEmissions {
     void init(const int ncol_, const int nspec_, const bool allocate_) {
       ncols = ncol_;
       nspec = nspec_;
-      if (allocate_)
+      if (allocate_) {
         flux_data = view_2d("onlineEmissData", nspec, ncols);
+        cfluxes = view_2d("onlineEmisLocalCflux", ncols, pcnst);
+      }
     } // onlineEmissData init
     void init(const int ncol_, const bool allocate_) {
       ncols = ncol_;
-      if (allocate_)
+      if (allocate_) {
         flux_data = view_2d("onlineEmissData", nspec, ncols);
+        cfluxes = view_2d("onlineEmisLocalCflux", ncols, pcnst);
+      }
     } // onlineEmissData init
     void init(const int ncol_) {
       ncols = ncol_;
       flux_data = view_2d("onlineEmissData", nspec, ncols);
+      cfluxes = view_2d("onlineEmisLocalCflux", ncols, pcnst);
     } // onlineEmissData init
   };  // onlineEmissData
 
+  onlineEmissData online_emis_data;
+
   // The output is really just onlineEmissData, but for clarity it might
-  // help to see a onlineEmissOutput along a onlineEmissInput in functions
+  // help to see a onlineEmissOutput along with onlineEmissInput in functions
   // signatures
   // using onlineEmissOutput = onlineEmissData;
 
@@ -80,12 +88,16 @@ template <typename ScalarType, typename DeviceType> struct onlineEmissions {
   //                           const onlineEmissInput &data_end,
   //                           const onlineEmissOutput &data_out);
 
-  static void init_from_input_file(const ekat::ParameterList &m_params,
-                                   onlineEmissData &data);
-  static void
-  transfer_to_cflux(const onlineEmissData &data,
-                       const std::map<std::string, int> idx_map,
-                       view_2d &fluxes);
+  void init_from_input_file(const ekat::ParameterList &m_params);
+  void transfer_to_cflux(const onlineEmissData &data,
+                                const std::map<std::string, int> idx_map,
+                                view_2d &fluxes);
+  // static void update_onlineEmiss_timestate(
+  //     std::shared_ptr<AtmosphereInput> &scorpio_reader,
+  //     const util::TimeStamp &ts, AbstractRemapper &onlineEmiss_horiz_interp,
+  //     onlineEmissTimeState &time_state, onlineEmissInput &onlineEmiss_beg,
+  //     onlineEmissInput &onlineEmiss_end);
+
 }; // struct onlineEmissions
 } // namespace scream::mam_coupling
 #endif // ONLINE_EMISSION_HPP
