@@ -218,6 +218,11 @@ contains
       do c = bounds%begc,bounds%endc
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
+
+         if (lun_pp%itype(l)==istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
+               qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
+               qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
+         endif
       end do
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
