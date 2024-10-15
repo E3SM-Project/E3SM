@@ -196,10 +196,13 @@ CONTAINS
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
+    call string_f2c(trim(caseid),caseid_c)
+    call string_f2c(trim(hostname),hostname_c)
+    call string_f2c(trim(username),username_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
-                          calendar_c)
+                          calendar_c, caseid_c, hostname_c, username_c)
 
 
     ! Init MCT gsMap
@@ -269,10 +272,7 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
-    call string_f2c(trim(caseid),caseid_c)
-    call string_f2c(trim(username),username_c)
-    call string_f2c(trim(hostname),hostname_c)
-    call scream_init_atm (caseid_c,hostname_c,username_c)
+    call scream_init_atm ()
 #ifdef HAVE_MOAB
     ! data should be set now inside moab from import and export fields
     ! do we import and export or just export at init stage ?
@@ -308,7 +308,7 @@ CONTAINS
 #ifdef MOABCOMP
     use mct_mod
     use seq_comm_mct,     only : num_moab_exports
-#endif 
+#endif
 
     integer :: ent_type
 #ifdef MOABCOMP
@@ -324,7 +324,7 @@ CONTAINS
 
     type(ESMF_Clock) ,intent(inout) :: EClock     ! clock
     type(seq_cdata)  ,intent(inout) :: cdata
-    type(mct_aVect)  ,intent(inout) :: x2a        ! driver     -> atmosphere 
+    type(mct_aVect)  ,intent(inout) :: x2a        ! driver     -> atmosphere
     type(mct_aVect)  ,intent(inout) :: a2x        ! atmosphere -> driver
 
     !--- local ---
@@ -403,7 +403,7 @@ CONTAINS
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock  ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere 
+    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere
     type(mct_aVect)             ,intent(inout) :: a2x     ! atmosphere -> driver
 
     !----------------------------------------------------------------------------
@@ -437,7 +437,7 @@ CONTAINS
     ! Build the atmosphere grid numbering for MCT
     ! NOTE:  Numbering scheme is: West to East and South to North
     ! starting at south pole.  Should be the same as what's used in SCRIP
-    
+
     ! Determine global seg map
     num_local_cols  = scream_get_num_local_cols()
     num_global_cols = scream_get_num_global_cols()
@@ -466,7 +466,7 @@ CONTAINS
     !
     integer        , intent(in)   :: lsize
     type(mct_gsMap), intent(in)   :: gsMap_atm
-    type(mct_ggrid), intent(inout):: dom_atm  
+    type(mct_ggrid), intent(inout):: dom_atm
     !
     ! Local Variables
     !
@@ -488,20 +488,20 @@ CONTAINS
 
     ! Fill in correct values for domain components
     call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
-    call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize) 
-    call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize)
+    call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize)
 
     call scream_get_cols_area(c_loc(data1))
-    call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize)
 
     ! Mask and frac are both exactly 1
     data1 = 1.0
-    call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize) 
-    call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize)
+    call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize)
 
     ! Aream is computed by mct, so give invalid initial value
     data1 = -9999.0_R8
-    call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize)
   end subroutine atm_domain_mct
 
 #ifdef HAVE_MOAB

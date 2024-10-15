@@ -105,7 +105,10 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const int run_start_tod,
                                  const int case_start_ymd,
                                  const int case_start_tod,
-                                 const char* calendar_name)
+                                 const char* calendar_name,
+                                 const char* caseid,
+                                 const char* hostname,
+                                 const char* username)
 {
   using namespace scream;
   using namespace scream::control;
@@ -171,6 +174,7 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     ad.set_params(scream_params);
     ad.init_scorpio(atm_id);
     ad.init_time_stamps(run_t0,case_t0);
+    ad.set_provenance_data (caseid,hostname,username);
     ad.create_output_managers ();
     ad.create_atm_processes ();
     ad.create_grids ();
@@ -240,9 +244,7 @@ void scream_init_hip_atm () {
 }
 #endif
 
-void scream_init_atm (const char* caseid,
-                      const char* hostname,
-                      const char* username)
+void scream_init_atm ()
 {
   using namespace scream;
   using namespace scream::control;
@@ -250,9 +252,6 @@ void scream_init_atm (const char* caseid,
   fpe_guard_wrapper([&](){
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
-
-    // Set provenance info in the driver (will be added to the output files)
-    ad.set_provenance_data (caseid,hostname,username);
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
