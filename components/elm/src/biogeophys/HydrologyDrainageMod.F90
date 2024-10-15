@@ -236,10 +236,10 @@ contains
                    if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
 
-         if (lun_pp%itype(l)==istice) then
-               qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
-               qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
-         endif
+         !if (lun_pp%itype(l)==istice) then
+         !      qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
+         !      qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
+         !endif
 
       end do
 
