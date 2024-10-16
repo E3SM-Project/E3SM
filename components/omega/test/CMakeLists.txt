@@ -6,6 +6,9 @@
 #####################
 
 function(add_omega_test test_name exe_name source_files mpi_args)
+  # Copy extra arguments to a local variable so they can be treated
+  # as a list
+  set(extra_args ${ARGN})
 
   # Create the executable
   add_executable(${exe_name} ${source_files})
@@ -14,9 +17,34 @@ function(add_omega_test test_name exe_name source_files mpi_args)
   target_link_libraries(
     ${exe_name}
     PRIVATE
-    ${OMEGA_LIB_NAME}
     OmegaLibFlags
   )
+
+  list(FIND extra_args single_precision use_sp)
+
+  # Link the single precision version if requested and not already configured to
+  # use single precision
+  if (NOT use_sp EQUAL -1)
+    if (OMEGA_SINGLE_PRECISION)
+      target_link_libraries(
+        ${exe_name}
+        PRIVATE
+        ${OMEGA_LIB_NAME}
+      )
+    else()
+      target_link_libraries(
+        ${exe_name}
+        PRIVATE
+        ${OMEGA_LIB_NAME}_SP
+      )
+    endif()
+  else()
+    target_link_libraries(
+      ${exe_name}
+      PRIVATE
+      ${OMEGA_LIB_NAME}
+    )
+  endif()
 
   set_target_properties(${exe_name} PROPERTIES LINKER_LANGUAGE C)
 
@@ -259,6 +287,14 @@ target_compile_definitions(
   testTendencyTermsPlane.exe
   PRIVATE
   TENDENCYTERMS_TEST_PLANE
+)
+
+add_omega_test(
+    TEND_PLANE_SINGLE_PRECISION_TEST
+    testTendencyTermsPlaneSinglePrecision.exe
+    ocn/TendencyTermsTest.cpp
+    "-n 8;--cpu-bind=cores"
+    single_precision
 )
 
 add_omega_test(
