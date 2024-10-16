@@ -1527,7 +1527,7 @@ contains
          do k = 1, maxLevelCell(iCell)
 
             tend_lowFreqDivergence(k,iCell) = &
-               -2.0*pii/thickness_filter_timescale_sec &
+               -2.0*pi/thickness_filter_timescale_sec &
               *(lowFreqDivergence(k,iCell)  - div_hu(k) &
                 + div_hu_btr * layerThickness(k,iCell)/totalThickness)
 
@@ -1535,7 +1535,7 @@ contains
                   div_hu_btr*layerThickness(k,iCell)/totalThickness + &
                   lowFreqDivergence(k,iCell) + &
                   use_highFreqThick_restore* &
-                  (-2.0*pii/highFreqThick_restore_time_sec* &
+                  (-2.0*pi/highFreqThick_restore_time_sec* &
                    highFreqThickness(k,iCell) )
 
          end do ! vert (k) loop

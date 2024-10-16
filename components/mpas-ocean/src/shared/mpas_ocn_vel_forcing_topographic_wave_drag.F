@@ -199,7 +199,7 @@ contains
               call mpas_log_write(" Topographic wave drag scheme is: Jayne and St. Laurent")
               call mpas_log_write("")
               tensorScheme = .false.
-              kappa = pii/10000.0_RKIND
+              kappa = pi/10000.0_RKIND
 
               do iEdge = 1, nEdgesAll
                   kmax =  maxLevelEdgeTop(iEdge)
@@ -241,7 +241,7 @@ contains
 
                       topographicWaveDrag(iEdge) = topographicWaveDragCoeff * gam  &
                                                  * bed_slope_edges(iEdge)**2 * Nbar * Nb &
-                                                 / (8.0_RKIND * omegaM2 * pii**2)
+                                                 / (8.0_RKIND * omegaM2 * pi**2)
                   endif
               enddo
           else if (config_topographic_wave_drag_scheme.EQ."LGF") then
@@ -256,7 +256,7 @@ contains
                       topographicWaveDrag(iEdge) = topographicWaveDragCoeff  &
                                                  * (sqrt((topo_buoyancy_N1B(iEdge)**2 - omegaM2**2)   &
                                                        * (topo_buoyancy_N1V(iEdge)**2 - omegaM2**2))) &
-                                                 / (4.0_RKIND*pii*omegaM2)
+                                                 / (4.0_RKIND*pi*omegaM2)
                       normalCoeffTWD(iEdge) = (lonGradEdge(iEdge)**2) &
                                          * (cos(angleEdge(iEdge))**2) + (latGradEdge(iEdge)**2)*(sin(angleEdge(iEdge))**2) &
                                          - 2.0_RKIND*latGradEdge(iEdge)*lonGradEdge(iEdge)*sin(angleEdge(iEdge))*(cos(angleEdge(iEdge)))
