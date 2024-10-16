@@ -23,18 +23,32 @@ atmosphere_processes:
     srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20240726.nc
     srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
     # FIXME: just set everything to a constant scalar for testing
-    online_emis_IC_ncl_a1: 1.0
-    online_emis_IC_ncl_a2: 2.0
-    online_emis_IC_ncl_a3: 3.0
-    online_emis_IC_mom_a1: 4.0
-    online_emis_IC_mom_a2: 5.0
-    online_emis_IC_mom_a4: 6.0
-    online_emis_IC_num_a1: 7.0
-    online_emis_IC_num_a2: 8.0
-    online_emis_IC_num_a3: 9.0
-    online_emis_IC_num_a4: 10.0
-    online_emis_IC_dst_a1: 11.0
-    online_emis_IC_dst_a3: 12.0
+    online_emis_IC_ncl_a1: 0.0
+    online_emis_IC_ncl_a2: 0.0
+    online_emis_IC_ncl_a3: 0.0
+    online_emis_IC_mom_a1: 0.16838301005552275E-013
+    online_emis_IC_mom_a2: 0.26554873160224250E-016
+    online_emis_IC_mom_a4: 0.0
+    online_emis_IC_num_a1: 0.0
+    online_emis_IC_num_a2: 0.0
+    online_emis_IC_num_a3: 0.0
+    online_emis_IC_num_a4: 0.0
+    online_emis_IC_dst_a1: 0.0
+    online_emis_IC_dst_a3: 0.18720550166902007E+003
+
+# NOTE: these are the single-call results from the mam validation test
+# (20) ncl_a1: 2.659900637e-13
+# (25) ncl_a2: 0
+# (29) ncl_a3: 2.391492482e-11
+# (21) mom_a1: 1.683830101e-14
+# (26) mom_a2: 2.655487316e-17
+# (38) mom_a4: 0
+# (22) num_a1: 2.594942753e-15
+# (27) num_a2: 4.092359179e-18
+# (35) num_a3: 0
+# (39) num_a4: 0
+# (19) dst_a1: 0
+# (28) dst_a3: 403.2611563
 
 grids_manager:
   Type: Mesh Free

@@ -33,9 +33,13 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
-  // FIXME: check into whether this should be an "Updated" field because
-  //        I haven't yet determined if an updated field needs to be output
-  //        as a tendency, and thus the flux would need dt [s] factored out
+  // FIXME: this should likely be an updated field, since online emissisons
+  //        expects input values for constituent_fluxes
+  // NOTE: the other option is that we do something like:
+  // add_field<Required>("constituent_fluxes_input", scalar2d_pcnct,
+  //                     kg / m2 / s, grid_name);
+  // and then bundle the online emissions computations as tendencies into the
+  // Computed constituent_fluxes field
   // -------------------------------------------------------------
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes of species in [kg/m2/s]
@@ -275,16 +279,19 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
-
   } // for loop for species
 
+  auto &online_data = online_emissions.online_emis_data;
   // TODO: check that units are consistent with srf emissions!
   // copy current values to online-emissions-local version
-  Kokkos::deep_copy(online_emis_data.cfluxes, constituent_fluxes_);
+  Kokkos::deep_copy(online_data.cfluxes, constituent_fluxes_);
   // TODO: potentially combine with above parfor(icol) loop?
   Kokkos::parallel_for(
       "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        // need to initialize values for:
+        // NOTE: calling aero_model_emissions() this way hides the fact that
+        // some hard-coded data is initialized within mam4::aero_model_emissions
+        // some of these values definitely need to be read from here column-wise
+        // the structs.{values} holding the above are:
         // SeasaltEmissionsData.{mpoly, mprot, mlip}
         // DustEmissionsData.dust_dmt_vwr
         // OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
@@ -293,14 +300,13 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         // which is a chunk-wise variable at this point
         // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
         // col-value once inside aero_model_emissions()
-
-        view_1d fluxes_col = Kokkos::subview(
-            online_emissions.online_emis_data.cfluxes, icol, Kokkos::ALL());
+        view_1d fluxes_col = Kokkos::subview(online_data.cfluxes, icol, Kokkos::ALL());
         mam4::aero_model_emissions::aero_model_emissions(fluxes_col);
       });
-  Kokkos::deep_copy(constituent_fluxes_, online_emis_data.cfluxes);
+  // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
+  // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
+  Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
   Kokkos::fence();
 } // run_impl ends
-
 // =============================================================================
 } // namespace scream

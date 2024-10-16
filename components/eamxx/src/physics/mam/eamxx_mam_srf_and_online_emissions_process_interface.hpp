@@ -13,7 +13,6 @@
 // class
 #include <share/atm_process/atmosphere_process.hpp>
 
-// #include <share/util/scream_common_physics_functions.hpp>
 #include <string>
 
 namespace scream {
@@ -45,8 +44,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
 public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-  using onlineEmiss =
-      mam_coupling::onlineEmissions<Real, DefaultDevice>;
+  using onlineEmiss = mam_coupling::onlineEmissions<Real, DefaultDevice>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
