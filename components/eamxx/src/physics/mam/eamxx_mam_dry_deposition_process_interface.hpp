@@ -7,6 +7,11 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
+//write why we need it
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/io/scorpio_input.hpp"
+#include <physics/mam/srf_emission.hpp>
+
 // For component name
 #include <string>
 
@@ -45,7 +50,6 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
 
-
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These
      correspond to the two attachment states and two moments:
@@ -64,13 +68,12 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // Dimensions
   //   [num_modes, aerosol_categories_, num columns, num levels]
   view_4d vlc_grv_;
-    
+
   // Output deposition velocity, [m/s]
-  // fraction landuse weighted sum of vlc_grv and vlc_trb 
+  // fraction landuse weighted sum of vlc_grv and vlc_trb
   // Dimensions
   //   [num_modes, aerosol_categories_, num columns, num levels]
   view_4d vlc_dry_;
-
 
   // Output of the the mixing ratio tendencies [kg/kg/s or 1/kg/s]
   // Dimensions
@@ -81,16 +84,16 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // Work array to hold the mixing ratios [kg/kg or 1/kg]
   // Dimensions
   //   [num columns, num levels, mam4::aero_model::pcnst]
-  // Packs AerosolState::int_aero_nmr 
+  // Packs AerosolState::int_aero_nmr
   // and   AerosolState::int_aero_nmr
   // into one array, hence is mixed kg/kg and 1/kg.
   view_3d qtracers_;
 
   // Work array to hold the fraction [non-dimentional]
-  // of land use for column. 
+  // of land use for column.
   // Dimensions
   //   [MAMDryDep::n_land_type, num columns]
-  // Values should sum to 1. 
+  // Values should sum to 1.
   view_2d fraction_landuse_;
 
   // Work array to hold the air density [kg/m3]
@@ -99,7 +102,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // Calculated from air pressure at layer midpoint,
   // Constants::r_gas_dry_air and air temperture.
   view_2d rho_;
-    
+
   // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   // Dimensions
   //   [mam4::aero_model::pcnst, num column, num level]
@@ -112,6 +115,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   view_3d qqcw_;
 
  public:
+ using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // Constructor

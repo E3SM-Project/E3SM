@@ -12,6 +12,7 @@ NOTES:
 -----------------------------------------------------------------
 */
 namespace scream {
+  using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
@@ -19,6 +20,119 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
    * initialized here. Like universal constants, mam wetscav options.
    */
 }
+
+struct FracLandUseData {
+    FracLandUseData() = default;
+    FracLandUseData(const int ncol_, const int nclass_)
+    {
+      init (ncol_, nclass_, true);
+    }
+
+    void init(const int ncol_, const int nclass_, const bool allocate)
+    {
+      ncols = ncol_;
+      nclass = nclass_;
+      
+      if (allocate)FRAC_LAND_USE = MAMDryDep::view_2d("FRAC_LAND_USE",nclass,ncols);
+    }
+
+    // Basic spatial dimensions of the data
+    int ncols;
+    int nclass;
+    
+    MAMDryDep::view_2d FRAC_LAND_USE;        // Fractional land use (unitless) dimensions = (nclass, ncols)
+  }; // FracLandUseData
+
+  struct FracLandUseInput {
+    FracLandUseInput() = default;
+    FracLandUseInput(const int ncols_, const int nclass_)
+    {
+      init(ncols_, nclass_);
+    }
+    void init(const int ncols_, const int nclass_)
+    {
+      data.init(ncols_,nclass_,true);
+    }
+    FracLandUseData  data;         // All fractional land use fields
+  }; // FracLandUseInput
+
+  // The output is really just SPAData, but for clarity it might
+  // help to see a SPAOutput along a SPAInput in functions signatures
+  using FracLandUseOutput = FracLandUseData;
+
+std::shared_ptr<AbstractRemapper> create_horiz_remapper (
+    const std::shared_ptr<const AbstractGrid>& model_grid,
+    const std::string& frac_land_use_data_file,
+    const std::string& map_file)
+{
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(frac_land_use_data_file,scorpio::Read);
+  const int ncols_data = scorpio::get_dimlen(frac_land_use_data_file,"ncol");
+  const int nclass_data   = scorpio::get_dimlen(frac_land_use_data_file,"class");
+  
+  scorpio::release_file(frac_land_use_data_file);
+
+  // We could use model_grid directly if using same num levels,
+  // but since shallow clones are cheap, we may as well do it (less lines of code)
+  auto horiz_interp_tgt_grid = model_grid->clone("frac_land_use_horiz_interp_tgt_grid",true);
+  
+  const int ncols_model = model_grid->get_num_global_dofs();
+  std::shared_ptr<AbstractRemapper> remapper;
+  if (ncols_data==ncols_model) {
+    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
+  } else {
+    EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+      "Error! We do not allow to coarsen fractional land use data to fit the model. We only allow\n"
+      "       fractional land use data to be at the same or coarser resolution as the model.\n");
+    // We must have a valid map file
+    EKAT_REQUIRE_MSG (map_file!="",
+        "ERROR: fractional land use data is on a different grid than the model one,\n"
+        "       but spa_remap_file is missing from fractional land use parameter list.");
+
+    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
+  }
+
+  remapper->registration_begins();
+
+  const auto tgt_grid = remapper->get_tgt_grid();
+
+  const auto layout_2d   = tgt_grid->get_2d_vector_layout(nclass_data, "class");
+  const auto nondim = ekat::units::Units::nondimensional();
+
+  Field fractional_land_use          (FieldIdentifier("fraction_landuse",        layout_2d,  nondim,tgt_grid->name()));
+  fractional_land_use.allocate_view();
+  
+  remapper->register_field_from_tgt (fractional_land_use);
+  
+  remapper->registration_ends();
+
+  return remapper;
+}
+
+//  template <typename S, typename D>
+void init_frac_landuse_file_read(
+    const int ncol, const int nclass, const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::vector<std::string> &sectors,
+    const std::string &mapping_file,
+    // output
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+    FracLandUseInput &SrfEmissData_start, FracLandUseInput &SrfEmissData_end,
+    FracLandUseOutput &SrfEmissData_out,
+    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+  // Init horizontal remap
+  SrfEmissHorizInterp =
+      create_horiz_remapper(grid, data_file, mapping_file);
+
+  // Initialize the size of start/end/out data structures
+  SrfEmissData_start = FracLandUseInput(ncol, nclass);
+  SrfEmissData_end   = FracLandUseInput(ncol, nclass);
+  SrfEmissData_out.init(ncol, nclass, true);
+
+  // Create reader (an AtmosphereInput object)
+  SrfEmissDataReader =
+      srfEmissFunc::create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
+}  // init_frac_landuse_file_read
 
 // ================================================================
 //  SET_GRIDS
@@ -56,7 +170,12 @@ void MAMDryDep::set_grids(
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
   const int num_aero_modes = mam_coupling::num_aero_modes();
+<<<<<<< HEAD
   const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(true, num_aero_modes, "num_modes");
+=======
+  const FieldLayout vector3d_mid =
+      grid_->get_3d_vector_layout(true, num_aero_modes, "num_modes");
+>>>>>>> Init for frational land use file works
 
   using namespace ekat::units;
 
@@ -199,6 +318,29 @@ void MAMDryDep::set_grids(
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols",
                       vector2d_pcnst, 1 / m2 / s, grid_name);
+
+  // -------------------------------------------------------------
+  // setup to enable reading files
+  // -------------------------------------------------------------
+
+  const auto mapping_file = m_params.get<std::string>("srf_remap_file", "");
+  std::string frac_landuse_data_file =
+  "/qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/5src/scream/atmsrf_ne2np4_dim_swapped_both_c20241016.nc.nc";
+  //    "/compyfs/inputdata/atm/cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc";
+  std::vector<std::string> field_names= {"fraction_landuse"};
+  std::shared_ptr<AbstractRemapper> horizInterp_;
+  std::shared_ptr<AtmosphereInput> dataReader_;
+  srfEmissFunc::srfEmissTimeState timeState_;
+  FracLandUseInput data_start_, data_end_;
+  FracLandUseOutput data_out_;
+
+
+  init_frac_landuse_file_read(
+        ncol_, 11, grid_,frac_landuse_data_file , field_names, mapping_file,
+        // output
+        horizInterp_, data_start_, data_end_,
+        data_out_, dataReader_);
+
 }  // set_grids
 
 // ================================================================
