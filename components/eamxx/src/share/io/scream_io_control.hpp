@@ -24,7 +24,8 @@ struct IOControl {
 
   // At run time, set dt in the struct, so we can compute next_write_ts correctly,
   // even if freq_units is "nsteps"
-  // NOTE: this ASSUMES dt is constant throughout the simulation. Error is thrown if it changes
+  // NOTE: this ASSUMES dt is constant throughout the run (i.e., no time adaptivity).
+  //       An error will be thrown if dt changes, so developers can fix this if we ever support variable dt
   double dt = 0;
 
   bool output_enabled () const {
