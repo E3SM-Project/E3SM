@@ -131,27 +131,27 @@ struct Functions
     Scalar ice_sedimentation_factor = 1.0;
     bool do_ice_production = true;
 
-    void load_runtime_options_from_file(ekat::ParameterList& m_params) {
-      max_total_ni = m_params.get<double>("max_total_ni", 740.0e3);
-      autoconversion_prefactor = m_params.get<double>("autoconversion_prefactor", 1350.0);
-      autoconversion_qc_exponent = m_params.get<double>("autoconversion_qc_exponent", 2.47);
-      autoconversion_nc_exponent = m_params.get<double>("autoconversion_nc_exponent", 1.79);
-      autoconversion_radius = m_params.get<double>("autoconversion_radius", 25.0e-6);
-      accretion_prefactor = m_params.get<double>("accretion_prefactor", 67.0);
-      accretion_qc_exponent = m_params.get<double>("accretion_qc_exponent", 1.15);
-      accretion_qr_exponent = m_params.get<double>("accretion_qr_exponent", 1.15);
-      rain_selfcollection_prefactor = m_params.get<double>("rain_selfcollection_prefactor", 5.78);
-      rain_selfcollection_breakup_diameter = m_params.get<double>("rain_selfcollection_breakup_diameter", 0.00028);
-      constant_mu_rain = m_params.get<double>("constant_mu_rain", 1.0);
-      spa_ccn_to_nc_factor = m_params.get<double>("spa_ccn_to_nc_factor", 1.0);
-      cldliq_to_ice_collection_factor = m_params.get<double>("cldliq_to_ice_collection_factor", 0.5);
-      rain_to_ice_collection_factor = m_params.get<double>("rain_to_ice_collection_factor", 1.0);
-      min_rime_rho = m_params.get<double>("min_rime_rho", 50.0);
-      max_rime_rho = m_params.get<double>("max_rime_rho", 900.0);
-      immersion_freezing_exponent = m_params.get<double>("immersion_freezing_exponent", 0.65);
-      deposition_nucleation_exponent = m_params.get<double>("deposition_nucleation_exponent", 0.304);
-      ice_sedimentation_factor = m_params.get<double>("ice_sedimentation_factor", 1.0);
-      do_ice_production = m_params.get<bool>("do_ice_production", true);
+    void load_runtime_options_from_file(ekat::ParameterList& params) {
+      max_total_ni = params.get<double>("max_total_ni", 740.0e3);
+      autoconversion_prefactor = params.get<double>("autoconversion_prefactor", 1350.0);
+      autoconversion_qc_exponent = params.get<double>("autoconversion_qc_exponent", 2.47);
+      autoconversion_nc_exponent = params.get<double>("autoconversion_nc_exponent", 1.79);
+      autoconversion_radius = params.get<double>("autoconversion_radius", 25.0e-6);
+      accretion_prefactor = params.get<double>("accretion_prefactor", 67.0);
+      accretion_qc_exponent = params.get<double>("accretion_qc_exponent", 1.15);
+      accretion_qr_exponent = params.get<double>("accretion_qr_exponent", 1.15);
+      rain_selfcollection_prefactor = params.get<double>("rain_selfcollection_prefactor", 5.78);
+      rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", 0.00028);
+      constant_mu_rain = params.get<double>("constant_mu_rain", 1.0);
+      spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", 1.0);
+      cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", 0.5);
+      rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", 1.0);
+      min_rime_rho = params.get<double>("min_rime_rho", 50.0);
+      max_rime_rho = params.get<double>("max_rime_rho", 900.0);
+      immersion_freezing_exponent = params.get<double>("immersion_freezing_exponent", 0.65);
+      deposition_nucleation_exponent = params.get<double>("deposition_nucleation_exponent", 0.304);
+      ice_sedimentation_factor = params.get<double>("ice_sedimentation_factor", 1.0);
+      do_ice_production = params.get<bool>("do_ice_production", true);
     }
 
   };
