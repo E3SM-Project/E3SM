@@ -1029,6 +1029,7 @@
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <modules compiler="crayclang.*">
         <command name="reset"></command>
+        <command name="switch">Core/24.07</command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
         <command name="switch">cce cce/15.0.1</command>
         <!-- craype module to address tcmalloc runtime errors at startup -->
@@ -1041,6 +1042,7 @@
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
+        <command name="switch">Core/24.07</command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
         <command name="switch">amd amd/5.4.0</command>
       </modules>
@@ -1049,6 +1051,7 @@
       </modules>
       <modules compiler="gnu.*">
         <command name="reset"></command>
+        <command name="switch">Core/24.07</command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
         <command name="switch">gcc gcc/12.2.0</command>
       </modules>
@@ -1057,12 +1060,12 @@
         <command name="load">rocm/5.4.0</command>
       </modules>
       <modules>
-        <command name="load">cray-python/3.9.13.1</command>
+        <command name="load">cray-python/3.11.5</command>
         <command name="load">cray-libsci</command>
-        <command name="load">subversion/1.14.1</command>
-        <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">zlib/1.2.11</command>
+        <command name="load">cmake/3.27.9</command>
+        <command name="load">subversion</command>
+        <command name="load">git</command>
+        <command name="load">zlib</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.1</command>
