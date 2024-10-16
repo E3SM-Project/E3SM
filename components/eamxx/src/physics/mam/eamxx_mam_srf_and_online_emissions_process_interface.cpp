@@ -30,6 +30,16 @@ void MAMSrfOnlineEmiss::set_grids(
   static constexpr int pcnst = mam4::aero_model::pcnst;
   const FieldLayout scalar2d_pcnct =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
+  // auto vector3d_mid = grid_->get_3d_vector_layout(true, 2);
+
+  // FIXME: online emissions requires the following quantities for the
+  // OnlineEmissionsData struct: {surface_temp, u_bottom, v_bottom, z_bottom,
+  //                              ocean_frac}
+  // // Temperature
+  // add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
+  // add_field<Required>("horiz_winds", vector3d_mid, m/s, grid_name);
+  // vertical wind?
+  // ocean_frac?
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
