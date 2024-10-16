@@ -9,7 +9,7 @@ on:
     branches: [ master ]
     # Only if docs-related files are touched
     paths:
-      - components/eamxx/mkdocs.yml
+      - components/eamxx/mkdocs.yaml
       - components/eamxx/docs/**
       - components/eamxx/cime_config/namelist_defaults_scream.xml
   # Runs every time a PR is open against master
@@ -17,7 +17,7 @@ on:
     branches: [ master ]
     # Only if docs-related files are touched
     paths:
-      - components/eamxx/mkdocs.yml
+      - components/eamxx/mkdocs.yaml
       - components/eamxx/docs/**
       - components/eamxx/cime_config/namelist_defaults_scream.xml
 
