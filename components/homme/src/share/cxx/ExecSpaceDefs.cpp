@@ -22,7 +22,7 @@
 #endif
 
 #ifdef KOKKOS_ENABLE_SYCL
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #endif
 
 namespace Homme {

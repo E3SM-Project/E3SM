@@ -112,7 +112,13 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
-  SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  # For SYCL builds it is suggested to use CXX linker with `-fortlib`
+  # for mixed-language setups
+  IF(SYCL_BUILD)
+    SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE CXX)
+  ELSE()
+    SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  ENDIF()
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
@@ -165,8 +171,8 @@ macro(createTestExec execName execType macroNP macroNC
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -mkl)
-    TARGET_LINK_LIBRARIES(${execName} -mkl)
+    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -qmkl)
+    TARGET_LINK_LIBRARIES(${execName} -qmkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${execName} lapack blas)
@@ -264,8 +270,8 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   ENDIF ()
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -mkl)
-    TARGET_LINK_LIBRARIES(${libName} -mkl)
+    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -qmkl)
+    TARGET_LINK_LIBRARIES(${libName} -qmkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${libName} lapack blas)
