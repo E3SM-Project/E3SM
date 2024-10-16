@@ -1,6 +1,6 @@
 # Running EAMxx with a Regionally Refined Mesh (RRM)
 
-Running EAMxx with an RRM allows you run a select region of the globe at high resolution (i.e. 3 km) with the remainder of the globe at a lower resolution (i.e. 25 or 100 km).  This document will point you to the steps required and resources available to assist in developing and running a new RRM.
+Running EAMxx with a RRM allows you run a select region of the globe at high resolution (i.e. 3 km) with the remainder of the globe at a lower resolution (i.e. 25 or 100 km).  This document will point you to the steps required and resources available to assist in developing and running a new RRM.
 
 ## Choose Your RRM
 
@@ -8,7 +8,7 @@ What region of the globe do you want to refine?  Your first step should be to ch
 
 ## Generate Your RRM
 
-Please refer to the offical [E3SM guide for developing new atmosphere grids](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/872579110/Running+E3SM+on+New+Atmosphere+Grids).
+Please refer to the offical [E3SM guide for developing new atmosphere grids](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/872579110/Running+E3SM+on+New+Atmosphere+Grids), which provides detailed guidance for developing your RRM.
 
 After you have made all the necessary files for your RRM, you will need to configure your code branch so that it knows about your new grid.  The steps required to do this are documented at the top of the [library of RRM grids/cases page](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3690397775/Library+of+Regionally-Refined+Model+RRM+Grids).
 
@@ -18,9 +18,9 @@ The easiest way to generate an initial condition is to use the [HICCUP tool](htt
 
 ## Assemble Nudging Data (Optional)
 
-If you wish to nudge your simulation, assemble your nudging data in the format required by EAMxx.  Please refer to this [documentation for nudging](nudging.md).
+If you wish to nudge your simulation, assemble your nudging data in the format required by EAMxx.  Please refer to the [nudging documentation](nudging.md).
 
-In the event that you only want to nudge a portion of your domain then you will need to generate a nudging weights file.  A common use case for this is when you want the high-resolution region to remain free-running (unnudged) while nudging the coarse domain towards reanalysis data.  Please use [this script](https://github.com/E3SM-Project/scream-docs/blob/master/run_scripts/RRM_example_scripts/SCREAMv1_create_nudging_weights.py) as an example of how to generate your nudging weights file.
+In the event that you only want to nudge a portion of your domain, then you will need to generate a nudging weights file.  A common use case for this is when you want the high-resolution region to remain free-running (unnudged) while nudging the coarse domain towards reanalysis or model data.  Please use [this script](https://github.com/E3SM-Project/scream-docs/blob/master/run_scripts/RRM_example_scripts/SCREAMv1_create_nudging_weights.py) as an example of how to generate your nudging weights file.
 
 ## Run your RRM
 
