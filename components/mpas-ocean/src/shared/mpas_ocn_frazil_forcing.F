@@ -535,9 +535,9 @@ contains
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = activeTracers(indexSalinity, k, iCell) !0.0_RKIND
+              frazilSalinity = config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) !0.0_RKIND
             else
-              frazilSalinity = activeTracers(indexSalinity, k, iCell) !config_frazil_sea_ice_reference_salinity
+              frazilSalinity = config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) !config_frazil_sea_ice_reference_salinity
             end if
             frazilSalinity = min( frazilSalinity, activeTracers(indexSalinity, k, iCell) )
 
@@ -546,7 +546,6 @@ contains
 
             ! limit the frazil formed appropriately
             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
-
 
             ! Determine new salt in frazil
             newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity
@@ -619,10 +618,9 @@ contains
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
-                                           * config_frazil_ice_density
-        !accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + sumNewThicknessWeightedSaltContent
+           * config_frazil_ice_density
 
-        !accumulatedFrazilIceSalinityTmp = sumNewThicknessWeightedSaltContent
+        !NJ: Assumed frazil salinity in coupling with sea ice
         if ( underLandIce ) then
            ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
            ! for freshwater budgets
@@ -634,7 +632,7 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        ! Determine true salt in frazil
+        !NJ: Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
         if (sumNewFrazilIceThickness > 0.0_RKIND) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
