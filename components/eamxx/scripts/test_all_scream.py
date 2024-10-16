@@ -511,7 +511,7 @@ class TestAllScream(object):
                f"Something is off. generate_baseline should have not be called for test {test}")
 
         baseline_dir = self.get_test_dir(self._baseline_dir, test)
-        test_dir = self.get_test_dir(self._work_dir / "tas_baseline_build", test)
+        test_dir = self.get_test_dir(self._work_dir, test)
         if test_dir.exists():
             shutil.rmtree(test_dir)
         test_dir.mkdir()
@@ -589,11 +589,6 @@ class TestAllScream(object):
         print("###############################################################################")
         print(f"Generating baselines using '{git_head}'")
         print("###############################################################################")
-
-        tas_baseline_bld = self._work_dir / "tas_baseline_build"
-        if tas_baseline_bld.exists():
-            shutil.rmtree(tas_baseline_bld)
-        tas_baseline_bld.mkdir()
 
         success = True
         num_workers = len(tests_needing_baselines) if self._parallel else 1
