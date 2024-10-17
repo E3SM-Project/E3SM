@@ -31,7 +31,7 @@ For a rectilinear lat-lon grid used by the land and/or river models the grid nam
 
 **Examples**: `r05` is 0.5 degree spacing and `r0125` is 1/8 or 0.125 degree spacing.
 
-For a mono-grid, which can only be used for idealized simulations such as aqua planet and RCE, the grid is written twice to indicate that both atmosphere/land and ocean/sea-ice models are on the same grid.
+For a mono-grid the convention is that the grid is written twice to indicate that both atmosphere/land and ocean/sea-ice models are on the same grid. A mono-grid is typically only used for idealized simulations such as aqua planet and RCE, but can also be used for F-compsets if the CICE sea-ice model is used in place of the MPAS sea-ice model (MPASSI). 
 
 **Example**: `ne30pg2_ne30pg2`
 
@@ -42,6 +42,19 @@ Bi-grid options should indicate two different grids used for atmosphere/land and
 Tri-grid options should indicate three different grids used for atmosphere, land, and ocean/sea-ice models, with the land grid appearing in the middle.
 
 **Example**: `ne30pg2_r05_IcoswISC30E3r5`
+
+
+Note that the conventions discussed above refer to the "grid alias", but for any combination of grids the full grid definition has a long form representation that spells out the grid in more detail.
+
+**Example**:
+```
+  alias: ne4pg2_ne4pg2
+
+  longname: a%ne4np4.pg2_l%ne4np4.pg2_oi%ne4np4.pg2_r%r05_g%null_w%null_z%null_m%oQU240
+  non-default grids are: atm:ne4np4.pg2  lnd:ne4np4.pg2  ocnice:ne4np4.pg2  rof:r05  glc:null  wav:null  
+  mask is: oQU240
+```
+
 
 ## Grid Definition
 
