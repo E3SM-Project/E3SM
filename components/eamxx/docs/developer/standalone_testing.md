@@ -21,7 +21,40 @@ configurations. We use several types of tests
   the [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) command.
 
 We also support a `test-all-scream` configuration that runs all of the
-standalone tests for an EAMxx configuration.
+standalone tests for an EAMxx configuration. Note, your current machine
+must be known to EAMxx before `test-all-scream` will work. A machine can
+be made known to EAMxx by editing the eamxx/scripts/machines_specs.py files.
+There are some instructions on what to do at the top of this file.
+
+`test-all-scream` has a good help dump
+```
+% cd $scream_repo/components/eamxx
+% ./scripts/test-all-scream -h
+```
+
+If you are unsure of the cmake configuration for you development cycle, one
+trick you can use is to run `test-all-scream` for the `dbg` test and just
+copy the cmake command it prints (then ctrl-C the process).
+```
+% cd $scream_repo/components/eamxx
+% ./scripts/test-all-scream -t dbg -m $machine
+* wait for a few seconds*
+* Ctrl-C *
+* Copy the contents of DCMAKE_COMMAND that was passed to ctest *
+* Add "cmake" to beginning of contents and path to eamxx at the end. *
+```
+
+Considerations for using `test-all-scream`:
+* Your machine must be known to our scripts, see above.
+* test-all-scream expects to be run from a compute node if you
+  are on a batch machine.
+* You'll need to think about your baseline situation, as many of our
+  tests rely on pre-existing baselines. The -b option controls the baseline
+  location and can have the following values:
+  * AUTO: A common public baseline area shared by all developers
+  * LOCAL: A private baseline area for the current developer in the current repo
+  * $path: A specific arbitrary path
+  * None: If there is no -b at all, no baseline testing will be done
 
 ## Running EAMxx's Tests with CTest
 
