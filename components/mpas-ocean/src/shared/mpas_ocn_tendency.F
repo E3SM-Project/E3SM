@@ -264,7 +264,8 @@ contains
                                              tendThick, err)
 
       ! Compute thickness tendency to manufactured solution
-      call ocn_manufactured_solution_tend_thick(tendThick, err)
+      call ocn_manufactured_solution_tend_thick(forcingPool, &
+                                                tendThick, err)
 
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
@@ -493,7 +494,8 @@ contains
                                 layerThickEdgeMean, tendVel, err)
  
       ! Compute tendency term for manufactured solution
-      call ocn_manufactured_solution_tend_vel(tendVel, err)
+      call ocn_manufactured_solution_tend_vel(forcingPool, &
+                                              tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying

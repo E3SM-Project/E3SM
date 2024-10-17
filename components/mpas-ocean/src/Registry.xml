@@ -4130,6 +4130,10 @@
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
 		/>
+               	<var name="forcingTimeIncrement" type="real" dimensions="" units="s"
+			description="Time increment to compute forcing terms at intermediate time intervals"
+			packages="forwardMode"
+		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">
 		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m s^-1"
