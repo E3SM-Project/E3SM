@@ -11,8 +11,13 @@ on:
     - cron: '00 15 * * 2'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   mkatmsrffile-test:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,10 +36,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: "envmkatmsrffile"
-          miniforge-variant: Mambaforge
           miniforge-version: latest
-          use-mamba: true
-          mamba-version: "*"
           channel-priority: strict
           auto-update-conda: true
           python-version: 3.11
@@ -42,7 +44,7 @@ jobs:
         name: Install dependencies
         run: |
           echo $CONDA_PREFIX
-          mamba install -y nco xarray numba numpy netcdf4
+          conda install -y nco xarray numba numpy netcdf4 -c conda-forge
       - 
         name: Run tests
         working-directory: components/eam/tools/mkatmsrffile
