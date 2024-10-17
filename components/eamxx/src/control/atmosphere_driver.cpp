@@ -765,10 +765,8 @@ void AtmosphereDriver::initialize_output_managers () {
         if (it.first == "Physics GLL") continue;
         fms[it.first] = it.second;
       }
-      om.set_logger(m_atm_logger);
       om.setup(fms, m_grids_manager);
     } else {
-      om.set_logger(m_atm_logger);
       om.setup(m_field_mgrs,m_grids_manager);
     }
     om.set_logger(m_atm_logger);
