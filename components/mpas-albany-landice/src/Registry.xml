@@ -609,6 +609,10 @@
 		            description="Logical flag determining if ascii mesh files will be created.  These files are written in a format that can be used by the standalone Albany velocity solver for optimization.  If .true., the model initializes, writes the mesh files, and then terminates."
 		            possible_values=".true. or .false."
                 />
+                <nml_option name="config_create_all_logs_in_e3sm" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if log files will be created for each processor in an E3SM configuration.  If .true., the model initializes and writes to one files per processor."
+		            possible_values=".true. or .false."
+                />
 
 	</nml_record>
 
