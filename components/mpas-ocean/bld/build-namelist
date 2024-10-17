@@ -725,8 +725,7 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 # Namelist group: coupling #
 ############################
 
-# Assume ice runoff corresponds to icebergs in Southern Ocean (true for JRA
-# forcing, perhaps modeled firn ice runoff approximates icebergs).
+# When we have a data representation of icebergs, remove ice runoff
 if ($OCN_ICEBERG eq 'true') {
 	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
 } else {
