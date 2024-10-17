@@ -60,7 +60,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
        const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Read input parameters and setup internal data
-  set_params(field_mgrs);
+  setup_internals(field_mgrs);
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -651,7 +651,7 @@ compute_filename (const IOFileSpecs& file_specs,
 }
 
 void OutputManager::
-set_params (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
+setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
 {
   using vos_t = std::vector<std::string>;
 

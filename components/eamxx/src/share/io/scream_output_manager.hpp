@@ -121,8 +121,9 @@ protected:
 
   void set_file_header(const IOFileSpecs& file_specs);
 
-  // Craft the restart parameter list from the parameters given at construction
-  void set_params (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
+  // Set internal class variables and processes the field_mgrs for restart fields
+  // to add to the parameter list for a model restart managers.
+  void setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
   void setup_file (      IOFileSpecs& filespecs,
                    const IOControl& control);
