@@ -29,9 +29,9 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
+      "Error! Invalid run_t0 timestamp: " + run_t0.to_string() + "\n");
+  EKAT_REQUIRE_MSG (case_t0.is_valid(),
       "Error! Invalid case_t0 timestamp: " + case_t0.to_string() + "\n");
-  EKAT_REQUIRE_MSG (run_t0.is_valid(),
-      "Error! Invalid run_t0 timestamp: " + case_t0.to_string() + "\n");
   EKAT_REQUIRE_MSG (case_t0<=run_t0,
       "Error! The case_t0 timestamp must precede run_t0.\n"
       "   run_t0 : " + run_t0.to_string() + "\n"
