@@ -2,7 +2,7 @@
 
 In addition to generating input data to support a new grid, several code modifications are required before E3SM can run with the grid. However, the specific changes will depend on how the grid will be used. The intendend model configuration for the new grid will change which files need to be modified. For instance, a grid intended for aquaplanet experiments does not require as many changes as a historical AMIP-style run.
 
-The guidelines here are meant to outline various possible changes the user should consider when adding support for a new grid. This document cannot be exhaustive, and it is important that the user understands the changes they are making. It is often useful to use a pre-existing grid configuration as a template. Note that the guidelines here are only relevant for "horizontal" grids. Similar considerations are needed to support a new vertical grid.
+The guidelines here are meant to outline various possible changes the user should consider when adding support for a new grid. This document cannot be exhaustive, and it is important that the user understands the changes they are making. It is often useful to use a pre-existing grid configuration as a template. Note that the guidelines here are only relevant for "horizontal" grids. Additional considerations are needed to support a new vertical grid, which is a topic not currently covered here.
 
 When setting up a new grid you will need to edit some or all of these files:
 
@@ -47,7 +47,7 @@ Tri-grid options should indicate three different grids used for atmosphere, land
 
 ### Adding a New Grid Alias
 
-Grid aliases are defined in specified in `cime_config/config_grids.xml` and are used to specify the grid for a case when calling `create_newcase` via the `--res` argument. Below is an example grid alias for the `ne30pg2_r05_IcoswISC30E3r5` grid used in E3SMv3 production simulations.
+Grid aliases are defined in `cime_config/config_grids.xml` and are used to specify the grid for a case when calling `create_newcase` via the `--res` argument. Below is an example grid alias for the `ne30pg2_r05_IcoswISC30E3r5` grid used in E3SMv3 production simulations.
 
 ```xml
     <model_grid alias="ne30pg2_r05_IcoswISC30E3r5">
@@ -77,11 +77,11 @@ Domain files are needed for each grid and are specified in the `<domains>` secti
     </domain>
 ```
 
-Notice where I've used ellipses `...` to omit all entires except the lines relevant to the `ne30pg2_r05_IcoswISC30E3r5` grid. Also, note that all of these paths are relative to the input data path set as `DIN_LOC_ROOT` which has a default for each machine. See [Generating Domain Files](/generate_domain_files/) for information about creating domain files.
+Notice the ellipses `...` are used here to omit all entries that are not relevant to the `ne30pg2_r05_IcoswISC30E3r5` grid. Also, note that all of these paths are relative to the input data path set as `DIN_LOC_ROOT` which has a default for each machine. See [Generating Domain Files](/generate_domain_files/) for information about creating domain files.
 
 ### Coupler Mapping Files
 
-The mapping files used by the component coupler to communicate fluxes between the component models must be specified in the `<gridmaps>` section of `cime_config/config_grids.xml`. these are organized for specific pairs of grids, such that tri-grids will require multiple sections. The entries relevant for `ne30pg2_r05_IcoswISC30E3r5` are shown below.
+The mapping files used by the component coupler to communicate fluxes between the component models must be specified in the `<gridmaps>` section of `cime_config/config_grids.xml`. These are organized for specific pairs of grids, such that tri-grids will require multiple sections. The entries relevant for `ne30pg2_r05_IcoswISC30E3r5` are shown below.
 
 ```xml
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="IcoswISC30E3r5">
@@ -119,7 +119,7 @@ Note that all of these paths are relative to the input data path set as `DIN_LOC
 
 When defining a new atmosphere grid, information needs to be provided on how the grid is constructed.
 
-To define a new atmosphere grid a line must be added to `components/eam/bld/config_files/horiz_grid.xml` that indicates the numebr of elements and physics columns. In the lines below for `ne30np4` (without the physgrid) and `ne30pg2` (with the physgrid) you can see the value of `ne` is the same (number of elements along a cube edge), but the number of physics columns is different.
+To define a new atmosphere grid a line must be added to `components/eam/bld/config_files/horiz_grid.xml` that indicates the number of elements and physics columns. In the lines below for `ne30np4` (without the physgrid) and `ne30pg2` (with the physgrid) you can see the value of `ne` is the same (number of elements along a cube edge), but the number of physics columns is different.
 
 ```xml
 <horiz_grid dyn="se"    hgrid="ne30np4"      ncol="48602"   csne="30"  csnp="4" npg="0" />
