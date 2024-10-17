@@ -15,17 +15,17 @@ When setting up a new grid you will need to edit some or all of these files:
 
 ## Mono-Grid vs Bi-Grid vs Tri-Grid
 
-The mono-bi-tri grid options in E3SM can be confusing, but it's important to understand what these terms mean when adding a new grid to E3SM. At the surface these terms mean that the whole model either using a single grid for all componennt models, or a combination of 2 or 3 grids shared among the component models. Note that mono-grid and bi-grid terms often ignore that the river model needs to be on i/ts own regular lat-lon grid (for now).
+The mono-bi-tri grid options in E3SM can be confusing, but it is important to understand what these terms mean when adding a new grid to E3SM. At the surface these terms mean that the whole model is either using a single grid for all componennt models, or a combination of 2 or 3 grids shared among the component models. Note that mono-grid and bi-grid terms often ignore that the river model needs to be on its own regular lat-lon grid.
 
-Historically, climate models would use a single grid for all components (i.e. mono-grid), but this is often not the case anymore. In E3SM the ocean and sea-ice components often use targeted regional refinement with special consideration of ocean mesoscale eddies, whereas the atmosphere will generally use a globally homogenous grid. In practice, the main difference between "bi" and "tri" grids often comes down to whether the land surface model shares a grid with the atmosphere or not. The component coupler is in charge of facilitating communication between component models, primarily through fluxes, and so mapping files are needed to support a combination of different grids. E3SMv3 uses a tri-grid configuration for production simulations.
+In practice, "bi" and "tri" grids are most commonly used and the main difference between them comes down to whether the land surface model shares a grid with the atmosphere or not. The component coupler is responsible for facilitating communication between component models, primarily through fluxes, and so mapping files are needed to support a combination of different grids. E3SMv3 uses a tri-grid configuration for production simulations.
 
 ## Grid Naming Conventions
 
-The atmosphere grid name should always indicate the "ne" value and add "pg2" to indicate that the physgrid is being used. For a regionally refined mesh (RRM) the grid name should always start with `ne0` followed a descriptive string that includes the region being refined and the degree of refinement.
+The atmosphere grid name should always indicate the base "ne" value and whether the physgrid is being used, usually by adding ".pg2" at the end. For a regionally refined mesh (RRM) the grid name should always start with `ne0` followed a descriptive string that includes the region being refined and the degree of refinement.
 
-**Example**: `ne0np4_northamericax4v1`
+**Example**: `ne0np4_northamerica_30x4v1.pg2`
 
-Note that the example indicates a `4x` refinement, but does indicate the base resolution, which is useful to know. A better grid name would be `ne0np4_northamerica30x4v1`, because this tells us that the grid is consistent with `ne30` in the unrefined regions.
+Note that this example differs from how the North American grid is currently named as `ne0np4_northamericax4v1.pg2`, which indicates a `4x` refinement, but does not indicate the base resolution, which is useful to know. The more informative grid name `ne0np4_northamerica_30x4v1.pg2` makes it clear that  unrefined regions are consistent with `ne30pg2`.
 
 For a rectilinear lat-lon grid used by the land and/or river models the grid name should start with "r" and typically use spacing less than one degree, so they indicate the nominal grid spacing, starting with "0" and omitting the decimal.
 
