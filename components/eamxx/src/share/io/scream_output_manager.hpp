@@ -70,7 +70,8 @@ public:
   OutputManager() = default;
   virtual ~OutputManager ();
 
-  // Initialize
+  // Initialize manager by storing class members that only depend on runtime parameters.
+  // Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options
   //  - run_t0: the timestamp of the start of the current simulation
   //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
@@ -86,7 +87,7 @@ public:
     initialize(io_comm, params, run_t0, run_t0, is_model_restart_output);
   }
 
-  // Set up the manager, creating all output streams.
+  // Setup manager by creating the internal output streams using grids/field data
   // Inputs:
   //  - field_mgr/field_mgrs: field manager(s) storing fields to be outputed
   //  - grids_mgr: grid manager to create remapping from field managers grids onto the IO grid.
