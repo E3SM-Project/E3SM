@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.39">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.41">
     
     
       
@@ -20,7 +20,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.8c3ca2c6.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.0253249f.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -2058,12 +2058,12 @@
 <li><code>components/elm/bld/namelist_files/namelist_defaults.xml</code></li>
 </ul>
 <h2 id="mono-grid-vs-bi-grid-vs-tri-grid">Mono-Grid vs Bi-Grid vs Tri-Grid</h2>
-<p>The mono-bi-tri grid options in E3SM can be confusing, but it's important to understand what these terms mean when adding a new grid to E3SM. At the surface these terms mean that the whole model either using a single grid for all componennt models, or a combination of 2 or 3 grids shared among the component models. Note that mono-grid and bi-grid terms often ignore that the river model needs to be on i/ts own regular lat-lon grid (for now).</p>
-<p>Historically, climate models would use a single grid for all components (i.e. mono-grid), but this is often not the case anymore. In E3SM the ocean and sea-ice components often use targeted regional refinement with special consideration of ocean mesoscale eddies, whereas the atmosphere will generally use a globally homogenous grid. In practice, the main difference between "bi" and "tri" grids often comes down to whether the land surface model shares a grid with the atmosphere or not. The component coupler is in charge of facilitating communication between component models, primarily through fluxes, and so mapping files are needed to support a combination of different grids. E3SMv3 uses a tri-grid configuration for production simulations.</p>
+<p>The mono-bi-tri grid options in E3SM can be confusing, but it is important to understand what these terms mean when adding a new grid to E3SM. At the surface these terms mean that the whole model is either using a single grid for all componennt models, or a combination of 2 or 3 grids shared among the component models. Note that mono-grid and bi-grid terms often ignore that the river model needs to be on its own regular lat-lon grid.</p>
+<p>In practice, "bi" and "tri" grids are most commonly used and the main difference between them comes down to whether the land surface model shares a grid with the atmosphere or not. The component coupler is responsible for facilitating communication between component models, primarily through fluxes, and so mapping files are needed to support a combination of different grids. E3SMv3 uses a tri-grid configuration for production simulations.</p>
 <h2 id="grid-naming-conventions">Grid Naming Conventions</h2>
-<p>The atmosphere grid name should always indicate the "ne" value and add "pg2" to indicate that the physgrid is being used. For a regionally refined mesh (RRM) the grid name should always start with <code>ne0</code> followed a descriptive string that includes the region being refined and the degree of refinement.</p>
-<p><strong>Example</strong>: <code>ne0np4_northamericax4v1</code></p>
-<p>Note that the example indicates a <code>4x</code> refinement, but does indicate the base resolution, which is useful to know. A better grid name would be <code>ne0np4_northamerica30x4v1</code>, because this tells us that the grid is consistent with <code>ne30</code> in the unrefined regions.</p>
+<p>The atmosphere grid name should always indicate the base "ne" value and whether the physgrid is being used, usually by adding ".pg2" at the end. For a regionally refined mesh (RRM) the grid name should always start with <code>ne0</code> followed a descriptive string that includes the region being refined and the degree of refinement.</p>
+<p><strong>Example</strong>: <code>ne0np4_northamerica_30x4v1.pg2</code></p>
+<p>Note that this example differs from how the North American grid is currently named as <code>ne0np4_northamericax4v1.pg2</code>, which indicates a <code>4x</code> refinement, but does not indicate the base resolution, which is useful to know. The more informative grid name <code>ne0np4_northamerica_30x4v1.pg2</code> makes it clear that  unrefined regions are consistent with <code>ne30pg2</code>.</p>
 <p>For a rectilinear lat-lon grid used by the land and/or river models the grid name should start with "r" and typically use spacing less than one degree, so they indicate the nominal grid spacing, starting with "0" and omitting the decimal.</p>
 <p><strong>Examples</strong>: <code>r05</code> is 0.5 degree spacing and <code>r0125</code> is 1/8 or 0.125 degree spacing.</p>
 <p>For a mono-grid, which can only be used for idealized simulations such as aqua planet and RCE, the grid is written twice to indicate that both atmosphere/land and ocean/sea-ice models are on the same grid.</p>
@@ -2221,7 +2221,7 @@ Note:<span class="w"> </span>0.1x0.1,<span class="w"> </span>0.5x0.5,<span class
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.525ec568.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.83f73b43.min.js"></script>
       
         <script src="../../../../javascript/mathjax.js"></script>
       
