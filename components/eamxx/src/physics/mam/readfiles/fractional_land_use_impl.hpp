@@ -4,22 +4,25 @@
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/scream_timing.hpp"
 
-namespace scream{
-namespace frac_landuse{
+namespace scream {
+namespace frac_landuse {
 
 template <typename S, typename D>
 std::shared_ptr<AbstractRemapper>
 fracLandUseFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &frac_land_use_data_file, const std::string &map_file) {
+    const std::string &data_file, const std::string &map_file,
+    const std::string &field_name, const std::string &dim_name1,
+    const std::string &dim_name2) {
   using namespace ShortFieldTagsNames;
 
-  scorpio::register_file(frac_land_use_data_file, scorpio::Read);
-  const int ncols_data  = scorpio::get_dimlen(frac_land_use_data_file, "ncol");
-  const int nclass_data = scorpio::get_dimlen(frac_land_use_data_file, "class");
+  scorpio::register_file(data_file, scorpio::Read);
+  const int ncols_data  = scorpio::get_dimlen(data_file, dim_name1);
+  const int nclass_data = scorpio::get_dimlen(data_file, dim_name2);
 
-  scorpio::release_file(frac_land_use_data_file);
+  scorpio::release_file(data_file);
 
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
@@ -57,7 +60,7 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
   const auto nondim    = ekat::units::Units::nondimensional();
 
   Field fractional_land_use(
-      FieldIdentifier("fraction_landuse", layout_2d, nondim, tgt_grid->name()));
+      FieldIdentifier(field_name, layout_2d, nondim, tgt_grid->name()));
   fractional_land_use.allocate_view();
 
   remapper->register_field_from_tgt(fractional_land_use);
@@ -68,17 +71,15 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
 }  // create_horiz_remapper
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput>
-fracLandUseFunctions<S, D>::create_data_reader(
+std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &data_file) {
   std::vector<Field> io_fields;
-    for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
-      io_fields.push_back(horiz_remapper->get_src_field(i));
-    }
-    const auto io_grid = horiz_remapper->get_src_grid();
-    return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields,
-                                             true);
+  for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+  return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
 }  // create_data_reader
 
 #if 0
@@ -93,7 +94,7 @@ ScalarX fracLandUseFunctions<S, D>::linear_interp(const ScalarX &x0,
 
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::perform_time_interpolation(
-    const FracLandUseTimeState &time_state, const FracLandUseInput &data_beg,
+    const CommonFileRead::timeState &time_state, const FracLandUseInput &data_beg,
     const FracLandUseInput &data_end, const FracLandUseOutput &data_out) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
@@ -147,7 +148,7 @@ void fracLandUseFunctions<S, D>::perform_time_interpolation(
 }  // perform_time_interpolation
 
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::FracLandUse_main(const FracLandUseTimeState &time_state,
+void fracLandUseFunctions<S, D>::FracLandUse_main(const CommonFileRead::timeState &time_state,
                                             const FracLandUseInput &data_beg,
                                             const FracLandUseInput &data_end,
                                             const FracLandUseOutput &data_out) {
@@ -171,63 +172,56 @@ void fracLandUseFunctions<S, D>::FracLandUse_main(const FracLandUseTimeState &ti
   // Step 1. Perform time interpolation
   perform_time_interpolation(time_state, data_beg, data_end, data_out);
 }  // FracLandUse_main
-
+#endif
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::update_FracLandUse_data_from_file(
+void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
     const int time_index,  // zero-based
-    AbstractRemapper &FracLandUse_horiz_interp, FracLandUseInput &FracLandUse_input) {
+    AbstractRemapper &horiz_interp, FracLandUseInput &input) {
   using namespace ShortFieldTagsNames;
   using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
   using Member = typename KokkosTypes<DefaultDevice>::MemberType;
 
-  start_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file");
+  start_timer("EAMxx::FracLandUse::update_frac_land_use_data_from_file");
 
   // 1. Read from file
-  start_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::read_data");
+  start_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::read_data");
   scorpio_reader->read_variables(time_index);
-  stop_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::read_data");
+  stop_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::read_data");
 
   // 2. Run the horiz remapper (it is a do-nothing op if FracLandUse data is on
   // same grid as model)
-  start_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::horiz_remap");
-  FracLandUse_horiz_interp.remap(/*forward = */ true);
-  stop_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::horiz_remap");
+  start_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
+  horiz_interp.remap(/*forward = */ true);
+  stop_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
 
-  // 3. Copy from the tgt field of the remapper into the FracLandUse_data, padding
-  // data if necessary
-  start_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::copy_and_pad");
-  // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
-  // tau_sw, tau_lw
-
-  const auto &layout = FracLandUse_horiz_interp.get_tgt_field(0)
-                           .get_header()
-                           .get_identifier()
-                           .get_layout();
-
-  const int ncols = layout.dim(COL);
-
-  // Read fields from the file
-  for(int i = 0; i < FracLandUse_horiz_interp.get_num_fields(); ++i) {
-    auto sector =
-        FracLandUse_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    const auto emiss =
-        Kokkos::subview(FracLandUse_input.data.emiss_sectors, i, Kokkos::ALL());
-    Kokkos::deep_copy(emiss, sector);
-  }
-
+  // 3. Copy from the tgt field of the remapper into the FracLandUse_data,
+  // padding data if necessary
+  start_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::copy_and_pad");
+  // Recall, the fields are registered in the order:
+  // Read the field from the file
+  const auto field_from_file =
+      horiz_interp.get_tgt_field(0).get_view<const Real **>();
+  // copy data to the input view
+  Kokkos::deep_copy(input.data.frac_land_use, field_from_file);
   Kokkos::fence();
-  stop_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file::copy_and_pad");
+  stop_timer(
+      "EAMxx::FracLandUse::update_frac_land_use_data_from_file::copy_and_pad");
 
-  stop_timer("EAMxx::FracLandUse::update_FracLandUse_data_from_file");
+  stop_timer("EAMxx::FracLandUse::update_frac_land_use_data_from_file");
 
-}  // END update_FracLandUse_data_from_file
+}  // END update_frac_landuse_data_from_file
 
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::update_FracLandUse_timestate(
+void fracLandUseFunctions<S, D>::update_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &FracLandUse_horiz_interp, FracLandUseTimeState &time_state,
-    FracLandUseInput &FracLandUse_beg, FracLandUseInput &FracLandUse_end) {
+    AbstractRemapper &horiz_interp, CommonFileRead::timeState &time_state,
+    FracLandUseInput &beg, FracLandUseInput &end) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that FracLandUse assumes monthly data to update.  Not
   //        any other frequency.
@@ -240,9 +234,9 @@ void fracLandUseFunctions<S, D>::update_FracLandUse_timestate(
             .frac_of_year_in_days();
     time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
 
-    // Copy FracLandUse_end'data into FracLandUse_beg'data, and read in the new
-    // FracLandUse_end
-    std::swap(FracLandUse_beg, FracLandUse_end);
+    // Copy end'data into beg'data, and read in the new
+    // end
+    std::swap(beg, end);
 
     // Update the FracLandUse forcing data for this month and next month
     // Start by copying next months data to this months data structure.
@@ -251,25 +245,33 @@ void fracLandUseFunctions<S, D>::update_FracLandUse_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_FracLandUse_data_from_file(scorpio_reader, ts, next_month,
-                                   FracLandUse_horiz_interp, FracLandUse_end);
+    update_frac_land_use_data_from_file(scorpio_reader, ts, next_month,
+                                        horiz_interp, end);
   }
 
 }  // END updata_FracLandUse_timestate
-#endif
+
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
-    const int ncol, const int nclass,
+    const std::string field_name, const std::string dim_name1,
+    const std::string dim_name2,
     const std::shared_ptr<const AbstractGrid> &grid,
-    const std::string &data_file, const std::vector<std::string> &sectors,
-    const std::string &mapping_file,
+    const std::string &data_file, const std::string &mapping_file,
     // output
     std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
-    FracLandUseInput &FracLandUseData_start, FracLandUseInput &FracLandUseData_end,
+    FracLandUseInput &FracLandUseData_start,
+    FracLandUseInput &FracLandUseData_end,
     FracLandUseOutput &FracLandUseData_out,
     std::shared_ptr<AtmosphereInput> &FracLandUseDataReader) {
   // Init horizontal remap
-  FracLandUseHorizInterp = create_horiz_remapper(grid, data_file, mapping_file);
+  FracLandUseHorizInterp = create_horiz_remapper(
+      grid, data_file, mapping_file, field_name, dim_name1, dim_name2);
+
+  // number of columns in the file
+  const int ncol = scorpio::get_dimlen(data_file, dim_name1);
+
+  // number of fractional land use classes
+  const int nclass = scorpio::get_dimlen(data_file, dim_name2);
 
   // Initialize the size of start/end/out data structures
   FracLandUseData_start = FracLandUseInput(ncol, nclass);
@@ -277,11 +279,10 @@ void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
   FracLandUseData_out.init(ncol, nclass, true);
 
   // Create reader (an AtmosphereInput object)
-  FracLandUseDataReader =
-      create_data_reader(FracLandUseHorizInterp, data_file);
+  FracLandUseDataReader = create_data_reader(FracLandUseHorizInterp, data_file);
 }  // init_frac_landuse_file_read
 
-}  // namespace
-}  // namespace scream::mam_coupling
+}  // namespace frac_landuse
+}  // namespace scream
 
 #endif  // FRACTIONAL_LANDUSE_IMPL_HPP

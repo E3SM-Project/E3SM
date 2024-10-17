@@ -12,7 +12,6 @@ NOTES:
 -----------------------------------------------------------------
 */
 namespace scream {
-using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
@@ -21,87 +20,6 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
    */
 }
 
-std::shared_ptr<AbstractRemapper> create_horiz_remapper(
-    const std::shared_ptr<const AbstractGrid> &model_grid,
-    const std::string &frac_land_use_data_file, const std::string &map_file) {
-  using namespace ShortFieldTagsNames;
-
-  scorpio::register_file(frac_land_use_data_file, scorpio::Read);
-  const int ncols_data  = scorpio::get_dimlen(frac_land_use_data_file, "ncol");
-  const int nclass_data = scorpio::get_dimlen(frac_land_use_data_file, "class");
-
-  scorpio::release_file(frac_land_use_data_file);
-
-  // We could use model_grid directly if using same num levels,
-  // but since shallow clones are cheap, we may as well do it (less lines of
-  // code)
-  auto horiz_interp_tgt_grid =
-      model_grid->clone("frac_land_use_horiz_interp_tgt_grid", true);
-
-  const int ncols_model = model_grid->get_num_global_dofs();
-  std::shared_ptr<AbstractRemapper> remapper;
-  if(ncols_data == ncols_model) {
-    remapper = std::make_shared<IdentityRemapper>(
-        horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
-  } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
-                     "Error! We do not allow to coarsen fractional land use "
-                     "data to fit the model. We only allow\n"
-                     "       fractional land use data to be at the same or "
-                     "coarser resolution as the model.\n");
-    // We must have a valid map file
-    EKAT_REQUIRE_MSG(map_file != "",
-                     "ERROR: fractional land use data is on a different grid "
-                     "than the model one,\n"
-                     "       but spa_remap_file is missing from fractional "
-                     "land use parameter list.");
-
-    remapper =
-        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
-  }
-
-  remapper->registration_begins();
-
-  const auto tgt_grid = remapper->get_tgt_grid();
-
-  const auto layout_2d = tgt_grid->get_2d_vector_layout(nclass_data, "class");
-  const auto nondim    = ekat::units::Units::nondimensional();
-
-  Field fractional_land_use(
-      FieldIdentifier("fraction_landuse", layout_2d, nondim, tgt_grid->name()));
-  fractional_land_use.allocate_view();
-
-  remapper->register_field_from_tgt(fractional_land_use);
-
-  remapper->registration_ends();
-
-  return remapper;
-}
-
-//  template <typename S, typename D>
-/*void init_frac_landuse_file_read(
-    const int ncol, const int nclass,
-    const std::shared_ptr<const AbstractGrid> &grid,
-    const std::string &data_file, const std::vector<std::string> &sectors,
-    const std::string &mapping_file,
-    // output
-    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
-    FracLandUseInput &SrfEmissData_start, FracLandUseInput &SrfEmissData_end,
-    FracLandUseOutput &SrfEmissData_out,
-    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
-  // Init horizontal remap
-  SrfEmissHorizInterp = create_horiz_remapper(grid, data_file, mapping_file);
-
-  // Initialize the size of start/end/out data structures
-  SrfEmissData_start = FracLandUseInput(ncol, nclass);
-  SrfEmissData_end   = FracLandUseInput(ncol, nclass);
-  SrfEmissData_out.init(ncol, nclass, true);
-
-  // Create reader (an AtmosphereInput object)
-  SrfEmissDataReader =
-      srfEmissFunc::create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
-}  // init_frac_landuse_file_read
-*/
 // ================================================================
 //  SET_GRIDS
 // ================================================================
@@ -288,7 +206,7 @@ void MAMDryDep::set_grids(
                       vector2d_pcnst, 1 / m2 / s, grid_name);
 
   // -------------------------------------------------------------
-  // setup to enable reading files
+  // setup to enable reading fractional land use file
   // -------------------------------------------------------------
 
   const auto mapping_file = m_params.get<std::string>("srf_remap_file", "");
@@ -296,10 +214,16 @@ void MAMDryDep::set_grids(
       "/qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/5src/scream/"
       "atmsrf_ne2np4_dim_swapped_both_c20241016.nc.nc";
   //    "/compyfs/inputdata/atm/cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc";
-  const std::vector<std::string> field_names = {"fraction_landuse"};
+  // Field to be read from file
+  const std::string field_name = "fraction_landuse";
+
+  // Dimensions of the filed
+  const std::string dim_name1 = "ncol";
+  const std::string dim_name2 = "class";
 
   FracLandUseFunc::init_frac_landuse_file_read(
-      ncol_, 11, grid_, frac_landuse_data_file, field_names, mapping_file,
+      field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+      mapping_file,
       // output
       horizInterp_, data_start_, data_end_, data_out_, dataReader_);
 
@@ -454,10 +378,20 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // The fraction of land use for the column. [non-dimentional]
   fraction_landuse_ = view_2d("fraction_landuse_", n_land_type, ncol_);
 
-  // Read files
-  /* update_frac_landuse_data_from_file(
-     ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
-     ispec_srf.data_end_);  // output*/
+  //-----------------------------------------------------------------
+  // Update fractional land use file reading
+  //-----------------------------------------------------------------
+  // Current month ( 0-based)
+  const int curr_month = timestamp().get_month() - 1;
+
+  // Load the first month into data_end.
+
+  // Note: At the first time step, the data will be moved into data_beg,
+  // and data_end will be reloaded from file with the new month.
+
+  FracLandUseFunc::update_frac_land_use_data_from_file(
+      dataReader_, timestamp(), curr_month, *horizInterp_,
+      data_end_);  // output
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -513,6 +447,26 @@ void MAMDryDep::run_impl(const double dt) {
                           .get_view<Real **>();
 
   // FIXME: remove it if it read from a file
+
+  //--------------------------------------------------------------------
+  // Interpolate fractional land use data
+  //--------------------------------------------------------------------
+
+  // Gather time and state information for interpolation
+  const auto ts = timestamp() + dt;
+  // Update TimeState
+  timeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  FracLandUseFunc::update_timestate(dataReader_, ts, *horizInterp_,
+                                    // output
+                                    timeState_, data_start_, data_end_);
+#if 0
+    // Call the main fracLandUse routine to get interpolated field
+    FracLandUseFunc::fracLandUse_main(timeState_, data_start_,
+                                data_end_, data_out_);
+#endif
+
   populated_fraction_landuse(fraction_landuse_, ncol_);
 
   // Call drydeposition and get tendencies

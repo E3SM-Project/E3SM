@@ -8,12 +8,8 @@
 #include <physics/mam/mam_coupling.hpp>
 
 // write why we need it
+#include <physics/mam/readfiles/common_file_read_func.hpp>
 #include <physics/mam/readfiles/fractional_land_use.hpp>
-#include <physics/mam/srf_emission.hpp>
-
-#include "share/grid/remap/abstract_remapper.hpp"
-#include "share/io/scorpio_input.hpp"
-
 // For component name
 #include <string>
 
@@ -34,9 +30,9 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   using view_4d       = Field::view_dev_t<Real ****>;
   using const_view_1d = Field::view_dev_t<const Real *>;
   using const_view_3d = Field::view_dev_t<const Real ***>;
-  using srfEmissFunc  = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
   using FracLandUseFunc =
       frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
+  using CommonFileRead = fileRead::commonFileReadFunc<Real, DefaultDevice>;
 
  private:
   // number of horizontal columns and vertical levels
@@ -122,7 +118,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // File reading:
   std::shared_ptr<AbstractRemapper> horizInterp_;
   std::shared_ptr<AtmosphereInput> dataReader_;
-  // srfEmissFunc::srfEmissTimeState timeState_;
+  CommonFileRead::timeState timeState_;
   FracLandUseFunc::FracLandUseInput data_start_, data_end_;
   FracLandUseFunc::FracLandUseOutput data_out_;
 
