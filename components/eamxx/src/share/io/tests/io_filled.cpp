@@ -128,7 +128,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("io_filled"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);

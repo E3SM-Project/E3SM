@@ -118,6 +118,10 @@ public:
   void finalize();
 
   long long res_dep_memory_footprint () const;
+
+  // For debug and testing purposes
+  const IOControl&   output_control    () const { return m_output_control;    }
+  const IOFileSpecs& output_file_specs () const { return m_output_file_specs; }
 protected:
 
   std::string compute_filename (const IOFileSpecs& file_specs,
@@ -131,6 +135,10 @@ protected:
 
   void setup_file (      IOFileSpecs& filespecs,
                    const IOControl& control);
+
+  // If a file can be closed (next snap won't fit) or needs flushing, do so
+  void close_or_flush_if_needed (      IOFileSpecs& file_specs,
+                                 const IOControl&   control) const;
 
   // Manage logging of info to atm.log
   void push_to_logger();

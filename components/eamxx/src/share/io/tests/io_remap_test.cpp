@@ -677,7 +677,6 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   params.set<std::string>("Averaging Type","Instant");
   params.set<int>("Max Snapshots Per File",1);
   params.set<std::string>("Floating Point Precision","real");
-  params.set<bool>("MPI Ranks in Filename",true);
   auto& oc = params.sublist("output_control");
   oc.set<int>("Frequency",1);
   oc.set<std::string>("frequency_units","nsteps");
