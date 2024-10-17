@@ -79,18 +79,18 @@ struct fracLandUseFunctions {
   static std::shared_ptr<AtmosphereInput> create_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &data_file);
-#if 0
+
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   static void fracLandUse_main(const CommonFileRead::timeState &time_state,
                                const FracLandUseInput &data_beg,
                                const FracLandUseInput &data_end,
-                               const fracLandUseOutput &data_out);
+                               const FracLandUseOutput &data_out);
 
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
-#endif
+
   static void update_frac_land_use_data_from_file(
       std::shared_ptr<AtmosphereInput> &scorpio_reader,
       const util::TimeStamp &ts,
@@ -108,12 +108,12 @@ struct fracLandUseFunctions {
 
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
-#if 0
+
   // The following three are called during fracLandUse_main
   static void perform_time_interpolation(const CommonFileRead::timeState &time_state,
                                          const FracLandUseInput &data_beg,
                                          const FracLandUseInput &data_end,
-                                         const fracLandUseOutput &data_out);
+                                         const FracLandUseOutput &data_out);
 
   // Performs convex interpolation of x0 and x1 at point t
   template <typename ScalarX, typename ScalarT>
@@ -122,7 +122,6 @@ struct fracLandUseFunctions {
                                                       const ScalarT &t);
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
-#endif
 
   static void init_frac_landuse_file_read(
       const std::string field_name, const std::string dim_name1,

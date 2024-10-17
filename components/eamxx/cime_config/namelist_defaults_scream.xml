@@ -250,7 +250,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_aci>
 
     <!-- MAM4xx-Dry Deposition -->
-    <mam4_drydep inherit="atm_proc_base" />
+    <mam4_drydep inherit="atm_proc_base">
+    <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/EAM_atmsrf_ne30pg2_200129.nc</fractional_land_use_file>
+    </mam4_drydep>
 
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>

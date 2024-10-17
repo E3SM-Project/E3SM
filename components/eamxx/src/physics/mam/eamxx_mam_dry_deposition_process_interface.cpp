@@ -209,18 +209,16 @@ void MAMDryDep::set_grids(
   // setup to enable reading fractional land use file
   // -------------------------------------------------------------
 
-  const auto mapping_file = m_params.get<std::string>("srf_remap_file", "");
-  const std::string frac_landuse_data_file =
-      "/qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/5src/scream/"
-      "atmsrf_ne2np4_dim_swapped_both_c20241016.nc.nc";
-  //    "/compyfs/inputdata/atm/cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc";
+  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+  const std::string frac_landuse_data_file = m_params.get<std::string>("fractional_land_use_file", "aaa");
+
   // Field to be read from file
   const std::string field_name = "fraction_landuse";
 
   // Dimensions of the filed
   const std::string dim_name1 = "ncol";
   const std::string dim_name2 = "class";
-
+  std::cout<<"BALI-FILE:"<<mapping_file<<":"<<frac_landuse_data_file<<std::endl;
   FracLandUseFunc::init_frac_landuse_file_read(
       field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
       mapping_file,
@@ -461,11 +459,11 @@ void MAMDryDep::run_impl(const double dt) {
   FracLandUseFunc::update_timestate(dataReader_, ts, *horizInterp_,
                                     // output
                                     timeState_, data_start_, data_end_);
-#if 0
+
     // Call the main fracLandUse routine to get interpolated field
     FracLandUseFunc::fracLandUse_main(timeState_, data_start_,
                                 data_end_, data_out_);
-#endif
+
 
   populated_fraction_landuse(fraction_landuse_, ncol_);
 

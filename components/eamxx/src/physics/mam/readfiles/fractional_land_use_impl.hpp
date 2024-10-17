@@ -82,7 +82,7 @@ std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
   return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
 }  // create_data_reader
 
-#if 0
+
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
 KOKKOS_INLINE_FUNCTION
@@ -110,7 +110,7 @@ void fracLandUseFunctions<S, D>::perform_time_interpolation(
   // At this stage, begin/end must have the same dimensions
   EKAT_REQUIRE(data_end.data.ncols == data_beg.data.ncols);
 
-  auto delta_t_fraction = (t_now - t_beg) / delta_t;
+  const auto delta_t_fraction = (t_now - t_beg) / delta_t;
 
   EKAT_REQUIRE_MSG(delta_t_fraction >= 0 && delta_t_fraction <= 1,
                    "Error! Convex interpolation with coefficient out of "
@@ -120,35 +120,28 @@ void fracLandUseFunctions<S, D>::perform_time_interpolation(
                        "  t_beg  : " +
                        std::to_string(t_beg) +
                        "\n  delta_t: " + std::to_string(delta_t) + "\n");
-
-  const int nsectors = data_beg.data.nsectors;
-  const int ncols    = data_beg.data.ncols;
+  const int nclass = data_beg.data.nclass;
+  const int ncol    = data_beg.data.ncols;
   using ExeSpace     = typename KT::ExeSpace;
   using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
-  const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
+  const auto policy  = ESU::get_default_team_policy(ncol, nclass);
+
 
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MemberType &team) {
         const int icol = team.league_rank();  // column index
-        Real accum     = 0;
-        // Parallel reduction over sectors
-        // FIXME: Do we need to use Kokkos::Single for each team here???
-        Kokkos::parallel_reduce(
-            Kokkos::TeamThreadRange(team, nsectors),
-            [&](const int i, Real &update) {
-              const auto beg = data_beg.data.emiss_sectors(i, icol);
-              const auto end = data_end.data.emiss_sectors(i, icol);
-              update += linear_interp(beg, end, delta_t_fraction);
-            },
-            accum);
-        // Assign the accumulated value to the output
-        data_out.emiss_sectors(0, icol) = accum;
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, 0u, nclass), [&](int iclass) {
+              const auto beg = data_beg.data.frac_land_use(icol, iclass);
+              const auto end = data_end.data.frac_land_use(icol, iclass);
+              data_out.frac_land_use(icol, iclass) = linear_interp(beg, end, delta_t_fraction);
+            });
       });
   Kokkos::fence();
 }  // perform_time_interpolation
 
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::FracLandUse_main(const CommonFileRead::timeState &time_state,
+void fracLandUseFunctions<S, D>::fracLandUse_main(const CommonFileRead::timeState &time_state,
                                             const FracLandUseInput &data_beg,
                                             const FracLandUseInput &data_end,
                                             const FracLandUseOutput &data_out) {
@@ -161,18 +154,18 @@ void fracLandUseFunctions<S, D>::FracLandUse_main(const CommonFileRead::timeStat
 
   // Horiz interpolation can be expensive, and does not depend on the particular
   // time of the month, so it can be done ONCE per month, *outside*
-  // FracLandUse_main (when updating the beg/end states, reading them from file).
+  // fracLandUse_main (when updating the beg/end states, reading them from file).
   EKAT_REQUIRE_MSG(
       data_end.data.ncols == data_out.ncols,
       "Error! Horizontal interpolation is performed *before* "
-      "calling FracLandUse_main,\n"
+      "calling fracLandUse_main,\n"
       "       FracLandUseInput and FracLandUseOutput data structs must have the "
       "same number columns.\n");
 
   // Step 1. Perform time interpolation
   perform_time_interpolation(time_state, data_beg, data_end, data_out);
-}  // FracLandUse_main
-#endif
+}  // fracLandUse_main
+
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
