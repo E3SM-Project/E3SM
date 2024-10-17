@@ -6,14 +6,13 @@ of the field. This allows for fast shallow copy semantic for this class.
 
 The data is stored on both CPU and device memory (these may be the same, depending on the Kokkos
 backend). In EAMxx, we always assume and guarantee that the device data is up to date. That implies that the data
-be explicitly synced to host before using it on host, and explicitly synced to device after host manipulation,
-in order to ensure correctness. In order to access the data, users must use the `get_view` method, which takes
-two template arguments: the data type, and an enum specifying whether CPU or device data is needed. The data
-type is used to reinterpret the generic pointer stored inside to a view of the correct scalar type and layout.
+must be explicitly synced to host before using it on host, and explicitly synced to device after host manipulation,
+in order to ensure correctness. In order to access the data, users must use the `get_view`/'get_strided_view' methods,
+which takes two template arguments: the data type, and an enum specifying whether CPU or device data is needed.
+The data type is used to reinterpret the generic pointer stored inside to a view of the correct scalar type and layout.
 It is a possibly const-qualified type, and if the field was marked as "read-only", the method ensures that the
-provided data type is const. A read-only field can be created via the `getConst` method, which returns an
-identical copy of the field, but marked as read-only. The enum specifying host or device data is optional,
-with device being the default.
+provided data type is const. A read-only field can be created via the `getConst` method, which returns a shallow
+copy of the field, but marked as read-only. The enum specifying host or device data is optional, with device being the default.
 
 The metadata is a collection of information on the field, such as name, layout, units, allocation size, and more.
 Part of the metadata is immutable after creation (e.g., name, units, or layout), while some metadata can be
