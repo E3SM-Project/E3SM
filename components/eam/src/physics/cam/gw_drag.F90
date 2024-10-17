@@ -24,7 +24,7 @@ module gw_drag
 !--------------------------------------------------------------------------
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
-  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,indexb,begchunk,endchunk
+  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,begchunk,endchunk
   use hycoef,             only: hyai, hybi, hyam, hybm, etamid !get the znu,znw,p_top set to 0
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
@@ -985,7 +985,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-
+     if () then
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -1000,7 +1000,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
 
-
+     !else if () then
 
      	!---------------------------------------------------------------------
 	! Replaced the basic units with cam's states
@@ -1079,7 +1079,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
         ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
         its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-        gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=0 )
+        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=0 )
+        !gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=0 )
         !
         call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
         call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
@@ -1093,6 +1094,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
         call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
         call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
+     endif
+     endif
+
         ! Add the orographic tendencies to the spectrum tendencies
         ! Compute the temperature tendency from energy conservation
         ! (includes spectrum).
