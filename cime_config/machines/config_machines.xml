@@ -3983,7 +3983,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/projects/e3sm/software/chicoma-cpu/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -4068,7 +4068,6 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.9</command>
-        <command name="load">cmake/3.27.7</command>
       </modules>
 
       <modules compiler="!intel">
@@ -4078,6 +4077,9 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+      </modules>
+
+      <modules>
         <command name="load">cmake/3.27.7</command>
       </modules>
     </module_system>
