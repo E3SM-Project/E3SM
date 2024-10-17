@@ -207,6 +207,7 @@ protected:
 
   ekat::ParameterList                       m_atm_params;
 
+  std::shared_ptr<OutputManager>            m_restart_output_manager;
   std::list<OutputManager>                  m_output_managers;
 
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;

@@ -690,7 +690,7 @@ void AtmosphereDriver::create_output_managers () {
   checkpoint_params.set("frequency_units",std::string("never"));
   checkpoint_params.set("Frequency",-1);
 
-  // IMPORTANT: create model restart OutputManager first! This OM will be in charge
+  // Create model restart OutputManager first. This OM will be in charge
   // of creating rpointer.atm, while other OM's will simply append to it.
   // If this assumption is not verified, we must always append to rpointer, which
   // can make the rpointer file a bit confusing.
@@ -700,12 +700,12 @@ void AtmosphereDriver::create_output_managers () {
     params.set<std::string>("Averaging Type","Instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
-    auto& om = m_output_managers.emplace_back();
-    om.initialize(m_atm_comm,
-                  params,
-                  m_run_t0,
-                  m_case_t0,
-                  /*is_model_restart_output*/ true);
+    m_restart_output_manager = std::make_shared<OutputManager>();
+    m_restart_output_manager->initialize(m_atm_comm,
+                                         params,
+                                         m_run_t0,
+                                         m_case_t0,
+                                         /*is_model_restart_output*/ true);
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
     checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
@@ -751,13 +751,8 @@ void AtmosphereDriver::initialize_output_managers () {
 
   check_ad_status (s_output_created | s_grids_created | s_fields_created);
 
-  // Early return if no output managers exist
-  if (m_output_managers.empty()) return;
-
   // Check for model restart output manager and setup if it exists.
-  // IMPORTANT: the restart output manager must be the first in the list.
-  if (m_output_managers.front().is_restart()) {
-    auto& om = m_output_managers.front();
+  if (m_restart_output_manager) {
     if (fvphyshack) {
       // Don't save CGLL fields from ICs to the restart file.
       std::map<std::string,field_mgr_ptr> fms;
@@ -765,20 +760,21 @@ void AtmosphereDriver::initialize_output_managers () {
         if (it.first == "Physics GLL") continue;
         fms[it.first] = it.second;
       }
-      om.setup(fms, m_grids_manager);
+      m_restart_output_manager->setup(fms, m_grids_manager);
     } else {
-      om.setup(m_field_mgrs,m_grids_manager);
+      m_restart_output_manager->setup(m_field_mgrs,m_grids_manager);
     }
-    om.set_logger(m_atm_logger);
+    m_restart_output_manager->set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,it.second);
+      m_restart_output_manager->add_global(it.first,it.second);
     }
   }
 
   // Setup output managers
   for (auto& om : m_output_managers) {
-    // We do not need to setup any restart output manager
-    if (om.is_restart()) continue;
+    EKAT_REQUIRE_MSG(not om.is_restart(),
+                     "Error! No restart output should be in m_output_managers. Model restart "
+                     "output should be setup in m_restart_output_manager./n");
 
     om.set_logger(m_atm_logger);
     om.setup(m_field_mgrs,m_grids_manager);
@@ -1660,6 +1656,7 @@ void AtmosphereDriver::run (const int dt) {
   // that quantity at the beginning of the timestep. Or they may need to store
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
+  if (m_restart_output_manager) m_restart_output_manager->init_timestep(m_current_ts, dt);
   for (auto& it : m_output_managers) {
     it.init_timestep(m_current_ts,dt);
   }
@@ -1686,6 +1683,7 @@ void AtmosphereDriver::run (const int dt) {
 
   // Update output streams
   m_atm_logger->debug("[EAMxx::run] running output managers...");
+  if (m_restart_output_manager) m_restart_output_manager->run(m_current_ts);
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
@@ -1716,6 +1714,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_logger->info("[EAMxx] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
+  if (m_restart_output_manager) {
+    m_restart_output_manager->finalize();
+    m_restart_output_manager = nullptr;
+  }
   for (auto& out_mgr : m_output_managers) {
     out_mgr.finalize();
   }
@@ -1839,6 +1841,11 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   // Atm buffer
   my_dev_mem_usage += m_memory_buffer->allocated_bytes();
   // Output
+  if (m_restart_output_manager) {
+    const auto om_footprint = m_restart_output_manager->res_dep_memory_footprint();
+    my_dev_mem_usage += om_footprint;
+    my_host_mem_usage += om_footprint;
+  }
   for (const auto& om : m_output_managers) {
     const auto om_footprint = om.res_dep_memory_footprint ();
     my_dev_mem_usage += om_footprint;
