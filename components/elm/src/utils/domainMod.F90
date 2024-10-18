@@ -52,10 +52,6 @@ module domainMod
      integer          :: nv           ! number of vertices
      real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
      real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
-#ifdef HAVE_MOAB
-     real(r8),pointer :: mblatv(:,:)    ! latitude of grid cell's vertices (deg) for MOAB
-     real(r8),pointer :: mblonv(:,:)    ! longitude of grid cell's vertices (deg) for MOAB
-#endif
      real(r8)         :: lon0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
      real(r8)         :: lat0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
 
