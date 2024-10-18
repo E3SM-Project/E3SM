@@ -10,8 +10,13 @@ on:
         # for now let's not lint files in eamxx
         - '!components/eamxx/**/*.md'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   linter:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
