@@ -1170,7 +1170,6 @@ end subroutine clubb_init_cnst
    use hycoef,             only: etamid
    use physconst,          only: rh2o,pi,rearth,r_universal
    !!get the znu,znw,p_top set to 0
-   use phys_grid, only: get_rlat_all_p
    implicit none
 
    ! --------------- !
@@ -1533,25 +1532,13 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
-   !===========================
-   !simply add par
-   !for z,dz,from other files              
-   real(r8) :: ztop(pcols,pver)             ! top interface height asl(m)
-   real(r8) :: zbot(pcols,pver)             ! bottom interface height asl(m)
-   real(r8) :: zmid(pcols,pver)             ! middle interface height asl(m)
-   real(r8) :: dz(pcols,pver)                  
-   real(r8) :: rlat(pcols)                 ! latitude in radians for columns
-   integer :: kpbl2d_in(pcols)
-   real(r8) :: ttgw(pcols,pver)                 ! temperature tendency
-   real(r8) :: utgw(pcols,pver)                 ! zonal wind tendency
-   real(r8) :: vtgw(pcols,pver)                 ! meridional wind tendency
+   !add par for tofd
    real(r8) :: dtaux3_fd(pcols,pver)
    real(r8) :: dtauy3_fd(pcols,pver)
    real(r8) :: dusfc_fd(pcols)
    real(r8) :: dvsfc_fd(pcols)
-   real(r8) :: dx(pcols),dy(pcols)
-   !==============================
-
+   integer  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+   !
    real(r8) :: inv_exner_clubb_surf
 
 
@@ -1978,74 +1965,24 @@ end subroutine clubb_init_cnst
                      tautmsx,      tautmsy,   cam_in%landfrac )
        call t_stopf('compute_tms')
     endif
-         ztop= 0.0_r8            ! top interface height asl(m)
-         zbot= 0.0_r8            ! bottom interface height asl(m)
-         zmid= 0.0_r8            ! middle interface height asl(m)
-         dz= 0.0_r8
-         kpbl2d_in = -1
-         dtaux3_fd= 0.0_r8
-         dtauy3_fd= 0.0_r8
-         dusfc_fd= 0.0_r8
-         dvsfc_fd= 0.0_r8
-    !similar as in gw_drag
-        do k=1,pverp-1
-        ! assign values from top
-        ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-        ! assign values from bottom           
-        zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
-        end do
-        !transform adding the pressure
-        !transfer from surface to sea level
-        do k=1,pver
-                do i=1,ncol
-                ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
-                zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
-                zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
-                !dz is from bottom to top already for gw_drag
-                dz(i,k)=ztop(i,k)-zbot(i,k)
-                end do
-        end do
-        !get the layer index of pblh in layer
-        kpbl2d_in=0._r8
-        do i=1,pcols
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
-        end do
-        !rlat
-        call get_rlat_all_p(lchnk, ncol, rlat)
-        !=========================================
-	utgw=0._r8
-        vtgw=0._r8
-        ttgw=0._r8
-        dusfc_fd=0._r8
-        dvsfc_fd=0._r8
         !
-        call grid_size(state,dx,dy)
-	call gwdo_gsd(&
-        u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
-        t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
-        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver+1:1:-1),&
-        pi3d=state%exner(:,pver:1:-1),z=zbot,&
-        rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
-        rthblten=ttgw(:,pver:1:-1),&
-        dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
-        dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
-        xland=cam_in%landfrac,br=state%ribulk,&
-        var2d=sgh30(:ncol),&
-        znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
-        cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
-        dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=hdtime,gwd_opt=0,&
-        ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
-        ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
-        its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
-        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
-        !gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
-	!!
+	gwd_ls=0
+     	gwd_bl=0
+     	gwd_ss=0
+     	gwd_fd=1
+        dummy_nm=0.0_r8
+	call gw_oro_interface(state,sgh,pbuf,hdtime,nm,&
+                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                            dtaux3_fd=dtaux3_fd,&
+                            dtauy3_fd=dtauy3_fd,&
+                            dusfc_fd=dusfc_fd,  &
+                            dvsfc_fd=dvsfc_fd)
+	!
 	call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
-        !!
+        !
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif

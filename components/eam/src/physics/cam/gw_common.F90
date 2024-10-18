@@ -18,6 +18,10 @@ public :: gw_prof
 public :: momentum_energy_conservation
 public :: gw_drag_prof
 
+!!Jinbo Xie
+public :: gw_oro_interface
+!!Jinbo Xie
+
 public :: pver, pgwv
 public :: dc
 public :: cref
@@ -744,6 +748,148 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   end if
 
 end subroutine gw_drag_prof
+!==========================================================================
+subroutine gw_oro_interface(state,sgh,pbuf,dt,nm,&
+                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                            utgw,vtgw,ttgw,&
+                            dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,&
+                            dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,&
+                            dusfc_ls, dvsfc_ls ,dusfc_bl, dvsfc_bl,&
+                            dusfc_ss, dvsfc_ss ,dusfc_fd, dvsfc_fd)
+  use gw_common,      only: gwdo_gsd,pblh_get_level_idx,grid_size
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
+  use ppgrid,         only: pcols,pver,pverp
+  type(physics_state), intent(in) :: state      ! physics state structure            ! Standard deviation of orography.
+  real(r8), intent(in) :: sgh(pcols)
+  type(physics_buffer_desc), pointer :: pbuf(:) ! Physics buffer
+  integer , intent(in) :: pblh_idx
+  integer , intent(in) :: dt
+  real(r8), intent(in) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
+  !
+  integer , intent(in) :: gwd_ls
+  integer , intent(in) :: gwd_bl
+  integer , intent(in) :: gwd_ss
+  integer , intent(in) :: gwd_fd
+  !
+  real(r8), intent(out), optional :: utgw(state%ncol,pver)
+  real(r8), intent(out), optional :: vtgw(state%ncol,pver)
+  real(r8), intent(out), optional :: ttgw(state%ncol,pver)
+  !
+  real(r8), intent(out), optional :: dtaux3_ls(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_ls(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_bl(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_bl(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_ss(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_ss(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_fd(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_fd(pcols,pver)
+  real(r8), intent(out), optional :: dusfc_ls(pcols)
+  real(r8), intent(out), optional :: dvsfc_ls(pcols)
+  real(r8), intent(out), optional :: dusfc_bl(pcols)
+  real(r8), intent(out), optional :: dvsfc_bl(pcols)
+  real(r8), intent(out), optional :: dusfc_ss(pcols)
+  real(r8), intent(out), optional :: dvsfc_ss(pcols)
+  real(r8), intent(out), optional :: dusfc_fd(pcols)
+  real(r8), intent(out), optional :: dvsfc_fd(pcols)
+  !
+  real(r8) :: ztop(pcols,pver)             ! top interface height asl (m)
+  real(r8) :: zbot(pcols,pver)             ! bottom interface height asl (m)
+  real(r8) :: zmid(pcols,pver)             ! middle interface height asl (m)
+  real(r8) :: dz(pcols,pver)               ! model layer height
+  !
+  !real(r8) :: g
+  !pblh input
+  integer  :: pblh_idx     = 0
+  integer  :: kpbl2d_in(pcols)
+  real(r8), pointer :: pblh(:)
+  real(r8) :: dx(pcols),dy(pcols)
+                !
+                !convert heights above surface to heights above sea level
+                !obtain z,dz,dx,dy
+                !ztop and zbot are already reversed, start from bottom to top
+                kpbl2d_in=0_r8
+                utgw=0._r8
+                vtgw=0._r8
+                ttgw=0._r8
+                !
+                ztop(1:ncol,1:pver)=0._r8
+                zbot(1:ncol,1:pver)=0._r8
+                zmid(1:ncol,1:pver)=0._r8
+                !
+		dtaux3_ls=0._r8
+                dtauy3_ls=0._r8
+                dtaux3_bl=0._r8
+                dtauy3_bl=0._r8
+                dtaux3_ss=0._r8
+                dtauy3_ss=0._r8
+                dtaux3_fd=0._r8
+                dtauy3_fd=0._r8
+                dusfc_ls=0._r8 
+                dvsfc_ls=0._r8
+                dusfc_bl=0._r8 
+                dvsfc_bl=0._r8
+                dusfc_ss=0._r8 
+                dvsfc_ss=0._r8
+                dusfc_fd=0._r8 
+                dvsfc_fd=0._r8
+                !
+		do k=1,pverp-1
+		! assign values for level top/bottom
+		ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
+		zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+		end do
+		!get g
+		g=gravit
+		!transform adding the pressure
+        	!transfer from surface to sea level
+        	do k=1,pver
+                	do i=1,ncol
+                	ztop(i,k)=ztop(i,k)+state%phis(i)/g
+                	zbot(i,k)=zbot(i,k)+state%phis(i)/g
+                	zmid(i,k)=state%zm(i,k)+state%phis(i)/g
+                	!dz is from bottom to top already for gw_drag
+                	dz(i,k)=ztop(i,k)-zbot(i,k)
+                	end do
+        	end do
+		!reverse to keep good format in scheme
+        	ztop=ztop(:,pver:1:-1)
+        	zbot=zbot(:,pver:1:-1)
+        	!get the layer index of pblh in layer for input in drag scheme
+                pblh_idx = pbuf_get_index('pblh')
+        	call pbuf_get_field(pbuf, pblh_idx, pblh)
+        	do i=1,pcols
+        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/g),pblh(i))
+        	end do
+                !
+                !get grid size for dx,dy
+                call grid_size(state,dx,dy)
+                !interface for orographic drag
+                call gwdo_gsd(&
+                u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
+                qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
+                pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
+                rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
+                dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
+                dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
+                dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
+                dtaux3d_fd=dtaux3_fd(:ncol,pver:1:-1),dtauy3d_fd=dtauy3_fd(:ncol,pver:1:-1),&
+                dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
+                dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
+                dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
+                dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
+                xland=cam_in%landfrac,br=state%ribulk(:ncol),&
+                var2d=sgh(:ncol),oc12d=state%oc(:ncol),&
+                oa2d=state%oadir(:ncol,:),ol2d=state%ol(:ncol,:),&
+                znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
+                cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
+                dt=dt,dx=dx,dy=dy,&
+                kpbl2d=kpbl2d_in,itimestep=dt,gwd_opt=0,&
+                ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
+                ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
+                its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
+                gwd_ls=gwd_ls,gwd_bl=gwd_bl,gwd_ss=gwd_ss,gwd_fd=gwd_fd )
+                !
+end subroutine gw_oro_interface
 !==========================================================================
 function pblh_get_level_idx(height_array ,pblheight)
 implicit none
