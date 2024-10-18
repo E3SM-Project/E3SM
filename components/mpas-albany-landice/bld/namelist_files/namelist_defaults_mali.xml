@@ -150,6 +150,7 @@
 <config_year_digits>4</config_year_digits>
 <config_output_external_velocity_solver_data>.false.</config_output_external_velocity_solver_data>
 <config_write_albany_ascii_mesh>.false.</config_write_albany_ascii_mesh>
+<config_create_all_logs_in_e3sm>.false.</config_create_all_logs_in_e3sm>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>
