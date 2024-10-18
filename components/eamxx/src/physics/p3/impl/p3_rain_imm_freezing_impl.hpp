@@ -26,19 +26,22 @@ void Functions<S,D>
   constexpr Scalar CONS5 = C::CONS5;
   constexpr Scalar CONS6 = C::CONS6;
 
-  const Scalar p3_a_imm = runtime_options.p3_a_imm;
+  const Scalar immersion_freezing_exponent =
+      runtime_options.immersion_freezing_exponent;
 
   const auto qr_not_small_and_t_freezing = (qr_incld >= qsmall) &&
                                            (T_atm <= T_rainfrz) && context;
-  if (qr_not_small_and_t_freezing.any()) {
-    qr2qi_immers_freeze_tend.set(qr_not_small_and_t_freezing,
-               CONS6 *
-               exp(log(cdistr) + log(tgamma(sp(7.)+mu_r)) - sp(6.)*log(lamr)) *
-               exp(p3_a_imm*(T_zerodegc-T_atm)));
-    nr2ni_immers_freeze_tend.set(qr_not_small_and_t_freezing,
-               CONS5 *
-               exp(log(cdistr) + log(tgamma(sp(4.)+mu_r)) - sp(3.)*log(lamr)) *
-               exp(p3_a_imm*(T_zerodegc-T_atm)));
+  if(qr_not_small_and_t_freezing.any()) {
+    qr2qi_immers_freeze_tend.set(
+        qr_not_small_and_t_freezing,
+        CONS6 *
+            exp(log(cdistr) + log(tgamma(sp(7.) + mu_r)) - sp(6.) * log(lamr)) *
+            exp(immersion_freezing_exponent * (T_zerodegc - T_atm)));
+    nr2ni_immers_freeze_tend.set(
+        qr_not_small_and_t_freezing,
+        CONS5 *
+            exp(log(cdistr) + log(tgamma(sp(4.) + mu_r)) - sp(3.) * log(lamr)) *
+            exp(immersion_freezing_exponent * (T_zerodegc - T_atm)));
   }
 }
 

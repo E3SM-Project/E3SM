@@ -7,6 +7,7 @@
 
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 namespace scream {
 namespace p3 {
@@ -110,25 +111,49 @@ struct Functions
   // Structure to store p3 runtime options
   struct P3Runtime {
     Scalar max_total_ni = 740.0e3;
-    Scalar p3_autoconversion_prefactor = 1350.0;
-    Scalar p3_autoconversion_qc_exponent = 2.47;
-    Scalar p3_autoconversion_nc_exponent = 1.79;
-    Scalar p3_autoconversion_radius = 25.0e-6;
-    Scalar p3_accretion_prefactor = 67.0;
-    Scalar p3_accretion_qc_exponent = 1.15;
-    Scalar p3_accretion_qr_exponent = 1.15;
-    Scalar p3_rain_selfcollection_prefactor = 5.78;
-    Scalar p3_rain_selfcollection_breakup_diameter = 0.00028;
-    Scalar p3_mu_r_constant = 1.0;
-    Scalar p3_spa_to_nc = 1.0;
-    Scalar p3_eci = 0.5;
-    Scalar p3_eri = 1.0;
-    Scalar p3_rho_rime_min = 50.0;
-    Scalar p3_rho_rime_max = 900.0;
-    Scalar p3_a_imm = 0.65;
-    Scalar p3_dep_nucleation_exponent = 0.304;
-    Scalar p3_ice_sed_knob = 1.0;
-    bool p3_do_ice_production = true;
+    Scalar autoconversion_prefactor = 1350.0;
+    Scalar autoconversion_qc_exponent = 2.47;
+    Scalar autoconversion_nc_exponent = 1.79;
+    Scalar autoconversion_radius = 25.0e-6;
+    Scalar accretion_prefactor = 67.0;
+    Scalar accretion_qc_exponent = 1.15;
+    Scalar accretion_qr_exponent = 1.15;
+    Scalar rain_selfcollection_prefactor = 5.78;
+    Scalar rain_selfcollection_breakup_diameter = 0.00028;
+    Scalar constant_mu_rain = 1.0;
+    Scalar spa_ccn_to_nc_factor = 1.0;
+    Scalar cldliq_to_ice_collection_factor = 0.5;
+    Scalar rain_to_ice_collection_factor = 1.0;
+    Scalar min_rime_rho = 50.0;
+    Scalar max_rime_rho = 900.0;
+    Scalar immersion_freezing_exponent = 0.65;
+    Scalar deposition_nucleation_exponent = 0.304;
+    Scalar ice_sedimentation_factor = 1.0;
+    bool do_ice_production = true;
+
+    void load_runtime_options_from_file(ekat::ParameterList& params) {
+      max_total_ni = params.get<double>("max_total_ni", 740.0e3);
+      autoconversion_prefactor = params.get<double>("autoconversion_prefactor", 1350.0);
+      autoconversion_qc_exponent = params.get<double>("autoconversion_qc_exponent", 2.47);
+      autoconversion_nc_exponent = params.get<double>("autoconversion_nc_exponent", 1.79);
+      autoconversion_radius = params.get<double>("autoconversion_radius", 25.0e-6);
+      accretion_prefactor = params.get<double>("accretion_prefactor", 67.0);
+      accretion_qc_exponent = params.get<double>("accretion_qc_exponent", 1.15);
+      accretion_qr_exponent = params.get<double>("accretion_qr_exponent", 1.15);
+      rain_selfcollection_prefactor = params.get<double>("rain_selfcollection_prefactor", 5.78);
+      rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", 0.00028);
+      constant_mu_rain = params.get<double>("constant_mu_rain", 1.0);
+      spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", 1.0);
+      cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", 0.5);
+      rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", 1.0);
+      min_rime_rho = params.get<double>("min_rime_rho", 50.0);
+      max_rime_rho = params.get<double>("max_rime_rho", 900.0);
+      immersion_freezing_exponent = params.get<double>("immersion_freezing_exponent", 0.65);
+      deposition_nucleation_exponent = params.get<double>("deposition_nucleation_exponent", 0.304);
+      ice_sedimentation_factor = params.get<double>("ice_sedimentation_factor", 1.0);
+      do_ice_production = params.get<bool>("do_ice_production", true);
+    }
+
   };
 
   // This struct stores prognostic variables evolved by P3.

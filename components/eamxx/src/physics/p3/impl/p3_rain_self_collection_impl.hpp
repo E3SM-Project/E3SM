@@ -22,8 +22,10 @@ void Functions<S,D>
   constexpr Scalar rho_h2o  = C::RHO_H2O;
   constexpr Scalar pi       = C::Pi;
 
-  const Scalar p3_rain_selfcollection_breakup_diameter = runtime_options.p3_rain_selfcollection_breakup_diameter;
-  const Scalar p3_rain_selfcollection_prefactor = runtime_options.p3_rain_selfcollection_prefactor;
+  const Scalar rain_selfcollection_breakup_diameter =
+      runtime_options.rain_selfcollection_breakup_diameter;
+  const Scalar rain_selfcollection_prefactor =
+      runtime_options.rain_selfcollection_prefactor;
 
   const auto qr_incld_not_small = qr_incld >= qsmall && context;
 
@@ -37,18 +39,18 @@ void Functions<S,D>
 
     Spack dum;
     const auto dum2_lt_dum1 =
-        dum2 < p3_rain_selfcollection_breakup_diameter && qr_incld_not_small;
+        dum2 < rain_selfcollection_breakup_diameter && qr_incld_not_small;
     const auto dum2_gt_dum1 =
-        dum2 >= p3_rain_selfcollection_breakup_diameter && qr_incld_not_small;
+        dum2 >= rain_selfcollection_breakup_diameter && qr_incld_not_small;
     dum.set(dum2_lt_dum1, 1);
     if(dum2_gt_dum1.any()) {
       dum.set(dum2_gt_dum1,
-              2 - exp(2300 * (dum2 - p3_rain_selfcollection_breakup_diameter)));
+              2 - exp(2300 * (dum2 - rain_selfcollection_breakup_diameter)));
     }
 
     nr_selfcollect_tend.set(
         qr_incld_not_small,
-        dum * p3_rain_selfcollection_prefactor * nr_incld * qr_incld * rho);
+        dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);
   }
 }
 

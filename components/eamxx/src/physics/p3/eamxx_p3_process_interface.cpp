@@ -219,27 +219,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
-  // Gather runtime options
-  runtime_options.max_total_ni = m_params.get<double>("max_total_ni", 740.0e3);
-  runtime_options.p3_autoconversion_prefactor = m_params.get<double>("p3_autoconversion_prefactor", 1350.0);
-  runtime_options.p3_autoconversion_qc_exponent = m_params.get<double>("p3_autoconversion_qc_exponent", 2.47);
-  runtime_options.p3_autoconversion_nc_exponent = m_params.get<double>("p3_autoconversion_nc_exponent", 1.79);
-  runtime_options.p3_autoconversion_radius = m_params.get<double>("p3_autoconversion_radius", 25.0e-6);
-  runtime_options.p3_accretion_prefactor = m_params.get<double>("p3_accretion_prefactor", 67.0);
-  runtime_options.p3_accretion_qc_exponent = m_params.get<double>("p3_accretion_qc_exponent", 1.15);
-  runtime_options.p3_accretion_qr_exponent = m_params.get<double>("p3_accretion_qr_exponent", 1.15);
-  runtime_options.p3_rain_selfcollection_prefactor = m_params.get<double>("p3_rain_selfcollection_prefactor", 5.78);
-  runtime_options.p3_rain_selfcollection_breakup_diameter = m_params.get<double>("p3_rain_selfcollection_breakup_diameter", 0.00028);
-  runtime_options.p3_mu_r_constant = m_params.get<double>("p3_mu_r_constant", 1.0);
-  runtime_options.p3_spa_to_nc = m_params.get<double>("p3_spa_to_nc", 1.0);
-  runtime_options.p3_eci = m_params.get<double>("p3_eci", 0.5);
-  runtime_options.p3_eri = m_params.get<double>("p3_eri", 1.0);
-  runtime_options.p3_rho_rime_min = m_params.get<double>("p3_rho_rime_min", 50.0);
-  runtime_options.p3_rho_rime_max = m_params.get<double>("p3_rho_rime_max", 900.0);
-  runtime_options.p3_a_imm = m_params.get<double>("p3_a_imm", 0.65);
-  runtime_options.p3_dep_nucleation_exponent = m_params.get<double>("p3_dep_nucleation_exponent", 0.304);
-  runtime_options.p3_ice_sed_knob = m_params.get<double>("p3_ice_sed_knob", 1.0);
-  runtime_options.p3_do_ice_production = m_params.get<bool>("p3_do_ice_production", true);
+  // Gather runtime options from file
+  runtime_options.load_runtime_options_from_file(m_params);
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);

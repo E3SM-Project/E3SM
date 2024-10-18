@@ -88,7 +88,7 @@ get_rain_dsd2 (
 
   const auto qr_gt_small = qr >= qsmall && context;
 
-  const Scalar mu_r_const = runtime_options.p3_mu_r_constant;
+  const Scalar mu_r_const = runtime_options.constant_mu_rain;
 
   if (qr_gt_small.any()) {
     // use lookup table to get mu
