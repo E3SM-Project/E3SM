@@ -16,7 +16,6 @@
 
 namespace scream
 {
-
 OutputManager::
 ~OutputManager ()
 {
@@ -24,45 +23,44 @@ OutputManager::
 }
 
 void OutputManager::
-setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-       const std::shared_ptr<fm_type>& field_mgr,
-       const std::shared_ptr<const gm_type>& grids_mgr,
-       const util::TimeStamp& run_t0,
-       const util::TimeStamp& case_t0,
-       const bool is_model_restart_output)
-{
-  using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
-  map_t fms;
-  fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(io_comm,params,fms,grids_mgr,run_t0,case_t0,is_model_restart_output);
-}
-
-void OutputManager::
-setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-       const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-       const std::shared_ptr<const gm_type>& grids_mgr,
-       const util::TimeStamp& run_t0,
-       const util::TimeStamp& case_t0,
-       const bool is_model_restart_output)
+initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
+           const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
+           const bool is_model_restart_output)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
+      "Error! Invalid run_t0 timestamp: " + run_t0.to_string() + "\n");
+  EKAT_REQUIRE_MSG (case_t0.is_valid(),
       "Error! Invalid case_t0 timestamp: " + case_t0.to_string() + "\n");
-  EKAT_REQUIRE_MSG (run_t0.is_valid(),
-      "Error! Invalid run_t0 timestamp: " + case_t0.to_string() + "\n");
   EKAT_REQUIRE_MSG (case_t0<=run_t0,
       "Error! The case_t0 timestamp must precede run_t0.\n"
       "   run_t0 : " + run_t0.to_string() + "\n"
       "   case_t0: " + case_t0.to_string() + "\n");
 
   m_io_comm = io_comm;
+  m_params = params;
   m_run_t0 = run_t0;
   m_case_t0 = case_t0;
   m_is_restarted_run = (case_t0<run_t0);
   m_is_model_restart_output = is_model_restart_output;
+}
 
+void OutputManager::
+setup (const std::shared_ptr<fm_type>& field_mgr,
+       const std::shared_ptr<const gm_type>& grids_mgr)
+{
+  using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
+  map_t fms;
+  fms[field_mgr->get_grid()->name()] = field_mgr;
+  setup(fms,grids_mgr);
+}
+
+void OutputManager::
+setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
+       const std::shared_ptr<const gm_type>& grids_mgr)
+{
   // Read input parameters and setup internal data
-  set_params(params,field_mgrs);
+  setup_internals(field_mgrs);
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -653,12 +651,9 @@ compute_filename (const IOFileSpecs& file_specs,
 }
 
 void OutputManager::
-set_params (const ekat::ParameterList& params,
-            const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
+setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
 {
   using vos_t = std::vector<std::string>;
-
-  m_params = params;
 
   if (m_is_model_restart_output) {
     // We build some restart parameters internally

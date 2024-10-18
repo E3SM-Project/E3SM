@@ -154,7 +154,8 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("Floating Point Precision","real");
 
   OutputManager output;
-  output.setup (comm, out_params, fm_dyn, gm, t0, t0, false);
+  output.initialize(comm, out_params, t0, false);
+  output.setup (fm_dyn, gm);
   output.run(t0);
   output.finalize();
 
