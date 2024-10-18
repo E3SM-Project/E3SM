@@ -210,7 +210,8 @@ void MAMDryDep::set_grids(
   // -------------------------------------------------------------
 
   const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
-  const std::string frac_landuse_data_file = m_params.get<std::string>("fractional_land_use_file", "aaa");
+  const std::string frac_landuse_data_file =
+      m_params.get<std::string>("fractional_land_use_file", "");
 
   // Field to be read from file
   const std::string field_name = "fraction_landuse";
@@ -218,7 +219,8 @@ void MAMDryDep::set_grids(
   // Dimensions of the filed
   const std::string dim_name1 = "ncol";
   const std::string dim_name2 = "class";
-  std::cout<<"BALI-FILE:"<<mapping_file<<":"<<frac_landuse_data_file<<std::endl;
+
+  // initialize the file read
   FracLandUseFunc::init_frac_landuse_file_read(
       field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
       mapping_file,
@@ -371,11 +373,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
 
-  static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
-  // FIXME: This should come from a file reading
-  // The fraction of land use for the column. [non-dimentional]
-  fraction_landuse_ = view_2d("fraction_landuse_", n_land_type, ncol_);
-
   //-----------------------------------------------------------------
   // Update fractional land use file reading
   //-----------------------------------------------------------------
@@ -444,8 +441,6 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
-  // FIXME: remove it if it read from a file
-
   //--------------------------------------------------------------------
   // Interpolate fractional land use data
   //--------------------------------------------------------------------
@@ -460,25 +455,31 @@ void MAMDryDep::run_impl(const double dt) {
                                     // output
                                     timeState_, data_start_, data_end_);
 
-    // Call the main fracLandUse routine to get interpolated field
-    FracLandUseFunc::fracLandUse_main(timeState_, data_start_,
-                                data_end_, data_out_);
+  // Call the main fracLandUse routine to get interpolated field
+  FracLandUseFunc::fracLandUse_main(timeState_, data_start_, data_end_,
+                                    data_out_);
 
+  // NOTE: Sum of all the values of data_out_.frac_land_use
+  // for a column should be ~1
 
-  populated_fraction_landuse(fraction_landuse_, ncol_);
+  printf("BALLI:%0.15e, %0.15e, %0.15e\n", data_start_.data.frac_land_use(0, 1),
+         data_end_.data.frac_land_use(0, 1), data_out_.frac_land_use(0, 1));
 
+  //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
-  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
-                     surface_friction_velocty_, land_fraction_, ice_fraction_,
-                     ocean_fraction_, friction_velocity_,
-                     aerodynamical_resistance_, qtracers_, fraction_landuse_,
-                     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
-                     // Inouts-outputs
-                     qqcw_,
-                     // Outputs
-                     ptend_q_, aerdepdrycw_, aerdepdryis_,
-                     // work arrays
-                     rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
+  //--------------------------------------------------------------------
+
+  compute_tendencies(
+      ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_,
+      land_fraction_, ice_fraction_, ocean_fraction_, friction_velocity_,
+      aerodynamical_resistance_, qtracers_, data_out_.frac_land_use,
+      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
+      // Inouts-outputs
+      qqcw_,
+      // Outputs
+      ptend_q_, aerdepdrycw_, aerdepdryis_,
+      // work arrays
+      rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
   Kokkos::fence();
 
   // Update the interstitial aerosols using ptend.

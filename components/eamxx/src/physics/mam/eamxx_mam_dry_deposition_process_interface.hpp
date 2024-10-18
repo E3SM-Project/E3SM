@@ -7,7 +7,7 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
-// write why we need it
+// For reading fractional land use file
 #include <physics/mam/readfiles/common_file_read_func.hpp>
 #include <physics/mam/readfiles/fractional_land_use.hpp>
 // For component name
@@ -90,13 +90,6 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // into one array, hence is mixed kg/kg and 1/kg.
   view_3d qtracers_;
 
-  // Work array to hold the fraction [non-dimentional]
-  // of land use for column.
-  // Dimensions
-  //   [MAMDryDep::n_land_type, num columns]
-  // Values should sum to 1.
-  view_2d fraction_landuse_;
-
   // Work array to hold the air density [kg/m3]
   // Dimensions
   //   [num columns, num levels]
@@ -115,7 +108,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // Filled with Prognostics::n_mode_c and Prognostics::q_aero_c
   view_3d qqcw_;
 
-  // File reading:
+  // For reading fractional land use file
   std::shared_ptr<AbstractRemapper> horizInterp_;
   std::shared_ptr<AtmosphereInput> dataReader_;
   CommonFileRead::timeState timeState_;

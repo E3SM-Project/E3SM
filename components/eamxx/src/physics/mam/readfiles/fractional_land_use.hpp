@@ -3,10 +3,10 @@
 
 #include <physics/mam/readfiles/common_file_read_func.hpp>
 
+// FIXME:Verify if we need them all or not???
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/iop/intensive_observation_period.hpp"
 #include "share/scream_types.hpp"
 
 namespace scream {
@@ -110,10 +110,10 @@ struct fracLandUseFunctions {
   // -------------------------------------------------------------------------------------------
 
   // The following three are called during fracLandUse_main
-  static void perform_time_interpolation(const CommonFileRead::timeState &time_state,
-                                         const FracLandUseInput &data_beg,
-                                         const FracLandUseInput &data_end,
-                                         const FracLandUseOutput &data_out);
+  static void perform_time_interpolation(
+      const CommonFileRead::timeState &time_state,
+      const FracLandUseInput &data_beg, const FracLandUseInput &data_end,
+      const FracLandUseOutput &data_out);
 
   // Performs convex interpolation of x0 and x1 at point t
   template <typename ScalarX, typename ScalarT>

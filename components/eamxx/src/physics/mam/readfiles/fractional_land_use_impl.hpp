@@ -70,6 +70,9 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
   return remapper;
 }  // create_horiz_remapper
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
 template <typename S, typename D>
 std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
@@ -82,20 +85,24 @@ std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
   return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
 }  // create_data_reader
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-KOKKOS_INLINE_FUNCTION
-ScalarX fracLandUseFunctions<S, D>::linear_interp(const ScalarX &x0,
-                                               const ScalarX &x1,
-                                               const ScalarT &t) {
+KOKKOS_INLINE_FUNCTION ScalarX fracLandUseFunctions<S, D>::linear_interp(
+    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::perform_time_interpolation(
-    const CommonFileRead::timeState &time_state, const FracLandUseInput &data_beg,
-    const FracLandUseInput &data_end, const FracLandUseOutput &data_out) {
+    const CommonFileRead::timeState &time_state,
+    const FracLandUseInput &data_beg, const FracLandUseInput &data_end,
+    const FracLandUseOutput &data_out) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
 
@@ -120,12 +127,11 @@ void fracLandUseFunctions<S, D>::perform_time_interpolation(
                        "  t_beg  : " +
                        std::to_string(t_beg) +
                        "\n  delta_t: " + std::to_string(delta_t) + "\n");
-  const int nclass = data_beg.data.nclass;
+  const int nclass  = data_beg.data.nclass;
   const int ncol    = data_beg.data.ncols;
-  using ExeSpace     = typename KT::ExeSpace;
-  using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
-  const auto policy  = ESU::get_default_team_policy(ncol, nclass);
-
+  using ExeSpace    = typename KT::ExeSpace;
+  using ESU         = ekat::ExeSpaceUtils<ExeSpace>;
+  const auto policy = ESU::get_default_team_policy(ncol, nclass);
 
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MemberType &team) {
@@ -134,17 +140,21 @@ void fracLandUseFunctions<S, D>::perform_time_interpolation(
             Kokkos::TeamVectorRange(team, 0u, nclass), [&](int iclass) {
               const auto beg = data_beg.data.frac_land_use(icol, iclass);
               const auto end = data_end.data.frac_land_use(icol, iclass);
-              data_out.frac_land_use(icol, iclass) = linear_interp(beg, end, delta_t_fraction);
+              data_out.frac_land_use(icol, iclass) =
+                  linear_interp(beg, end, delta_t_fraction);
             });
       });
   Kokkos::fence();
 }  // perform_time_interpolation
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::fracLandUse_main(const CommonFileRead::timeState &time_state,
-                                            const FracLandUseInput &data_beg,
-                                            const FracLandUseInput &data_end,
-                                            const FracLandUseOutput &data_out) {
+void fracLandUseFunctions<S, D>::fracLandUse_main(
+    const CommonFileRead::timeState &time_state,
+    const FracLandUseInput &data_beg, const FracLandUseInput &data_end,
+    const FracLandUseOutput &data_out) {
   // Beg/End/Tmp month must have all sizes matching
 
   EKAT_REQUIRE_MSG(
@@ -154,17 +164,21 @@ void fracLandUseFunctions<S, D>::fracLandUse_main(const CommonFileRead::timeStat
 
   // Horiz interpolation can be expensive, and does not depend on the particular
   // time of the month, so it can be done ONCE per month, *outside*
-  // fracLandUse_main (when updating the beg/end states, reading them from file).
-  EKAT_REQUIRE_MSG(
-      data_end.data.ncols == data_out.ncols,
-      "Error! Horizontal interpolation is performed *before* "
-      "calling fracLandUse_main,\n"
-      "       FracLandUseInput and FracLandUseOutput data structs must have the "
-      "same number columns.\n");
+  // fracLandUse_main (when updating the beg/end states, reading them from
+  // file).
+  EKAT_REQUIRE_MSG(data_end.data.ncols == data_out.ncols,
+                   "Error! Horizontal interpolation is performed *before* "
+                   "calling fracLandUse_main,\n"
+                   "       FracLandUseInput and FracLandUseOutput data structs "
+                   "must have the "
+                   "same number columns.\n");
 
   // Step 1. Perform time interpolation
   perform_time_interpolation(time_state, data_beg, data_end, data_out);
 }  // fracLandUse_main
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
@@ -210,6 +224,9 @@ void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
 
 }  // END update_frac_landuse_data_from_file
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::update_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
@@ -243,6 +260,9 @@ void fracLandUseFunctions<S, D>::update_timestate(
   }
 
 }  // END updata_FracLandUse_timestate
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
