@@ -97,7 +97,7 @@ module seq_rest_mod
   public :: seq_rest_mb_write ! read  cpl7_moab restart data
 
 #ifdef MOABDEBUG
-  public :: write_moab_state ! debug, write files 
+  public :: write_moab_state ! debug, write files
 #endif
 
   ! !PUBLIC DATA MEMBERS:
@@ -367,7 +367,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use iMOAB,            only: iMOAB_GetGlobalInfo
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
-    
+
     implicit none
 
     character(*)           , intent(in) :: rest_file  ! restart file path/name
@@ -379,7 +379,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
     real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
 
     character(CXX)        :: moab_rest_file
-    character(CXX)        :: tagname  
+    character(CXX)        :: tagname
     integer (in), pointer   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
     integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
 
@@ -392,7 +392,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
     real(r8), dimension(:,:), pointer  :: p_l2racc_lm
 
     character(len=*), parameter :: subname = "(seq_rest_mb_read) "
-    
+
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -517,7 +517,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
            call seq_io_read(moab_rest_file, mboxid,  'fractions_ox', &
               'afrac:ifrac:ofrac:ifrad:ofrad') ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
            call seq_io_read(moab_rest_file, mboxid,  'o2x_ox', &
-                  trim(seq_flds_o2x_fields)) 
+                  trim(seq_flds_o2x_fields))
            tagname = trim(seq_flds_x2o_fields)
            x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
            p_x2oacc_om => prep_ocn_get_x2oacc_om()
@@ -525,7 +525,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
            call seq_io_read (moab_rest_file, mboxid, 'x2oacc_ox', &
                   trim(tagname), &
                   matrix=p_x2oacc_om)
-           call seq_io_read(moab_rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt') 
+           call seq_io_read(moab_rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt')
       !           tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
       !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
@@ -548,7 +548,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
            call seq_io_read(moab_rest_file, mbixid, 'fractions_ix', &
                'afrac:ifrac:ofrac')  ! fraclist_i = 'afrac:ifrac:ofrac'
            call seq_io_read(moab_rest_file, mbixid, 'i2x_ix', &
-               trim(seq_flds_i2x_fields) ) 
+               trim(seq_flds_i2x_fields) )
 !           gsmap => component_get_gsmap_cx(ice(1))
 !           call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
 !           call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix')
@@ -557,7 +557,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
            call seq_io_read(moab_rest_file, mbrxid, 'fractions_rx', &
                'lfrac:lfrin:rfrac') ! fraclist_r = 'lfrac:lfrin:rfrac'
            call seq_io_read(moab_rest_file, mbrxid, 'r2x_rx', &
-               trim(seq_flds_r2x_fields) ) 
+               trim(seq_flds_r2x_fields) )
 !           gsmap => component_get_gsmap_cx(rof(1))
 !           call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
 !           call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx')
@@ -799,6 +799,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
           call seq_io_write(rest_file,rvar,'seq_infodata_precip_fact',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata,case_name=cvar)
           call seq_io_write(rest_file,trim(cvar),'seq_infodata_case_name',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata,rmean_rmv_ice_runoff=rvar)
+          call seq_io_write(rest_file,rvar,'seq_infodata_rmean_rmv_ice_runoff',whead=whead,wdata=wdata)
 
           call seq_timemgr_EClockGetData( EClock_d, start_ymd=ivar)
           call seq_io_write(rest_file,ivar,'seq_timemgr_start_ymd',whead=whead,wdata=wdata)
@@ -1120,6 +1122,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
           call seq_io_write(rest_file,rvar,'seq_infodata_precip_fact',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata,case_name=cvar)
           call seq_io_write(rest_file,trim(cvar),'seq_infodata_case_name',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata,rmean_rmv_ice_runoff=rvar)
+          call seq_io_write(rest_file,rvar,'seq_infodata_rmean_rmv_ice_runoff',whead=whead,wdata=wdata)
 
           call seq_timemgr_EClockGetData( EClock_d, start_ymd=ivar)
           call seq_io_write(rest_file,ivar,'seq_timemgr_start_ymd',whead=whead,wdata=wdata)
@@ -1169,15 +1173,15 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 ! nx for land will be from global nb atmosphere
                 ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
-                  whead=whead, wdata=wdata, nx=nx_lnd) 
+                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+                  whead=whead, wdata=wdata, nx=nx_lnd)
              else
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                   whead=whead, wdata=wdata)
              endif
             !  call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-            !      'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+            !      'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
             !      whead=whead, wdata=wdata)
 !              gsmap => component_get_gsmap_cx(lnd(1))
 !              call seq_io_write(rest_file, gsmap, fractions_lx, 'fractions_lx', &
@@ -1192,7 +1196,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd) 
+                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
@@ -1247,11 +1251,11 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
          if (ocn_present) then
    !              gsmap         => component_get_gsmap_cx(ocn(1))
    !              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
-            
+
             call seq_io_write(rest_file, mboxid,  'fractions_ox', &
                   'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
                   whead=whead, wdata=wdata)
-            
+
             call seq_io_write(rest_file, mboxid,  'o2x_ox', &
                   trim(seq_flds_o2x_fields), &
                   whead=whead, wdata=wdata)
@@ -1293,7 +1297,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                whead=whead, wdata=wdata)
             call seq_io_write(rest_file, mbixid, 'i2x_ix', &
                trim(seq_flds_i2x_fields), &
-               whead=whead, wdata=wdata) 
+               whead=whead, wdata=wdata)
    !              gsmap  => component_get_gsmap_cx(ice(1))
    !              call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
    !                   whead=whead, wdata=wdata)
@@ -1348,10 +1352,10 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
   !===============================================================================
 
 #ifdef MOABDEBUG
-  subroutine  write_moab_state ( before_reading ) ! debug, write files 
+  subroutine  write_moab_state ( before_reading ) ! debug, write files
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use seq_comm_mct,     only: num_moab_exports
-    use iso_c_binding 
+    use iso_c_binding
     use iMOAB, only:  iMOAB_WriteMesh
 
     implicit none
@@ -1414,7 +1418,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
       endif
     endif
 
-  end subroutine  write_moab_state 
+  end subroutine  write_moab_state
 #endif
 
 end module seq_rest_mod

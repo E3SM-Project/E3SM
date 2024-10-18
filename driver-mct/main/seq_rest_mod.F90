@@ -519,6 +519,8 @@ contains
           call seq_io_write(rest_file,rvar,'seq_infodata_precip_fact',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata,case_name=cvar)
           call seq_io_write(rest_file,trim(cvar),'seq_infodata_case_name',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata,rmean_rmv_ice_runoff=rvar)
+          call seq_io_write(rest_file,rvar,'seq_infodata_rmean_rmv_ice_runoff',whead=whead,wdata=wdata)
 
           call seq_timemgr_EClockGetData( EClock_d, start_ymd=ivar)
           call seq_io_write(rest_file,ivar,'seq_timemgr_start_ymd',whead=whead,wdata=wdata)
