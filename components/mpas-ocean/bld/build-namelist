@@ -731,6 +731,8 @@ if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 } else {
 	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
 }
+add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
+add_default($nl, 'config_ais_ice_runoff_history_days');
 
 ######################################
 # Namelist group: shortwaveRadiation #

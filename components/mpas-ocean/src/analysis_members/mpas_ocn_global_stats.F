@@ -243,7 +243,7 @@ contains
       real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, &
                                     areaEdgeGlobal, areaTriangleGlobal, totalVolumeChange, netFreshwaterInput, &
                                     absoluteFreshWaterConservation, relativeFreshWaterConservation, &
-                                    landIceFloatingAreaSum
+                                    landIceFloatingAreaSum, gsRunningMeanRemovedIceRunoff, runningMeanRemovedIceRunoff
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge, landIceFloatingArea
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, &
             lowFreqDivergence, highFreqThickness, &
@@ -1383,6 +1383,14 @@ contains
       else
          averages(variableIndex) = 0.0_RKIND
          rms(variableIndex) = 0.0_RKIND
+      end if
+
+      if (config_scale_dismf_by_removed_ice_runoff) then
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_array(globalStatsAMPool, 'gsRunningMeanRemovedIceRunoff', gsRunningMeanRemovedIceRunoff)
+         call mpas_pool_get_array(forcingPool, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
+         gsRunningMeanRemovedIceRunoff = runningMeanRemovedIceRunoff
       end if
 
       ! calculate fresh water conservation check quantities
