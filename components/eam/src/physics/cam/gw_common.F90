@@ -749,21 +749,25 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
 
 end subroutine gw_drag_prof
 !==========================================================================
-subroutine gw_oro_interface(state,sgh,pbuf,dt,nm,&
-                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
-                            utgw,vtgw,ttgw,&
+subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     nm,&
+                            gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,&
+                            utgw,     vtgw,     ttgw,&
                             dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,&
                             dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,&
                             dusfc_ls, dvsfc_ls ,dusfc_bl, dvsfc_bl,&
                             dusfc_ss, dvsfc_ss ,dusfc_fd, dvsfc_fd)
-  use gw_common,      only: gwdo_gsd,pblh_get_level_idx,grid_size
+  use physics_types,  only: physics_state
   use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
+  use camsrfexch,     only: cam_in_t
   use ppgrid,         only: pcols,pver,pverp
+  use physconst,      only: gravit,rair,cpair,rh2o,zvir,pi
+  use hycoef,         only: etamid
+  !
   type(physics_state), intent(in) :: state      ! physics state structure            ! Standard deviation of orography.
+  type(cam_in_t),      intent(in) :: cam_in
   real(r8), intent(in) :: sgh(pcols)
   type(physics_buffer_desc), pointer :: pbuf(:) ! Physics buffer
-  integer , intent(in) :: pblh_idx
-  integer , intent(in) :: dt
+  real(r8), intent(in) :: dtime
   real(r8), intent(in) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
   !
   integer , intent(in) :: gwd_ls
@@ -803,50 +807,51 @@ subroutine gw_oro_interface(state,sgh,pbuf,dt,nm,&
   integer  :: kpbl2d_in(pcols)
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
+  !needed index
+  integer  :: ncol
+  integer  :: i
+  integer  :: k
+  !local transfer variables
+  real(r8) :: dtaux3_ls_local(pcols,pver)
+  real(r8) :: dtauy3_ls_local(pcols,pver)
+  real(r8) :: dtaux3_bl_local(pcols,pver)
+  real(r8) :: dtauy3_bl_local(pcols,pver)
+  real(r8) :: dtaux3_ss_local(pcols,pver)
+  real(r8) :: dtauy3_ss_local(pcols,pver)
+  real(r8) :: dtaux3_fd_local(pcols,pver)
+  real(r8) :: dtauy3_fd_local(pcols,pver)
+  real(r8) :: dusfc_ls_local(pcols)
+  real(r8) :: dvsfc_ls_local(pcols)
+  real(r8) :: dusfc_bl_local(pcols)
+  real(r8) :: dvsfc_bl_local(pcols)
+  real(r8) :: dusfc_ss_local(pcols)
+  real(r8) :: dvsfc_ss_local(pcols)
+  real(r8) :: dusfc_fd_local(pcols)
+  real(r8) :: dvsfc_fd_local(pcols)
+
                 !
+                ncol=state%ncol
                 !convert heights above surface to heights above sea level
                 !obtain z,dz,dx,dy
                 !ztop and zbot are already reversed, start from bottom to top
                 kpbl2d_in=0_r8
-                utgw=0._r8
-                vtgw=0._r8
-                ttgw=0._r8
                 !
                 ztop(1:ncol,1:pver)=0._r8
                 zbot(1:ncol,1:pver)=0._r8
                 zmid(1:ncol,1:pver)=0._r8
-                !
-		dtaux3_ls=0._r8
-                dtauy3_ls=0._r8
-                dtaux3_bl=0._r8
-                dtauy3_bl=0._r8
-                dtaux3_ss=0._r8
-                dtauy3_ss=0._r8
-                dtaux3_fd=0._r8
-                dtauy3_fd=0._r8
-                dusfc_ls=0._r8 
-                dvsfc_ls=0._r8
-                dusfc_bl=0._r8 
-                dvsfc_bl=0._r8
-                dusfc_ss=0._r8 
-                dvsfc_ss=0._r8
-                dusfc_fd=0._r8 
-                dvsfc_fd=0._r8
                 !
 		do k=1,pverp-1
 		! assign values for level top/bottom
 		ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
 		zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
 		end do
-		!get g
-		g=gravit
 		!transform adding the pressure
         	!transfer from surface to sea level
         	do k=1,pver
                 	do i=1,ncol
-                	ztop(i,k)=ztop(i,k)+state%phis(i)/g
-                	zbot(i,k)=zbot(i,k)+state%phis(i)/g
-                	zmid(i,k)=state%zm(i,k)+state%phis(i)/g
+                	ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
+                	zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
+                	zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
                 	!dz is from bottom to top already for gw_drag
                 	dz(i,k)=ztop(i,k)-zbot(i,k)
                 	end do
@@ -858,12 +863,13 @@ subroutine gw_oro_interface(state,sgh,pbuf,dt,nm,&
                 pblh_idx = pbuf_get_index('pblh')
         	call pbuf_get_field(pbuf, pblh_idx, pblh)
         	do i=1,pcols
-        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/g),pblh(i))
+        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
         	end do
                 !
                 !get grid size for dx,dy
                 call grid_size(state,dx,dy)
                 !interface for orographic drag
+                !if (gwd_fd.eq.0) then
                 call gwdo_gsd(&
                 u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
                 qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
@@ -882,8 +888,8 @@ subroutine gw_oro_interface(state,sgh,pbuf,dt,nm,&
                 oa2d=state%oadir(:ncol,:),ol2d=state%ol(:ncol,:),&
                 znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
                 cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
-                dt=dt,dx=dx,dy=dy,&
-                kpbl2d=kpbl2d_in,itimestep=dt,gwd_opt=0,&
+                dt=dtime,dx=dx,dy=dy,&
+                kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
                 ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
                 ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
                 its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
@@ -1065,7 +1071,7 @@ end subroutine grid_size
   real(r8),     dimension( ims:ime, kms:kme )                    , &
      intent(in   )   ::                                 p3di
   real(r8),     dimension( ims:ime, kms:kme )                    , &
-           intent(inout)   ::                   rublten, &
+  optional,     intent(inout)   ::                        rublten, &
                                                           rvblten, &
                                                           rthblten
   real(r8),     dimension( ims:ime, kms:kme ), optional                 , &
@@ -1172,36 +1178,25 @@ ENDIF
               ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte               &
               ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
 !!============================================      
-IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
                 do i = its,ite
                 dusfcg_ls(i)=dusfc_ls(i)
                 dvsfcg_ls(i)=dvsfc_ls(i)
                 dusfcg_bl(i)=dusfc_bl(i)
                 dvsfcg_bl(i)=dvsfc_bl(i)
+                dusfcg_ss(i)=dusfc_ss(i)
+                dvsfcg_ss(i)=dvsfc_ss(i)
+                dusfcg_fd(i)=dusfc_fd(i)
+                dvsfcg_fd(i)=dvsfc_fd(i)
                 enddo
-		!!
+                !!
                 dtaux3d_ls=dtaux2d_ls
                 dtaux3d_bl=dtaux2d_bl
                 dtauy3d_ls=dtauy2d_ls
                 dtauy3d_bl=dtauy2d_bl
-		!!
-		do i = its,ite
-                dusfcg_ss(i)=dusfc_ss(i)
-                dvsfcg_ss(i)=dvsfc_ss(i)
-                end do
-		!!
                 dtaux3d_ss=dtaux2d_ss
-                dtauy3d_ss=dtauy2d_ss
-ENDIF
-IF (gwd_fd .EQ. 1) then
-
-                do i = its,ite
-                dusfcg_fd(i)=dusfc_fd(i)
-                dvsfcg_fd(i)=dvsfc_fd(i)
-                enddo
                 dtaux3d_fd=dtaux2d_fd
+                dtauy3d_ss=dtauy2d_ss
                 dtauy3d_fd=dtauy2d_fd
-ENDIF
    end subroutine gwdo_gsd
 !
 !-------------------------------------------------------------------------------

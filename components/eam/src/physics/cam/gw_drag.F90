@@ -650,7 +650,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Location-dependent cpair
   use physconst,  only: cpairv
   use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof
+       gw_drag_prof,gw_oro_interface
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
@@ -673,6 +673,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: dtauy3_bl(pcols,pver)
   real(r8) :: dtaux3_ss(pcols,pver)
   real(r8) :: dtauy3_ss(pcols,pver)
+  real(r8) :: dummx3_fd(pcols,pver)
+  real(r8) :: dummy3_fd(pcols,pver)
   !
   real(r8) :: dusfc_ls(pcols)
   real(r8) :: dvsfc_ls(pcols)
@@ -680,6 +682,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: dvsfc_bl(pcols)
   real(r8) :: dusfc_ss(pcols)
   real(r8) :: dvsfc_ss(pcols)
+  real(r8) :: dummx_fd(pcols)
+  real(r8) :: dummy_fd(pcols)
   !
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
@@ -967,7 +971,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-     if () then
+#if 0
+     !if () then
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -981,8 +986,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
-
-     else if () then
+#endif
+     !else if () then
      !open ogwd,bl,ss, 
      !close fd
      gwd_ls=1
@@ -990,17 +995,21 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      gwd_ss=1
      gwd_fd=0
      !
-     call gw_oro_interface( state,sgh,pbuf,utgw,vtgw,ttgw,dt,nm,&
+     call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                            utgw,vtgw,ttgw,&
                             dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
                             dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
                             dtaux3_ss=dtaux3_ss,dtauy3_ss=dtauy3_ss,&
+                            dtaux3_fd=dummx3_fd,dtauy3_fd=dummy3_fd,&
                             dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls,&
                             dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
-                            dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss)
-     endif
+                            dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
+                            dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
+
+     !endif
      
-  endif
+  !endif
 
         ! Add the orographic tendencies to the spectrum tendencies
         ! Compute the temperature tendency from energy conservation

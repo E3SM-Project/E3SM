@@ -927,7 +927,6 @@ end subroutine clubb_init_cnst
     call addfld ('VMAGDP',        horiz_only,     'A',             '-', 'ZM gustiness enhancement')
     call addfld ('VMAGCL',        horiz_only,     'A',             '-', 'CLUBB gustiness enhancement')
     call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
-    !==================================
     !!added for TOFD output
     call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
     call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
@@ -937,8 +936,6 @@ end subroutine clubb_init_cnst
     call add_default('DTAUY3_FD', 1,  ' ')
     call add_default('DUSFC_FD',  1,  ' ')
     call add_default('DVSFC_FD',  1,  ' ')
-    !!added for TOFD output
-    !=====================================
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8
@@ -1166,7 +1163,7 @@ end subroutine clubb_init_cnst
    use model_flags, only: ipdf_call_placement
    use advance_clubb_core_module, only: ipdf_post_advance_fields
 #endif
-   use gw_common,          only: gwdo_gsd,grid_size,pblh_get_level_idx
+   use gw_common,          only: grid_size,pblh_get_level_idx,gw_oro_interface
    use hycoef,             only: etamid
    use physconst,          only: rh2o,pi,rearth,r_universal
    !!get the znu,znw,p_top set to 0
@@ -1538,6 +1535,23 @@ end subroutine clubb_init_cnst
    real(r8) :: dusfc_fd(pcols)
    real(r8) :: dvsfc_fd(pcols)
    integer  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+   real(r8) :: dummy_nm(pcols,pver)
+   real(r8) :: dummy_utgw(pcols,pver)
+   real(r8) :: dummy_vtgw(pcols,pver)
+   real(r8) :: dummy_ttgw(pcols,pver)
+   !
+   real(r8) :: dummx_ls(pcols,pver)
+   real(r8) :: dummx_bl(pcols,pver)
+   real(r8) :: dummx_ss(pcols,pver)
+   real(r8) :: dummy_ls(pcols,pver)
+   real(r8) :: dummy_bl(pcols,pver)
+   real(r8) :: dummy_ss(pcols,pver)
+   real(r8) :: dummx3_ls(pcols,pver)
+   real(r8) :: dummx3_bl(pcols,pver)
+   real(r8) :: dummx3_ss(pcols,pver)
+   real(r8) :: dummy3_ls(pcols,pver)
+   real(r8) :: dummy3_bl(pcols,pver)
+   real(r8) :: dummy3_ss(pcols,pver)
    !
    real(r8) :: inv_exner_clubb_surf
 
@@ -1971,14 +1985,23 @@ end subroutine clubb_init_cnst
      	gwd_ss=0
      	gwd_fd=1
         dummy_nm=0.0_r8
-	call gw_oro_interface(state,sgh,pbuf,hdtime,nm,&
-                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
-                            dtaux3_fd=dtaux3_fd,&
-                            dtauy3_fd=dtauy3_fd,&
-                            dusfc_fd=dusfc_fd,  &
-                            dvsfc_fd=dvsfc_fd)
-	!
-	call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
+        dummy_utgw=0.0_r8
+        dummy_vtgw=0.0_r8
+        dummy_ttgw=0.0_r8
+        !sgh30 as the input for TOFD instead of sgh
+	call gw_oro_interface(state,cam_in,sgh30,pbuf,hdtime,dummy_nm,&
+                              gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                              dummy_utgw,dummy_vtgw,dummy_ttgw,& 
+                              dtaux3_ls=dummx3_ls,dtauy3_ls=dummy3_ls,&
+                              dtaux3_bl=dummx3_bl,dtauy3_bl=dummy3_bl,&
+                              dtaux3_ss=dummx3_ss,dtauy3_ss=dummy3_ss,&
+                              dtaux3_fd=dtaux3_fd,dtauy3_fd=dtauy3_fd,&
+                              dusfc_ls=dummx_ls,dvsfc_ls=dummy_ls,&
+                              dusfc_bl=dummx_bl,dvsfc_bl=dummy_bl,&
+                              dusfc_ss=dummx_ss,dvsfc_ss=dummy_ss,&
+                              dusfc_fd=dusfc_fd,dvsfc_fd=dvsfc_fd)
+        !
+        call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
