@@ -38,7 +38,7 @@ module gw_drag
     !zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix
+  use phys_control,  only: use_gw_oro, use_gw_front,use_gw_convect,use_gw_energy_fix,use_od_ls,use_od_bl,use_od_ss,ncleff_ls,ncd_bl,sncleff_ss
 
 ! Typical module header
   implicit none
@@ -971,8 +971,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-#if 0
-     !if () then
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -986,17 +984,21 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
-#endif
-     !else if () then
+  endif
+  !
+  if (use_od_ls.eq.1.or.&
+      use_od_bl.eq.1.or.&
+      use_od_ss.eq.1) then
      !open ogwd,bl,ss, 
      !close fd
-     gwd_ls=1
-     gwd_bl=1
-     gwd_ss=1
+     gwd_ls=use_od_ls
+     gwd_bl=use_od_bl
+     gwd_ss=use_od_ss
      gwd_fd=0
      !
      call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                            ncleff_ls,ncd_bl,sncleff_ss,&
                             utgw,vtgw,ttgw,&
                             dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
                             dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
@@ -1007,13 +1009,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
                             dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
                             dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
 
-     !endif
-     
-  !endif
-
+  endif
         ! Add the orographic tendencies to the spectrum tendencies
         ! Compute the temperature tendency from energy conservation
         ! (includes spectrum).
+        ! both old and new gwd scheme will add the tendency to circulation
+  if (use_gw_oro.or.    &
+      use_od_ls.eq.1.or.&
+      use_od_bl.eq.1.or.&
+      use_od_ss.eq.1) then
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -1063,15 +1067,27 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
+     !
+     if (use_od_ls.eq.0.and.&
+         use_od_bl.eq.0.and.&
+         use_od_ss.eq.0) then
+     !old gwd scheme
+     tau0x = tau(:,0,pver) * xv * effgw_oro
+     tau0y = tau(:,0,pver) * yv * effgw_oro
+     else
+     !new gwd scheme
      !set the GWORO as combination of 3
      tau0x=dusfc_ls+dusfc_bl+dusfc_ss
      tau0y=dvsfc_ls+dvsfc_bl+dvsfc_ss
-     !tau0x = tau(:,0,pver) * xv * effgw_oro
-     !tau0y = tau(:,0,pver) * yv * effgw_oro
+     endif
+     !
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
      call outfld('SGH   ',   sgh,pcols, lchnk)
      !
+     if (use_od_ls.eq.1.or.&
+         use_od_bl.eq.1.or.&
+         use_od_ss.eq.1) then
      call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
      call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
      call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
@@ -1084,7 +1100,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
      call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
      call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
-
+     endif
+     !
   end if
 
   ! Convert the tendencies for the dry constituents to dry air basis.

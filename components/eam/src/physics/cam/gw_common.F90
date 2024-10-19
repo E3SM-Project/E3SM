@@ -751,6 +751,7 @@ end subroutine gw_drag_prof
 !==========================================================================
 subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     nm,&
                             gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,&
+                            ncleff_ls,ncd_bl,   sncleff_ss,&
                             utgw,     vtgw,     ttgw,&
                             dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,&
                             dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,&
@@ -774,6 +775,10 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   integer , intent(in) :: gwd_bl
   integer , intent(in) :: gwd_ss
   integer , intent(in) :: gwd_fd
+  !tunable parameter from namelist
+  real(r8), intent(in) :: ncleff_ls
+  real(r8), intent(in) :: ncd_bl
+  real(r8), intent(in) :: sncleff_ss
   !
   real(r8), intent(out), optional :: utgw(state%ncol,pver)
   real(r8), intent(out), optional :: vtgw(state%ncol,pver)
@@ -874,6 +879,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
                 qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
                 pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
+                ncleff_ls=ncleff_ls,ncd_bl=ncd_bl,sncleff_ss=sncleff_ss,&
                 rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
                 dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
                 dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
@@ -992,6 +998,7 @@ subroutine grid_size(state, grid_dx, grid_dy)
 end subroutine grid_size
 !==========================================================================
    subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                       &
+                  ncleff_ls,ncd_bl,sncleff_ss,                                 &
                   rublten,rvblten,rthblten,                                    &
                   dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,                 &
                   dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
@@ -1069,7 +1076,8 @@ end subroutine grid_size
                                                                 z, &
                                                                dz
   real(r8),     dimension( ims:ime, kms:kme )                    , &
-     intent(in   )   ::                                 p3di
+     intent(in   )   ::                                       p3di
+  real(r8),     intent(in)      ::                        ncleff_ls,ncd_bl,sncleff_ss
   real(r8),     dimension( ims:ime, kms:kme )                    , &
   optional,     intent(inout)   ::                        rublten, &
                                                           rvblten, &
@@ -1148,7 +1156,8 @@ IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
 ENDIF
 !=================================================================
       call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                  &
-             ,dthdt=rthblten(ims,kms)                                          &
+                 ,dthdt=rthblten(ims,kms)                                      &
+              ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                  &
               ,dtaux2d_ls=dtaux2d_ls,dtauy2d_ls=dtauy2d_ls                     &
               ,dtaux2d_bl=dtaux2d_bl,dtauy2d_bl=dtauy2d_bl                     &
               ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                     &
@@ -1202,12 +1211,15 @@ ENDIF
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
-   subroutine gwdo2d(dudt,dvdt,dthdt,dtaux2d_ls,dtauy2d_ls,                    &
-                    dtaux2d_bl,dtauy2d_bl,dtaux2d_ss,dtauy2d_ss,               &
-                    dtaux2d_fd,dtauy2d_fd,u1,v1,t1,q1,                         &
+   subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
+                    dtaux2d_ls,dtauy2d_ls,                                     &
+                    dtaux2d_bl,dtauy2d_bl,                                     &
+                    dtaux2d_ss,dtauy2d_ss,                                     &
+                    dtaux2d_fd,dtauy2d_fd,                                     &
+                    u1,v1,t1,q1,                                               &
                     del,                                                       &
                     prsi,prsl,prslk,zl,rcl,                                    &
-                    xland1,br1,hpbl,bnv_in,dz2,                               &
+                    xland1,br1,hpbl,bnv_in,dz2,                                &
                     kpblmax,dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,               &
                     dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,&
                     g,cp,rd,rv,fv,pi,dxmeter,dymeter,deltim,kpbl,kdt,lat,      &
@@ -1275,6 +1287,11 @@ ENDIF
    real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
    real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
    real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
+!
+   !variables for open/close process
+   integer , intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
+   !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
+   real(r8), intent(in) :: ncleff,ncd,sncleff
 !
 ! added for small-scale orographic wave drag
 !
@@ -1374,22 +1391,10 @@ real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
    real(r8)                 ::  olp(its:ite),&
                                  od(its:ite)
    real(r8)                 :: taufb(its:ite,kts:kte+1)
-   !variables for open/close process
-   integer , intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd        
-   !tunable parameter
-   real(r8):: ncleff  !!tunable parameter for gwd
-   real(r8):: ncd  !!tunable parameter for fbd
-   real(r8):: sncleff !!tunable parameter for sgwd
    !readdata for low-level determination of ogwd
    real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
    logical  :: iint
    real(r8) :: zl_hint(its:ite)
-   !
-   !tunable parameter 
-   !     
-   ncleff    = 3._r8
-   ncd       = 3._r8
-   sncleff   = 1._r8
    !
    !---- constants                                                         
    !                                                                       
@@ -2026,7 +2031,6 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
           cd = max(2.0_r8-1.0_r8/od(i),0.0_r8)
           !
           !tuning of the drag magnitude
-          !
           cd=ncd*cd
           !
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &

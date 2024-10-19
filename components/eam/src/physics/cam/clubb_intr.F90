@@ -20,7 +20,7 @@ module clubb_intr
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use shr_log_mod ,  only: errMsg => shr_log_errMsg
   use ppgrid,        only: pver, pverp
-  use phys_control,  only: phys_getopts
+  use phys_control,  only: phys_getopts,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
   use cam_logfile,   only: iulog
@@ -1980,10 +1980,11 @@ end subroutine clubb_init_cnst
        call t_stopf('compute_tms')
     endif
         !
-	gwd_ls=0
-     	gwd_bl=0
-     	gwd_ss=0
-     	gwd_fd=1
+    if (use_od_fd.eq.1) then
+        gwd_ls=0
+        gwd_bl=0
+        gwd_ss=0
+        gwd_fd=use_od_fd
         dummy_nm=0.0_r8
         dummy_utgw=0.0_r8
         dummy_vtgw=0.0_r8
@@ -1991,6 +1992,7 @@ end subroutine clubb_init_cnst
         !sgh30 as the input for TOFD instead of sgh
 	call gw_oro_interface(state,cam_in,sgh30,pbuf,hdtime,dummy_nm,&
                               gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                              ncleff_ls,ncd_bl,sncleff_ss,&
                               dummy_utgw,dummy_vtgw,dummy_ttgw,& 
                               dtaux3_ls=dummx3_ls,dtauy3_ls=dummy3_ls,&
                               dtaux3_bl=dummx3_bl,dtauy3_bl=dummy3_bl,&
@@ -2000,12 +2002,13 @@ end subroutine clubb_init_cnst
                               dusfc_bl=dummx_bl,dvsfc_bl=dummy_bl,&
                               dusfc_ss=dummx_ss,dvsfc_ss=dummy_ss,&
                               dusfc_fd=dusfc_fd,dvsfc_fd=dvsfc_fd)
-        !
+                              !
         call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
-        !
+   endif
+   !
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
