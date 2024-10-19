@@ -3204,10 +3204,13 @@ end subroutine clubb_init_cnst
     ! --------------- !
 
     integer :: i                                                ! indicees
+    integer :: k
     integer :: ncol                                             ! # of atmospheric columns
 
     real(r8) :: th(pcols)                                       ! surface potential temperature
     real(r8) :: thv(pcols)                                      ! surface virtual potential temperature
+    real(r8) :: th_lv(pcols,pver)                               ! level potential temperature
+    real(r8) :: thv_lv(pcols,pver)                              ! level virtual potential temperature
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
@@ -3243,20 +3246,34 @@ end subroutine clubb_init_cnst
        end if
     enddo
 
+    !compute the whole level th and thv for diagnose of bulk richardson number
+    do i=1,ncol
+      do k=1,pver
+         th_lv(i,k) = state%t(i,k)*state%exner(i,k)
+         if (use_sgv) then
+           thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq) &
+                    - state%q(i,k,ixcldliq))  !PMA corrects thv formula
+         else
+           thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq))
+         end if
+      enddo
+   enddo
+   !
+
     do i = 1, ncol
        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                         rrho, ustar(i) )
        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
-    !!===== add calculation of ribulk here=====
+    !add calculation of bulk richardson number here
     kbfs_pcol=0.0_r8
     do i=1,ncol
         call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
         kbfs_pcol(i)=kbfs
     enddo
-    call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
+    call pblintd_ri(ncol, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
     return
 
