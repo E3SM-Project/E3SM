@@ -1163,7 +1163,7 @@ end subroutine clubb_init_cnst
    use model_flags, only: ipdf_call_placement
    use advance_clubb_core_module, only: ipdf_post_advance_fields
 #endif
-   use gw_common,          only: grid_size,pblh_get_level_idx,gw_oro_interface
+   use gw_common,          only: grid_size,gw_oro_interface
    use hycoef,             only: etamid
    use physconst,          only: rh2o,pi,rearth,r_universal
    !!get the znu,znw,p_top set to 0
