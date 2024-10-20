@@ -266,7 +266,7 @@ void fracLandUseFunctions<S, D>::update_timestate(
 
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
-    const std::string field_name, const std::string dim_name1,
+    const int ncol, const std::string field_name, const std::string dim_name1,
     const std::string dim_name2,
     const std::shared_ptr<const AbstractGrid> &grid,
     const std::string &data_file, const std::string &mapping_file,
@@ -279,9 +279,6 @@ void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
   // Init horizontal remap
   FracLandUseHorizInterp = create_horiz_remapper(
       grid, data_file, mapping_file, field_name, dim_name1, dim_name2);
-
-  // number of columns in the file
-  const int ncol = scorpio::get_dimlen(data_file, dim_name1);
 
   // number of fractional land use classes
   const int nclass = scorpio::get_dimlen(data_file, dim_name2);

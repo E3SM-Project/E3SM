@@ -124,7 +124,7 @@ struct fracLandUseFunctions {
   // -------------------------------------------------------------------------------------------
 
   static void init_frac_landuse_file_read(
-      const std::string field_name, const std::string dim_name1,
+      const int ncol, const std::string field_name, const std::string dim_name1,
       const std::string dim_name2,
       const std::shared_ptr<const AbstractGrid> &grid,
       const std::string &data_file, const std::string &mapping_file,

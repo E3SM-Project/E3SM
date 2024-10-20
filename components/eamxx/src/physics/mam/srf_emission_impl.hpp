@@ -219,6 +219,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
         srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
     const auto emiss =
         Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
+    printf("BALLI:%i, %i,%i, %i\n",emiss.extent(0),emiss.extent(1),sector.extent(0),sector.extent(1));
     Kokkos::deep_copy(emiss, sector);
   }
 
@@ -281,6 +282,7 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   SrfEmissData_start = srfEmissInput(ncol, sectors.size());
   SrfEmissData_end   = srfEmissInput(ncol, sectors.size());
   SrfEmissData_out.init(ncol, 1, true);
+  std::cout<<"BALLI-ncol1:"<<ncol<<":"<<SrfEmissData_start.data.emiss_sectors.extent(0)<<std::endl;
 
   // Create reader (an AtmosphereInput object)
   SrfEmissDataReader =

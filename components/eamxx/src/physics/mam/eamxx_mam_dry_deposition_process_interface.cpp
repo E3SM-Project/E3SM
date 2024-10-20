@@ -222,7 +222,7 @@ void MAMDryDep::set_grids(
 
   // initialize the file read
   FracLandUseFunc::init_frac_landuse_file_read(
-      field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
       mapping_file,
       // output
       horizInterp_, data_start_, data_end_, data_out_, dataReader_);
