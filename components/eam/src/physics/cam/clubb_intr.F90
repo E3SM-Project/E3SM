@@ -1534,7 +1534,7 @@ end subroutine clubb_init_cnst
    real(r8) :: dtauy3_fd(pcols,pver)
    real(r8) :: dusfc_fd(pcols)
    real(r8) :: dvsfc_fd(pcols)
-   integer  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+   logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
    real(r8) :: dummy_nm(pcols,pver)
    real(r8) :: dummy_utgw(pcols,pver)
    real(r8) :: dummy_vtgw(pcols,pver)
@@ -1980,10 +1980,10 @@ end subroutine clubb_init_cnst
        call t_stopf('compute_tms')
     endif
         !
-    if (use_od_fd.eq.1) then
-        gwd_ls=0
-        gwd_bl=0
-        gwd_ss=0
+    if (use_od_fd) then
+        gwd_ls=.false.
+        gwd_bl=.false.
+        gwd_ss=.false.
         gwd_fd=use_od_fd
         dummy_nm=0.0_r8
         dummy_utgw=0.0_r8

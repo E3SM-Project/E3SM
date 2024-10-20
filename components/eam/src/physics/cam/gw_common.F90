@@ -771,10 +771,10 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   real(r8), intent(in) :: dtime
   real(r8), intent(in) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
   !
-  integer , intent(in) :: gwd_ls
-  integer , intent(in) :: gwd_bl
-  integer , intent(in) :: gwd_ss
-  integer , intent(in) :: gwd_fd
+  logical , intent(in) :: gwd_ls
+  logical , intent(in) :: gwd_bl
+  logical , intent(in) :: gwd_ss
+  logical , intent(in) :: gwd_fd
   !tunable parameter from namelist
   real(r8), intent(in) :: ncleff_ls
   real(r8), intent(in) :: ncd_bl
@@ -1127,7 +1127,7 @@ end subroutine grid_size
   real(r8),   dimension( its:ite, nvar_dirOA )  ::     oa4
   real(r8),   dimension( its:ite, nvar_dirOL )  ::     ol4
   integer ::  i,j,k,kpblmax
-  integer , intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+  logical, intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
   !!
    do k = kts,kte
      if(znu(k).gt.0.6_r8) kpblmax = k + 1
@@ -1147,7 +1147,7 @@ end subroutine grid_size
       enddo
 !
 !no need when there is no large drag
-IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
+IF (gwd_ls).or.(gwd_bl) then
 
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
@@ -1234,11 +1234,11 @@ ENDIF
 !  form drag (Beljaars et al.,2004).
 !
 !           Activation of each component is done by specifying the integer-parameters
-!           (defined below) to 0: inactive or 1: active
-!                    gsd_gwd_ls = 0 or 1: large-scale
-!                    gsd_gwd_bl = 0 or 1: blocking drag 
-!                    gsd_gwd_ss = 0 or 1: small-scale gravity wave drag
-!                    gsd_gwd_fd = 0 or 1: topographic form drag
+!           (defined below) to .true. (active) or .false. (inactive)
+!                    gsd_gwd_ls : large-scale
+!                    gsd_gwd_bl : blocking drag 
+!                    gsd_gwd_ss : small-scale gravity wave drag
+!                    gsd_gwd_fd : topographic form drag
 !
 !
 !        References:
@@ -1289,7 +1289,7 @@ ENDIF
    real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
 !
    !variables for open/close process
-   integer , intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
+   logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
    !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
    real(r8), intent(in) :: ncleff,ncd,sncleff
 !
@@ -1537,7 +1537,7 @@ ss_taper=1._r8
    enddo
 !
 ! For ls and bl only
-IF  ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)) then
+IF  (gsd_gwd_ls.or.gsd_gwd_bl) then
 !     figure out low-level horizontal wind direction 
 ! order into a counterclockwise index instead
 !
@@ -1589,9 +1589,7 @@ ENDIF
 !============================================
 ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
 !============================================
-IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
-               (ls_taper .GT. 1.E-02) ) THEN   !====
-
+IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN 
 !                                                                       
 !---  saving richardson number in usqj for migwdi                       
 !
@@ -1714,7 +1712,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        tem      = fr(i) * fr(i) * oc1(i)
        gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
        !!
-       if ( gsd_gwd_ls .NE. 0 ) then
+       if (gsd_gwd_ls) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
        else     ! We've gotten what we need for the blocking scheme
@@ -1727,7 +1725,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
      endif
    enddo
 
-ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
+ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
 !=========================================================
 ! add small-scale wavedrag for stable boundary layer
 !=========================================================
@@ -1739,7 +1737,7 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
   vtendwave=0._r8
   zq=0._r8
 !
-  IF ( (gsd_gwd_ss .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+  IF (gsd_gwd_ss.and.(ss_taper.GT.1.E-02)) THEN
 !
 ! declaring potential temperature
 !
@@ -1829,17 +1827,17 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
        enddo
     enddo
 
-ENDIF  ! end if gsd_gwd_ss == 1
+ENDIF  ! end if gsd_gwd_ss == .true.
 !================================================================
 !add Beljaars et al. (2004, QJRMS, equ. 16) form drag:
 !================================================================
-IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+IF (gsd_gwd_fd.and.(ss_taper.GT.1.E-02) ) THEN
 
    utendform=0._r8
    vtendform=0._r8
    zq=0._r8
 
-   IF ( (gsd_gwd_ss .NE. 1).and.(ss_taper.GT.1.E-02) ) THEN
+   IF (.not.gsd_gwd_ss.and.(ss_taper.GT.1.E-02) ) THEN
       ! Defining layer height. This is already done above is small-scale GWD is used
       do k = kts,kte
         do i = its,ite
@@ -1888,11 +1886,11 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
          dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
       enddo
    enddo
-   ENDIF  ! end if gsd_gwd_fd == 1
+   ENDIF  ! end if gsd_gwd_fd == .true.
 !=======================================================
 ! More for the large-scale gwd component
 !=======================================================
-IF ( (gsd_gwd_ls .EQ. 1).and.(ls_taper.GT.1.E-02) ) THEN
+IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
 !                                                                       
 !   now compute vertical structure of the stress.
 !
@@ -1991,7 +1989,7 @@ ENDIF !END LARGE-SCALE TAU CALCULATION
 !===============================================================
 !COMPUTE BLOCKING COMPONENT 
 !===============================================================
-IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 
    do i = its,ite
       if(.not.ldrag(i)) then
@@ -2051,7 +2049,7 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
 
 ENDIF   ! end blocking drag
 !===========================================================
-IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 
 !                                                                       
 !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy

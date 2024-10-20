@@ -178,10 +178,10 @@ logical, public, protected :: print_additional_diagn_phys_control = .false.
 !additional flags and tuning parameters for orographic drags, 
 !including orographic gravity wave drag (oGWD),flow-blocking drag (FBD),
 !small-scale GWD drag (sGWD), turbulent orographic form drag (TOFD).
-integer, public, protected :: use_od_ls = 1!0
-integer, public, protected :: use_od_bl = 1!0
-integer, public, protected :: use_od_ss = 1!0
-integer, public, protected :: use_od_fd = 1!0
+logical, public, protected :: use_od_ls = .false.
+logical, public, protected :: use_od_bl = .false.
+logical, public, protected :: use_od_ss = .false.
+logical, public, protected :: use_od_fd = .false.
 real(r8),public, protected :: ncleff_ls = 3._r8 !tunable parameter for oGWD
 real(r8),public, protected :: ncd_bl    = 3._r8 !tunable parameter for FBD
 real(r8),public, protected :: sncleff_ss= 1._r8 !tunable parameter for sGWD

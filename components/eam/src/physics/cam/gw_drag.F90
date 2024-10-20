@@ -688,7 +688,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
   !
-  integer  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+  logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
   !
 
   !---------------------------Local storage-------------------------------
@@ -986,15 +986,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
   endif
   !
-  if (use_od_ls.eq.1.or.&
-      use_od_bl.eq.1.or.&
-      use_od_ss.eq.1) then
+  if (use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
      !open ogwd,bl,ss, 
      !close fd
      gwd_ls=use_od_ls
      gwd_bl=use_od_bl
      gwd_ss=use_od_ss
-     gwd_fd=0
+     gwd_fd=.false.
      !
      call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
@@ -1015,9 +1015,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! (includes spectrum).
         ! both old and new gwd scheme will add the tendency to circulation
   if (use_gw_oro.or.    &
-      use_od_ls.eq.1.or.&
-      use_od_bl.eq.1.or.&
-      use_od_ss.eq.1) then
+      use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -1068,9 +1068,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
      !
-     if (use_od_ls.eq.0.and.&
-         use_od_bl.eq.0.and.&
-         use_od_ss.eq.0) then
+     if (use_od_ls.and.&
+         use_od_bl.and.&
+         use_od_ss) then
      !old gwd scheme
      tau0x = tau(:,0,pver) * xv * effgw_oro
      tau0y = tau(:,0,pver) * yv * effgw_oro
@@ -1085,9 +1085,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
      call outfld('SGH   ',   sgh,pcols, lchnk)
      !
-     if (use_od_ls.eq.1.or.&
-         use_od_bl.eq.1.or.&
-         use_od_ss.eq.1) then
+     if (use_od_ls.or.&
+         use_od_bl.or.&
+         use_od_ss) then
      call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
      call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
      call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
