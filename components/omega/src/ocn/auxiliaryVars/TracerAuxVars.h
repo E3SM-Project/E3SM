@@ -13,8 +13,8 @@ namespace OMEGA {
 
 class TracerAuxVars {
  public:
-   Array3DReal HTracersOnEdge;
-   Array3DReal Del2TracersOnCell;
+   Array3DReal HTracersEdge;
+   Array3DReal Del2TracersCell;
 
    FluxThickEdgeOption TracersOnEdgeChoice = Center;
 
@@ -33,7 +33,7 @@ class TracerAuxVars {
       case Center:
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
-            HTracersOnEdge(L, IEdge, K) =
+            HTracersEdge(L, IEdge, K) =
                 0.5_Real * (HCell(JCell0, K) * TrCell(L, JCell0, K) +
                             HCell(JCell1, K) * TrCell(L, JCell1, K));
          }
@@ -42,13 +42,13 @@ class TracerAuxVars {
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {
-               HTracersOnEdge(L, IEdge, K) =
+               HTracersEdge(L, IEdge, K) =
                    HCell(JCell0, K) * TrCell(L, JCell0, K);
             } else if (NormalVelEdge(IEdge, K) < 0) {
-               HTracersOnEdge(L, IEdge, K) =
+               HTracersEdge(L, IEdge, K) =
                    HCell(JCell1, K) * TrCell(L, JCell1, K);
             } else {
-               HTracersOnEdge(L, IEdge, K) =
+               HTracersEdge(L, IEdge, K) =
                    Kokkos::max(HCell(JCell0, K) * TrCell(L, JCell0, K),
                                HCell(JCell1, K) * TrCell(L, JCell1, K));
             }
@@ -83,8 +83,8 @@ class TracerAuxVars {
          }
       }
       for (int KVec = 0; KVec < VecLength; ++KVec) {
-         const int K                    = KStart + KVec;
-         Del2TracersOnCell(L, ICell, K) = Del2TrCellTmp[KVec] * InvAreaCell;
+         const int K                  = KStart + KVec;
+         Del2TracersCell(L, ICell, K) = Del2TrCellTmp[KVec] * InvAreaCell;
       }
    }
 
