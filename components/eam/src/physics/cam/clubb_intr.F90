@@ -3177,13 +3177,12 @@ end subroutine clubb_init_cnst
 !-------------------------------------------------------------------------------
 
     use physics_types,          only: physics_state
-    use physconst,              only: zvir
+    use physconst,              only: zvir,gravit
     use ppgrid,                 only: pver, pcols
     use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
     use hb_diff,                only: pblintd_ri
 
- use cam_abortutils,  only: endrun
 
     implicit none
 

@@ -767,7 +767,7 @@ end subroutine init_hb_diff
     return
   end subroutine austausch_pbl
   !===============================================================================
-  subroutine pblintd_ri(ncol    , g       , &
+  subroutine pblintd_ri(ncol     ,g       , &
        thv     ,z       ,u       ,v       , &
        ustar   ,obklen  ,kbfs    ,rino_bulk)
     !! 
