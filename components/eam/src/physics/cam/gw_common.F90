@@ -868,7 +868,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 pblh_idx = pbuf_get_index('pblh')
         	call pbuf_get_field(pbuf, pblh_idx, pblh)
         	do i=1,pcols
-        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pver,pblh(i))
+        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
         	end do
                 !
                 !get grid size for dx,dy
@@ -903,7 +903,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 !
 end subroutine gw_oro_interface
 !==========================================================================
-function pblh_get_level_idx(height_array ,pblheight,pver)
+function pblh_get_level_idx(height_array,pblheight)
 implicit none
 real(8),intent(in),dimension(pver) :: height_array
 real(8),intent(in) :: pblheight
@@ -1075,7 +1075,7 @@ end subroutine grid_size
                                                               t3d, &
                                                                 z, &
                                                                dz
-  real(r8),     dimension( ims:ime, kms:kme )                    , &
+  real(r8),     dimension( ims:ime, kms:kme+1 )                   ,&
      intent(in   )   ::                                       p3di
   real(r8),     intent(in)      ::                        ncleff_ls,ncd_bl,sncleff_ss
   real(r8),     dimension( ims:ime, kms:kme )                    , &
