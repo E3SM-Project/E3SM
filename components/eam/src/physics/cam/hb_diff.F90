@@ -807,7 +807,8 @@ end subroutine init_hb_diff
     
     logical  :: unstbl(pcols)           ! pts w/unstbl pbl (positive virtual ht flx)
     logical  :: check(pcols)            ! True=>chk if Richardson no.>critcal
-    !!
+    !
+    rino_bulk    = 0.0_r8
     do i=1,ncol
        check(i)     = .true.
        rino(i,pver) = 0.0_r8

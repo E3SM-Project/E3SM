@@ -2133,8 +2133,10 @@ end subroutine clubb_init_cnst
       !Apply TOFD
       !----------------------------------------------------!
       !tendency is flipped already
+       if (use_od_fd) then 
         um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)
         vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)
+       endif
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
          um_in(k)      = real(um(i,pverp-k+1), kind = core_rknd)
@@ -3247,6 +3249,7 @@ end subroutine clubb_init_cnst
     enddo
 
     !compute the whole level th and thv for diagnose of bulk richardson number
+    thv_lv=0.0_r8
     do i=1,ncol
       do k=1,pver
          th_lv(i,k) = state%t(i,k)*state%exner(i,k)
@@ -3273,6 +3276,7 @@ end subroutine clubb_init_cnst
                         kinheat, kinwat, kbfs, obklen(i) )
         kbfs_pcol(i)=kbfs
     enddo
+    !
     call pblintd_ri(ncol, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
     return

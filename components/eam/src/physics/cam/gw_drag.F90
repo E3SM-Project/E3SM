@@ -305,6 +305,8 @@ subroutine gw_init()
   pblh_idx = pbuf_get_index('pblh')
   !
   grid_id = cam_grid_id('physgrid')
+  !
+  if (use_od_ls.or.use_od_bl) then
                 if (.not. cam_grid_check(grid_id)) then
                 call endrun(trim(subname)//': Internal error, no "physgrid" grid')
                 end if
@@ -327,6 +329,7 @@ subroutine gw_init()
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
                 !
                 call close_initial_fileGWD()
+  endif
   !
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
@@ -1077,8 +1080,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      else
      !new gwd scheme
      !set the GWORO as combination of 3
-     tau0x=dusfc_ls+dusfc_bl+dusfc_ss
-     tau0y=dvsfc_ls+dvsfc_bl+dvsfc_ss
+     tau0x=dusfc_ls(:ncol)+dusfc_bl(:ncol)+dusfc_ss(:ncol)
+     tau0y=dvsfc_ls(:ncol)+dvsfc_bl(:ncol)+dvsfc_ss(:ncol)
      endif
      !
      call outfld('TAUGWX', tau0x, ncol, lchnk)
