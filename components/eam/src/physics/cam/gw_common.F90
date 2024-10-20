@@ -1147,8 +1147,7 @@ end subroutine grid_size
       enddo
 !
 !no need when there is no large drag
-IF (gwd_ls).or.(gwd_bl) then
-
+IF (gwd_ls.or.gwd_bl) then
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
             ol4(i,:) = ol2d(i,:)
