@@ -16,6 +16,7 @@
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "TimeMgr.h"
+#include "Tracers.h"
 
 #include <functional>
 #include <memory>
@@ -427,6 +428,7 @@ class Tendencies {
    // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
+   Array3DReal TracerTend;
 
    // Instances of tendency terms
    ThicknessFluxDivOnCell ThicknessFluxDiv;
@@ -435,6 +437,9 @@ class Tendencies {
    SSHGradOnEdge SSHGrad;
    VelocityDiffusionOnEdge VelocityDiffusion;
    VelocityHyperDiffOnEdge VelocityHyperDiff;
+   TracerHorzAdvOnCell TracerHorzAdv;
+   TracerDiffOnCell TracerDiffusion;
+   TracerHyperDiffOnCell TracerHyperDiff;
 
    // Methods to compute tendency groups
    void computeThicknessTendencies(const OceanState *State,
@@ -459,6 +464,11 @@ class Tendencies {
                                       const AuxiliaryState *AuxState,
                                       int ThickTimeLevel, int VelTimeLevel,
                                       TimeInstant Time);
+   void computeTracerTendenciesOnly(const OceanState *State,
+                                    const AuxiliaryState *AuxState,
+                                    const Array3DReal &TracerArray,
+                                    int ThickTimeLevel, int VelTimeLevel,
+                                    TimeInstant Time);
 
    // Create a non-default group of tendencies
    template <class... ArgTypes>
@@ -510,6 +520,7 @@ class Tendencies {
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
               int NVertLevels,         ///< [in] Number of vertical levels
+              int NTracersIn,          ///< [in] Number of tracers
               Config *Options,         ///< [in] Configuration options
               CustomTendencyType InCustomThicknessTend,
               CustomTendencyType InCustomVelocityTend);
@@ -517,6 +528,7 @@ class Tendencies {
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
               int NVertLevels,         ///< [in] Number of vertical levels
+              int NTracersIn,          ///< [in] Number of tracers
               Config *Options          ///< [in] Configuration options
    );
 
@@ -527,6 +539,7 @@ class Tendencies {
    // Mesh sizes
    I4 NCellsAll; ///< Number of cells including full halo
    I4 NEdgesAll; ///< Number of edges including full halo
+   I4 NTracers;  ///< Number of tracers
    I4 NChunks;   ///< Number of vertical level chunks
 
    // Pointer to default tendencies

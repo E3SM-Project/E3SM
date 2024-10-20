@@ -198,7 +198,7 @@ int initTimeStepperTest(const std::string &mesh) {
 
    // Creating non-default tendencies with custom velocity tendencies
    auto *TestTendencies = Tendencies::create(
-       "TestTendencies", DefMesh, NVertLevels, &Options,
+       "TestTendencies", DefMesh, NVertLevels, NTracers, &Options,
        Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
    if (!TestTendencies) {
       Err++;
@@ -212,6 +212,9 @@ int initTimeStepperTest(const std::string &mesh) {
    TestTendencies->SSHGrad.Enabled            = false;
    TestTendencies->VelocityDiffusion.Enabled  = false;
    TestTendencies->VelocityHyperDiff.Enabled  = false;
+   TestTendencies->TracerHorzAdv.Enabled      = false;
+   TestTendencies->TracerDiffusion.Enabled    = false;
+   TestTendencies->TracerHyperDiff.Enabled    = false;
 
    return Err;
 }

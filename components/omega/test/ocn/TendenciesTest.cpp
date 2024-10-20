@@ -171,10 +171,6 @@ int testTendencies() {
    DefTendencies->KEGrad.Enabled             = true;
    DefTendencies->SSHGrad.Enabled            = true;
 
-   // TODO need to get visc values from config
-   DefTendencies->VelocityDiffusion.Enabled = false;
-   DefTendencies->VelocityHyperDiff.Enabled = false;
-
    if (DefTendencies) {
       LOG_INFO("TendenciesTest: Default tendencies retrieval PASS");
    } else {
@@ -186,7 +182,7 @@ int testTendencies() {
    const auto *Mesh = HorzMesh::getDefault();
    // test creation of another tendencies
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, 12, Options);
+   Tendencies::create("TestTendencies", Mesh, 12, 3, Options);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -209,6 +205,7 @@ int testTendencies() {
    // put NANs in every tendency variables
    deepCopy(DefTendencies->LayerThicknessTend, NAN);
    deepCopy(DefTendencies->NormalVelocityTend, NAN);
+   deepCopy(DefTendencies->TracerTend, NAN);
 
    // compute tendencies
    const auto *State    = OceanState::getDefault();
@@ -238,6 +235,13 @@ int testTendencies() {
    if (!Kokkos::isfinite(NormVelTendSum) || NormVelTendSum == 0) {
       Err++;
       LOG_ERROR("TendenciesTest: NormVelTendSum FAIL");
+   }
+
+   const Real TraceTendSum =
+       sum(DefTendencies->TracerTend, NTracers, NCellsOwned);
+   if (!Kokkos::isfinite(TraceTendSum) || TraceTendSum == 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: TraceTendSum FAIL");
    }
 
    Tendencies::clear();

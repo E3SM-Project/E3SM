@@ -25,6 +25,11 @@ Omega:
     ViscDel2: 1.0e3
     VelHyperDiffTendencyEnable: true
     ViscDel4: 1.2e11
+    TracerHorzAdvTendencyEnable: true
+    TracerDiffTendencyEnable: true
+    EddyDiff2: 10.0
+    TracerHyperDiffTendencyEnable: true
+    EddyDiff4: 0.0
   Tracers:
     Base: [Temp, Salt]
     Debug: [Debug1, Debug2, Debug3]
