@@ -7,8 +7,6 @@
 -----------------------------------------------------------------
 NOTES:
 1. Add a CIME test and multi-process tests
-2. Ensure that the submodule for MAM4xx is the main branch
-3. Read file for fractional landuse
 -----------------------------------------------------------------
 */
 namespace scream {
@@ -225,7 +223,7 @@ void MAMDryDep::set_grids(
       ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
       mapping_file,
       // output
-      horizInterp_, data_start_, data_end_, data_out_, dataReader_);
+      horizInterp_, frac_landuse_, dataReader_);
 
 }  // set_grids
 
@@ -374,19 +372,13 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
 
   //-----------------------------------------------------------------
-  // Update fractional land use file reading
+  // Read fractional land use data
   //-----------------------------------------------------------------
-  // Current month ( 0-based)
-  const int curr_month = timestamp().get_month() - 1;
-
-  // Load the first month into data_end.
-
-  // Note: At the first time step, the data will be moved into data_beg,
-  // and data_end will be reloaded from file with the new month.
-
+  // This data is time-independent, we read all data here for the
+  // entire simulation
   FracLandUseFunc::update_frac_land_use_data_from_file(
-      dataReader_, timestamp(), curr_month, *horizInterp_,
-      data_end_);  // output
+      dataReader_, *horizInterp_,
+      frac_landuse_);  // output
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -442,37 +434,13 @@ void MAMDryDep::run_impl(const double dt) {
                           .get_view<Real **>();
 
   //--------------------------------------------------------------------
-  // Interpolate fractional land use data
-  //--------------------------------------------------------------------
-
-  // Gather time and state information for interpolation
-  const auto ts = timestamp() + dt;
-  // Update TimeState
-  timeState_.t_now = ts.frac_of_year_in_days();
-
-  // Update time state and if the month has changed, update the data.
-  FracLandUseFunc::update_timestate(dataReader_, ts, *horizInterp_,
-                                    // output
-                                    timeState_, data_start_, data_end_);
-
-  // Call the main fracLandUse routine to get interpolated field
-  FracLandUseFunc::fracLandUse_main(timeState_, data_start_, data_end_,
-                                    data_out_);
-
-  // NOTE: Sum of all the values of data_out_.frac_land_use
-  // for a column should be ~1
-
-  printf("BALLI:%0.15e, %0.15e, %0.15e\n", data_start_.data.frac_land_use(0, 1),
-         data_end_.data.frac_land_use(0, 1), data_out_.frac_land_use(0, 1));
-
-  //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-
+  printf("BALLI:%0.15e\n", frac_landuse_.data.frac_land_use(0, 1));
   compute_tendencies(
       ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_,
       land_fraction_, ice_fraction_, ocean_fraction_, friction_velocity_,
-      aerodynamical_resistance_, qtracers_, data_out_.frac_land_use,
+      aerodynamical_resistance_, qtracers_, frac_landuse_.data.frac_land_use,
       dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
       // Inouts-outputs
       qqcw_,

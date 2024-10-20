@@ -8,7 +8,6 @@
 #include <physics/mam/mam_coupling.hpp>
 
 // For reading fractional land use file
-#include <physics/mam/readfiles/common_file_read_func.hpp>
 #include <physics/mam/readfiles/fractional_land_use.hpp>
 // For component name
 #include <string>
@@ -32,7 +31,6 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   using const_view_3d = Field::view_dev_t<const Real ***>;
   using FracLandUseFunc =
       frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
-  using CommonFileRead = fileRead::commonFileReadFunc<Real, DefaultDevice>;
 
  private:
   // number of horizontal columns and vertical levels
@@ -111,9 +109,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   // For reading fractional land use file
   std::shared_ptr<AbstractRemapper> horizInterp_;
   std::shared_ptr<AtmosphereInput> dataReader_;
-  CommonFileRead::timeState timeState_;
-  FracLandUseFunc::FracLandUseInput data_start_, data_end_;
-  FracLandUseFunc::FracLandUseOutput data_out_;
+  FracLandUseFunc::FracLandUseInput frac_landuse_;
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
