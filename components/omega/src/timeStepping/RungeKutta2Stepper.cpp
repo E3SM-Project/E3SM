@@ -17,16 +17,19 @@ void RungeKutta2Stepper::doStep(OceanState *State, TimeInstant Time) const {
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
+   Array3DReal CurTracerArray, NextTracerArray;
+
    // q = (h,u)
    // R_q^{n} = RHS_q(u^{n}, h^{n}, t^{n})
-   Tend->computeAllTendencies(State, AuxState, CurLevel, CurLevel, Time);
+   Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
+                              CurLevel, Time);
 
    // q^{n+0.5} = q^{n} + 0.5*dt*R_q^{n}
    updateStateByTend(State, NextLevel, State, CurLevel, 0.5 * TimeStep);
 
    // R_q^{n+0.5} = RHS_q(u^{n+0.5}, h^{n+0.5}, t^{n+0.5})
-   Tend->computeAllTendencies(State, AuxState, NextLevel, NextLevel,
-                              Time + 0.5 * TimeStep);
+   Tend->computeAllTendencies(State, AuxState, NextTracerArray, NextLevel,
+                              NextLevel, Time + 0.5 * TimeStep);
 
    // q^{n+1} = q^{n} + dt*R_q^{n+0.5}
    updateStateByTend(State, NextLevel, State, CurLevel, TimeStep);

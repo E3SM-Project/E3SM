@@ -35,10 +35,15 @@ struct TestSetup {
       return -4 * Radius * std::sin(Lon) * std::cos(Lon) *
              std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
+
+   KOKKOS_FUNCTION Real tracer(Real Lon, Real Lat) const {
+      return (2 - std::cos(Lon) * std::pow(std::cos(Lat), 4));
+   }
 };
 
 constexpr Geometry Geom   = Geometry::Spherical;
 constexpr int NVertLevels = 60;
+constexpr int NTracers    = 5;
 
 int initState() {
    int Err = 0;
@@ -50,9 +55,17 @@ int initState() {
    const auto &LayerThickCell = State->LayerThickness[0];
    const auto &NormalVelEdge  = State->NormalVelocity[0];
 
+   Array3DReal TracersArray;
+   Err += Tracers::getAll(TracersArray, 0);
+   const auto &TracersCell = TracersArray;
+
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
        LayerThickCell, Geom, Mesh, OnCell, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracer(X, Y); },
+       TracersCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real Lon, Real Lat) {
@@ -112,6 +125,12 @@ int initTendenciesTest(const std::string &mesh) {
    if (TimeStepperErr != 0) {
       Err++;
       LOG_ERROR("TendenciesTest: error initializing default time stepper");
+   }
+
+   int TracerErr = Tracers::init();
+   if (TracerErr != 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: error initializing tracer infrastructure");
    }
 
    const auto &Mesh = HorzMesh::getDefault();
@@ -194,11 +213,13 @@ int testTendencies() {
    // compute tendencies
    const auto *State    = OceanState::getDefault();
    const auto *AuxState = AuxiliaryState::getDefault();
-   int ThickTimeLevel   = 0;
-   int VelTimeLevel     = 0;
+   Array3DReal TracerArray;
+   Err += Tracers::getAll(TracerArray, 0);
+   int ThickTimeLevel = 0;
+   int VelTimeLevel   = 0;
    TimeInstant Time;
-   DefTendencies->computeAllTendencies(State, AuxState, ThickTimeLevel,
-                                       VelTimeLevel, Time);
+   DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
+                                       ThickTimeLevel, VelTimeLevel, Time);
 
    // check that everything got computed correctly
    int NCellsOwned    = Mesh->NCellsOwned;
@@ -225,6 +246,7 @@ int testTendencies() {
 }
 
 void finalizeTendenciesTest() {
+   Tracers::clear();
    AuxiliaryState::clear();
    OceanState::clear();
    Field::clear();

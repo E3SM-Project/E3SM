@@ -41,6 +41,8 @@ using namespace OMEGA;
 constexpr Geometry Geom = Geometry::Planar;
 // Only one vertical level is needed
 constexpr int NVertLevels = 1;
+// Number of tracers
+constexpr int NTracers = 5;
 
 // Custom tendency for normal velocity
 // du/dt = -coeff * u
@@ -186,7 +188,7 @@ int initTimeStepperTest(const std::string &mesh) {
    }
 
    auto *TestAuxState =
-       AuxiliaryState::create("TestAuxState", DefMesh, NVertLevels);
+       AuxiliaryState::create("TestAuxState", DefMesh, NVertLevels, NTracers);
    if (!TestAuxState) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test auxiliary state");

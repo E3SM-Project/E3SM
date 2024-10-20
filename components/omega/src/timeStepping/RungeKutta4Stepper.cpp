@@ -37,14 +37,15 @@ void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
+   Array3DReal NextTracersArray, CurTracersArray, ProvisTracers;
    for (int Stage = 0; Stage < NStages; ++Stage) {
       const TimeInstant StageTime = Time + RKC[Stage] * TimeStep;
       // first stage does:
       // R^{(0)} = RHS(q^{n}, t^{n})
       // q^{n+1} = q^{n} + dt * RKB[0] * dt * R^{(0)}
       if (Stage == 0) {
-         Tend->computeAllTendencies(State, AuxState, CurLevel, CurLevel,
-                                    StageTime);
+         Tend->computeAllTendencies(State, AuxState, CurTracersArray, CurLevel,
+                                    CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, CurLevel,
                            RKB[Stage] * TimeStep);
       } else {
@@ -60,8 +61,8 @@ void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
             ProvisState->exchangeHalo(CurLevel);
          }
 
-         Tend->computeAllTendencies(ProvisState, AuxState, CurLevel, CurLevel,
-                                    StageTime);
+         Tend->computeAllTendencies(ProvisState, AuxState, ProvisTracers,
+                                    CurLevel, CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, NextLevel,
                            RKB[Stage] * TimeStep);
       }

@@ -16,7 +16,7 @@ class TracerAuxVars {
    Array3DReal HTracersEdge;
    Array3DReal Del2TracersCell;
 
-   FluxThickEdgeOption TracersOnEdgeChoice = Center;
+   FluxThickEdgeOption TracersOnEdgeChoice;
 
    TracerAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
                  const I4 NVertLevels, const I4 NTracers);

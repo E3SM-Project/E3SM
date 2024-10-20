@@ -17,6 +17,8 @@ void ForwardBackwardStepper::doStep(OceanState *State, TimeInstant Time) const {
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
+   Array3DReal TracerArray;
+
    // R_h^{n} = RHS_h(u^{n}, h^{n}, t^{n})
    Tend->computeThicknessTendencies(State, AuxState, CurLevel, CurLevel, Time);
 
@@ -24,8 +26,8 @@ void ForwardBackwardStepper::doStep(OceanState *State, TimeInstant Time) const {
    updateThicknessByTend(State, NextLevel, State, CurLevel, TimeStep);
 
    // R_u^{n+1} = RHS_u(u^{n}, h^{n+1}, t^{n+1})
-   Tend->computeVelocityTendencies(State, AuxState, NextLevel, CurLevel,
-                                   Time + TimeStep);
+   Tend->computeVelocityTendencies(State, AuxState, TracerArray, NextLevel,
+                                   CurLevel, Time + TimeStep);
    // u^{n+1} = u^{n} + R_u^{n+1}
    updateVelocityByTend(State, NextLevel, State, CurLevel, TimeStep);
 
