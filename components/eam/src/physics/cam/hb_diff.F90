@@ -767,14 +767,14 @@ end subroutine init_hb_diff
     return
   end subroutine austausch_pbl
   !===============================================================================
-  subroutine pblintd_ri(ncol    ,                            &
+  subroutine pblintd_ri(ncol    , g       , &
        thv     ,z       ,u       ,v       , &
        ustar   ,obklen  ,kbfs    ,rino_bulk)
     !! 
     use pbl_utils, only: virtem, calc_ustar, calc_obklen
     !!
     integer, intent(in) :: ncol                      ! number of atmospheric columns
-    
+    real(r8), intent(in)  :: g
     real(r8), intent(in)  :: thv(pcols,pver)         ! virtual temperature
     real(r8), intent(in)  :: z(pcols,pver)           ! height above surface [m]
     real(r8), intent(in)  :: u(pcols,pver)           ! windspeed x-direction [m/s]
@@ -808,7 +808,6 @@ end subroutine init_hb_diff
     logical  :: unstbl(pcols)           ! pts w/unstbl pbl (positive virtual ht flx)
     logical  :: check(pcols)            ! True=>chk if Richardson no.>critcal
     !
-    rino_bulk    = 0.0_r8
     do i=1,ncol
        check(i)     = .true.
        rino(i,pver) = 0.0_r8

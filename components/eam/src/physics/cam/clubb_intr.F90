@@ -20,7 +20,7 @@ module clubb_intr
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use shr_log_mod ,  only: errMsg => shr_log_errMsg
   use ppgrid,        only: pver, pverp
-  use phys_control,  only: phys_getopts,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
+  use phys_control,  only: phys_getopts,use_od_ss,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
   use cam_logfile,   only: iulog
@@ -3181,7 +3181,9 @@ end subroutine clubb_init_cnst
     use ppgrid,                 only: pver, pcols
     use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
-    use hb_diff,                   only: pblintd_ri
+    use hb_diff,                only: pblintd_ri
+
+ use cam_abortutils,  only: endrun
 
     implicit none
 
@@ -3247,9 +3249,20 @@ end subroutine clubb_init_cnst
          thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq))  ! diagnose virtual potential temperature
        end if
     enddo
-
+    !
+    do i = 1, ncol
+       call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
+                        rrho, ustar(i) )
+       call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
+                        kinheat, kinwat, kbfs, obklen(i) )
+    enddo
+    !
+    if (use_od_ss) then
+    !add calculation of bulk richardson number here
+    !
     !compute the whole level th and thv for diagnose of bulk richardson number
     thv_lv=0.0_r8
+    th_lv=0.0_r8
     do i=1,ncol
       do k=1,pver
          th_lv(i,k) = state%t(i,k)*state%exner(i,k)
@@ -3260,16 +3273,8 @@ end subroutine clubb_init_cnst
            thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq))
          end if
       enddo
-   enddo
-   !
-
-    do i = 1, ncol
-       call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
-                        rrho, ustar(i) )
-       call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
-                        kinheat, kinwat, kbfs, obklen(i) )
     enddo
-    !add calculation of bulk richardson number here
+    !
     kbfs_pcol=0.0_r8
     do i=1,ncol
         call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
@@ -3277,8 +3282,10 @@ end subroutine clubb_init_cnst
         kbfs_pcol(i)=kbfs
     enddo
     !
-    call pblintd_ri(ncol, thv_lv, state%zm, state%u, state%v, &
+    call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
+    endif
+    !
     return
 
 #endif

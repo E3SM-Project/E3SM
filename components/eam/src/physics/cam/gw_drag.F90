@@ -1071,21 +1071,14 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
      !
-     if (use_od_ls.and.&
-         use_od_bl.and.&
-         use_od_ss) then
+     if (use_gw_oro) then
      !old gwd scheme
      tau0x = tau(:,0,pver) * xv * effgw_oro
      tau0y = tau(:,0,pver) * yv * effgw_oro
-     else
-     !new gwd scheme
-     !set the GWORO as combination of 3
-     tau0x=dusfc_ls(:ncol)+dusfc_bl(:ncol)+dusfc_ss(:ncol)
-     tau0y=dvsfc_ls(:ncol)+dvsfc_bl(:ncol)+dvsfc_ss(:ncol)
-     endif
-     !
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
+     endif
+     !
      call outfld('SGH   ',   sgh,pcols, lchnk)
      !
      if (use_od_ls.or.&

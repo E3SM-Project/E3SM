@@ -1329,7 +1329,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
                               is_first_restart_step, is_last_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
-    use phys_control,   only: ieflx_opt
+    use phys_control,   only: ieflx_opt,use_od_ls,use_od_bl
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
                               co2_diags_store_fields, co2_diags_read_fields
     use co2_cycle,      only: co2_transport
@@ -1433,11 +1433,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
        ! for tranport of ogwd related parameters
+       if (use_od_ls.or.use_od_bl) then
        phys_state(c)%var(:)=var(:,c)                   
        phys_state(c)%var30(:)=var30(:,c)
        phys_state(c)%oc(:)=oc(:,c)
        phys_state(c)%oadir(:,:)=oadir(:,:,c)
        phys_state(c)%ol(:,:)=ol(:,:,c)
+       endif
        !
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
