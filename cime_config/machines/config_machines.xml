@@ -230,7 +230,7 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/23.9</command>
+        <command name="load">nvidia/24.5</command>
         <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
