@@ -23,7 +23,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
 # Ensure test input files are present in the data dir
-# Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
   scream/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 )

@@ -209,7 +209,7 @@ void MAMDryDep::set_grids(
 
   const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
   const std::string frac_landuse_data_file =
-      m_params.get<std::string>("fractional_land_use_file", "");
+      m_params.get<std::string>("fractional_land_use_file");
 
   // Field to be read from file
   const std::string field_name = "fraction_landuse";

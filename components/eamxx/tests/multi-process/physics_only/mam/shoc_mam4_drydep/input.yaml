@@ -29,6 +29,10 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       Ckh: 0.1
       Ckm: 0.1
+  mam4_drydep:
+    # Fractional land use file
+    drydep_remap_file: ""
+    fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
   Type: Mesh Free
