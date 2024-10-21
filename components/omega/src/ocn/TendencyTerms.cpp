@@ -435,14 +435,45 @@ void Tendencies::computeThicknessTendencies(
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    TimeInstant Time                ///< [in] Time
+) {
+   AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
+   computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
+                                 Time);
+}
+
+void Tendencies::computeTracerTendencies(
+    const OceanState *State,        ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-   AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
-   computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                 Time);
+   OMEGA_SCOPE(TracerAux, AuxState->TracerAux);
+   OMEGA_SCOPE(LayerThickCell, State->LayerThickness[ThickTimeLevel]);
+   OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[VelTimeLevel]);
+
+   parallelFor(
+       "computeTracerAuxEdge", {NTracers, NEdgesAll, NChunks},
+       KOKKOS_LAMBDA(int LTracer, int IEdge, int KChunk) {
+          TracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk, NormalVelEdge,
+                                      LayerThickCell, TracerArray);
+       });
+
+   const auto &MeanLayerThickEdge =
+       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   parallelFor(
+       "computeTracerAuxCell", {NTracers, NCellsAll, NChunks},
+       KOKKOS_LAMBDA(int LTracer, int ICell, int KChunk) {
+          TracerAux.computeVarsOnCells(LTracer, ICell, KChunk,
+                                       MeanLayerThickEdge, TracerArray);
+       });
+
+   computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                               VelTimeLevel, Time);
 }
 
 //------------------------------------------------------------------------------
