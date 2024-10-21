@@ -49,22 +49,19 @@ AuxiliaryState::~AuxiliaryState() {
       LOG_ERROR("Error destroying FieldGroup {}", GroupName);
 }
 
-// Compute the auxiliary variables
-void AuxiliaryState::computeAll(const OceanState *State,
-                                const Array3DReal &TracerArray,
-                                int ThickTimeLevel, int VelTimeLevel) const {
+// Compute the auxiliary variables needed for momentum equation
+void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
+                                   int VelTimeLevel) const {
    const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
    const Array2DReal &NormalVelEdge  = State->NormalVelocity[VelTimeLevel];
 
    const int NVertLevels = LayerThickCell.extent_int(1);
    const int NChunks     = NVertLevels / VecLength;
-   const int NTracers    = TracerArray.extent_int(0);
 
    OMEGA_SCOPE(LocKineticAux, KineticAux);
    OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocVorticityAux, VorticityAux);
    OMEGA_SCOPE(LocVelocityDel2Aux, VelocityDel2Aux);
-   OMEGA_SCOPE(LocTracerAux, TracerAux);
 
    parallelFor(
        "vertexAuxState1", {Mesh->NVerticesAll, NChunks},
@@ -110,6 +107,22 @@ void AuxiliaryState::computeAll(const OceanState *State,
           LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
                                                   LayerThickCell);
        });
+}
+
+// Compute the auxiliary variables
+void AuxiliaryState::computeAll(const OceanState *State,
+                                const Array3DReal &TracerArray,
+                                int ThickTimeLevel, int VelTimeLevel) const {
+   const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
+   const Array2DReal &NormalVelEdge  = State->NormalVelocity[VelTimeLevel];
+
+   const int NVertLevels = LayerThickCell.extent_int(1);
+   const int NChunks     = NVertLevels / VecLength;
+   const int NTracers    = TracerArray.extent_int(0);
+
+   OMEGA_SCOPE(LocTracerAux, TracerAux);
+
+   computeMomAux(State, ThickTimeLevel, VelTimeLevel);
 
    parallelFor(
        "edgeAuxState4", {NTracers, Mesh->NEdgesAll, NChunks},

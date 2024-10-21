@@ -63,6 +63,10 @@ class AuxiliaryState {
    /// Read and set config options
    int readConfigOptions(Config *OmegaConfig);
 
+   // Compute all auxiliary variables needed for momentum equation
+   void computeMomAux(const OceanState *State, int ThickTimeLevel,
+                      int VelTimeLevel) const;
+
    /// Compute all auxiliary variables based on an ocean state at a given time
    /// level
    void computeAll(const OceanState *State, const Array3DReal &TracerArray,
