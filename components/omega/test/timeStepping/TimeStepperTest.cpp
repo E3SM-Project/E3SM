@@ -29,6 +29,7 @@
 #include "OmegaKokkos.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
+#include "Tracers.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -75,13 +76,16 @@ int initState() {
 
    auto *Mesh  = HorzMesh::getDefault();
    auto *State = OceanState::get("TestState");
+   Array3DReal TracerArray;
+   Err = Tracers::getAll(TracerArray, 0);
 
    const auto &LayerThickCell = State->LayerThickness[0];
    const auto &NormalVelEdge  = State->NormalVelocity[0];
 
-   // Initially set thickness and velocity to 1
+   // Initially set thickness and velocity and to 1
    deepCopy(LayerThickCell, 1);
    deepCopy(NormalVelEdge, 1);
+   deepCopy(TracerArray, 1);
 
    return Err;
 }
@@ -91,6 +95,8 @@ int createExactSolution(Real TimeEnd) {
 
    auto *DefHalo = Halo::getDefault();
    auto *DefMesh = HorzMesh::getDefault();
+   Array3DReal TracerArray;
+   Err = Tracers::getAll(TracerArray, 0);
 
    auto *ExactState =
        OceanState::create("Exact", DefMesh, DefHalo, NVertLevels, 1);
@@ -103,6 +109,8 @@ int createExactSolution(Real TimeEnd) {
    deepCopy(LayerThickCell, 1);
    // Normal velocity decays exponentially
    deepCopy(NormalVelEdge, DecayVelocityTendency{}.exactSolution(TimeEnd));
+   // No tracer tendenciesk, final tracers == initial tracers
+   deepCopy(TracerArray, 1);
 
    return Err;
 }
@@ -145,6 +153,12 @@ int initTimeStepperTest(const std::string &mesh) {
       return Err;
    }
 
+   int TSErr = TimeStepper::init1();
+   if (TSErr != 0) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: error initializing default time stepper");
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
@@ -167,6 +181,12 @@ int initTimeStepperTest(const std::string &mesh) {
    if (MeshErr != 0) {
       Err++;
       LOG_ERROR("TimeStepperTest: error initializing default mesh");
+   }
+
+   int TracerErr = Tracers::init();
+   if (TracerErr != 0) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: error initializing tracers infrastructure");
    }
 
    // Non-default init
@@ -251,6 +271,7 @@ void timeLoop(TimeInstant TimeStart, Real TimeEnd) {
 
 void finalizeTimeStepperTest() {
 
+   Tracers::clear();
    TimeStepper::clear();
    Tendencies::clear();
    AuxiliaryState::clear();

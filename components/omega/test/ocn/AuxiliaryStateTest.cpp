@@ -95,6 +95,12 @@ int initAuxStateTest(const std::string &mesh) {
       return Err;
    }
 
+   int TimeStepperErr = TimeStepper::init1();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("AuxStateTest: error initializing default time stepper");
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
@@ -117,12 +123,6 @@ int initAuxStateTest(const std::string &mesh) {
    if (MeshErr != 0) {
       Err++;
       LOG_ERROR("AuxStateTest: error initializing default mesh");
-   }
-
-   int TimeStepperErr = TimeStepper::init();
-   if (TimeStepperErr != 0) {
-      Err++;
-      LOG_ERROR("AuxStateTest: error initializing default time stepper");
    }
 
    int TracerErr = Tracers::init();

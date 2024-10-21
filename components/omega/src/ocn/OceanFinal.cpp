@@ -17,6 +17,7 @@
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
+#include "Tracers.h"
 
 namespace OMEGA {
 
@@ -29,6 +30,7 @@ int ocnFinalize(const TimeInstant &CurrTime ///< [in] current sim time
    // Write restart file if necessary
 
    // clean up all objects
+   Tracers::clear();
    TimeStepper::clear();
    Tendencies::clear();
    AuxiliaryState::clear();

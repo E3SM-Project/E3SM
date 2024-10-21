@@ -18,6 +18,7 @@
 #include "OceanState.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
+#include "Tracers.h"
 
 #include <map>
 #include <memory>
@@ -52,8 +53,11 @@ class TimeStepper {
    // by one time step, from Time to Time + TimeStep
    virtual void doStep(OceanState *State, TimeInstant Time) const = 0;
 
-   /// Initialize the default time stepper
-   static int init();
+   /// 1st phase of Initialization for the default time stepper
+   static int init1();
+
+   /// 2nd phase of Initialization for the default time stepper
+   static int init2();
 
    // Create a time stepper from name, type, tendencies, auxiliary state, mesh
    // and halo

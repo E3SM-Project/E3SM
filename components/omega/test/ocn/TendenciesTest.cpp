@@ -97,6 +97,12 @@ int initTendenciesTest(const std::string &mesh) {
       return Err;
    }
 
+   int TimeStepperErr = TimeStepper::init1();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: error initializing default time stepper");
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
@@ -119,12 +125,6 @@ int initTendenciesTest(const std::string &mesh) {
    if (MeshErr != 0) {
       Err++;
       LOG_ERROR("TendenciesTest: error initializing default mesh");
-   }
-
-   int TimeStepperErr = TimeStepper::init();
-   if (TimeStepperErr != 0) {
-      Err++;
-      LOG_ERROR("TendenciesTest: error initializing default time stepper");
    }
 
    int TracerErr = Tracers::init();
@@ -164,12 +164,6 @@ int testTendencies() {
 
    // test retrievel of default
    Tendencies *DefTendencies = Tendencies::getDefault();
-
-   // turn on tendency terms
-   DefTendencies->ThicknessFluxDiv.Enabled   = true;
-   DefTendencies->PotientialVortHAdv.Enabled = true;
-   DefTendencies->KEGrad.Enabled             = true;
-   DefTendencies->SSHGrad.Enabled            = true;
 
    if (DefTendencies) {
       LOG_INFO("TendenciesTest: Default tendencies retrieval PASS");

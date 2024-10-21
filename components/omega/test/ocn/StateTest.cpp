@@ -51,6 +51,11 @@ int initStateTest() {
       return Err;
    }
 
+   // Initialize the default time stepper
+   Err = OMEGA::TimeStepper::init1();
+   if (Err != 0)
+      LOG_ERROR("State: error initializing default time stepper");
+
    // Initialize the IO system
    Err = OMEGA::IO::init(DefComm);
    if (Err != 0)
@@ -70,11 +75,6 @@ int initStateTest() {
    Err = OMEGA::HorzMesh::init();
    if (Err != 0)
       LOG_ERROR("State: error initializing default mesh");
-
-   // Initialize the default time stepper
-   Err = OMEGA::TimeStepper::init();
-   if (Err != 0)
-      LOG_ERROR("State: error initializing default time stepper");
 
    return Err;
 }

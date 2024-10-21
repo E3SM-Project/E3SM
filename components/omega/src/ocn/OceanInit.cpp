@@ -22,6 +22,7 @@
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
+#include "Tracers.h"
 
 #include "mpi.h"
 
@@ -169,6 +170,12 @@ int initOmegaModules(MPI_Comm Comm) {
    I4 Err = 0;
 
    // initialize all necessary Omega modules
+   Err = TimeStepper::init1();
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: Error phase 1 initializing default time stepper");
+      return Err;
+   }
+
    Err = IO::init(Comm);
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: Error initializing parallel IO");
@@ -199,6 +206,12 @@ int initOmegaModules(MPI_Comm Comm) {
       return Err;
    }
 
+   Err = Tracers::init();
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: Error initializing tracers infrastructure");
+      return Err;
+   }
+
    Err = AuxiliaryState::init();
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: Error initializing default aux state");
@@ -211,9 +224,9 @@ int initOmegaModules(MPI_Comm Comm) {
       return Err;
    }
 
-   Err = TimeStepper::init();
+   Err = TimeStepper::init2();
    if (Err != 0) {
-      LOG_CRITICAL("ocnInit: Error initializing default time stepper");
+      LOG_CRITICAL("ocnInit: Error phase 2 initializing default time stepper");
       return Err;
    }
 

@@ -79,13 +79,9 @@ TimeStepper *TimeStepper::create(const std::string &Name, TimeStepperType Type,
    return NewTimeStepper;
 }
 
-// Initialize the default time stepper
-int TimeStepper::init() {
-   int Err           = 0;
-   auto *DefMesh     = HorzMesh::getDefault();
-   auto *DefAuxState = AuxiliaryState::getDefault();
-   auto *DefHalo     = Halo::getDefault();
-   auto *DefTend     = Tendencies::getDefault();
+// Begin initialization of the default time stepper
+int TimeStepper::init1() {
+   int Err = 0;
 
    TimeInterval TimeStep;
    TimeStepperType TimeStepperChoice;
@@ -114,9 +110,21 @@ int TimeStepper::init() {
    }
    TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
 
-   TimeStepper::DefaultTimeStepper = create(
-       "Default", TimeStepperChoice, DefTend, DefAuxState, DefMesh, DefHalo);
+   TimeStepper::DefaultTimeStepper =
+       create("Default", TimeStepperChoice, nullptr, nullptr, nullptr, nullptr);
    DefaultTimeStepper->setTimeStep(TimeStep);
+
+   return Err;
+}
+
+// Finish initialization of the default time stepper
+int TimeStepper::init2() {
+   int Err = 0;
+
+   DefaultTimeStepper->Mesh     = HorzMesh::getDefault();
+   DefaultTimeStepper->MeshHalo = Halo::getDefault();
+   DefaultTimeStepper->AuxState = AuxiliaryState::getDefault();
+   DefaultTimeStepper->Tend     = Tendencies::getDefault();
 
    return Err;
 }
