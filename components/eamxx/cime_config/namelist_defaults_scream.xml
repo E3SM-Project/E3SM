@@ -37,6 +37,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <selector name="hgrid" case_env="ATM_GRID"/>
     <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+    <selector name="ntracers" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_TRACERS ([0-9]+).*"/>
+
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
@@ -251,7 +253,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- MAM4xx-Dry Deposition -->
     <mam4_drydep inherit="atm_proc_base">
-    <fractional_land_use_file type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne30pg2_c20241017.nc</fractional_land_use_file>
+    <fractional_land_use_file type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne30pg2/atmsrf_ne30pg2_c20241017.nc</fractional_land_use_file>
     <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne4pg2_c20241017.nc</fractional_land_use_file>
 
     <!-- Mapping Files for finer resolutions -->
@@ -503,9 +505,11 @@ be lost if SCREAM_HACK_XML is not enabled.
   <initial_conditions>
     <Filename type="file">UNSET</Filename>
     <Filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne4np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</Filename>
     <Filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</Filename>
     <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
+    <Filename hgrid="ne30np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</Filename>
     <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
     <Filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</Filename>
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
