@@ -255,7 +255,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor_inv
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
-                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s
+                            hypervis_scaling, laplace_scaling, dcmip16_mu,dcmip16_mu_s
     use control_mod, only : tstep_type
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -265,7 +265,7 @@ contains
     ! Element statisics
     real (kind=real_kind) :: min_max_dx ! used for normalizing scalar HV
     real (kind=real_kind) :: max_normDinv  ! used for CFL
-    real (kind=real_kind) :: normDinv_hypervis
+    real (kind=real_kind) :: normDinv_hypervis, normDinv_laplace
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
     integer :: ie
     type (quadrature_t)    :: gp
@@ -338,6 +338,16 @@ contains
        ! constant coefficient formula:
        normDinv_hypervis = (lambda_vis**2) * (scale_factor_inv*max_normDinv)**4
     endif
+    if (laplace_scaling/=0) then
+       ! tensor laplace.  New eigenvalues are the eigenvalues of the tensor V
+       ! formulas here must match what is in cube_mod.F90
+       lambda = max_normDinv**2
+       normDinv_laplace = (lambda_vis) * (max_normDinv**2) * &
+            (lambda**(-laplace_scaling/2) )
+    else
+       ! constant coefficient formula:
+       normDinv_laplace = (lambda_vis) * (scale_factor_inv*max_normDinv)**2
+    endif
 
      if (hybrid%masterthread) then
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
@@ -375,12 +385,12 @@ contains
        if(nu_top>0) then
 #ifdef MODEL_THETA_L
           nu_top_actual=maxval(nu_scale_top)*nu_top
-          write(iulog,'(a,f10.2,a)') 'scaled nu_top viscosity CFL: dt < S*', &
-               1.0d0/(nu_top_actual*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
+          write(iulog,'(a,f12.4,a)') 'scaled nu_top viscosity CFL: dt < S*', &
+               1.0d0/(nu_top_actual*normDinv_laplace),'s'
 #else
           nu_top_actual=4*nu_top
           write(iulog,'(a,f10.2,a)') '4*nu_top viscosity CFL: dt < S*', &
-               1.0d0/(nu_top_actual*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
+               1.0d0/(nu_top_actual*normDinv_laplace),'s'
 #endif
        end if
 

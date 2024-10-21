@@ -53,8 +53,6 @@ logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef1 = .true.
-   if(hypervis_scaling > 0)  var_coef1= .false.
 
    ! note: there is a scaling bug in the treatment of nu_div
    ! nu_ratio is applied twice, once in each laplace operator
@@ -85,9 +83,9 @@ logical var_coef1
             enddo
          enddo
         
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=var_coef1)
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.false.)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
-              elem(ie),var_coef=var_coef1,nu_ratio=nu_ratio1)
+              elem(ie),var_coef=.false.,nu_ratio=nu_ratio1)
 
       enddo
       kptr=0
@@ -116,8 +114,8 @@ logical var_coef1
                v(i,j,2)=rspheremv(i,j)*vtens(i,j,2,k,ie)
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),var_coef=.true.,&
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=(hypervis_scaling>0))
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),var_coef=(hypervis_scaling>0),&
               nu_ratio=nu_ratio2)
       enddo
    enddo

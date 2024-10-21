@@ -76,6 +76,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     dcmip16_pbl_type,&
     interp_lon0,    &
     hypervis_scaling,   &  ! use tensor HV instead of scalar coefficient
+    laplace_scaling,   &   ! use tensor laplace instead of scalar coefficient
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     hypervis_order,       &
     hypervis_subcycle,    &
@@ -1223,9 +1224,14 @@ end if
        write(iulog,*)"readnl: internal_diagnostics_level = ",internal_diagnostics_level
 
        if(hypervis_scaling /=0)then
-          write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
+          write(iulog,*)"Tensor hyperviscosity: hypervis_scaling=",hypervis_scaling
        else
-          write(iulog,*)"Constant (hyper)viscosity used."
+          write(iulog,*)"Constant (hyper)viscosity.  hypervis_scaling=",hypervis_scaling
+       endif
+       if(laplace_scaling /=0)then
+          write(iulog,*)"Sponge layer viscosity: laplace_scaling=",laplace_scaling
+       else
+          write(iulog,*)"Sponge layer Constant viscosity. laplace_scaling=",laplace_scaling
        endif
 
        write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
