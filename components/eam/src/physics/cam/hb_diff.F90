@@ -809,6 +809,7 @@ subroutine pblintd_ri(ncol    ,                            &
     real(r8) :: phihinv(pcols)          ! inverse phi function for heat
     real(r8) :: rino(pcols,pver)        ! bulk Richardson no. from level to ref lev
     real(r8) :: tlv(pcols)              ! ref. level pot tmp + tmp excess
+    real(r8) :: tref(pcols) 
     real(r8) :: vvk                     ! velocity magnitude squared
 
     logical  :: unstbl(pcols)           ! pts w/unstbl pbl (positive virtual ht flx)
@@ -819,6 +820,7 @@ subroutine pblintd_ri(ncol    ,                            &
        rino(i,pver) = 0.0_r8
        rino_bulk(i)    = 0.0_r8
        pblh(i)      = z(i,pver)
+       tref(i)      = thv(i,pver)!if not excess then tref is equal to lowest level thv_lv
     end do
     !
     !
@@ -850,6 +852,9 @@ subroutine pblintd_ri(ncol    ,                            &
           phiminv(i)   = (1._r8 - binm*pblh(i)/obklen(i))**onet
           rino(i,pver) = 0.0_r8
           tlv(i)       = thv(i,pver) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+          !
+          tref(i)      = tlv(i)
+          !
        end if
     end do
     !
@@ -879,9 +884,9 @@ subroutine pblintd_ri(ncol    ,                            &
     !!================Jinbo Xie============
     !calculate bulk richardson number in the surface layer
     do i=1,ncol
-    vvk = (u(i,k) - u(i,pver))**2 + (v(i,k) - v(i,pver))**2 + fac*ustar(i)**2
+    vvk = u(i,pver)**2 + v(i,pver)**2 + fac*ustar(i)**2
     vvk = max(vvk,tiny)
-    rino_bulk(i)=g*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+    rino_bulk(i)=g*(thv(i,pver) - tref(i))*z(i,pver)/(thv(i,pver)*vvk)
     enddo
     !!================Jinbo Xie============
     return

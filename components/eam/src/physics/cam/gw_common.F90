@@ -756,7 +756,7 @@ end subroutine gw_drag_prof
 !===========Jinbo Xie===============================
 function pblh_get_level_idx(height_array ,pblheight)
 implicit none
-real(8),intent(in),dimension(30) :: height_array
+real(8),intent(in),dimension(pver) :: height_array
 real(8),intent(in) :: pblheight
 integer :: pblh_get_level_idx
        
@@ -1688,6 +1688,8 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        fr(i) = bnv(i)  * rulow(i) * 2._r8 * var(i) * od(i)
        fr(i) = min(fr(i),frmax)
        xn(i)  = ubar(i) * rulow(i)
+    enddo
+    enddo
        yn(i)  = vbar(i) * rulow(i)
      endif
    enddo
@@ -1701,7 +1703,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
 
    do i = its,ite
      if (.not. ldrag(i))   then
-       efact    = (oa1(i) + 2._r8) ** (ce*fr(i)/frc)
+       efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
        efact    = min( max(efact,efmin), efmax )
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
