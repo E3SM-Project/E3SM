@@ -436,7 +436,6 @@ void MAMDryDep::run_impl(const double dt) {
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  printf("BALLI:%0.15e\n", frac_landuse_.data.frac_land_use(0, 1));
   compute_tendencies(
       ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_,
       land_fraction_, ice_fraction_, ocean_fraction_, friction_velocity_,
