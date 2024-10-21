@@ -228,8 +228,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
       const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
       if (m_resume_output_file) {
-        int num_snaps = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
-        m_output_file_specs.storage.num_snapshots_in_file = num_snaps;
+        m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
         if (m_output_file_specs.storage.snapshot_fits(m_output_control.next_write_ts)) {
           // The setup_file call will not register any new variable (the file is in Append mode,
@@ -500,10 +499,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
           write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
           scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
-
-          int nsnaps = m_output_file_specs.is_open
-                     ? scorpio::get_dimlen(m_output_file_specs.filename,"time") : 0;
-          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",nsnaps);
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
         }
         // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
         // output, and the latter b/c we want to make sure these params don't change across restarts
@@ -563,6 +559,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
     if (is_checkpoint_step) {
       write_global_data(m_checkpoint_control,m_checkpoint_file_specs);
+
+      // Always flush output during checkpoints (assuming we opened it already)
+      if (m_output_file_specs.is_open) {
+        scorpio::flush_file (m_output_file_specs.filename);
+      }
     }
     stop_timer(timer_root+"::update_snapshot_tally");
     if (is_output_step && m_time_bnds.size()>0) {
@@ -636,16 +637,16 @@ compute_filename (const IOFileSpecs& file_specs,
   auto ts = (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart)
           ? timestamp : control.last_write_ts;
 
+  int ts_string_len = 0;
   switch (file_specs.storage.type) {
-    case NumSnaps:
-      filename += "." + ts.to_string(); break;
-    case Yearly:
-      filename += "." + std::to_string(ts.get_year()); break;
-    case Monthly:
-      filename += "." + std::to_string(ts.get_year()) + "-" + std::to_string(ts.get_month()); break;
+    case Yearly:   ts_string_len = 4;  break; // YYYY
+    case Monthly:  ts_string_len = 7;  break; // YYYY-MM
+    case Daily:    ts_string_len = 10; break; // YYYY-MM-DD
+    case NumSnaps: ts_string_len = 16; break; // YYYY-MM-DD-XXXXX
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
   }
+  filename += "." + ts.to_string().substr(0,ts_string_len);
 
   return filename + ".nc";
 }
@@ -701,6 +702,8 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
       storage.type = Yearly;
     } else if (storage_type=="one_month") {
       storage.type = Monthly;
+    } else if (storage_type=="one_day") {
+      storage.type = Daily;
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }

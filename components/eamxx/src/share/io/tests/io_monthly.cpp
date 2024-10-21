@@ -178,11 +178,11 @@ void read (const int seed, const ekat::Comm& comm)
   // Get filename from timestamp
   std::string casename = "io_monthly";
   auto get_filename = [&](const util::TimeStamp& t) {
+    auto t_str = t.to_string().substr(0,7);
     std::string fname = casename
                       + ".INSTANT.nsteps_x1"
                       + ".np" + std::to_string(comm.size())
-                      + "." + std::to_string(t.get_year())
-                      + "-" + std::to_string(t.get_month())
+                      + "." + t_str
                       + ".nc";
     return fname;
   };
