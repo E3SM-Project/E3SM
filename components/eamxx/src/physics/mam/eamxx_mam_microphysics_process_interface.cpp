@@ -70,9 +70,20 @@ void MAMMicrophysics::set_grids(
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
+<<<<<<< HEAD
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+=======
+  config_.amicphys.nucleation = {};
+  // config_.amicphys.nucleation.dens_so4a_host = 1770.0;
+  // config_.amicphys.nucleation.mw_so4a_host = 115.0;
+  // config_.amicphys.nucleation.newnuc_method_user_choice = 2;
+  // config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
+  // config_.amicphys.nucleation.adjust_factor_pbl_ratenucl = 1.0;
+  // config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
+  config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
+>>>>>>> comment out error-inducing code in mam4_amicphys.cpp and small reorg change in online_emission.hpp
 
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
