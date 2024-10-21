@@ -56,10 +56,12 @@ struct StorageSpecs {
   }
 
   void update_storage (const util::TimeStamp& t) {
+    // We always update the snap counter, to help with flushing
+    ++num_snapshots_in_file;
     switch (type) {
       case Yearly:    curr_idx = t.get_year();  break;
       case Monthly:   curr_idx = t.get_month(); break;
-      case NumSnaps:  ++num_snapshots_in_file;  break;
+      case NumSnaps:  break;
       default:
         EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
