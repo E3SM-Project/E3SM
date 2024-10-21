@@ -632,16 +632,16 @@ compute_filename (const IOFileSpecs& file_specs,
   auto ts = (m_avg_type==OutputAvgType::Instant || file_specs.ftype==FileType::HistoryRestart)
           ? timestamp : control.last_write_ts;
 
+  int ts_string_len = 0;
   switch (file_specs.storage.type) {
-    case NumSnaps:
-      filename += "." + ts.to_string(); break;
-    case Yearly:
-      filename += "." + std::to_string(ts.get_year()); break;
-    case Monthly:
-      filename += "." + std::to_string(ts.get_year()) + "-" + std::to_string(ts.get_month()); break;
+    case Yearly:   ts_string_len = 4;  break; // YYYY
+    case Monthly:  ts_string_len = 7;  break; // YYYY-MM
+    case Daily:    ts_string_len = 10; break; // YYYY-MM-DD
+    case NumSnaps: ts_string_len = 16; break; // YYYY-MM-DD-XXXXX
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
   }
+  filename += "." + ts.to_string().substr(0,ts_string_len);
 
   return filename + ".nc";
 }
@@ -697,6 +697,8 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
       storage.type = Yearly;
     } else if (storage_type=="one_month") {
       storage.type = Monthly;
+    } else if (storage_type=="one_day") {
+      storage.type = Daily;
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
