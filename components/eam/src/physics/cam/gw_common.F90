@@ -1688,8 +1688,6 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        fr(i) = bnv(i)  * rulow(i) * 2._r8 * var(i) * od(i)
        fr(i) = min(fr(i),frmax)
        xn(i)  = ubar(i) * rulow(i)
-    enddo
-    enddo
        yn(i)  = vbar(i) * rulow(i)
      endif
    enddo
