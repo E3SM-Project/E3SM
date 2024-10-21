@@ -999,6 +999,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      gwd_ss=use_od_ss
      gwd_fd=.false.
      !
+     utgw=0.0_r8
+     vtgw=0.0_r8
+     ttgw=0.0_r8
+     !
      call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
                             ncleff_ls,ncd_bl,sncleff_ss,&

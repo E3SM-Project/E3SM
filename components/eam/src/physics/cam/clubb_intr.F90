@@ -3262,6 +3262,7 @@ end subroutine clubb_init_cnst
     !compute the whole level th and thv for diagnose of bulk richardson number
     thv_lv=0.0_r8
     th_lv=0.0_r8
+    !
     do i=1,ncol
       do k=1,pver
          th_lv(i,k) = state%t(i,k)*state%exner(i,k)

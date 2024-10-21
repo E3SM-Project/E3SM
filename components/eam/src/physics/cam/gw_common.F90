@@ -17,10 +17,7 @@ public :: gw_common_init
 public :: gw_prof
 public :: momentum_energy_conservation
 public :: gw_drag_prof
-
-!!Jinbo Xie
 public :: gw_oro_interface
-!!Jinbo Xie
 
 public :: pver, pgwv
 public :: dc
@@ -1432,6 +1429,7 @@ ss_taper=1._r8
      taub (i)      = 0.0_r8
      oa1(i)        = 0.0_r8
      ol(i)         = 0.0_r8
+     fr(i)         = 0.0_r8
      ulow (i)      = 0.0_r8
      dtfac(i)      = 1.0_r8
      ldrag(i)      = .false.
@@ -1696,11 +1694,11 @@ IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN
 !  ratio const. use simplified relationship between standard            
 !  deviation & critical hgt                                          
 !
-
    do i = its,ite
      if (.not. ldrag(i))   then
-       efact    = (oa1(i) + 2._r8) ** (ce*fr(i)/frc)
-       efact    = min( max(efact,efmin), efmax )
+       !maintain (oa+2) greater than or equal to 0
+       efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
+       efact    = min(max(efact,efmin),efmax)
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
