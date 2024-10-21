@@ -559,6 +559,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
     if (is_checkpoint_step) {
       write_global_data(m_checkpoint_control,m_checkpoint_file_specs);
+
+      // Always flush output during checkpoints (assuming we opened it already)
+      if (m_output_file_specs.is_open) {
+        scorpio::flush_file (m_output_file_specs.filename);
+      }
     }
     stop_timer(timer_root+"::update_snapshot_tally");
     if (is_output_step && m_time_bnds.size()>0) {
