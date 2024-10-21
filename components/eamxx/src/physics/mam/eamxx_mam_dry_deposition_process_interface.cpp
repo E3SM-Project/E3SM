@@ -433,20 +433,22 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
+  // Get fractional land use data from the file data structure
+  const const_view_2d frac_landuse = frac_landuse_.data.frac_land_use;
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  compute_tendencies(
-      ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_,
-      land_fraction_, ice_fraction_, ocean_fraction_, friction_velocity_,
-      aerodynamical_resistance_, qtracers_, frac_landuse_.data.frac_land_use,
-      dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
-      // Inouts-outputs
-      qqcw_,
-      // Outputs
-      ptend_q_, aerdepdrycw_, aerdepdryis_,
-      // work arrays
-      rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
+  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
+                     surface_friction_velocty_, land_fraction_, ice_fraction_,
+                     ocean_fraction_, friction_velocity_,
+                     aerodynamical_resistance_, frac_landuse, dgncur_awet_,
+                     wet_dens_, dry_atm_, dry_aero_,
+                     // Inouts-outputs
+                     qqcw_,
+                     // Outputs
+                     ptend_q_, aerdepdrycw_, aerdepdryis_,
+                     // work arrays
+                     rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_, qtracers_);
   Kokkos::fence();
 
   // Update the interstitial aerosols using ptend.

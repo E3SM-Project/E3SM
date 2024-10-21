@@ -45,7 +45,7 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
     EKAT_REQUIRE_MSG(map_file != "",
                      "ERROR: fractional land use data is on a different grid "
                      "than the model one,\n"
-                     "       but spa_remap_file is missing from fractional "
+                     "       but remap file is missing from fractional "
                      "land use parameter list.");
 
     remapper =

@@ -28,6 +28,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   using view_3d       = Field::view_dev_t<Real ***>;
   using view_4d       = Field::view_dev_t<Real ****>;
   using const_view_1d = Field::view_dev_t<const Real *>;
+  using const_view_2d = Field::view_dev_t<const Real **>;
   using const_view_3d = Field::view_dev_t<const Real ***>;
   using FracLandUseFunc =
       frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;

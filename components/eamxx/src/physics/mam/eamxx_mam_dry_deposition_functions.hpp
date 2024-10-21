@@ -19,7 +19,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d ocnfrac,
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
-    MAMDryDep::view_3d qtracers, MAMDryDep::view_2d fraction_landuse_,
+    const MAMDryDep::const_view_2d fraction_landuse_,
     const MAMDryDep::const_view_3d dgncur_awet_,
     const MAMDryDep::const_view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
@@ -35,7 +35,7 @@ void compute_tendencies(
     // work arrays
     MAMDryDep::view_2d rho_, MAMDryDep::view_4d vlc_dry_,
     MAMDryDep::view_3d vlc_trb_, MAMDryDep::view_4d vlc_grv_,
-    MAMDryDep::view_3d dqdt_tmp_) {
+    MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers) {
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
@@ -85,9 +85,6 @@ void compute_tendencies(
 
         static constexpr int n_land_type = MAMDryDep::n_land_type;
         Real fraction_landuse[n_land_type];
-        //NOTE: The file reader for fractional landuse
-        //is designed to have the faster changing dimension
-        //to be the first one (icol is faster than land type)
         for(int i = 0; i < n_land_type; ++i) {
           fraction_landuse[i] = fraction_landuse_(icol, i);
         }
