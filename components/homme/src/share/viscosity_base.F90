@@ -17,7 +17,8 @@ use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t, abortmp
 use element_mod, only : element_t
-use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
+use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit,&
+     divergence_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack, &
@@ -85,13 +86,6 @@ type (derivative_t)  , intent(in) :: deriv
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
-logical var_coef1
-
-   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
-   !so tensor is only used on second call to laplace_sphere_wk
-   var_coef1 = .true.
-   if(hypervis_scaling > 0)    var_coef1 = .false.
-
 
 
    do ie=nets,nete
@@ -102,7 +96,7 @@ logical var_coef1
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.false.)
          enddo
          call edgeVpack_nlyr(edgeq, elem(ie)%desc, qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
       enddo
@@ -122,7 +116,7 @@ logical var_coef1
         call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=(hypervis_scaling>0))
         enddo
       enddo
    enddo
@@ -645,7 +639,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
 
 
      do ie=nets,nete
-        pstens(:,:,ie)=laplace_sphere_wk(phis(:,:,ie),deriv,elem(ie),var_coef=.true.)
+        pstens(:,:,ie)=laplace_sphere_wk(phis(:,:,ie),deriv,elem(ie),var_coef=(hypervis_scaling>0))
      enddo
 
      do ie=nets,nete
