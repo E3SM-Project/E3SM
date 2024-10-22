@@ -884,13 +884,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ocn_import_mct(x2o_o, errorCode)
-    if (errorCode /= 0) then
-       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
-    endif
-
 #ifdef HAVE_MOAB
-
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2o_fields
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
@@ -906,6 +900,14 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
+#endif
+
+    call ocn_import_mct(x2o_o, errorCode)
+    if (errorCode /= 0) then
+       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
+    endif
+
+#ifdef HAVE_MOAB
 
     call ocn_import_moab(Eclock, errorCode)
     if (errorCode /= 0) then
@@ -1029,12 +1031,8 @@ contains
       call mpas_get_timeInterval(timeStep, dt=dt)
       call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
-      ! Import state from coupler
-      call ocn_import_mct(x2o_o, ierr)
-      ! Import state from moab coupler
+
 #ifdef HAVE_MOAB
-
-
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2o_fields
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
@@ -1049,6 +1047,12 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
+#endif
+
+      ! Import state from coupler
+      call ocn_import_mct(x2o_o, ierr)
+      ! Import state from moab coupler
+#ifdef HAVE_MOAB
 
       call ocn_import_moab(Eclock, ierr)
       if (ierr /= 0) then
