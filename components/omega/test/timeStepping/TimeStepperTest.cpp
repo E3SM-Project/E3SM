@@ -82,7 +82,7 @@ int initState() {
    const auto &LayerThickCell = State->LayerThickness[0];
    const auto &NormalVelEdge  = State->NormalVelocity[0];
 
-   // Initially set thickness and velocity and to 1
+   // Initially set thickness and velocity and tracers to 1
    deepCopy(LayerThickCell, 1);
    deepCopy(NormalVelEdge, 1);
    deepCopy(TracerArray, 1);

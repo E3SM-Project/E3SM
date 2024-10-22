@@ -24,10 +24,10 @@ OMEGA::AuxiliaryState* DefAuxState = OMEGA::AuxiliaryState::getDefault();
 
 ## Creation of non-default auxiliary states
 
-A non-default auxiliary state can be created from a string `Name`, horizontal mesh `Mesh`, and number of
-vertical levels `NVertLevels`:
+A non-default auxiliary state can be created from a string `Name`, horizontal mesh `Mesh`, a number of
+vertical levels `NVertLevels`, and a number of Tracers `NTracers`:
 ```c++
-OMEGA::AuxiliaryState*  NewAuxState = OMEGA::AuxiliaryState::create(Name, Mesh, NVertLevels);
+OMEGA::AuxiliaryState*  NewAuxState = OMEGA::AuxiliaryState::create(Name, Mesh, NVertLevels, NTracers);
 ```
 For conveniece, this returns a pointer to the newly created state. Given its name, a pointer to a named auxiliary state
 can be obtained at any time by calling the static `get` method:
