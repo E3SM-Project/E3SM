@@ -1,5 +1,5 @@
-#ifndef EAMXX_MAM_HELPER_MICRO
-#define EAMXX_MAM_HELPER_MICRO
+#ifndef EAMXX_MAM_TRACER_READER_UTILS
+#define EAMXX_MAM_TRACER_READER_UTILS
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <ekat/util/ekat_lin_interp.hpp>
@@ -35,20 +35,16 @@ inline void compute_p_src_zonal_files(const view_1d &levs,
   const int ncol       = p_src.extent(0);
   const int nlevs_data = levs.extent(0);
   EKAT_REQUIRE_MSG(
-      int(p_src.extent(1)) == nlevs_data,
+      p_src.extent_int(1) == nlevs_data,
       "Error: p_src has a different number of levels than the source data. \n");
-
-  const auto policy_pressure = ESU::get_default_team_policy(ncol, nlevs_data);
   Kokkos::parallel_for(
-      "pressure_computation", policy_pressure, KOKKOS_LAMBDA(const Team &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs_data),
-                             [&](const Int &kk) {
-                               // mbar->pascals
-                               // FIXME: Does EAMxx have a better method to
-                               // convert units?"
-                               p_src(icol, kk) = levs(kk) * 100;
-                             });
+      "pressure_computation",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2> >({0, 0}, {ncol, nlevs_data}),
+      KOKKOS_LAMBDA(const int icol, const int kk) {
+        // mbar->pascals
+        // FIXME: Does EAMxx have a better method to
+        // convert units?"
+        p_src(icol, kk) = levs(kk) * 100;
       });
   Kokkos::fence();
 }
@@ -202,9 +198,12 @@ inline util::TimeStamp convert_date(const int date) {
   int day   = date - year * ten_thousand - month * one_hundred;
   return util::TimeStamp(year, month, day, 0, 0, 0);
 }
-// FIXME: check if this function is implemented in eamxx
-// Assumes 365 days/year, 30 days/month
-inline int compute_days(const util::TimeStamp &ts) {
+// FIXME: This function is not implemented in eamxx.
+// FIXME: Assumes 365 days/year, 30 days/month;
+// NOTE: that this assumption is mainly used for plotting.
+// NOTE: This is not a direct port from EAM.
+//We only use this routine for chlorine.
+inline int compute_number_days_from_zero(const util::TimeStamp &ts) {
   return ts.get_year() * 365 + ts.get_month() * 30 + ts.get_day();
 }
 
@@ -215,7 +214,7 @@ inline void create_linoz_chlorine_reader(
   auto time_stamp_beg = convert_date(chlorine_loading_ymd);
 
   const int offset_time =
-      compute_days(time_stamp_beg) - compute_days(model_time);
+      compute_number_days_from_zero(time_stamp_beg) - compute_number_days_from_zero(model_time);
   scorpio::register_file(linoz_chlorine_file, scorpio::Read);
   const int nlevs_time = scorpio::get_time_len(linoz_chlorine_file);
   for(int itime = 0; itime < nlevs_time; ++itime) {
@@ -226,7 +225,7 @@ inline void create_linoz_chlorine_reader(
       scorpio::read_var(linoz_chlorine_file, "chlorine_loading", &value, itime);
       values.push_back(value);
       auto time_stamp = convert_date(date);
-      time_secs.push_back(compute_days(time_stamp) - offset_time);
+      time_secs.push_back(compute_number_days_from_zero(time_stamp) - offset_time);
     }
   }  // end itime
   scorpio::release_file(linoz_chlorine_file);
@@ -267,7 +266,7 @@ inline void get_time_from_ncfile(const std::string &file_name,
 inline Real chlorine_loading_advance(const util::TimeStamp &ts,
                                      std::vector<Real> &values,
                                      std::vector<int> &time_secs) {
-  const int current_time = compute_days(ts);
+  const int current_time = compute_number_days_from_zero(ts);
   int index              = 0;
   // update index
   for(int i = 0; i < int(values.size()); i++) {
@@ -612,7 +611,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const TracerData &input,
                                            const view_2d output[]) {
   // At this stage, begin/end must have the same horiz dimensions
-  EKAT_REQUIRE(input.ncol_ == int(output[0].extent(0)));
+  EKAT_REQUIRE(input.ncol_ == output[0].extent_int(0));
   const int ncol   = input.ncol_;
   const int levsiz = input.nlev_;
   const int pver   = mam4::nlev;
@@ -652,11 +651,11 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   EKAT_REQUIRE_MSG(
       input.file_type == VERT_EMISSION,
       "Error! vertical interpolation only with altitude variable. \n");
-  const int ncols          = input.ncol_;
-  const int num_vars       = input.nvars_;
-  const int ntrg           = output[0].extent(1);
-  const int num_vert_packs = ntrg;
-  const int outer_iters    = ncols * num_vars;
+  const int ncols                   = input.ncol_;
+  const int num_vars                = input.nvars_;
+  const int num_vertical_lev_target = output[0].extent(1);
+  const int num_vert_packs          = num_vertical_lev_target;
+  const int outer_iters             = ncols * num_vars;
   const auto policy_interp =
       ESU::get_default_team_policy(outer_iters, num_vert_packs);
   // FIXME: Get m2km from emaxx.
@@ -684,8 +683,8 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
           trg_x[pverp - i - 1] = m2km * zi(icol, i);
         }
         team.team_barrier();
-        mam4::vertical_interpolation::rebin(team, nsrc, ntrg, src_x, trg_x, src,
-                                            trg);
+        mam4::vertical_interpolation::rebin(team, nsrc, num_vertical_lev_target,
+                                            src_x, trg_x, src, trg);
       });
 }
 

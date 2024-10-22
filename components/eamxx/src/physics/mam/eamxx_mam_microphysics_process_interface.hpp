@@ -6,7 +6,7 @@
 #include <share/util/scream_common_physics_functions.hpp>
 
 // For reading files
-#include "impl/helper_micro.hpp"
+#include "impl/tracer_reader_utils.hpp"
 
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
@@ -73,7 +73,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
-  Int m_orbital_year;
+  int m_orbital_year;
 
   // Orbital parameters, used for zenith angle calculations.
   // If >= 0, bypass computation based on orbital year and use fixed parameters
@@ -221,9 +221,6 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
-
-  // sets defaults for "namelist parameters"
-  void set_namelist_params_();
 
   mam_coupling::TracerTimeState linoz_time_state_;
   view_2d work_photo_table_;

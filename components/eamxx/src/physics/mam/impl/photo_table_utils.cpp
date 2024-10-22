@@ -41,7 +41,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(
     const std::string &rsf_file, const std::string &xs_long_file) {
   // set up the lng_indexer and pht_alias_mult_1 views based on our
   // (hardwired) chemical mechanism
-  HostViewInt1D lng_indexer_h("lng_indexer(host)", phtcnt);
+  HostViewInt1D lng_indexer_h("lng_indexer", phtcnt);
 
   int nw, nump, numsza, numcolo3, numalb, nt, np_xs;  // table dimensions
   scorpio::register_file(rsf_file, scorpio::Read);

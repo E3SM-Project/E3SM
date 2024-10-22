@@ -28,8 +28,8 @@ void MAMWetscav::set_grids(
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto q_unit    = kg / kg;
-  auto n_unit    = 1 / kg;  // units of number mixing ratios of tracers
+  auto q_unit = kg / kg;
+  auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();

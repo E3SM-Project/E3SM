@@ -272,49 +272,57 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-Aerosol-Microphysics -->
     <mam4_aero_microphys inherit="atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
-      <mam4_do_cond   type="logical" doc="">true</mam4_do_cond>
-      <mam4_do_newnuc type="logical" doc="">true</mam4_do_newnuc>
-      <mam4_do_coag   type="logical" doc="">true</mam4_do_coag>
-      <mam4_do_rename type="logical" doc="">true</mam4_do_rename>
+      <mam4_do_cond   type="logical" doc="Switch to enable aerosol microphysics condensation process">true</mam4_do_cond>
+      <mam4_do_newnuc type="logical" doc="Switch to enable aerosol microphysics nucleation process">true</mam4_do_newnuc>
+      <mam4_do_coag   type="logical" doc="Switch to enable aerosol microphysics coagulation process">true</mam4_do_coag>
+      <mam4_do_rename type="logical" doc="Switch to enable aerosol microphysics rename process">true</mam4_do_rename>
       <!-- LINOZ parameters -->
-      <mam4_o3_tau    type="real"    doc="">172800.0</mam4_o3_tau>
-      <mam4_o3_sfc    type="real"    doc="">3.0E-008</mam4_o3_sfc>
-      <mam4_o3_lbl    type="integer" doc="">4</mam4_o3_lbl>
+      <mam4_o3_tau    type="real"    doc="Linoz tau parameter">172800.0</mam4_o3_tau>
+      <mam4_o3_sfc    type="real"    doc="Linoz surface parameter">3.0E-008</mam4_o3_sfc>
+      <mam4_o3_lbl    type="integer" doc="Linoz lbl parameter">4</mam4_o3_lbl>
       <mam4_linoz_ymd type="integer" > 20100101</mam4_linoz_ymd>
-      <mam4_linoz_file_name type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne30pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne30pg2_c20240724.nc</mam4_linoz_file_name>
-      <mam4_linoz_file_name hgrid="ne4np4.pg2" type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne4pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne4pg2_c20240724.nc</mam4_linoz_file_name>
+      <mam4_linoz_file_name type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne30pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne30pg2_c20240724.nc</mam4_linoz_file_name>
+      <mam4_linoz_file_name hgrid="ne4np4.pg2" type="file" doc="LINOZ chemistry file"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/ne4pg2/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne4pg2_c20240724.nc</mam4_linoz_file_name>
       <!--Invariants-->
       <mam4_oxid_ymd type="integer" > 20150101 </mam4_oxid_ymd>
-      <mam4_oxid_file_name  type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_1850-2015_ne30pg2_c20241009.nc</mam4_oxid_file_name>
-      <mam4_oxid_file_name  hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_1.9x2.5_L26_1850-2015_ne4pg2_c20241009.nc</mam4_oxid_file_name>
-      <mam4_chlorine_loading_ymd type="integer" doc=""> 20100101 </mam4_chlorine_loading_ymd>
-      <mam4_linoz_chlorine_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</mam4_linoz_chlorine_file>
+      <mam4_oxid_file_name  type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_1850-2015_ne30pg2_c20241009.nc</mam4_oxid_file_name>
+      <mam4_oxid_file_name  hgrid="ne4np4.pg2" type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_1.9x2.5_L26_1850-2015_ne4pg2_c20241009.nc</mam4_oxid_file_name>
+      <mam4_chlorine_loading_ymd type="integer" doc="Cycle year for chlorine"> 20100101 </mam4_chlorine_loading_ymd>
+      <mam4_linoz_chlorine_file type="file" doc="File containing chlorine data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</mam4_linoz_chlorine_file>
       <!--Photolysis-->
-      <mam4_rsf_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc</mam4_rsf_file>
-      <mam4_xs_long_file type="file" doc=""> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc</mam4_xs_long_file>
+      <mam4_rsf_file type="file" doc="File containing photolysis data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc</mam4_rsf_file>
+      <mam4_xs_long_file type="file" doc="File containing photolysis data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc</mam4_xs_long_file>
       <!--Vertical emissions-->
       <verti_emiss_ymd type="integer"> 20100101 </verti_emiss_ymd>
       <!-- For all other grids -->
-      <mam4_so2_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_so2_verti_emiss_file_name>
-      <mam4_so4_a1_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_so4_a1_verti_emiss_file_name>
-      <mam4_so4_a2_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_so4_a2_verti_emiss_file_name>
-      <mam4_pom_a4_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_pom_a4_verti_emiss_file_name>
-      <mam4_bc_a4_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_bc_a4_verti_emiss_file_name>
-      <mam4_num_a1_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_num_a1_verti_emiss_file_name>
-      <mam4_num_a2_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_num_a2_verti_emiss_file_name>
-      <mam4_num_a4_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_num_a4_verti_emiss_file_name>
-      <mam4_soag_verti_emiss_file_name type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne30pg2_c20241008.nc </mam4_soag_verti_emiss_file_name>
+      <mam4_so2_verti_emiss_file_name type="file" doc="vertical emissions for so2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so2_verti_emiss_file_name>
+      <mam4_so4_a1_verti_emiss_file_name type="file" doc="vertical emissions for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so4_a1_verti_emiss_file_name>
+      <mam4_so4_a2_verti_emiss_file_name type="file" doc="vertical emissions for ao4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so4_a2_verti_emiss_file_name>
+      <mam4_pom_a4_verti_emiss_file_name type="file" doc="vertical emissions for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_pom_a4_verti_emiss_file_name>
+      <mam4_bc_a4_verti_emiss_file_name type="file" doc="vertical emissions for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_bc_a4_verti_emiss_file_name>
+      <mam4_num_a1_verti_emiss_file_name type="file" doc="vertical emissions for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_num_a1_verti_emiss_file_name>
+      <mam4_num_a2_verti_emiss_file_name type="file" doc="vertical emissions for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_num_a2_verti_emiss_file_name>
+      <mam4_num_a4_verti_emiss_file_name type="file" doc="vertical emissions for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_num_a4_verti_emiss_file_name>
+      <mam4_soag_verti_emiss_file_name type="file" doc="vertical emissions for soag">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_soag_verti_emiss_file_name>
 
       <!-- For ne4 grids -->
-      <mam4_so2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_so2_verti_emiss_file_name>
-      <mam4_so4_a1_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_so4_a1_verti_emiss_file_name>
-      <mam4_so4_a2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_so4_a2_verti_emiss_file_name>
-      <mam4_pom_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_pom_a4_verti_emiss_file_name>
-      <mam4_bc_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_bc_a4_verti_emiss_file_name>
-      <mam4_num_a1_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_num_a1_verti_emiss_file_name>
-      <mam4_num_a2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_num_a2_verti_emiss_file_name>
-      <mam4_num_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_num_a4_verti_emiss_file_name>
-      <mam4_soag_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc </mam4_soag_verti_emiss_file_name>
+      <mam4_so2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for so2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_so2_verti_emiss_file_name>
+      <mam4_so4_a1_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_so4_a1_verti_emiss_file_name>
+      <mam4_so4_a2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_so4_a2_verti_emiss_file_name>
+      <mam4_pom_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_pom_a4_verti_emiss_file_name>
+      <mam4_bc_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_bc_a4_verti_emiss_file_name>
+      <mam4_num_a1_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_num_a1_verti_emiss_file_name>
+      <mam4_num_a2_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_num_a2_verti_emiss_file_name>
+      <mam4_num_a4_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_num_a4_verti_emiss_file_name>
+      <mam4_soag_verti_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="vertical emissions for soag">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_soag_verti_emiss_file_name>
+
+      <!-- Mapping Files for finer resolutions -->
+      <aero_microphys_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same."/>
+      <aero_microphys_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</aero_microphys_remap_file>
+      <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
+      <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
+      <aero_microphys_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</aero_microphys_remap_file>
+
     </mam4_aero_microphys>
 
     <!-- MAM4xx-Optics -->

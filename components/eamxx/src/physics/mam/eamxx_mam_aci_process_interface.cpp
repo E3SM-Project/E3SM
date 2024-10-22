@@ -74,12 +74,6 @@ void MAMAci::set_grids(
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol_}};
 
-  auto make_layout = [](const std::vector<int> &extents,
-                        const std::vector<std::string> &names) {
-    std::vector<FieldTag> tags(extents.size(), CMP);
-    return FieldLayout(tags, extents, names);
-  };
-
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers

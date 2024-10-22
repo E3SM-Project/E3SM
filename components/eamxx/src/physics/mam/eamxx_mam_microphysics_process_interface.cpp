@@ -21,46 +21,6 @@ namespace scream {
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
                                  const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params), aero_config_() {
-  // Asserts for the runtime or namelist options
-  // ----- Aerosol Microphysics processes on/off switches -------
-  EKAT_REQUIRE_MSG(m_params.isParameter("mam4_do_cond"),
-                   "ERROR:  mam4_do_cond is missing from mam4_aero_microphys  "
-                   "parameter list.");
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_do_rename"),
-      "ERROR:  mam4_do_rename is missing from mam4_aero_microphys   "
-      "parameter list.");
-
-  EKAT_REQUIRE_MSG(m_params.isParameter("mam4_do_newnuc"),
-                   "ERROR:  mam4_do_newnuc is missing from mam4_aero_microphys "
-                   " parameter list.");
-
-  EKAT_REQUIRE_MSG(m_params.isParameter("mam4_do_coag"),
-                   "ERROR:  mam4_do_coag is missing from mam4_aero_microphys  "
-                   "parameter list.");
-  // ----- LINOZ namelist parameters -------
-
-  EKAT_REQUIRE_MSG(
-      m_params.isParameter("mam4_o3_tau"),
-      "ERROR: mam4_o3_tau is missing from mam4_aero_microphys parameter list.");
-
-  EKAT_REQUIRE_MSG(m_params.isParameter("mam4_o3_sfc"),
-                   "ERROR:  mam4_o3_sfc is  missing from mam4_aero_microphys "
-                   "parameter list.");
-
-  EKAT_REQUIRE_MSG(m_params.isParameter("mam4_o3_lbl"),
-                   "ERROR:  mam4_o3_lbl is missing from mam4_aero_microphys "
-                   "parameter  list.");
-
-  set_namelist_params_();
-}
-
-AtmosphereProcessType MAMMicrophysics::type() const {
-  return AtmosphereProcessType::Physics;
-}
-
-void MAMMicrophysics::set_namelist_params_() {
   config_.amicphys.do_cond   = m_params.get<bool>("mam4_do_cond");
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
@@ -69,13 +29,27 @@ void MAMMicrophysics::set_namelist_params_() {
   // these parameters guide the coupling between parameterizations
   // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
   // NOTE: safe to change these without code modifications.
+
+  // controls treatment of h2so4 condensation in mam_gasaerexch_1subarea
+  //    1 = sequential   calc. of gas-chem prod then condensation loss
+  //    2 = simultaneous calc. of gas-chem prod and  condensation loss
   config_.amicphys.gaexch_h2so4_uptake_optaa = 2;
-  config_.amicphys.newnuc_h2so4_conc_optaa   = 2;
+
+  // controls treatment of h2so4 concentrationin mam_newnuc_1subarea
+  //    1 = use average value calculated in standard cam5.2.10 and earlier
+  //    2 = use average value calculated in mam_gasaerexch_1subarea
+  //   11 = use average of initial and final values from mam_gasaerexch_1subarea
+  //   12 = use final value from mam_gasaerexch_1subarea
+  config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // LINOZ namelist parameters
   o3_lbl_ = m_params.get<int>("mam4_o3_lbl");
-  o3_tau_ = m_params.get<Real>("mam4_o3_tau");
-  o3_sfc_ = m_params.get<Real>("mam4_o3_sfc");
+  o3_tau_ = m_params.get<double>("mam4_o3_tau");
+  o3_sfc_ = m_params.get<double>("mam4_o3_sfc");
+}
+
+AtmosphereProcessType MAMMicrophysics::type() const {
+  return AtmosphereProcessType::Physics;
 }
 
 // ================================================================
@@ -116,19 +90,19 @@ void MAMMicrophysics::set_grids(
   // ----------- Atmospheric quantities -------------
 
   // Specific humidity [kg/kg](Require only for building DS)
-  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qv", grid_, kg/kg); // specific humidity
 
   // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Updated>("qc", grid_, kg/kg); // cloud liquid wet mixing ratio
 
   // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qi", grid_, kg/kg); // ice wet mixing ratio
 
   // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Updated>("nc", grid_, n_unit); // cloud liquid wet number mixing ratio
 
   // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("ni", grid_, n_unit); // ice number mixing ratio
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -190,15 +164,13 @@ void MAMMicrophysics::set_grids(
   for(int m = 0; m < nmodes; ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                           "tracers");
+        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
       }
     }  // for loop species
   }    // for loop nmodes interstitial
@@ -220,21 +192,21 @@ void MAMMicrophysics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg/kg);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
   {
     linoz_file_name_ = m_params.get<std::string>("mam4_linoz_file_name");
-    std::string linoz_map_file = "";
-    std::vector<std::string> var_names{"o3_clim",     "o3col_clim",   "t_clim",
-                                       "PmL_clim",    "dPmL_dO3",     "dPmL_dT",
-                                       "dPmL_dO3col", "cariolle_pscs"};
+    const std::string linoz_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
+    const std::vector<std::string> var_names{
+        "o3_clim",  "o3col_clim", "t_clim",      "PmL_clim",
+        "dPmL_dO3", "dPmL_dT",    "dPmL_dO3col", "cariolle_pscs"};
 
     // in format YYYYMMDD
-    int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
+    const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
     scream::mam_coupling::setup_tracer_data(linoz_data_, linoz_file_name_,
                                             linoz_cyclical_ymd);
     LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
@@ -271,12 +243,13 @@ void MAMMicrophysics::set_grids(
 
   {
     oxid_file_name_ = m_params.get<std::string>("mam4_oxid_file_name");
-    std::string oxid_map_file = "";
+    const std::string oxid_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
     // NOTE: order matches mam4xx:
-    std::vector<std::string> var_names{"O3", "OH", "NO3", "HO2"};
+    const std::vector<std::string> var_names{"O3", "OH", "NO3", "HO2"};
 
-    // //in format YYYYMMDD
-    int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
+    // in format YYYYMMDD
+    const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
     scream::mam_coupling::setup_tracer_data(tracer_data_, oxid_file_name_,
                                             oxid_ymd);
     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
@@ -306,16 +279,15 @@ void MAMMicrophysics::set_grids(
   }  // oxid file reader
 
   {
-    // FIXME: I will need to add this file per forcing file.
-    std::string extfrc_map_file = "";
+    const std::string extfrc_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
     // NOTE: order of forcing species is important.
     // extfrc_lst(:  9) = {'SO2             ','so4_a1          ','so4_a2
     // ','pom_a4          ','bc_a4           ', 'num_a1          ','num_a2
     // ','num_a4          ','SOAG            ' }
     // This order corresponds to files in namelist e3smv2
-    extfrc_lst_ =
-        std::vector<std::string>({"so2", "so4_a1", "so4_a2", "pom_a4", "bc_a4",
-                                  "num_a1", "num_a2", "num_a4", "soag"});
+    extfrc_lst_ = {"so2",    "so4_a1", "so4_a2", "pom_a4", "bc_a4",
+                   "num_a1", "num_a2", "num_a4", "soag"};
 
     for(const auto &var_name : extfrc_lst_) {
       std::string item_name = "mam4_" + var_name + "_verti_emiss_file_name";
@@ -357,11 +329,10 @@ void MAMMicrophysics::set_grids(
     }  // var_name vert emissions
     int i               = 0;
     int offset_emis_ver = 0;
-    for(auto it = extfrc_lst_.begin(); it != extfrc_lst_.end(); ++it, ++i) {
-      const auto var_name  = *it;
+    for(const auto &var_name : extfrc_lst_) {
       const auto file_name = vert_emis_file_name_[var_name];
       const auto var_names = vert_emis_var_names_[var_name];
-      const int nvars      = int(var_names.size());
+      const int nvars      = static_cast<int>(var_names.size());
 
       forcings_[i].nsectors = nvars;
       // I am assuming the order of species in extfrc_lst_.
@@ -377,17 +348,18 @@ void MAMMicrophysics::set_grids(
       vert_emis_data_[i].allocate_temporal_views();
       forcings_[i].file_alt_data = vert_emis_data_[i].has_altitude_;
       for(int isp = 0; isp < nvars; ++isp) {
-        EKAT_REQUIRE_MSG(
-            offset_emis_ver <= int(mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS),
-            "Error! Number of fields is bigger than "
-            "MAX_NUM_VERT_EMISSION_FIELDS. Increase the "
-            "MAX_NUM_VERT_EMISSION_FIELDS in helper_micro.hpp \n");
         forcings_[i].offset = offset_emis_ver;
         vert_emis_output_[isp + offset_emis_ver] =
             view_2d("vert_emis_output_", ncol_, nlev_);
       }
       offset_emis_ver += nvars;
+      ++i;
     }  // end i
+    EKAT_REQUIRE_MSG(
+        offset_emis_ver <= int(mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS),
+        "Error! Number of fields is bigger than "
+        "MAX_NUM_VERT_EMISSION_FIELDS. Increase the "
+        "MAX_NUM_VERT_EMISSION_FIELDS in tracer_reader_utils.hpp \n");
 
 #if defined(ENABLE_OUTPUT_TRACER_FIELDS)
     FieldLayout scalar3d_mid_emis_ver = grid_->get_3d_vector_layout(
@@ -418,15 +390,16 @@ size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
 // number of bytes allocated.
 
 void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(
-      buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
-      "Error! Insufficient buffer size.\n");
-
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  EKAT_REQUIRE_MSG(
-      used_mem == requested_buffer_size_in_bytes(),
-      "Error! Used memory != requested memory for MAMMicrophysics.");
+  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for MAMMicrophysics."
+                   " Used memory: "
+                       << std::to_string(used_mem)
+                       << "."
+                          " Requested memory: "
+                       << std::to_string(requested_buffer_size_in_bytes())
+                       << ". \n");
 }
 
 // ================================================================
@@ -436,12 +409,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
-  m_orbital_year = m_params.get<Int>("orbital_year", -9999);
+  m_orbital_year = m_params.get<int>("orbital_year", -9999);
 
   // Get orbital parameters from yaml file
-  m_orbital_eccen = m_params.get<Int>("orbital_eccentricity", -9999);
-  m_orbital_obliq = m_params.get<Int>("orbital_obliquity", -9999);
-  m_orbital_mvelp = m_params.get<Int>("orbital_mvelp", -9999);
+  m_orbital_eccen = m_params.get<double>("orbital_eccentricity", -9999);
+  m_orbital_obliq = m_params.get<double>("orbital_obliquity", -9999);
+  m_orbital_mvelp = m_params.get<double>("orbital_mvelp", -9999);
 
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
@@ -582,8 +555,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   scream::mam_coupling::update_tracer_data_from_file(
       TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
 
-  int i = 0;
-  for(auto it = extfrc_lst_.begin(); it != extfrc_lst_.end(); ++it, ++i) {
+  for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
         VertEmissionsDataReader_[i], curr_month, *VertEmissionsHorizInterp_[i],
         vert_emis_data_[i]);
@@ -705,8 +677,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   vert_emiss_time_state_.t_now = ts.frac_of_year_in_days();
   int i                        = 0;
-  for(auto it = extfrc_lst_.begin(); it != extfrc_lst_.end(); ++it, ++i) {
-    const auto var_name  = *it;
+  for(const auto &var_name : extfrc_lst_) {
     const auto file_name = vert_emis_file_name_[var_name];
     const auto var_names = vert_emis_var_names_[var_name];
     const int nsectors   = int(var_names.size());
@@ -718,6 +689,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         VertEmissionsDataReader_[i], *VertEmissionsHorizInterp_[i], ts,
         vert_emiss_time_state_, vert_emis_data_[i], dry_atm_.p_mid,
         dry_atm_.z_iface, vert_emis_output);
+    i++;
     Kokkos::fence();
   }
 
@@ -737,10 +709,8 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   mam_coupling::AerosolState &dry_aero = dry_aero_;
-  mam_coupling::AerosolState &wet_aero = wet_aero_;
 
   mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
-  const int nlev                              = nlev_;
   const Config &config                        = config_;
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
@@ -753,12 +723,17 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
   // angle. This operation is performed on the host because the routine
   // shr_orb_cosz_c2f has not been ported to C++.
-  auto ts2 = timestamp();
-  double obliqr, lambm0, mvelpp;
+  auto ts2          = timestamp();
   auto orbital_year = m_orbital_year;
-  auto eccen        = m_orbital_eccen;
-  auto obliq        = m_orbital_obliq;
-  auto mvelp        = m_orbital_mvelp;
+  // Note: We need double precision because
+  // shr_orb_params_c2f and shr_orb_decl_c2f only support double precision.
+  double obliqr, lambm0, mvelpp;
+  double eccen = m_orbital_eccen;
+  double obliq = m_orbital_obliq;
+  double mvelp = m_orbital_mvelp;
+  // Use the orbital parameters to calculate the solar declination and
+  // eccentricity factor
+  double delta, eccf;
   if(eccen >= 0 && obliq >= 0 && mvelp >= 0) {
     // use fixed orbital parameters; to force this, we need to set
     // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
@@ -770,9 +745,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   }
   shr_orb_params_c2f(&orbital_year,                                       // in
                      &eccen, &obliq, &mvelp, &obliqr, &lambm0, &mvelpp);  // out
-  // Use the orbital parameters to calculate the solar declination and
-  // eccentricity factor
-  Real delta, eccf;
+
   // Want day + fraction; calday 1 == Jan 1 0Z
   auto calday = ts2.frac_of_year_in_days() + 1;
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr,  // in
@@ -799,12 +772,8 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
   const auto zenith_angle = acos_cosine_zenith_;
-
-  constexpr int num_modes = mam4::AeroConfig::num_modes();
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nqtendbb  = mam_coupling::nqtendbb();
 
-  constexpr int pcnst         = mam4::pcnst;
   const auto vert_emis_output = vert_emis_output_;
   const auto extfrc           = extfrc_;
   const auto forcings         = forcings_;
@@ -893,7 +862,8 @@ void MAMMicrophysics::run_impl(const double dt) {
             ekat::subview(linoz_dPmL_dO3col, icol);
         const auto linoz_cariolle_pscs_icol =
             ekat::subview(linoz_cariolle_pscs, icol);
-        // Note: All variables are inputs, except for progs, which is an input/output variable.
+        // Note: All variables are inputs, except for progs, which is an
+        // input/output variable.
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, cnst_offline_icol, forcings_in, atm, progs,
             photo_table, chlorine_loading, config.setsox, config.amicphys,
