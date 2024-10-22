@@ -124,8 +124,8 @@ class TimeStepper {
                       const Array3DReal &CurTracers, OceanState *CurState,
                       int TimeLevel1) const;
 
-   // accumulate contributions to tracers at the next time level from each
-   // Runge-Kutta stage
+   // accumulate contributions to the tracer array at the next time level from
+   // each Runge-Kutta stage
    void accumulateTracersUpdate(const Array3DReal &AccumTracer,
                                 TimeInterval Coeff) const;
 
