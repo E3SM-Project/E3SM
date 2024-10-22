@@ -15,8 +15,8 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
    auto NTracers    = Tracers::getNumTracers();
 
    ProvisState = OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, 1);
-   ProvisTracers  = Array3DReal("ProvisTracers", NTracers, Mesh->NCellsSize,
-                                NVertLevels);
+   ProvisTracers =
+       Array3DReal("ProvisTracers", NTracers, Mesh->NCellsSize, NVertLevels);
 
    RKA[0] = 0;
    RKA[1] = 1. / 2;
