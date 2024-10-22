@@ -8,6 +8,6 @@ if (PROJECT_NAME STREQUAL "E3SM")
   add_subdirectory(mct_coupling)
 endif()
 
-if (EAMXX_ENABLE_PYBIND)
+if (EAMXX_ENABLE_PYSCREAM)
   add_subdirectory(python)
 endif()

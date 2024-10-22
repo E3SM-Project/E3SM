@@ -52,8 +52,11 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     // Check some input
     REQUIRE((SDS.shcol > 0 && SDS.nlev > 0));
 
-    // call the fortran implementation
-    check_tke(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    check_tke_f(SDS.nlev, SDS.shcol, SDS.tke);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result against the input values
     for(Int s = 0; s < shcol; ++s) {

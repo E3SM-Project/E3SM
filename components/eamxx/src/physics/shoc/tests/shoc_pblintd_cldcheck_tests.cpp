@@ -79,8 +79,9 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
       }
     }
 
-    // Call the fortran implementation
-    pblintd_cldcheck(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    shoc_pblintd_cldcheck_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.zi, SDS.cldn, SDS.pblh);
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {

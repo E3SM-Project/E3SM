@@ -237,33 +237,17 @@
   </batch_system>
 
   <!-- for lawrence livermore computing -->
-  <batch_system type="lc_slurm">
-    <batch_query per_job_arg="-j">squeue</batch_query>
-    <batch_submit>sbatch</batch_submit>
-    <batch_cancel>scancel</batch_cancel>
-    <batch_directive>#SBATCH</batch_directive>
-    <jobid_pattern>(\d+)$</jobid_pattern>
-    <depend_string>--dependency=afterok:jobid</depend_string>
-    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
-    <depend_separator>:</depend_separator>
-    <walltime_format>%H:%M:%S</walltime_format>
-    <batch_mail_flag>--mail-user</batch_mail_flag>
-    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
-    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
-    <directives>
-      <directive>--export=ALL</directive>
-      <directive>-p {{ job_queue }}</directive>
-      <directive>-J {{ job_id }}</directive>
-      <directive>-N {{ num_nodes }}</directive>
-      <directive>-n {{ total_tasks }}</directive>
-      <directive>-t {{ job_wallclock_time }}</directive>
-      <directive>-o {{ job_id }}.out</directive>
-      <directive>-e {{ job_id }}.err</directive>
-      <directive>-A {{ project }}</directive>
-    </directives>
+  <batch_system MACH="ruby" type="slurm">
     <queues>
-      <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
-      <queue walltimemax="00:30:00">pdebug</queue>
+      <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
+      <queue walltimemax="01:00:00" nodemax="12">pdebug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="dane" type="slurm">
+    <queues>
+      <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
+      <queue walltimemax="01:00:00" nodemax="20">pdebug</queue>
     </queues>
   </batch_system>
   <!-- for lawrence livermore computing -->

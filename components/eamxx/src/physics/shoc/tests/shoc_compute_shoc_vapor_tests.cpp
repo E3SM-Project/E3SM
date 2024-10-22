@@ -62,8 +62,10 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
       }
     }
 
-    // Call the fortran implementation
-    compute_shoc_vapor(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    compute_shoc_vapor_f(SDS.shcol, SDS.nlev, SDS.qw, SDS.ql, SDS.qv);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Verify the result
     for(Int s = 0; s < shcol; ++s) {

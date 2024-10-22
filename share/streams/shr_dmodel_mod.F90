@@ -383,7 +383,7 @@ CONTAINS
          nxgo = scm_nx
          nygo = scm_ny
          nzgo = -1
-         gsize = abs(scm_nx*scm_nx*nzgo)
+         gsize = abs(scm_nx*scm_ny*nzgo)
        else
          nxgo = nxg
          nygo = nyg

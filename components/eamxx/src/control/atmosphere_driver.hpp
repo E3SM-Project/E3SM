@@ -87,6 +87,9 @@ public:
   void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                            const int num_cpl_fields, const int num_scream_fields,
                                            const int field_size, Real* data_ptr,
+#ifdef HAVE_MOAB
+                                           Real* data_ptr_moab,
+#endif
                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr);
 
