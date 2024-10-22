@@ -29,6 +29,9 @@ class RungeKutta4Stepper : public TimeStepper {
    // Provisional state
    OceanState *ProvisState;
 
+   // Provisional tracers
+   Array3DR8 ProvisTracers;
+
    // Runge-Kutta coefficients
    Real RKA[NStages];
    Real RKB[NStages];

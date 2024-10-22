@@ -12,8 +12,11 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
                   MeshHalo) {
 
    auto NVertLevels = Tend->LayerThicknessTend.extent_int(1);
+   auto NTracers    = Tracers::getNumTracers();
 
    ProvisState = OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, 1);
+   ProvisTracers  = Array3DR8("ProvisTracers", NTracers, Mesh->NCellsSize,
+                              NVertLevels);
 
    RKA[0] = 0;
    RKA[1] = 1. / 2;
@@ -34,20 +37,30 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
 // Advance the state by one step of the fourth-order Runge Kutta scheme
 void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
 
+   int Err = 0;
+
    const int CurLevel  = 0;
    const int NextLevel = 1;
+   // TODO: resolve time level indexing
+   const int TrCurLevel  = -1;
+   const int TrNextLevel = 0;
 
-   Array3DReal NextTracersArray, CurTracersArray, ProvisTracers;
+   Array3DReal NextTracerArray, CurTracerArray;
+   Err = Tracers::getAll(CurTracerArray, TrCurLevel);
+   Err = Tracers::getAll(NextTracerArray, TrNextLevel);
+
    for (int Stage = 0; Stage < NStages; ++Stage) {
       const TimeInstant StageTime = Time + RKC[Stage] * TimeStep;
       // first stage does:
       // R^{(0)} = RHS(q^{n}, t^{n})
-      // q^{n+1} = q^{n} + dt * RKB[0] * dt * R^{(0)}
+      // q^{n+1} = q^{n} + dt * RKB[0] * R^{(0)}
       if (Stage == 0) {
-         Tend->computeAllTendencies(State, AuxState, CurTracersArray, CurLevel,
+         weightTracers(NextTracerArray, CurTracerArray, State, CurLevel);
+         Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
                                     CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, CurLevel,
                            RKB[Stage] * TimeStep);
+         accumulateTracersUpdate(NextTracerArray, RKB[Stage] * TimeStep);
       } else {
          // every other stage does:
          // q^{provis} = q^{n} + RKA[stage] * dt * R^{(s-1)}
@@ -55,22 +68,31 @@ void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
          // q^{n+1} += RKB[stage] * dt * R^{(s)}
          updateStateByTend(ProvisState, CurLevel, State, CurLevel,
                            RKA[Stage] * TimeStep);
+         updateTracersByTend(ProvisTracers, CurTracerArray, ProvisState,
+                             CurLevel, State, CurLevel, RKA[Stage] * TimeStep);
 
          // TODO(mwarusz) this depends on halo width actually
          if (Stage == 2) {
             ProvisState->exchangeHalo(CurLevel);
+            auto ProvisTracersH = createHostMirrorCopy(ProvisTracers);
+            MeshHalo->exchangeFullArrayHalo(ProvisTracersH, OnCell);
+            deepCopy(ProvisTracers, ProvisTracersH);
          }
 
          Tend->computeAllTendencies(ProvisState, AuxState, ProvisTracers,
                                     CurLevel, CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, NextLevel,
                            RKB[Stage] * TimeStep);
+         accumulateTracersUpdate(NextTracerArray, RKB[Stage] * TimeStep);
       }
    }
+
+   finalizeTracersUpdate(NextTracerArray, State, NextLevel);
 
    // Update time levels (New -> Old) of prognostic variables with halo
    // exchanges
    State->updateTimeLevels();
+   Tracers::updateTimeLevels();
 }
 
 } // namespace OMEGA

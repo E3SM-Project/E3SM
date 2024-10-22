@@ -119,6 +119,20 @@ class TimeStepper {
                             int TimeLevel1, OceanState *State2, int TimeLevel2,
                             TimeInterval Coeff) const;
 
+   // couple tracer array to layer thickness
+   void weightTracers(const Array3DReal &NextTracers,
+                      const Array3DReal &CurTracers, OceanState *CurState,
+                      int TimeLevel1) const;
+
+   // accumulate contributions to tracers at the next time level from each
+   // Runge-Kutta stage
+   void accumulateTracersUpdate(const Array3DReal &AccumTracer,
+                                TimeInterval Coeff) const;
+
+   // normalize tracer array so final array stores concentrations
+   void finalizeTracersUpdate(const Array3DReal &NextTracers, OceanState *State,
+                              int TimeLevel) const;
+
  protected:
    // Name of time stepper
    std::string Name;

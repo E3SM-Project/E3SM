@@ -258,4 +258,56 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
        });
 }
 
+// couple tracer array to layer thickness
+void TimeStepper::weightTracers(const Array3DReal &NextTracers,
+                                const Array3DReal &CurTracers,
+                                OceanState *CurState, int TimeLevel1) const {
+
+   const Array2DReal &CurThickness = CurState->LayerThickness[TimeLevel1];
+   const int NTracers              = NextTracers.extent(0);
+   const int NVertLevels           = NextTracers.extent(2);
+
+   parallelFor(
+       "weightTracers", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) =
+              CurTracers(L, ICell, K) * CurThickness(ICell, K);
+       });
+}
+
+// accumulate contributions to the tracer array at the next time level from
+// each Runge-Kutta stage
+void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
+                                          TimeInterval Coeff) const {
+
+   const auto &TracerTend = Tend->TracerTend;
+   const int NTracers     = TracerTend.extent(0);
+   const int NVertLevels  = TracerTend.extent(2);
+
+   Real CoeffSeconds;
+   int Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
+   parallelFor(
+       "accumulateTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          AccumTracer(L, ICell, K) += CoeffSeconds * TracerTend(L, ICell, K);
+       });
+}
+
+// normalize tracer array so final array stores concentrations
+void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
+                                        OceanState *State,
+                                        int TimeLevel) const {
+
+   const Array2DReal &NextThick = State->LayerThickness[TimeLevel];
+   const int NTracers           = NextTracers.extent(0);
+   const int NVertLevels        = NextTracers.extent(2);
+
+   parallelFor(
+       "finalizeTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) /= NextThick(ICell, K);
+       });
+}
+
 } // namespace OMEGA
