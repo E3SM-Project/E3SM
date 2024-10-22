@@ -17,7 +17,7 @@ module comsrf
 ! USES:
 !
   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
-  use ppgrid, only: pcols, begchunk, endchunk,nvar_dirOA,nvar_dirOL,indexb
+  use ppgrid, only: pcols, begchunk, endchunk,nvar_dirOA,nvar_dirOL
   use infnan, only: nan, assignment(=)
   use cam_abortutils, only: endrun
 

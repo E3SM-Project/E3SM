@@ -767,14 +767,14 @@ end subroutine init_hb_diff
     return
   end subroutine austausch_pbl
   !===============================================================================
-  subroutine pblintd_ri(ncol    ,                            &
+  subroutine pblintd_ri(ncol     ,gravit  , &
        thv     ,z       ,u       ,v       , &
        ustar   ,obklen  ,kbfs    ,rino_bulk)
     !! 
     use pbl_utils, only: virtem, calc_ustar, calc_obklen
     !!
     integer, intent(in) :: ncol                      ! number of atmospheric columns
-    
+    real(r8), intent(in)  :: gravit
     real(r8), intent(in)  :: thv(pcols,pver)         ! virtual temperature
     real(r8), intent(in)  :: z(pcols,pver)           ! height above surface [m]
     real(r8), intent(in)  :: u(pcols,pver)           ! windspeed x-direction [m/s]
@@ -803,16 +803,17 @@ end subroutine init_hb_diff
     real(r8) :: phihinv(pcols)          ! inverse phi function for heat
     real(r8) :: rino(pcols,pver)        ! bulk Richardson no. from level to ref lev
     real(r8) :: tlv(pcols)              ! ref. level pot tmp + tmp excess
+    real(r8) :: tref(pcols)             ! ref. level pot tmp
     real(r8) :: vvk                     ! velocity magnitude squared
-    
     logical  :: unstbl(pcols)           ! pts w/unstbl pbl (positive virtual ht flx)
     logical  :: check(pcols)            ! True=>chk if Richardson no.>critcal
-    !!
+    !
     do i=1,ncol
        check(i)     = .true.
        rino(i,pver) = 0.0_r8
        rino_bulk(i)    = 0.0_r8
        pblh(i)      = z(i,pver)
+       tref(i)      = thv(i,pver)!if not excess then tref is equal to lowest level thv_lv
     end do
     !
     !
@@ -824,7 +825,7 @@ end subroutine init_hb_diff
           if (check(i)) then
              vvk = (u(i,k) - u(i,pver))**2 + (v(i,k) - v(i,pver))**2 + fac*ustar(i)**2
              vvk = max(vvk,tiny)
-             rino(i,k) = g*(thv(i,k) - thv(i,pver))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+             rino(i,k) = gravit*(thv(i,k) - thv(i,pver))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
              if (rino(i,k) >= ricr) then
                 pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1)) * &
                      (z(i,k) - z(i,k+1))
@@ -844,6 +845,9 @@ end subroutine init_hb_diff
           phiminv(i)   = (1._r8 - binm*pblh(i)/obklen(i))**onet
           rino(i,pver) = 0.0_r8
           tlv(i)       = thv(i,pver) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+          !
+          tref(i)      = tlv(i)
+          !
        end if
     end do
     !
@@ -857,11 +861,11 @@ end subroutine init_hb_diff
           if (check(i)) then
              vvk = (u(i,k) - u(i,pver))**2 + (v(i,k) - v(i,pver))**2 + fac*ustar(i)**2
              vvk = max(vvk,tiny)
-             rino(i,k) = g*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+             rino(i,k) = gravit*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
              if (rino(i,k) >= ricr) then
                 pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1))* &
                      (z(i,k) - z(i,k+1))
-                bge(i) = 2._r8*g/(thv(i,k)+thv(i,k+1))*(thv(i,k)-thv(i,k+1))/(z(i,k)-z(i,k+1))*pblh(i)
+                bge(i) = 2._r8*gravit/(thv(i,k)+thv(i,k+1))*(thv(i,k)-thv(i,k+1))/(z(i,k)-z(i,k+1))*pblh(i)
                 if (bge(i).lt.0._r8) then
                    bge(i) = 1.e-8_r8
                 endif
@@ -872,11 +876,12 @@ end subroutine init_hb_diff
     end do
     !
     !calculate bulk richardson number in the surface layer
+    !following Holstag and Boville (1993) equation (2.8)
     !
     do i=1,ncol
-    vvk = (u(i,k) - u(i,pver))**2 + (v(i,k) - v(i,pver))**2 + fac*ustar(i)**2
+    vvk = u(i,pver)**2 + v(i,pver)**2 + fac*ustar(i)**2
     vvk = max(vvk,tiny)
-    rino_bulk(i)=g*(thv(i,k) - tlv(i))*(z(i,k)-z(i,pver))/(thv(i,pver)*vvk)
+    rino_bulk(i)=gravit*(thv(i,pver) - tref(i))*z(i,pver)/(thv(i,pver)*vvk)
     enddo
     !
     return

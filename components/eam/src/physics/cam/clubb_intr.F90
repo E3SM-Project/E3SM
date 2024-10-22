@@ -20,7 +20,7 @@ module clubb_intr
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use shr_log_mod ,  only: errMsg => shr_log_errMsg
   use ppgrid,        only: pver, pverp
-  use phys_control,  only: phys_getopts
+  use phys_control,  only: phys_getopts,use_od_ss,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
   use cam_logfile,   only: iulog
@@ -927,7 +927,6 @@ end subroutine clubb_init_cnst
     call addfld ('VMAGDP',        horiz_only,     'A',             '-', 'ZM gustiness enhancement')
     call addfld ('VMAGCL',        horiz_only,     'A',             '-', 'CLUBB gustiness enhancement')
     call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
-    !==================================
     !!added for TOFD output
     call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
     call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
@@ -937,8 +936,6 @@ end subroutine clubb_init_cnst
     call add_default('DTAUY3_FD', 1,  ' ')
     call add_default('DUSFC_FD',  1,  ' ')
     call add_default('DVSFC_FD',  1,  ' ')
-    !!added for TOFD output
-    !=====================================
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8
@@ -1166,11 +1163,10 @@ end subroutine clubb_init_cnst
    use model_flags, only: ipdf_call_placement
    use advance_clubb_core_module, only: ipdf_post_advance_fields
 #endif
-   use gw_common,          only: gwdo_gsd,grid_size,pblh_get_level_idx
+   use gw_common,          only: grid_size,gw_oro_interface
    use hycoef,             only: etamid
    use physconst,          only: rh2o,pi,rearth,r_universal
    !!get the znu,znw,p_top set to 0
-   use phys_grid, only: get_rlat_all_p
    implicit none
 
    ! --------------- !
@@ -1533,25 +1529,30 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
-   !===========================
-   !simply add par
-   !for z,dz,from other files              
-   real(r8) :: ztop(pcols,pver)             ! top interface height asl(m)
-   real(r8) :: zbot(pcols,pver)             ! bottom interface height asl(m)
-   real(r8) :: zmid(pcols,pver)             ! middle interface height asl(m)
-   real(r8) :: dz(pcols,pver)                  
-   real(r8) :: rlat(pcols)                 ! latitude in radians for columns
-   integer :: kpbl2d_in(pcols)
-   real(r8) :: ttgw(pcols,pver)                 ! temperature tendency
-   real(r8) :: utgw(pcols,pver)                 ! zonal wind tendency
-   real(r8) :: vtgw(pcols,pver)                 ! meridional wind tendency
+   !add par for tofd
    real(r8) :: dtaux3_fd(pcols,pver)
    real(r8) :: dtauy3_fd(pcols,pver)
    real(r8) :: dusfc_fd(pcols)
    real(r8) :: dvsfc_fd(pcols)
-   real(r8) :: dx(pcols),dy(pcols)
-   !==============================
-
+   logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+   real(r8) :: dummy_nm(pcols,pver)
+   real(r8) :: dummy_utgw(pcols,pver)
+   real(r8) :: dummy_vtgw(pcols,pver)
+   real(r8) :: dummy_ttgw(pcols,pver)
+   !
+   real(r8) :: dummx_ls(pcols,pver)
+   real(r8) :: dummx_bl(pcols,pver)
+   real(r8) :: dummx_ss(pcols,pver)
+   real(r8) :: dummy_ls(pcols,pver)
+   real(r8) :: dummy_bl(pcols,pver)
+   real(r8) :: dummy_ss(pcols,pver)
+   real(r8) :: dummx3_ls(pcols,pver)
+   real(r8) :: dummx3_bl(pcols,pver)
+   real(r8) :: dummx3_ss(pcols,pver)
+   real(r8) :: dummy3_ls(pcols,pver)
+   real(r8) :: dummy3_bl(pcols,pver)
+   real(r8) :: dummy3_ss(pcols,pver)
+   !
    real(r8) :: inv_exner_clubb_surf
 
 
@@ -1978,73 +1979,36 @@ end subroutine clubb_init_cnst
                      tautmsx,      tautmsy,   cam_in%landfrac )
        call t_stopf('compute_tms')
     endif
-         ztop= 0.0_r8            ! top interface height asl(m)
-         zbot= 0.0_r8            ! bottom interface height asl(m)
-         zmid= 0.0_r8            ! middle interface height asl(m)
-         dz= 0.0_r8
-         kpbl2d_in = -1
-         dtaux3_fd= 0.0_r8
-         dtauy3_fd= 0.0_r8
-         dusfc_fd= 0.0_r8
-         dvsfc_fd= 0.0_r8
-    !similar as in gw_drag
-        do k=1,pverp-1
-        ! assign values from top
-        ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-        ! assign values from bottom           
-        zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
-        end do
-        !transform adding the pressure
-        !transfer from surface to sea level
-        do k=1,pver
-                do i=1,ncol
-                ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
-                zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
-                zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
-                !dz is from bottom to top already for gw_drag
-                dz(i,k)=ztop(i,k)-zbot(i,k)
-                end do
-        end do
-        !get the layer index of pblh in layer
-        kpbl2d_in=0._r8
-        do i=1,pcols
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
-        end do
-        !rlat
-        call get_rlat_all_p(lchnk, ncol, rlat)
-        !=========================================
-	utgw=0._r8
-        vtgw=0._r8
-        ttgw=0._r8
-        dusfc_fd=0._r8
-        dvsfc_fd=0._r8
         !
-        call grid_size(state,dx,dy)
-	call gwdo_gsd(&
-        u3d=state%u(:,pver:1:-1),v3d=state%v(:,pver:1:-1),&
-        t3d=state%t(:,pver:1:-1),qv3d=state%q(:,pver:1:-1,1),&
-        p3d=state%pmid(:,pver:1:-1),p3di=state%pint(:,pver+1:1:-1),&
-        pi3d=state%exner(:,pver:1:-1),z=zbot,&
-        rublten=utgw(:,pver:1:-1),rvblten=vtgw(:,pver:1:-1),&
-        rthblten=ttgw(:,pver:1:-1),&
-        dtaux3d_fd=dtaux3_fd(:,pver:1:-1),dtauy3d_fd=dtauy3_fd(:,pver:1:-1),&
-        dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
-        xland=cam_in%landfrac,br=state%ribulk,&
-        var2d=sgh30(:ncol),&
-        znu=etamid(pver:1:-1),dz=dz,pblh=pblh,&
-        cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,&
-        dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=hdtime,gwd_opt=0,&
-        ids=1,ide=pcols,jds=0,jde=0,kds=1,kde=pver, &
-        ims=1,ime=pcols,jms=0,jme=0,kms=1,kme=pver, &
-        its=1,ite=pcols,jts=0,jte=0,kts=1,kte=pver,&
-        gwd_ls=0,gwd_bl=0,gwd_ss=0,gwd_fd=1)
-	!!
-	call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
+    if (use_od_fd) then
+        gwd_ls=.false.
+        gwd_bl=.false.
+        gwd_ss=.false.
+        gwd_fd=use_od_fd
+        dummy_nm=0.0_r8
+        dummy_utgw=0.0_r8
+        dummy_vtgw=0.0_r8
+        dummy_ttgw=0.0_r8
+        !sgh30 as the input for TOFD instead of sgh
+	call gw_oro_interface(state,cam_in,sgh30,pbuf,hdtime,dummy_nm,&
+                              gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                              ncleff_ls,ncd_bl,sncleff_ss,&
+                              dummy_utgw,dummy_vtgw,dummy_ttgw,& 
+                              dtaux3_ls=dummx3_ls,dtauy3_ls=dummy3_ls,&
+                              dtaux3_bl=dummx3_bl,dtauy3_bl=dummy3_bl,&
+                              dtaux3_ss=dummx3_ss,dtauy3_ss=dummy3_ss,&
+                              dtaux3_fd=dtaux3_fd,dtauy3_fd=dtauy3_fd,&
+                              dusfc_ls=dummx_ls,dvsfc_ls=dummy_ls,&
+                              dusfc_bl=dummx_bl,dvsfc_bl=dummy_bl,&
+                              dusfc_ss=dummx_ss,dvsfc_ss=dummy_ss,&
+                              dusfc_fd=dusfc_fd,dvsfc_fd=dvsfc_fd)
+                              !
+        call outfld ('DTAUX3_FD', dtaux3_fd,  pcols, lchnk)
         call outfld ('DTAUY3_FD', dtauy3_fd,  pcols, lchnk)
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
-        !!
+   endif
+   !
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
@@ -2169,8 +2133,10 @@ end subroutine clubb_init_cnst
       !Apply TOFD
       !----------------------------------------------------!
       !tendency is flipped already
+       if (use_od_fd) then 
         um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)
         vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)
+       endif
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
          um_in(k)      = real(um(i,pverp-k+1), kind = core_rknd)
@@ -3211,11 +3177,12 @@ end subroutine clubb_init_cnst
 !-------------------------------------------------------------------------------
 
     use physics_types,          only: physics_state
-    use physconst,              only: zvir
+    use physconst,              only: zvir,gravit
     use ppgrid,                 only: pver, pcols
     use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
-    use hb_diff,                   only: pblintd_ri
+    use hb_diff,                only: pblintd_ri
+
 
     implicit none
 
@@ -3240,10 +3207,13 @@ end subroutine clubb_init_cnst
     ! --------------- !
 
     integer :: i                                                ! indicees
+    integer :: k
     integer :: ncol                                             ! # of atmospheric columns
 
     real(r8) :: th(pcols)                                       ! surface potential temperature
     real(r8) :: thv(pcols)                                      ! surface virtual potential temperature
+    real(r8) :: th_lv(pcols,pver)                               ! level potential temperature
+    real(r8) :: thv_lv(pcols,pver)                              ! level virtual potential temperature
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
@@ -3278,22 +3248,44 @@ end subroutine clubb_init_cnst
          thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq))  ! diagnose virtual potential temperature
        end if
     enddo
-
+    !
     do i = 1, ncol
        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                         rrho, ustar(i) )
        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
-    !!===== add calculation of ribulk here=====
+    !
+    if (use_od_ss) then
+    !add calculation of bulk richardson number here
+    !
+    !compute the whole level th and thv for diagnose of bulk richardson number
+    thv_lv=0.0_r8
+    th_lv=0.0_r8
+    !
+    do i=1,ncol
+      do k=1,pver
+         th_lv(i,k) = state%t(i,k)*state%exner(i,k)
+         if (use_sgv) then
+           thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq) &
+                    - state%q(i,k,ixcldliq))  !PMA corrects thv formula
+         else
+           thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq))
+         end if
+      enddo
+    enddo
+    !
     kbfs_pcol=0.0_r8
     do i=1,ncol
         call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
         kbfs_pcol(i)=kbfs
     enddo
-    call pblintd_ri(ncol, thv, state%zm, state%u, state%v, &
+    !
+    call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
+    endif
+    !
     return
 
 #endif

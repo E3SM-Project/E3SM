@@ -17,6 +17,7 @@ public :: gw_common_init
 public :: gw_prof
 public :: momentum_energy_conservation
 public :: gw_drag_prof
+public :: gw_oro_interface
 
 public :: pver, pgwv
 public :: dc
@@ -745,9 +746,163 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
 
 end subroutine gw_drag_prof
 !==========================================================================
-function pblh_get_level_idx(height_array ,pblheight)
+subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     nm,&
+                            gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,&
+                            ncleff_ls,ncd_bl,   sncleff_ss,&
+                            utgw,     vtgw,     ttgw,&
+                            dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,&
+                            dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,&
+                            dusfc_ls, dvsfc_ls ,dusfc_bl, dvsfc_bl,&
+                            dusfc_ss, dvsfc_ss ,dusfc_fd, dvsfc_fd)
+  use physics_types,  only: physics_state
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
+  use camsrfexch,     only: cam_in_t
+  use ppgrid,         only: pcols,pver,pverp
+  use physconst,      only: gravit,rair,cpair,rh2o,zvir,pi
+  use hycoef,         only: etamid
+  !
+  type(physics_state), intent(in) :: state      ! physics state structure            ! Standard deviation of orography.
+  type(cam_in_t),      intent(in) :: cam_in
+  real(r8), intent(in) :: sgh(pcols)
+  type(physics_buffer_desc), pointer :: pbuf(:) ! Physics buffer
+  real(r8), intent(in) :: dtime
+  real(r8), intent(in) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
+  !
+  logical , intent(in) :: gwd_ls
+  logical , intent(in) :: gwd_bl
+  logical , intent(in) :: gwd_ss
+  logical , intent(in) :: gwd_fd
+  !tunable parameter from namelist
+  real(r8), intent(in) :: ncleff_ls
+  real(r8), intent(in) :: ncd_bl
+  real(r8), intent(in) :: sncleff_ss
+  !
+  real(r8), intent(out), optional :: utgw(state%ncol,pver)
+  real(r8), intent(out), optional :: vtgw(state%ncol,pver)
+  real(r8), intent(out), optional :: ttgw(state%ncol,pver)
+  !
+  real(r8), intent(out), optional :: dtaux3_ls(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_ls(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_bl(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_bl(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_ss(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_ss(pcols,pver)
+  real(r8), intent(out), optional :: dtaux3_fd(pcols,pver)
+  real(r8), intent(out), optional :: dtauy3_fd(pcols,pver)
+  real(r8), intent(out), optional :: dusfc_ls(pcols)
+  real(r8), intent(out), optional :: dvsfc_ls(pcols)
+  real(r8), intent(out), optional :: dusfc_bl(pcols)
+  real(r8), intent(out), optional :: dvsfc_bl(pcols)
+  real(r8), intent(out), optional :: dusfc_ss(pcols)
+  real(r8), intent(out), optional :: dvsfc_ss(pcols)
+  real(r8), intent(out), optional :: dusfc_fd(pcols)
+  real(r8), intent(out), optional :: dvsfc_fd(pcols)
+  !
+  real(r8) :: ztop(pcols,pver)             ! top interface height asl (m)
+  real(r8) :: zbot(pcols,pver)             ! bottom interface height asl (m)
+  real(r8) :: zmid(pcols,pver)             ! middle interface height asl (m)
+  real(r8) :: dz(pcols,pver)               ! model layer height
+  !
+  !real(r8) :: g
+  !pblh input
+  integer  :: pblh_idx     = 0
+  integer  :: kpbl2d_in(pcols)
+  real(r8), pointer :: pblh(:)
+  real(r8) :: dx(pcols),dy(pcols)
+  !needed index
+  integer  :: ncol
+  integer  :: i
+  integer  :: k
+  !local transfer variables
+  real(r8) :: dtaux3_ls_local(pcols,pver)
+  real(r8) :: dtauy3_ls_local(pcols,pver)
+  real(r8) :: dtaux3_bl_local(pcols,pver)
+  real(r8) :: dtauy3_bl_local(pcols,pver)
+  real(r8) :: dtaux3_ss_local(pcols,pver)
+  real(r8) :: dtauy3_ss_local(pcols,pver)
+  real(r8) :: dtaux3_fd_local(pcols,pver)
+  real(r8) :: dtauy3_fd_local(pcols,pver)
+  real(r8) :: dusfc_ls_local(pcols)
+  real(r8) :: dvsfc_ls_local(pcols)
+  real(r8) :: dusfc_bl_local(pcols)
+  real(r8) :: dvsfc_bl_local(pcols)
+  real(r8) :: dusfc_ss_local(pcols)
+  real(r8) :: dvsfc_ss_local(pcols)
+  real(r8) :: dusfc_fd_local(pcols)
+  real(r8) :: dvsfc_fd_local(pcols)
+
+                !
+                ncol=state%ncol
+                !convert heights above surface to heights above sea level
+                !obtain z,dz,dx,dy
+                !ztop and zbot are already reversed, start from bottom to top
+                kpbl2d_in=0_r8
+                !
+                ztop(1:ncol,1:pver)=0._r8
+                zbot(1:ncol,1:pver)=0._r8
+                zmid(1:ncol,1:pver)=0._r8
+                !
+		do k=1,pverp-1
+		! assign values for level top/bottom
+		ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
+		zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+		end do
+		!transform adding the pressure
+        	!transfer from surface to sea level
+        	do k=1,pver
+                	do i=1,ncol
+                	ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
+                	zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
+                	zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
+                	!dz is from bottom to top already for gw_drag
+                	dz(i,k)=ztop(i,k)-zbot(i,k)
+                	end do
+        	end do
+		!reverse to keep good format in scheme
+        	ztop=ztop(:,pver:1:-1)
+        	zbot=zbot(:,pver:1:-1)
+        	!get the layer index of pblh in layer for input in drag scheme
+                pblh_idx = pbuf_get_index('pblh')
+        	call pbuf_get_field(pbuf, pblh_idx, pblh)
+        	do i=1,pcols
+        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
+        	end do
+                !
+                !get grid size for dx,dy
+                call grid_size(state,dx,dy)
+                !interface for orographic drag
+                !if (gwd_fd.eq.0) then
+                call gwdo_gsd(&
+                u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
+                qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
+                pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
+                ncleff_ls=ncleff_ls,ncd_bl=ncd_bl,sncleff_ss=sncleff_ss,&
+                rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
+                dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
+                dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
+                dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
+                dtaux3d_fd=dtaux3_fd(:ncol,pver:1:-1),dtauy3d_fd=dtauy3_fd(:ncol,pver:1:-1),&
+                dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
+                dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
+                dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
+                dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
+                xland=cam_in%landfrac,br=state%ribulk(:ncol),&
+                var2d=sgh(:ncol),oc12d=state%oc(:ncol),&
+                oa2d=state%oadir(:ncol,:),ol2d=state%ol(:ncol,:),&
+                znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
+                cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
+                dt=dtime,dx=dx,dy=dy,&
+                kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
+                ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
+                ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
+                its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
+                gwd_ls=gwd_ls,gwd_bl=gwd_bl,gwd_ss=gwd_ss,gwd_fd=gwd_fd )
+                !
+end subroutine gw_oro_interface
+!==========================================================================
+function pblh_get_level_idx(height_array,pblheight)
 implicit none
-real(8),intent(in),dimension(30) :: height_array
+real(8),intent(in),dimension(pver) :: height_array
 real(8),intent(in) :: pblheight
 integer :: pblh_get_level_idx
        
@@ -840,6 +995,7 @@ subroutine grid_size(state, grid_dx, grid_dy)
 end subroutine grid_size
 !==========================================================================
    subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                       &
+                  ncleff_ls,ncd_bl,sncleff_ss,                                 &
                   rublten,rvblten,rthblten,                                    &
                   dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,                 &
                   dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
@@ -916,10 +1072,11 @@ end subroutine grid_size
                                                               t3d, &
                                                                 z, &
                                                                dz
+  real(r8),     dimension( ims:ime, kms:kme+1 )                   ,&
+     intent(in   )   ::                                       p3di
+  real(r8),     intent(in)      ::                        ncleff_ls,ncd_bl,sncleff_ss
   real(r8),     dimension( ims:ime, kms:kme )                    , &
-     intent(in   )   ::                                 p3di
-  real(r8),     dimension( ims:ime, kms:kme )                    , &
-           intent(inout)   ::                   rublten, &
+  optional,     intent(inout)   ::                        rublten, &
                                                           rvblten, &
                                                           rthblten
   real(r8),     dimension( ims:ime, kms:kme ), optional                 , &
@@ -967,7 +1124,7 @@ end subroutine grid_size
   real(r8),   dimension( its:ite, nvar_dirOA )  ::     oa4
   real(r8),   dimension( its:ite, nvar_dirOL )  ::     ol4
   integer ::  i,j,k,kpblmax
-  integer , intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+  logical, intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
   !!
    do k = kts,kte
      if(znu(k).gt.0.6_r8) kpblmax = k + 1
@@ -987,8 +1144,7 @@ end subroutine grid_size
       enddo
 !
 !no need when there is no large drag
-IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
-
+IF (gwd_ls.or.gwd_bl) then
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
             ol4(i,:) = ol2d(i,:)
@@ -996,7 +1152,8 @@ IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
 ENDIF
 !=================================================================
       call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                  &
-             ,dthdt=rthblten(ims,kms)                                          &
+                 ,dthdt=rthblten(ims,kms)                                      &
+              ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                  &
               ,dtaux2d_ls=dtaux2d_ls,dtauy2d_ls=dtauy2d_ls                     &
               ,dtaux2d_bl=dtaux2d_bl,dtauy2d_bl=dtauy2d_bl                     &
               ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                     &
@@ -1026,47 +1183,39 @@ ENDIF
               ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte               &
               ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
 !!============================================      
-IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
                 do i = its,ite
                 dusfcg_ls(i)=dusfc_ls(i)
                 dvsfcg_ls(i)=dvsfc_ls(i)
                 dusfcg_bl(i)=dusfc_bl(i)
                 dvsfcg_bl(i)=dvsfc_bl(i)
+                dusfcg_ss(i)=dusfc_ss(i)
+                dvsfcg_ss(i)=dvsfc_ss(i)
+                dusfcg_fd(i)=dusfc_fd(i)
+                dvsfcg_fd(i)=dvsfc_fd(i)
                 enddo
-		!!
+                !!
                 dtaux3d_ls=dtaux2d_ls
                 dtaux3d_bl=dtaux2d_bl
                 dtauy3d_ls=dtauy2d_ls
                 dtauy3d_bl=dtauy2d_bl
-		!!
-		do i = its,ite
-                dusfcg_ss(i)=dusfc_ss(i)
-                dvsfcg_ss(i)=dvsfc_ss(i)
-                end do
-		!!
                 dtaux3d_ss=dtaux2d_ss
-                dtauy3d_ss=dtauy2d_ss
-ENDIF
-IF (gwd_fd .EQ. 1) then
-
-                do i = its,ite
-                dusfcg_fd(i)=dusfc_fd(i)
-                dvsfcg_fd(i)=dvsfc_fd(i)
-                enddo
                 dtaux3d_fd=dtaux2d_fd
+                dtauy3d_ss=dtauy2d_ss
                 dtauy3d_fd=dtauy2d_fd
-ENDIF
    end subroutine gwdo_gsd
 !
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
-   subroutine gwdo2d(dudt,dvdt,dthdt,dtaux2d_ls,dtauy2d_ls,                    &
-                    dtaux2d_bl,dtauy2d_bl,dtaux2d_ss,dtauy2d_ss,               &
-                    dtaux2d_fd,dtauy2d_fd,u1,v1,t1,q1,                         &
+   subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
+                    dtaux2d_ls,dtauy2d_ls,                                     &
+                    dtaux2d_bl,dtauy2d_bl,                                     &
+                    dtaux2d_ss,dtauy2d_ss,                                     &
+                    dtaux2d_fd,dtauy2d_fd,                                     &
+                    u1,v1,t1,q1,                                               &
                     del,                                                       &
                     prsi,prsl,prslk,zl,rcl,                                    &
-                    xland1,br1,hpbl,bnv_in,dz2,                               &
+                    xland1,br1,hpbl,bnv_in,dz2,                                &
                     kpblmax,dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,               &
                     dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,&
                     g,cp,rd,rv,fv,pi,dxmeter,dymeter,deltim,kpbl,kdt,lat,      &
@@ -1081,11 +1230,11 @@ ENDIF
 !  form drag (Beljaars et al.,2004).
 !
 !           Activation of each component is done by specifying the integer-parameters
-!           (defined below) to 0: inactive or 1: active
-!                    gsd_gwd_ls = 0 or 1: large-scale
-!                    gsd_gwd_bl = 0 or 1: blocking drag 
-!                    gsd_gwd_ss = 0 or 1: small-scale gravity wave drag
-!                    gsd_gwd_fd = 0 or 1: topographic form drag
+!           (defined below) to .true. (active) or .false. (inactive)
+!                    gsd_gwd_ls : large-scale
+!                    gsd_gwd_bl : blocking drag 
+!                    gsd_gwd_ss : small-scale gravity wave drag
+!                    gsd_gwd_fd : topographic form drag
 !
 !
 !        References:
@@ -1134,6 +1283,11 @@ ENDIF
    real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
    real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
    real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
+!
+   !variables for open/close process
+   logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
+   !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
+   real(r8), intent(in) :: ncleff,ncd,sncleff
 !
 ! added for small-scale orographic wave drag
 !
@@ -1233,22 +1387,10 @@ real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
    real(r8)                 ::  olp(its:ite),&
                                  od(its:ite)
    real(r8)                 :: taufb(its:ite,kts:kte+1)
-   !variables for open/close process
-   integer , intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd        
-   !tunable parameter
-   real(r8):: ncleff  !!tunable parameter for gwd
-   real(r8):: ncd  !!tunable parameter for fbd
-   real(r8):: sncleff !!tunable parameter for sgwd
    !readdata for low-level determination of ogwd
    real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
    logical  :: iint
    real(r8) :: zl_hint(its:ite)
-   !
-   !tunable parameter 
-   !     
-   ncleff    = 3._r8
-   ncd       = 3._r8
-   sncleff   = 1._r8
    !
    !---- constants                                                         
    !                                                                       
@@ -1287,6 +1429,7 @@ ss_taper=1._r8
      taub (i)      = 0.0_r8
      oa1(i)        = 0.0_r8
      ol(i)         = 0.0_r8
+     fr(i)         = 0.0_r8
      ulow (i)      = 0.0_r8
      dtfac(i)      = 1.0_r8
      ldrag(i)      = .false.
@@ -1391,7 +1534,7 @@ ss_taper=1._r8
    enddo
 !
 ! For ls and bl only
-IF  ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)) then
+IF  (gsd_gwd_ls.or.gsd_gwd_bl) then
 !     figure out low-level horizontal wind direction 
 ! order into a counterclockwise index instead
 !
@@ -1443,9 +1586,7 @@ ENDIF
 !============================================
 ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
 !============================================
-IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
-               (ls_taper .GT. 1.E-02) ) THEN   !====
-
+IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN 
 !                                                                       
 !---  saving richardson number in usqj for migwdi                       
 !
@@ -1553,11 +1694,11 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
 !  ratio const. use simplified relationship between standard            
 !  deviation & critical hgt                                          
 !
-
    do i = its,ite
      if (.not. ldrag(i))   then
-       efact    = (oa1(i) + 2._r8) ** (ce*fr(i)/frc)
-       efact    = min( max(efact,efmin), efmax )
+       !maintain (oa+2) greater than or equal to 0
+       efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
+       efact    = min(max(efact,efmin),efmax)
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
@@ -1568,7 +1709,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        tem      = fr(i) * fr(i) * oc1(i)
        gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
        !!
-       if ( gsd_gwd_ls .NE. 0 ) then
+       if (gsd_gwd_ls) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
        else     ! We've gotten what we need for the blocking scheme
@@ -1581,7 +1722,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
      endif
    enddo
 
-ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
+ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
 !=========================================================
 ! add small-scale wavedrag for stable boundary layer
 !=========================================================
@@ -1593,7 +1734,7 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
   vtendwave=0._r8
   zq=0._r8
 !
-  IF ( (gsd_gwd_ss .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+  IF (gsd_gwd_ss.and.(ss_taper.GT.1.E-02)) THEN
 !
 ! declaring potential temperature
 !
@@ -1683,17 +1824,17 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
        enddo
     enddo
 
-ENDIF  ! end if gsd_gwd_ss == 1
+ENDIF  ! end if gsd_gwd_ss == .true.
 !================================================================
 !add Beljaars et al. (2004, QJRMS, equ. 16) form drag:
 !================================================================
-IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+IF (gsd_gwd_fd.and.(ss_taper.GT.1.E-02) ) THEN
 
    utendform=0._r8
    vtendform=0._r8
    zq=0._r8
 
-   IF ( (gsd_gwd_ss .NE. 1).and.(ss_taper.GT.1.E-02) ) THEN
+   IF (.not.gsd_gwd_ss.and.(ss_taper.GT.1.E-02) ) THEN
       ! Defining layer height. This is already done above is small-scale GWD is used
       do k = kts,kte
         do i = its,ite
@@ -1742,11 +1883,11 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
          dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
       enddo
    enddo
-   ENDIF  ! end if gsd_gwd_fd == 1
+   ENDIF  ! end if gsd_gwd_fd == .true.
 !=======================================================
 ! More for the large-scale gwd component
 !=======================================================
-IF ( (gsd_gwd_ls .EQ. 1).and.(ls_taper.GT.1.E-02) ) THEN
+IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
 !                                                                       
 !   now compute vertical structure of the stress.
 !
@@ -1845,7 +1986,7 @@ ENDIF !END LARGE-SCALE TAU CALCULATION
 !===============================================================
 !COMPUTE BLOCKING COMPONENT 
 !===============================================================
-IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 
    do i = its,ite
       if(.not.ldrag(i)) then
@@ -1885,7 +2026,6 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
           cd = max(2.0_r8-1.0_r8/od(i),0.0_r8)
           !
           !tuning of the drag magnitude
-          !
           cd=ncd*cd
           !
           taufb(i,kts) = 0.5_r8 * roll(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i)   &
@@ -1906,7 +2046,7 @@ IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
 
 ENDIF   ! end blocking drag
 !===========================================================
-IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 
 !                                                                       
 !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
@@ -1951,7 +2091,9 @@ IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) T
          !apply limiter for ogwd
          !1.dudt < |c-u|/dt, so u-c cannot change sign(u^n+1 = u^n + du/dt * dt)
          !2.dudt<tndmax, eliminate ridiculous large tendency
+         if (k.ne.kte) then!velco does not have top level value
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/kdt),taud_ls(i,k))
+         endif
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),tndmax),taud_ls(i,k))
          taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper
          dtaux2d_ls(i,k) = taud_ls(i,k) * xn(i)

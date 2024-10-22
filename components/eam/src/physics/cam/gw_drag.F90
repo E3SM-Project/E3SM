@@ -24,7 +24,7 @@ module gw_drag
 !--------------------------------------------------------------------------
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
-  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,indexb,begchunk,endchunk
+  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,begchunk,endchunk
   use hycoef,             only: hyai, hybi, hyam, hybm, etamid !get the znu,znw,p_top set to 0
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
@@ -38,7 +38,7 @@ module gw_drag
     !zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix
+  use phys_control,  only: use_gw_oro, use_gw_front,use_gw_convect,use_gw_energy_fix,use_od_ls,use_od_bl,use_od_ss,ncleff_ls,ncd_bl,sncleff_ss
 
 ! Typical module header
   implicit none
@@ -305,6 +305,8 @@ subroutine gw_init()
   pblh_idx = pbuf_get_index('pblh')
   !
   grid_id = cam_grid_id('physgrid')
+  !
+  if (use_od_ls.or.use_od_bl) then
                 if (.not. cam_grid_check(grid_id)) then
                 call endrun(trim(subname)//': Internal error, no "physgrid" grid')
                 end if
@@ -327,6 +329,7 @@ subroutine gw_init()
                 if(.not. found) call endrun('ERROR: GWD topo file readerr')
                 !
                 call close_initial_fileGWD()
+  endif
   !
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
@@ -402,7 +405,10 @@ subroutine gw_init()
        errstring)
   if (trim(errstring) /= "") call endrun("gw_common_init: "//errstring)
 
-  if (use_gw_oro) then
+  if (use_gw_oro.or.&
+      use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
 
      if (effgw_oro == unset_r8) then
         call endrun("gw_drag_init: Orographic gravity waves enabled, &
@@ -650,13 +656,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Location-dependent cpair
   use physconst,  only: cpairv
   use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof
+       gw_drag_prof,gw_oro_interface
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
   use phys_grid, only: get_rlat_all_p
-  use gw_common,  only: gwdo_gsd,pblh_get_level_idx,grid_size
   use physconst,          only: gravit,rair
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
@@ -667,43 +672,30 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Parameterization net tendencies.
   type(physics_ptend), intent(out):: ptend
   type(cam_in_t), intent(in) :: cam_in
-  !input par
-        integer :: kpbl2d_in(pcols)
-        !simply add par
-        !for z,dz,from other files
-        real(r8) :: ztop(pcols,pver)             ! top interface height asl (m)
-        real(r8) :: zbot(pcols,pver)             ! bottom interface height asl (m)
-        real(r8) :: zmid(pcols,pver)             ! middle interface height asl (m)
-        real(r8) :: dz(pcols,pver)       ! model layer height
-
-        !bulk richardson number from hb_diff
-        !bulk at the surface
-        !real(r8),parameter :: rino(pcols,nver)
-        real(r8) :: rlat(pcols)
-    !locally added gw and bl drag
-    real(r8) :: dtaux3_ls(pcols,pver)
-    real(r8) :: dtauy3_ls(pcols,pver)
-    real(r8) :: dtaux3_bl(pcols,pver)
-    real(r8) :: dtauy3_bl(pcols,pver)
-    !
-    real(r8) :: dtaux3_ss(pcols,pver)
-    real(r8) :: dtauy3_ss(pcols,pver)
-    !
-    real(r8) :: dusfc_ls(pcols)
-    real(r8) :: dvsfc_ls(pcols)
-    real(r8) :: dusfc_bl(pcols)
-    real(r8) :: dvsfc_bl(pcols)
-    !
-    real(r8) :: dusfc_ss(pcols)
-    real(r8) :: dvsfc_ss(pcols)
-    real(r8) :: g
-
-    real(r8) :: dtaux3_fd(pcols,pver)
-    real(r8) :: dtauy3_fd(pcols,pver)
-    real(r8) :: dusfc_fd(pcols)
-    real(r8) :: dvsfc_fd(pcols)
-    real(r8), pointer :: pblh(:)
-    real(r8) :: dx(pcols),dy(pcols)
+  !locally added gw and bl drag
+  real(r8) :: dtaux3_ls(pcols,pver)
+  real(r8) :: dtauy3_ls(pcols,pver)
+  real(r8) :: dtaux3_bl(pcols,pver)
+  real(r8) :: dtauy3_bl(pcols,pver)
+  real(r8) :: dtaux3_ss(pcols,pver)
+  real(r8) :: dtauy3_ss(pcols,pver)
+  real(r8) :: dummx3_fd(pcols,pver)
+  real(r8) :: dummy3_fd(pcols,pver)
+  !
+  real(r8) :: dusfc_ls(pcols)
+  real(r8) :: dvsfc_ls(pcols)
+  real(r8) :: dusfc_bl(pcols)
+  real(r8) :: dvsfc_bl(pcols)
+  real(r8) :: dusfc_ss(pcols)
+  real(r8) :: dvsfc_ss(pcols)
+  real(r8) :: dummx_fd(pcols)
+  real(r8) :: dummy_fd(pcols)
+  !
+  real(r8), pointer :: pblh(:)
+  real(r8) :: dx(pcols),dy(pcols)
+  !
+  logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+  !
 
   !---------------------------Local storage-------------------------------
 
@@ -985,7 +977,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -999,103 +990,44 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
+  endif
+  !
+  if (use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
+     !open ogwd,bl,ss, 
+     !close fd
+     gwd_ls=use_od_ls
+     gwd_bl=use_od_bl
+     gwd_ss=use_od_ss
+     gwd_fd=.false.
+     !
+     utgw=0.0_r8
+     vtgw=0.0_r8
+     ttgw=0.0_r8
+     !
+     call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
+                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                            ncleff_ls,ncd_bl,sncleff_ss,&
+                            utgw,vtgw,ttgw,&
+                            dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
+                            dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
+                            dtaux3_ss=dtaux3_ss,dtauy3_ss=dtauy3_ss,&
+                            dtaux3_fd=dummx3_fd,dtauy3_fd=dummy3_fd,&
+                            dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls,&
+                            dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
+                            dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
+                            dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
 
-
-
-     	!---------------------------------------------------------------------
-	! Replaced the basic units with cam's states
-	!---------------------------------------------------------------------
-        !this is for z,dz,dx,dy
-        !add surface height (surface geopotential/gravity) to convert CAM
-        !heights based on geopotential above surface into height above sea
-        !level
-        !taken from %%module cospsimulator_intr
-        !CAM is top to surface, which may be opposite in WRF
-        !fv is same dlat,dlon, so we do it directly
-        !%%needs to decide which to reverse!!!!!!!
-        !ztop and zbot are already reversed, start from bottom to top
-        !dz needs no reverse also
-        !zmid is different calculation process, 
-        !so it needs reverse if to use
-        ztop(1:ncol,1:pver)=0._r8
-        zbot(1:ncol,1:pver)=0._r8
-        zmid(1:ncol,1:pver)=0._r8
-        !
-        do k=1,pverp-1
-        ! assign values from top
-        ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-        ! assign values from bottom           
-        zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
-        end do
-        !get g
-        g=gravit
-        !transform adding the pressure
-        !transfer from surface to sea level
-        do k=1,pver
-                do i=1,ncol
-                ztop(i,k)=ztop(i,k)+state%phis(i)/g
-                zbot(i,k)=zbot(i,k)+state%phis(i)/g
-                zmid(i,k)=state%zm(i,k)+state%phis(i)/g
-                !dz is from bottom to top already for gw_drag
-                dz(i,k)=ztop(i,k)-zbot(i,k)
-                end do
-        end do
-        !reverse to keep good format in scheme
-        ztop=ztop(:,pver:1:-1)
-        zbot=zbot(:,pver:1:-1)
-        !get the layer index of pblh in layer
-        call pbuf_get_field(pbuf, pblh_idx, pblh)
-        !
-        kpbl2d_in=0_r8
-        do i=1,pcols
-        kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/g),pblh(i))
-        end do
-        call get_rlat_all_p(lchnk, ncol, rlat)
-        !Initialize
-        utgw=0._r8
-        vtgw=0._r8
-        ttgw=0._r8
-        call grid_size(state,dx,dy)
-        call gwdo_gsd(&
-        u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
-        qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
-        pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
-        rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
-        dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
-        dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
-        dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
-        dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
-        dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
-        dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
-        xland=cam_in%landfrac,br=state%ribulk(:ncol),&
-        var2d=state%var(:ncol),&
-        oc12d=state%oc(:ncol),&
-        oa2d=state%oadir(:ncol,:),&
-        ol2d=state%ol(:ncol,:),&
-        znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
-        cp=cpair,g=g,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
-        dt=dt,dx=dx,dy=dy,&
-        kpbl2d=kpbl2d_in,itimestep=dt,gwd_opt=0,&
-        ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
-        ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
-        its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-        gwd_ls=1,gwd_bl=1,gwd_ss=1,gwd_fd=0 )
-        !
-        call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
-        call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
-        call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
-        call outfld ('DTAUY3_BL', dtauy3_bl,  pcols, lchnk)
-        call outfld ('DTAUX3_SS', dtaux3_ss,  pcols, lchnk)
-        call outfld ('DTAUY3_SS', dtauy3_ss,  pcols, lchnk)
-        call outfld ('DUSFC_LS', dusfc_ls,  pcols, lchnk)
-        call outfld ('DVSFC_LS', dvsfc_ls,  pcols, lchnk)
-        call outfld ('DUSFC_BL', dusfc_bl,  pcols, lchnk)
-        call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
-        call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
-        call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
+  endif
         ! Add the orographic tendencies to the spectrum tendencies
         ! Compute the temperature tendency from energy conservation
         ! (includes spectrum).
+        ! both old and new gwd scheme will add the tendency to circulation
+  if (use_gw_oro.or.    &
+      use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -1145,15 +1077,34 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
-     !set the GWORO as combination of 3
-     tau0x=dusfc_ls+dusfc_bl+dusfc_ss
-     tau0y=dvsfc_ls+dvsfc_bl+dvsfc_ss
-     !tau0x = tau(:,0,pver) * xv * effgw_oro
-     !tau0y = tau(:,0,pver) * yv * effgw_oro
+     !
+     if (use_gw_oro) then
+     !old gwd scheme
+     tau0x = tau(:,0,pver) * xv * effgw_oro
+     tau0y = tau(:,0,pver) * yv * effgw_oro
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
+     endif
+     !
      call outfld('SGH   ',   sgh,pcols, lchnk)
-
+     !
+     if (use_od_ls.or.&
+         use_od_bl.or.&
+         use_od_ss) then
+     call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
+     call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
+     call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
+     call outfld ('DTAUY3_BL', dtauy3_bl,  pcols, lchnk)
+     call outfld ('DTAUX3_SS', dtaux3_ss,  pcols, lchnk)
+     call outfld ('DTAUY3_SS', dtauy3_ss,  pcols, lchnk)
+     call outfld ('DUSFC_LS', dusfc_ls,  pcols, lchnk)
+     call outfld ('DVSFC_LS', dvsfc_ls,  pcols, lchnk)
+     call outfld ('DUSFC_BL', dusfc_bl,  pcols, lchnk)
+     call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
+     call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
+     call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
+     endif
+     !
   end if
 
   ! Convert the tendencies for the dry constituents to dry air basis.
