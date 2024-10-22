@@ -405,7 +405,10 @@ subroutine gw_init()
        errstring)
   if (trim(errstring) /= "") call endrun("gw_common_init: "//errstring)
 
-  if (use_gw_oro) then
+  if (use_gw_oro.or.&
+      use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
 
      if (effgw_oro == unset_r8) then
         call endrun("gw_drag_init: Orographic gravity waves enabled, &
