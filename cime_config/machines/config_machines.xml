@@ -2412,17 +2412,15 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <modules compiler="intel" mpilib="openmpi">
         <command name="load">openmpi/4.1.6-2mm63n2</command>
         <command name="load">hdf5/1.10.7-4cghwvq</command>
-        <command name="load">netcdf-c/4.4.1-a4hji6e</command>
-        <command name="load">netcdf-cxx/4.2-ldoxr43</command>
-        <command name="load">netcdf-fortran/4.4.4-husened</command>
+        <command name="load">netcdf-c/4.7.4-4qjdadt</command>
+        <command name="load">netcdf-fortran/4.5.3-qozrykr</command>
         <command name="load">parallel-netcdf/1.11.0-icrpxty</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
-        <command name="load">hdf5/1.8.16-se4xyo7</command>
-        <command name="load">netcdf-c/4.4.1-qvxyzq2</command>
-        <command name="load">netcdf-cxx/4.2-binixgj</command>
-        <command name="load">netcdf-fortran/4.4.4-rdxohvp</command>
+        <command name="load">hdf5/1.10.7-wczt56s</command>
+        <command name="load">netcdf-c/4.7.4-ba6agmb</command>
+        <command name="load">netcdf-fortran/4.5.3-5lvy5p4</command>
         <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
       </modules>
       <modules compiler="gnu">
@@ -2432,17 +2430,19 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <modules compiler="gnu" mpilib="openmpi">
         <command name="load">openmpi/4.1.6-ggebj5o</command>
         <command name="load">hdf5/1.10.7-ol6xuae</command>
-        <command name="load">netcdf-c/4.4.1-2njo6xx</command>
-        <command name="load">netcdf-cxx/4.2-7pdzqua</command>
-        <command name="load">netcdf-fortran/4.4.4-52c6oqi</command>
+        <command name="load">netcdf-c/4.7.4-pfocec2</command>
+        <command name="load">netcdf-fortran/4.5.3-va3hoor</command>
         <command name="load">parallel-netcdf/1.11.0-d7h4ysd</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
+        <command name="unload">gcc/11.2.0-bgddrif</command>
+        <command name="unload">intel-oneapi-mkl/2022.1.0-w4kgsn4</command>
+        <command name="load">gcc/9.2.0-ugetvbp</command>
+        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
         <command name="load">hdf5/1.8.16-dtbpce3</command>
-        <command name="load">netcdf-c/4.4.1-zcoa44z</command>
-        <command name="load">netcdf-cxx/4.2-ayxg4c7</command>
-        <command name="load">netcdf-fortran/4.4.4-2lfr2lr</command>
+        <command name="load">netcdf-c/4.7.4-seagl7g</command>
+        <command name="load">netcdf-fortran/4.5.3-ova6t37</command>
         <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
       </modules>
       <modules compiler="oneapi-ifx">
