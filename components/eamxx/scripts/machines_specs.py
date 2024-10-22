@@ -187,18 +187,46 @@ def logical_cores_per_physical_core():
     return psutil.cpu_count() // psutil.cpu_count(logical=False)
 
 ###############################################################################
+def get_cpu_ids_from_slurm_env_var():
+###############################################################################
+    """
+    Parse the SLURM_CPU_BIND_LIST, and use the hexadecimal value to determine
+    which CPUs on this node are assigned to the job
+    NOTE: user should check that the var is set BEFORE calling this function
+    """
+
+    cpu_bind_list = os.getenv('SLURM_CPU_BIND_LIST')
+
+    expect (cpu_bind_list is not None,
+            "SLURM_CPU_BIND_LIST environment variable is not set. Check, before calling this function")
+
+    # Remove the '0x' prefix and convert to an integer
+    mask_int = int(cpu_bind_list, 16)
+
+    # Generate the list of CPU IDs
+    cpu_ids = []
+    for i in range(mask_int.bit_length()):  # Check each bit position
+        if mask_int & (1 << i):  # Check if the i-th bit is set
+            cpu_ids.append(i)
+
+    return cpu_ids
+
+###############################################################################
 def get_available_cpu_count(logical=True):
 ###############################################################################
     """
     Get number of CPUs available to this process and its children. logical=True
     will include hyperthreads, logical=False will return only physical cores
     """
-    affinity_len = len(psutil.Process().cpu_affinity())
-    if not logical:
-        hyperthread_ratio = logical_cores_per_physical_core()
-        return int(affinity_len / hyperthread_ratio)
+    if 'SLURM_CPU_BIND_LIST' in os.environ:
+        cpu_count = len(get_cpu_ids_from_slurm_env_var())
     else:
-        return affinity_len
+        cpu_count = len(psutil.Process().cpu_affinity())
+    elif not logical:
+        hyperthread_ratio = logical_cores_per_physical_core()
+        return int(cpu_count / hyperthread_ratio)
+    else:
+        return cpu_count
 
 ###############################################################################
 def get_mach_compilation_resources():

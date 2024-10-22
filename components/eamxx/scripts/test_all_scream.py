@@ -7,7 +7,7 @@ from test_factory import create_tests, COV, CSR
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
     get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported, \
-    logical_cores_per_physical_core
+    logical_cores_per_physical_core, get_cpu_ids_from_slurm_env_var
 
 check_minimum_python_version(3, 4)
 
@@ -405,6 +405,8 @@ class TestAllScream(object):
         if not for_compile and self.on_cuda():
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
             affinity_cp = list(range(self._ctest_max_jobs))
+        elif "SLURM_CPU_BIND_LIST" in os.environ:
+            affinity_cp = get_cpu_ids_from_slurm_env_var()
         else:
             this_process = psutil.Process()
             affinity_cp = list(this_process.cpu_affinity())
