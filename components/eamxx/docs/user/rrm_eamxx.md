@@ -20,10 +20,10 @@ The easiest way to generate an initial condition is to use the [HICCUP tool](htt
 
 If you wish to nudge your simulation, assemble your nudging data in the format required by EAMxx.  Please refer to the [nudging documentation](nudging.md).
 
-In the event that you only want to nudge a portion of your domain, then you will need to generate a nudging weights file.  A common use case for this is when you want the high-resolution region to remain free-running (unnudged) while nudging the coarse domain towards reanalysis or model data.  Please use [this script](https://github.com/E3SM-Project/scream-docs/blob/master/run_scripts/RRM_example_scripts/SCREAMv1_create_nudging_weights.py) as an example of how to generate your nudging weights file.
+In the event that you only want to nudge a portion of your domain, then you will need to generate a nudging weights file.  A common use case for this is when you want the high-resolution region to remain free-running (unnudged) while nudging the coarse domain towards reanalysis or model data.  Please use [this script](https://github.com/E3SM-Project/eamxx-scripts/blob/master/run_scripts/RRM_example_scripts/SCREAMv1_create_nudging_weights.py) as an example of how to generate your nudging weights file.
 
 ## Run your RRM
 
 Congratulations, you are now ready to run your EAMxx RRM.  If you are running your RRM in free running mode (not using any nudging) then you simply need to modify an existing EAMxx script and change the resolution to match the one you created for your RRM.
 
-If you are using nudging, then please see this [example script of how to run a nudged EAMxx RRM run](https://github.com/E3SM-Project/scream-docs/blob/master/run_scripts/RRM_example_scripts/SCREAMv1-nudging.CAx32v1pg2.pm-gpu.template.sh).  This example script uses the [California 3-km RRM](https://gmd.copernicus.org/articles/17/3687/2024/), which is on the master branch.
+If you are using nudging, then please see this [example script of how to run a nudged EAMxx RRM run](https://github.com/E3SM-Project/eamxx-scripts/blob/master/run_scripts/RRM_example_scripts/SCREAMv1-nudging.CAx32v1pg2.pm-gpu.template.sh).  This example script uses the [California 3-km RRM](https://gmd.copernicus.org/articles/17/3687/2024/), which is on the master branch.
