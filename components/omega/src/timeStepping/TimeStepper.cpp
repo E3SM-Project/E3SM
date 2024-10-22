@@ -230,4 +230,32 @@ void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
    updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
 }
 
+// NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
+// Coeff * TracersTend) / LayerThickness1(TimeLevel1)
+void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
+                                      const Array3DReal &CurTracers,
+                                      OceanState *State1, int TimeLevel1,
+                                      OceanState *State2, int TimeLevel2,
+                                      TimeInterval Coeff) const {
+   int Err = 0;
+
+   const auto &LayerThick1 = State1->LayerThickness[TimeLevel1];
+   const auto &LayerThick2 = State2->LayerThickness[TimeLevel2];
+   const auto &TracerTend  = Tend->TracerTend;
+   const int NTracers      = TracerTend.extent(0);
+   const int NVertLevels   = TracerTend.extent(2);
+
+   Real CoeffSeconds;
+   Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
+   parallelFor(
+       "updateTracersByTend", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) =
+              (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
+               CoeffSeconds * TracerTend(L, ICell, K)) /
+              LayerThick1(ICell, K);
+       });
+}
+
 } // namespace OMEGA

@@ -112,6 +112,13 @@ class TimeStepper {
                              OceanState *State2, int TimeLevel2,
                              TimeInterval Coeff) const;
 
+   // NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
+   // Coeff * TracersTend) / LayerThickness1(TimeLevel1)
+   void updateTracersByTend(const Array3DReal &NextTracers,
+                            const Array3DReal &CurTracers, OceanState *State1,
+                            int TimeLevel1, OceanState *State2, int TimeLevel2,
+                            TimeInterval Coeff) const;
+
  protected:
    // Name of time stepper
    std::string Name;
