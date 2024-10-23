@@ -181,7 +181,7 @@ the critical error macro:
 ERROR_CRITICAL(ErrCode, ErrMsg, additional args for ErrMsg)
 ```
 The error message (ErrMsg) can be either a simple string or
-can follow format of the Logging facility in which ``{}``
+can follow the format of the Logging facility in which ``{}``
 placeholders can be used with additional arguments to
 include variable information
 (see the [Logging documentation](#omega-user-logging)).
@@ -213,6 +213,19 @@ Err = MyFunction(...);
 ERROR_CRITICAL(Err, "Error encountered in MyFunction");
 
 ```
+
+Two interfaces are provided in which a condition can be checked,
+rather than the error code:
+```c++
+ERROR_REQUIRE(condition, ErrMsg, additional args for msg);
+ERROR_ASSERT(condition, ErrMsg, additional args for msg);
+```
+where condition is any conditional expression that evaluates to
+true/false. These have the same behavior as the critical errors
+above with a false condition treated as an ``Err::Fail``. The
+REQUIRE interface is always evaluated; the ASSERT interface behaves
+similarly to the C++ assert function and is only checked for DEBUG
+builds.
 
 For less severe errors, we provide several different macros
 to match the behavior desired when continuing the simulation.
