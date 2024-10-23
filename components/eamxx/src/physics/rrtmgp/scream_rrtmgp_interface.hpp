@@ -562,44 +562,6 @@ static void rrtmgp_sw(
   const int ngpt = k_dist.get_ngpt();
   const int ngas = gas_concs.get_num_gases();
 
-  // Allocate temporaries from pool
-  const int size1 = nday;
-  const int size2 = nday*nlay; // 4
-  const int size3 = nday*(nlay+1); // 5
-  const int size4 = ncol*nlay;
-  const int size5 = nbnd*nday; //2
-  const int size6 = nday*ngpt;
-  const int size7 = nday*(nlay+1)*nbnd; // 3
-  const int size8 = ncol*nlay*(k_dist.get_ngas()+1);
-
-  RealT* data = pool_t::template alloc_raw<RealT>(size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8), *dcurr = data;
-
-  auto mu0_day             = view_t<RealT*>  (dcurr, nday); dcurr += size1;
-
-  auto p_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto t_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto vmr_day             = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto t_lay_limited       = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-
-  auto p_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto t_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_up_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_dn_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_dn_dir_day     = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-
-  auto vmr                 = view_t<RealT**> (dcurr, ncol, nlay); dcurr += size4;
-
-  auto sfc_alb_dir_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
-  auto sfc_alb_dif_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
-
-  auto toa_flux            = view_t<RealT**> (dcurr, nday, ngpt); dcurr += size6;
-
-  auto bnd_flux_up_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
-  auto bnd_flux_dn_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
-  auto bnd_flux_dn_dir_day = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
-
-  auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
-
   // Associate local pointers for fluxes
   auto &flux_up = fluxes.flux_up;
   auto &flux_dn = fluxes.flux_dn;
