@@ -247,6 +247,7 @@ module seq_comm_mct
   integer, public :: mbintxrl ! iMOAB id for intx mesh between river and land
   
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
+  logical, public :: mb_rof_aream_computed = .false.  ! whether the aream for rof has been set or not 
 
   !=======================================================================
 contains
