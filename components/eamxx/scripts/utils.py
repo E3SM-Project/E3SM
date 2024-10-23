@@ -2,7 +2,7 @@
 Utilities
 """
 
-import os, sys, re, signal, subprocess, site, time, shutil
+import os, sys, re, signal, subprocess, site, time, shutil, argparse
 from importlib import import_module
 import stat as statlib
 from pathlib import Path
@@ -495,3 +495,15 @@ def safe_copy(src_path, tgt_path, preserve_meta=True):
         os.chmod(
             tgt_path, st.st_mode | statlib.S_IXUSR | statlib.S_IXGRP | statlib.S_IXOTH
         )
+
+###############################################################################
+class GoodFormatter(
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter
+):
+###############################################################################
+    """
+    We want argument default info to be added but we also want to
+    preserve formatting in the description string.
+    """
+    pass

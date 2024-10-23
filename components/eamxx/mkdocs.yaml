@@ -10,6 +10,8 @@ nav:
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
     - 'COSP': 'user/cosp.md'
+    - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
+    - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'

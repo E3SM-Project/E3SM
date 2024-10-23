@@ -119,6 +119,9 @@ public:
   // Load initial conditions for atm inputs
   void initialize_fields ();
 
+  // Create output managers
+  void create_output_managers ();
+
   // Initialie I/O structures for output
   void initialize_output_managers ();
 
@@ -204,6 +207,7 @@ protected:
 
   ekat::ParameterList                       m_atm_params;
 
+  std::shared_ptr<OutputManager>            m_restart_output_manager;
   std::list<OutputManager>                  m_output_managers;
 
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
@@ -239,6 +243,7 @@ protected:
   static constexpr int s_fields_inited  =  256;
   static constexpr int s_procs_inited   =  512;
   static constexpr int s_ts_inited      = 1024;
+  static constexpr int s_output_created = 2048;
 
   // Lazy version to ensure s_atm_inited & flag is true for every flag,
   // even if someone adds new flags later on

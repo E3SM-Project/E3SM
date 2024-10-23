@@ -33,7 +33,7 @@ void P3Microphysics::run_impl (const double dt)
 #ifdef SCREAM_P3_SMALL_KERNELS
                temporaries,
 #endif
-               workspace_mgr, m_num_cols, m_num_levs, m_p3constants);
+               workspace_mgr, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

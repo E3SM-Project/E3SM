@@ -14,10 +14,13 @@ namespace scream
 {
 
 // How the file capacity is specified
+// NOTE: Keep Yearly=0, Monthly=1, Daily=2, so you can use them
+//       to access a TimeStamp date at the correct index in StorageSpecs methods
 enum StorageType {
-  NumSnaps,   // Fixed number of snaps per file
-  Monthly,    // Each file contains output for one month
-  Yearly      // Each file contains output for one year
+  Yearly  = 0,  // Each file contains output for one year
+  Monthly = 1,  // Each file contains output for one month
+  Daily   = 2,  // Each file contains output for one day
+  NumSnaps      // Fixed number of snaps per file
 };
 
 inline std::string e2str (const StorageType st) {
@@ -25,6 +28,7 @@ inline std::string e2str (const StorageType st) {
     case NumSnaps: return "num_snapshots";
     case Yearly:   return "one_year";
     case Monthly:  return "one_month";
+    case Daily:    return "one_day";
     default:       return "unknown";
   }
 }
@@ -33,21 +37,20 @@ struct StorageSpecs {
 
   StorageType type = NumSnaps;
 
-  // Current index ***in terms of this->type***
-  // If type==NumSnaps, curr_idx=num_snapshots_in_file,
-  // otherwise it is the month/year index stored in this file
+  // Current index for type!=NumSnaps. It stores the year/month/day
+  // index associated with this file
   int  curr_idx = -1;
 
   // A snapshot fits if
   //  - type=NumSnaps: the number of stored snaps is less than the max allowed per file.
-  //  - otherwise: the snapshot month/year index match the one currently stored in the file
+  //  - otherwise: the snapshot year/month/day index match the one currently stored in the file
   //               or the file has no snapshot stored yet
-  bool snapshot_fits (const util::TimeStamp& t) {
-    const auto& idx = type==Monthly ? t.get_month() : t.get_year();
+  bool snapshot_fits (const util::TimeStamp& t) const {
     switch (type) {
-      case Yearly:
-      case Monthly:
-        return curr_idx==-1 or curr_idx==idx;
+      case Yearly:  [[fallthrough]];
+      case Monthly: [[fallthrough]];
+      case Daily:
+        return curr_idx==-1 or curr_idx==t.get_date()[static_cast<int>(type)];
       case NumSnaps:
         return num_snapshots_in_file<max_snapshots_in_file;
       default:
@@ -56,10 +59,15 @@ struct StorageSpecs {
   }
 
   void update_storage (const util::TimeStamp& t) {
+    // We always update the snap counter (regardless of storage type),
+    // so that FileSpecs can correctly detect if it needs flushing
     switch (type) {
-      case Yearly:    curr_idx = t.get_year();  break;
-      case Monthly:   curr_idx = t.get_month(); break;
-      case NumSnaps:  ++num_snapshots_in_file;  break;
+      case Yearly:  [[fallthrough]];
+      case Monthly: [[fallthrough]];
+      case Daily:
+          curr_idx = t.get_date()[static_cast<int>(type)]; [[fallthrough]];
+      case NumSnaps:
+        ++num_snapshots_in_file;  break;
       default:
         EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
@@ -86,9 +94,8 @@ struct IOFileSpecs {
   // If positive, flush the output file every these many snapshots
   int flush_frequency = std::numeric_limits<int>::max();
 
-  // bool file_is_full () const { return num_snapshots_in_file>=max_snapshots_in_file; }
   bool file_needs_flush () const {
-    return storage.num_snapshots_in_file%flush_frequency==0;
+    return storage.num_snapshots_in_file>0 and storage.num_snapshots_in_file%flush_frequency==0;
   }
 
   // Whether it is a model output, model restart, or history restart file

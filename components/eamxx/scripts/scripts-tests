@@ -10,7 +10,7 @@ If you are on a batch machine, it is expected that you are on a compute node.
 TODO: Add doctests to libs
 """
 
-from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result, GoodFormatter
 
 check_minimum_python_version(3, 6)
 
@@ -544,7 +544,7 @@ OR
     parser = argparse.ArgumentParser(
         usage=help_str,
         description=desc,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=GoodFormatter)
 
     parser.add_argument("-m", "--machine",
                         help="Provide machine name. This is required for full (not dry) runs")

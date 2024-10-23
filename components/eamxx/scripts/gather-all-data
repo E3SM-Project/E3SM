@@ -20,7 +20,7 @@ A number of options support automatic magic strings. See the help for individual
 options to see which magic strings are supported.
 """
 
-from utils import expect, check_minimum_python_version
+from utils import expect, check_minimum_python_version, GoodFormatter
 from git_utils import get_current_commit
 
 check_minimum_python_version(3, 5)
@@ -52,7 +52,7 @@ OR
     > {0} '$scream/scripts/perf-analysis ncol:8000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=$kokkos --test=lin-interp/li_ref --test=lin-interp/li_kokkos --test=lin-interp/li_vect -s ncol:2:128000' -m blake -o
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("run", help="What to run on the machine, cwd for the command will be root-dir. "

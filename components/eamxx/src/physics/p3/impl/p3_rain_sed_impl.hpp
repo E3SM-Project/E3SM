@@ -18,11 +18,11 @@ void Functions<S,D>
   const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
   const Spack& qr_incld, const Spack& rhofacr,
   Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   Table3 table;
-  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, p3constants, context);
+  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, runtime_options, context);
 
   if (context.any()) {
     lookup(mu_r, lamr, table, context);
@@ -56,7 +56,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qr_tend,
   const uview_1d<Spack>& nr_tend,
   Scalar& precip_liq_surf,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qr, V_nr, flux_qx, flux_nx;
@@ -112,7 +112,7 @@ void Functions<S,D>
           compute_rain_fall_velocity(vn_table_vals, vm_table_vals,
                                      qr_incld(pk), rhofacr(pk),
                                      nr_incld(pk), mu_r(pk), lamr(pk),
-				     V_qr(pk), V_nr(pk), p3constants, qr_gt_small);
+				     V_qr(pk), V_nr(pk), runtime_options, qr_gt_small);
 
 	  //in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
 	  //distribution within reasonable bounds by modifying nr_incld.

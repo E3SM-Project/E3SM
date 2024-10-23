@@ -48,7 +48,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -202,18 +202,25 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
       </tables>
-      <p3_autoconversion_prefactor type="real" doc="P3 autoconversion_prefactor (scale factor in autoconversion)">1350.0</p3_autoconversion_prefactor>
-      <p3_mu_r_constant type="real" doc="P3 mu_r_constant (rain shape parameter in gamma drop-size distribution)">1.0</p3_mu_r_constant>
-      <p3_spa_to_nc type="real" doc="P3 spa_to_nc (scaling factor for turning CCN into nc in SPA)">1.0</p3_spa_to_nc>
-      <p3_k_accretion type="real" doc="P3 k_accretion (scaling factor on accretion)">67.0</p3_k_accretion>
-      <p3_eci type="real" doc="P3 eci (liquid/ice collision/collection coefficient)">0.5</p3_eci>
-      <p3_eri type="real" doc="P3 eri (ice/rain collision/collection coefficient)">1.0</p3_eri>
-      <p3_rho_rime_min type="real" doc="P3 rho_rime_min (riming density maximum)">50.0</p3_rho_rime_min>
-      <p3_rho_rime_max type="real" doc="P3 rho_rime_max (riming density minimum)">900.0</p3_rho_rime_max>
-      <p3_a_imm type="real" doc="P3 a_imm (drop freezing exponent )">0.65</p3_a_imm>
-      <p3_dep_nucleation_exponent type="real" doc="P3 dep_nucleation_exponent (deposition nucleation)">0.304</p3_dep_nucleation_exponent>
-      <p3_ice_sed_knob type="real" doc="P3 ice_sed_knob (ice fall speed)">1.0</p3_ice_sed_knob>
-      <p3_d_breakup_cutoff type="real" doc="P3 d_breakup_cutoff (rain self collection and breakup)">0.00028</p3_d_breakup_cutoff>
+      <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
+      <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
+      <autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent">1.79</autoconversion_nc_exponent>
+      <autoconversion_radius type="real" doc="Autoconversion droplet radius in meter">25.0e-6</autoconversion_radius>
+      <accretion_prefactor type="real" doc="Accretion linear prefactor">67.0</accretion_prefactor>
+      <accretion_qc_exponent type="real" doc="Accretion qc exponent">1.15</accretion_qc_exponent>
+      <accretion_qr_exponent type="real" doc="Accretion qr exponent">1.15</accretion_qr_exponent>
+      <rain_selfcollection_prefactor type="real" doc="Rain self-collection prefactor">5.78</rain_selfcollection_prefactor>
+      <rain_selfcollection_breakup_diameter type="real" doc="Rain self-collection breakup diameter in meter">0.00028</rain_selfcollection_breakup_diameter>
+      <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
+      <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_factor>
+      <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
+      <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
+      <min_rime_rho type="real" doc="Minimum rime density in kg/m3">50.0</min_rime_rho>
+      <max_rime_rho type="real" doc="Maximum rime density in kg/m3">900.0</max_rime_rho>
+      <immersion_freezing_exponent type="real" doc="Immersion freezing exponent for both rain and cloud liquid">0.65</immersion_freezing_exponent>
+      <deposition_nucleation_exponent type="real" doc="Deposition nucleation exponent factor">0.304</deposition_nucleation_exponent>
+      <ice_sedimentation_factor type="real" doc="Ice sedimentation fall speed factor">1.0</ice_sedimentation_factor>
+      <do_ice_production type="logical" doc="Flag to turn on ice production processes (loss processes unaffected)">true</do_ice_production>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -357,6 +364,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
       <spa_remap_file COMPSET=".*DP-EAMxx"/>
 
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one"/>
@@ -409,6 +417,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CAx32v1">3</rad_frequency>
       <rad_frequency COMPSET=".*DP-EAMxx">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
@@ -442,6 +451,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CAx32v1">1</number_of_subcycles>
       <number_of_subcycles COMPSET=".*DP-EAMxx">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
@@ -479,7 +489,8 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
     <Filename type="file">UNSET</Filename>
-    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</Filename>
     <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
     <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
@@ -490,6 +501,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
+    <Filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</Filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
@@ -506,6 +518,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
+    <!-- CA RRM grid -->
+    <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
     <restart_casename>${CASE}.scream</restart_casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
@@ -576,8 +590,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
     <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne512np4|ne1024np4">0.0</nc>
-    <ni hgrid="ne256np4|ne512np4|ne1024np4">0.0</ni>
+    <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
+    <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
@@ -601,6 +615,18 @@ be lost if SCREAM_HACK_XML is not enabled.
       </output_control>
     </model_restart>
   </Scorpio>
+
+  <!-- driver debug options for eamxx -->
+  <!--
+       These options are meant for power users to debug the code.
+       They are not meant to be used for typical eamxx simulations.
+  --> 
+  <driver_debug_options>
+    <force_crash_nsteps type="integer"
+		  doc="Force simulation to fail at a specific atmosphere timestep">
+      -9999
+    </force_crash_nsteps>
+  </driver_debug_options>
 
   <!-- driver_options options for scream -->
   <driver_options>
@@ -665,6 +691,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hv_ref_profiles hgrid="ne120np4">0</hv_ref_profiles>
     <hv_ref_profiles hgrid="ne512np4">0</hv_ref_profiles>
     <hv_ref_profiles hgrid="ne0np4_conus_x4v1_lowcon">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne0np4_CAx32v1">0</hv_ref_profiles>
     <hv_ref_profiles COMPSET=".*SCREAM%AQUA.*">0</hv_ref_profiles>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
@@ -680,6 +707,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne256np4">4.0e4</nu_top>
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
     <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
@@ -687,6 +715,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <pgrad_correction hgrid="ne120np4">0</pgrad_correction>
     <pgrad_correction hgrid="ne512np4">0</pgrad_correction>
     <pgrad_correction hgrid="ne0np4_conus_x4v1_lowcon">0</pgrad_correction>
+    <pgrad_correction hgrid="ne0np4_CAx32v1">0</pgrad_correction>
     <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
@@ -699,6 +728,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
     <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
     <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
+    <se_ne hgrid="ne0np4_CAx32v1">0</se_ne>
     <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
@@ -720,6 +750,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
     <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
     <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CAx32v1" constraints="gt 0">8.3333333333333</se_tstep>
     <se_tstep COMPSET=".*DP-EAMxx" constraints="gt 0">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
     <statefreq>9999</statefreq>
@@ -742,6 +773,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
     <mesh_file type="file">none</mesh_file>
     <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
   </ctl_nl>
 
 </namelist_defaults>

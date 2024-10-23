@@ -74,8 +74,9 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
         nr_selfcollect_tend_local[s]    = dc_device(vs).nr_selfcollect_tend;
       }
 
-      Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local,
-		      physics::P3_Constants<Real>());
+      Functions::rain_self_collection(
+          rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local,
+          p3::Functions<Real,DefaultDevice>::P3Runtime());
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

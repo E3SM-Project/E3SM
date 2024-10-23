@@ -3,7 +3,6 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
 #include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -220,13 +219,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
-  // Gather runtime options
-  runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
-
-  // setting P3 constants in a struct
-  m_p3constants.set_p3_from_namelist(m_params);
-  m_p3constants.print_p3constants(m_atm_logger);
-  // done setting P3 constants
+  // Gather runtime options from file
+  runtime_options.load_runtime_options_from_file(m_params);
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);

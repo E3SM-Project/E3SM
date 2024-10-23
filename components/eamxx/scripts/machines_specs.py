@@ -8,7 +8,7 @@ CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..",".
 
 # MACHINE -> (env_setup,                      # list of shell commands to set up scream-approved env
 #             compilers,                      # list of compilers [CXX, F90, C]
-#             batch submit prefix,            # string shell commmand prefix
+#             batch submit prefix,            # string shell commmand prefix, leave blank for non-batch machines
 #             pre-existing baselines root dir # string path)
 MACHINE_METADATA = {
     # NOTE: blake must use a different minor version of python than weaver
