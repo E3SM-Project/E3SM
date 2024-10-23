@@ -11,43 +11,8 @@ template <typename ScalarType, typename DeviceType>
 struct fracLandUseFunctions {
   using Device = DeviceType;
 
-  using KT      = KokkosTypes<Device>;
-  using view_2d = typename KT::template view_2d<Real>;
-
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
-  struct FracLandUseData {
-    FracLandUseData() = default;
-    FracLandUseData(const int ncol_, const int nclass_) {
-      init(ncol_, nclass_, true);
-    }
-    void init(const int ncol_, const int nclass_, const bool allocate) {
-      ncols  = ncol_;
-      nclass = nclass_;
-      if(allocate) frac_land_use = view_2d("FRAC_LAND_USE", ncols, nclass);
-    }
-    // Basic spatial dimensions of the data
-    int ncols;
-    int nclass;
-
-    // Fractional land use (unitless) dimensions = (nclass, ncols)
-    view_2d frac_land_use;
-  };  // FracLandUseData
-
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
-  struct FracLandUseInput {
-    FracLandUseInput() = default;
-    FracLandUseInput(const int ncols_, const int nclass_) {
-      init(ncols_, nclass_);
-    }
-    void init(const int ncols_, const int nclass_) {
-      data.init(ncols_, nclass_, true);
-    }
-    FracLandUseData data;  // All fractional land use fields
-  };                       // FracLandUseInput
+  using KT            = KokkosTypes<Device>;
+  using const_view_2d = typename KT::template view_2d<const Real>;
 
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
@@ -71,7 +36,7 @@ struct fracLandUseFunctions {
 
   static void update_frac_land_use_data_from_file(
       std::shared_ptr<AtmosphereInput> &scorpio_reader,
-      AbstractRemapper &horiz_interp, FracLandUseInput &input);
+      AbstractRemapper &horiz_interp, const_view_2d &input);
 
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
@@ -83,7 +48,6 @@ struct fracLandUseFunctions {
       const std::string &data_file, const std::string &mapping_file,
       // output
       std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
-      FracLandUseInput &FracLandUseData_data,
       std::shared_ptr<AtmosphereInput> &FracLandUseDataReader);
 
 };  // struct fracLandUseFunctions
