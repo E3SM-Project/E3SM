@@ -1291,7 +1291,7 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
     // Check answers by computing new cldfrac from mask
     Kokkos::deep_copy(cldfrac_from_mask, 0.0);
     Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
@@ -1325,7 +1325,7 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
     auto cldmask_h = chc(cldmask);
     for (int igpt = 0; igpt < ngpt; igpt++) {
       if (cldmask_h(0,0,igpt) == 1) {
