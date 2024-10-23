@@ -1,0 +1,123 @@
+name: EAMxx standalone testing
+
+on:
+  # Runs on PRs against master
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+  # Manual run is used to bless
+  workflow_dispatch:
+    inputs:
+      jobs_list:
+        description: 'Job to run'
+        required: true
+        type: choice
+        options:
+          - gcc-openmp
+      bless:
+        description: 'Generate baselines'
+        required: true
+        type: boolean
+
+  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
+  # schedule:
+  #   - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+
+concurrency:
+  # Two runs are in the same group if:
+  #  - they have the same trigger
+  #  - if trigger=pull_request, the PR number must match
+  #  - if trigger=workflow_dispatch, the inputs are the same
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{
+             github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id
+           }}
+  cancel-in-progress: true
+
+jobs:
+  gcc-openmp:
+    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
+    strategy:
+      fail-fast: true
+      matrix:
+        build_type: [sp, dbg, fpe, opt]
+    # Run this workflow if:
+    #   - workflow_dispatch: user requested this job.
+    #   - schedule: always:
+    #   - pull_request: matching skip label is NOT found
+    if: |
+      ${{
+          github.event_name == 'schedule' || 
+          ( github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list == 'gcc-openmp' ) ||
+          (
+            github.event_name == 'pull_request' &&
+            !(
+              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc-openmp') || 
+              contains(github.event.pull_request.labels.*.name, 'AT: skip standalone')
+            )
+          )
+        }}
+    name: gcc-openmp-${{ matrix.build_type }}
+    steps:
+      - name: Show action trigger
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const eventAction = context.payload.action || 'N/A';
+            const actor = context.actor;
+            console.log(`The job was triggered by a ${eventName} event.`);
+            console.log(`  - Event action: ${eventAction}`);
+            console.log(`  - Triggered by: ${actor}`);
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Set test-all inputs based on event specs
+        run: |
+          echo "submit=false" >> $GITHUB_ENV
+          echo "generate=false" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "submit=true" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ inputs.bless }}" == "true" ]; then
+              echo "generate=true" >> $GITHUB_ENV
+            fi
+          fi
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-snl-cpu
+          generate: ${{ env.generate }}
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ENABLE_OPENMP=ON
+  # cuda:
+  #   # Disable until the CUDA container is up and running. When CUDA container is availabe, remove
+  #   # this line and uncomment the next if
+  #   if: false
+  #   # Runs always for pull_request. For workflow_dispatch, user must request this machine
+  #   # if: ${{ github.event_name == 'pull_request' || contains(github.event.inputs.jobs_to_run, 'openmp-gcc') }}
+  #   runs-on:  [self-hosted, cuda]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       build_type: [sp, dbg, fpe, opt]
+  #   name: cuda-${{ matrix.build_type }}
+  #   steps:
+  #     - name: Show action trigger
+  #       uses: ./.github/actions/print-workflow-trigger
+  #     - name: Check out the repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #         show-progress: false
+  #         submodules: recursive
+  #     - name: Run tests
+  #       uses: ./.github/actions/test-all-scream
+  #       with:
+  #         build_type: ${{ matrix.build_type }}
+  #         machine: ghci-snl-cuda
+  #         run_type: at-run
