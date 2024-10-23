@@ -19,6 +19,9 @@
 
 module ocn_conservation_check
 
+   use shr_kind_mod, only: SHR_KIND_R8
+   use shr_const_mod
+
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
@@ -158,10 +161,9 @@ contains
       !-----------------------------------------------------------------
 
       ! taking PI from SHR_CONST_PI in share/util/shr_const_mod.F90 to match coupler
-      !real (kind=RKIND), parameter :: piE3SM = 3.14159265358979323846_RKIND  ! pi
-      real (kind=RKIND), parameter :: piE3SM = 3.141592653589793_RKIND
+      real (kind=RKIND), parameter :: piE3SM = SHR_CONST_PI
       ! taking earth radius from SHR_CONST_REARTH in share/util/shr_const_mod.F90 to match coupler
-      real (kind=RKIND), parameter :: earthRadiusE3SM = 6.371229e6_RKIND ! radius of earth, m
+      real (kind=RKIND), parameter :: earthRadiusE3SM = SHR_CONST_REARTH ! radius of earth, m
 
       err = 0
 
