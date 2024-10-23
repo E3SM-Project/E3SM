@@ -506,4 +506,3 @@ class GoodFormatter(
     We want argument default info to be added but we also want to
     preserve formatting in the description string.
     """
-    pass
