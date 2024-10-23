@@ -405,12 +405,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- in drv_in, and we should probably switch to allowing for that in the future.   -->
       <orbital_year>-9999</orbital_year>
       <orbital_year COMPSET="2010_.*">2010</orbital_year>
-      <orbital_eccentricity>-9999</orbital_eccentricity>
-      <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
-      <orbital_obliquity>-9999</orbital_obliquity>
-      <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0</orbital_obliquity>
-      <orbital_mvelp>-9999</orbital_mvelp>
-      <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0</orbital_mvelp>
+      <orbital_eccentricity type="real">-9999.0</orbital_eccentricity>
+      <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_eccentricity>
+      <orbital_obliquity type="real">-9999.0</orbital_obliquity>
+      <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_obliquity>
+      <orbital_mvelp type="real">-9999.0</orbital_mvelp>
+      <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0.0</orbital_mvelp>
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne120np4">4</rad_frequency>
