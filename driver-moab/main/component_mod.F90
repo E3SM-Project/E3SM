@@ -615,7 +615,8 @@ contains
             tagname='aream'//C_NULL_CHAR
             nloc = mct_avect_lsize(dom_s%data)
             allocate(data1(nloc))
-            data1 = dom_s%data%rAttr(ka,:)
+            km = mct_aVect_indexRa(dom_s%data, "aream" )
+            data1 = dom_s%data%rAttr(km,:)
             ent_type = 1  ! element dense double tags
             allocate(gids(nloc))
             gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
@@ -628,6 +629,14 @@ contains
             endif
             deallocate(gids)
             deallocate(data1)
+#ifdef MOABDEBUG
+            ierr = iMOAB_WriteMesh(mbrxid, trim('recRofWithAream.h5m'//C_NULL_CHAR), &
+                                    trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing rof  mesh coupler '
+               call shr_sys_abort(subname//' ERROR in writing rof mesh coupler ')
+            endif
+#endif
           endif
        endif
     end if
