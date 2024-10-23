@@ -171,8 +171,8 @@ macro(createTestExec execName execType macroNP macroNC
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -qmkl)
-    TARGET_LINK_LIBRARIES(${execName} -qmkl)
+    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${execName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${execName} lapack blas)
@@ -270,8 +270,8 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   ENDIF ()
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -qmkl)
-    TARGET_LINK_LIBRARIES(${libName} -qmkl)
+    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${libName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${libName} lapack blas)

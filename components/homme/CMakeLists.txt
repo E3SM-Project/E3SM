@@ -258,7 +258,7 @@ endif()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
-  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -qmkl will be added to each executable/library.")
+  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl will be added to each executable/library.")
 ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
