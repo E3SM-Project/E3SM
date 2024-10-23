@@ -48,6 +48,9 @@ module seq_diag_mct
   use shr_reprosum_mod, only : shr_reprosum_calc
   use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
+  use prep_glc_mod,  only : prep_glc_get_x2gacc_gx_cnt 
+  use glc_elevclass_mod, only: glc_get_num_elevation_classes 
+
   implicit none
   save
   private
@@ -140,42 +143,45 @@ module seq_diag_mct
   integer(in),parameter :: f_hsen      =10     ! heat : sensible
   integer(in),parameter :: f_hpolar    =11     ! heat : AIS imbalance
   integer(in),parameter :: f_hh2ot     =12     ! heat : water temperature
-  integer(in),parameter :: f_wfrz      =13     ! water: freezing
-  integer(in),parameter :: f_wmelt     =14     ! water: melting
-  integer(in),parameter :: f_wrain     =15     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow     =16     ! water: precip, frozen
-  integer(in),parameter :: f_wpolar    =17     ! water: AIS imbalance
-  integer(in),parameter :: f_wevap     =18     ! water: evaporation
-  integer(in),parameter :: f_wroff     =19     ! water: runoff/flood
-  integer(in),parameter :: f_wioff     =20     ! water: frozen runoff
-  integer(in),parameter :: f_wirrig    =21     ! water: irrigation
-  integer(in),parameter :: f_wfrz_16O  =22     ! water: freezing
-  integer(in),parameter :: f_wmelt_16O =23     ! water: melting
-  integer(in),parameter :: f_wrain_16O =24     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_16O =25     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_16O =26     ! water: evaporation
-  integer(in),parameter :: f_wroff_16O =27     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_16O =28     ! water: frozen runoff
-  integer(in),parameter :: f_wfrz_18O  =29     ! water: freezing
-  integer(in),parameter :: f_wmelt_18O =30     ! water: melting
-  integer(in),parameter :: f_wrain_18O =31     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_18O =32     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_18O =33     ! water: evaporation
-  integer(in),parameter :: f_wroff_18O =34     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_18O =35     ! water: frozen runoff
-  integer(in),parameter :: f_wfrz_HDO  =36     ! water: freezing
-  integer(in),parameter :: f_wmelt_HDO =37     ! water: melting
-  integer(in),parameter :: f_wrain_HDO =38     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_HDO =39     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_HDO =40     ! water: evaporation
-  integer(in),parameter :: f_wroff_HDO =41     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_HDO =42     ! water: frozen runoff
+  integer(in),parameter :: f_hgsmb     =13     ! heat : Greenland ice sheet surface mass balance
+  integer(in),parameter :: f_wfrz      =14     ! water: freezing
+  integer(in),parameter :: f_wmelt     =15     ! water: melting
+  integer(in),parameter :: f_wrain     =16     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow     =17     ! water: precip, frozen
+  integer(in),parameter :: f_wpolar    =18     ! water: AIS imbalance
+  integer(in),parameter :: f_wgsmb     =19     ! water: Greenland ice sheet surface mass balance
+  integer(in),parameter :: f_wevap     =20     ! water: evaporation
+  integer(in),parameter :: f_wroff     =21     ! water: runoff/flood
+  integer(in),parameter :: f_wioff     =22     ! water: frozen runoff
+  integer(in),parameter :: f_wirrig    =23     ! water: irrigation
+  integer(in),parameter :: f_wfrz_16O  =24     ! water: freezing
+  integer(in),parameter :: f_wmelt_16O =25     ! water: melting
+  integer(in),parameter :: f_wrain_16O =26     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_16O =27     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_16O =28     ! water: evaporation
+  integer(in),parameter :: f_wroff_16O =29     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_16O =30     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_18O  =31     ! water: freezing
+  integer(in),parameter :: f_wmelt_18O =32     ! water: melting
+  integer(in),parameter :: f_wrain_18O =33     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_18O =34     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_18O =35     ! water: evaporation
+  integer(in),parameter :: f_wroff_18O =36     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_18O =37     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_HDO  =38     ! water: freezing
+  integer(in),parameter :: f_wmelt_HDO =39     ! water: melting
+  integer(in),parameter :: f_wrain_HDO =40     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_HDO =41     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_HDO =42     ! water: evaporation
+  integer(in),parameter :: f_wroff_HDO =43     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_HDO =44     ! water: frozen runoff
 
   integer(in),parameter :: f_size     = f_wioff_HDO   ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
-  integer(in),parameter :: f_h_end    = f_hh2ot       ! Last index for heat
+  !integer(in),parameter :: f_h_end    = f_hh2ot       ! Last index for heat
+  integer(in),parameter :: f_h_end    = f_hgsmb       ! Last index for heat
   integer(in),parameter :: f_w        = f_wfrz        ! 1st index for water
   integer(in),parameter :: f_w_end    = f_wirrig      ! Last index for water
   integer(in),parameter :: f_16O      = f_wfrz_16O    ! 1st index for 16O water isotope
@@ -189,8 +195,10 @@ module seq_diag_mct
 
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
-       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
+!       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
+       '      hpolar','    hh2otemp','       hgsmb','     wfreeze','       wmelt','       wrain', &
+!       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
+       '       wsnow','      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O',                               &
@@ -262,6 +270,8 @@ module seq_diag_mct
   integer :: index_l2x_Flrl_irrig
   integer :: index_l2x_Flrl_wslake
 
+  integer, allocatable :: index_l2x_Flgl_qice(:) 
+  integer, allocatable :: index_x2l_Sg_ice_covered(:)
 
   integer :: index_x2l_Faxa_lwdn
   integer :: index_x2l_Faxa_rainc
@@ -337,6 +347,8 @@ module seq_diag_mct
   integer :: index_g2x_Fogg_rofl
   integer :: index_g2x_Fogg_rofi
   integer :: index_g2x_Figg_rofi
+
+  integer :: index_x2g_Flgl_qice 
 
   integer :: index_x2o_Foxx_rofl_16O
   integer :: index_x2o_Foxx_rofi_16O
@@ -433,6 +445,9 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_snow_16O
   integer :: index_x2i_Faxa_snow_18O
   integer :: index_x2i_Faxa_snow_HDO
+
+  integer :: glc_nec
+  integer :: x2gacc_gx_cnt
 
   !===============================================================================
 contains
@@ -866,13 +881,19 @@ contains
     type(mct_aVect), pointer :: l2x_l        ! model to drv bundle
     type(mct_aVect), pointer :: x2l_l        ! drv to model bundle
     type(mct_ggrid), pointer :: dom_l
-    integer(in)              :: n,ic,nf,ip ! generic index
+    integer(in)              :: n,ic,nf,ip   ! generic index
     integer(in)              :: kArea        ! index of area field in aVect
     integer(in)              :: kl           ! fraction indices
     integer(in)              :: lSize        ! size of aVect
     real(r8)                 :: ca_l         ! area of a grid cell
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_lnd = .false.
+
+    real(r8)                 :: l2x_Flgl_qice_col_sum ! for summing fluxes over no. of elev. classes 
+
+    character(len=64)        :: name
+    character(len= 2)        :: cnum         
+    integer(in)              :: num               
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_lnd_mct) '
@@ -894,6 +915,13 @@ contains
     kArea = mct_aVect_indexRA(dom_l%data,afldname)
     kl    = mct_aVect_indexRA(frac_l,lfrinname)
 
+    ! get number of elevation classes and allocate relevant sets of indices 
+    glc_nec = glc_get_num_elevation_classes()
+    if (first_time) then
+       allocate(index_l2x_Flgl_qice(0:glc_nec))
+       allocate(index_x2l_Sg_ice_covered(0:glc_nec))
+    end if
+   
     if (present(do_l2x)) then
        if (first_time) then
           index_l2x_Fall_swnet  = mct_aVect_indexRA(l2x_l,'Fall_swnet')
@@ -908,6 +936,14 @@ contains
           index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
           index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
+
+          do num=0,glc_nec 
+             write(cnum,'(i2.2)') num
+             name = 'Flgl_qice' // cnum
+             index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name))
+             name = 'Sg_ice_covered' // cnum
+             index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) 
+          end do
 
           index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
           if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -942,7 +978,15 @@ contains
           if (index_l2x_Flrl_irrig /= 0) then
              nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
           end if
-          nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
+          nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n) ! contribution from land ice calving currently zero
+
+          l2x_Flgl_qice_col_sum = 0.0d0
+          do num=0,glc_nec 
+             ! sums the contributions from fluxes in each set of elevation classes 
+             ! RHS product is flux times fraction of area in specific elevation class times land cell area 
+             l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * ca_l 
+          end do
+          nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - l2x_Flgl_qice_col_sum
 
           if ( flds_wiso_lnd )then
              nf = f_wevap_16O;
@@ -976,7 +1020,14 @@ contains
                   ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi_HDO,n)
           end if
        end do
-       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+
+       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice ! contribution from land ice calving currently zero 
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice
+
+       ! Nneeded? Not sure if / when these should be deallocated
+       !deallocate(index_l2x_Flgl_qice(0:glc_nec))
+       !deallocate(index_x2l_Sg_ice_covered(0:glc_nec))
+
     end if
 
     if (present(do_x2l)) then
@@ -1252,27 +1303,32 @@ contains
   !     Compute global glc input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2024-Sept. - S. Price - update
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_diag_glc_mct( glc, frac_g, infodata)
+  subroutine seq_diag_glc_mct( glc, frac_g, infodata, do_x2g, do_g2x )
 
     type(component_type)    , intent(in) :: glc    ! component type for instance1
-    type(mct_aVect)         , intent(in) :: frac_g ! frac bundle
+    type(mct_aVect)         , intent(in) :: frac_g ! frac bundle (may not be used / needed here) 
     type(seq_infodata_type) , intent(in) :: infodata
+    logical                 , intent(in), optional :: do_x2g
+    logical                 , intent(in), optional :: do_g2x
 
     !EOP
 
     !----- local -----
     type(mct_aVect), pointer :: g2x_g
-    type(mct_aVect), pointer :: x2g_g
+    type(mct_aVect), pointer :: x2gacc_g        
     type(mct_ggrid), pointer :: dom_g
     integer(in)              :: n,ic,nf,ip      ! generic index
-    integer(in)              :: kArea             ! index of area field in aVect
-    integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_g ! area of a grid cell
+    integer(in)              :: kArea           ! index of area field in aVect
+    integer(in)              :: lSize           ! size of aVect
+    real(r8)                 :: ca_g            ! area of a grid cell
     logical,save             :: first_time = .true.
+
+    integer,save             :: counter,smb_counter,calving_counter ! SFP: Debugging 
+    integer,save             :: smb_vector_length,calving_vector_length
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_mct) '
@@ -1287,25 +1343,73 @@ contains
 
     dom_g => component_get_dom_cx(glc)
     g2x_g => component_get_c2x_cx(glc)
-    x2g_g => component_get_x2c_cx(glc)
-
-    if (first_time) then
-       index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
-       index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
-       index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
-    end if
+    x2gacc_g => component_get_x2c_cx(glc)
 
     ip = p_inst
-    ic = c_glc_gs
-    kArea = mct_aVect_indexRA(dom_g%data,afldname)
-    lSize = mct_avect_lSize(g2x_g)
-    do n=1,lSize
-       ca_g =  dom_g%data%rAttr(kArea,n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
-            - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
-    end do
-    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+
+    if( present(do_g2x))then  ! do fields from glc to coupler (g2x_)
+
+       if (first_time) then
+
+          calving_counter=0
+          calving_vector_length = 0
+
+          index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
+          index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
+          index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
+
+       end if
+
+       ic = c_glc_gr
+       kArea = mct_aVect_indexRA(dom_g%data,afldname)
+       lSize = mct_avect_lSize(g2x_g)
+
+       do n=1,lSize
+           ca_g =  dom_g%data%rAttr(kArea,n)
+           nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
+           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
+                   - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
+       end do
+
+       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+
+    endif ! end do fields from glc to coupler (g2x_)
+
+    if( present(do_x2g))then  ! do fields from coupler to glc (x2g_)
+
+       x2gacc_gx_cnt = prep_glc_get_x2gacc_gx_cnt() ! counter for how many times SMB flux accumulation has occured 
+                                                    ! note that this would be useful below but does not seem to work currently
+                                                    ! (being reset to zero before being called here?)
+       if (first_time) then
+
+          smb_counter=0 ! something like this (or above) needed to turn average flux 
+                        ! into accumulated flux (i.e., multiply average flux by no. of lnd coupling intervals)
+
+          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2gacc_g,'Flgl_qice') ! While name suggests this holds accumulated flux,
+                                                                          ! it appears to actually be the average flux (e.g. see
+                                                                          ! subroutine 'prep_glc_accum_avg' in prep_glc_mod.f90.
+                                                                          ! (also note that this same value gets copied to x2g_)  
+       end if
+
+       ic = c_glc_gs
+       kArea = mct_aVect_indexRA(dom_g%data,afldname)
+       lSize = mct_avect_lSize(x2gacc_g)        
+
+       do n=1,lSize
+          ca_g =  dom_g%data%rAttr(kArea,n)
+          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2gacc_g%rAttr(index_x2g_Flgl_qice,n)
+       end do
+
+       !budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * x2gacc_gx_cnt ! ideally use something like this for multiplying average flux 
+                                                                    ! to get accumulated flux (but currently always zero)
+       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * smb_counter ! works for now, but sloppy and only works for a 1 day run
+
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
+
+       smb_vector_length = smb_vector_length +lSize
+       smb_counter = smb_counter + 1
+
+    end if ! end do fields from coupler to glc (x2g_)
 
     first_time = .false.
 
