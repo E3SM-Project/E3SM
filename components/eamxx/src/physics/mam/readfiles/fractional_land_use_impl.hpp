@@ -92,10 +92,6 @@ template <typename S, typename D>
 void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
     AbstractRemapper &horiz_interp, const_view_2d &input) {
-  using namespace ShortFieldTagsNames;
-  using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
-  using Member = typename KokkosTypes<DefaultDevice>::MemberType;
-
   start_timer("EAMxx::FracLandUse::update_frac_land_use_data_from_file");
 
   // 1. Read from file
