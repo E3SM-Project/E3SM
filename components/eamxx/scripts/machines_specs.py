@@ -222,7 +222,8 @@ def get_available_cpu_count(logical=True):
         cpu_count = len(get_cpu_ids_from_slurm_env_var())
     else:
         cpu_count = len(psutil.Process().cpu_affinity())
-    elif not logical:
+
+    if not logical:
         hyperthread_ratio = logical_cores_per_physical_core()
         return int(cpu_count / hyperthread_ratio)
     else:
