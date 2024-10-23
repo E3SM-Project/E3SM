@@ -6,12 +6,6 @@
 // For reading fractional land use file
 #include <physics/mam/readfiles/fractional_land_use.hpp>
 
-/*
------------------------------------------------------------------
-NOTES:
-1. Add a CIME test and multi-process tests
------------------------------------------------------------------
-*/
 namespace scream {
 
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
