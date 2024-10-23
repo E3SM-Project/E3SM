@@ -3548,9 +3548,9 @@ export FI_CXI_DEFAULT_CQ_SIZE=131072 # try avoiding F90 MPI_BCAST errors
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
