@@ -55,13 +55,13 @@ void MAMOptics::set_grids(
   add_field<Required>("p_int",              scalar3d_int, Pa,     grid_name);  // total pressure
   add_field<Required>("pseudo_density",     scalar3d_mid, Pa,     grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa,     grid_name);
-  add_tracer<Required>("qv",                scalar3d_mid, kg/kg,  grid_name);  // specific humidity
-  add_tracer<Required>("qi",                scalar3d_mid, kg/kg,  grid_name);  // ice wet mixing ratio
-  add_tracer<Required>("ni",                scalar3d_mid, n_unit, grid_name);  // ice number mixing ratio
+  add_tracer<Required>("qv",                grid_, kg/kg);                     // specific humidity
+  add_tracer<Required>("qi",                grid_, kg/kg);                     // ice wet mixing ratio
+  add_tracer<Required>("ni",                grid_, n_unit);                    // ice number mixing ratio
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_tracer<Required>("qc", scalar3d_mid, kg/kg, grid_name);  // cloud liquid wet mixing ratio
-  add_tracer<Required>("nc", scalar3d_mid, n_unit, grid_name);  // cloud liquid wet number mixing ratio
+  add_tracer<Required>("qc", grid_, kg/kg);  // cloud liquid wet mixing ratio
+  add_tracer<Required>("nc", grid_, n_unit);  // cloud liquid wet number mixing ratio
 
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim,grid_name);  // cloud fraction
@@ -86,12 +86,12 @@ void MAMOptics::set_grids(
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-    add_tracer<Updated>(int_nmr_field_name, scalar3d_mid, n_unit,grid_name);
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, scalar3d_mid, kg/kg,grid_name);
+        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
       }
     }
   }
@@ -113,7 +113,7 @@ void MAMOptics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, scalar3d_mid, kg/kg, grid_name);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg/kg);
   }
 }
 

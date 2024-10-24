@@ -350,10 +350,9 @@ protected:
 
   // Specialization for add_field to tracer group
   template<RequestType RT>
-  void add_tracer (const std::string& name, const FieldLayout& layout,
-                   const ekat::units::Units& u, const std::string& grid_name,
-                   const int ps = 1)
-  { add_field<RT>(name, layout, u, grid_name, "tracers", ps); }
+  void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
+                   const ekat::units::Units& u, const int ps = 1)
+  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
 
   // Group requests
   template<RequestType RT>

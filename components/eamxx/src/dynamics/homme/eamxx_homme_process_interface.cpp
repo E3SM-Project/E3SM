@@ -179,7 +179,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
 
-  add_tracer<Updated >("qv",   pg_scalar3d_mid, kg/kg, pgn, N);
+  add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
