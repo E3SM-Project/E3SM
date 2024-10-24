@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - components/eamxx
+      - components/eam/src/physics/rrtmgp
+      - components/eam/src/physics/p3/scream
+      - components/eam/src/physics/cam
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -52,7 +57,8 @@ jobs:
             github.event_name == 'pull_request' &&
             !(
               contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip v1')
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-v1') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
             )
           )
         }}

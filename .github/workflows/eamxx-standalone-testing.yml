@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - components/eamxx
+      - components/eam/src/physics/rrtmgp
+      - components/eam/src/physics/p3/scream
+      - components/eam/src/physics/cam
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -47,13 +52,15 @@ jobs:
     #   - pull_request: matching skip label is NOT found
     if: |
       ${{
-          github.event_name == 'schedule' || 
+          github.event_name == 'schedule' ||
           ( github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list == 'gcc-openmp' ) ||
           (
             github.event_name == 'pull_request' &&
             !(
-              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc-openmp') || 
-              contains(github.event.pull_request.labels.*.name, 'AT: skip standalone')
+              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip openmp') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-standalone') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
             )
           )
         }}
