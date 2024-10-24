@@ -1067,7 +1067,7 @@ static void compute_cloud_area(
 {
   // Subcolumn binary cld mask; if any layers with pressure between pmin and pmax are cloudy
   // then 2d subcol mask is 1, otherwise it is 0
-  auto subcol_mask = pool_t::template alloc<RealT>(ncol, ngpt);
+  auto subcol_mask = pool_t::template alloc_and_init<RealT>(ncol, ngpt);
   Kokkos::parallel_for(MDRP::template get<3>({ngpt, nlay, ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
     // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
     // using play/pmid does not
