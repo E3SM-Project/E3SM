@@ -1656,6 +1656,7 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <executable>mpirun</executable>
       <arguments>
         <arg name="binding"> --bind-to core</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
