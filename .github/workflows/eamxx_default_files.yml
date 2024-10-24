@@ -11,9 +11,13 @@ on:
     - cron: '00 00 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   scream-defaults:
-    if: ${{ github.event.repository.name == 'e3sm' }}
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     outputs:
       event_name: ${{ github.event_name }}
