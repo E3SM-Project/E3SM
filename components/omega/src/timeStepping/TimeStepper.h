@@ -152,6 +152,8 @@ class TimeStepper {
    HorzMesh *Mesh;
    Halo *MeshHalo;
 
+   virtual void finalizeInit() {}
+
    TimeStepper(const std::string &Name, TimeStepperType Type, int NTimeLevels,
                Tendencies *Tend, AuxiliaryState *AuxState, HorzMesh *Mesh,
                Halo *MeshHalo);

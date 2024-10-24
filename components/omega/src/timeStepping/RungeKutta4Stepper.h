@@ -22,6 +22,9 @@ class RungeKutta4Stepper : public TimeStepper {
    // Advance the state by one step of the fourth-order Runge Kutta scheme
    void doStep(OceanState *State, TimeInstant Time) const override;
 
+ protected:
+   void finalizeInit() override;
+
  private:
    // Number of stages
    static constexpr int NStages = 4;

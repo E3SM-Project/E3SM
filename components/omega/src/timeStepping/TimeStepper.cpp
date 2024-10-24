@@ -126,6 +126,10 @@ int TimeStepper::init2() {
    DefaultTimeStepper->AuxState = AuxiliaryState::getDefault();
    DefaultTimeStepper->Tend     = Tendencies::getDefault();
 
+   if (DefaultTimeStepper->Type == TimeStepperType::RungeKutta4) {
+      DefaultTimeStepper->finalizeInit();
+   }
+
    return Err;
 }
 

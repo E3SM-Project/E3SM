@@ -11,12 +11,8 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
     : TimeStepper(Name, TimeStepperType::RungeKutta4, 2, Tend, AuxState, Mesh,
                   MeshHalo) {
 
-   auto NVertLevels = Tend->LayerThicknessTend.extent_int(1);
-   auto NTracers    = Tracers::getNumTracers();
-
-   ProvisState = OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, 1);
-   ProvisTracers =
-       Array3DReal("ProvisTracers", NTracers, Mesh->NCellsSize, NVertLevels);
+   if (Tend)
+      finalizeInit();
 
    RKA[0] = 0;
    RKA[1] = 1. / 2;
@@ -32,6 +28,16 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
    RKC[1] = 1. / 2;
    RKC[2] = 1. / 2;
    RKC[3] = 1;
+}
+
+void RungeKutta4Stepper::finalizeInit() {
+
+   auto NVertLevels = Tend->LayerThicknessTend.extent_int(1);
+   auto NTracers    = Tracers::getNumTracers();
+
+   ProvisState = OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, 1);
+   ProvisTracers =
+       Array3DReal("ProvisTracers", NTracers, Mesh->NCellsSize, NVertLevels);
 }
 
 // Advance the state by one step of the fourth-order Runge Kutta scheme
