@@ -92,6 +92,7 @@ design/Config
 design/DataTypes
 design/Decomp
 design/Driver
+design/Error
 design/Halo
 design/HorzMeshClass
 design/Logging
