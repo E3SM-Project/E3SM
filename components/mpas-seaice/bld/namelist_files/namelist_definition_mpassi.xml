@@ -2686,6 +2686,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_scale_dib_by_removed_ice_runoff" type="logical"
+	category="ocean" group="ocean">
+Whether to scale data iceberg fluxes by the running mean of removed ice runoff
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_salt_flux_coupling_type" type="char*1024"
 	category="ocean" group="ocean">
 Type of salt flux to ocean method

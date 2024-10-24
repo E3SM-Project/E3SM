@@ -810,6 +810,10 @@
 			 description="Difference between change in ocean volume and freshwater input divided by volume change"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="gsRunningMeanRemovedIceRunoff" type="real" dimensions="Time" units="kg s^-1"
+			 description="Global stats copy of the running mean of the daily averaged removed ice runoff"
+			 packages="scaledDISMFPKG"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"

@@ -300,7 +300,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix = 'mpassi.IcoswISC30E3r5'
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
-        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20240805.nc'
         dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac.IcoswISC30E3r5.20240511.nc'
         if ice_ic_mode == 'spunup':
             if iceberg_mode == 'data':
@@ -335,7 +335,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix = 'mpassi.SOwISC12to30E3r3'
         decomp_date = '20240829'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
-        data_iceberg_file = 'Iceberg_Climatology_Merino.SOwISC12to30E3r3.20240829.nc'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.SOwISC12to30E3r3.20241017.nc'
         if ice_ic_mode == 'spunup':
             grid_date = '20240829'
             grid_prefix = 'mpassi.SOwISC12to30E3r3.rstFromG-chrysalis'
@@ -668,6 +668,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('                  input_interval="none" >')
                 lines.append('')
                 lines.append('    <var name="bergFreshwaterFluxData"/>')
+                lines.append('    <var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"/>')
                 lines.append('    <var name="xtime"/>')
                 lines.append('</stream>')
                 lines.append('')

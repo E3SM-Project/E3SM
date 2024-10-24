@@ -376,7 +376,7 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
             eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240805.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
         if ocn_sgr == 'data':
@@ -417,7 +417,7 @@ def buildnml(case, caseroot, compname):
             ic_date = '20240829'
             ic_prefix = 'mpaso.SOwISC12to30E3r3.rstFromG-chrysalis'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20240829.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20241017.nc'
 
 
     #--------------------------------------------------------------------
@@ -1818,6 +1818,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('        packages="dataLandIceFluxesPKG">')
                 lines.append('    <var name="dataLandIceFreshwaterFlux"/>')
                 lines.append('    <var name="dataLandIceHeatFlux"/>')
+                lines.append('    <var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"/>')
                 lines.append('</stream>')
                 lines.append('')
 
