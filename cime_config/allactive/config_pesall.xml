@@ -2296,6 +2296,22 @@
           <rootpe_rof>1152</rootpe_rof>
         </rootpe>
       </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="XM">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 64 nodes ~6 sypd</comment>
+        <ntasks>
+          <ntasks_atm>3840</ntasks_atm>
+          <ntasks_cpl>3840</ntasks_cpl>
+          <ntasks_lnd>2304</ntasks_lnd>
+          <ntasks_rof>2304</ntasks_rof>
+          <ntasks_ice>1536</ntasks_ice>
+          <ntasks_ocn>256</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>3840</rootpe_ocn>
+          <rootpe_lnd>1536</rootpe_lnd>
+          <rootpe_rof>1536</rootpe_rof>
+        </rootpe>
+      </pes>
     </mach>
   </grid>
   <grid name="a%ne30np4_l%.+oi%oEC60to30.+w%wQU225EC60to30">
