@@ -274,7 +274,8 @@ public:
 
   // For internal diagnostics and debugging.
   void print_global_state_hash(const std::string& label, const bool in = true,
-                               const bool out = true, const bool internal = true) const;
+                               const bool out = true, const bool internal = true,
+                               const Real* mem = nullptr, const int nmem = 0) const;
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
 
