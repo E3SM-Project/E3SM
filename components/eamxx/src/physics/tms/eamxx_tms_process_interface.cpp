@@ -50,7 +50,7 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("T_mid",          scalar3d_mid, K,      grid_name,            ps);
   add_field<Required>("p_mid",          scalar3d_mid, Pa,     grid_name,            ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,     grid_name,            ps);
-  add_field<Required>("qv",             scalar3d_mid, kg/kg,  grid_name, "tracers", ps);
+  add_tracer<Required>("qv",            scalar3d_mid, kg/kg,  grid_name,            ps);
   add_field<Required>("sgh30",          scalar2d    , m,      grid_name);
   add_field<Required>("landfrac",       scalar2d    , nondim, grid_name);
 

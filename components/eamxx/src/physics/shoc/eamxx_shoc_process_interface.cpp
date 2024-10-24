@@ -61,7 +61,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   add_field<Updated>("surf_evap",       scalar2d    , kg/(m2*s), grid_name);
   add_field<Updated> ("T_mid",          scalar3d_mid, K,         grid_name, ps);
-  add_field<Updated> ("qv",             scalar3d_mid, kg/kg,     grid_name, "tracers", ps);
+  add_tracer<Updated>("qv",             scalar3d_mid, kg/kg,     grid_name, ps);
 
   // If TMS is a process, add surface drag coefficient to required fields
   if (m_params.get<bool>("apply_tms", false)) {
@@ -75,11 +75,11 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",           scalar3d_mid, m2/s2,   grid_name, "tracers", ps);
+  add_tracer<Updated>("tke",          scalar3d_mid, m2/s2,   grid_name, ps);
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",            scalar3d_mid, kg/kg,   grid_name, "tracers", ps);
+  add_tracer<Updated>("qc",           scalar3d_mid, kg/kg,   grid_name, ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
 
   // Output variables
