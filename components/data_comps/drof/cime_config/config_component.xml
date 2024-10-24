@@ -13,24 +13,14 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%NYFAIS00][%NYFAIS45][%NYFAIS55][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p5-AIS0ROF][%JRA-1p4-2018][%JRA-1p4-2018-AIS0ICE][%JRA-1p4-2018-AIS0LIQ][%JRA-1p4-2018-AIS0ROF[%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]">Data runoff model</desc>
+    <desc rof="DROF[%NULL][%NYF][%IAF][%CPLHIST][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]">Data runoff model</desc>
     <desc option="NULL"     >NULL mode</desc>
     <desc option="NYF"      >COREv2 normal year forcing:</desc>
-    <desc option="NYFAIS00" >COREv2 normal year forcing:</desc>
-    <desc option="NYFAIS45" >COREv2 normal year forcing:</desc>
-    <desc option="NYFAIS55" >COREv2 normal year forcing:</desc>
     <desc option="IAF"      >COREv2 interannual year forcing:</desc>
-    <desc option="IAFAIS00" >COREv2 interannual year forcing:</desc>
-    <desc option="IAFAIS45" >COREv2 interannual year forcing:</desc>
-    <desc option="IAFAIS55" >COREv2 interannual year forcing:</desc>
     <desc option="CPLHIST"  >CPLHIST mode:</desc>
     <desc option="JRA-1p5-2023">JRA55 interannual forcing, v1.5, through 2023</desc>
     <desc option="JRA-1p5">JRA55 interannual forcing, v1.5, through 2020</desc>
-    <desc option="JRA-1p5-AIS0ROF">JRA55 interannual forcing, v1.5, through 2020, no rofi or rofl around AIS</desc>
     <desc option="JRA-1p4-2018">JRA55 interannual forcing, v1.4, through 2018</desc>
-    <desc option="JRA-1p4-2018-AIS0ICE">JRA55 interannual forcing, v1.4, through 2018, no rofi around AIS</desc>
-    <desc option="JRA-1p4-2018-AIS0LIQ">JRA55 interannual forcing, v1.4, through 2018, no rofl around AIS</desc>
-    <desc option="JRA-1p4-2018-AIS0ROF">JRA55 interannual forcing, v1.4, through 2018, no rofi or rofl around AIS</desc>
     <desc option="JRA"      >JRA55 interannual forcing</desc>
     <desc option="JRA-RYF8485">JRA55 Repeat Year Forcing v1.3 1984-1985</desc>
     <desc option="JRA-RYF9091">JRA55 Repeat Year Forcing v1.3 1990-1991</desc>
@@ -48,27 +38,17 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_ANN_AIS00_RX1,DIATREN_ANN_AIS45_RX1,DIATREN_ANN_AIS55_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,IAF_JRA_1p5,IAF_JRA_1p5_AIS0ROF,IAF_JRA_1p4_2018,IAF_JRA_1p4_2018_AIS0ICE,IAF_JRA_1p4_2018_AIS0LIQ,IAF_JRA_1p4_2018_AIS0ROF,RYF8485_JRA,RYF9091_JRA,RYF0304_JRA,NULL</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,IAF_JRA,IAF_JRA_1p5,IAF_JRA_1p4_2018,RYF8485_JRA,RYF9091_JRA,RYF0304_JRA,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
-      <value compset="_DROF%NYFAIS00" >DIATREN_ANN_AIS00_RX1</value>
-      <value compset="_DROF%NYFAIS45" >DIATREN_ANN_AIS45_RX1</value>
-      <value compset="_DROF%NYFAIS55" >DIATREN_ANN_AIS55_RX1</value>
       <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
-      <value compset="_DROF%IAFAIS00" >DIATREN_IAF_AIS00_RX1</value>
-      <value compset="_DROF%IAFAIS45" >DIATREN_IAF_AIS45_RX1</value>
-      <value compset="_DROF%IAFAIS55" >DIATREN_IAF_AIS55_RX1</value>
       <value compset="_DROF%CPLHIST">CPLHIST</value>
       <value compset="_DROF%JRA" >IAF_JRA</value>
       <value compset="_DROF%JRA-1p5-2023" >IAF_JRA_1p5</value>
       <value compset="_DROF%JRA-1p5" >IAF_JRA_1p5</value>
-      <value compset="_DROF%JRA-1p5-AIS0ROF" >IAF_JRA_1p5_AIS0ROF</value>
       <value compset="_DROF%JRA-1p4-2018" >IAF_JRA_1p4_2018</value>
-      <value compset="_DROF%JRA-1p4-2018-AIS0ICE" >IAF_JRA_1p4_2018_AIS0ICE</value>
-      <value compset="_DROF%JRA-1p4-2018-AIS0LIQ" >IAF_JRA_1p4_2018_AIS0LIQ</value>
-      <value compset="_DROF%JRA-1p4-2018-AIS0ROF" >IAF_JRA_1p4_2018_AIS0ROF</value>
       <value compset="_DROF%JRA-RYF8485" >RYF8485_JRA</value>
       <value compset="_DROF%JRA-RYF9091" >RYF9091_JRA</value>
       <value compset="_DROF%JRA-RYF0304" >RYF0304_JRA</value>
