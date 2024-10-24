@@ -962,6 +962,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var_array name="activeTracersAtBottom"/>')
             lines.append('    <var name="kineticEnergyAtSurface"/>')
             lines.append('    <var name="kineticEnergyAt250m"/>')
+            lines.append('    <var name="relativeVorticityAtSurface"/>')
             lines.append('    <var name="relativeVorticityAt250m"/>')
             lines.append('    <var name="ssh"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
