@@ -448,6 +448,7 @@
       <queue walltimemax="00:45:00" nodemax="1792" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">preempt</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">shared</queue>
+      <queue walltimemax="00:45:00" nodemax="1792" strict="true">overrun</queue>
       <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -502,10 +503,11 @@
       <queue walltimemax="00:30:00" nodemax="3072" default="true">regular</queue>
       <queue walltimemax="00:30:00" nodemax="3072" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="3072" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
-  
+
   <batch_system MACH="alvarez" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
