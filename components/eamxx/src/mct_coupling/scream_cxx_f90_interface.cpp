@@ -295,7 +295,7 @@ void scream_finalize (/* args ? */) {
 
 // Get the local (i.e., on current atm rank only) number of physics columns
 int scream_get_num_local_cols () {
-  int ncols;
+  int ncols = -1;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
@@ -309,7 +309,7 @@ int scream_get_num_local_cols () {
 
 // Get the global (i.e., the whole earth) number of physics columns
 int scream_get_num_global_cols () {
-  int ncols;
+  int ncols = -1;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
