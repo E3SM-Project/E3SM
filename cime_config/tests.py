@@ -705,7 +705,7 @@ _TESTS = {
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-spa_remap--scream-output-preset-4",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5",
             "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash--scream-output-preset-6",
-            "ERS_Ld1.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-output-preset-4"
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-output-preset-4"
             )
     },
 
