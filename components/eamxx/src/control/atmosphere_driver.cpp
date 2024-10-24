@@ -852,7 +852,9 @@ initialize_fields ()
   start_timer("EAMxx::initialize_fields");
 
   // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
+  if (fvphyshack) {
+    TraceGasesWorkaround::singleton().run_type = m_run_type;
+  }
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
@@ -942,7 +944,8 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
+  const auto& provenance = m_atm_params.sublist("provenance");
+  const auto& casename = provenance.get<std::string>("rest_caseid");
   auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
