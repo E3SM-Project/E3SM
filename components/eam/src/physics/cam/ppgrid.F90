@@ -21,7 +21,8 @@ module ppgrid
   public psubcols
   public pver
   public pverp
-
+  public nvar_dirOA
+  public nvar_dirOL
 
 ! Grid point resolution parameters
 
@@ -31,6 +32,9 @@ module ppgrid
    integer psubcols   ! number of sub-columns (max)
    integer pver       ! number of vertical levels
    integer pverp      ! pver + 1
+   !added for ogwd
+   integer nvar_dirOA
+   integer nvar_dirOL
 
 #ifdef PPCOLS
    parameter (pcols     = PCOLS)
@@ -38,6 +42,9 @@ module ppgrid
    parameter (psubcols  = PSUBCOLS)
    parameter (pver      = PLEV)
    parameter (pverp     = pver + 1  )
+   !added for ogwd
+   parameter (nvar_dirOA =2+1 )!avoid bug when nvar_dirOA is 2
+   parameter (nvar_dirOL =180)!set for 360 degrees wind direction
 !
 ! start, end indices for chunks owned by a given MPI task
 ! (set in phys_grid_init).
