@@ -1087,6 +1087,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_create_all_logs_in_e3sm" type="logical"
+	category="io" group="io">
+Logical flag determining if log files will be created for each processor in an E3SM configuration.  If .true., the model initializes and writes to one files per processor.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 
