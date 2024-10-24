@@ -521,7 +521,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
-    <restart_casename>${CASE}.scream</restart_casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
     <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
