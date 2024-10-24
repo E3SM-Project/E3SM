@@ -16,6 +16,7 @@
 
 namespace scream
 {
+
 OutputManager::
 ~OutputManager ()
 {
@@ -25,7 +26,7 @@ OutputManager::
 void OutputManager::
 initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
            const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-           const bool is_model_restart_output)
+           const bool is_model_restart_output, const RunType run_type)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
@@ -41,7 +42,7 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_params = params;
   m_run_t0 = run_t0;
   m_case_t0 = case_t0;
-  m_is_restarted_run = (case_t0<run_t0);
+  m_run_type = run_type;
   m_is_model_restart_output = is_model_restart_output;
 }
 
@@ -160,7 +161,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_is_restarted_run and not m_is_model_restart_output) {
+  if (m_run_type==RunType::Restart and not m_is_model_restart_output) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
@@ -251,7 +252,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
     m_time_bnds.resize(2);
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
   } else if (m_output_control.output_enabled() and
-             m_run_t0==m_case_t0 and
+             m_run_type==RunType::Initial and
              not m_is_model_restart_output and
              not m_params.sublist("output_control").get<bool>("skip_t0_output",false)) // This will be true for ERS/ERP tests
   {
@@ -928,13 +929,18 @@ push_to_logger()
     return y;
   };
 
+  auto rt_to_string = [](RunType rt) {
+    std::string s = rt==RunType::Initial ? "Initial" : "Restart";
+    return s;
+  };
+
   m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
   m_atm_logger->info("           Filename prefix: " + m_filename_prefix);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
   m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
-  m_atm_logger->info("        Is Restarted Run ?: " + bool_to_string(m_is_restarted_run));
+  m_atm_logger->info("                 Run type : " + rt_to_string(m_run_type));
   m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   switch (m_output_file_specs.storage.type) {

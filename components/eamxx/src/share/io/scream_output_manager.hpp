@@ -79,12 +79,21 @@ public:
   //  - is_model_restart_output: whether this output stream is to write a model restart file
   void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
                    const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-                   const bool is_model_restart_output);
+                   const bool is_model_restart_output, const RunType run_type);
 
+  // This overloads are to make certain unit tests easier
+  void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+                   const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
+                   const bool is_model_restart_output)
+  {
+    auto run_type = case_t0<run_t0 ? RunType::Restart : RunType::Initial;
+    initialize(io_comm,params,run_t0,case_t0,is_model_restart_output,run_type);
+  }
   void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
                    const util::TimeStamp& run_t0,
-                   const bool is_model_restart_output) {
-    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output);
+                   const bool is_model_restart_output)
+  {
+    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output, RunType::Initial);
   }
 
   // Setup manager by creating the internal output streams using grids/field data
@@ -169,7 +178,7 @@ protected:
 
   // Whether this run is the restart of a previous run, in which case
   // we might have to load an output checkpoint file (depending on avg type)
-  bool m_is_restarted_run;
+  RunType m_run_type;
 
   // Whether a restarted run can resume filling previous run output file (if not full)
   bool m_resume_output_file = false;
