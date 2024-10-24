@@ -3353,7 +3353,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: &
-         iCell, iEdge, i, &! loop indices for cell, edge, neighbors
+         iCell, iEdge, i, k, &! loop indices for cell, edge, neighbors
          kmin,               &! topmost active cell index
          nCells,             &! number of cells
          err,                &! local error code
@@ -3362,6 +3362,9 @@ contains
       real (kind=RKIND) :: &
          fracAbsorbed,       &! fraction of sfc flux absorbed
          fracAbsorbedRunoff, &! same for runoff
+         fracAbsorbedSubglacialRunoff, &! same for subglacial runoff
+         zTop,zBot,          &! temporary variables
+         transmissionCoeffTop,transmissionCoeffBot,     &! temporary variables
          sumSurfaceStressSquared ! sum of sfc stress squared
 
       ! pointers for variable/pool retrievals
