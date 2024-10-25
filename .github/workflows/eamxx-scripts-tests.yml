@@ -1,0 +1,72 @@
+name: EAMxx scripts testing
+
+on:
+  # Runs on PRs against master, but only if they touch eamxx scripts
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - components/eamxx/scripts
+      - components/eamxx/cime_config/*.py
+
+  # Manual run for debug purposes only
+  workflow_dispatch:
+
+  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
+  # schedule:
+  #   - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+
+concurrency:
+  # Two runs are in the same group if:
+  #  - they have the same trigger
+  #  - if trigger=pull_request, the PR number must match
+  #  - if trigger=workflow_dispatch, the inputs are the same
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{
+             github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id
+           }}
+  cancel-in-progress: true
+
+jobs:
+  cpu-gcc:
+    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+    # Run this workflow if:
+    #   - workflow_dispatch: user requested this job.
+    #   - schedule: always:
+    #   - pull_request: matching skip label is NOT found
+    if: |
+      ${{
+          github.event_name == 'schedule' ||
+          github.event_name == 'workflow_dispatch' ||
+          (
+            github.event_name == 'pull_request' &&
+            !(
+              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
+            )
+          )
+        }}
+    steps:
+      - name: Show action trigger
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const eventAction = context.payload.action || 'N/A';
+            const actor = context.actor;
+            console.log(`The job was triggered by a ${eventName} event.`);
+            console.log(`  - Event action: ${eventAction}`);
+            console.log(`  - Triggered by: ${actor}`);
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Run test
+        run: |
+          cd components/eamxx
+          if [ ${{ github.event_name == 'schedule' }} ]; then
+            ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
+          else
+            ./scripts/scripts-tests -f -m ghci-snl-cpu
+            ./scripts/cime-nml-tests
+          fi
