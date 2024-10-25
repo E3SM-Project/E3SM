@@ -43,6 +43,7 @@ module mpas_moabmesh
     integer, dimension(:), pointer :: nEdgesOnCell
     integer, dimension(:), pointer :: indexToVertexID, indexToCellID
     real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
     real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, areaCell
     logical, pointer :: on_a_sphere, is_periodic
     real(kind=RKIND), pointer :: x_period, y_period
@@ -58,7 +59,7 @@ module mpas_moabmesh
     character*100  tagname, lnum
     integer tagtype, numco, tag_sto_len, ent_type, tagindex, currentVertex
     real (kind=RKIND), pointer :: sphere_radius
-    real (kind=RKIND)   :: moab_radius
+    real (kind=RKIND)   :: moab_radius, latvc, lonvc
 
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
@@ -98,6 +99,11 @@ module mpas_moabmesh
 !       call mpas_pool_get_array(meshPool, 'xCell', xCell)
 !       call mpas_pool_get_array(meshPool, 'yCell', yCell)
 !       call mpas_pool_get_array(meshPool, 'zCell', zCell)
+       if (sphere_radius .eq. 0.) then
+         call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+         call mpas_pool_get_array(meshPool, 'lonVertex', lonVertex)
+       endif
+           
 
        call mpas_log_write(' MOAB instance: number of vertices:: $i number of cells:: $i solve: v:$i c:$i', intArgs=(/nVertices, nCells, nVerticesSolve, nCellsSolve/) )
         !!
@@ -138,16 +144,24 @@ module mpas_moabmesh
        enddo
        allocate(moab_vert_coords(3*currentVertex))
        if (sphere_radius .eq. 0.) then
-          moab_radius = 1.0
+        moab_radius = 1.0
+        do i1 =1, currentVertex
+          ! compute coordinates from latitude and longitude
+          latvc = latVertex(invMap(i1))
+          lonvc = lonVertex(invMap(i1))
+          moab_vert_coords(3*i1-2) = cos( latvc ) * cos( lonvc )  ! x coordinate
+          moab_vert_coords(3*i1-1) = cos( latvc ) * sin( lonvc )  ! y
+          moab_vert_coords(3*i1  ) = sin( latvc )                         ! z
+        enddo
        else
-          moab_radius = sphere_radius
-       endif
-       do i1 =1, currentVertex
-         moab_vert_coords(3*i1-2) = xVertex(invMap(i1))/moab_radius
-         moab_vert_coords(3*i1-1) = yVertex(invMap(i1))/moab_radius
-         moab_vert_coords(3*i1  ) = zVertex(invMap(i1))/moab_radius
-         ! call mpas_log_write('i:: $i coords:: $r $r $r $r', intArgs=(/i1/), realArgs=(/moab_vert_coords(3*i1-2),moab_vert_coords(3*i1-1), moab_vert_coords(3*i1)/) )
-       enddo
+        moab_radius = sphere_radius
+        do i1 =1, currentVertex
+          moab_vert_coords(3*i1-2) = xVertex(invMap(i1))/sphere_radius
+          moab_vert_coords(3*i1-1) = yVertex(invMap(i1))/sphere_radius
+          moab_vert_coords(3*i1  ) = zVertex(invMap(i1))/sphere_radius
+          ! call mpas_log_write('i:: $i coords:: $r $r $r $r', intArgs=(/i1/), realArgs=(/moab_vert_coords(3*i1-2),moab_vert_coords(3*i1-1), moab_vert_coords(3*i1)/) )
+        enddo
+      endif
        dimcoord = 3*currentVertex
        dimen = 3
        ierr = iMOAB_CreateVertices(pid, dimcoord, dimen, moab_vert_coords)
