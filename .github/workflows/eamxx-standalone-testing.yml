@@ -43,7 +43,7 @@ jobs:
   gcc-openmp:
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         build_type: [sp, dbg, fpe, opt]
     # Run this workflow if:
