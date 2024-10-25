@@ -43,7 +43,6 @@ struct TestSetup {
 
 constexpr Geometry Geom   = Geometry::Spherical;
 constexpr int NVertLevels = 60;
-constexpr int NTracers    = 5;
 
 int initState() {
    int Err = 0;
@@ -58,6 +57,8 @@ int initState() {
    Array3DReal TracersArray;
    Err += Tracers::getAll(TracersArray, 0);
    const auto &TracersCell = TracersArray;
+
+   int NTracers = Tracers::getNumTracers();
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
@@ -216,6 +217,7 @@ int testTendencies() {
    int NCellsOwned    = Mesh->NCellsOwned;
    int NEdgesOwned    = Mesh->NEdgesOwned;
    int NVerticesOwned = Mesh->NVerticesOwned;
+   int NTracers       = Tracers::getNumTracers();
 
    const Real LayerThickTendSum =
        sum(DefTendencies->LayerThicknessTend, NCellsOwned);

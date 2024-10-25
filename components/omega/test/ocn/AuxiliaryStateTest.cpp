@@ -43,7 +43,6 @@ struct TestSetup {
 
 constexpr Geometry Geom   = Geometry::Spherical;
 constexpr int NVertLevels = 60;
-constexpr int NTracers    = 5;
 
 int initState() {
    int Err = 0;
@@ -56,6 +55,8 @@ int initState() {
    const auto &NormalVelEdge  = State->NormalVelocity[0];
    Array3DReal TracerArray;
    Err += Tracers::getAll(TracerArray, 0);
+
+   int NTracers = Tracers::getNumTracers();
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
@@ -217,6 +218,7 @@ int testAuxState() {
    int NCellsOwned    = Mesh->NCellsOwned;
    int NEdgesOwned    = Mesh->NEdgesOwned;
    int NVerticesOwned = Mesh->NVerticesOwned;
+   int NTracers       = Tracers::getNumTracers();
 
    const Real KineticEnergySum =
        sum(DefAuxState->KineticAux.KineticEnergyCell, NCellsOwned);
