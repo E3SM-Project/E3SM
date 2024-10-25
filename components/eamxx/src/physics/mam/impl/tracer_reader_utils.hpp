@@ -521,7 +521,7 @@ inline void update_tracer_timestate(
                                  tracer_horiz_interp, data_tracer);
   }
 
-}  // END updata_spa_timestate
+}  // END update_tracer_timestate
 
 // This function is based on the SPA::perform_time_interpolation function.
 inline void perform_time_interpolation(const TracerTimeState &time_state,

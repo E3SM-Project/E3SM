@@ -78,9 +78,10 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // Orbital parameters, used for zenith angle calculations.
   // If >= 0, bypass computation based on orbital year and use fixed parameters
   // If <  0, compute based on orbital year, specified above
-  Real m_orbital_eccen;  // Eccentricity
-  Real m_orbital_obliq;  // Obliquity
-  Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+  // These variables are required to be double.
+  double m_orbital_eccen;  // Eccentricity
+  double m_orbital_obliq;  // Obliquity
+  double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
   // configuration data (for the moment, we plan to be able to move this to
   // the device, so we can't use C++ strings)
