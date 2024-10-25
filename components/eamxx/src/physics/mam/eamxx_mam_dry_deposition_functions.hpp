@@ -19,7 +19,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_1d ocnfrac,
     const MAMDryDep::const_view_1d friction_velocity,
     const MAMDryDep::const_view_1d aerodynamical_resistance,
-    MAMDryDep::view_3d qtracers, MAMDryDep::view_2d fraction_landuse_,
+    const MAMDryDep::const_view_2d fraction_landuse_,
     const MAMDryDep::const_view_3d dgncur_awet_,
     const MAMDryDep::const_view_3d wet_dens_,
     const mam_coupling::DryAtmosphere dry_atm,
@@ -35,7 +35,7 @@ void compute_tendencies(
     // work arrays
     MAMDryDep::view_2d rho_, MAMDryDep::view_4d vlc_dry_,
     MAMDryDep::view_3d vlc_trb_, MAMDryDep::view_4d vlc_grv_,
-    MAMDryDep::view_3d dqdt_tmp_) {
+    MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers) {
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   const auto policy =
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
@@ -86,7 +86,7 @@ void compute_tendencies(
         static constexpr int n_land_type = MAMDryDep::n_land_type;
         Real fraction_landuse[n_land_type];
         for(int i = 0; i < n_land_type; ++i) {
-          fraction_landuse[i] = fraction_landuse_(i, icol);
+          fraction_landuse[i] = fraction_landuse_(icol, i);
         }
 
         static constexpr int nmodes = mam4::AeroConfig::num_modes();
@@ -180,24 +180,6 @@ void update_cloudborne_mmrs(const MAMDryDep::view_3d qqcw, const double dt,
     }
   }
 }  // Update cloud borne aerosols ends
-
-// FIXME: remove the following function after implementing file read for landuse
-void populated_fraction_landuse(MAMDryDep::view_2d flu, const int ncol) {
-  Kokkos::parallel_for(
-      "populated_fraction_landuse", 1, KOKKOS_LAMBDA(int) {
-        static constexpr int n_land_type = MAMDryDep::n_land_type;
-        const Real temp[n_land_type]     = {
-                0.28044346587077795E-003, 0.26634987180780171E-001,
-                0.16803558403621365E-001, 0.18076055155371872E-001,
-                0.00000000000000000E+000, 0.00000000000000000E+000,
-                0.91803784897907303E+000, 0.17186036997038400E-002,
-                0.00000000000000000E+000, 0.00000000000000000E+000,
-                0.18448503115578840E-001};
-        for(int i = 0; i < n_land_type; ++i)
-          for(int j = 0; j < ncol; ++j) flu(i, j) = temp[i];
-      });
-  Kokkos::fence();
-}
 
 }  // namespace
 }  // namespace scream

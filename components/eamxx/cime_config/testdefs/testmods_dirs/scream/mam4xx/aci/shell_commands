@@ -5,9 +5,6 @@
 #------------------------------------------------------
 $CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh
 
-#modify initial condition file to get aerosol species ICs
-$CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
-
 # Add spa as RRTMG needs spa
 $CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,spa,rrtmgp" -b
 
