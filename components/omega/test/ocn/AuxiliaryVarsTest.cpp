@@ -408,7 +408,7 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
    // Compute numerical result
 
    LayerThicknessAuxVars LayerThicknessAux("", Mesh, NVertLevels);
-   LayerThicknessAux.FluxThickEdgeChoice = Upwind;
+   LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           LayerThicknessAux.computeVarsOnEdge(IEdge, KLevel, LayerThickCell,
@@ -679,7 +679,7 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    const auto Mesh = HorzMesh::getDefault();
 
    TracerAuxVars TracerAux("", Mesh, NVertLevels, NTracers);
-   TracerAux.TracersOnEdgeChoice = Upwind;
+   TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
 
    // Set input arrays
 

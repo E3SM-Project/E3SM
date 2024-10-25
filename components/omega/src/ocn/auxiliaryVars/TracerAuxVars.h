@@ -5,18 +5,19 @@
 #include "Field.h"
 #include "HorzMesh.h"
 #include "OmegaKokkos.h"
-#include "auxiliaryVars/LayerThicknessAuxVars.h"
 
 #include <string>
 
 namespace OMEGA {
+
+enum class FluxTracerEdgeOption { Center, Upwind };
 
 class TracerAuxVars {
  public:
    Array3DReal HTracersEdge;
    Array3DReal Del2TracersCell;
 
-   FluxThickEdgeOption TracersOnEdgeChoice;
+   FluxTracerEdgeOption TracersOnEdgeChoice;
 
    TracerAuxVars(const std::string &AuxStateSuffix, const HorzMesh *Mesh,
                  const I4 NVertLevels, const I4 NTracers);
@@ -30,7 +31,7 @@ class TracerAuxVars {
       const int JCell1 = CellsOnEdge(IEdge, 1);
 
       switch (TracersOnEdgeChoice) {
-      case Center:
+      case FluxTracerEdgeOption::Center:
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
             HTracersEdge(L, IEdge, K) =
@@ -38,7 +39,7 @@ class TracerAuxVars {
                             HCell(JCell1, K) * TrCell(L, JCell1, K));
          }
          break;
-      case Upwind:
+      case FluxTracerEdgeOption::Upwind:
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {

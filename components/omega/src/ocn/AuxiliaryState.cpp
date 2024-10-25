@@ -233,13 +233,29 @@ int AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
    }
 
    if (FluxThickTypeStr == "Center") {
-      this->LayerThicknessAux.FluxThickEdgeChoice = Center;
-      this->TracerAux.TracersOnEdgeChoice         = Center;
+      this->LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Center;
    } else if (FluxThickTypeStr == "Upwind") {
-      this->LayerThicknessAux.FluxThickEdgeChoice = Upwind;
-      this->TracerAux.TracersOnEdgeChoice         = Upwind;
+      this->LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
    } else {
       LOG_CRITICAL("AuxiliaryState: Unknown FluxThicknessType requested");
+      Err = -1;
+      return Err;
+   }
+
+   std::string FluxTracerTypeStr;
+   Err = AdvectConfig.get("FluxTracerType", FluxTracerTypeStr);
+   if (Err != 0) {
+      LOG_CRITICAL("AuxiliaryState: FluxTracerType not found in "
+                   "AdvectConfig");
+      return Err;
+   }
+
+   if (FluxTracerTypeStr == "Center") {
+      this->TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Center;
+   } else if (FluxTracerTypeStr == "Upwind") {
+      this->TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
+   } else {
+      LOG_CRITICAL("AuxiliaryState: Unknown FluxTracerType requested");
       Err = -1;
       return Err;
    }
