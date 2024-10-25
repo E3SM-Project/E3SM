@@ -1,4 +1,4 @@
-name: EAMxx v1 testing
+name: eamxx-v1
 
 on:
   # Runs on PRs against master
@@ -41,10 +41,14 @@ jobs:
     strategy:
       matrix:
         test:
-          - ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.scream-output-preset-2
-          - ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.scream-dpxx-arm97
-          - ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
+          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.scream-output-preset-2
+            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2
+          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.scream-dpxx-arm97
+            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97
+          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
+            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5
       fail-fast: false
+    name: cpu-gcc / ${{ matrix.test.short_name }}
     # Run this workflow if:
     #   - workflow_dispatch: user requested this job.
     #   - schedule: always:
@@ -109,23 +113,23 @@ jobs:
           submodules: recursive
       - name: Run test
         run: |
-          ./cime/scripts/create_test ${{ matrix.test }} ${{ env.flags }} --wait
+          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
       - name: Upload case files
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.test }}
+          name: ${{ matrix.test.full_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/TestStatus.log
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/bld/case2bld/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/run/case2run/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/run/*.cprnc.out
-            /projects/e3sm/scratch/${{ matrix.test }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/TestStatus.log
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/case2bld/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Clean up
         if: ${{ always() }}
         run: |
-          rm -rf /projects/e3sm/scratch/${{ matrix.test }}*
+          rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}*

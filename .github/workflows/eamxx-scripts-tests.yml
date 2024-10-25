@@ -1,4 +1,4 @@
-name: EAMxx scripts testing
+name: eamxx-scripts
 
 on:
   # Runs on PRs against master, but only if they touch eamxx scripts

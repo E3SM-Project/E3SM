@@ -1,4 +1,4 @@
-name: EAMxx standalone testing
+name: eamxx-sa
 
 on:
   # Runs on PRs against master
@@ -64,7 +64,7 @@ jobs:
             )
           )
         }}
-    name: gcc-openmp-${{ matrix.build_type }}
+    name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Show action trigger
         uses: actions/github-script@v7
