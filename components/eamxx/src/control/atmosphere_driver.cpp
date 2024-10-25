@@ -259,8 +259,9 @@ void AtmosphereDriver::create_grids()
   const auto& ic_pl = m_atm_params.sublist("initial_conditions");
   if (m_run_type==RunType::Restart) {
     // Restarted run -> read geo data from restart file
-    const auto& casename = ic_pl.get<std::string>("restart_casename");
-    auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("Filename")) {
@@ -711,6 +712,7 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
+    params.set<std::string>("filename_prefix",m_casename+".scream");
     params.set<std::string>("Averaging Type","Instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
@@ -815,7 +817,7 @@ set_provenance_data (std::string caseid,
   EKAT_REQUIRE_MSG (hostname!="", "Error! Invalid hostname: " + hostname + "\n");
   EKAT_REQUIRE_MSG (username!="", "Error! Invalid username: " + username + "\n");
 #else
-  caseid = rest_caseid = "EAMxx standalone";
+  caseid = rest_caseid = m_casename;
   char* user = new char[32];
   char* host = new char[256];
   int err;
@@ -946,7 +948,7 @@ void AtmosphereDriver::restart_model ()
   // First, figure out the name of the netcdf file containing the restart data
   const auto& provenance = m_atm_params.sublist("provenance");
   const auto& casename = provenance.get<std::string>("rest_caseid");
-  auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+  auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 

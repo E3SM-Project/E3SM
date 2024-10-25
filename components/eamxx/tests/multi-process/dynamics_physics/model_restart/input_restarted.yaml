@@ -9,9 +9,6 @@ time_stepping:
   run_t0: 2023-01-01-00030  # YYYY-MM-DD-XXXXX
   case_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
 
-initial_conditions:
-  restart_casename: model_restart
-
 atmosphere_processes:
   atm_procs_list: [homme,physics]
   schedule_type: Sequential
