@@ -1773,7 +1773,7 @@ ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
           IF (za(i,k)>300._r8) then
              kpbl2 = k
              IF (k == kpbl(i)) then
-                hpbl2 = hpbl(i)+10._r8
+                 hpbl2 = hpbl(i)+10._r8
              ELSE
                 hpbl2 = za(i,k)+10._r8
              ENDIF
@@ -1781,6 +1781,7 @@ ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
           ENDIF
        enddo
 
+        
         if(xland1(i).gt.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
           if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
             cleff    = sqrt(dxy(i)**2_r8 + dxyp(i)**2_r8)
@@ -1804,7 +1805,6 @@ ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
               tauwavey0=0._r8
             endif
 !
-
             do k=kts,kpbl(i) !MIN(kpbl2+1,kte-1)
               utendwave(i,k)=-1._r8*tauwavex0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
               vtendwave(i,k)=-1._r8*tauwavey0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2

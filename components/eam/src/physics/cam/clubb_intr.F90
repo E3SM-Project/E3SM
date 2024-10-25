@@ -3282,8 +3282,8 @@ end subroutine clubb_init_cnst
         kbfs_pcol(i)=kbfs
     enddo
     !
-    call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
-                ustar, obklen, kbfs_pcol, state%ribulk)
+    !call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
+    !            ustar, obklen, kbfs_pcol, state%ribulk)
     endif
     !
     return
