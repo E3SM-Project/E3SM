@@ -36,7 +36,7 @@ module ocn_time_integration
    use ocn_time_integration_lts
    use ocn_time_integration_fblts
    use ocn_time_integration_split_ab2
-
+   use ocn_time_integration_benthos
 
    implicit none
    private
@@ -74,7 +74,8 @@ module ocn_time_integration
        timeIntRK4              = 4, &! 4th-order Runge-Kutta
        timeIntLTS              = 5, &! local time-stepping
        timeIntFBLTS            = 6, &! forward-backward lts
-       timeIntSplitExplicitAB2 = 7   ! split-explicit AB2 baroclinic
+       timeIntSplitExplicitAB2 = 7, &! split-explicit AB2 baroclinic
+       timeIntBenthos          = 8
 
 !***********************************************************************
 
@@ -142,6 +143,8 @@ module ocn_time_integration
          call ocn_time_integrator_fblts(domain, dt)
       case (timeIntSplitExplicitAB2)
          call ocn_time_integrator_split_ab2(domain, dt)
+      case (timeIntBenthos)
+         call ocn_time_integrator_benthos(domain, dt)
       end select
 
       ! compute time since start of simulation, in days
@@ -218,8 +221,13 @@ module ocn_time_integration
 
       select case (trim(config_time_integrator))
       case ('split_explicit')
-         timeIntegratorChoice = timeIntSplitExplicit
-         call ocn_time_integration_split_init(domain)
+         if (config_do_benthos_spinup) then
+            timeIntegratorChoice = timeIntBenthos
+            call ocn_time_integration_benthos_init(domain)
+         else
+            timeIntegratorChoice = timeIntSplitExplicit
+            call ocn_time_integration_split_init(domain)
+         endif
 
       case ('unsplit_explicit')
          timeIntegratorChoice = timeIntUnsplitExplicit
