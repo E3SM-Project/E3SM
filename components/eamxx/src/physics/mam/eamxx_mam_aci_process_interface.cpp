@@ -86,19 +86,19 @@ void MAMAci::set_grids(
 
   // atmospheric quantities
   // specific humidity [kg/kg]
-  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qv", grid_, q_unit);
 
   // cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qc", grid_, q_unit);
 
   // cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qi", grid_, q_unit);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("nc", grid_, n_unit);
 
   // cloud ice number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("ni", grid_, n_unit);
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
@@ -164,8 +164,7 @@ void MAMAci::set_grids(
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
-    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit,
-                       grid_name, "tracers");
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -180,8 +179,7 @@ void MAMAci::set_grids(
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit,
-                           grid_name, "tracers");
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
       }
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -197,8 +195,7 @@ void MAMAci::set_grids(
 
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit,
-                       grid_name, "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
   }  // end for loop num gases
 
   // ------------------------------------------------------------------------

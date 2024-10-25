@@ -349,6 +349,12 @@ protected:
   void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
   { add_field<RT>(FieldRequest(fid,groups,ps)); }
 
+  // Specialization for add_field to tracer group
+  template<RequestType RT>
+  void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
+                   const ekat::units::Units& u, const int ps = 1)
+  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
+
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,

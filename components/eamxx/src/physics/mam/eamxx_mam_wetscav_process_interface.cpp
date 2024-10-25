@@ -61,19 +61,19 @@ void MAMWetscav::set_grids(
 
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg]
-  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qv", m_grid, q_unit);
 
   // cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qc", m_grid, q_unit);
 
   // cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qi", m_grid, q_unit);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("nc", m_grid, n_unit);
 
   // cloud ice number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("ni", m_grid, n_unit);
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -161,8 +161,7 @@ void MAMWetscav::set_grids(
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const char *int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(imode);
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(int_nmr_field_name, m_grid, n_unit);
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // Note: Do *not* add cld borne aerosols to the "tracer" group as these are
@@ -177,8 +176,7 @@ void MAMWetscav::set_grids(
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(imode, ispec);
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                           "tracers");
+        add_tracer<Updated>(int_mmr_field_name, m_grid, q_unit);
       }
 
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
@@ -198,8 +196,7 @@ void MAMWetscav::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, m_grid, q_unit);
   }
 
   // -------------------------------------------------------------
