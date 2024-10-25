@@ -16,6 +16,7 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields ! 
   use seq_flds_mod, only: seq_flds_r2x_fields, seq_flds_x2r_fields, seq_flds_r2x_fluxes
+  use seq_flds_mod, only: seq_flds_g2x_fields, seq_flds_x2g_fields !
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -26,6 +27,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
+  use seq_comm_mct, only : MBGLid, mbgxid  ! glc model
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
   ! use dimensions_mod, only : np     ! for atmosphere
@@ -1051,7 +1053,7 @@ subroutine  copy_aream_from_area(mbappid)
       character(CL)            :: ocn_domain
       character(CL)            :: ice_domain   ! used for data ice only?
       character(CL)            :: atm_mesh
-      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
+      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID, maxMGID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof, glc
       integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
       integer                  :: rank, ent_type
       integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
@@ -1096,6 +1098,7 @@ subroutine  copy_aream_from_area(mbappid)
       call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
       call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
 
+      call shr_mpi_max(MBGLID, maxMGID, mpicom_join, all=.true.)
       if (seq_comm_iamroot(CPLID) ) then
          write(logunit, *) "MOAB coupling for ", comp%oneletterid,' ', comp%ntype
       endif
@@ -1913,6 +1916,137 @@ subroutine  copy_aream_from_area(mbappid)
 #endif
       endif ! end for rof coupler set up 
 
+      ! start copy from sea ice
+      ! glacier land ice ?
+      if (comp%oneletterid == 'g'  .and. maxMGID /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+         ! find glc domain file if it exists; it would be for data glc model (glc_prognostic false)
+         ! call seq_infodata_GetData(infodata,glc_domain=glc_domain)
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component processes
+ 
+            if (MBGLID >= 0) then
+               ierr  = iMOAB_GetMeshInfo ( MBGLID, nvert, nvise, nbl, nsurf, nvisBC )
+               comp%mbApCCid = MBGLID ! glc imoab app id
+            endif
+            !if ( trim(ice_domain) == 'none' ) then ! regular ice model
+               comp%mbGridType = 1 ! 0 or 1, pc or cells 
+               comp%mblsize = nvise(1) ! cells   
+               !  send glc ice mesh to coupler
+               ierr = iMOAB_SendMesh(MBGLID, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending lnd ice mesh to coupler '
+                  call shr_sys_abort(subname//' ERROR in sending lnd ice mesh to coupler ')
+               endif
+           ! else
+             !  comp%mbGridType = 0 ! 0 or 1, pc or cells
+          !     comp%mblsize = nvert(1) ! vertices
+           ! endif
+         endif 
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+            appname = "COUPLE_MPASLNDICE"//C_NULL_CHAR
+            ! migrated mesh gets another app id, moab moab land ice to coupler (mbix)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbgxid)
+            !if ( trim(ice_domain) == 'none' ) then ! regular ice model
+               ierr = iMOAB_ReceiveMesh(mbgxid, mpicom_join, mpigrp_old, id_old)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving lnd ice mesh in coupler '
+                  call shr_sys_abort(subname//' ERROR in receiving lnd ice mesh in coupler ')
+               endif
+            !else
+               ! we need to read the mesh ice (domain file) 
+               !ierr = iMOAB_LoadMesh(mbixid, trim(ice_domain)//C_NULL_CHAR, &
+               ! "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
+               !if ( ierr /= 0 ) then
+               !   write(logunit,*) 'Failed to load ice domain mesh on coupler'
+              !    call shr_sys_abort(subname//' ERROR Failed to load ice domain mesh on coupler  ')
+               !endif
+               !if (seq_comm_iamroot(CPLID)) then
+               !   write(logunit,'(A)') subname//' load ice domain mesh from file '//trim(ice_domain)
+              ! endif
+               ! need to add global id tag to the app, it will be used in restart
+               !tagtype = 0  ! dense, integer
+             !  numco = 1
+             !  tagname='GLOBAL_ID'//C_NULL_CHAR
+             !  ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+              ! if (ierr .ne. 0) then
+              !    write(logunit,*) subname,' error in adding global id tag to icex'
+              !    call shr_sys_abort(subname//' ERROR in adding global id tag to icex ')
+              ! endif
+#ifdef MOABDEBUG
+      !        debug test
+              ! outfile = 'recLndIceInit.h5m'//C_NULL_CHAR
+             !  wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !        write out the mesh file to disk
+             !  ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+             !  if (ierr .ne. 0) then
+             !    write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+             !    call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+             !  endif
+#endif
+            !endif
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_g2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for lnd ice on coupler' )
+            end if
+            tagname = trim(seq_flds_x2g_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+            end if
+
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd ice on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
+            
+#ifdef MOABDEBUG
+      !      debug test
+            outfile = 'recLndIce.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbgxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+               call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+            endif
+#endif
+         endif
+         if (MBGLID .ge. 0) then  ! we are on component sea ice pes
+            !if ( trim(ice_domain) == 'none' ) then
+               context_id = id_join
+               ierr = iMOAB_FreeSenderBuffers(MBGLID, context_id)
+               if (ierr .ne. 0) then
+                 write(logunit,*) subname,' error in freeing buffers '
+                 call shr_sys_abort(subname//' ERROR in freeing buffers ')
+               endif
+           ! endif
+         endif
+        ! in case of ice domain read, we need to compute the comm graph
+       ! if ( trim(ice_domain) /= 'none' ) then
+            ! we are now on joint pes, compute comm graph between data ice and coupler model ice
+        !    typeA = 2 ! point cloud on component PEs
+         !   typeB = 3 ! full mesh on coupler pes, we just read it
+          !  ierr = iMOAB_ComputeCommGraph( MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+           !    typeA, typeB, id_old, id_join) 
+            !if (ierr .ne. 0) then
+         !      write(logunit,*) subname,' error in computing comm graph for data ice model '
+         !      call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
+         !   endif
+            ! also, frac, area, aream, masks has to come from ice MPSIID , not from domain file reader
+            ! this is hard to digest :(
+         !   tagname = 'area:aream:frac:mask'//C_NULL_CHAR
+         !   call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
+      !   endif 
+
+      endif
+      ! end copy sea-ice
    end subroutine cplcomp_moab_Init
 
 
