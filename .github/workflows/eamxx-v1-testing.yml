@@ -1,4 +1,4 @@
-name: EAMxx v1 CI testing
+name: EAMxx v1 testing
 
 on:
   # Runs on PRs against master
