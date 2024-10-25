@@ -2,7 +2,6 @@
 ---
 filename_prefix: homme_shoc_cld_p3_mam_optics_rrtmgp
 Averaging Type: Instant
-Max Snapshots Per File: 1
 Fields:
   Physics GLL:
     Field Names:
