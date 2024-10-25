@@ -122,7 +122,8 @@ class OceanState {
    I4 getLayerThickness(Array2DReal &LayerThick, const I4 TimeLevel) const;
 
    /// Get layer thickness host array at given time level
-   I4 getLayerThicknessH(HostArray2DReal &LayerThickH, const I4 TimeLevel) const;
+   I4 getLayerThicknessH(HostArray2DReal &LayerThickH,
+                         const I4 TimeLevel) const;
 
    /// Get normal velocity device array at given time level
    I4 getNormalVelocity(Array2DReal &NormVel, const I4 TimeLevel) const;

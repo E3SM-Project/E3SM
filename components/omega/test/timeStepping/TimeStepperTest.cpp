@@ -56,8 +56,8 @@ struct DecayVelocityTendency {
                    const AuxiliaryState *AuxState, int ThickTimeLevel,
                    int VelTimeLevel, TimeInstant Time) const {
 
-      auto *Mesh                = HorzMesh::getDefault();
-      auto NVertLevels          = NormalVelTend.extent_int(1);
+      auto *Mesh       = HorzMesh::getDefault();
+      auto NVertLevels = NormalVelTend.extent_int(1);
       Array2DReal NormalVelEdge;
       State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 

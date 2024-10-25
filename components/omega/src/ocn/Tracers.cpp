@@ -499,7 +499,7 @@ I4 Tracers::updateTimeLevels() {
 }
 
 //---------------------------------------------------------------------------
-// get index for time level 
+// get index for time level
 // TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
 //---------------------------------------------------------------------------
 I4 Tracers::getTimeIndex(const I4 TimeLevel) {

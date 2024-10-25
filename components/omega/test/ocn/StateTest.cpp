@@ -80,7 +80,8 @@ int initStateTest() {
 }
 
 // Check for differences between layer thickness and normal velocity host arrays
-int checkHost(OMEGA::OceanState* DefState, OMEGA::OceanState* TestState, int DefLevel, int TestLevel) {
+int checkHost(OMEGA::OceanState *DefState, OMEGA::OceanState *TestState,
+              int DefLevel, int TestLevel) {
 
    int count = 0;
    OMEGA::HostArray2DReal LayerThicknessH_def;
@@ -112,8 +113,10 @@ int checkHost(OMEGA::OceanState* DefState, OMEGA::OceanState* TestState, int Def
    return count;
 }
 
-// Check for differences between layer thickness and normal velocity device arrays
-int checkDevice(OMEGA::OceanState* DefState, OMEGA::OceanState* TestState, int DefLevel, int TestLevel) {
+// Check for differences between layer thickness and normal velocity device
+// arrays
+int checkDevice(OMEGA::OceanState *DefState, OMEGA::OceanState *TestState,
+                int DefLevel, int TestLevel) {
 
    int count1;
    OMEGA::Array2DReal LayerThickness_def;
@@ -205,10 +208,12 @@ int main(int argc, char *argv[]) {
          // Test retrieval of the default state
          OMEGA::OceanState *DefState = OMEGA::OceanState::get("Default");
          if (DefState) { // true if non-null ptr
-            LOG_INFO("State: Default state retrieval (NTimeLevels={}) PASS", NTimeLevels);
+            LOG_INFO("State: Default state retrieval (NTimeLevels={}) PASS",
+                     NTimeLevels);
          } else {
             RetVal += 1;
-            LOG_INFO("State: Default state retrieval (NTimeLevels={}) FAIL", NTimeLevels);
+            LOG_INFO("State: Default state retrieval (NTimeLevels={}) FAIL",
+                     NTimeLevels);
          }
 
          // Create "test" state
@@ -218,10 +223,12 @@ int main(int argc, char *argv[]) {
          OMEGA::OceanState *TestState = OMEGA::OceanState::get("Test");
 
          if (TestState) { // true if non-null ptr
-            LOG_INFO("State: Test state retrieval (NTimeLevels={}) PASS", NTimeLevels);
+            LOG_INFO("State: Test state retrieval (NTimeLevels={}) PASS",
+                     NTimeLevels);
          } else {
             RetVal += 1;
-            LOG_INFO("State: Test state retrieval (NTimeLevels={}) FAIL", NTimeLevels);
+            LOG_INFO("State: Test state retrieval (NTimeLevels={}) FAIL",
+                     NTimeLevels);
          }
 
          // Initially fill test state with the same values as the default state
@@ -273,10 +280,14 @@ int main(int argc, char *argv[]) {
          int count2 = checkDevice(DefState, TestState, CurLevel, CurLevel);
 
          if (count1 + count2 == 0) {
-            LOG_INFO("State: Default test state comparison (NTimeLevels={}) PASS", NTimeLevels);
+            LOG_INFO(
+                "State: Default test state comparison (NTimeLevels={}) PASS",
+                NTimeLevels);
          } else {
             RetVal += 1;
-            LOG_INFO("State: Default test state comparison (NTimeLevels={}) FAIL", NTimeLevels);
+            LOG_INFO(
+                "State: Default test state comparison (NTimeLevels={}) FAIL",
+                NTimeLevels);
          }
 
          // Perform time level update.
@@ -288,14 +299,18 @@ int main(int argc, char *argv[]) {
          count2 = checkDevice(DefState, TestState, CurLevel, CurLevel);
 
          if (count1 + count2 != 0) {
-            LOG_INFO("State: time levels different after single update (NTimeLevels={}) PASS", NTimeLevels);
+            LOG_INFO("State: time levels different after single update "
+                     "(NTimeLevels={}) PASS",
+                     NTimeLevels);
          } else {
             RetVal += 1;
-            LOG_INFO("State: time levels different after single update (NTimeLevels={}) FAIL", NTimeLevels);
+            LOG_INFO("State: time levels different after single update "
+                     "(NTimeLevels={}) FAIL",
+                     NTimeLevels);
          }
 
          // Perform time level updates to cycle back to inital index
-         for (int i = 0; i < NTimeLevels-1; i++) {
+         for (int i = 0; i < NTimeLevels - 1; i++) {
             DefState->updateTimeLevels();
          }
 
@@ -305,12 +320,13 @@ int main(int argc, char *argv[]) {
          count2 = checkDevice(DefState, TestState, CurLevel, CurLevel);
 
          if (count1 + count2 == 0) {
-            LOG_INFO("State: time level update (NTimeLevels={}) PASS", NTimeLevels);
+            LOG_INFO("State: time level update (NTimeLevels={}) PASS",
+                     NTimeLevels);
          } else {
             RetVal += 1;
-            LOG_INFO("State: time level update (NTimeLevels={}) FAIL", NTimeLevels);
+            LOG_INFO("State: time level update (NTimeLevels={}) FAIL",
+                     NTimeLevels);
          }
-
 
          OMEGA::OceanState::clear();
       }
