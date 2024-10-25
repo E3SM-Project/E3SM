@@ -10,9 +10,9 @@ atmosphere_processes:
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     orbital_year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem
-    orbital_eccentricity: 0
-    orbital_obliquity: 0
-    orbital_mvelp: 0
+    orbital_eccentricity: 0.0
+    orbital_obliquity: 0.0
+    orbital_mvelp: 0.0
     Fixed Solar Zenith Angle: 0.86
     do_aerosol_rad: false
     nswgpts: 224
