@@ -23,6 +23,8 @@
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 #include "mpi.h"
+#include <chrono>
+#include <thread>
 #include <vector>
 
 using namespace OMEGA;
@@ -253,9 +255,9 @@ int main(int argc, char **argv) {
       }
 
       // Force read the latest restart and check the results
-      // We use this log message to act as a barrier/delay to make sure the
-      // restart write has finished before we read.
-      LOG_INFO("Test reading final restart");
+      // A delay is needed here to make sure the restart file is completely
+      // written before we read.
+      std::this_thread::sleep_for(std::chrono::seconds(5));
       bool ForceRead = true;
       Err1 = IOStream::read("RestartRead", *ModelClock, ReqMetadata, ForceRead);
       TestEval("Restart force read", Err1, ErrRef, Err);
