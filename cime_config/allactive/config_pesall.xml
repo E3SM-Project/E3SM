@@ -2260,6 +2260,52 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="anvil">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 64 nodes ~1.8 sypd</comment>
+        <ntasks>
+          <ntasks_atm>2160</ntasks_atm>
+          <ntasks_cpl>2160</ntasks_cpl>
+          <ntasks_lnd>2160</ntasks_lnd>
+          <ntasks_rof>2160</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>144</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>2160</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="M">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 96 nodes ~2.5 sypd</comment>
+        <ntasks>
+          <ntasks_atm>3240</ntasks_atm>
+          <ntasks_cpl>3240</ntasks_cpl>
+          <ntasks_lnd>1080</ntasks_lnd>
+          <ntasks_rof>1080</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>216</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>3240</rootpe_ocn>
+          <rootpe_lnd>2160</rootpe_lnd>
+          <rootpe_rof>2160</rootpe_rof>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 128 nodes ~3.2 sypd</comment>
+        <ntasks>
+          <ntasks_atm>4320</ntasks_atm>
+          <ntasks_cpl>4320</ntasks_cpl>
+          <ntasks_lnd>4320</ntasks_lnd>
+          <ntasks_rof>4320</ntasks_rof>
+          <ntasks_ice>4320</ntasks_ice>
+          <ntasks_ocn>288</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>4320</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4_l%.+oi%oEC60to30.+w%wQU225EC60to30">
     <mach name="anvil|chrysalis">
