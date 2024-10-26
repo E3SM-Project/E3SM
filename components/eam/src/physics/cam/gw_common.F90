@@ -1915,7 +1915,7 @@ IF ( (gsd_gwd_ls .EQ. 1).and.(ls_taper.GT.1.E-02) ) THEN
 do i=its,ite
 iint=.false.
         do k=kpblmin,kte-1
-        if (k.gt.kbl(i).and.usqj(1,k)-usqj(1,k-1).lt.0.and.(.not.iint)) then
+        if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
         iint=.true.
         zl_hint(i)=zl(i,k+1)
         endif

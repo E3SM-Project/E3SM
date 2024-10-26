@@ -3313,6 +3313,8 @@ end subroutine clubb_init_cnst
    !!=====Jinbo Xie add calculation of ribulk here=====
    kbfs_pcol=0.0_r8
    do i=1,ncol
+        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
+                        rrho, ustar(i) )
         call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
         kbfs_pcol(i)=kbfs
