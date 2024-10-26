@@ -631,7 +631,8 @@ end subroutine clubb_init_cnst
     use constituents,           only: cnst_get_ind
     use phys_control,           only: phys_getopts
 
-    use parameters_tunable, only: params_list
+    use parameters_tunable,     only: params_list
+    use cam_abortutils,         only: endrun
 
 #endif
 
@@ -927,6 +928,8 @@ end subroutine clubb_init_cnst
     call addfld ('VMAGDP',        horiz_only,     'A',             '-', 'ZM gustiness enhancement')
     call addfld ('VMAGCL',        horiz_only,     'A',             '-', 'CLUBB gustiness enhancement')
     call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
+    !
+    if (use_od_fd) then
     !!added for TOFD output
     call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
     call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
@@ -936,6 +939,16 @@ end subroutine clubb_init_cnst
     call add_default('DTAUY3_FD', 1,  ' ')
     call add_default('DUSFC_FD',  1,  ' ')
     call add_default('DVSFC_FD',  1,  ' ')
+        if (masterproc) then
+          write(iulog,*)'Using turbulent orographic form drag scheme (TOFD)'
+        end if
+        !
+        if (use_od_fd.and.do_tms) then
+           call endrun("clubb_intr: Both TMS and TOFD are turned on, please turn one off&
+           &by setting use_od_fd or do_tms as .false.")
+        end if 
+        !
+    end if
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8

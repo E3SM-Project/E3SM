@@ -409,12 +409,17 @@ subroutine gw_init()
       use_od_ls.or.&
       use_od_bl.or.&
       use_od_ss) then
-
-     if (effgw_oro == unset_r8) then
+     !
+     if (use_gw_oro.and.effgw_oro == unset_r8) then
         call endrun("gw_drag_init: Orographic gravity waves enabled, &
              &but effgw_oro was not set.")
      end if
-
+     !
+     if (use_gw_oro.and.use_od_ls) then
+        call endrun("gw_drag_init: Both orographic gravity waves schemes are turned on, &
+                             &please turn one off by setting use_gw_oro or use_od_ls as .false.")
+     end if
+     !
      call gw_oro_init(errstring)
      if (trim(errstring) /= "") call endrun("gw_oro_init: "//errstring)
 
