@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 19
+  integer, parameter, public :: num_scream_imports = 20
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -92,6 +92,7 @@ module scream_cpl_indices
     import_field_names(17) = 'icefrac'
     import_field_names(18) = 'fv'
     import_field_names(19) = 'ram1'
+    import_field_names(20) = 'sst'
 
     ! CPL indices
     import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
@@ -113,6 +114,7 @@ module scream_cpl_indices
     import_cpl_indices(17) = mct_avect_indexra(x2a,'Sf_ifrac') 
     import_cpl_indices(18) = mct_avect_indexra(x2a,'Sl_fv')
     import_cpl_indices(19) = mct_avect_indexra(x2a,'Sl_ram1')
+    import_cpl_indices(20) = mct_avect_indexra(x2a,'So_t')
 
     ! Vector components
     import_vector_components(11) = 0
