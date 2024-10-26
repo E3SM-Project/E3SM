@@ -992,7 +992,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
   endif
   !
-#if 0
   if (use_od_ls.or.&
       use_od_bl.or.&
       use_od_ss) then
@@ -1021,17 +1020,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
                             dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
 
   endif
-#endif
-        utgw=0.0_r8
-        vtgw=0.0_r8
-        ttgw=0.0_r8
-        !write(iulog,*) "Jinbo Xie"
-
-
+        !
         ! Add the orographic tendencies to the spectrum tendencies
         ! Compute the temperature tendency from energy conservation
         ! (includes spectrum).
         ! both old and new gwd scheme will add the tendency to circulation
+        !
   if (use_gw_oro.or.    &
       use_od_ls.or.&
       use_od_bl.or.&

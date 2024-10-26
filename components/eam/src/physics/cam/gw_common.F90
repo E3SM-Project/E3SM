@@ -1142,6 +1142,8 @@ end subroutine grid_size
           delprsi(i,k) = pdhi(i,k)-pdhi(i,k+1)
         enddo
       enddo
+!delprsi=10000._r8
+
 !
 !no need when there is no large drag
 IF (gwd_ls.or.gwd_bl) then
@@ -1435,6 +1437,7 @@ ss_taper=1._r8
      ldrag(i)      = .false.
      icrilv(i)     = .false.
      flag(i)       = .true.
+     zl_hint(i)    = 0.0_r8
    enddo
 !
    do k = kts,kte
@@ -1536,7 +1539,7 @@ ss_taper=1._r8
 ! For ls and bl only
 IF  (gsd_gwd_ls.or.gsd_gwd_bl) then
 !     figure out low-level horizontal wind direction 
-! order into a counterclockwise index instead
+!     order into a counterclockwise index instead
 !
    do i = its,ite
         wdir  = atan2(vbar(i),ubar(i)) + pi!changed into y/x
@@ -1702,13 +1705,13 @@ IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
        cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
-       !!tune the times of drag
+       !tune the times of drag
        cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
        coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
        xlinv(i) = coefm(i) / cleff
-       tem      = fr(i) * fr(i) * oc1(i)
+       tem      = fr(i) * fr(i) * 1.!oc1(i)
        gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
-       !!
+       !
        if (gsd_gwd_ls) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
@@ -1896,15 +1899,16 @@ IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
          if (k .le. kbl(i)) taup(i,k) = taub(i)
       enddo
    enddo
+
 !
 !determination of the interface height
 do i=its,ite
 iint=.false.
         do k=kpblmin,kte-1
-        if (k.gt.kbl(i).and.usqj(1,k)-usqj(1,k-1).lt.0.and.(.not.iint)) then
-        iint=.true.
-        zl_hint(i)=zl(i,k+1)
-        endif
+                if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
+                        iint=.true.
+                        zl_hint(i)=zl(i,k+1)
+                endif
         enddo
 enddo
    do k = kpblmin, kte-1                   ! vertical level k loop!
@@ -1957,11 +1961,14 @@ enddo
                taup(i,kp1)=min(tem1*hd*hd,taup(i,k))
             !add vertical decrease at low level below hint (Kim and Doyle 2005)
             !where Ri first decreases
-                if (k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i)) then
-                        l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)!-(shr2_xjb(i,kp1)/velco(i,kp1))
-                        l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)!-(shr2_xjb(i,k)/velco(i,k))
-                        taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
-                endif
+                !currently closed the use of low-level vertical decrease
+                !if (k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i).and.k.lt.kte-1) then
+                !        l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)!-(shr2_xjb(i,kp1)/velco(i,kp1))
+                !        l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)!-(shr2_xjb(i,k)/velco(i,k))
+                !        !
+                !        taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+                !        !
+                !endif
               endif
             else                    ! no wavebreaking!
               taup(i,kp1) = taup(i,k)
@@ -1972,10 +1979,8 @@ enddo
    enddo
 !
 
-
    if(lcap.lt.kte) then
       do klcap = lcapp1,kte
-
          do i = its,ite
            taup(i,klcap) = prsi(i,klcap) / prsi(i,lcap) * taup(i,lcap)
          enddo
@@ -2051,6 +2056,7 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 !                                                                       
 !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
 !
+
    do k = kts,kte
      do i = its,ite
        taud_ls(i,k) = 1._r8 * (taup(i,k+1) - taup(i,k)) * csg / del(i,k)
