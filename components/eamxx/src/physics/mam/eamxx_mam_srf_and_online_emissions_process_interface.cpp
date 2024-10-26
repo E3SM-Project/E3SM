@@ -51,7 +51,7 @@ void MAMSrfOnlineEmiss::set_grids(
   // and then bundle the online emissions computations as tendencies into the
   // Computed constituent_fluxes field
   // -------------------------------------------------------------
-  static constexpr Units m2(m * m, "m2");
+  constexpr auto m2 = pow(m, 2);
   // Constituent fluxes of species in [kg/m2/s]
   add_field<Computed>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
                       grid_name);
