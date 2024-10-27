@@ -286,7 +286,7 @@ contains
     endif
 
    !find_spectrc_ncol = INDEX(filename, 'bc_a4') !(zhang73)
-   if(flds(2)%fldnam.eq.'shf'.and.(.not.file%is_ncol)) file%is_ncol = .true. !set sfx_data%file%is_ncol=.true. (zhang73)
+   if((flds(mxnflds)%fldnam.eq.'shf'.or.flds(mxnflds)%fldnam.eq.'lhf'.or.flds(mxnflds)%fldnam.eq.'lwup').and.(.not.file%is_ncol)) file%is_ncol = .true. !set sfx_data%file%is_ncol=.true. (zhang73)
    if(masterproc.and.file%is_ncol) write(iulog,*) '(zhang73 trcdata_init) file%curr_data_times:',file%curr_data_times
    if (masterproc) then
       flds_loop1: do f = 1,mxnflds
