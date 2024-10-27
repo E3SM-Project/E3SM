@@ -30,5 +30,6 @@
 <stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
 
+<check_dynpft_consistency>.false.</check_dynpft_consistency>
 
 </namelist_defaults>
