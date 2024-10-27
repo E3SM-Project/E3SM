@@ -1142,8 +1142,6 @@ end subroutine grid_size
           delprsi(i,k) = pdhi(i,k)-pdhi(i,k+1)
         enddo
       enddo
-!delprsi=10000._r8
-
 !
 !no need when there is no large drag
 IF (gwd_ls.or.gwd_bl) then
@@ -1378,21 +1376,23 @@ real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
    real(r8),parameter       :: odmin  = 0.1_r8
    real(r8),parameter       :: odmax  = 10._r8
    real(r8),parameter       :: erad   = 6371.315e+3_r8
-   integer              :: komax(its:ite)
-   integer              :: kblk
+   integer                  :: komax(its:ite)
+   integer                  :: kblk
    real(r8)                 :: cd
    real(r8)                 :: zblk,tautem
    real(r8)                 :: pe,ke
    real(r8)                 :: dely(its:ite),dxy4(its:ite,nvar_dirOL),&
-                     delx(its:ite),dxy4p(its:ite,nvar_dirOL)
+                               delx(its:ite),dxy4p(its:ite,nvar_dirOL)
    real(r8)                 :: dxy(its:ite),dxyp(its:ite)
    real(r8)                 ::  olp(its:ite),&
                                  od(its:ite)
    real(r8)                 :: taufb(its:ite,kts:kte+1)
    !readdata for low-level determination of ogwd
    real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
-   logical  :: iint
    real(r8) :: zl_hint(its:ite)
+   logical  :: iint
+   !open/close low-level momentum adjustment according to scorer parameter
+   logical  :: scorer_on=.false.
    !
    !---- constants                                                         
    !                                                                       
@@ -1405,8 +1405,8 @@ real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
 !
 !--- calculate scale-aware tapering factors, currently set as no taper
 !
-ls_taper=1._r8
-ss_taper=1._r8
+   ls_taper=1._r8
+   ss_taper=1._r8
 !
 !--- calculate length of grid for flow-blocking drag
 !
@@ -1900,17 +1900,21 @@ IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
       enddo
    enddo
 
-!
-!determination of the interface height
-do i=its,ite
-iint=.false.
-        do k=kpblmin,kte-1
-                if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
-                        iint=.true.
-                        zl_hint(i)=zl(i,k+1)
-                endif
-        enddo
-enddo
+   if (scorer_on) then
+   !
+   !determination of the interface height for scorer adjustment
+   !
+       do i=its,ite
+           iint=.false.
+           do k=kpblmin,kte-1
+               if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
+                   iint=.true.
+                   zl_hint(i)=zl(i,k+1)
+               endif
+           enddo
+       enddo
+   endif
+   !
    do k = kpblmin, kte-1                   ! vertical level k loop!
       kp1 = k + 1
       do i = its,ite
@@ -1955,20 +1959,20 @@ enddo
                 temc = 2.0_r8 + 1.0_r8 / tem2
                 hd   = velco(i,k) * (2.0_r8*sqrt(temc)-temc) / brvf(i)
                 taup(i,kp1) = tem1 * hd * hd
-            !
-            !  taup is restricted to monotoncally decrease
-            !  to avoid unexpected high taup with taup cal
-               taup(i,kp1)=min(tem1*hd*hd,taup(i,k))
-            !add vertical decrease at low level below hint (Kim and Doyle 2005)
-            !where Ri first decreases
-                !currently closed the use of low-level vertical decrease
-                !if (k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i).and.k.lt.kte-1) then
-                !        l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)!-(shr2_xjb(i,kp1)/velco(i,kp1))
-                !        l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)!-(shr2_xjb(i,k)/velco(i,k))
-                !        !
-                !        taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
-                !        !
-                !endif
+                !
+                !  taup is restricted to monotoncally decrease
+                !  to avoid unexpected high taup in calculation
+                !
+                taup(i,kp1)=min(tem1*hd*hd,taup(i,k))
+                !
+                !  add vertical decrease at low level below hint (Kim and Doyle 2005)
+                !  where Ri first decreases
+                !
+                if (scorer_on.and.k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i).and.k.lt.kte-1) then
+                        l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)
+                        l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)
+                        taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+                endif
               endif
             else                    ! no wavebreaking!
               taup(i,kp1) = taup(i,k)
