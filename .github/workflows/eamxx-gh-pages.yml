@@ -34,7 +34,7 @@ concurrency:
 jobs:
 
   eamxx-docs:
-    if: ${{ github.event.repository.name == 'scream' }}
+    if: ${{ github.repository == 'E3SM-Project/scream' }}
     runs-on: ubuntu-latest
 
     steps:
