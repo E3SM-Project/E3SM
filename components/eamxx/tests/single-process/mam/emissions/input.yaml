@@ -69,6 +69,10 @@ initial_conditions:
 
   #we should get the following variables from other processes
   pbl_height : 1.0
+  dstflx : [ -0.99391637990504811E-011, -0.53350997938896468E-010, -0.12510222703847123E-009, -0.11784238261270793E-009]
+  ocnfrc:   0.99999999999999989E+000
+  sst: 0.30196620710190155E+003
+  cldfrac_tot: 0.138584624960092
 
 # The parameters for I/O control
 Scorpio:

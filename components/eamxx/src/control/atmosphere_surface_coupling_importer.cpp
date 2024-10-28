@@ -59,7 +59,6 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   // Aerodynamical resistance
   add_field<Computed>("ram1",             scalar2d, s/m,     grid_name);
   // Sea surface temperature [K]
-  //FIXME: Verify the units
   add_field<Computed>("sst",              scalar2d, K,       grid_name);
   //dust fluxes [kg/m^2/s]: Four flux values for eacch column
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);

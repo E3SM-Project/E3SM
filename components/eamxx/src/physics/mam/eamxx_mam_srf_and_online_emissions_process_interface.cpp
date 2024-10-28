@@ -19,41 +19,101 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_ = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
-  ncol_ = grid_->get_num_local_dofs();      // Number of columns on this rank
-  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
+  constexpr auto m2     = pow(m, 2);
+  constexpr auto s2     = pow(s, 2);
+  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+  constexpr auto nondim = ekat::units::Units::nondimensional();
 
-  static constexpr int pcnst = mam4::aero_model::pcnst;
-  const FieldLayout scalar2d_pcnct =
+  const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
+  const FieldLayout scalar3d_m = grid_->get_3d_scalar_layout(true);   // mid
+  const FieldLayout scalar3d_i = grid_->get_3d_scalar_layout(false);  // int
+
+  // For U and V components of wind
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
+
+  // For components of dust flux
+  const FieldLayout vector4d = grid_->get_2d_vector_layout(4);
+
+  // --------------------------------------------------------------------------
+  // These variables are "Required" or pure inputs for the process
+  // --------------------------------------------------------------------------
+
+  // ----------- Atmospheric quantities -------------
+
+  // -- Variables required for building DS to compute z_mid --
+  // Specific humidity [kg/kg]
+  // FIXME: Comply with add_tracer calls
+  add_field<Required>("qv", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud liquid mass mixing ratio [kg/kg]
+  add_field<Required>("qc", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud ice mass mixing ratio [kg/kg]
+  add_field<Required>("qi", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud liquid number mixing ratio [1/kg]
+  add_field<Required>("nc", scalar3d_m, n_unit, grid_name, "tracers");
+
+  // Cloud ice number mixing ratio [1/kg]
+  add_field<Required>("ni", scalar3d_m, n_unit, grid_name, "tracers");
+
+  // Temperature[K] at midpoints
+  add_field<Required>("T_mid", scalar3d_m, K, grid_name);
+
+  // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
+  // DS)
+  add_field<Required>("omega", scalar3d_m, Pa / s, grid_name);
+
+  // Total pressure [Pa] at midpoints
+  add_field<Required>("p_mid", scalar3d_m, Pa, grid_name);
+
+  // Total pressure [Pa] at interfaces
+  add_field<Required>("p_int", scalar3d_i, Pa, grid_name);
+
+  // Layer thickness(pdel) [Pa] at midpoints
+  add_field<Required>("pseudo_density", scalar3d_m, Pa, grid_name);
+
+  // Planetary boundary layer height [m]
+  add_field<Required>("pbl_height", scalar2d, m, grid_name);
+
+  // Surface geopotential [m2/s2]
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+
+  //----------- Variables from microphysics scheme -------------
+
+  // Total cloud fraction [fraction] (Require only for building DS)
+  add_field<Required>("cldfrac_tot", scalar3d_m, nondim, grid_name);
+
+  // -- Variables required for online dust and sea salt emissions --
+
+  // U and V components of the wind[m/s]
+  add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
+
+  // Sea surface temperature [K]
+  add_field<Required>("sst", scalar2d, K, grid_name);
+
+  // dust fluxes [kg/m^2/s]: Four flux values for eacch column
+  add_field<Required>("dstflx", vector4d, kg / m2 / s, grid_name);
+
+  // -------------------------------------------------------------
+  // These variables are "Updated" or input-outputs for the process
+  // -------------------------------------------------------------
+
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  const FieldLayout vector2d_pcnst =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
-  // auto vector3d_mid = grid_->get_3d_vector_layout(true, 2);
 
-  // FIXME: online emissions requires the following quantities for the
-  // OnlineEmissionsData struct: {surface_temp, u_bottom, v_bottom, z_bottom,
-  //                              ocean_frac}
-  // // Temperature
-  // add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
-  // add_field<Required>("horiz_winds", vector3d_mid, m/s, grid_name);
-  // vertical wind?
-  // ocean_frac?
-
-  // -------------------------------------------------------------
-  // These variables are "Computed" or outputs for the process
-  // FIXME: this should likely be an updated field, since online emissisons
-  //        expects input values for constituent_fluxes
-  // NOTE: the other option is that we do something like:
-  // add_field<Required>("constituent_fluxes_input", scalar2d_pcnct,
-  //                     kg / m2 / s, grid_name);
-  // and then bundle the online emissions computations as tendencies into the
-  // Computed constituent_fluxes field
-  // -------------------------------------------------------------
-  constexpr auto m2 = pow(m, 2);
   // Constituent fluxes of species in [kg/m2/s]
-  add_field<Computed>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
+  // FIXME: confirm if it is Updated or Computed
+  add_field<Computed>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
                       grid_name);
 
   // Surface emissions remapping file
@@ -66,20 +126,20 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ dms;
   // File name, name and sectors
-  dms.data_file = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_DMS");
   dms.species_name = "dms";
-  dms.sectors = {"DMS"};
-  srf_emiss_species_.push_back(dms); // add to the vector
+  dms.sectors      = {"DMS"};
+  srf_emiss_species_.push_back(dms);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init so2 srf emiss data structures
   //--------------------------------------------------------------------
   srf_emiss_ so2;
   // File name, name and sectors
-  so2.data_file = m_params.get<std::string>("srf_emis_specifier_for_SO2");
+  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_SO2");
   so2.species_name = "so2";
-  so2.sectors = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
-  srf_emiss_species_.push_back(so2); // add to the vector
+  so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
+  srf_emiss_species_.push_back(so2);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init bc_a4 srf emiss data structures
@@ -88,8 +148,8 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   bc_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_bc_a4");
   bc_a4.species_name = "bc_a4";
-  bc_a4.sectors = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
-  srf_emiss_species_.push_back(bc_a4); // add to the vector
+  bc_a4.sectors      = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
+  srf_emiss_species_.push_back(bc_a4);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init num_a1 srf emiss data structures
@@ -98,9 +158,9 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   num_a1.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a1");
   num_a1.species_name = "num_a1";
-  num_a1.sectors = {"num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV",
-                    "num_a1_SO4_WST"};
-  srf_emiss_species_.push_back(num_a1); // add to the vector
+  num_a1.sectors      = {"num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV",
+                         "num_a1_SO4_WST"};
+  srf_emiss_species_.push_back(num_a1);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init num_a2 srf emiss data structures
@@ -109,8 +169,8 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   num_a2.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a2");
   num_a2.species_name = "num_a2";
-  num_a2.sectors = {"num_a2_SO4_RCO", "num_a2_SO4_TRA"};
-  srf_emiss_species_.push_back(num_a2); // add to the vector
+  num_a2.sectors      = {"num_a2_SO4_RCO", "num_a2_SO4_TRA"};
+  srf_emiss_species_.push_back(num_a2);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init num_a4 srf emiss data structures
@@ -119,12 +179,12 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   num_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a4");
   num_a4.species_name = "num_a4";
-  num_a4.sectors = {
-      "num_a1_BC_AGR",  "num_a1_BC_ENE",  "num_a1_BC_IND",  "num_a1_BC_RCO",
-      "num_a1_BC_SHP",  "num_a1_BC_SLV",  "num_a1_BC_TRA",  "num_a1_BC_WST",
-      "num_a1_POM_AGR", "num_a1_POM_ENE", "num_a1_POM_IND", "num_a1_POM_RCO",
-      "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
-  srf_emiss_species_.push_back(num_a4); // add to the vector
+  num_a4.sectors      = {
+           "num_a1_BC_AGR",  "num_a1_BC_ENE",  "num_a1_BC_IND",  "num_a1_BC_RCO",
+           "num_a1_BC_SHP",  "num_a1_BC_SLV",  "num_a1_BC_TRA",  "num_a1_BC_WST",
+           "num_a1_POM_AGR", "num_a1_POM_ENE", "num_a1_POM_IND", "num_a1_POM_RCO",
+           "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
+  srf_emiss_species_.push_back(num_a4);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init pom_a4 srf emiss data structures
@@ -134,7 +194,7 @@ void MAMSrfOnlineEmiss::set_grids(
   pom_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_pom_a4");
   pom_a4.species_name = "pom_a4";
   pom_a4.sectors = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
-  srf_emiss_species_.push_back(pom_a4); // add to the vector
+  srf_emiss_species_.push_back(pom_a4);  // add to the vector
 
   //--------------------------------------------------------------------
   // Init so4_a1 srf emiss data structures
@@ -143,7 +203,7 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   so4_a1.data_file = m_params.get<std::string>("srf_emis_specifier_for_so4_a1");
   so4_a1.species_name = "so4_a1";
-  so4_a1.sectors = {"AGR", "SHP", "SLV", "WST"};
+  so4_a1.sectors      = {"AGR", "SHP", "SLV", "WST"};
   srf_emiss_species_.push_back(so4_a1);
 
   //--------------------------------------------------------------------
@@ -153,20 +213,20 @@ void MAMSrfOnlineEmiss::set_grids(
   // File name, name and sectors
   so4_a2.data_file = m_params.get<std::string>("srf_emis_specifier_for_so4_a2");
   so4_a2.species_name = "so4_a2";
-  so4_a2.sectors = {"RCO", "TRA"};
+  so4_a2.sectors      = {"RCO", "TRA"};
   srf_emiss_species_.push_back(so4_a2);
 
   //--------------------------------------------------------------------
   // Init data structures to read and interpolate
   //--------------------------------------------------------------------
-  for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
+  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::init_srf_emiss_objects(
         ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
         // output
         ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
         ispec_srf.data_out_, ispec_srf.dataReader_);
   }
-} // set_grid ends
+}  // set_grid ends
 
 // ================================================================
 //  REQUEST_BUFFER_SIZE_IN_BYTES
@@ -184,9 +244,9 @@ size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
 void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
-                       requested_buffer_size_in_bytes(),
-                   "Error! Insufficient buffer size.\n");
+  EKAT_REQUIRE_MSG(
+      buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+      "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
@@ -199,6 +259,42 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
 //  INITIALIZE_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
+  // ---------------------------------------------------------------
+  // Input fields read in from IC file, namelist or other processes
+  // ---------------------------------------------------------------
+
+  // Populate the wet atmosphere state with views from fields
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+
+  // Following wet_atm vars are required only for building DS
+  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
+
+  // Populate the dry atmosphere state with views from fields
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+
+  // Following dry_atm vars are required only for building DS
+  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
+
+  // store fields converted to dry mmr from wet mmr in dry_atm_
+  dry_atm_.z_mid     = buffer_.z_mid;
+  dry_atm_.z_iface   = buffer_.z_iface;
+  dry_atm_.dz        = buffer_.dz;
+  dry_atm_.qv        = buffer_.qv_dry;
+  dry_atm_.qc        = buffer_.qc_dry;
+  dry_atm_.nc        = buffer_.nc_dry;
+  dry_atm_.qi        = buffer_.qi_dry;
+  dry_atm_.ni        = buffer_.ni_dry;
+  dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+
   // ---------------------------------------------------------------
   // Output fields
   // ---------------------------------------------------------------
@@ -223,10 +319,10 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Update surface emissions from file
   //--------------------------------------------------------------------
-  for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
+  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
         ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
-        ispec_srf.data_end_); // output
+        ispec_srf.data_end_);  // output
   }
 
   //--------------------------------------------------------------------
@@ -238,15 +334,17 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
-  preprocess_.initialize(constituent_fluxes_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_, constituent_fluxes_);
 
-} // end initialize_impl()
+}  // end initialize_impl()
 
 // ================================================================
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Zero-out output
+  // FIXME: Find out if we do it in the fortran code
+  // if we do, this should be a "Computed" field
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
   // Gather time and state information for interpolation
@@ -256,7 +354,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Interpolate srf emiss data
   //--------------------------------------------------------------------
 
-  for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
+  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     // Update TimeState, note the addition of dt
     ispec_srf.timeState_.t_now = ts.frac_of_year_in_days();
 
@@ -279,7 +377,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    auto constituent_fluxes = this->constituent_fluxes_;
+    auto constituent_fluxes  = this->constituent_fluxes_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
     // Parallel loop over all the columns to update units
@@ -289,7 +387,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
-  } // for loop for species
+  }  // for loop for species
 
   auto &online_data = online_emissions.online_emis_data;
   // TODO: check that units are consistent with srf emissions!
@@ -310,13 +408,14 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         // which is a chunk-wise variable at this point
         // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
         // col-value once inside aero_model_emissions()
-        view_1d fluxes_col = Kokkos::subview(online_data.cfluxes, icol, Kokkos::ALL());
+        view_1d fluxes_col =
+            Kokkos::subview(online_data.cfluxes, icol, Kokkos::ALL());
         mam4::aero_model_emissions::aero_model_emissions(fluxes_col);
       });
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
   // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
   Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
   Kokkos::fence();
-} // run_impl ends
+}  // run_impl ends
 // =============================================================================
-} // namespace scream
+}  // namespace scream

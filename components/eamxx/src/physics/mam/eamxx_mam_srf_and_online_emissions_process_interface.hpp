@@ -12,7 +12,6 @@
 // For declaring surface and online emission class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
-
 #include <string>
 
 namespace scream {
@@ -20,18 +19,30 @@ namespace scream {
 // The process responsible for handling MAM4 surface and online emissions. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
 class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
-  using KT = ekat::KokkosTypes<DefaultDevice>;
-  using view_1d = typename KT::template view_1d<Real>;
-  using view_2d = typename KT::template view_2d<Real>;
+  using KT            = ekat::KokkosTypes<DefaultDevice>;
+  using view_1d       = typename KT::template view_1d<Real>;
+  using view_2d       = typename KT::template view_2d<Real>;
+  using const_view_1d = typename KT::template view_1d<const Real>;
+  using const_view_2d = typename KT::template view_2d<const Real>;
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
+
+  // Wet and dry states of atmosphere
+  mam_coupling::WetAtmosphere wet_atm_;
+  mam_coupling::DryAtmosphere dry_atm_;
 
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
+
+  // Sea surface temoerature [K]
+  const_view_1d sst_;
+
+  // Dust fluxes (four values for each col) [kg/m2/s]
+  const_view_2d dust_fluxes_;
 
   // Constituent fluxes of species in [kg/m2/s]
   view_2d constituent_fluxes_;
@@ -40,11 +51,11 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   view_1d fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
-  static constexpr Real amufac = 1.65979e-23; // 1.e4* kg / amu
+  static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
-public:
+ public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-  using onlineEmiss = mam_coupling::onlineEmissions<Real, DefaultDevice>;
+  using onlineEmiss  = mam_coupling::onlineEmissions<Real, DefaultDevice>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -60,8 +71,8 @@ public:
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void
-  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(
+      const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -81,14 +92,39 @@ public:
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const view_2d &constituent_fluxes) {
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere &wet_atm,
+                    const mam_coupling::DryAtmosphere &dry_atm,
+                    const view_2d &constituent_fluxes) {
+      ncol_pre_               = ncol;
+      nlev_pre_               = nlev;
+      wet_atm_pre_            = wet_atm;
+      dry_atm_pre_            = dry_atm;
       constituent_fluxes_pre_ = constituent_fluxes;
     }
-    // local variables for preprocess struct
-    view_2d constituent_fluxes_pre_;
-  }; // MAMSrfOnlineEmiss::Preprocess
+    KOKKOS_INLINE_FUNCTION
+    void operator()(
+        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int i = team.league_rank();  // column index
 
-private:
+      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
+      team.team_barrier();
+      // vertical heights has to be computed after computing dry mixing ratios
+      // for atmosphere
+      compute_vertical_layer_heights(team, dry_atm_pre_, i);
+      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
+    }  // Preprocess operator()
+
+    // local variables for preprocess struct
+    // number of horizontal columns and vertical levels
+    int ncol_pre_, nlev_pre_;
+
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_pre_;
+    mam_coupling::DryAtmosphere dry_atm_pre_;
+    view_2d constituent_fluxes_pre_;
+  };  // MAMSrfOnlineEmiss::Preprocess
+ private:
   // preprocessing scratch pad
   Preprocess preprocess_;
 
@@ -131,8 +167,8 @@ private:
   static constexpr int offset_ =
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
 
-}; // MAMSrfOnlineEmiss
+};  // MAMSrfOnlineEmiss
 
-} // namespace scream
+}  // namespace scream
 
-#endif // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
+#endif  // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
