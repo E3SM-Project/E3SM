@@ -128,7 +128,7 @@ contains
        rxt_rates(:ncol,:,rxt_tag_map(i)) = rxt_rates(:ncol,:,rxt_tag_map(i)) *  m(:,:)
        call outfld( rate_names(i), rxt_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
 
-      if ( .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels) then
+      if (history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels) then
 
         if (rate_names(i) .eq. 'r_lch4') then
           !kg/m2/sec
