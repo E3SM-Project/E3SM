@@ -142,6 +142,7 @@ contains
         maxLevelCell, minLevelCell, nEdgesOnCell, maxLevelEdgeTop, minLevelEdgeBot
 
       integer, dimension(:), pointer :: landIceMask
+      integer :: landIceMaskValue
 
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, fCell, &
@@ -482,19 +483,25 @@ contains
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
               ! compute Langmuir number and Langmuir enhancement factor
-              if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-                 langmuirNumber(iCell) =  sqrt(surfaceFrictionVelocity(iCell) / ( &
+              if (associated(landIceMask)) then
+                  landIceMaskValue = landIceMask(iCell)
+              else
+                  landIceMaskValue = 0
+              endif
+
+              if ( landIceMaskValue .eq. 0 .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+                 if (config_cvmix_kpp_use_theory_wave) then
+                    langmuirNumber(iCell) =  sqrt(surfaceFrictionVelocity(iCell) / ( &
                          cvmix_kpp_ustokes_SL_model(windSpeed10m(iCell), &
                                                     boundaryLayerDepth(iCell), &
                                                     cvmix_global_params)+1e-15_RKIND) )
-                 langmuirEnhancementFactor =  &
+                    langmuirEnhancementFactor =  &
                          cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
                                                  surfaceFrictionVelocity(iCell), &
                                                  boundaryLayerDepth(iCell), &
                                                  cvmix_global_params)
-              else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND &
-                       .and. landIceMask(iCell) .eq. 0) then
-                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+                 else if (config_cvmix_kpp_use_active_wave) then
+                    call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
                                                        windStressMeridional(iCell), &
                                                        surfaceFrictionVelocity(iCell), &
                                                        significantWaveHeight(iCell), &
@@ -503,9 +510,10 @@ contains
                                                        stokesDriftMeridionalWavenumber(:,iCell), &
                                                        alphaAngle, &
                                                        langmuirNumber(iCell))
-                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+                    call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
                                                               langmuirNumber(iCell), &
                                                               langmuirEnhancementFactor)
+                 endif
               else
                  ! arbitrarily large Langmuir number
                  langmuirNumber(iCell) = 1.e10_RKIND
@@ -682,15 +690,21 @@ contains
                           OBL_depth = boundaryLayerDepth(iCell) )
 
             ! update Langmuir enhancement factor
-            if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-               langmuirEnhancementFactor =  &
+            if (associated(landIceMask)) then
+                  landIceMaskValue = landIceMask(iCell)
+            else
+                  landIceMaskValue = 0
+            endif
+
+            if (landIceMaskValue .eq. 0 .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+               if (config_cvmix_kpp_use_theory_wave) then
+                  langmuirEnhancementFactor =  &
                        cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
                                                surfaceFrictionVelocity(iCell), &
                                                boundaryLayerDepth(iCell), &
                                                cvmix_global_params)
-            else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND &
-                     .and. landIceMask(iCell) .eq. 0) then
-                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+               else if (config_cvmix_kpp_use_active_wave) then
+                  call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
                                                        windStressMeridional(iCell), &
                                                        surfaceFrictionVelocity(iCell), &
                                                        significantWaveHeight(iCell), &
@@ -699,13 +713,13 @@ contains
                                                        stokesDriftMeridionalWavenumber(:,iCell), &
                                                        alphaAngle, &
                                                        langmuirNumber(iCell))
-                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
-                                                              langmuirNumber(iCell), &
-                                                              langmuirEnhancementFactor)
+                  call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+                                                       langmuirNumber(iCell), &
+                                                       langmuirEnhancementFactor)
+               endif
             else
                langmuirEnhancementFactor = 1.0_RKIND
-            end if
-
+            endif
 !           call mpas_timer_start('cvmix coeffs kpp', .false.)
             call cvmix_coeffs_kpp(                                              &
                           Mdiff_out = cvmix_variables % Mdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),       &
