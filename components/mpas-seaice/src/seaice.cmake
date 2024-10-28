@@ -144,6 +144,7 @@ set(SEAICE_MODEL_FORWARD
 )
 list(APPEND RAW_SOURCES ${SEAICE_MODEL_FORWARD})
 list(APPEND DISABLE_QSMP ${SEAICE_MODEL_FORWARD})
+list(APPEND NOOPT_FILES "core_seaice/icepack/columnphysics/icepack_shortwave_data.F90")
 
 # Generate core input
 handle_st_nl_gen("namelist.seaice" "streams.seaice stream_list.seaice. listed" ${CORE_INPUT_DIR} ${CORE_BLDDIR})

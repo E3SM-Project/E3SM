@@ -121,8 +121,12 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
       }
     }
 
-    // Call the fortran implementation
-    pblintd(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.npbl, SDS.z, SDS.zi,
+              SDS.thl, SDS.ql, SDS.q, SDS.u, SDS.v, SDS.ustar, SDS.obklen,
+              SDS.kbfs, SDS.cldn, SDS.pblh);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Make sure PBL height is reasonable
     // Should be larger than second lowest zi level and lower

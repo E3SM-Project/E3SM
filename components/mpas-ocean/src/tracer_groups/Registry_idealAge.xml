@@ -69,6 +69,11 @@
 				description="Flux of iAge through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
+			<var_array name="idealAgeTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="idealAgeTracersPKG">
+				<var name="iAgeSurfaceFluxSubglacialRunoff" array_group="iAgeSubglacialRunoffFluxGRP" units="none"
+				description="Flux of iAge through the ocean surface due to subglacial runoff. Positive into ocean."
+				/>
+			</var_array>
 			<var_array name="idealAgeTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="idealAgeTracersPKG">
 				<var name="iAgeSurfaceFluxRemoved" array_group="iAgeRemovedFluxGRP" units="none"
 				description="Flux of iAge that is ignored coming into the ocean. Positive into ocean."

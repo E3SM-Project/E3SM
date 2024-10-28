@@ -9,7 +9,11 @@ set(PAM_DRIVER_SRC
     params.F90)
 
 add_library(pam_driver 
-           ${PAM_DRIVER_SRC})
+  ${PAM_DRIVER_SRC})
+
+set(SCREAM_LIBS_ONLY TRUE)
+set(SCREAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
+add_library(eamxx_physics INTERFACE ${SCREAM_HOME}/components/eamxx/src/physics/)
 
 if (${USE_CUDA})
   # PAM will be CUDA-linked with device symbols resolved at library creation
@@ -37,7 +41,6 @@ set(PAM_MICRO   p3)
 set(PAM_SGS     shoc)
 set(PAM_RAD     forced)
 set(PAM_SCREAM_USE_CXX True)
-set(SCREAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
 
 # removing this once the cime cmake_macros aren't using obsolete
 # Kokkos settings like KOKKOS_OPTIONS.
@@ -124,7 +127,7 @@ target_compile_options(pam_driver PUBLIC
 )
 
 if (PAM_SCREAM_USE_CXX)
-  target_link_libraries(pam_driver pam_core physics dynamics pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share)
+  target_link_libraries(pam_driver pam_core physics dynamics pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share eamxx_physics)
 else()
   target_link_libraries(pam_driver pam_core physics dynamics )
 endif()

@@ -145,14 +145,9 @@ CONTAINS
     use seq_drydep_mod , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
     use landunit_varcon, only : istsoil, istice, istice_mec, istdlak, istwet
     use elm_varctl     , only : iulog
-    use pftvarcon      , only : noveg, ndllf_evr_tmp_tree, ndllf_evr_brl_tree
-    use pftvarcon      , only : ndllf_dcd_brl_tree, nbrdlf_evr_trp_tree
-    use pftvarcon      , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_trp_tree
-    use pftvarcon      , only : nbrdlf_dcd_tmp_tree, nbrdlf_dcd_brl_tree
-    use pftvarcon      , only : nbrdlf_evr_shrub, nbrdlf_dcd_tmp_shrub
-    use pftvarcon      , only : nbrdlf_dcd_brl_shrub,nc3_arctic_grass
-    use pftvarcon      , only : nc3_nonarctic_grass, nc4_grass, nc3crop
-    use pftvarcon      , only : nc3irrig, npcropmin, npcropmax
+    use pftvarcon       , only : noveg, nonvascular
+    use pftvarcon       , only : woody, graminoid, iscft, crop
+    use pftvarcon       , only : needleleaf
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -275,24 +270,31 @@ CONTAINS
 
             !map ELM veg type into Wesely veg type
             wesveg = wveg_unset
-            if (elmveg == noveg                               ) wesveg = 8
-            if (elmveg == ndllf_evr_tmp_tree                  ) wesveg = 5
-            if (elmveg == ndllf_evr_brl_tree                  ) wesveg = 5
-            if (elmveg == ndllf_dcd_brl_tree                  ) wesveg = 5
-            if (elmveg == nbrdlf_evr_trp_tree                 ) wesveg = 4
-            if (elmveg == nbrdlf_evr_tmp_tree                 ) wesveg = 4
-            if (elmveg == nbrdlf_dcd_trp_tree                 ) wesveg = 4
-            if (elmveg == nbrdlf_dcd_tmp_tree                 ) wesveg = 4
-            if (elmveg == nbrdlf_dcd_brl_tree                 ) wesveg = 4
-            if (elmveg == nbrdlf_evr_shrub                    ) wesveg = 11
-            if (elmveg == nbrdlf_dcd_tmp_shrub                ) wesveg = 11
-            if (elmveg == nbrdlf_dcd_brl_shrub                ) wesveg = 11
-            if (elmveg == nc3_arctic_grass                    ) wesveg = 3
-            if (elmveg == nc3_nonarctic_grass                 ) wesveg = 3
-            if (elmveg == nc4_grass                           ) wesveg = 3
-            if (elmveg == nc3crop                             ) wesveg = 2
-            if (elmveg == nc3irrig                            ) wesveg = 2
-            if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
+            if (elmveg == noveg                                      ) wesveg = 8
+            if (nonvascular(elmveg) == 2.0_r8                        ) wesveg = 8      ! assuming lichen like bare-ground
+            !if (elmveg == ndllf_evr_tmp_tree                  ) wesveg = 5
+            !if (elmveg == ndllf_evr_brl_tree                  ) wesveg = 5
+            !if (elmveg == ndllf_dcd_brl_tree                  ) wesveg = 5
+            if (woody(elmveg) == 1.0_r8 .and. needleleaf(elmveg) == 1) wesveg = 5
+            !if (elmveg == nbrdlf_evr_trp_tree                 ) wesveg = 4
+            !if (elmveg == nbrdlf_evr_tmp_tree                 ) wesveg = 4
+            !if (elmveg == nbrdlf_dcd_trp_tree                 ) wesveg = 4
+            !if (elmveg == nbrdlf_dcd_tmp_tree                 ) wesveg = 4
+            !if (elmveg == nbrdlf_dcd_brl_tree                 ) wesveg = 4
+            if (woody(elmveg) == 1.0_r8 .and. needleleaf(elmveg) == 0) wesveg = 4
+            !if (elmveg == nbrdlf_evr_shrub                    ) wesveg = 11
+            !if (elmveg == nbrdlf_dcd_tmp_shrub                ) wesveg = 11
+            !if (elmveg == nbrdlf_dcd_brl_shrub                ) wesveg = 11
+            if (woody(elmveg) == 2.0_r8                              ) wesveg = 11
+            !if (elmveg == nc3_arctic_grass                    ) wesveg = 3
+            !if (elmveg == nc3_nonarctic_grass                 ) wesveg = 3
+            !if (elmveg == nc4_grass                           ) wesveg = 3
+            if (graminoid(elmveg) == 1.0_r8                          ) wesveg = 3
+            if (nonvascular(elmveg) == 1.0_r8                        ) wesveg = 3      ! assuming moss like grass
+            !if (elmveg == nc3crop                             ) wesveg = 2
+            !if (elmveg == nc3irrig                            ) wesveg = 2
+            !if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
+            if (crop(elmveg) == 1.0_r8 .or. iscft(elmveg)) wesveg = 2
 #ifndef _OPENACC
             if (wesveg == wveg_unset )then
                write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)

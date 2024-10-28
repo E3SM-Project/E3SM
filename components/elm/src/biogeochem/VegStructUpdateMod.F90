@@ -37,9 +37,10 @@ contains
     ! vegetation structure (LAI, SAI, height)
     !
     ! !USES:
-    use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
-    use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
+    use pftvarcon        , only : noveg, woody, iscft, crop
+    use pftvarcon        , only : ncorn, ncornirrig, ztopmx, laimx
     use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
+    use pftvarcon        , only : bendresist, vegshape, stocking, taper
     use elm_time_manager , only : get_rad_step_size
     use elm_varctl       , only : spinup_state, spinup_mortality_factor
     !
@@ -58,8 +59,6 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: p,c,g      ! indices
     integer  :: fp         ! lake filter indices
-    real(r8) :: taper      ! ratio of height:radius_breast_height (tree allometry)
-    real(r8) :: stocking   ! #stems / ha (stocking density)
     real(r8) :: ol         ! thickness of canopy layer covered by snow (m)
     real(r8) :: fb         ! fraction of canopy layer covered by snow
     real(r8) :: tlai_old   ! for use in Zeng tsai formula
@@ -83,12 +82,14 @@ contains
 
     associate(                                                            &
          ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type
-         woody              =>  veg_vp%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
          slatop             =>  veg_vp%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
          dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
          displar            =>  veg_vp%displar                ,       & ! Input:  [real(r8) (:) ] ratio of displacement height to canopy top height (-)
          dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)
+         bendresist         =>  veg_vp%bendresist             ,       & ! Input:  [real(r8) (:) ] resistance to bending under snow loading Sturm et al. 2005 (-) [0,1]
+         vegshape           =>  veg_vp%vegshape               ,       & ! Input:  [real(r8) (:) ] vegetation shape for calculating snow buried fraction only (-) (Liston and Heimstra, 2011)
+         stocking           =>  veg_vp%stocking               ,       & ! Input:  [real(r8) (:) ] Stocking density [stems / hectare]
 
          snow_depth         =>  col_ws%snow_depth    ,       & ! Input:  [real(r8) (:) ] snow height (m)
 
@@ -113,13 +114,6 @@ contains
          )
 
       dt = real( get_rad_step_size(), r8 )
-
-      ! constant allometric parameters
-      taper = 200._r8
-      stocking = 1000._r8
-
-      ! convert from stems/ha -> stems/m^2
-      stocking = stocking / 10000._r8
 
       ! patch loop
       do fp = 1,num_soilp
@@ -148,7 +142,7 @@ contains
             ! alpha are set by PFT, and alpha is scaled to CLM time step by multiplying by
             ! dt and dividing by dtsmonth (seconds in average 30 day month)
             ! tsai_min scaled by 0.5 to match MODIS satellite derived values
-            if (ivt(p) == nc3crop .or. ivt(p) == nc3irrig) then ! generic crops
+            if (crop(ivt(p)) == 1 .and. .not. iscft(ivt(p))) then ! generic crops
 
                tsai_alpha = 1.0_r8-1.0_r8*dt/dtsmonth
                tsai_min = 0.1_r8
@@ -159,26 +153,18 @@ contains
             tsai_min = tsai_min * 0.5_r8
             tsai(p) = max(tsai_alpha*tsai_old+max(tlai_old-tlai(p),0._r8),tsai_min)
 
-            if (woody(ivt(p)) == 1._r8) then
+            if (woody(ivt(p)) >= 1.0_r8) then
 
-               ! trees and shrubs
-
-               ! if shrubs have a squat taper
-               if (ivt(p) >= nbrdlf_evr_shrub .and. ivt(p) <= nbrdlf_dcd_brl_shrub) then
-                  taper = 10._r8
-                  ! otherwise have a tall taper
-               else
-                  taper = 200._r8
-               end if
-
-               ! trees and shrubs for now have a very simple allometry, with hard-wired
-               ! stem taper (height:radius) and hard-wired stocking density (#individuals/area)
+               ! trees and shrubs currently have a very simple allometry, based on
+               ! stem taper (height:radius) and stocking density (#individuals/area)
+               ! taper and stocking density can be set as input variables now to
+               ! change from default values set in pftvarcon.F90
                if (spinup_state >= 1) then
-                 htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper * taper)/ &
-                      (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+                 htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper(ivt(p)) * taper(ivt(p)))/ &
+                      (SHR_CONST_PI * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
                else
-                 htop(p) = ((3._r8 * deadstemc(p) * taper * taper)/ &
-                      (SHR_CONST_PI * stocking * dwood(ivt(p))))**(1._r8/3._r8)
+                 htop(p) = ((3._r8 * deadstemc(p) * taper(ivt(p)) * taper(ivt(p)))/ &
+                      (SHR_CONST_PI * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
                end if
 
                ! Peter Thornton, 5/3/2004
@@ -194,7 +180,7 @@ contains
 
                hbot(p) = max(0._r8, min(3._r8, htop(p)-1._r8))
 
-            else if (ivt(p) >= npcropmin) then ! prognostic crops
+            else if (iscft(ivt(p))) then ! prognostic crops
 
                if (tlai(p) >= laimx(ivt(p))) peaklai(p) = 1 ! used in CNAllocation
 
@@ -247,10 +233,12 @@ contains
 
          ! adjust lai and sai for burying by snow.
          ! snow burial fraction for short vegetation (e.g. grasses) as in
-         ! Wang and Zeng, 2007.
-         if (ivt(p) > noveg .and. ivt(p) <= nbrdlf_dcd_brl_shrub ) then
+         ! Wang and Zeng et al 2007.
+         ! Taller vegetation (trees and shrubs) have been updated to use formulation similar to
+         ! Sturm et al. 2005; Liston and Hiemstra, 2011; and Belke-Brea et al. 2020
+         if ( woody(ivt(p)) >= 1.0_r8 ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
-            fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
+            fb = 1._r8 - (ol / max(1.e-06_r8, bendresist(ivt(p)) * (htop(p)-hbot(p)))) ** vegshape(ivt(p))
          else
             fb = 1._r8 - max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8   ! 0.2m is assumed
             !depth of snow required for complete burial of grasses

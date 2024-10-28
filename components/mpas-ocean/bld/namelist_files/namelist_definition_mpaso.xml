@@ -1188,6 +1188,70 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_subglacial_runoff_mode" type="char*1024"
+	category="forcing" group="forcing">
+Selects the mode in which subglacial runoff fluxes are implemented.
+
+Valid values: 'off', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_flux_attenuation_coefficient_subglacial_runoff" type="real"
+	category="forcing" group="forcing">
+The length scale of exponential decay of subglacial runoff, used when config_sgr_flux_vertical_location is 'top' or 'bottom'. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sgr_flux_vertical_location" type="char*1024"
+	category="forcing" group="forcing">
+Selects the vertical location where subglacial runoff is fluxed.
+
+Valid values: 'top','uniform', 'bottom'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sgr_opt_kpp" type="logical"
+	category="forcing" group="forcing">
+If true, include subglacial runoff (sgr) contribution in kpp calculation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sgr_opt_temp_prescribed" type="logical"
+	category="forcing" group="forcing">
+If true, subglacial runoff temperature is set to config_sgr_temperature_prescribed. If false, the temperature is set to local freezing point.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sgr_opt_salt_prescribed" type="logical"
+	category="forcing" group="forcing">
+If true, subglacial runoff salinity is set to config_sgr_salinity_prescribed. If false, the salinity is set to 0 PSU.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sgr_temperature_prescribed" type="real"
+	category="forcing" group="forcing">
+Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sgr_salinity_prescribed" type="real"
+	category="forcing" group="forcing">
+Prescribed subglacial runoff salinity value, applied when config_use_sgr_opt_salt_prescribed = .true.
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- coupling -->
 

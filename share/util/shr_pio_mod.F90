@@ -173,17 +173,24 @@ contains
     logical, intent(in) :: comp_iamin(:)
     character(len=*), intent(in) :: comp_name(:)
     integer, intent(in) ::  comp_comm(:), comp_comm_iam(:)
+    integer(kind=pio_offset_kind) :: cur_buffer_size_limit=-1
     integer :: i
     character(len=shr_kind_cl) :: nlfilename, cname
     integer :: ret
     character(*), parameter :: subName = '(shr_pio_init2) '
 
     ! 0 is a valid value of pio_buffer_size_limit
-    if(pio_buffer_size_limit>=0) then
+    ! -1 is the value used by CIME to let the library choose the buffer limit
+    if(pio_buffer_size_limit>=-1) then
+       call pio_set_buffer_size_limit(pio_buffer_size_limit, prev_limit=cur_buffer_size_limit)
        if(comp_comm_iam(1)==0) then
-          write(shr_log_unit,*) 'Setting pio_buffer_size_limit : ',pio_buffer_size_limit
+          if(pio_buffer_size_limit >= 0) then
+            write(shr_log_unit,*) 'Set pio_buffer_size_limit to : ', pio_buffer_size_limit, ' (bytes)'
+          else
+            ! Default pio_buffer_size_limit
+            write(shr_log_unit,*) 'Using pio_buffer_size_limit (default): ', cur_buffer_size_limit, ' (bytes)'
+          end if
        end if
-       call pio_set_buffer_size_limit(pio_buffer_size_limit)
     endif
     if(pio_blocksize>0) then
        if(comp_comm_iam(1)==0) then

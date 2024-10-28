@@ -55,6 +55,7 @@ module controlMod
   use elm_varctl              , only: const_climate_hist
   use elm_varctl              , only: use_top_solar_rad
   use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+  use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
   !
   ! !PUBLIC TYPES:
@@ -181,6 +182,10 @@ contains
     namelist /elm_inparm/ &
          NFIX_PTASE_plant
 
+    ! BGC balance check
+    namelist /elm_inparm/ &
+         bgc_balance_check_tolerance
+
     ! For experimental manipulations
     namelist /elm_inparm/ &
          startdate_add_temperature
@@ -285,7 +290,7 @@ contains
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
-         use_vancouver, use_mexicocity, use_noio
+         use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -325,7 +330,7 @@ contains
 
     namelist /elm_mosart/ &
          lnd_rof_coupling_nstep
-		 
+
     namelist /elm_inparm/ &
          snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
     
@@ -727,6 +732,7 @@ contains
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extrasnowlayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_firn_percolation_and_compaction, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_T_rho_dependent_snowthk, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -795,6 +801,7 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (bgc_balance_check_tolerance, 1, MPI_REAL8, 0, mpicom, ier)
     call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
@@ -1031,6 +1038,7 @@ contains
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction
+    write(iulog,*) '    use_T_rho_dependent_snowthk = ', use_T_rho_dependent_snowthk
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn

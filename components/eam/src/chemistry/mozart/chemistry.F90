@@ -106,6 +106,13 @@ module chemistry
   integer            :: ext_frc_fixed_ymd = 0
   integer            :: ext_frc_fixed_tod = 0
 
+  ! alternative type and cycle year for volcanic and other SO2 for controlling single forcing experiments
+  ! if NULL, same treatment as for the other species. 
+  ! Possible in the future to modify further and apply to volcanic sector of SO2 alone
+
+  character(len=24)  :: ext_frc_volc_type = 'NULL' !'NULL'|'CYCLICAL'|'SERIAL'|'INTERP_MISSING_MONTHS'
+  integer            :: ext_frc_volc_cycle_yr  = -1
+
   real(r8)           :: dms_emis_scale = 1._r8
 
   ! fixed stratosphere
@@ -515,7 +522,7 @@ end function chem_is
          srf_emis_type, srf_emis_cycle_yr, srf_emis_fixed_ymd, srf_emis_fixed_tod, srf_emis_specifier,  &
          fstrat_file, fstrat_list, fstrat_efold_list, &
          ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod, &
-         dms_emis_scale
+         ext_frc_volc_type, ext_frc_volc_cycle_yr, dms_emis_scale
 
     namelist /chem_inparm/ chem_rad_passive
 
@@ -689,6 +696,8 @@ end function chem_is
     call mpibcast (ext_frc_cycle_yr,  1,                               mpiint,  0, mpicom)
     call mpibcast (ext_frc_fixed_ymd, 1,                               mpiint,  0, mpicom)
     call mpibcast (ext_frc_fixed_tod, 1,                               mpiint,  0, mpicom)
+    call mpibcast (ext_frc_volc_type, len(ext_frc_volc_type),          mpichar, 0, mpicom)
+    call mpibcast (ext_frc_volc_cycle_yr,  1,                          mpiint,  0, mpicom)
 
     call mpibcast (dms_emis_scale,    1,                               mpir8,   0, mpicom)
 
@@ -1033,6 +1042,8 @@ end function chem_is_active
        , ext_frc_cycle_yr &
        , ext_frc_fixed_ymd &
        , ext_frc_fixed_tod &
+       , ext_frc_volc_type &
+       , ext_frc_volc_cycle_yr &
        , xactive_prates &
        , exo_coldens_file &
        , tuv_xsect_file &

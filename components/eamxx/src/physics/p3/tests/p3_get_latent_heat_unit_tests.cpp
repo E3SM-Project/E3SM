@@ -24,11 +24,11 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
 
   static void run_latent_heat_bfb()
   {
+    constexpr Scalar latvap = C::LatVap;
+    constexpr Scalar latice = C::LatIce;
+
     LatentHeatData latent_fortran[] = {
       //           its, ite, kts, kte
-      LatentHeatData(1,   7,   1,  10),
-      LatentHeatData(1,   7,   1,  10),
-      LatentHeatData(1,   7,   1,  10),
       LatentHeatData(1,   7,   1,  10),
     };
 
@@ -45,16 +45,11 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
       LatentHeatData& h = latent_fortran[i];
       get_latent_heat(h);
 
-      LatentHeatData& d = latent_cxx[i];
-      get_latent_heat_f(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
-
       if (SCREAM_BFB_TESTING) {
-        REQUIRE(h.total(h.v) == d.total(d.v));
-
         for (Int j = 0; j < h.total(h.v); ++j) {
-          REQUIRE(d.v[j] == h.v[j]);
-          REQUIRE(d.s[j] == h.s[j]);
-          REQUIRE(d.f[j] == h.f[j]);
+          REQUIRE(h.v[j] == latvap);
+          REQUIRE(h.s[j] == (latvap+latice));
+          REQUIRE(h.f[j] == latice);
         }
       }
     }

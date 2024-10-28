@@ -49,6 +49,9 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
             )
         },
 
@@ -76,11 +79,10 @@ _TESTS = {
             )
         },
 
-
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug", "fates_elm_developer"),
         "tests" : (
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
@@ -206,6 +208,7 @@ _TESTS = {
             "REP_Ln5.ne4pg2_oQU480.F2010",
             "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
+            "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
             )
         },
 
@@ -265,6 +268,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-PISMF.mpaso-impl_top_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-upwind_advection",
+            "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             )
         },
 
@@ -274,6 +278,7 @@ _TESTS = {
             "ERS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "PEM_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
+            "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
             )
         },
 
@@ -302,7 +307,7 @@ _TESTS = {
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
             "ERS.f09_g16_g.MALISIA",
-            "ERS_Ld5.TL319_oQU240wLI_ais20.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
@@ -321,6 +326,7 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
+            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4pg2_oQU480.F2010",
@@ -337,6 +343,7 @@ _TESTS = {
             "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-nlmaps",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
+            "ERS.ne30pg2_r05_IcoswISC30E3r5.GPMPAS-JRA.mosart-rof_ocn_2way",
             )
         },
 
@@ -370,7 +377,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
-            # "SMS_Ln3.ne4pg2_ne4pg2.F2010-MMF2", - temporarily disabled due to ongoing dev issues
+            "SMS_Ln3.ne4pg2_oQU480.F2010-MMF2",
             )
         },
 
@@ -668,13 +675,20 @@ _TESTS = {
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.scream-output-preset-3",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-output-preset-4",
             "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2--scream-output-preset-5",
+            "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5",
+            "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels_p3--scream-output-preset-5",
+            "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels_shoc--scream-output-preset-5",
             )
     },
 
     "e3sm_scream_v1_dp-eamxx" : {
         "time"  : "01:00:00",
+        # each test runs with 225 dynamics and 100 physics columns, roughly size of ne2
         "tests" : (
-            "ERS_P16_Ln22.ne30_ne30.F2010-SCREAMv1-DP-DYCOMSrf01", # 225 phys cols, roughly size of ne2
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-dycomsrf01",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-comble",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FRCE-SCREAMv1-DP",
             )
     },
 
@@ -742,6 +756,8 @@ _TESTS = {
         "tests" : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-optics",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-aci",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-wetscav",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-drydep",
         )
     },
 
@@ -762,6 +778,7 @@ _TESTS = {
     "e3sm_gpucxx" : {
         "tests"    : (
                  "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
+                 "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
                  )
     },
 
@@ -805,7 +822,10 @@ _TESTS = {
     "e3sm_wav_developer" : {
         "time"    : "0:45:00",
         "tests"   : (
-            "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
+            "ERS.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "PEM.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "PET.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
     },
 

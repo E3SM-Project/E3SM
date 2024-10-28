@@ -20,7 +20,14 @@ ENDIF()
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_BDW ON CACHE BOOL "")
 
-SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
+EXECUTE_PROCESS(COMMAND pnetcdf-config --prefix
+  RESULT_VARIABLE PNCCONFIG_RESULT
+  OUTPUT_VARIABLE PNCCONFIG_OUTPUT
+  ERROR_VARIABLE  PNCCONFIG_ERROR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+SET (PnetCDF_PATH "${PNCCONFIG_OUTPUT}" CACHE STRING "")
+
 #
 # anvil module system doesn't set environment variables, but will put
 # nc-config in our path.  anvil seperates C and Fortran libraries,

@@ -1,5 +1,6 @@
 set(MPICC "cc")
-set(MPICXX "hipcc")
+set(MPICXX "mpicxx")
+#set(MPICXX "CC")
 set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "hipcc")
@@ -33,7 +34,7 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 # -Wl,--allow-shlib-undefined was added to address rocm 5.4.3 Fortran linker issue:
 # /opt/rocm-5.4.3/lib/libhsa-runtime64.so.1: undefined reference to `std::condition_variable::wait(std::unique_lock<std::mutex>&)@GLIBCXX_3.4.30'
 # AMD started building with GCC 12.2.0, which brings in a GLIBCXX symbol that isn't in CCE's default GCC toolchain.
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
+#string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
 
 # Switching to O3 for performance benchmarking
 # Will revisit any failing tests
@@ -53,11 +54,13 @@ string(APPEND CMAKE_Fortran_FLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
 string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
-string(APPEND CMAKE_CXX_FLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
-string(APPEND CMAKE_EXE_LINKER_FLAGS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
+string(APPEND CMAKE_CXX_FLAGS " --offload-arch=gfx90a")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -L/opt/cray/pe/gcc/12.2.0/snos/lib64 -lgfortran -lstdc++")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 
 set(USE_HIP "TRUE")
 string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -munsafe-fp-atomics -x hip")
+set(E3SM_LINK_WITH_FORTRAN "TRUE")

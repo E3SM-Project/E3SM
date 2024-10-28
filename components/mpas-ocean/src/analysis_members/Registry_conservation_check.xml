@@ -106,6 +106,10 @@
 		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with river runoff. Positive into the ocean."
 		/>
+		<var name="accumulatedSubglacialRunoffTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
+			 description="Heat flux associated with subglacial runoff. Positive into the ocean."
+			 packages="dataSubglacialRunoffFluxPKG"
+		/>
 		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt. Positive into the ocean."
 		/>
@@ -144,6 +148,10 @@
 		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from river runoff from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
+		/>
+		<var name="accumulatedSubglacialRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
+			 description="Fresh water flux from subglacial runoff from coupler. Positive into the ocean."
+			 packages="dataSubglacialRunoffFluxPKG"
 		/>
 		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg s^-1"
 			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
@@ -194,6 +202,11 @@
 		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Salinity flux from frazil to sea ice, given to coupler. Land ice does not contribute because its frazil salinity is assumed 0. Positive into the ocean."
 		/>
+		<var name="accumulatedSubglacialRunoffSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
+			 description="Salinity flux from subglacial runoff. Positive into the ocean."
+			 packages="dataSubglacialRunoffFluxPKG"
+		/>
+
 	</var_struct>
             <var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
                 <var name="initialCarbon" type="real" dimensions="Time" units="kg"
@@ -287,12 +300,14 @@
             <var name="accumulatedEvapTemperatureFlux"/>
             <var name="accumulatedSeaIceTemperatureFlux"/>
             <var name="accumulatedRiverRunoffTemperatureFlux"/>
+            <var name="accumulatedSubglacialRunoffTemperatureFlux"/>
             <var name="accumulatedIcebergTemperatureFlux"/>
             <var name="accumulatedRainFlux"/>
             <var name="accumulatedSnowFlux"/>
             <var name="accumulatedEvaporationFlux"/>
             <var name="accumulatedSeaIceFlux"/>
             <var name="accumulatedRiverRunoffFlux"/>
+            <var name="accumulatedSubglacialRunoffFlux"/>
             <var name="accumulatedIceRunoffFlux"/>
             <var name="accumulatedRemovedRiverRunoffFlux"/>
             <var name="accumulatedRemovedIceRunoffFlux"/>
@@ -302,6 +317,7 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
+            <var name="accumulatedSubglacialRunoffSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="finalCarbon"/>
             <var name="carbonChange"/>
@@ -343,12 +359,14 @@
             <var name="accumulatedEvapTemperatureFlux"/>
             <var name="accumulatedSeaIceTemperatureFlux"/>
             <var name="accumulatedRiverRunoffTemperatureFlux"/>
+            <var name="accumulatedSubglacialRunoffTemperatureFlux"/>
             <var name="accumulatedIcebergTemperatureFlux"/>
             <var name="accumulatedRainFlux"/>
             <var name="accumulatedSnowFlux"/>
             <var name="accumulatedEvaporationFlux"/>
             <var name="accumulatedSeaIceFlux"/>
             <var name="accumulatedRiverRunoffFlux"/>
+            <var name="accumulatedSubglacialRunoffFlux"/>
             <var name="accumulatedIceRunoffFlux"/>
             <var name="accumulatedRemovedRiverRunoffFlux"/>
             <var name="accumulatedRemovedIceRunoffFlux"/>
@@ -358,6 +376,7 @@
             <var name="accumulatedLandIceFrazilFlux"/>
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
+            <var name="accumulatedSubglacialRunoffSalinityFlux"/>
             <var name="initialCarbon"/>
             <var name="accumulatedAbsoluteCarbonError"/>
             <var name="accumulatedRelativeCarbonError"/>

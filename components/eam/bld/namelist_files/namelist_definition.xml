@@ -5138,6 +5138,17 @@ Format: YYYY
 Default: 0
 </entry>
 
+<entry id="ext_frc_volc_cycle_yr" type="integer" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+The  cycle year of the volcanic SO2 forcing (3D emissions) data.
+Use this in place of ext_frc_cycle_yr if non-default, to allow different 
+speciciations volcanic emission and aerosols/precursors, which may be 
+invoked for single forcing simulation design.
+if <varname>ext_frc_volc_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: -1
+</entry>
+
 <entry id="ext_frc_fixed_ymd" type="integer" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Default: current model date
@@ -5187,6 +5198,13 @@ Default: set by build-namelist.
 Type of time interpolation for fixed lower boundary data.
 Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
 Default: 'CYCLICAL'
+</entry>
+
+<entry id="ext_frc_volc_type" type="char*32" category="cam_chem"
+       group="chem_inparm" valid_values="NULL,CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for fixed lower boundary data. See also ext_frc_volc_cycle_yr.
+Can be set to 'NULL','CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'NULL'
 </entry>
 
 <entry id="flbc_cycle_yr" type="integer" category="cam_chem"

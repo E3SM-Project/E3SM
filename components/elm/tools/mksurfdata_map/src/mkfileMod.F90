@@ -15,6 +15,7 @@ contains
     use mkpftMod     , only : mkpftAtt
     use mksoilMod    , only : mksoilAtt
     use mkSedMod     , only : mksedAtt
+    use mktopradMod  , only : mktopradAtt
     use mkharvestMod , only : mkharvest_fieldname, mkharvest_numtypes, mkharvest_longname
     use mkncdio      , only : check_ret, ncd_defvar
     use mkdomainMod  
@@ -297,6 +298,10 @@ contains
     call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
          'map_fertilizer_file', len_trim(str), trim(str)), subname)
 
+    str = get_filename(map_ftoprad)
+    call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
+         'map_ftoprad_file', len_trim(str), trim(str)), subname)
+
     ! ----------------------------------------------------------------------
     ! Define variables
     ! ----------------------------------------------------------------------
@@ -312,6 +317,8 @@ contains
     call mkpftAtt(  ncid, dynlanduse, xtype )
 
     call mksedAtt(  ncid, dynlanduse, xtype )
+
+    call mktopradAtt(  ncid, dynlanduse, xtype )
 
     if (outnc_1d) then
        call ncd_defvar(ncid=ncid, varname='AREA' , xtype=nf_double, &

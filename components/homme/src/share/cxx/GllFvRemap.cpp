@@ -16,13 +16,13 @@
 namespace Homme {
 
 void init_gllfvremap_c (int nelemd, int np, int nf, int nf_max,
-                        bool theta_hydrostatic_mode,
+                        int theta_hydrostatic_mode,
                         CF90Ptr fv_metdet, CF90Ptr g2f_remapd,
                         CF90Ptr f2g_remapd, CF90Ptr D_f, CF90Ptr Dinv_f) {
   auto& c = Context::singleton();
   auto& g = c.get<GllFvRemap>();
-  g.init_data(nf, nf_max, theta_hydrostatic_mode, fv_metdet, g2f_remapd,
-              f2g_remapd, D_f, Dinv_f);
+  const bool thm = static_cast<bool>(theta_hydrostatic_mode);
+  g.init_data(nf, nf_max, thm, fv_metdet, g2f_remapd, f2g_remapd, D_f, Dinv_f);
 }
 
 GllFvRemap::GllFvRemap () {
@@ -52,7 +52,7 @@ void GllFvRemap::init_boundary_exchanges () {
 }
 
 void GllFvRemap
-::init_data (const int nf, const int nf_max, bool theta_hydrostatic_mode,
+::init_data (const int nf, const int nf_max, const bool theta_hydrostatic_mode,
              const Real* fv_metdet, const Real* g2f_remapd, const Real* f2g_remapd,
              const Real* D_f, const Real* Dinv_f) {
   m_impl->init_data(nf, nf_max, theta_hydrostatic_mode, fv_metdet,

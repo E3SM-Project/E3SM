@@ -18,9 +18,9 @@ module CNGapMortalityBeTRMod
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_cf, col_nf, col_pf
   use VegetationPropertiesType      , only : veg_vp
-  use VegetationType      , only : veg_pp  
-  use VegetationDataType  , only : veg_cs, veg_cf, veg_ns, veg_nf 
-  use VegetationDataType  , only : veg_ps, veg_pf 
+  use VegetationType      , only : veg_pp
+  use VegetationDataType  , only : veg_cs, veg_cf, veg_ns, veg_nf
+  use VegetationDataType  , only : veg_ps, veg_pf
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -91,7 +91,7 @@ contains
     ! !USES:
     use elm_time_manager , only: get_days_per_year
     use elm_varcon       , only: secspday
-    use pftvarcon        , only: npcropmin
+    use pftvarcon        , only: iscft
     use elm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
@@ -121,7 +121,7 @@ contains
     associate(                                                                                              &
          ivt                                 =>    veg_pp%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         woody                               =>    veg_vp%woody                                       & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform
+         woody                               =>    veg_vp%woody                                       & ! Input:  [real(r8) (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          )
 
       ! set the mortality rate based on annual rate
@@ -188,7 +188,7 @@ contains
             * gap_indicator(gid_m_deadcrootn_to_litter)
 
 
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(veg_pp%itype(p))) then
             veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m &
                * gap_indicator(gid_m_retransn_to_litter)
          end if
@@ -239,7 +239,7 @@ contains
          veg_pf%m_deadstemp_to_litter(p)           = veg_ps%deadstemp(p)           * m
          veg_pf%m_livecrootp_to_litter(p)          = veg_ps%livecrootp(p)          * m
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m
-         if (ivt(p) < npcropmin) then
+         if (.not. iscft(veg_pp%itype(p))) then
             veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
          end if
 

@@ -561,7 +561,6 @@ contains
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use subgridAveMod , only: p2c
-    use pftvarcon     , only: npcropmin
     ! pflotran
 !    use elm_varctl    , only: use_pflotran, pf_cmode
     !
