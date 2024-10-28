@@ -78,6 +78,8 @@ contains
     use mo_rxt_rates_conv, only: set_rates
     use chem_mods,    only : gas_pcnst, rxntot
 
+    use cam_logfile,   only : iulog
+
     real(r8), intent(inout) :: rxt_rates(:,:,:) ! 'molec/cm3/sec'
     real(r8), intent(in)    :: vmr(:,:,:)
     real(r8), intent(in)    :: m(:,:)           ! air density (molecules/cm3)
@@ -126,14 +128,14 @@ contains
        rxt_rates(:ncol,:,rxt_tag_map(i)) = rxt_rates(:ncol,:,rxt_tag_map(i)) *  m(:,:)
        call outfld( rate_names(i), rxt_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
 
-       if ( .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels) return
+      if ( .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels) then
 
-       if (rate_names(i) .eq. 'r_lch4') then
+        if (rate_names(i) .eq. 'r_lch4') then
           !kg/m2/sec
           wrk(:ncol,:) = adv_mass_ch4*rxt_rates_vmr(:ncol,:,rxt_tag_map(i))/mbar(:ncol,:) &
                                 *pdeldry(:ncol,:)*rgrav
 
-       if (history_UCIgaschmbudget_2D_levels) then
+        if (history_UCIgaschmbudget_2D_levels) then
           wrk_sum(:ncol) = 0.0_r8
             do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
@@ -158,14 +160,17 @@ contains
                wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_2D', wrk(:ncol,1), ncol ,lchnk )
-       elseif (history_UCIgaschmbudget_2D) then          
+        elseif (history_UCIgaschmbudget_2D) then          
             do k=2,pver
                wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_2D', wrk(:ncol,1), ncol ,lchnk )
-       endif
+        endif
 
-       endif
+        endif
+
+      endif
+
     enddo
 
   end subroutine rate_diags_calc
