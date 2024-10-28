@@ -112,7 +112,13 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
-  SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  # For SYCL builds it is suggested to use CXX linker with `-fortlib`
+  # for mixed-language setups
+  IF(SYCL_BUILD)
+    SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE CXX)
+  ELSE()
+    SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  ENDIF()
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()

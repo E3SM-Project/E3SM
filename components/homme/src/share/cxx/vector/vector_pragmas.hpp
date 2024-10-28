@@ -7,7 +7,7 @@
 #ifndef HOMMEXX_VECTOR_PRAGMAS_HPP
 #define HOMMEXX_VECTOR_PRAGMAS_HPP
 
-#if defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER) || defined(__INTEL_CLANG_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 
 #define VECTOR_IVDEP_LOOP _Pragma("ivdep")
 #define ALWAYS_VECTORIZE_LOOP _Pragma("vector always")
