@@ -9,7 +9,7 @@
 
 namespace OMEGA {
 
-enum FluxThickEdgeOption { Center, Upwind };
+enum class FluxThickEdgeOption { Center, Upwind };
 
 class LayerThicknessAuxVars {
  public:
@@ -36,7 +36,7 @@ class LayerThicknessAuxVars {
       }
 
       switch (FluxThickEdgeChoice) {
-      case Center:
+      case FluxThickEdgeOption::Center:
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
             FluxLayerThickEdge(IEdge, K) =
@@ -44,7 +44,7 @@ class LayerThicknessAuxVars {
                 (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
          }
          break;
-      case Upwind:
+      case FluxThickEdgeOption::Upwind:
          for (int KVec = 0; KVec < VecLength; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {

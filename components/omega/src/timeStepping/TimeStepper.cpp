@@ -79,13 +79,9 @@ TimeStepper *TimeStepper::create(const std::string &Name, TimeStepperType Type,
    return NewTimeStepper;
 }
 
-// Initialize the default time stepper
-int TimeStepper::init() {
-   int Err           = 0;
-   auto *DefMesh     = HorzMesh::getDefault();
-   auto *DefAuxState = AuxiliaryState::getDefault();
-   auto *DefHalo     = Halo::getDefault();
-   auto *DefTend     = Tendencies::getDefault();
+// Begin initialization of the default time stepper
+int TimeStepper::init1() {
+   int Err = 0;
 
    TimeInterval TimeStep;
    TimeStepperType TimeStepperChoice;
@@ -114,9 +110,23 @@ int TimeStepper::init() {
    }
    TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
 
-   TimeStepper::DefaultTimeStepper = create(
-       "Default", TimeStepperChoice, DefTend, DefAuxState, DefMesh, DefHalo);
+   TimeStepper::DefaultTimeStepper =
+       create("Default", TimeStepperChoice, nullptr, nullptr, nullptr, nullptr);
    DefaultTimeStepper->setTimeStep(TimeStep);
+
+   return Err;
+}
+
+// Finish initialization of the default time stepper
+int TimeStepper::init2() {
+   int Err = 0;
+
+   DefaultTimeStepper->Mesh     = HorzMesh::getDefault();
+   DefaultTimeStepper->MeshHalo = Halo::getDefault();
+   DefaultTimeStepper->AuxState = AuxiliaryState::getDefault();
+   DefaultTimeStepper->Tend     = Tendencies::getDefault();
+
+   DefaultTimeStepper->finalizeInit();
 
    return Err;
 }
@@ -220,6 +230,86 @@ void TimeStepper::updateStateByTend(OceanState *State1, int TimeLevel1,
                                     TimeInterval Coeff) const {
    updateThicknessByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
    updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
+}
+
+// NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
+// Coeff * TracersTend) / LayerThickness1(TimeLevel1)
+void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
+                                      const Array3DReal &CurTracers,
+                                      OceanState *State1, int TimeLevel1,
+                                      OceanState *State2, int TimeLevel2,
+                                      TimeInterval Coeff) const {
+   int Err = 0;
+
+   const auto &LayerThick1 = State1->LayerThickness[TimeLevel1];
+   const auto &LayerThick2 = State2->LayerThickness[TimeLevel2];
+   const auto &TracerTend  = Tend->TracerTend;
+   const int NTracers      = TracerTend.extent(0);
+   const int NVertLevels   = TracerTend.extent(2);
+
+   Real CoeffSeconds;
+   Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
+   parallelFor(
+       "updateTracersByTend", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) =
+              (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
+               CoeffSeconds * TracerTend(L, ICell, K)) /
+              LayerThick1(ICell, K);
+       });
+}
+
+// couple tracer array to layer thickness
+void TimeStepper::weightTracers(const Array3DReal &NextTracers,
+                                const Array3DReal &CurTracers,
+                                OceanState *CurState, int TimeLevel1) const {
+
+   const Array2DReal &CurThickness = CurState->LayerThickness[TimeLevel1];
+   const int NTracers              = NextTracers.extent(0);
+   const int NVertLevels           = NextTracers.extent(2);
+
+   parallelFor(
+       "weightTracers", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) =
+              CurTracers(L, ICell, K) * CurThickness(ICell, K);
+       });
+}
+
+// accumulate contributions to the tracer array at the next time level from
+// each Runge-Kutta stage
+void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
+                                          TimeInterval Coeff) const {
+
+   const auto &TracerTend = Tend->TracerTend;
+   const int NTracers     = TracerTend.extent(0);
+   const int NVertLevels  = TracerTend.extent(2);
+
+   Real CoeffSeconds;
+   int Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
+
+   parallelFor(
+       "accumulateTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          AccumTracer(L, ICell, K) += CoeffSeconds * TracerTend(L, ICell, K);
+       });
+}
+
+// normalize tracer array so final array stores concentrations
+void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
+                                        OceanState *State,
+                                        int TimeLevel) const {
+
+   const Array2DReal &NextThick = State->LayerThickness[TimeLevel];
+   const int NTracers           = NextTracers.extent(0);
+   const int NVertLevels        = NextTracers.extent(2);
+
+   parallelFor(
+       "finalizeTracersUpdate", {NTracers, Mesh->NCellsAll, NVertLevels},
+       KOKKOS_LAMBDA(int L, int ICell, int K) {
+          NextTracers(L, ICell, K) /= NextThick(ICell, K);
+       });
 }
 
 } // namespace OMEGA

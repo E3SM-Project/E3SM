@@ -27,15 +27,15 @@ tendency terms, which each store constant mesh information as private member var
 
 A non-default tendency group can be created with or without custom tendencies.
 Without custom tendencies, it is created from a string `Name`, horizontal mesh `Mesh`, number of
-vertical levels `NVertLevels`, and a configuration `Options`:
+vertical levels `NVertLevels`, number of tracers `NTracers`, and a configuration `Options`:
 ```c++
-OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, Options);
+OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, NTracers, Options);
 ```
 For convenience, this returns a pointer to the newly created instance.
 To allow the user to provide custom tendencies, the `create` function can take two additional arguments
 `CustomThicknessTend` and `CustomVelocityTend`
 ```c++
-OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, Options, CustomThicknessTend, CustomVelocityTend);
+OMEGA::Tendencies*  NewTendencies = OMEGA::Tendencies::create(Name, Mesh, NVertLevels, NTracers, Options, CustomThicknessTend, CustomVelocityTend);
 ```
 The two custom tendency arguments need to be callable objects that take a Kokkos array `Tend`, ocean state `State`,
 auxiliary state `AuxState`, two integers: `ThickTimeLevel` and `VelTimeLevel`, and time instant `Time`.
@@ -47,11 +47,12 @@ OMEGA::Tendencies* NewTendencies = OMEGA::Tendencies::get(Name);
 ```
 
 ## Computation of tendencies
-To compute all tendencies for both layer thickness and normal velocity equations,
-given ocean state, `State`, a group of auxiliary variables, `AuxState`, thickness
-time level 'ThickTimeLevel', velocity time level `VelTimeLevel`, and time instant `Time` do:
+To compute all tendencies for layer thickness, normal velocity, and tracer equations,
+given ocean state, `State`, a group of auxiliary variables, `AuxState`, an array of tracers,
+`TracerArray`, thickness time level 'ThickTimeLevel', velocity time level `VelTimeLevel`,
+and time instant `Time` do:
 ```c++
-Tendencies.computeAllTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
+Tendencies.computeAllTendencies(State, AuxState, TracerArray, ThickTimeLevel, VelTimeLevel, Time);
 ```
 To call only the layer thickness tendency terms:
 ```c++
@@ -61,6 +62,8 @@ To call only the normal velocity tendency terms:
 ```c++
 Tendencies.computeVelocityTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
 ```
+To call only the tracer tendency terms:
+Tendencies.computeTracerTendencies(State, AuxState, TracerArray, ThickTimeLevel, VelTimeLevel);
 
 ## Removal of tendencies
 To erase a specific named tendencies instance use `erase`

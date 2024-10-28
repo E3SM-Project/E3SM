@@ -14,6 +14,7 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "Tracers.h"
 
 namespace OMEGA {
 
@@ -28,6 +29,7 @@ int Tendencies::init() {
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
 
    I4 NVertLevels = DefHorzMesh->NVertLevels;
+   I4 NTracers    = Tracers::getNumTracers();
 
    // Get TendConfig group
    Config *OmegaConfig = Config::getOmegaConfig();
@@ -39,7 +41,7 @@ int Tendencies::init() {
    }
 
    Tendencies::DefaultTendencies =
-       create("Default", DefHorzMesh, NVertLevels, &TendConfig);
+       create("Default", DefHorzMesh, NVertLevels, NTracers, &TendConfig);
 
    Err = DefaultTendencies->readTendConfig(&TendConfig);
 
@@ -133,10 +135,11 @@ int Tendencies::readTendConfig(Config *TendConfig ///< [in] Tendencies subconfig
       return VelDiffErr;
    }
 
-   I4 ViscDel2 = TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
-   if (ViscDel2 != 0 && this->VelocityDiffusion.Enabled) {
+   I4 ViscDel2Err =
+       TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
+   if (ViscDel2Err != 0 && this->VelocityDiffusion.Enabled) {
       LOG_CRITICAL("Tendencies: ViscDel2 not found in TendConfig");
-      return ViscDel2;
+      return ViscDel2Err;
    }
 
    I4 VelHyperErr = TendConfig->get("VelHyperDiffTendencyEnable",
@@ -147,10 +150,52 @@ int Tendencies::readTendConfig(Config *TendConfig ///< [in] Tendencies subconfig
       return VelHyperErr;
    }
 
-   I4 ViscDel4 = TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
-   if (ViscDel4 != 0 && this->VelocityHyperDiff.Enabled) {
+   I4 ViscDel4Err =
+       TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
+   if (ViscDel4Err != 0 && this->VelocityHyperDiff.Enabled) {
       LOG_CRITICAL("Tendencies: ViscDel4 not found in TendConfig");
-      return ViscDel4;
+      return ViscDel4Err;
+   }
+
+   I4 TrHAdvErr = TendConfig->get("TracerHorzAdvTendencyEnable",
+                                  this->TracerHorzAdv.Enabled);
+   if (TrHAdvErr != 0) {
+      LOG_CRITICAL("Tendencies: TracerHorzAdvTendencyEnable not found in "
+                   "TendConfig");
+      return TrHAdvErr;
+   }
+
+   I4 TrDiffErr = TendConfig->get("TracerDiffTendencyEnable",
+                                  this->TracerDiffusion.Enabled);
+
+   if (TrDiffErr != 0) {
+      LOG_CRITICAL("Tendencies: TracerDiffTendencyEnable not found in "
+                   "TendConfig");
+      return TrDiffErr;
+   }
+
+   I4 EddyDiff2Err =
+       TendConfig->get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
+   if (EddyDiff2Err != 0 && this->TracerDiffusion.Enabled) {
+      LOG_CRITICAL("Tendencies: EddyDiff2 not found in TendConfig");
+      return EddyDiff2Err;
+   }
+
+   I4 TrHyperDiffErr = TendConfig->get("TracerHyperDiffTendencyEnable",
+                                       this->TracerHyperDiff.Enabled);
+
+   if (TrHyperDiffErr != 0) {
+      LOG_CRITICAL("Tendencies: TracerHyperDiffTendencyEnable not found in "
+                   "TendConfig");
+      return TrHyperDiffErr;
+   }
+
+   I4 EddyDiff4Err =
+       TendConfig->get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
+
+   if (EddyDiff4Err != 0 && this->TracerHyperDiff.Enabled) {
+      LOG_CRITICAL("Tendencies: EddyDiff4 not found in TendConfig");
+      return EddyDiff4Err;
    }
 
    return Err;
@@ -161,11 +206,13 @@ int Tendencies::readTendConfig(Config *TendConfig ///< [in] Tendencies subconfig
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        int NVertLevels, ///< [in] Number of vertical levels
+                       int NTracersIn,  ///< [in] Number of tracers
                        Config *Options, ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
     : ThicknessFluxDiv(Mesh), PotientialVortHAdv(Mesh), KEGrad(Mesh),
       SSHGrad(Mesh), VelocityDiffusion(Mesh), VelocityHyperDiff(Mesh),
+      TracerHorzAdv(Mesh), TracerDiffusion(Mesh), TracerHyperDiff(Mesh),
       CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend) {
 
@@ -174,10 +221,13 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
        Array2DReal("LayerThicknessTend", Mesh->NCellsSize, NVertLevels);
    NormalVelocityTend =
        Array2DReal("NormalVelocityTend", Mesh->NEdgesSize, NVertLevels);
+   TracerTend =
+       Array3DReal("TracerTend", NTracersIn, Mesh->NCellsSize, NVertLevels);
 
    // Array dimension lengths
    NCellsAll = Mesh->NCellsAll;
    NEdgesAll = Mesh->NEdgesAll;
+   NTracers  = NTracersIn;
    NChunks   = NVertLevels / VecLength;
 
 } // end constructor
@@ -185,9 +235,10 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        int NVertLevels, ///< [in] Number of vertical levels
+                       int NTracersIn,  ///< [in] Number of tracers
                        Config *Options) ///< [in] Configuration options
-    : Tendencies(Name, Mesh, NVertLevels, Options, CustomTendencyType{},
-                 CustomTendencyType{}) {}
+    : Tendencies(Name, Mesh, NVertLevels, NTracersIn, Options,
+                 CustomTendencyType{}, CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
@@ -306,6 +357,58 @@ void Tendencies::computeVelocityTendenciesOnly(
 
 } // end velocity tendency compute
 
+void Tendencies::computeTracerTendenciesOnly(
+    const OceanState *State,        ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    TimeInstant Time                ///< [in] Time
+) {
+   OMEGA_SCOPE(LocTracerTend, TracerTend);
+   OMEGA_SCOPE(LocTracerHorzAdv, TracerHorzAdv);
+   OMEGA_SCOPE(LocTracerDiffusion, TracerDiffusion);
+   OMEGA_SCOPE(LocTracerHyperDiff, TracerHyperDiff);
+
+   deepCopy(LocTracerTend, 0);
+
+   // compute tracer horizotal advection
+   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
+   const Array3DReal &HTracersEdge  = AuxState->TracerAux.HTracersEdge;
+   if (LocTracerHorzAdv.Enabled) {
+      parallelFor(
+          {NTracers, NCellsAll, NChunks},
+          KOKKOS_LAMBDA(int L, int ICell, int KChunk) {
+             LocTracerHorzAdv(LocTracerTend, L, ICell, KChunk, NormalVelEdge,
+                              HTracersEdge);
+          });
+   }
+
+   // compute tracer diffusion
+   const Array2DReal &MeanLayerThickEdge =
+       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   if (LocTracerDiffusion.Enabled) {
+      parallelFor(
+          {NTracers, NCellsAll, NChunks},
+          KOKKOS_LAMBDA(int L, int ICell, int KChunk) {
+             LocTracerDiffusion(LocTracerTend, L, ICell, KChunk, TracerArray,
+                                MeanLayerThickEdge);
+          });
+   }
+
+   // compute tracer hyperdiffusion
+   const Array3DReal &Del2TracersCell = AuxState->TracerAux.Del2TracersCell;
+   if (LocTracerHyperDiff.Enabled) {
+      parallelFor(
+          {NTracers, NCellsAll, NChunks},
+          KOKKOS_LAMBDA(int L, int ICell, int KChunk) {
+             LocTracerHyperDiff(LocTracerTend, L, ICell, KChunk,
+                                Del2TracersCell);
+          });
+   }
+
+} // end tracer tendency compute
+
 void Tendencies::computeThicknessTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
@@ -336,9 +439,41 @@ void Tendencies::computeVelocityTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-   AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
+   AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                  Time);
+}
+
+void Tendencies::computeTracerTendencies(
+    const OceanState *State,        ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    TimeInstant Time                ///< [in] Time
+) {
+   OMEGA_SCOPE(TracerAux, AuxState->TracerAux);
+   OMEGA_SCOPE(LayerThickCell, State->LayerThickness[ThickTimeLevel]);
+   OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[VelTimeLevel]);
+
+   parallelFor(
+       "computeTracerAuxEdge", {NTracers, NEdgesAll, NChunks},
+       KOKKOS_LAMBDA(int LTracer, int IEdge, int KChunk) {
+          TracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk, NormalVelEdge,
+                                      LayerThickCell, TracerArray);
+       });
+
+   const auto &MeanLayerThickEdge =
+       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   parallelFor(
+       "computeTracerAuxCell", {NTracers, NCellsAll, NChunks},
+       KOKKOS_LAMBDA(int LTracer, int ICell, int KChunk) {
+          TracerAux.computeVarsOnCells(LTracer, ICell, KChunk,
+                                       MeanLayerThickEdge, TracerArray);
+       });
+
+   computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                               VelTimeLevel, Time);
 }
 
 //------------------------------------------------------------------------------
@@ -346,16 +481,19 @@ void Tendencies::computeVelocityTendencies(
 void Tendencies::computeAllTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
 
-   AuxState->computeAll(State, ThickTimeLevel, VelTimeLevel);
+   AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                  Time);
+   computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                               VelTimeLevel, Time);
 
 } // end all tendency compute
 

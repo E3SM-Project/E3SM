@@ -35,3 +35,6 @@ implemented:
 - `SSHGradOnEdge`
 - `VelocityDiffusionOnEdge`
 - `VelocityHyperDiffOnEdge`
+- `TracerHorzAdvOnCell`
+- `TracerDiffOnCell`
+- `TracerHyperDiffOnCell`

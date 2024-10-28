@@ -18,6 +18,7 @@
 #include "OceanState.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
+#include "Tracers.h"
 
 #include <map>
 #include <memory>
@@ -52,8 +53,11 @@ class TimeStepper {
    // by one time step, from Time to Time + TimeStep
    virtual void doStep(OceanState *State, TimeInstant Time) const = 0;
 
-   /// Initialize the default time stepper
-   static int init();
+   /// 1st phase of Initialization for the default time stepper
+   static int init1();
+
+   /// 2nd phase of Initialization for the default time stepper
+   static int init2();
 
    // Create a time stepper from name, type, tendencies, auxiliary state, mesh
    // and halo
@@ -108,6 +112,27 @@ class TimeStepper {
                              OceanState *State2, int TimeLevel2,
                              TimeInterval Coeff) const;
 
+   // NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
+   // Coeff * TracersTend) / LayerThickness1(TimeLevel1)
+   void updateTracersByTend(const Array3DReal &NextTracers,
+                            const Array3DReal &CurTracers, OceanState *State1,
+                            int TimeLevel1, OceanState *State2, int TimeLevel2,
+                            TimeInterval Coeff) const;
+
+   // couple tracer array to layer thickness
+   void weightTracers(const Array3DReal &NextTracers,
+                      const Array3DReal &CurTracers, OceanState *CurState,
+                      int TimeLevel1) const;
+
+   // accumulate contributions to the tracer array at the next time level from
+   // each Runge-Kutta stage
+   void accumulateTracersUpdate(const Array3DReal &AccumTracer,
+                                TimeInterval Coeff) const;
+
+   // normalize tracer array so final array stores concentrations
+   void finalizeTracersUpdate(const Array3DReal &NextTracers, OceanState *State,
+                              int TimeLevel) const;
+
  protected:
    // Name of time stepper
    std::string Name;
@@ -126,6 +151,8 @@ class TimeStepper {
    AuxiliaryState *AuxState;
    HorzMesh *Mesh;
    Halo *MeshHalo;
+
+   virtual void finalizeInit() {}
 
    TimeStepper(const std::string &Name, TimeStepperType Type, int NTimeLevels,
                Tendencies *Tend, AuxiliaryState *AuxState, HorzMesh *Mesh,

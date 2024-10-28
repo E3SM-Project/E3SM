@@ -408,7 +408,7 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
    // Compute numerical result
 
    LayerThicknessAuxVars LayerThicknessAux("", Mesh, NVertLevels);
-   LayerThicknessAux.FluxThickEdgeChoice = Upwind;
+   LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
    parallelFor(
        {Mesh->NEdgesOwned, NVertLevels}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
           LayerThicknessAux.computeVarsOnEdge(IEdge, KLevel, LayerThickCell,
@@ -679,7 +679,7 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    const auto Mesh = HorzMesh::getDefault();
 
    TracerAuxVars TracerAux("", Mesh, NVertLevels, NTracers);
-   TracerAux.TracersOnEdgeChoice = Upwind;
+   TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
 
    // Set input arrays
 
@@ -694,16 +694,16 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
        LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   // Compute exact HTracerOnEdge
+   // Compute exact HTracerEdge
 
-   Array3DReal ExactHTrOnEdge("ExactHTrOnEdge", NTracers, Mesh->NEdgesOwned,
-                              NVertLevels);
+   Array3DReal ExactHTrEdge("ExactHTrEdge", NTracers, Mesh->NEdgesOwned,
+                            NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.thickTracer(X, Y); },
-       ExactHTrOnEdge, Geom, Mesh, OnEdge, NVertLevels, NTracers,
+       ExactHTrEdge, Geom, Mesh, OnEdge, NVertLevels, NTracers,
        ExchangeHalos::No);
 
-   // Compute numerical HTracersOnEdge
+   // Compute numerical HTracersEdge
 
    parallelFor(
        {NTracers, Mesh->NEdgesOwned, NVertLevels},
@@ -712,26 +712,26 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
                                       LayerThickCell, TracersOnCell);
        });
 
-   // Compute error measures and check errors for HTracersOnEdge
+   // Compute error measures and check errors for HTracersEdge
 
-   const auto &NumHTrOnEdge = TracerAux.HTracersOnEdge;
+   const auto &NumHTrEdge = TracerAux.HTracersEdge;
 
    ErrorMeasures HTracerErrors;
-   Err += computeErrors(HTracerErrors, NumHTrOnEdge, ExactHTrOnEdge, Mesh,
-                        OnEdge, NVertLevels, NTracers);
+   Err += computeErrors(HTracerErrors, NumHTrEdge, ExactHTrEdge, Mesh, OnEdge,
+                        NVertLevels, NTracers);
    Err += checkErrors("AuxVarsTest", "HTracers", HTracerErrors,
                       Setup.ExpectedHTracerErrors, RTol);
 
-   // Compute exact Del2TracerOnCell
+   // Compute exact Del2TracerCell
 
-   Array3DReal ExactDel2TrOnCell("ExactDel2TrOnCell", NTracers,
-                                 Mesh->NCellsOwned, NVertLevels);
+   Array3DReal ExactDel2TrCell("ExactDel2TrCell", NTracers, Mesh->NCellsOwned,
+                               NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.del2Tracer(X, Y); },
-       ExactDel2TrOnCell, Geom, Mesh, OnCell, NVertLevels, NTracers,
+       ExactDel2TrCell, Geom, Mesh, OnCell, NVertLevels, NTracers,
        ExchangeHalos::No);
 
-   // Compute numerical Del2TracerOnCell
+   // Compute numerical Del2TracerCell
 
    parallelFor(
        {NTracers, Mesh->NCellsOwned, NVertLevels},
@@ -740,13 +740,13 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
                                        TracersOnCell);
        });
 
-   // Compute error measures and check errors for Del2TracersOnCell
+   // Compute error measures and check errors for Del2TracersCell
 
-   const auto &NumDel2TrOnCell = TracerAux.Del2TracersOnCell;
+   const auto &NumDel2TrCell = TracerAux.Del2TracersCell;
 
    ErrorMeasures Del2TracerErrors;
-   Err += computeErrors(Del2TracerErrors, NumDel2TrOnCell, ExactDel2TrOnCell,
-                        Mesh, OnCell, NVertLevels, NTracers);
+   Err += computeErrors(Del2TracerErrors, NumDel2TrCell, ExactDel2TrCell, Mesh,
+                        OnCell, NVertLevels, NTracers);
    Err += checkErrors("AuxVarsTest", "Del2Tracers", Del2TracerErrors,
                       Setup.ExpectedDel2TracerErrors, RTol);
 

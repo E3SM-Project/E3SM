@@ -14,6 +14,9 @@ tendency terms are currently implemented:
 | SSHGradOnEdge | gradient of sea-surface height, multiplied by gravitational acceleration, defined on edges
 | VelocityDiffusionOnEdge | Laplacian horizontal mixing, defined on edges
 | VelocityHyperDiffOnEdge | biharmonic horizontal mixing, defined on edges
+| TracerHorzAdvOnCell | horizontal advection of thickness-weighted tracers
+| TracerDiffOnCell | horizontal diffusion of thickness-weighted tracers
+| TracerHyperDiffOnCell | biharmonic horizontal mixing of thickness-weighted tracers
 
 Among the internal data stored by each functor is a `bool` which can enable or
 disable the contribution of that particular term to the tendency. These flags
@@ -35,4 +38,9 @@ the currently available tendency terms:
 | VelocityDiffusionOnEdge | VelDiffTendencyEnable | enable/disable term
 | | ViscDel2 | horizontal viscosity
 | VelocityHyperDiffOnEdge | VelHyperDiffTendencyEnable | enable/disable term
-| | ViscDel4 | coefficient for horizontal biharmonic mixing
+| | ViscDel4 | horizontal biharmonic mixing coefficient for normal velocity
+| TracerHorzAdvOnCell | TracerHorzAdvTendencyEnable | enable/disable term
+| TracerDiffOnCell | TracerDiffTendencyEnable | enable/disable term
+| | EddyDiff2 | horizontal diffusion coefficient
+| TracerHyperDiffOnCell | TracerHyperDiffTendencyEnable | enable/disable term
+| | EddyDiff4 | biharmonic horizontal mixing coeffienct for tracers

@@ -35,6 +35,10 @@ struct TestSetup {
       return -4 * Radius * std::sin(Lon) * std::cos(Lon) *
              std::pow(std::cos(Lat), 3) * std::sin(Lat);
    }
+
+   KOKKOS_FUNCTION Real tracer(Real Lon, Real Lat) const {
+      return (2 - std::cos(Lon) * std::pow(std::cos(Lat), 4));
+   }
 };
 
 constexpr Geometry Geom   = Geometry::Spherical;
@@ -50,9 +54,19 @@ int initState() {
    const auto &LayerThickCell = State->LayerThickness[0];
    const auto &NormalVelEdge  = State->NormalVelocity[0];
 
+   Array3DReal TracersArray;
+   Err += Tracers::getAll(TracersArray, 0);
+   const auto &TracersCell = TracersArray;
+
+   int NTracers = Tracers::getNumTracers();
+
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
        LayerThickCell, Geom, Mesh, OnCell, NVertLevels);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracer(X, Y); },
+       TracersCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real Lon, Real Lat) {
@@ -84,6 +98,12 @@ int initTendenciesTest(const std::string &mesh) {
       return Err;
    }
 
+   int TimeStepperErr = TimeStepper::init1();
+   if (TimeStepperErr != 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: error initializing default time stepper");
+   }
+
    int IOErr = IO::init(DefComm);
    if (IOErr != 0) {
       Err++;
@@ -108,10 +128,10 @@ int initTendenciesTest(const std::string &mesh) {
       LOG_ERROR("TendenciesTest: error initializing default mesh");
    }
 
-   int TimeStepperErr = TimeStepper::init();
-   if (TimeStepperErr != 0) {
+   int TracerErr = Tracers::init();
+   if (TracerErr != 0) {
       Err++;
-      LOG_ERROR("TendenciesTest: error initializing default time stepper");
+      LOG_ERROR("TendenciesTest: error initializing tracer infrastructure");
    }
 
    const auto &Mesh = HorzMesh::getDefault();
@@ -146,16 +166,6 @@ int testTendencies() {
    // test retrievel of default
    Tendencies *DefTendencies = Tendencies::getDefault();
 
-   // turn on tendency terms
-   DefTendencies->ThicknessFluxDiv.Enabled   = true;
-   DefTendencies->PotientialVortHAdv.Enabled = true;
-   DefTendencies->KEGrad.Enabled             = true;
-   DefTendencies->SSHGrad.Enabled            = true;
-
-   // TODO need to get visc values from config
-   DefTendencies->VelocityDiffusion.Enabled = false;
-   DefTendencies->VelocityHyperDiff.Enabled = false;
-
    if (DefTendencies) {
       LOG_INFO("TendenciesTest: Default tendencies retrieval PASS");
    } else {
@@ -167,7 +177,7 @@ int testTendencies() {
    const auto *Mesh = HorzMesh::getDefault();
    // test creation of another tendencies
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, 12, Options);
+   Tendencies::create("TestTendencies", Mesh, 12, 3, Options);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -190,20 +200,24 @@ int testTendencies() {
    // put NANs in every tendency variables
    deepCopy(DefTendencies->LayerThicknessTend, NAN);
    deepCopy(DefTendencies->NormalVelocityTend, NAN);
+   deepCopy(DefTendencies->TracerTend, NAN);
 
    // compute tendencies
    const auto *State    = OceanState::getDefault();
    const auto *AuxState = AuxiliaryState::getDefault();
-   int ThickTimeLevel   = 0;
-   int VelTimeLevel     = 0;
+   Array3DReal TracerArray;
+   Err += Tracers::getAll(TracerArray, 0);
+   int ThickTimeLevel = 0;
+   int VelTimeLevel   = 0;
    TimeInstant Time;
-   DefTendencies->computeAllTendencies(State, AuxState, ThickTimeLevel,
-                                       VelTimeLevel, Time);
+   DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
+                                       ThickTimeLevel, VelTimeLevel, Time);
 
    // check that everything got computed correctly
    int NCellsOwned    = Mesh->NCellsOwned;
    int NEdgesOwned    = Mesh->NEdgesOwned;
    int NVerticesOwned = Mesh->NVerticesOwned;
+   int NTracers       = Tracers::getNumTracers();
 
    const Real LayerThickTendSum =
        sum(DefTendencies->LayerThicknessTend, NCellsOwned);
@@ -219,12 +233,20 @@ int testTendencies() {
       LOG_ERROR("TendenciesTest: NormVelTendSum FAIL");
    }
 
+   const Real TraceTendSum =
+       sum(DefTendencies->TracerTend, NTracers, NCellsOwned);
+   if (!Kokkos::isfinite(TraceTendSum) || TraceTendSum == 0) {
+      Err++;
+      LOG_ERROR("TendenciesTest: TraceTendSum FAIL");
+   }
+
    Tendencies::clear();
 
    return Err;
 }
 
 void finalizeTendenciesTest() {
+   Tracers::clear();
    AuxiliaryState::clear();
    OceanState::clear();
    Field::clear();

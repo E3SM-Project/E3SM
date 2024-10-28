@@ -99,3 +99,5 @@ The following auxiliary variable groups are currently implemented:
 | VelocityDel2AuxVars |  Del2Edge ||
 ||  Del2DivCell ||
 ||  Del2RelVortVertex ||
+| TracerAuxVars | HTracersEdge | Center or Upwind|
+|| Del2TracersCell ||

@@ -8,10 +8,10 @@ namespace OMEGA {
 TracerAuxVars::TracerAuxVars(const std::string &AuxStateSuffix,
                              const HorzMesh *Mesh, const I4 NVertLevels,
                              const I4 NTracers)
-    : HTracersOnEdge("ThickTracersOnEdge" + AuxStateSuffix, NTracers,
-                     Mesh->NEdgesSize, NVertLevels),
-      Del2TracersOnCell("Del2TracerOnCell" + AuxStateSuffix, NTracers,
-                        Mesh->NCellsSize, NVertLevels),
+    : HTracersEdge("ThickTracersEdge" + AuxStateSuffix, NTracers,
+                   Mesh->NEdgesSize, NVertLevels),
+      Del2TracersCell("Del2TracerCell" + AuxStateSuffix, NTracers,
+                      Mesh->NCellsSize, NVertLevels),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
       DcEdge(Mesh->DcEdge), DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
@@ -37,7 +37,7 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
    DimNames[1]            = "NEdges" + DimSuffix;
    DimNames[2]            = "NVertLevels";
    auto HTracersEdgeField = Field::create(
-       HTracersOnEdge.label(), // field name
+       HTracersEdge.label(), // field name
        "thickness-weighted tracers at edges. May be centered, upwinded, or a "
        "combination of the two.",        // long name or description
        "",                               // units
@@ -52,7 +52,7 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
    // Del2 tracers on Cell
    DimNames[1]               = "NCells" + DimSuffix;
    auto Del2TracersCellField = Field::create(
-       Del2TracersOnCell.label(),                                // field name
+       Del2TracersCell.label(),                                  // field name
        "laplacian of thickness-weighted tracers at cell center", // long name or
                                                                  // description
        "",                                                       // units
@@ -65,36 +65,36 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
    );
 
    // Add fields to Aux Field group
-   Err = FieldGroup::addFieldToGroup(HTracersOnEdge.label(), AuxGroupName);
+   Err = FieldGroup::addFieldToGroup(HTracersEdge.label(), AuxGroupName);
    if (Err != 0)
-      LOG_ERROR("Error adding field {} to group {}", HTracersOnEdge.label(),
+      LOG_ERROR("Error adding field {} to group {}", HTracersEdge.label(),
                 AuxGroupName);
 
-   Err = FieldGroup::addFieldToGroup(Del2TracersOnCell.label(), AuxGroupName);
+   Err = FieldGroup::addFieldToGroup(Del2TracersCell.label(), AuxGroupName);
    if (Err != 0)
-      LOG_ERROR("Error adding field {} to group {}", Del2TracersOnCell.label(),
+      LOG_ERROR("Error adding field {} to group {}", Del2TracersCell.label(),
                 AuxGroupName);
 
    // Attach data to fields
-   Err = HTracersEdgeField->attachData<Array3DReal>(HTracersOnEdge);
+   Err = HTracersEdgeField->attachData<Array3DReal>(HTracersEdge);
    if (Err != 0)
-      LOG_ERROR("Error attaching data to field {}", HTracersOnEdge.label());
+      LOG_ERROR("Error attaching data to field {}", HTracersEdge.label());
 
-   Err = Del2TracersCellField->attachData<Array3DReal>(Del2TracersOnCell);
+   Err = Del2TracersCellField->attachData<Array3DReal>(Del2TracersCell);
    if (Err != 0)
-      LOG_ERROR("Error attaching data to field {}", Del2TracersOnCell.label());
+      LOG_ERROR("Error attaching data to field {}", Del2TracersCell.label());
 }
 
 void TracerAuxVars::unregisterFields() const {
    int Err = 0;
 
-   Err = Field::destroy(HTracersOnEdge.label());
+   Err = Field::destroy(HTracersEdge.label());
    if (Err != 0)
-      LOG_ERROR("Error destroying field {}", HTracersOnEdge.label());
+      LOG_ERROR("Error destroying field {}", HTracersEdge.label());
 
-   Err = Field::destroy(Del2TracersOnCell.label());
+   Err = Field::destroy(Del2TracersCell.label());
    if (Err != 0)
-      LOG_ERROR("Error destroying field {}", Del2TracersOnCell.label());
+      LOG_ERROR("Error destroying field {}", Del2TracersCell.label());
 }
 
 } // namespace OMEGA

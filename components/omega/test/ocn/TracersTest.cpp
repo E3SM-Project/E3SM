@@ -55,6 +55,13 @@ I4 initTracersTest() {
       return Err;
    }
 
+   // Initialize the default time stepper
+   Err = TimeStepper::init1();
+   if (Err != 0) {
+      LOG_ERROR("Tracers: error initializing default time stepper");
+      return Err;
+   }
+
    // Initialize the IO system
    Err = IO::init(DefComm);
    if (Err != 0) {
@@ -80,13 +87,6 @@ I4 initTracersTest() {
    Err = HorzMesh::init();
    if (Err != 0) {
       LOG_ERROR("Tracers: error initializing default mesh");
-      return Err;
-   }
-
-   // Initialize the default time stepper
-   Err = TimeStepper::init();
-   if (Err != 0) {
-      LOG_ERROR("Tracers: error initializing default time stepper");
       return Err;
    }
 

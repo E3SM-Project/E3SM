@@ -5,8 +5,10 @@
 #include "DataTypes.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "Tracers.h"
 #include "auxiliaryVars/KineticAuxVars.h"
 #include "auxiliaryVars/LayerThicknessAuxVars.h"
+#include "auxiliaryVars/TracerAuxVars.h"
 #include "auxiliaryVars/VelocityDel2AuxVars.h"
 #include "auxiliaryVars/VorticityAuxVars.h"
 
@@ -31,6 +33,7 @@ class AuxiliaryState {
    // Auxiliary variables
    KineticAuxVars KineticAux;
    LayerThicknessAuxVars LayerThicknessAux;
+   TracerAuxVars TracerAux;
    VorticityAuxVars VorticityAux;
    VelocityDel2AuxVars VelocityDel2Aux;
 
@@ -43,7 +46,7 @@ class AuxiliaryState {
 
    // Create a non-default auxiliary state
    static AuxiliaryState *create(const std::string &Name, const HorzMesh *Mesh,
-                                 int NVertLevels);
+                                 int NVertLevels, int NTracers);
 
    /// Get the default auxiliary state
    static AuxiliaryState *getDefault();
@@ -60,15 +63,20 @@ class AuxiliaryState {
    /// Read and set config options
    int readConfigOptions(Config *OmegaConfig);
 
+   // Compute all auxiliary variables needed for momentum equation
+   void computeMomAux(const OceanState *State, int ThickTimeLevel,
+                      int VelTimeLevel) const;
+
    /// Compute all auxiliary variables based on an ocean state at a given time
    /// level
-   void computeAll(const OceanState *State, int ThickTimeLevel,
-                   int VelTimeLevel) const;
-   void computeAll(const OceanState *State, int TimeLevel) const;
+   void computeAll(const OceanState *State, const Array3DReal &TracerArray,
+                   int ThickTimeLevel, int VelTimeLevel) const;
+   void computeAll(const OceanState *State, const Array3DReal &TracerArray,
+                   int TimeLevel) const;
 
  private:
    AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
-                  int NVertLevels);
+                  int NVertLevels, int NTracers);
 
    AuxiliaryState(const AuxiliaryState &) = delete;
    AuxiliaryState(AuxiliaryState &&)      = delete;

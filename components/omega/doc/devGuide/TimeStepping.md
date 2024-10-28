@@ -40,11 +40,14 @@ implementations of this method.
 
 #### Initialization
 
-The static method:
+Two static methods:
 ```c++
-TimeStepper::init();
+TimeStepper::init1();
+TimeStepper::init2();
 ```
-initializes the default time stepper. A pointer to it can be retrieved at any time using:
+initialize the default time stepper in two phases. The first phase must be called early in the
+initialization process, and the second phase is called after the default tendency, auxiliary state,
+horizontal mesh, and halo objects have been initialized. A pointer to it can be retrieved at any time using:
 ```c++
 TimeStepper* DefTimeStepper = TimeStepper::getDefault();
 ```
@@ -112,6 +115,17 @@ updateThicknessByTend(State1, TimeLevel1, *State2, TimeLevel2, Coeff);
 and only for normal velocity do
 ```c++
 updateVelocityByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
+```
+Similarly for tracers, the method for updating tracers is
+```c++
+updateTracersByTend(NextTracers, CurTracers, State1, TimeLevel1, State2, TimeLevel2, Coeff);
+```
+Additionally, for the RK4 method, there are methods for initializing, accumulating, and
+finalizing the tracer integration for a given time step
+```c++
+weightTracers(NextTracers, CurTracers, CurState, TimeLevel1);
+accumulateTracersUpdate(AccumTracer, Coeff);
+finalizeTracersUpdate(NextTracers, State, TimeLevel);
 ```
 
 ## Implemented time steppers

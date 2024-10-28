@@ -27,3 +27,5 @@ The following auxiliary variables are currently available:
 | VelDel2Edge | laplacian of horizontal velocity on edges
 | VelDel2DivCell | divergence of laplacian of horizontal velocity on cells
 | VelDel2RelVortVertex | curl of laplacian of horizontal velocity on cells
+| HTracersEdge | thickness-weighted tracers used for fluxes through edges. May be centered, upwinded or a combination of the two
+| Del2TracersCell | laplacian of tracers on cells

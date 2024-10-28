@@ -106,7 +106,7 @@ int initIOStreamTest(std::shared_ptr<Clock> &ModelClock, // Model clock
        Dimension::create("NVertLevels", NVertLevels);
 
    // Initialize time stepper needed before ocean state (for time levels)
-   Err1 = TimeStepper::init();
+   Err1 = TimeStepper::init1();
    TestEval("Ocean time step initialization", Err1, ErrRef, Err);
 
    // Initialize State
@@ -279,6 +279,7 @@ int main(int argc, char **argv) {
    }
 
    // Clean up environments
+   TimeStepper::clear();
    OceanState::clear();
    HorzMesh::clear();
    Field::clear();
