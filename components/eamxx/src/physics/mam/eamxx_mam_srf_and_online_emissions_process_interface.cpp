@@ -342,17 +342,43 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
+
   // Zero-out output
   // FIXME: Find out if we do it in the fortran code
-  // if we do, this should be a "Computed" field
+  // if we do, this should be a "Computed" field,
+  // ALSO this code should in the preprocessor struct now
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
-  // Gather time and state information for interpolation
-  auto ts = timestamp() + dt;
+  //--------------------------------------------------------------------
+  // Online emissions from dust and sea salt
+  //--------------------------------------------------------------------
+
+  const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
+  auto constituent_fluxes  = this->constituent_fluxes_;
+  // TODO: check that units are consistent with srf emissions!
+  // copy current values to online-emissions-local version
+  // TODO: potentially combine with below parfor(icol) loop?
+  Kokkos::parallel_for(
+      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+        view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
+        mam4::aero_model_emissions::aero_model_emissions(dstflx, fluxes_col);
+      });
+  // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
+  // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
+  //Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
+  //Kokkos::fence();
 
   //--------------------------------------------------------------------
-  // Interpolate srf emiss data
+  // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
+  // Gather time and state information for interpolation
+  auto ts = timestamp() + dt;
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     // Update TimeState, note the addition of dt
@@ -377,7 +403,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    auto constituent_fluxes  = this->constituent_fluxes_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
     // Parallel loop over all the columns to update units
@@ -388,34 +413,19 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
   }  // for loop for species
-
-  auto &online_data = online_emissions.online_emis_data;
-  // TODO: check that units are consistent with srf emissions!
-  // copy current values to online-emissions-local version
-  Kokkos::deep_copy(online_data.cfluxes, constituent_fluxes_);
-  // TODO: potentially combine with above parfor(icol) loop?
-  Kokkos::parallel_for(
-      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        // NOTE: calling aero_model_emissions() this way hides the fact that
-        // some hard-coded data is initialized within mam4::aero_model_emissions
-        // some of these values definitely need to be read from here column-wise
-        // the structs.{values} holding the above are:
-        // SeasaltEmissionsData.{mpoly, mprot, mlip}
-        // DustEmissionsData.dust_dmt_vwr
-        // OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
-        //                      v_bottom, z_bottom, ocean_frac}
-        // NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
-        // which is a chunk-wise variable at this point
-        // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
-        // col-value once inside aero_model_emissions()
-        view_1d fluxes_col =
-            Kokkos::subview(online_data.cfluxes, icol, Kokkos::ALL());
-        mam4::aero_model_emissions::aero_model_emissions(fluxes_col);
-      });
-  // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
-  // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
-  Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
-  Kokkos::fence();
 }  // run_impl ends
 // =============================================================================
 }  // namespace scream
+
+// NOTE: calling aero_model_emissions() this way hides the fact that
+// some hard-coded data is initialized within mam4::aero_model_emissions
+// some of these values definitely need to be read from here column-wise
+// the structs.{values} holding the above are:
+// SeasaltEmissionsData.{mpoly, mprot, mlip}
+// DustEmissionsData.dust_dmt_vwr
+// OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
+//                      v_bottom, z_bottom, ocean_frac}
+// NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
+// which is a chunk-wise variable at this point
+// (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
+// col-value once inside aero_model_emissions()
