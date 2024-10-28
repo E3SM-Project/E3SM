@@ -43,9 +43,10 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // LINOZ namelist parameters
-  o3_lbl_ = m_params.get<int>("mam4_o3_lbl");
-  o3_tau_ = m_params.get<double>("mam4_o3_tau");
-  o3_sfc_ = m_params.get<double>("mam4_o3_sfc");
+  config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
+  config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
+  config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
+  config_.linoz.psc_T = m_params.get<double>("mam4_psc_T");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -774,9 +775,9 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto vert_emis_output = vert_emis_output_;
-  const auto extfrc           = extfrc_;
-  const auto forcings         = forcings_;
+  const auto& vert_emis_output = vert_emis_output_;
+  const auto& extfrc           = extfrc_;
+  const auto& forcings         = forcings_;
   constexpr int extcnt        = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
@@ -792,11 +793,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
     permute_4[i]             = mam4::gas_chemistry::permute_4[i];
   }
-  // LINOZ parameters from the namelist
-  const int o3_lbl  = o3_lbl_;
-  const Real o3_tau = o3_tau_;
-  const Real o3_sfc = o3_sfc_;
-
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -873,7 +869,8 @@ void MAMMicrophysics::run_impl(const double dt) {
             linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
             linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
             linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles, clsmap_4,
-            permute_4, offset_aerosol, o3_sfc, o3_tau, o3_lbl,
+            permute_4, offset_aerosol,
+            config.linoz.o3_sfc, config.linoz.o3_tau, config.linoz.o3_lbl,
             dry_diameter_icol, wet_diameter_icol, wetdens_icol);
       });  // parallel_for for the column loop
   Kokkos::fence();

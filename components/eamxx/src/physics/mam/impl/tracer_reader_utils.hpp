@@ -134,7 +134,6 @@ struct TracerData {
   const_view_1d hyam;
   const_view_1d hybm;
   view_int_1d work_vert_inter[MAX_NVARS_TRACER];
-  ;
 
   // External forcing file (vertical emission)
   // Uses altitude instead of pressure to interpolate data
@@ -534,10 +533,10 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
   auto &delta_t = time_state.days_this_month;
 
   // We can ||ize over columns as well as over variables and bands
-  const auto data      = data_tracer.data;
-  const auto file_type = data_tracer.file_type;
+  const auto& data      = data_tracer.data;
+  const auto& file_type = data_tracer.file_type;
 
-  const auto ps      = data_tracer.ps;
+  const auto& ps      = data_tracer.ps;
   const int num_vars = data_tracer.nvars_;
 
   const int ncol     = data_tracer.ncol_;
@@ -610,20 +609,25 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
                                            const const_view_2d &p_tgt_c,
                                            const TracerData &input,
                                            const view_2d output[]) {
-  // At this stage, begin/end must have the same horiz dimensions
-  EKAT_REQUIRE(input.ncol_ == output[0].extent_int(0));
   const int ncol   = input.ncol_;
   const int levsiz = input.nlev_;
   const int pver   = mam4::nlev;
 
   const int num_vars = input.nvars_;
-  // FIXME:delete  work[ivar]
-  const auto work = input.work_vert_inter;
-  EKAT_REQUIRE(work[num_vars - 1].data() != 0);
-  // vert_interp is serial in col and lev.
+  // make a local copy of output
+  view_2d output_local[MAX_NVARS_TRACER];
+  EKAT_REQUIRE_MSG(
+        num_vars <= int(MAX_NVARS_TRACER),
+        "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  for (int ivar = 0; ivar < num_vars; ++ivar)
+  {
+    // At this stage, begin/end must have the same horiz dimensions
+    EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
+    output_local[ivar] = output[ivar];
+  }
   const int outer_iters   = ncol * num_vars;
   const auto policy_setup = ESU::get_default_team_policy(outer_iters, pver);
-  const auto data         = input.data;
+  const auto& data         = input.data;
 
   Kokkos::parallel_for(
       "vert_interp", policy_setup,
@@ -633,9 +637,9 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
         const int ivar             = team.league_rank() % num_vars;
         const auto pin_at_icol     = ekat::subview(p_src_c, icol);
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
-        const auto datain          = data[TracerDataIndex::OUT][ivar];
+        const auto& datain          = data[TracerDataIndex::OUT][ivar];
         const auto datain_at_icol  = ekat::subview(datain, icol);
-        const auto dataout         = output[ivar];
+        const auto dataout = output_local[ivar];
         const auto dataout_at_icol = ekat::subview(dataout, icol);
 
         mam4::vertical_interpolation::vert_interp(
@@ -664,8 +668,19 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   const int nsrc     = input.nlev_;
   constexpr int pver = mam4::nlev;
   const int pverp    = pver + 1;
-  const auto data    = input.data;
+  const auto& data    = input.data;
 
+  // make a local copy of output
+  view_2d output_local[MAX_NVARS_TRACER];
+  EKAT_REQUIRE_MSG(
+        num_vars <= int(MAX_NVARS_TRACER),
+        "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  for (int ivar = 0; ivar < num_vars; ++ivar)
+  {
+    // At this stage, begin/end must have the same horiz dimensions
+    EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
+    output_local[ivar] = output[ivar];
+  }
   Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy_interp,
       KOKKOS_LAMBDA(const Team &team) {
@@ -673,7 +688,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
         const int ivar = team.league_rank() % num_vars;
 
         const auto src = ekat::subview(data[TracerDataIndex::OUT][ivar], icol);
-        const auto trg = ekat::subview(output[ivar], icol);
+        const auto trg = ekat::subview(output_local[ivar], icol);
         // FIXME: Try to avoid copy of trg_x by modifying rebin
         // trg_x
         Real trg_x[pver + 1];

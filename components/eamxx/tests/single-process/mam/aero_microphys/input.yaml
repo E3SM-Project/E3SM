@@ -18,6 +18,7 @@ atmosphere_processes:
    mam4_o3_tau: 172800.0
    mam4_o3_sfc: 3.0E-008
    mam4_o3_lbl: 4
+   mam4_psc_T : 193.0
    mam4_linoz_ymd : 20100101
    mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
    mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc

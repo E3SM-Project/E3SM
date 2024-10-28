@@ -66,10 +66,6 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // Namelist for LINOZ
-  int o3_lbl_;
-  Real o3_tau_, o3_sfc_;
-
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -83,23 +79,14 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   double m_orbital_obliq;  // Obliquity
   double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
-  // configuration data (for the moment, we plan to be able to move this to
-  // the device, so we can't use C++ strings)
-#define MAX_FILENAME_LEN 256
   struct Config {
-    // photolysis parameters
-    struct {
-      char rsf_file[MAX_FILENAME_LEN];
-      char xs_long_file[MAX_FILENAME_LEN];
-    } photolysis;
 
     // stratospheric chemistry parameters
     struct {
       int o3_lbl;  // number of layers with ozone decay from the surface
-      int o3_sfc;  // set from namelist input linoz_sfc
-      int o3_tau;  // set from namelist input linoz_tau
+      Real o3_sfc;  // set from namelist input linoz_sfc
+      Real o3_tau;  // set from namelist input linoz_tau
       Real psc_T;  // set from namelist input linoz_psc_T
-      char chlorine_loading_file[MAX_FILENAME_LEN];
     } linoz;
 
     // aqueous chemistry parameters
@@ -107,11 +94,6 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
     // aero microphysics configuration (see impl/mam4_amicphys.cpp)
     mam4::microphysics::AmicPhysConfig amicphys;
-
-    // dry deposition parameters
-    struct {
-      char srf_file[MAX_FILENAME_LEN];
-    } drydep;
   };
   Config config_;
 
@@ -211,7 +193,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   mam4::mo_photo::PhotoTableData photo_table_;
 
   // column areas, latitudes, longitudes
-  const_view_1d col_latitudes_, col_longitudes_;
+  const_view_1d col_latitudes_;
 
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;
