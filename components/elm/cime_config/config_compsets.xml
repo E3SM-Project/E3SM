@@ -730,6 +730,11 @@
   </compset>
 
   <compset>
+   <alias>I20TRWCCNPWFMCROP</alias>
+   <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBCWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+ </compset>
+
+  <compset>
     <alias>I20TRWCCNPWFMCROP</alias>
     <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
@@ -830,7 +835,32 @@
   </compset>
   <compset>
     <alias>I20TRGSWCNPWFMCROP</alias>
+    <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>I20TRGSWCNPWFMCROP</alias>
     <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCWFM-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+ <compset>
+   <alias>I1850GSWCNPPHSWFMCROP</alias>
+   <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+ </compset>
+
+  <compset>
+   <alias>I20TRGSWCNPPHSWFMCROP</alias>
+   <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+ </compset>
+
+    <compset>
+    <alias>I1850WCCNPPHSWFMCROP</alias>
+    <lname>1850_DATM%E3SMWCv2_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>I20TRWCCNPPHSWFMCROP</alias>
+    <lname>20TR_DATM%CPLWCH_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!---I compset system tests -->
