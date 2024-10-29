@@ -140,8 +140,10 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
   // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
-  // NOTE: Cloud borne aerosols are not updated in this process but are included
-  // to create data structures.
+  // NOTE:
+  //   - Cloud borne aerosols are not updated in this process but are included
+  //     to create data structures.
+  //   - For interstitial aerosols, we have dynamics advect, but not turbulence.
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -149,13 +151,13 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit, false);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit, false);
       }
     }  // end for loop num species
   }    // end for loop for num modes
@@ -167,7 +169,7 @@ void MAMGenericInterface::add_tracers_gases() {
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit, true);
   }  // end for loop num gases
 }
 // ================================================================
@@ -331,19 +333,19 @@ void MAMGenericInterface::add_tracers_wet_atm() {
 
   // atmospheric quantities
   // specific humidity [kg/kg]
-  add_tracer<Required>("qv", grid_, q_unit);
+  add_tracer<Required>("qv", grid_, q_unit, true);
 
   // cloud liquid mass mixing ratio [kg/kg]
-  add_tracer<Required>("qc", grid_, q_unit);
+  add_tracer<Required>("qc", grid_, q_unit, true);
 
   // cloud ice mass mixing ratio [kg/kg]
-  add_tracer<Required>("qi", grid_, q_unit);
+  add_tracer<Required>("qi", grid_, q_unit, true);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", grid_, n_unit);
+  add_tracer<Required>("nc", grid_, n_unit, true);
 
   // cloud ice number mixing ratio [1/kg]
-  add_tracer<Required>("ni", grid_, n_unit);
+  add_tracer<Required>("ni", grid_, n_unit, true);
 }
 
 void MAMGenericInterface::add_fields_dry_atm() {
