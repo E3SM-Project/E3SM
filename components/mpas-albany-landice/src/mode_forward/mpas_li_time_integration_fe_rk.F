@@ -1045,6 +1045,11 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+
+      integer, dimension(:), pointer :: edgeMask
+      real (kind=RKIND) :: allowableDtACFL
 
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: waterFrac
@@ -1094,6 +1099,18 @@ module li_time_integration_fe_rk
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+            call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+            call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+
+            call li_layer_normal_velocity( &
+                 meshPool,               &
+                 normalVelocity,         &
+                 edgeMask,               &
+                 layerNormalVelocity,    &
+                 allowableDtACFL,        &
+                 err_tmp)
+            err = ior(err,err_tmp)
 
             call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err_tmp)
             err = ior(err,err_tmp)
