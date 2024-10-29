@@ -26,7 +26,7 @@ module gw_drag
   use shr_kind_mod,  only: r8 => shr_kind_r8
   !!==========Jinbo Xie==========
   !use ppgrid,        only: pcols, pver
-  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,indexb,begchunk,endchunk
+  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,begchunk,endchunk
   use hycoef,             only: hyai, hybi, hyam, hybm, etamid !get the znu,znw,p_top set to 0
   !!==========Jinbo Xie==========
   use constituents,  only: pcnst
