@@ -1248,9 +1248,6 @@ ENDIF
 !===============================
 ! Jinbo Xie add another dymeter
 !===============================
-!=====Jinbo Xie=====
-use sub_xjb,only:OLgrid,dxygrid
-!=====Jinbo Xie=====
 !  this code handles the time tendencies of u v due to the effect of mountain 
 !  induced gravity wave drag from sub-grid scale orography. this routine 
 !  not only treats the traditional upper-level wave breaking due to mountain 
