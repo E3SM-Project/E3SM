@@ -419,6 +419,11 @@ void FieldManager::registration_ends ()
   // extensive changes in Homme. Instead, we hack our way around this limitatin
   // (for now), and rearrange groups/fields so that we can expect qv to be the
   // first tracer.
+  // Note: there are potentially two bundled groups of tracers, "tracers" (which
+  // homme advects) and "turbulence_advected_tracers" (which shoc advects).
+  // "turbulence_advected_tracers" is guarenteed to be a subset of "tracers", so
+  // moving qv first in "tracers" will do the same for "turbulence_advected_tracers".
+  // Only homme requires qv first, so we only need to move qv if "tracers" exist.
   bool qv_must_come_first = false;
   if (ekat::contains(groups_to_bundle,"tracers")
       and

@@ -52,7 +52,7 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,     grid_name,            ps);
   add_field<Required>("sgh30",          scalar2d    , m,      grid_name);
   add_field<Required>("landfrac",       scalar2d    , nondim, grid_name);
-  add_tracer<Required>("qv", m_grid, kg/kg, ps);
+  add_tracer<Required>("qv", m_grid, kg/kg, true, ps);
 
   add_field<Computed>("surf_drag_coeff_tms", scalar2d, kg/(m2*s), grid_name);
   add_field<Computed>("wind_stress_tms",     vector2d, N/m2,      grid_name);

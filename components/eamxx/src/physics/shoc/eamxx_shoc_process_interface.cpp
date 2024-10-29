@@ -61,7 +61,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   add_field<Updated>("surf_evap",       scalar2d    , kg/(m2*s), grid_name);
   add_field<Updated> ("T_mid",          scalar3d_mid, K,         grid_name, ps);
-  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qv", m_grid, kg/kg, true, ps);
 
   // If TMS is a process, add surface drag coefficient to required fields
   if (m_params.get<bool>("apply_tms", false)) {
@@ -79,8 +79,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
-  add_tracer<Updated>("tke", m_grid, m2/s2, ps);
-  add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("tke", m_grid, m2/s2, true, ps);
+  add_tracer<Updated>("qc",  m_grid, kg/kg, true, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
@@ -111,7 +111,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   } // Extra SHOC output diagnostics
 
   // Tracer group
-  add_group<Updated>("tracers", grid_name, ps, true);
+  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, true);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -131,7 +131,7 @@ set_computed_group_impl (const FieldGroup& group)
 
   const auto& name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name=="tracers",
+  EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
@@ -269,7 +269,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers            = get_group_out("tracers").m_bundle->get_view<Spack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_bundle->get_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
