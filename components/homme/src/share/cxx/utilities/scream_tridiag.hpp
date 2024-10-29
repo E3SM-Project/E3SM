@@ -120,7 +120,7 @@ int get_team_nthr (const TeamMember& team) {
   return team.team_size();
 }
 
-// Impl details for Nvidia and AMD GPUs.
+// Impl details for Nvidia, AMD and Intel GPUs.
 
 template <typename TeamMember> KOKKOS_FORCEINLINE_FUNCTION
 int get_thread_id_within_team_gpu (const TeamMember& team) {
