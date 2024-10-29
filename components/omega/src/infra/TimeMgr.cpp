@@ -1096,7 +1096,7 @@ std::unique_ptr<Calendar> Calendar::OmegaCal = nullptr;
 
 //-------------------------------------------------------------------------
 // Calendar::get - retrieves pointer to model calendar
-Calendar::Calendar *Calendar::get() {
+Calendar *Calendar::get() {
    if (isDefined()) {
       return Calendar::OmegaCal.get();
    } else {
