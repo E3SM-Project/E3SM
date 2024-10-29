@@ -216,6 +216,16 @@ class GHCISNLCPU(Machine):
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cpu"
 
 ###############################################################################
+class GHCISNLCuda(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base(name="ghci-snl-cuda",num_bld_res=16,num_run_res=1)
+        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cuda"
+        cls.gpu_arch = "cuda"
+
+###############################################################################
 class Lassen(Machine):
 ###############################################################################
     concrete = True
