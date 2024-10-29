@@ -124,6 +124,7 @@ module ColumnDataType
     real(r8), pointer :: swe_old            (:,:) => null() ! initial snow water content (-nlevsno+1:0) (kg/m2)
     real(r8), pointer :: snw_rds            (:,:) => null() ! col snow grain radius (-nlevsno+1:0) (m^-6, or microns)
     real(r8), pointer :: air_vol            (:,:) => null() ! air filled porosity (m3/m3)
+    real(r8), pointer :: sno_latent_heat    (:,:) => null() ! latent heat in snow [J/m^2]
     ! Derived water, ice, and snow variables, column aggregate
     real(r8), pointer :: qg_snow            (:)   => null() ! specific humidity over snow (kg H2O/kg moist air)
     real(r8), pointer :: qg_soil            (:)   => null() ! specific humidity over soil (kg H2O/kg moist air)
@@ -1395,6 +1396,7 @@ contains
     allocate(this%h2osoi_ice_old     (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_old     (:,:) = spval
     allocate(this%bw                 (begc:endc,-nlevsno+1:0))        ; this%bw                 (:,:) = spval
     allocate(this%smp_l              (begc:endc,-nlevsno+1:nlevgrnd)) ; this%smp_l              (:,:) = spval
+    allocate(this%sno_latent_heat    (begc:endc,-nlevsno+1:0))        ; this%sno_latent_heat    (:,:) = spval 
     allocate(this%soilp              (begc:endc,1:nlevgrnd))          ; this%soilp              (:,:) = 0._r8
     allocate(this%swe_old            (begc:endc,-nlevsno+1:0))        ; this%swe_old            (:,:) = spval
     allocate(this%snw_rds            (begc:endc,-nlevsno+1:0))        ; this%snw_rds            (:,:) = spval
@@ -1492,6 +1494,18 @@ contains
      call hist_addfld2d (fname='SNO_BW', units='kg/m3', type2d='levsno', &
           avgflag='A', long_name='Partial density of water in the snow pack (ice + liquid)', &
            ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
+
+     this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0) = spval
+     data2dptr => this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0)
+      call hist_addfld2d (fname='QSNOFRZ_LYR', units='kg/m2/s', type2d='levsno',&
+          avgflag='I', long_name='layer snow freezing rate', &
+           ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
+
+     this%sno_latent_heat(begc:endc,-nlevsno+1:0) = spval 
+     data2dptr => this%sno_latent_heat(:,-nlevsno+1:0)
+      call hist_addfld2d (fname='SNO_LTNT_HT', units='J/m^2', type2d='levsno',  &
+           avgflag='I', long_name='latent heat in snow', &
+            ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
     this%snw_rds(begc:endc,-nlevsno+1:0) = spval
     data2dptr => this%snw_rds(:,-nlevsno+1:0)

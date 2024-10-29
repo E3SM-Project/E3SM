@@ -418,6 +418,7 @@ contains
     real(r8) :: heat_dry_mass(bounds%begc:bounds%endc) ! sum of heat content: dry mass [J/m^2]
     real(r8) :: heat_ice(bounds%begc:bounds%endc)      ! sum of heat content: ice [J/m^2]
     real(r8) :: latent_heat_liquid(bounds%begc:bounds%endc) ! sum of latent heat content of liquid water [J/m^2]
+    real(r8) :: sno_latent_heat_lcl(bounds%begc:bounds%endc,-nlevsno+1:0) ! sum of latent heat content of liquid water in snow [J/m^2] 
 
     !character(len=*), parameter :: subname = 'ComputeHeatNonLake'
     !-----------------------------------------------------------------------
@@ -438,6 +439,7 @@ contains
          h2osno       => col_ws%h2osno, & ! snow water (mm H2O)
          h2osfc       => col_ws%h2osfc, & ! surface water (mm H2O)
          h2ocan_patch => veg_ws%h2ocan, & ! canopy water (mm H2O)
+         sno_latent_heat_lcl => col_ws%sno_latent_heat, &
 !         snocan_patch => waterstate_inst%snocan_patch, & ! canopy snow water (mm H2O)
          total_plant_stored_h2o_col => col_ws%total_plant_stored_h2o, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
          wa           => soilhydrology_inst%wa_col & ! water in the unconfined aquifer (mm)
@@ -514,6 +516,7 @@ contains
                   latent_heat_liquid = latent_heat_liquid(c))
              heat_ice(c) = heat_ice(c) + &
                   TempToHeat(t_soisno(c,j), (h2osoi_ice(c,j)*cpice))
+                  sno_latent_heat_lcl(c,j) = latent_heat_liquid(c)
           end do
        else if (h2osno(c) /= 0._r8) then
           ! No explicit snow layers, but there may still be some ice in h2osno (there is
