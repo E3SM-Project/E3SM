@@ -1458,7 +1458,7 @@ module li_time_integration_fe_rk
       ! local variables
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), pointer :: thickness
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, layerNormalVelocity
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nEdges, nVertLevels
       integer :: iEdge, cell1, cell2, k
@@ -1472,7 +1472,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
       ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
       ! Note: ocn_diagnostic_solve in mpas_ocn_tendency.F has 2, 3, & 4th order calculations for h_edge that can be used.
@@ -1486,7 +1486,7 @@ module li_time_integration_fe_rk
          cell2 = cellsOnEdge(2,iEdge)
          do k=1, nVertLevels
             ! Calculate h on edges using first order
-            VelSign = sign(1.0_RKIND, normalVelocity(k, iEdge))
+            VelSign = sign(1.0_RKIND, layerNormalVelocity(k, iEdge))
             layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), &
                VelSign * (-1.0_RKIND) * layerThickness(k, cell2))
             ! + velocity goes from index 1 to 2 in the cellsOnEdge array.
