@@ -567,7 +567,7 @@ class TestAllScream(object):
                     if fn != "":
                         src = Path(fn)
                         dst = baseline_dir / "data" / src.name
-                        safe_copy(src, dst)
+                        shutil.copyfile(src, dst)
 
         # Store the sha used for baselines generation. This is only for record
         # keeping.
