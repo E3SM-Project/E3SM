@@ -1,8 +1,13 @@
-//#include <ekat/ekat_assert.hpp>
+
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
+
+// For reading soil erodibility file
+#include <physics/mam/readfiles/soil_erodibility.hpp>
 
 namespace scream {
 
+using soilErodibilityFunc =
+    soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
 // ================================================================
 //  Constructor
 // ================================================================
@@ -225,7 +230,27 @@ void MAMSrfOnlineEmiss::set_grids(
         // output
         ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
         ispec_srf.data_out_, ispec_srf.dataReader_);
-  }
+  }  // srf emissions file read init
+
+  // -------------------------------------------------------------
+  // setup to enable reading soil erodibility file
+  // -------------------------------------------------------------
+
+  const std::string soil_erodibility_data_file =
+      m_params.get<std::string>("soil_erodibility_file");
+  //   /compyfs/inputdata/atm/cam/dst/dst_1.9x2.5_c090203.nc
+
+  // Field to be read from file
+  const std::string field_name = "mbl_bsn_fct_geo";
+
+  // Dimensions of the filed
+  const std::string dim_name1 = "ncol";
+
+  // initialize the file read
+  soilErodibilityFunc::init_soil_erodibility_file_read(
+      ncol_, field_name, dim_name1, grid_, soil_erodibility_data_file,
+      srf_map_file, horizInterp_, dataReader_);  // output
+
 }  // set_grid ends
 
 // ================================================================
@@ -325,6 +350,15 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
         ispec_srf.data_end_);  // output
   }
 
+  //-----------------------------------------------------------------
+  // Read Soil erodibility data
+  //-----------------------------------------------------------------
+  // This data is time-independent, we read all data here for the
+  // entire simulation
+  soilErodibilityFunc::update_soil_erodibility_data_from_file(
+      dataReader_, *horizInterp_,
+      soil_erodibility_);  // output
+
   //--------------------------------------------------------------------
   // Initialize online emissions from file
   //--------------------------------------------------------------------
@@ -360,19 +394,21 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
-  auto constituent_fluxes  = this->constituent_fluxes_;
+  auto constituent_fluxes    = this->constituent_fluxes_;
+  auto soil_erodibility      = this->soil_erodibility_;
   // TODO: check that units are consistent with srf emissions!
   // copy current values to online-emissions-local version
   // TODO: potentially combine with below parfor(icol) loop?
   Kokkos::parallel_for(
       "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
-        mam4::aero_model_emissions::aero_model_emissions(dstflx, fluxes_col);
+        mam4::aero_model_emissions::aero_model_emissions(
+            dstflx, soil_erodibility, fluxes_col);
       });
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
   // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
-  //Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
-  //Kokkos::fence();
+  // Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
+  // Kokkos::fence();
 
   //--------------------------------------------------------------------
   // Interpolate srf emiss data read in from emissions files

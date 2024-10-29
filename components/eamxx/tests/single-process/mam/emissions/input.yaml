@@ -22,6 +22,8 @@ atmosphere_processes:
     srf_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_pom_a4_surf_ne2np4_2010_clim_c20240726.nc
     srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20240726.nc
     srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
+
+    soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
     # FIXME: just set everything to a constant scalar for testing
     online_emis_IC_ncl_a1: 0.0
     online_emis_IC_ncl_a2: 0.0

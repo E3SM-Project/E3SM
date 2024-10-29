@@ -53,6 +53,11 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
+  // For reading soil erodibility file
+  std::shared_ptr<AbstractRemapper> horizInterp_;
+  std::shared_ptr<AtmosphereInput> dataReader_;
+  const_view_1d soil_erodibility_;
+
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
   using onlineEmiss  = mam_coupling::onlineEmissions<Real, DefaultDevice>;

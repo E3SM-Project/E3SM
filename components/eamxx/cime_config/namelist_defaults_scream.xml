@@ -371,7 +371,16 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_pom_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_pom_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_pom_a4>
       <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a1>
       <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a2>
+<<<<<<< HEAD
 
+=======
+      
+      <!-- Soil erodibility-->
+      <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
+
+      <!-- Soil erodibility ne4 grid-->
+      <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
+>>>>>>> EAMxx:Adds soil erodibility file read and sent to online emission read
 
       <!-- For ne4pg2 grid -->
       <srf_emis_specifier_for_DMS    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_DMS>
