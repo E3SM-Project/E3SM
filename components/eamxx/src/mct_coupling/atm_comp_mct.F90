@@ -95,7 +95,8 @@ CONTAINS
     use ekat_string_utils,  only: string_f2c
     use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
-    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
+    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont, &
+                                  seq_infodata_start_type_brnch
     use seq_comm_mct,       only: seq_comm_inst, seq_comm_name, seq_comm_suffix
     use shr_file_mod,       only: shr_file_getunit, shr_file_setIO
     use shr_sys_mod,        only: shr_sys_abort
@@ -136,9 +137,9 @@ CONTAINS
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
-    character(len=256) :: caseid, username, hostname
-    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c
-    logical (kind=c_bool) :: restarted_run
+    character(len=256) :: caseid, username, hostname, rest_caseid
+    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c, rest_caseid_c
+    integer (kind=c_int) :: run_type_c
     !-------------------------------------------------------------------------------
 
     ! Grab some data from the cdata structure (coming from the coupler)
@@ -149,7 +150,8 @@ CONTAINS
          dom=dom_atm, &
          infodata=infodata)
     call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
-                              username=username, case_name=caseid, hostname=hostname)
+                              username=username, case_name=caseid, &
+                              rest_case_name=rest_caseid, hostname=hostname)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -189,6 +191,17 @@ CONTAINS
     ! Initialize atm
     !----------------------------------------------------------------------------
 
+    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
+      run_type_c = 0
+    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
+      run_type_c = 1
+    else if (trim(run_type) == trim(seq_infodata_start_type_brnch) ) then
+      run_type_c = 1
+    else
+      print *, "[eamxx] ERROR! Unsupported run type: "//trim(run_type)
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
                                    curr_ymd=cur_ymd, curr_tod=cur_tod, &
@@ -197,13 +210,13 @@ CONTAINS
     call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
     call string_f2c(trim(caseid),caseid_c)
+    call string_f2c(trim(rest_caseid),rest_caseid_c)
     call string_f2c(trim(hostname),hostname_c)
     call string_f2c(trim(username),username_c)
-    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
+    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, run_type_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
-                          calendar_c, caseid_c, hostname_c, username_c)
-
+                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
@@ -223,16 +236,6 @@ CONTAINS
     ! Init import/export mct attribute vectors
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
-
-    ! Complete AD initialization based on run type
-    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
-      restarted_run = .false.
-    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
-      restarted_run = .true.
-    else
-      print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
-      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
-    endif
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)

@@ -224,8 +224,6 @@ apply_iop_forcing(const Real dt)
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ColOps = ColumnOps<DefaultDevice, Real>;
-  using C = physics::Constants<Real>;
-  constexpr Real Rair = C::Rair;
 
   // Homme objects
   const auto& c = Homme::Context::singleton();
@@ -239,7 +237,6 @@ apply_iop_forcing(const Real dt)
   const auto nelem    = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const auto total_levels = m_dyn_grid->get_num_vertical_levels();
   const auto qsize = params.qsize;
-  const auto theta_hydrostatic_mode = params.theta_hydrostatic_mode;
 
   // Sanity checks since we will be switching between ekat::Pack
   // and Homme::Scalar view types

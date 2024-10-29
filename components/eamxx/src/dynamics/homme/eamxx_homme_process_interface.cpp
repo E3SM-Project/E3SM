@@ -444,7 +444,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   prim_init_model_f90 ();
 
   if (fv_phys_active()) {
-    fv_phys_dyn_to_fv_phys(run_type != RunType::Initial);
+    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
     // separate fvphyshack-based line to remove the whole CGLL FM. The intention
     // is to clear the view memory on the device, but I don't know if these two
@@ -457,7 +457,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis", "pseudo_density"})
       remove_field(f, rgn);
     remove_group("tracers", rgn);
-    fv_phys_rrtmgp_active_gases_remap();
+    fv_phys_rrtmgp_active_gases_remap(run_type);
   }
 
   // Set up field property checks

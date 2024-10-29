@@ -16,6 +16,7 @@
 
 namespace scream
 {
+
 OutputManager::
 ~OutputManager ()
 {
@@ -25,7 +26,7 @@ OutputManager::
 void OutputManager::
 initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
            const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-           const bool is_model_restart_output)
+           const bool is_model_restart_output, const RunType run_type)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
@@ -41,7 +42,7 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_params = params;
   m_run_t0 = run_t0;
   m_case_t0 = case_t0;
-  m_is_restarted_run = (case_t0<run_t0);
+  m_run_type = run_type;
   m_is_model_restart_output = is_model_restart_output;
 }
 
@@ -160,7 +161,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_is_restarted_run and not m_is_model_restart_output) {
+  if (m_run_type==RunType::Restart and not m_is_model_restart_output) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
@@ -251,7 +252,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
     m_time_bnds.resize(2);
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
   } else if (m_output_control.output_enabled() and
-             m_run_t0==m_case_t0 and
+             m_run_type==RunType::Initial and
              not m_is_model_restart_output and
              not m_params.sublist("output_control").get<bool>("skip_t0_output",false)) // This will be true for ERS/ERP tests
   {
@@ -285,10 +286,12 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
+  const bool is_first_step = m_output_control.dt==0 and dt>0;
+
   // Make sure dt is in the control
   m_output_control.set_dt(dt);
 
-  if (start_of_step==m_case_t0 and m_avg_type==OutputAvgType::Instant and
+  if (m_run_type==RunType::Initial and is_first_step and m_avg_type==OutputAvgType::Instant and
       m_output_file_specs.storage.type!=NumSnaps and m_output_control.frequency_units=="nsteps") {
     // This is the 1st step of the whole run, and a very sneaky corner case. Bear with me.
     // When we call run, we also compute next_write_ts. Then, we use next_write_ts to see if the
@@ -303,17 +306,11 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     close_or_flush_if_needed (m_output_file_specs,m_output_control);
   }
 
-  // Check if the end of this timestep will correspond to an output step. If not, there's nothing to do
-  const auto& end_of_step = start_of_step+dt;
-
-  // Note: a full checkpoint not only writes globals in the restart file, but also all the history variables.
-  //       Since we *always* write a history restart file, we can have a non-full checkpoint, if the average
-  //       type is Instant and/or the frequency is every step. A non-full checkpoint will simply write some
-  //       global attribute, such as the time of last write.
-  const bool is_output_step          = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
-  const bool is_checkpoint_step      = m_checkpoint_control.is_write_step(end_of_step);
-  const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant;
-  if (not is_output_step and not (is_checkpoint_step and has_checkpoint_data) ) {
+  // Note: we need to "init" the timestep if we are going to do something this step, which means we either
+  //       have INST output and it's a write step, or we have AVG output.
+  const auto end_of_step = start_of_step+dt;
+  const bool is_output_step = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
+  if (not is_output_step and m_avg_type==OutputAvgType::Instant) {
     return;
   }
 
@@ -738,7 +735,6 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
   // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
   // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
   // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
-  // NOTE: m_is_restarted_run and not m_is_model_restart_output, these timestamps will be corrected once we open the hist restart file
   const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
   const bool perform_history_restart = m_params.sublist("Restart").get("Perform Restart",true);
   const auto& start_ref = use_case_as_ref and perform_history_restart ? m_case_t0 : m_run_t0;
@@ -928,13 +924,18 @@ push_to_logger()
     return y;
   };
 
+  auto rt_to_string = [](RunType rt) {
+    std::string s = rt==RunType::Initial ? "Initial" : "Restart";
+    return s;
+  };
+
   m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
   m_atm_logger->info("           Filename prefix: " + m_filename_prefix);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
   m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
-  m_atm_logger->info("        Is Restarted Run ?: " + bool_to_string(m_is_restarted_run));
+  m_atm_logger->info("                 Run type : " + rt_to_string(m_run_type));
   m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   switch (m_output_file_specs.storage.type) {
