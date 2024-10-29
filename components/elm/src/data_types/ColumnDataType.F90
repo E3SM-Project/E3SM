@@ -464,6 +464,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_evap_grnd       (:)   => null() ! ground surface evaporation rate (mm H2O/s) [+]
     real(r8), pointer :: qflx_snwcp_liq       (:)   => null() ! excess rainfall due to snow capping (mm H2O /s)
     real(r8), pointer :: qflx_snwcp_ice       (:)   => null() ! excess snowfall due to snow capping (mm H2O /s)
+    real(r8), pointer :: qflx_ice_runoff_xs   (:)   => null() ! solid runoff from excess ice in soil (mm H2O /s) [+]
     real(r8), pointer :: qflx_tran_veg        (:)   => null() ! vegetation transpiration (mm H2O/s) (+ = to atm)
     real(r8), pointer :: qflx_dew_snow        (:)   => null() ! surface dew added to snow pack (mm H2O /s) [+]
     real(r8), pointer :: qflx_dew_grnd        (:)   => null() ! ground surface dew formation (mm H2O /s) [+] (+ = to atm); usually eflx_bot >= 0)
@@ -5687,6 +5688,7 @@ contains
     allocate(this%qflx_evap_grnd         (begc:endc))             ; this%qflx_evap_grnd       (:)   = spval
     allocate(this%qflx_snwcp_liq         (begc:endc))             ; this%qflx_snwcp_liq       (:)   = spval
     allocate(this%qflx_snwcp_ice         (begc:endc))             ; this%qflx_snwcp_ice       (:)   = spval
+    allocate(this%qflx_ice_runoff_xs     (begc:endc))             ; this%qflx_ice_runoff_xs   (:)   = 0._r8
     allocate(this%qflx_tran_veg          (begc:endc))             ; this%qflx_tran_veg        (:)   = spval
     allocate(this%qflx_dew_snow          (begc:endc))             ; this%qflx_dew_snow        (:)   = spval
     allocate(this%qflx_dew_grnd          (begc:endc))             ; this%qflx_dew_grnd        (:)   = spval
