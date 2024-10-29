@@ -434,6 +434,9 @@ subroutine gw_init()
           'Zonal gravity wave surface stress')
      call addfld ('TAUGWY',horiz_only,    'A','N/m2', &
           'Meridional gravity wave surface stress')
+    if (use_od_ls.or.&
+        use_od_bl.or.&
+        use_od_ss) then
     !added for orographic drag
     call addfld ('DTAUX3_LS',(/'lev'/),'A','m/s2','U tendency - ls orographic drag')
     call addfld ('DTAUY3_LS',(/'lev'/),'A','m/s2','V tendency - ls orographic drag')
@@ -460,6 +463,7 @@ subroutine gw_init()
     call add_default ('DUSFC_SS      ',    1,' ')
     call add_default ('DVSFC_SS      ',    1,' ')
     !added for orographic drag output
+    endif
 
      if (history_amwg) then
         call add_default('TAUGWX  ', 1, ' ')
