@@ -35,6 +35,7 @@
 
 #include "DataTypes.h"
 
+#include <memory>
 #include <string>
 
 // Definitions of conversions
@@ -65,15 +66,15 @@ enum class TimeUnits {
 
 /// This enum represents supported calendar types
 enum CalendarKind {
-   CalendarGregorian = 1, ///< usual Gregorian calendar
-   CalendarNoLeap,        ///< Gregorian, but without leap yrs
-   CalendarJulian,        ///< Julian
-   CalendarJulianDay,     ///< Julian day
-   CalendarModJulianDay,  ///< modified Julian day
-   Calendar360Day,        ///< 12 months, 30 days each
-   CalendarCustom,        ///< user defined
-   CalendarNoCalendar,    ///< track elapsed time only
-   CalendarUnknown        ///< uninitialized or invalid
+   CalendarGregorian,    ///< usual Gregorian calendar
+   CalendarNoLeap,       ///< Gregorian, but without leap yrs
+   CalendarJulian,       ///< Julian
+   CalendarJulianDay,    ///< Julian day
+   CalendarModJulianDay, ///< modified Julian day
+   Calendar360Day,       ///< 12 months, 30 days each
+   CalendarCustom,       ///< user defined
+   CalendarNoCalendar,   ///< track elapsed time only
+   CalendarUnknown       ///< uninitialized or invalid
 };
 
 /// String name associated with each supported calendar type
@@ -281,74 +282,91 @@ class TimeFrac {
 class Calendar {
    // private variables
  private:
-   I4 ID;                   ///< unique id for quick checks
-   static I4 NumCalendars;  ///< number of calendars created
-   std::string Name;        ///< name of calendar
-   CalendarKind CalKind;    ///< enum for calendar kind
-   std::string CalKindName; ///< name of calendar kind
+   static std::unique_ptr<Calendar> OmegaCal; ///< single instance of calendar
+   CalendarKind CalKind;                      ///< enum for calendar kind
+   std::string CalKindName;                   ///< name of calendar kind
 
    // variables defining calendar characteristics for time
-   I4 DaysPerMonth[MONTHS_PER_YEAR]; ///< days in each month
-   I4 MonthsPerYear;                 ///< num months in year
-   I4 SecondsPerDay;                 ///< seconds per day
-   I4 SecondsPerYear;                ///< seconds per normal year
-   I4 DaysPerYear;                   ///< days per normal year
+   std::vector<I4> DaysPerMonth; ///< days in each month
+   I4 MonthsPerYear;             ///< num months in year
+   I4 SecondsPerDay;             ///< seconds per day
+   I4 SecondsPerYear;            ///< seconds per normal year
+   I4 DaysPerYear;               ///< days per normal year
+
+   // Constructors are private - use set to create the only calendar
+   /// Constructor based on kind of calendar
+   Calendar(CalendarKind CalKind ///< [in] choice of calendar kind
+   );
+   /// Constructs custom calendar based in inputs
+   Calendar(std::vector<I4> &InDaysPerMonth, ///< [in] array of days per month
+            I4 InSecondsPerDay,              ///< [in] seconds per day
+            I4 InSecondsPerYear,             ///< [in] seconds per year
+            I4 InDaysPerYear                 ///< [in] days per year (dpy)
+   );
 
    // public methods
  public:
-   /// Renames a Calendar to the input string
-   /// \return Error code
-   I4 rename(const std::string InName ///< [in] name to use for calendar
+   /// Initializes a standard model calendar
+   static void
+   init(std::string CalendarKindStr ///< [in] string for type of calendar
    );
 
-   /// Retrieve any/all calendar properties
-   /// \return Error code
-   I4 get(I4 *OutID,             ///< [out] id assigned to calendar
-          std::string *OutName,  ///< [out] Name of calendar
-          CalendarKind *OutKind, ///< [out] Kind of calendar
-          I4 *OutDaysPerMonth,   ///< [out] Days per month
-          I4 *OutMonthsPerYear,  ///< [out] Months per year
-          I4 *OutSecondsPerDay,  ///< [out] Seconds per day
-          I4 *OutSecondsPerYear, ///< [out] Seconds per year
-          I4 *OutDaysPerYear     ///< [out] Days per year (DPY)
-   ) const;
+   /// Creates a custom user-defined calendar
+   static void
+   init(std::vector<I4> &InDaysPerMonth, ///< [in] array of days per month
+        I4 InSecondsPerDay,              ///< [in] seconds per day
+        I4 InSecondsPerYear,             ///< [in] seconds per year
+        I4 InDaysPerYear                 ///< [in] days per year (dpy)
+   );
 
-   /// Default constructor
-   Calendar(void);
-   /// Copy constructor
-   Calendar(const Calendar &Cal);
-   /// Constructor based on kind of calendar
-   Calendar(std::string InName,  ///< [in] name of calendar
-            CalendarKind CalKind ///< [in] choice of calendar kind
-   );
-   /// Constructs custom calendar based in inputs
-   Calendar(const std::string InName, ///< [in] name of calendar
-            I4 *InDaysPerMonth,       ///< [in] array of days per month
-            I4 InSecondsPerDay,       ///< [in] seconds per day
-            I4 InSecondsPerYear,      ///< [in] seconds per year
-            I4 InDaysPerYear          ///< [in] days per year (dpy)
-   );
+   /// Checks whether a calendar has been defined
+   static bool isDefined();
+
+   /// Retrieve pointer to the calendar
+   static Calendar *get();
+
+   /// Retrieve Type of calendar
+   static CalendarKind getKind();
+
+   /// Retrieve days per month in calendar
+   static std::vector<I4> getDaysPerMonth();
+
+   /// Retrieve months per year in calendar
+   static I4 getMonthsPerYear();
+
+   /// Retrieve days per month in calendar
+   static I4 getSecondsPerDay();
+
+   /// Retrieve days per month in calendar
+   static I4 getSecondsPerYear();
+
+   /// Retrieve days per year in calendar
+   static I4 getDaysPerYear();
+
+   /// Disable copy constructor
+   Calendar(const Calendar &) = delete;
+   Calendar(Calendar &&)      = delete;
+
+   /// Destroy the single calendar instance
+   /// This should only be used during testing as it will invalidate
+   /// all time instants and other behavior
+   static void reset();
+
    /// Calendar destructor
    ~Calendar(void);
-
-   /// Calendar equivalence operator
-   bool operator==(const Calendar &Cal) const;
-   /// Calendar non-equivalence operator
-   bool operator!=(const Calendar &Cal) const;
 
    /// Validate calendar
    I4 validate() const;
 
    /// Checks whether input year is a leap year
    /// \return true if year is a leap year, false otherwise
-   bool isLeapYear(I8 Year, ///< [in] year to check
-                   I4 &Err  ///< [out] return code to flag errors
-   ) const;
+   static bool isLeapYear(I8 Year ///< [in] year to check
+   );
 
    /// Computes the total elapsed time in seconds (in TimeFrac form)
    /// since the calendar reference time, given a calendar date, time.
    /// \return Elapsed time in TimeFrac form
-   TimeFrac
+   static TimeFrac
    getElapsedTime(const I8 Year,   ///< [in] calendar year
                   const I8 Month,  ///< [in] calendar month
                   const I8 Day,    ///< [in] calendar day
@@ -357,22 +375,22 @@ class Calendar {
                   const I8 Whole,  ///< [in] time of day-whole seconds
                   const I8 Numer,  ///< [in] time of day-frac secs (numerator)
                   const I8 denom   ///< [in] time of day-frac secs (denom)
-   ) const;
+   );
 
    /// Determines the calendar date and time of day, given an
    /// elapsed time since the calendar reference time.
    /// \return error code
-   I4 getDateTime(
-       const TimeFrac ElapsedTime, ///< [in] time in secs from ref time
-       I8 &Year,                   ///< [out] calendar year
-       I8 &Month,                  ///< [out] calendar month
-       I8 &Day,                    ///< [out] calendar day
-       I8 &Hour,                   ///< [out] time of day-hours
-       I8 &Minute,                 ///< [out] time of day-minutes
-       I8 &Whole,                  ///< [out] time of day-whole seconds
-       I8 &Numer,                  ///< [out] time of day-frac secs (numerator)
-       I8 &Denom                   ///< [out] time of day-frac secs (denom)
-   ) const;
+   static I4
+   getDateTime(const TimeFrac ElapsedTime, ///< [in] time in secs from ref time
+               I8 &Year,                   ///< [out] calendar year
+               I8 &Month,                  ///< [out] calendar month
+               I8 &Day,                    ///< [out] calendar day
+               I8 &Hour,                   ///< [out] time of day-hours
+               I8 &Minute,                 ///< [out] time of day-minutes
+               I8 &Whole,                  ///< [out] time of day-whole seconds
+               I8 &Numer, ///< [out] time of day-frac secs (numerator)
+               I8 &Denom  ///< [out] time of day-frac secs (denom)
+   );
 
    /// Increments (or decrements) a calendar date by a specified
    /// interval, supplied by an integer interval in given time units.
@@ -382,13 +400,13 @@ class Calendar {
    /// time intervals that are dependent on date and sensitive to
    /// calendar features like leap years and varying days of the month.
    /// \return error code
-   I4 incrementDate(
-       const I8 Interval,     ///< [in] time interval to advance date
-       const TimeUnits Units, ///< [in] time units for interval
-       I8 &Year,  ///< [in,out] calendar year for time to be advanced
-       I8 &Month, ///< [in,out] calendar month for time to be advanced
-       I8 &Day    ///< [in,out] calendar day for time to be advanced
-   ) const;
+   static I4
+   incrementDate(const I8 Interval,     ///< [in] time interval to advance date
+                 const TimeUnits Units, ///< [in] time units for interval
+                 I8 &Year,  ///< [in,out] calendar year for time to be advanced
+                 I8 &Month, ///< [in,out] calendar month for time to be advanced
+                 I8 &Day    ///< [in,out] calendar day for time to be advanced
+   );
 }; // end class Calendar
 
 /// The TimeInterval class represents an interval of time -- the amount of time
@@ -589,7 +607,6 @@ class TimeInstant {
    // private variables
  private:
    TimeFrac ElapsedTime; ///< Fractional seconds since reference time
-   Calendar *CalPtr;     ///< Pointer to calendar in which time is based
 
  public:
    // constructors/destructors
@@ -599,8 +616,7 @@ class TimeInstant {
 
    /// Construct time instant from date, time, calendar
    /// Where seconds is supplied as real number.
-   TimeInstant(Calendar *Cal,   ///< [in] Calendar to use
-               const I8 Year,   ///< [in] year
+   TimeInstant(const I8 Year,   ///< [in] year
                const I8 Month,  ///< [in] month
                const I8 Day,    ///< [in] day
                const I8 Hour,   ///< [in] hour
@@ -610,8 +626,7 @@ class TimeInstant {
 
    /// Construct time instant from date, time, calendar
    /// Where seconds is supplied in integer fractional seconds.
-   TimeInstant(Calendar *Cal,   ///< [in] Calendar to use
-               const I8 Year,   ///< [in] year
+   TimeInstant(const I8 Year,   ///< [in] year
                const I8 Month,  ///< [in] month
                const I8 Day,    ///< [in] day
                const I8 Hour,   ///< [in] hour
@@ -625,19 +640,13 @@ class TimeInstant {
    /// form YYYY-MM-DD_HH:MM:SS.SSSS where the width of the YY and SS
    /// strings can be of arbitrary width (within reason) and the
    /// separators can be any single non-numeric character
-   TimeInstant(Calendar *Cal,          ///< [in] Calendar to use
-               std::string &TimeString ///< [in] string containing date/time
+   TimeInstant(std::string &TimeString ///< [in] string containing date/time
    );
 
    /// Destructor for time interval
    ~TimeInstant(void);
 
    // Accessor methods
-
-   /// Set time instant calendar
-   /// \return error code
-   I4 set(Calendar *Cal ///< [in] Calendar to use for this time
-   );
 
    /// Set time instant from date and time, where seconds is supplied
    /// as a real number.
@@ -662,11 +671,6 @@ class TimeInstant {
           const I8 Numer,  ///< [in] second (fraction numerator)
           const I8 Denom   ///< [in] second (fraction denominator)
    );
-
-   /// Retrieve calendar from time instant
-   /// \return error code
-   I4 get(Calendar *&Cal ///< [out] Calendar ptr in which instant defined
-   ) const;
 
    /// Retrieve time in date, time form with real seconds.
    /// \return error code

@@ -20,8 +20,7 @@ namespace OMEGA {
 
 /// Read the config file and call all the inidividual initialization routines
 /// for each Omega module
-int ocnInit(MPI_Comm Comm, Calendar &OmegaCal, TimeInstant &StartTime,
-            Alarm &EndAlarm);
+int ocnInit(MPI_Comm Comm, TimeInstant &StartTime, Alarm &EndAlarm);
 
 /// Advance the model from starting from CurrTime until EndAlarm rings
 int ocnRun(TimeInstant &CurrTime, Alarm &EndAlarm);
@@ -30,8 +29,8 @@ int ocnRun(TimeInstant &CurrTime, Alarm &EndAlarm);
 int ocnFinalize(const TimeInstant &CurrTime);
 
 /// Extract time management options from Config
-int initTimeManagement(Calendar &OmegaCal, TimeInstant &StartTime,
-                       Alarm &EndAlarm, Config *OmegaConfig);
+int initTimeManagement(TimeInstant &StartTime, Alarm &EndAlarm,
+                       Config *OmegaConfig);
 
 /// Initialize Omega modules needed to run ocean model
 int initOmegaModules(MPI_Comm Comm);
