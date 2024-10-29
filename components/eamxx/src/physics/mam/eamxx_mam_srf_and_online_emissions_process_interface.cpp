@@ -6,14 +6,17 @@
 
 namespace scream {
 
+// For reading soil erodibility file
 using soilErodibilityFunc =
     soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
+
 // ================================================================
 //  Constructor
 // ================================================================
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
+  // FIXME: Do we want to read dust emiss factor hfrom namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
@@ -46,6 +49,16 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // For components of dust flux
   const FieldLayout vector4d = grid_->get_2d_vector_layout(4);
+
+  // FIXME: The following variables are used for validation ONLY!!! REMOVE
+  // THEM!!!
+  add_field<Required>("dstflx1", scalar2d, kg / m2 / s, grid_name);
+  add_field<Required>("dstflx2", scalar2d, kg / m2 / s, grid_name);
+  add_field<Required>("dstflx3", scalar2d, kg / m2 / s, grid_name);
+  add_field<Required>("dstflx4", scalar2d, kg / m2 / s, grid_name);
+  add_field<Required>("z_mid", scalar3d_m, kg / m2 / s, grid_name);
+  add_field<Required>("u_wind", scalar3d_m, kg / m2 / s, grid_name);
+  add_field<Required>("v_wind", scalar3d_m, kg / m2 / s, grid_name);
 
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
@@ -393,6 +406,20 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
 
+  // FIXME: Remove the following vars as they are used only for validation
+  const const_view_2d z_mid  = get_field_in("z_mid").get_view<const Real **>();
+  const const_view_2d u_wind = get_field_in("u_wind").get_view<const Real **>();
+  const const_view_2d v_wind = get_field_in("v_wind").get_view<const Real **>();
+  const const_view_1d dstflx1 =
+      get_field_in("dstflx1").get_view<const Real *>();
+  const const_view_1d dstflx2 =
+      get_field_in("dstflx2").get_view<const Real *>();
+  const const_view_1d dstflx3 =
+      get_field_in("dstflx3").get_view<const Real *>();
+  const const_view_1d dstflx4 =
+      get_field_in("dstflx4").get_view<const Real *>();
+  // FIXME: Remove ^^^^^^
+
   const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
   auto constituent_fluxes    = this->constituent_fluxes_;
   auto soil_erodibility      = this->soil_erodibility_;
@@ -400,11 +427,13 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // copy current values to online-emissions-local version
   // TODO: potentially combine with below parfor(icol) loop?
   Kokkos::parallel_for(
-      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+      //      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+      "online_emis_fluxes", 1, KOKKOS_LAMBDA(int icol) {
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
         mam4::aero_model_emissions::aero_model_emissions(
             dstflx, soil_erodibility, fluxes_col);
       });
+
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
   // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
   // Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
