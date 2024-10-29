@@ -902,8 +902,8 @@ end subroutine gw_oro_interface
 !==========================================================================
 function pblh_get_level_idx(height_array,pblheight)
 implicit none
-real(8),intent(in),dimension(pver) :: height_array
-real(8),intent(in) :: pblheight
+real(r8),intent(in),dimension(pver) :: height_array
+real(r8),intent(in) :: pblheight
 integer :: pblh_get_level_idx
        
 !local 
