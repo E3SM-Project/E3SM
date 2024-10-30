@@ -115,10 +115,14 @@ void MAMSrfOnlineEmiss::set_grids(
   // U and V components of the wind[m/s]
   add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
 
+  //----------- Variables from coupler (ocean component)---------
+  // Ocean fraction [unitless]
+  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
+
   // Sea surface temperature [K]
   add_field<Required>("sst", scalar2d, K, grid_name);
 
-  // dust fluxes [kg/m^2/s]: Four flux values for eacch column
+  // dust fluxes [kg/m^2/s]: Four flux values for each column
   add_field<Required>("dstflx", vector4d, kg / m2 / s, grid_name);
 
   // -------------------------------------------------------------
@@ -420,18 +424,51 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
       get_field_in("dstflx4").get_view<const Real *>();
   // FIXME: Remove ^^^^^^
 
+  // dust fluxes [kg/m^2/s]: Four flux values for each column
   const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
-  auto constituent_fluxes    = this->constituent_fluxes_;
-  auto soil_erodibility      = this->soil_erodibility_;
+
+  // Ocean fraction [unitless]
+  const const_view_1d ocnfrac =
+      get_field_in("ocnfrac").get_view<const Real *>();
+
+  // Sea surface temperature [K]
+  const const_view_1d sst = get_field_in("sst").get_view<const Real *>();
+
+  // U wind component [m/s]
+  const const_view_2d u_bottom =
+      get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
+
+  // V wind component [m/s]
+  const const_view_2d v_bottom =
+      get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
+
+  // Constituent fluxes [kg/m^2/s]
+  auto constituent_fluxes = this->constituent_fluxes_;
+
+  // Soil edodibility [fraction]
+  auto soil_erodibility = this->soil_erodibility_;
+
   // TODO: check that units are consistent with srf emissions!
   // copy current values to online-emissions-local version
   // TODO: potentially combine with below parfor(icol) loop?
+  const int surf_lev = nlev_ - 1;
+
   Kokkos::parallel_for(
       //      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
       "online_emis_fluxes", 1, KOKKOS_LAMBDA(int icol) {
+        // gather all input
+        const const_view_1d dstflx_icol   = ekat::subview(dstflx, icol);
+        const const_view_1d u_bottom_icol = ekat::subview(u_bottom, icol);
+        const const_view_1d v_bottom_icol = ekat::subview(v_bottom, icol);
+
+        // output
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
+
+        // comput online emissions
         mam4::aero_model_emissions::aero_model_emissions(
-            dstflx, soil_erodibility, fluxes_col);
+            sst(icol), ocnfrac(icol), u_bottom(icol, surf_lev),
+            v_bottom(icol, surf_lev), dstflx_icol, soil_erodibility(icol),
+            fluxes_col);
       });
 
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
