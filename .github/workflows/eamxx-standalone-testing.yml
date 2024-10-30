@@ -23,6 +23,7 @@ on:
         type: choice
         options:
           - gcc-openmp
+          - gcc-cuda
       bless:
         description: 'Generate baselines'
         required: true
@@ -86,30 +87,64 @@ jobs:
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  # cuda:
-  #   # Disable until the CUDA container is up and running. When CUDA container is availabe, remove
-  #   # this line and uncomment the next if
-  #   if: false
-  #   # Runs always for pull_request. For workflow_dispatch, user must request this machine
-  #   # if: ${{ github.event_name == 'pull_request' || contains(github.event.inputs.jobs_to_run, 'openmp-gcc') }}
-  #   runs-on:  [self-hosted, cuda]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       build_type: [sp, dbg, fpe, opt]
-  #   name: cuda-${{ matrix.build_type }}
-  #   steps:
-  #     - name: Show action trigger
-  #       uses: ./.github/actions/print-workflow-trigger
-  #     - name: Check out the repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
-  #         show-progress: false
-  #         submodules: recursive
-  #     - name: Run tests
-  #       uses: ./.github/actions/test-all-scream
-  #       with:
-  #         build_type: ${{ matrix.build_type }}
-  #         machine: ghci-snl-cuda
-  #         run_type: at-run
+  gcc-cuda:
+    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [sp, dbg, opt]
+    # Run this workflow if:
+    #   - workflow_dispatch: user requested this job.
+    #   - schedule: always:
+    #   - pull_request: matching skip label is NOT found
+    if: |
+      ${{
+          github.event_name == 'schedule' ||
+          ( github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list == 'gcc-cuda' ) ||
+          (
+            github.event_name == 'pull_request' &&
+            !(
+              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip cuda') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-sa') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
+            )
+          )
+        }}
+    name: gcc-cuda / ${{ matrix.build_type }}
+    steps:
+      - name: Show action trigger
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const eventAction = context.payload.action || 'N/A';
+            const actor = context.actor;
+            console.log(`The job was triggered by a ${eventName} event.`);
+            console.log(`  - Event action: ${eventAction}`);
+            console.log(`  - Triggered by: ${actor}`);
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Set test-all inputs based on event specs
+        run: |
+          echo "submit=false" >> $GITHUB_ENV
+          echo "generate=false" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "submit=true" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ inputs.bless }}" == "true" ]; then
+              echo "generate=true" >> $GITHUB_ENV
+            fi
+          fi
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-snl-cuda
+          generate: ${{ env.generate }}
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70
