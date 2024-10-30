@@ -111,7 +111,7 @@ class CrayMachine(Machine):
 class PM(CrayMachine):
 ###############################################################################
     @classmethod
-    def setup(cls,partition):
+    def setup_pm(cls,partition):
         expect (partition in ['cpu', 'gpu'], "Unknown Perlmutter partition")
 
         super().setup_cray("pm-"+partition)
@@ -132,16 +132,16 @@ class PMCPU(PM):
 ###############################################################################
     concrete = True
     @classmethod
-    def setup(cls,partition):
-        super().setup_cray("cpu")
+    def setup(cls):
+        super().setup_pm("cpu")
 
 ###############################################################################
 class PMGPU(PM):
 ###############################################################################
     concrete = True
     @classmethod
-    def setup(cls,partition):
-        super().setup_base("gpu")
+    def setup(cls):
+        super().setup_pm("gpu")
 
         cls.num_run_res = 4 # four gpus
         cls.gpu_arch = "cuda"
@@ -340,7 +340,7 @@ class AnlGceUb22(Machine):
                         ]
 
 ###############################################################################
-def get_all_machines ():
+def get_all_machines (base=Machine):
 ###############################################################################
     # If the user has the file ~/.cime/scream_mach_specs.py, import the machine type Local from it
     if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
@@ -354,11 +354,15 @@ def get_all_machines ():
         # so it doesn't find the module
         from scream_mach_specs import Local# pylint: disable=unused-import, import-error
 
-    for m in Machine.__subclasses__():
+    machines = []
+    for m in base.__subclasses__():
         if m.concrete:
-            m.setup()
+            m.setup() # Init the class static data
+            machines.append(m)
 
-    return [m for m in Machine.__subclasses__() if m.concrete]
+        machines.extend(get_all_machines(m))
+
+    return machines
 
 ###############################################################################
 def get_machine (name):
