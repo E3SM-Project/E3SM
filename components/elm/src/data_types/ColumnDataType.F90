@@ -1495,12 +1495,6 @@ contains
           avgflag='A', long_name='Partial density of water in the snow pack (ice + liquid)', &
            ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
-     this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0) = spval
-     data2dptr => this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0)
-      call hist_addfld2d (fname='QSNOFRZ_LYR', units='kg/m2/s', type2d='levsno',&
-          avgflag='I', long_name='layer snow freezing rate', &
-           ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
-
      this%sno_latent_heat(begc:endc,-nlevsno+1:0) = spval 
      data2dptr => this%sno_latent_heat(:,-nlevsno+1:0)
       call hist_addfld2d (fname='SNO_LTNT_HT', units='J/m^2', type2d='levsno',  &
@@ -5778,6 +5772,11 @@ contains
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_wf
     !-----------------------------------------------------------------------
+    this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0) = spval         
+      call hist_addfld2d (fname='QSNOFRZ_LYR', units='kg/m2/s', type2d='levsno',&
+          avgflag='I', long_name='layer snow freezing rate', &    
+           ptr_col=this%qflx_snofrz_lyr, no_snow_behavior=no_snow_normal, default='inactive')
+
     this%qflx_snwcp_ice(begc:endc) = spval
      call hist_addfld1d (fname='QSNWCPICE_NODYNLNDUSE', units='mm H2O/s', &
           avgflag='A', long_name='excess snowfall due to snow capping not including correction for land use change', &
