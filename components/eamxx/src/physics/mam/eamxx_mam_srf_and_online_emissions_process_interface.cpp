@@ -57,9 +57,6 @@ void MAMSrfOnlineEmiss::set_grids(
   add_field<Required>("dstflx3", scalar2d, kg / m2 / s, grid_name);
   add_field<Required>("dstflx4", scalar2d, kg / m2 / s, grid_name);
   add_field<Required>("z_mid", scalar3d_m, kg / m2 / s, grid_name);
-  add_field<Required>("u_wind", scalar3d_m, kg / m2 / s, grid_name);
-  add_field<Required>("v_wind", scalar3d_m, kg / m2 / s, grid_name);
-
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
@@ -411,9 +408,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   // FIXME: Remove the following vars as they are used only for validation
-  const const_view_2d z_mid  = get_field_in("z_mid").get_view<const Real **>();
-  const const_view_2d u_wind = get_field_in("u_wind").get_view<const Real **>();
-  const const_view_2d v_wind = get_field_in("v_wind").get_view<const Real **>();
+  const const_view_2d z_mid2 = get_field_in("z_mid").get_view<const Real **>();
   const const_view_1d dstflx1 =
       get_field_in("dstflx1").get_view<const Real *>();
   const const_view_1d dstflx2 =
@@ -435,11 +430,11 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const const_view_1d sst = get_field_in("sst").get_view<const Real *>();
 
   // U wind component [m/s]
-  const const_view_2d u_bottom =
+  const const_view_2d u_wind =
       get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
 
   // V wind component [m/s]
-  const const_view_2d v_bottom =
+  const const_view_2d v_wind =
       get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
 
   // Constituent fluxes [kg/m^2/s]
@@ -447,6 +442,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
   // Soil edodibility [fraction]
   auto soil_erodibility = this->soil_erodibility_;
+
+  // Vertical layer height at midpoints
+  const const_view_2d z_mid = dry_atm_.z_mid;
 
   // TODO: check that units are consistent with srf emissions!
   // copy current values to online-emissions-local version
@@ -456,19 +454,17 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::parallel_for(
       //      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
       "online_emis_fluxes", 1, KOKKOS_LAMBDA(int icol) {
-        // gather all input
-        const const_view_1d dstflx_icol   = ekat::subview(dstflx, icol);
-        const const_view_1d u_bottom_icol = ekat::subview(u_bottom, icol);
-        const const_view_1d v_bottom_icol = ekat::subview(v_bottom, icol);
+        // input
+        const const_view_1d dstflx_icol = ekat::subview(dstflx, icol);
 
         // output
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
 
         // comput online emissions
         mam4::aero_model_emissions::aero_model_emissions(
-            sst(icol), ocnfrac(icol), u_bottom(icol, surf_lev),
-            v_bottom(icol, surf_lev), dstflx_icol, soil_erodibility(icol),
-            fluxes_col);
+            sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
+            v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
+            soil_erodibility(icol), fluxes_col);
       });
 
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
@@ -525,8 +521,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 // the structs.{values} holding the above are:
 // SeasaltEmissionsData.{mpoly, mprot, mlip}
 // DustEmissionsData.dust_dmt_vwr
-// OnlineEmissionsData.{dust_flux_in, surface_temp, u_bottom,
-//                      v_bottom, z_bottom, ocean_frac}
+// OnlineEmissionsData.{dust_flux_in, surface_temp, u_wind,
+//                      v_wind, z_bottom, ocean_frac}
 // NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
 // which is a chunk-wise variable at this point
 // (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
