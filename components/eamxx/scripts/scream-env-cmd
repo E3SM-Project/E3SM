@@ -9,7 +9,7 @@ script to conveniently load the SCREAM-approved env into your current shell.
 from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
-from machines_specs import get_mach_env_setup_command, get_machine
+from machines_specs import get_mach_env_setup_command
 
 import argparse, sys, pathlib
 
@@ -44,15 +44,14 @@ OR
         formatter_class=GoodFormatter
     )
 
-    parser.add_argument("mach_name", help="The machine name for which you want the scream env")
+    parser.add_argument("mach", help="The machine name for which you want the scream env")
 
     return parser.parse_args(args[1:])
 
 ###############################################################################
-def dump_scream_env(mach_name):
+def dump_scream_env(mach):
 ###############################################################################
-    machine = get_machine(mach_name)
-    commands = get_mach_env_setup_command(machine)
+    commands = get_mach_env_setup_command(mach)
     print(" && ".join(commands))
     print("\n".join(commands), file=sys.stderr)
 
