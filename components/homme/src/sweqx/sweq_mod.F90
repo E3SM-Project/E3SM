@@ -18,6 +18,8 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit, allocate_subcell_integration_matrix
     !-----------------
+    use viscosity_mod, only : dss_hvtensor
+    !-----------------
     use dimensions_mod, only : np, nlev, npsq, nelemd
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
@@ -192,7 +194,7 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
        call test_global_integral(elem,hybrid,nets,nete)
-
+       call dss_hvtensor(elem,hybrid,nets,nete)
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 
@@ -829,6 +831,8 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit
     !-----------------
+    use viscosity_mod, only : dss_hvtensor
+    !-----------------
     use dimensions_mod, only :  np, nlev, npsq
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, &
@@ -932,6 +936,7 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
 
        call test_global_integral(elem,hybrid,nets,nete,mindx)
+       call dss_hvtensor(elem,hybrid,nets,nete)
        dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 
