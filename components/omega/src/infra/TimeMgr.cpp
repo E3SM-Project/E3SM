@@ -30,10 +30,12 @@
 #include "TimeMgr.h"
 #include "Logging.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 
 // max/min macros if they don't already exist
 #ifndef MAX
@@ -1086,118 +1088,159 @@ I4 TimeFrac::simplify(void) {
 // Calendar definitions
 //------------------------------------------------------------------------------
 
-// initialize static calendar instance counter
-I4 Calendar::NumCalendars = 0;
+// initialize static calendar instance
+std::unique_ptr<Calendar> Calendar::OmegaCal = nullptr;
 
 // Calendar accessors
 //------------------------------------------------------------------------------
-// Calendar::rename - Resets a calendar's name
-// Resets the name of a calendar. This is the only variable that
-// should be changed outside the constructor.
-
-I4 Calendar::rename(const std::string InName) { // input - name of calendar
-
-   // set error code
-   I4 Err = 0;
-
-   // set calendar name
-   Name = InName;
-
-   // Return error code
-   return Err;
-
-} // end Calendar::rename
 
 //-------------------------------------------------------------------------
-// Calendar::get - retrieves calendar properties
-// Retrieves selected components of a Calendar
+// Calendar::get - retrieves pointer to model calendar
+Calendar *Calendar::get() {
+   if (isDefined()) {
+      return Calendar::OmegaCal.get();
+   } else {
+      LOG_CRITICAL("Attempt to retrieve undefined calendar");
+   }
+} // end retrieve calendar pointer
 
-I4 Calendar::get(I4 *OutID,             // [out] assigned id
-                 std::string *OutName,  // [out] calendar name
-                 CalendarKind *OutKind, // [out] calendar type
-                 I4 *OutDaysPerMonth,   // [out] array of days/month
-                 I4 *OutMonthsPerYear,  // [out] months per year
-                 I4 *OutSecondsPerDay,  // [out] seconds per day
-                 I4 *OutSecondsPerYear, // [out] seconds per normal year
-                 I4 *OutDaysPerYear     // [out] days per normal year
-) const {
+//------------------------------------------------------------------------------
+// Calendar::get - retrievals for each calendar property
 
-   // initial error code
-   I4 Err = 0;
+CalendarKind Calendar::getKind() {
 
-   // check for valid calendar
-   if (this->CalKind == CalendarUnknown) {
-      Err = 1;
-      LOG_ERROR("TimeMgr: Calendar::get unknown calendar");
-      return Err;
+   CalendarKind OutKind = CalendarUnknown;
+   // check if calendar defined
+   if (isDefined()) {
+
+      // get calendar type and check for valid value
+      OutKind = Calendar::OmegaCal->CalKind;
+      if (OutKind == CalendarUnknown)
+         LOG_CRITICAL("Cannot retrieve calendar kind"
+                      " - Calendar undefined or not initialized");
+
+   } else {
+      LOG_CRITICAL("Cannot retrieve calendar kind - Calendar not initialized");
    }
 
-   // if id requested, return id
-   if (OutID != NULL)
-      *OutID = this->ID;
+   return OutKind;
+}
 
-   // if name requested, return calendar name
-   if (OutName != NULL)
-      *OutName = this->Name;
+std::vector<I4> Calendar::getDaysPerMonth() {
 
-   // if calendar type requested, return calendar type
-   if (OutKind != NULL)
-      *OutKind = this->CalKind;
-
-   // if days per month requested, return days per month
-   if (OutDaysPerMonth != NULL) {
-      for (I4 I = 0; I < this->MonthsPerYear; I++) {
-         OutDaysPerMonth[I] = this->DaysPerMonth[I];
+   // check if calendar defined
+   if (isDefined) {
+      // also check for valid vector
+      if (Calendar::OmegaCal->DaysPerMonth.size() > 0) {
+         return Calendar::OmegaCal->DaysPerMonth;
+      } else {
+         LOG_CRITICAL("Invalid DaysPerMonth vector");
       }
+   } else {
+      LOG_CRITICAL("Cannot retrieve calendar props - Calendar not initialized");
    }
+}
 
-   // if months per year requested, return months per year
-   if (OutMonthsPerYear != NULL)
-      *OutMonthsPerYear = this->MonthsPerYear;
+I4 Calendar::getMonthsPerYear() {
 
-   // if seconds per day requested, return seconds per day
-   if (OutSecondsPerDay != NULL)
-      *OutSecondsPerDay = this->SecondsPerDay;
+   // check if calendar defined
+   if (isDefined()) {
+      return Calendar::OmegaCal->MonthsPerYear;
+   } else {
+      LOG_CRITICAL("Cannot retrieve MonthsPerYear - Calendar not initialized");
+      return 0;
+   }
+}
 
-   // if seconds per year requested, return seconds per year
-   if (OutSecondsPerYear != NULL)
-      *OutSecondsPerYear = this->SecondsPerYear;
+I4 Calendar::getSecondsPerDay() {
 
-   // if days per year requested, return seconds per year
-   if (OutDaysPerYear != NULL)
-      *OutDaysPerYear = this->DaysPerYear;
+   // check if calendar defined
+   if (isDefined()) {
+      return Calendar::OmegaCal->SecondsPerDay;
+   } else {
+      LOG_CRITICAL("Cannot retrieve SecondsPerDay - Calendar not initialized");
+      return 0;
+   }
+}
 
-   // all done, return
-   return Err;
+I4 Calendar::getSecondsPerYear() {
 
-} // end Calendar::get
+   // check if calendar defined
+   if (isDefined()) {
+      return Calendar::OmegaCal->SecondsPerYear;
+   } else {
+      LOG_CRITICAL("Cannot retrieve SecondsPerYear - Calendar not initialized");
+      return 0;
+   }
+}
+
+I4 Calendar::getDaysPerYear() {
+   // check if calendar defined
+   if (isDefined()) {
+      return Calendar::OmegaCal->DaysPerYear;
+   } else {
+      LOG_CRITICAL("Cannot retrieve DaysPerYear - Calendar not initialized");
+      return 0;
+   }
+}
 
 // Calendar constructors/destructors
 //------------------------------------------------------------------------------
-// Calendar::Calendar - default constructor creates no calendar option
-// This constructor routine creates a calendar that uses no calendar,
-// meaning the time variable stays in seconds with no notion of days
-// or years. Construction by calendar kind is the most preferred
-// option for construction, so this version should not be used often.
+// Calendar::init - creates the calendar from a supported calendar option
+void Calendar::init(
+    std::string CalendarKindStr // [in] string name for calendar type
+) {
 
-Calendar::Calendar(void) {
+   // If calendar has already been set, throw a critical error
+   if (isDefined()) {
+      LOG_CRITICAL("Omega calendar already set, can not be changed");
+      return;
+   }
 
-   // set default name and id
-   Name = ' ';
-   ID   = ++NumCalendars;
+   // Convert string name for type of calendar to a supported kind
+   CalendarKind CalKindLoc = CalendarUnknown;
+   for (int I = 0; I < NUM_SUPPORTED_CALENDARS; ++I) {
+      if (CalendarKindStr == CalendarKindName[I]) {
+         CalKindLoc = (CalendarKind)(I);
+         break;
+      }
+   }
 
-   // define calendar as using no calendar
-   CalKind     = CalendarNoCalendar;
-   CalKindName = CalendarKindName[CalKind - 1];
+   // Call constructor and assign the calendar if it is valid
+   if (CalKindLoc == CalendarUnknown) {
+      LOG_CRITICAL("Attempt to create calendar of unknown name: {}",
+                   CalendarKindStr);
+      Calendar::OmegaCal = nullptr;
+   } else {
+      Calendar::OmegaCal = std::unique_ptr<Calendar>(new Calendar(CalKindLoc));
+   }
 
-   MonthsPerYear = MONTHS_PER_YEAR;
-   for (I4 I = 0; I < MonthsPerYear; I++)
-      DaysPerMonth[I] = 0;
-   SecondsPerDay  = 0;
-   SecondsPerYear = 0;
-   DaysPerYear    = 0;
+   LOG_INFO("Omega using calendar type: {}", CalendarKindStr);
+}
 
-} // end Calendar::Calendar default constructor
+//------------------------------------------------------------------------------
+// Calendar::init - creates the calendar from a custom calendar
+
+void Calendar::init(std::vector<I4> &InDaysPerMonth, // [in] vector days/month
+                    int InSecondsPerDay,             // [in] seconds per day
+                    int InSecondsPerYear,            // [in] seconds per year
+                    int InDaysPerYear                // [in] days per year
+) {
+
+   // If calendar has already been set, throw a critical error
+   if (isDefined()) {
+      LOG_CRITICAL("Omega calendar already set, can not be changed");
+      return;
+   }
+
+   // Call constructor and assign the single instance
+   // instance = std::unique_ptr<Singleton>(new Singleton());
+   Calendar::OmegaCal = std::unique_ptr<Calendar>(new Calendar(
+       InDaysPerMonth, InSecondsPerDay, InSecondsPerYear, InDaysPerYear));
+
+   LOG_INFO("Omega using a custom calendar");
+
+} // end custom calendar create
 
 //------------------------------------------------------------------------------
 // Calendar::Calendar - constructor creates standard calendar by kind
@@ -1205,21 +1248,17 @@ Calendar::Calendar(void) {
 // standard supported calendars (e.g. Gregorian, Julian, no-leap).
 // It is the preferred method for creating a calendar.
 
-Calendar::Calendar(std::string InName,       // [in] name for calendar
-                   CalendarKind InCalKind) { // [in] calendar type
-
-   // set calendar name and id
-   Name = InName;
-   ID   = ++NumCalendars;
+Calendar::Calendar(CalendarKind InCalKind) { // [in] calendar type
 
    // set calendar kind
    CalKind     = InCalKind;
-   CalKindName = CalendarKindName[CalKind - 1];
+   CalKindName = CalendarKindName[CalKind];
 
    // months per year fixed
    MonthsPerYear = MONTHS_PER_YEAR;
 
    // set remaining variables based on type (kind) of calendar
+   DaysPerMonth.resize(MonthsPerYear);
    switch (CalKind) {
    // All these cases have similar months, days per month
    case CalendarGregorian:
@@ -1282,52 +1321,33 @@ Calendar::Calendar(std::string InName,       // [in] name for calendar
    default:
       // unknown calendar kind, invalidate and return with error
       CalKind     = CalendarUnknown;
-      CalKindName = CalendarKindName[CalKind - 1];
-      LOG_ERROR("TimeMgr: Calendar constructor unknown calendar kind");
+      CalKindName = CalendarKindName[CalKind];
+      LOG_ERROR("Attempt to create a calendar of unknown kind");
       break;
 
    } // end switch on CalKind
 
 } // end Calendar::Calendar standard constructor
 
-//-----------------------------------------------------------------------------
-// Calendar::Calendar - constructor that creates by copying another
-// This calendar constructor creates a new calendar by copying from
-// an existing calendar.
-
-Calendar::Calendar(const Calendar &InCalendar) { // in - calendar to copy
-
-   // copy from the input calendar
-   *this = InCalendar;
-
-   // but give it a new id
-   ID = ++NumCalendars;
-
-} // end Calendar::Calendar copy constructor
-
 //------------------------------------------------------------------------------
 // Calendar::Calendar - constructs a custom calendar
 // In some cases, the standard calendars are inappropriate, so this
 // custom constructor permits users to define their own calendar.
 
-Calendar::Calendar(const std::string InName, // [in] name for calendar
-                   int *InDaysPerMonth,      // [in] array of days/month
-                   int InSecondsPerDay,      // [in] seconds per day
-                   int InSecondsPerYear,     // [in] seconds per year
-                   int InDaysPerYear) {      // [in] days per year
-
-   // set name and id
-   Name = InName;
-   ID   = ++NumCalendars;
+Calendar::Calendar(std::vector<I4> &InDaysPerMonth, // [in] array of days/month
+                   int InSecondsPerDay,             // [in] seconds per day
+                   int InSecondsPerYear,            // [in] seconds per year
+                   int InDaysPerYear) {             // [in] days per year
 
    // define calendar as custom
    CalKind     = CalendarCustom;
-   CalKindName = CalendarKindName[CalKind - 1];
+   CalKindName = CalendarKindName[CalKind];
 
    // months per year is fixed
    MonthsPerYear = MONTHS_PER_YEAR;
 
    // set remaining calendar vars from input values
+   DaysPerMonth.resize(MonthsPerYear);
    for (I4 I = 0; I < MonthsPerYear; I++)
       DaysPerMonth[I] = InDaysPerMonth[I];
    SecondsPerDay  = InSecondsPerDay;
@@ -1339,79 +1359,31 @@ Calendar::Calendar(const std::string InName, // [in] name for calendar
 //------------------------------------------------------------------------------
 // Calendar::~Calendar - destructor for calendar
 
-Calendar::~Calendar(void) {
+Calendar::~Calendar(void) {}
 
-   // decrement counter
-   --NumCalendars;
+//------------------------------------------------------------------------------
+// Calendar::reset - Destroys the single instance
+// This should only be used during testing as it will invalidate most
+// time instants and other time manager functions
+void Calendar::reset() {
 
-} // end ~Calendar
+   LOG_WARN("Removing Omega calendar");
+   LOG_WARN("This invalidates all prior time manager values"
+            "and should only be used in testing");
+   Calendar::OmegaCal.reset(); // Resets the calendar pointer
+}
 
 // Calendar operators
 //------------------------------------------------------------------------------
-// Calendar(==) - Calendar equality comparison
-// The equivalence operator to determine whether two calendars are the
-// same. For most, it is sufficient to compare the calendar type, but
-// for custom calendars, must check equivalence of each component.
-
-bool Calendar::operator==(const Calendar &Cal) const {
-
-   // if custom calendars, must check all properties for equality;
-   // return false as soon as inequality is known, otherwise return true
-   if (CalKind == CalendarCustom && Cal.CalKind == CalendarCustom) {
-      if (MonthsPerYear != Cal.MonthsPerYear)
-         return false;
-      for (I4 I = 0; I < MonthsPerYear; I++) {
-         if (DaysPerMonth[I] != Cal.DaysPerMonth[I])
-            return false;
-      }
-      if (SecondsPerDay != Cal.SecondsPerDay)
-         return false;
-      if (SecondsPerYear != Cal.SecondsPerYear)
-         return false;
-      if (DaysPerYear != Cal.DaysPerYear)
-         return false;
-      return true; // custom calendars are equal
+// Calendar::isDefined - checks whether a calendar has been initialized
+bool Calendar::isDefined() {
+   if (Calendar::OmegaCal) {
+      return true;
    } else {
-      // for all other calendars, sufficient to just check kind
-      return CalKind == Cal.CalKind;
+      return false;
    }
-   return true;
+}
 
-} // end Calendar::operator==
-
-//------------------------------------------------------------------------------
-// Calendar(!=) - Calendar inequality comparison
-// Compare two calendars for inequality. For most calendars, sufficient
-// to check calendar kind, but custom calendars must compare all
-// properties.
-
-bool Calendar::operator!=(const Calendar &Cal) const {
-
-   // if custom calendars, must check all properties for inequality
-   // can return true as soon as any inequality is known
-   if (CalKind == CalendarCustom && Cal.CalKind == CalendarCustom) {
-      if (MonthsPerYear != Cal.MonthsPerYear)
-         return true;
-      if (SecondsPerDay != Cal.SecondsPerDay)
-         return true;
-      if (SecondsPerYear != Cal.SecondsPerYear)
-         return true;
-      if (DaysPerYear != Cal.DaysPerYear)
-         return true;
-      for (I4 I = 0; I < MonthsPerYear; I++) {
-         if (DaysPerMonth[I] != Cal.DaysPerMonth[I])
-            return true;
-      }
-      return false; // custom calendars are equal
-   }
-
-   // for all other calendars, just check calendar kind
-   else
-      return CalKind != Cal.CalKind;
-
-} // end Calendar::operator!=
-
-// Calendar methods
 //------------------------------------------------------------------------------
 // Calendar::validate - validate Calendar state
 // Validates the Calendar state, checking for improper values.
@@ -1488,14 +1460,17 @@ I4 Calendar::validate() const {
 // Calendar::isLeapYear - Determine if given year is a leap year
 // Logical function that returns true if input year is a leap year.
 
-bool Calendar::isLeapYear(I8 Year,         // [in] a calendar year
-                          I4 &Err) const { // [out] error return code
+bool Calendar::isLeapYear(I8 Year // [in] a calendar year
+) {
 
-   // initialize error code
-   Err = 0;
+   // Check calendar existence
+   if (!isDefined()) {
+      LOG_CRITICAL("Attempt to check leap year - calendar not defined");
+      return false;
+   }
 
    // now check for leap year depending on calendar kind
-   switch (CalKind) {
+   switch (Calendar::OmegaCal->CalKind) {
    case CalendarGregorian:
       // leap year is divisible by 400 or divisible by 4 and not 100.
       return (Year % 400 == 0) || ((Year % 4 == 0) && (Year % 100 != 0));
@@ -1529,7 +1504,7 @@ TimeFrac Calendar::getElapsedTime(
     const I8 Whole,  ///< [in] time of day-whole seconds
     const I8 Numer,  ///< [in] time of day-frac secs (numerator)
     const I8 Denom   ///< [in] time of day-frac secs (denom)
-) const {
+) {
 
    // initialize error code, the basetime result, and common temps
    I4 Err{0};
@@ -1540,8 +1515,14 @@ TimeFrac Calendar::getElapsedTime(
    I8 HourTmp{0};     // For half-day JD conversions
    I4 FebDays{0};     // For tracking leap days
 
+   // Check that calendar has been defined
+   if (!isDefined()) {
+      LOG_CRITICAL("Cannot get elapsed time - calendar not defined");
+      return Result;
+   }
+
    // Branch on calendar type for actual calculation
-   switch (CalKind) {
+   switch (Calendar::OmegaCal->CalKind) {
 
    // convert Gregorian Date to time since reference of noon 3/1/-4800
    case CalendarGregorian: {
@@ -1559,7 +1540,7 @@ TimeFrac Calendar::getElapsedTime(
          break;
       }
       // check day of the month for any month except February
-      if (Month != 2 && Day > DaysPerMonth[Month - 1]) {
+      if (Month != 2 && Day > Calendar::OmegaCal->DaysPerMonth[Month - 1]) {
          Err = 1;
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of month for "
                    "Gregorian calendar");
@@ -1568,8 +1549,8 @@ TimeFrac Calendar::getElapsedTime(
       // if February, take leap year into account before checking
       //   day of the month
       if (Month == 2) {
-         FebDays = DaysPerMonth[1];
-         if (isLeapYear(Year, Err))
+         FebDays = Calendar::OmegaCal->DaysPerMonth[1];
+         if (isLeapYear(Year))
             FebDays += 1;
          if (Day > FebDays) {
             Err = 1;
@@ -1602,8 +1583,9 @@ TimeFrac Calendar::getElapsedTime(
       }
 
       // Finally, convert JD to seconds and add hours, minutes, secs
-      ResultWhole = JD * SecondsPerDay + HourTmp * SECONDS_PER_HOUR +
-                    Minute * SECONDS_PER_MINUTE + Whole;
+      ResultWhole = JD * Calendar::OmegaCal->SecondsPerDay +
+                    HourTmp * SECONDS_PER_HOUR + Minute * SECONDS_PER_MINUTE +
+                    Whole;
       Err = Result.set(ResultWhole, Numer, Denom);
       if (Err != 0)
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime Gregorian - error "
@@ -1627,7 +1609,7 @@ TimeFrac Calendar::getElapsedTime(
          break;
       }
       // check day of the month for any month except February
-      if (Month != 2 && Day > DaysPerMonth[Month - 1]) {
+      if (Month != 2 && Day > Calendar::OmegaCal->DaysPerMonth[Month - 1]) {
          Err = 1;
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid day of month for "
                    "Julian calendar");
@@ -1636,8 +1618,8 @@ TimeFrac Calendar::getElapsedTime(
       // if February, take leap year into account before checking
       //   day of the month
       if (Month == 2) {
-         FebDays = DaysPerMonth[1];
-         if (isLeapYear(Year, Err))
+         FebDays = Calendar::OmegaCal->DaysPerMonth[1];
+         if (isLeapYear(Year))
             FebDays += 1;
          if (Day > FebDays) {
             Err = 1;
@@ -1670,8 +1652,9 @@ TimeFrac Calendar::getElapsedTime(
       }
 
       // Finally, conver JD to seconds and add hours, minutes, secs
-      ResultWhole = JD * SecondsPerDay + HourTmp * SECONDS_PER_HOUR +
-                    Minute * SECONDS_PER_MINUTE + Whole;
+      ResultWhole = JD * Calendar::OmegaCal->SecondsPerDay +
+                    HourTmp * SECONDS_PER_HOUR + Minute * SECONDS_PER_MINUTE +
+                    Whole;
       Err = Result.set(ResultWhole, Numer, Denom);
       if (Err != 0)
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime Julian - error setting "
@@ -1700,8 +1683,9 @@ TimeFrac Calendar::getElapsedTime(
       // For regular Julian Day, the start of the day is at noon on
       // other calendars - does not matter for internal calendar
       // operations, so no correction and just noted here
-      ResultWhole = (Day - 1) * SecondsPerDay + Hour * SECONDS_PER_HOUR +
-                    Minute * SECONDS_PER_MINUTE + Whole;
+      ResultWhole = (Day - 1) * Calendar::OmegaCal->SecondsPerDay +
+                    Hour * SECONDS_PER_HOUR + Minute * SECONDS_PER_MINUTE +
+                    Whole;
       // Now set final result and add fractional second
       Err = Result.set(ResultWhole, Numer, Denom);
       if (Err != 0)
@@ -1714,14 +1698,15 @@ TimeFrac Calendar::getElapsedTime(
    case Calendar360Day:
    case CalendarCustom: {
       // Validate inputs
-      if (Year < 0 || Month < 1 || Month > MonthsPerYear || Day < 1) {
+      if (Year < 0 || Month < 1 || Month > Calendar::OmegaCal->MonthsPerYear ||
+          Day < 1) {
          Err = 1;
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date for "
                    "fixed-length calendars");
          break;
       }
       // check day of the month for any month except February
-      if (Day > DaysPerMonth[Month - 1]) {
+      if (Day > Calendar::OmegaCal->DaysPerMonth[Month - 1]) {
          Err = 1;
          LOG_ERROR("TimeMgr: Calendar::getElapsedTime invalid date of month "
                    "for fixed-length calendars");
@@ -1737,10 +1722,11 @@ TimeFrac Calendar::getElapsedTime(
       }
 
       // Conversion straightforward for fixed-length calendars
-      ResultWhole = Year * SecondsPerYear; // secs at beg of year
+      ResultWhole = Year * Calendar::OmegaCal->SecondsPerYear; // at beg of year
       for (I4 Imonth = 0; Imonth < Month - 1; Imonth++)
-         ResultWhole += DaysPerMonth[Imonth] * SecondsPerDay; // add months
-      ResultWhole += (Day - 1) * SecondsPerDay;               // add days
+         ResultWhole += Calendar::OmegaCal->DaysPerMonth[Imonth] *
+                        Calendar::OmegaCal->SecondsPerDay; // add months
+      ResultWhole += (Day - 1) * Calendar::OmegaCal->SecondsPerDay; // add days
       ResultWhole +=
           Hour * SECONDS_PER_HOUR + Minute * SECONDS_PER_MINUTE + Whole;
       // Now set final result and add fractional second
@@ -1793,11 +1779,18 @@ I4 Calendar::getDateTime(
     I8 &Whole,                  //< [out] time of day-whole seconds
     I8 &Numer,                  //< [out] time of day-frac secs (numerator)
     I8 &Denom                   //< [out] time of day-frac secs (denom)
-) const {
+) {
 
    // initialize error code to success and make sure input elapsed
    // time is reduced to its simplest form
    I4 Error{0};
+
+   // Check existence of calendar
+   if (!isDefined()) {
+      LOG_CRITICAL("Attempt to getDateTime on non-existent calendar");
+      return 1;
+   }
+
    TimeFrac RevisedTime = ElapsedTime;
    Error                = RevisedTime.simplify();
    if (Error != 0) {
@@ -1821,13 +1814,13 @@ I4 Calendar::getDateTime(
    I8 JD{0};
 
    // branch to appropriate calculation based on calendar type
-   switch (CalKind) {
+   switch (OmegaCal->CalKind) {
    case CalendarGregorian: {
       // Reference time same as Julian Days
       // Convert whole seconds to Julian Day (number of days)
       // and remove that from elapsed seconds
-      JD = Whole / SecondsPerDay;
-      Whole -= (JD * SecondsPerDay);
+      JD = Whole / Calendar::OmegaCal->SecondsPerDay;
+      Whole -= (JD * Calendar::OmegaCal->SecondsPerDay);
 
       // Now convert the remaining seconds to hour, minute, seconds
       Hour = Whole / SECONDS_PER_HOUR;
@@ -1868,8 +1861,8 @@ I4 Calendar::getDateTime(
       // Reference time same as Julian Days
       // Convert whole seconds to Julian Day (number of days)
       // and remove that from elapsed seconds
-      JD = Whole / SecondsPerDay;
-      Whole -= JD * SecondsPerDay;
+      JD = Whole / Calendar::OmegaCal->SecondsPerDay;
+      Whole -= JD * Calendar::OmegaCal->SecondsPerDay;
 
       // Now convert the remaining seconds to hour, minute, seconds
       Hour = Whole / SECONDS_PER_HOUR;
@@ -1900,8 +1893,8 @@ I4 Calendar::getDateTime(
       // year and month not defined
       // Convert whole seconds to Julian Day (number of days)
       // and remove that from elapsed seconds
-      JD = Whole / SecondsPerDay;
-      Whole -= JD * SecondsPerDay;
+      JD = Whole / Calendar::OmegaCal->SecondsPerDay;
+      Whole -= JD * Calendar::OmegaCal->SecondsPerDay;
       Year  = 0;
       Month = 0;
       Day   = JD + 1; // correct for 1-based counting
@@ -1920,22 +1913,22 @@ I4 Calendar::getDateTime(
    case CalendarNoLeap:
    case Calendar360Day:
    case CalendarCustom: {
-      Year = Whole / SecondsPerYear;      // determine year
-      Whole -= SecondsPerYear * Year;     // modify Whole to hold remainder
-      DayInYear = Whole / SecondsPerDay;  // determine day in current year
-      Whole -= SecondsPerDay * DayInYear; // modify Whole to hold remainder
-      DayInYear += 1;                     // correct for 1-based counting
+      Year = Whole / Calendar::OmegaCal->SecondsPerYear;      // determine year
+      Whole -= Calendar::OmegaCal->SecondsPerYear * Year;     // holds remainder
+      DayInYear = Whole / Calendar::OmegaCal->SecondsPerDay;  // day in year
+      Whole -= Calendar::OmegaCal->SecondsPerDay * DayInYear; // holds remainder
+      DayInYear += 1; // correct for 1-based counting
       // find month, day
       CountDays = 0;
       PrevDays  = 0;
-      for (I4 I = 0; I < MonthsPerYear; I++) {
-         CountDays += DaysPerMonth[I];
+      for (I4 I = 0; I < Calendar::OmegaCal->MonthsPerYear; I++) {
+         CountDays += Calendar::OmegaCal->DaysPerMonth[I];
          if (DayInYear <= CountDays) { // day is in this month
             Month = I + 1;
             Day   = DayInYear - PrevDays;
             break;
          }
-         PrevDays += DaysPerMonth[I];
+         PrevDays += Calendar::OmegaCal->DaysPerMonth[I];
       }
       // keep peeling off for hour, minute
       Hour = Whole / SECONDS_PER_HOUR;
@@ -1979,24 +1972,30 @@ I4 Calendar::incrementDate(
     I8 &Year,              //< [in,out] calendar year for time to be advanced
     I8 &Month,             //< [in,out] calendar month for time to be advanced
     I8 &Day                //< [in,out] calendar day for time to be advanced
-) const {
+) {
 
    // initialize error code
    I4 Err{0};
+
+   // Check calendar exists
+   if (!isDefined()) {
+      LOG_CRITICAL("Attempt to increment non-existent calendar");
+      return 1;
+   }
 
    // Increment date based on supported interval types
    switch (Units) {
    // For year intervals, mostly just increment/decrement the year
    // while keeping all other units fixed, though check for leap day error
    case TimeUnits::Years: {
-      switch (CalKind) {
+      switch (Calendar::OmegaCal->CalKind) {
       case CalendarGregorian:
       case CalendarNoLeap:
       case CalendarJulian:
       case Calendar360Day:
       case CalendarCustom: {
          Year += Interval;
-         if (!(this->isLeapYear(Year, Err)) && Month == 2 && Day == 29) {
+         if (!(isLeapYear(Year)) && Month == 2 && Day == 29) {
             Err = 1;
             LOG_ERROR("TimeMgr: Calendar::incrementDate day out of range for "
                       "new year increment");
@@ -2020,7 +2019,7 @@ I4 Calendar::incrementDate(
 
    // For monthly intervals, check for year rollovers
    case TimeUnits::Months: {
-      switch (CalKind) {
+      switch (Calendar::OmegaCal->CalKind) {
       // For most calendars, add the monthly interval and adjust year
       // and day accordingly.
       case CalendarGregorian:
@@ -2031,19 +2030,19 @@ I4 Calendar::incrementDate(
          I8 TmpMonth = Month + Interval;
          // correct the year if the interval pushes beyond the end of year
          // use a while loop in case interval extends across multiple years
-         while (TmpMonth > MonthsPerYear) {
+         while (TmpMonth > Calendar::OmegaCal->MonthsPerYear) {
             Year += 1;
-            TmpMonth -= MonthsPerYear;
+            TmpMonth -= Calendar::OmegaCal->MonthsPerYear;
          }
          // For negative intervals, check the opposite direction
          while (TmpMonth < 1) {
             Year -= 1;
-            TmpMonth += MonthsPerYear;
+            TmpMonth += Calendar::OmegaCal->MonthsPerYear;
          }
          // Set month and check that the day of the month is valid
          Month      = TmpMonth;
-         I8 MaxDays = DaysPerMonth[Month - 1];
-         if (this->isLeapYear(Year, Err) && Month == 2)
+         I8 MaxDays = Calendar::OmegaCal->DaysPerMonth[Month - 1];
+         if (isLeapYear(Year) && Month == 2)
             MaxDays += 1;
          if (Day < 1 || Day > MaxDays) {
             Err = 1;
@@ -2069,27 +2068,28 @@ I4 Calendar::incrementDate(
 
    // For day intervals, increment days and adjust year, month
    case TimeUnits::Days: {
-      switch (CalKind) {
+      switch (Calendar::OmegaCal->CalKind) {
       case CalendarGregorian:
       case CalendarNoLeap:
       case CalendarJulian:
       case Calendar360Day:
       case CalendarCustom: {
          if (Interval > 0) { // positive interval - step forward
-            I4 DayMax = DaysPerMonth[Month - 1];
-            if (Month == 2 && this->isLeapYear(Year, Err))
+            I4 DayMax = Calendar::OmegaCal->DaysPerMonth[Month - 1];
+            if (Month == 2 && isLeapYear(Year))
                DayMax += 1;
             for (I4 I = 1; I <= Interval; ++I) {
                Day += 1;
                if (Day > DayMax) { // rollover month boundary
                   Day = 1;
                   Month += 1;
-                  if (Month > MonthsPerYear) { // rollover year boundary
+                  // rollover year boundary
+                  if (Month > Calendar::OmegaCal->MonthsPerYear) {
                      Month = 1;
                      Year += 1;
                   }
-                  DayMax = DaysPerMonth[Month - 1];
-                  if (Month == 2 && this->isLeapYear(Year, Err))
+                  DayMax = Calendar::OmegaCal->DaysPerMonth[Month - 1];
+                  if (Month == 2 && isLeapYear(Year))
                      DayMax += 1;
                }
             }
@@ -2099,11 +2099,11 @@ I4 Calendar::incrementDate(
                if (Day < 1) {
                   Month -= 1;
                   if (Month < 1) {
-                     Month = MonthsPerYear;
+                     Month = Calendar::OmegaCal->MonthsPerYear;
                      Year -= 1;
                   }
-                  Day = DaysPerMonth[Month - 1];
-                  if (Month == 2 && this->isLeapYear(Year, Err))
+                  Day = Calendar::OmegaCal->DaysPerMonth[Month - 1];
+                  if (Month == 2 && isLeapYear(Year))
                      Day += 1;
                }
             }
@@ -3343,28 +3343,6 @@ bool TimeInterval::isPositive(void) {
 // TimeInstant accessors
 // Define first so constructors can use set methods
 //------------------------------------------------------------------------------
-// TimeInstant::set (calendar)
-// Sets the calendar to be used for a time instant
-
-I4 TimeInstant::set(Calendar *Cal) {
-
-   I4 Err{0};
-
-   // Check to see whether pointer is valid and if so, set the pointer
-   if (Cal != nullptr) {
-      CalPtr = Cal;
-   } else {
-      // Otherwise return an error
-      Err = 1;
-      LOG_ERROR("TimeMgr: TimeInstant::set(calendar) Calendar not defined "
-                "(null ptr)");
-   }
-
-   return Err;
-
-} // end TimeInstant::set (calendar)
-
-//------------------------------------------------------------------------------
 // TimeInstant::set (date and time, real seconds)
 // Sets a time instant from a date and time, where the seconds is supplied as
 // a real number. The calendar must already be set in order to correctly use
@@ -3388,16 +3366,9 @@ I4 TimeInstant::set(const I8 Year,   //< [in] year
    I8 Denom{0};
    Err = TmpSeconds.get(Whole, Numer, Denom);
 
-   // Check that calendar has already been defined
-   if (CalPtr == nullptr) {
-      Err = 1;
-      LOG_ERROR("TimeMgr: TimeInstant::set(date and time, real seconds) "
-                "calendar must be defined to set by date");
-   } else {
-      // Call Calendar function to determine elapsed time since reference time
-      ElapsedTime = CalPtr->getElapsedTime(Year, Month, Day, Hour, Minute,
-                                           Whole, Numer, Denom);
-   }
+   // Call Calendar function to determine elapsed time since reference time
+   ElapsedTime = Calendar::getElapsedTime(Year, Month, Day, Hour, Minute, Whole,
+                                          Numer, Denom);
 
    return Err;
 
@@ -3422,45 +3393,13 @@ int TimeInstant::set(const I8 Year,   //< [in] year
    // Initialize error code
    I4 Err{0};
 
-   // Check that calendar has already been defined
-   if (CalPtr == nullptr) {
-      LOG_ERROR("TimeMgr: TimeInstant::set(date and time, frac int seconds)",
-                "calendar must be defined to set by date");
-   } else {
-      // Call Calendar function to determine elapsed time since reference time
-      ElapsedTime = CalPtr->getElapsedTime(Year, Month, Day, Hour, Minute,
-                                           Whole, Numer, Denom);
-   }
+   // Call Calendar function to determine elapsed time since reference time
+   ElapsedTime = Calendar::getElapsedTime(Year, Month, Day, Hour, Minute, Whole,
+                                          Numer, Denom);
 
    return Err;
 
 } // end TimeInstant::set (date and time, fractional integer seconds)
-
-//------------------------------------------------------------------------------
-// TimeInstant::get (calendar)
-// Retrieve the associated calendar from a time instant.
-
-I4 TimeInstant::get(Calendar *&Cal //< [out] Calendar in which instant defined
-) const {
-
-   // Initialize error code
-   I4 Err{0};
-
-   // If the calendar has been defined, return the calendar pointer
-   if (CalPtr != nullptr) {
-      Cal = CalPtr;
-   } else {
-      // Otherwise, set a null pointer print an error message
-      Cal = nullptr;
-      Err = 0;
-      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) ",
-                "attempt to retrieve a Calendar that is not defined");
-   }
-
-   // return the error code
-   return Err;
-
-} // end TimeInstant::get (calendar)
 
 //------------------------------------------------------------------------------
 // TimeInstant::get (date and time, real seconds)
@@ -3480,29 +3419,21 @@ I4 TimeInstant::get(I8 &Year,   //< [out] year   of this time instant
 
    Second = 0.0;
 
-   // If the calendar has been defined, call the calendar function to
-   // convert the time to a date and time appropriate for that calendar
-   if (CalPtr != nullptr) {
-      I8 Whole{0};
-      I8 Numer{0};
-      I8 Denom{0};
-      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
-                                Whole, Numer, Denom);
-      if (Err != 0) {
-         LOG_ERROR("TimeMgr: TimeInstant::get(date and time, real seconds) "
-                   "error converting base time to date/time");
-      } else {
-         // Convert retrieved seconds in TimeFrac and then
-         // to real seconds for return
-         TimeFrac TmpSeconds(Whole, Numer, Denom);
-         Second = TmpSeconds.getSeconds();
-      }
-
+   // Call the calendar function to convert the time to a date and time
+   // appropriate for the calendar
+   I8 Whole{0};
+   I8 Numer{0};
+   I8 Denom{0};
+   Err = Calendar::getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                               Whole, Numer, Denom);
+   if (Err != 0) {
+      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, real seconds) "
+                "error converting base time to date/time");
    } else {
-      // Otherwise, print an error message
-      Err = 1;
-      LOG_ERROR("TimeMgr: TimeInstant::get(date and time, real seconds) ",
-                "calendar not defined.");
+      // Convert retrieved seconds in TimeFrac and then
+      // to real seconds for return
+      TimeFrac TmpSeconds(Whole, Numer, Denom);
+      Second = TmpSeconds.getSeconds();
    }
 
    // return the error code
@@ -3528,19 +3459,13 @@ I4 TimeInstant::get(I8 &Year,   //< [out] year   of this time instant
    // Initialize error code
    I4 Err{0};
 
-   // If the calendar has been defined, call the calendar function to
-   // convert the time to a date and time appropriate for that calendar
-   if (CalPtr != nullptr) {
-      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
-                                Whole, Numer, Denom);
-      if (Err != 0)
-         LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) "
-                   "error converting base time to date/time");
-   } else {
-      // Otherwise, print an error message
+   // Call the calendar function to convert the time to a date and time
+   // appropriate for that calendar
+   Err = Calendar::getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                               Whole, Numer, Denom);
+   if (Err != 0)
       LOG_ERROR("TimeMgr: TimeInstant::get(date and time, frac int seconds) "
-                "calendar not defined.");
-   }
+                "error converting base time to date/time");
 
    // return the error code
    return Err;
@@ -3553,7 +3478,7 @@ I4 TimeInstant::get(I8 &Year,   //< [out] year   of this time instant
 // This is a default constructor that creates an empty time instant with zero
 // values and a null calendar.
 
-TimeInstant::TimeInstant(void) : ElapsedTime(0, 0, 1), CalPtr(nullptr) {
+TimeInstant::TimeInstant(void) : ElapsedTime(0, 0, 1) {
    // Everything taken care of in initialization list above
 } // end TimeInstant::TimeInstant
 
@@ -3562,17 +3487,13 @@ TimeInstant::TimeInstant(void) : ElapsedTime(0, 0, 1), CalPtr(nullptr) {
 // Constructs a time instant from a date, time, calendar, where the seconds
 // part of time is supplied as a real number.
 
-TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
-                         const I8 Year,   //< [in] year
+TimeInstant::TimeInstant(const I8 Year,   //< [in] year
                          const I8 Month,  //< [in] month
                          const I8 Day,    //< [in] day
                          const I8 Hour,   //< [in] hour
                          const I8 Minute, //< [in] minute
                          const R8 RSecond //< [in] second (real)
 ) {
-
-   // Set the calendar
-   CalPtr = Cal;
 
    // Reuse the set function to define the time component
    I4 Err = this->set(Year, Month, Day, Hour, Minute, RSecond);
@@ -3588,8 +3509,7 @@ TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
 // Constructs a time instant from a calendar, date and time, where the seconds
 // is supplied as an integer fraction (whole + numrator/denominator)
 
-TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
-                         const I8 Year,   //< [in] year
+TimeInstant::TimeInstant(const I8 Year,   //< [in] year
                          const I8 Month,  //< [in] month
                          const I8 Day,    //< [in] day
                          const I8 Hour,   //< [in] hour
@@ -3598,9 +3518,6 @@ TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
                          const I8 Numer,  //< [in] second (fraction numerator)
                          const I8 Denom   //< [in] second (fraction denominator)
 ) {
-
-   // Set the calendar
-   CalPtr = Cal;
 
    // Reuse the set function to define the time component
    I4 Err = this->set(Year, Month, Day, Hour, Minute, Whole, Numer, Denom);
@@ -3617,12 +3534,8 @@ TimeInstant::TimeInstant(Calendar *Cal,   //< [in] Calendar to use
 // YYYYY-MM-DD_HH:MM:SS.SSS where the width of the YY and SS fields can
 // be of arbitrary width and the separators can be any non-numeric character
 
-TimeInstant::TimeInstant(Calendar *Cal,          //< [in] Calendar to use
-                         std::string &TimeString //< [in] string with date/time
+TimeInstant::TimeInstant(std::string &TimeString //< [in] string with date/time
 ) {
-
-   // Set the calendar
-   CalPtr = Cal;
 
    // Extract variables from string
    I8 Year    = 0;
@@ -3668,8 +3581,7 @@ bool TimeInstant::operator==(
    // Note that the calendars do not need to be the same calendar,
    //   simply equivalent calendars
 
-   if ((*(this->CalPtr) == *(Instant.CalPtr)) &&
-       (this->ElapsedTime == Instant.ElapsedTime))
+   if (this->ElapsedTime == Instant.ElapsedTime)
       return true;
    else
       return false;
@@ -3698,14 +3610,6 @@ bool TimeInstant::operator!=(
 bool TimeInstant::operator<(
     const TimeInstant &Instant) const { // [in] - instant to compare
 
-   // check that calendars are equivalent
-   if (*(this->CalPtr) != *(Instant.CalPtr)) {
-      LOG_ERROR("TimeMgr: TimeInstant::operator< cannot compare time instants "
-                "on different calendars");
-      return false;
-   }
-
-   // If on the same calendar, just a matter of comparing ElapsedTimes
    return (this->ElapsedTime < Instant.ElapsedTime);
 
 } // end TimeInstant::operator<
@@ -3718,14 +3622,6 @@ bool TimeInstant::operator<(
 bool TimeInstant::operator>(
     const TimeInstant &Instant) const { // [in] - instant to compare
 
-   // check that calendars are equivalent
-   if (*(this->CalPtr) != *(Instant.CalPtr)) {
-      LOG_ERROR("TimeMgr: TimeInstant::operator> cannot compare time instants "
-                "on different calendars");
-      return false;
-   }
-
-   // If on the same calendar, just a matter of comparing ElapsedTimes
    return (this->ElapsedTime > Instant.ElapsedTime);
 
 } // end TimeInstant::operator>
@@ -3738,14 +3634,6 @@ bool TimeInstant::operator>(
 bool TimeInstant::operator<=(
     const TimeInstant &Instant) const { // [in] - instant to compare
 
-   // check that calendars are equivalent
-   if (*(this->CalPtr) != *(Instant.CalPtr)) {
-      LOG_ERROR("TimeMgr: TimeInstant::operator<= cannot compare time instants "
-                "on different calendars");
-      return false;
-   }
-
-   // If on the same calendar, just a matter of comparing ElapsedTimes
    return (this->ElapsedTime <= Instant.ElapsedTime);
 
 } // end TimeInstant::operator<=
@@ -3758,14 +3646,6 @@ bool TimeInstant::operator<=(
 bool TimeInstant::operator>=(
     const TimeInstant &Instant) const { // [in] - instant to compare
 
-   // check that calendars are equivalent
-   if (*(this->CalPtr) != *(Instant.CalPtr)) {
-      LOG_ERROR("TimeMgr: TimeInstant::operator>= cannot compare time instants "
-                "on different calendars");
-      return false;
-   }
-
-   // If on the same calendar, just a matter of comparing ElapsedTimes
    return (this->ElapsedTime >= Instant.ElapsedTime);
 
 } // end TimeInstant::operator>=
@@ -3797,14 +3677,14 @@ TimeInstant TimeInstant::operator+(
       I8 Whole{0};
       I8 Numer{0};
       I8 Denom{1};
-      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
-                                Whole, Numer, Denom);
+      Err = Calendar::getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                  Whole, Numer, Denom);
       if (Err != 0)
          LOG_ERROR("TimeMgr: TimeInstant::operator+ error converting instant "
                    "to date/time");
       // use calendar function to increment date based on calendar kind
-      Err = CalPtr->incrementDate(Interval.CalInterval, Interval.Units, Year,
-                                  Month, Day);
+      Err = Calendar::incrementDate(Interval.CalInterval, Interval.Units, Year,
+                                    Month, Day);
       if (Err != 0)
          LOG_ERROR("TimeMgr: TimeInstant::operator+ error advancing calendar "
                    "date/time");
@@ -3850,15 +3730,15 @@ TimeInstant TimeInstant::operator-(
       I8 Whole{0};
       I8 Numer{0};
       I8 Denom{1};
-      Err = CalPtr->getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
-                                Whole, Numer, Denom);
+      Err = Calendar::getDateTime(ElapsedTime, Year, Month, Day, Hour, Minute,
+                                  Whole, Numer, Denom);
       if (Err != 0)
          LOG_ERROR("TimeMgr: TimeInstant::operator- error converting instant "
                    "to date/time");
       // use calendar function to decrement date based on calendar kind
       I8 TmpInterval = -(Interval.CalInterval);
-      Err =
-          CalPtr->incrementDate(TmpInterval, Interval.Units, Year, Month, Day);
+      Err = Calendar::incrementDate(TmpInterval, Interval.Units, Year, Month,
+                                    Day);
       if (Err != 0)
          LOG_ERROR("TimeMgr: TimeInstant::operator- error reversing calendar "
                    "date/time");
@@ -3887,13 +3767,6 @@ TimeInterval TimeInstant::operator-(const TimeInstant &Instant) const {
    I8 Numer{0};
    I8 Denom{1};
    TimeInterval Result(Whole, Numer, Denom); // zero interval as default
-
-   // check that calendars are equivalent
-   if (*(this->CalPtr) != *(Instant.CalPtr)) {
-      LOG_ERROR("TimeMgr: TimeInstant::operator- (interval) cannot subtract "
-                "time instants on different calendars");
-      return Result;
-   }
 
    // subtract the ElapsedTime components of time instants
    TimeFrac Timediff = ElapsedTime - Instant.ElapsedTime;
@@ -4100,7 +3973,7 @@ Alarm::~Alarm(void) { // Nothing to be done
 
 bool Alarm::isRinging(void) { return Ringing; }
 
-// end TimeInstant::isRinging
+// end Alarm::isRinging
 
 //------------------------------------------------------------------------------
 // Alarm::updateStatus - Changes the alarm status based on current time

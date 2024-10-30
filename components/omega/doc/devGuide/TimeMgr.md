@@ -39,24 +39,46 @@ enum CalendarKind {
    CalendarUnknown        ///< uninitialized or invalid
 };
 ```
+During a simulation, only one calendar can be defined and is set with the call:
+```c++
+Calendar::init("CalendarName");
+```
+that must be set early in the model initialization before other time quantities
+are defined. CalendarName is a string associated with the defined calendars
+above and found in the list CalendarKindName in ``TimeMgr.h``. Typically, they
+are the same as the kinds above with a space for multi-word names
+(eg "No Leap"). If a custom calendar is desired rather than the supported
+calendars, a custom calendar can be defined with a different init
+interface in which all the relevant quantities are provided:
+```c++
+Calendar::init(
+   std::vector<I4> &InDaysPerMonth, ///< [in] array of days per month
+   I4 InSecondsPerDay,              ///< [in] seconds per day
+   I4 InSecondsPerYear,             ///< [in] seconds per year
+   I4 InDaysPerYear                 ///< [in] days per year (dpy)
+);
+```
 Time is generally tracked as the amount of time elapsed from a reference date
-for a given calendar.
+for a given calendar. A number of public functions exist to retrieve Calendar
+information, convert between dates and elapsed time, check for leap years and
+other checks. However, these are typically used by other TimeMgr classes and
+not directly by the developer. Examples of their use can be found in the
+TimeMgr unit test.
 
 ### 3. TimeInstant
 
-The TimeInstant class represents a moment in time for a particular calendar. It
-consists of a TimeFrac and a pointer to the Calendar in which the time is based.
+The TimeInstant class represents a moment in time with the particular calendar
+that has been defined for the simulation. It consists of a TimeFrac that
+represents the time since a reference time associated with the defined calendar.
 There are three constructors for initializing a TimeInstant. One method is with
-a pointer to an initialized Calendar object, five 8-byte integers, and an 8-byte
-real value:
+five 8-byte integers, and an 8-byte real value:
 ```c++
-OMEGA::TimeInstant TI1(&CalGreg, Year, Month, Day, Hour, Minute, RealSecond);
+OMEGA::TimeInstant TI1(Year, Month, Day, Hour, Minute, RealSecond);
 ```
-Alternatively, the TimeInstant can be initialized with a Calendar pointer and
-eight 8-byte integers, with the seconds value represented by three 8-byte
-integers:
+Alternatively, the TimeInstant can be initialized with eight 8-byte integers,
+with the seconds value represented by three 8-byte integers:
 ```c++
-OMEGA::TimeInstant TI2(&CalGreg, Y, M, D, H, M, Whole, Numer, Denom);
+OMEGA::TimeInstant TI2(Y, M, D, H, M, Whole, Numer, Denom);
 ```
 A final constructor creates a time instant based on a time string that
 conforms roughly to the ISO standard `"YYYYYY-MM-DD_HH:MM:SS.SSSS"` though
@@ -64,7 +86,7 @@ the constructor allows for any single-character non-numeric separator between
 each of the numeric fields and the width of the YY and SS fields can be up
 to the 8-byte standards for integer and floats, respectively.
 ```c++
-OMEGA::TimeInstant TI3(&CalGreg, TimeString);
+OMEGA::TimeInstant TI3(TimeString);
 ```
 
 Among the methods defined in the TimeInstant class is `getString` which will
@@ -107,6 +129,10 @@ enum class TimeUnits {
    Months,   ///< time units in months
    Years,    ///< time units in years
 };
+```
+Finally, a time interval can be defined as the time between two time instants:
+```c++
+OMEGA::TimeInterval MyDeltaTime = MyTimeInstant2 - MyTimeInstant1;
 ```
 
 ### 5. Alarm

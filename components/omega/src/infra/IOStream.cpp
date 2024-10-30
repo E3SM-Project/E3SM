@@ -431,13 +431,6 @@ int IOStream::create(const std::string &StreamName, //< [in] name of stream
 
    // For alarms, need to retrieve clock start time
    TimeInstant ClockStart = ModelClock.getStartTime();
-   Calendar *CalendarPtr;
-   Err = ClockStart.get(CalendarPtr);
-   if (Err != 0) {
-      LOG_ERROR("Unable to retrieve clock info while constructing stream {}",
-                StreamName);
-      return Err;
-   }
 
    // Read frequency of input/output
    int IOFreq;
@@ -518,7 +511,7 @@ int IOStream::create(const std::string &StreamName, //< [in] name of stream
       std::string StrtTime;
       Err = StreamConfig.get("StartTime", StrtTime);
       if (Err == 0) {
-         TimeInstant AlarmTime(CalendarPtr, StrtTime);
+         TimeInstant AlarmTime(StrtTime);
          NewStream->MyAlarm = Alarm(AlarmName, AlarmTime);
          HasAlarm           = true;
       } else {
@@ -576,8 +569,8 @@ int IOStream::create(const std::string &StreamName, //< [in] name of stream
                    StreamName);
          return Err;
       }
-      TimeInstant Start(CalendarPtr, StartTimeStr);
-      TimeInstant End(CalendarPtr, EndTimeStr);
+      TimeInstant Start(StartTimeStr);
+      TimeInstant End(EndTimeStr);
       std::string StartName = StreamName + "Start";
       std::string EndName   = StreamName + "End";
       NewStream->StartAlarm = Alarm(StartName, Start);

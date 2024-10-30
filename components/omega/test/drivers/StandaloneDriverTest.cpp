@@ -30,11 +30,10 @@ int main(int argc, char *argv[]) {
    Kokkos::initialize();   // initialize Kokkos
 
    // Time management objects
-   OMEGA::Calendar OmegaCal;
    OMEGA::TimeInstant CurrTime;
    OMEGA::Alarm EndAlarm;
 
-   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD, OmegaCal, CurrTime, EndAlarm);
+   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD, CurrTime, EndAlarm);
    if (ErrCurr == 0) {
       LOG_INFO("DriverTest: Omega initialize PASS");
    } else {

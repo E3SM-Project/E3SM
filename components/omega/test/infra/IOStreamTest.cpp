@@ -10,6 +10,7 @@
 //===-----------------------------------------------------------------------===/
 
 #include "IOStream.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
@@ -51,23 +52,24 @@ void TestEval(const std::string &TestName, T TestVal, T ExpectVal, int &Error) {
 }
 //------------------------------------------------------------------------------
 // Initialization routine to create reference Fields
-int initIOStreamTest(std::shared_ptr<Clock> &ModelClock, // Model clock
-                     Calendar &ModelCalendar) {
+int initIOStreamTest(std::shared_ptr<Clock> &ModelClock // Model clock
+) {
 
    int Err    = 0;
    int Err1   = 0;
    int ErrRef = 0;
 
-   // Initialize maching environment and logging
+   // Initialize machine environment and logging
    MachEnv::init(MPI_COMM_WORLD);
    MachEnv *DefEnv  = MachEnv::getDefault();
    MPI_Comm DefComm = DefEnv->getComm();
    initLogging(DefEnv);
 
    // Read the model configuration
-   Config Config("omega");
+   Config("Omega");
    Err1 = Config::readAll("omega.yml");
    TestEval("Config read all", Err1, ErrRef, Err);
+   Config *OmegaConfig = Config::getOmegaConfig();
 
    // Initialize base-level IO
    Err1 = IO::init(DefComm);
@@ -86,7 +88,23 @@ int initIOStreamTest(std::shared_ptr<Clock> &ModelClock, // Model clock
    TestEval("IO Field initialization", Err1, ErrRef, Err);
 
    // Create the model clock and time step
-   TimeInstant SimStartTime(&ModelCalendar, 0001, 1, 1, 0, 0, 0.0);
+   // Get Calendar from time management config group
+   Config TimeMgmtConfig("TimeManagement");
+   Err = OmegaConfig->get(TimeMgmtConfig);
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: TimeManagement group not found in Config");
+      return Err;
+   }
+   std::string ConfigCalStr;
+   Err = TimeMgmtConfig.get("CalendarType", ConfigCalStr);
+   if (Err != 0) {
+      LOG_CRITICAL("ocnInit: CalendarType not found in TimeMgmtConfig");
+      return Err;
+   }
+   Calendar::init(ConfigCalStr);
+
+   // Use internal start time and time step rather than Config
+   TimeInstant SimStartTime(0001, 1, 1, 0, 0, 0.0);
    TimeInterval TimeStep(2, TimeUnits::Hours);
    ModelClock = std::make_shared<Clock>(SimStartTime, TimeStep);
 
@@ -192,11 +210,10 @@ int main(int argc, char **argv) {
    Kokkos::initialize();
    {
 
-      Calendar CalGreg("Gregorian", OMEGA::CalendarGregorian);
-      std::shared_ptr<Clock> ModelClock;
+      std::shared_ptr<Clock> ModelClock = nullptr;
 
       // Call initialization to create reference IO field
-      Err1 = initIOStreamTest(ModelClock, CalGreg);
+      Err1 = initIOStreamTest(ModelClock);
       TestEval("Initialize IOStream test", Err1, ErrRef, Err);
 
       // Retrieve dimension lengths and some mesh info
@@ -237,7 +254,7 @@ int main(int argc, char **argv) {
           });
 
       // Create a stop alarm at 1 year for time stepping
-      TimeInstant StopTime(&CalGreg, 0002, 1, 1, 0, 0, 0.0);
+      TimeInstant StopTime(0002, 1, 1, 0, 0, 0.0);
       Alarm StopAlarm("Stop Time", StopTime);
       Err1 = ModelClock->attachAlarm(&StopAlarm);
       TestEval("Attach stop alarm", Err1, ErrRef, Err);

@@ -292,7 +292,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    auto *TestAuxState   = AuxiliaryState::get("TestAuxState");
    auto *TestTendencies = Tendencies::get("TestTendencies");
 
-   Calendar TestCalendar("TestCalendar", CalendarNoCalendar);
+   Calendar::init("No Calendar");
 
    auto *TestTimeStepper = TimeStepper::create(
        "TestTimeStepper", Type, TestTendencies, TestAuxState, DefMesh, DefHalo);
@@ -306,7 +306,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    std::vector<ErrorMeasures> Errors(NRefinements);
 
    // Start time = 0
-   const TimeInstant TimeStart(&TestCalendar, 0, 0, 0, 0, 0, 0);
+   const TimeInstant TimeStart(0, 0, 0, 0, 0, 0);
 
    const Real TimeEnd = 1;
 
