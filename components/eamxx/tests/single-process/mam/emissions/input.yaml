@@ -65,18 +65,18 @@ grids_manager:
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   #Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
-  Filename: /qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/4src/screami_unit_tests_mam4xx_ne2np4L72_LAT_39p0553303768561_LON_83p8339931334693_ONLINE_EMISS_1st.nc
+  Filename: /qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/4src/screami_unit_tests_mam4xx_ne2np4L72_LAT_m5p57727434969464_LON_83p9312243922771_ONLINE_EMISS_1st.nc
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
   #These should come from the input file
 
   #we should get the following variables from other processes
   pbl_height : 1.0
-  dstflx : [ -0.15639291491198312E-010, -0.83947887868839890E-010, -0.19684857140996447E-009, -0.18542519360366344E-009]
-  ocnfrac:   0.0
-  sst: 0.0
+  dstflx : [  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000]
+  ocnfrac:   0.10000000000000000E+001
+  sst: 0.30178553874977507E+003
   cldfrac_tot: 0.138584624960092
-  horiz_winds: [0.70975328186226694E+001, 0.83157735469095362E+000]
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
 
 # The parameters for I/O control
 Scorpio:

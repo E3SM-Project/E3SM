@@ -52,10 +52,6 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // FIXME: The following variables are used for validation ONLY!!! REMOVE
   // THEM!!!
-  add_field<Required>("dstflx1", scalar2d, kg / m2 / s, grid_name);
-  add_field<Required>("dstflx2", scalar2d, kg / m2 / s, grid_name);
-  add_field<Required>("dstflx3", scalar2d, kg / m2 / s, grid_name);
-  add_field<Required>("dstflx4", scalar2d, kg / m2 / s, grid_name);
   add_field<Required>("z_mid", scalar3d_m, kg / m2 / s, grid_name);
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
@@ -252,18 +248,37 @@ void MAMSrfOnlineEmiss::set_grids(
 
   const std::string soil_erodibility_data_file =
       m_params.get<std::string>("soil_erodibility_file");
-  //   /compyfs/inputdata/atm/cam/dst/dst_1.9x2.5_c090203.nc
 
   // Field to be read from file
-  const std::string field_name = "mbl_bsn_fct_geo";
+  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
 
   // Dimensions of the filed
-  const std::string dim_name1 = "ncol";
+  const std::string soil_erod_dname = "ncol";
 
   // initialize the file read
   soilErodibilityFunc::init_soil_erodibility_file_read(
-      ncol_, field_name, dim_name1, grid_, soil_erodibility_data_file,
+      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
+      soil_erodibility_data_file, srf_map_file, horizInterp_,
+      dataReader_);  // output
+  // -------------------------------------------------------------
+  // setup to enable reading marine organics file
+  // -------------------------------------------------------------
+#if 0
+  const std::string marine_organics_data_file =
+      m_params.get<std::string>("marine_organics_file");
+
+  // Field to be read from file
+  const std::vector<std::string> marine_org_fld_name = {
+      "CHL1", "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+
+  // Dimensions of the filed
+  const std::string marine_org_dname = "ncol";
+
+  // initialize the file read
+  soilErodibilityFunc::init_soil_erodibility_file_read(
+      ncol_, marine_org_fld_name, marine_org_dname, grid_, marine_organics_data_file,
       srf_map_file, horizInterp_, dataReader_);  // output
+#endif
 
 }  // set_grid ends
 
@@ -409,14 +424,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
   // FIXME: Remove the following vars as they are used only for validation
   const const_view_2d z_mid2 = get_field_in("z_mid").get_view<const Real **>();
-  const const_view_1d dstflx1 =
-      get_field_in("dstflx1").get_view<const Real *>();
-  const const_view_1d dstflx2 =
-      get_field_in("dstflx2").get_view<const Real *>();
-  const const_view_1d dstflx3 =
-      get_field_in("dstflx3").get_view<const Real *>();
-  const const_view_1d dstflx4 =
-      get_field_in("dstflx4").get_view<const Real *>();
   // FIXME: Remove ^^^^^^
 
   // dust fluxes [kg/m^2/s]: Four flux values for each column
