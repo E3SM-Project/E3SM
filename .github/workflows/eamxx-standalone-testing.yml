@@ -26,8 +26,8 @@ on:
         type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
-  # schedule:
-  #   - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+  schedule:
+    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
 
 concurrency:
   # Two runs are in the same group if:
