@@ -60,8 +60,8 @@ jobs:
             !(
               contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
               contains(github.event.pull_request.labels.*.name, 'AT: skip openmp') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-standalone') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-sa') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
             )
           )
         }}
