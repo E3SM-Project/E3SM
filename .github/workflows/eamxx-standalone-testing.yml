@@ -10,6 +10,7 @@ on:
       - components/eam/src/physics/rrtmgp/**
       - components/eam/src/physics/p3/scream/**
       - components/eam/src/physics/cam/**
+      - .github/workflows/eamxx-standalone-testing.yml
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -26,8 +27,8 @@ on:
         type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
-  # schedule:
-  #   - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+  schedule:
+    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
 
 concurrency:
   # Two runs are in the same group if:
@@ -59,8 +60,8 @@ jobs:
             !(
               contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
               contains(github.event.pull_request.labels.*.name, 'AT: skip openmp') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-standalone') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-sa') ||
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
             )
           )
         }}

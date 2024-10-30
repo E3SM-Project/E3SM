@@ -10,6 +10,7 @@ on:
       - components/eam/src/physics/rrtmgp/**
       - components/eam/src/physics/p3/scream/**
       - components/eam/src/physics/cam/**
+      - .github/workflows/eamxx-v1-testing.yml
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -47,6 +48,8 @@ jobs:
             short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97
           - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5
+          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.scream-mam4xx-all_mam4xx_procs
+            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     # Run this workflow if:
@@ -62,7 +65,7 @@ jobs:
             !(
               contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
               contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-v1') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip all')
+              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
             )
           )
         }}
