@@ -621,6 +621,7 @@ end subroutine clubb_init_cnst
     use phys_control,           only: phys_getopts
 
     use parameters_tunable, only: params_list
+    use cam_abortutils,  only: endrun
 
 #endif
 
@@ -1154,7 +1155,7 @@ end subroutine clubb_init_cnst
 #endif
  
    !=============Jinbo Xie=====================
-   use gw_common,          only: gwdo_gsd,grid_size,pblh_get_level_idx
+   use gw_common,          only: gw_oro_interface,grid_size
    use hycoef,             only: etamid
    !use hb_diff,            only: rino_pub
    use physconst,          only: rh2o,pi,rearth,r_universal
@@ -1514,28 +1515,30 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
-   !==========Jinbo Xie==================
-        !simply add par
-        !for z,dz,from other files
-    real(r8) :: ztop(pcols,pver)             ! top interface height asl(m)
-    real(r8) :: zbot(pcols,pver)             ! bottom interface height asl(m)
-    real(r8) :: zmid(pcols,pver)             ! middle interface height asl(m)
-    real(r8) :: dz(pcols,pver)
-    !=======Jinbo Xie=========== 
-    real(r8) :: rlat(pcols)                 ! latitude in radians for columns
-    integer :: kpbl2d_in(pcols)
-    real(r8) :: ttgw(pcols,pver)                 ! temperature tendency
-    real(r8) :: utgw(pcols,pver)                 ! zonal wind tendency
-    real(r8) :: vtgw(pcols,pver)                 ! meridional wind tendency
-    !=======Jinbo Xie================
-    real(r8) :: dtaux3_fd(pcols,pver)
-    real(r8) :: dtauy3_fd(pcols,pver)
-    real(r8) :: dusfc_fd(pcols)
-    real(r8) :: dvsfc_fd(pcols)
-    !=======Jinbo Xie================
-    real(r8) :: dx(pcols),dy(pcols)
-    !=======Jinbo Xie================
-
+   !
+   !add par for tofd
+   real(r8) :: dtaux3_fd(pcols,pver)
+   real(r8) :: dtauy3_fd(pcols,pver)
+   real(r8) :: dusfc_fd(pcols)
+   real(r8) :: dvsfc_fd(pcols)
+   logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
+   real(r8) :: dummy_nm(pcols,pver)
+   real(r8) :: dummy_utgw(pcols,pver) 
+   real(r8) :: dummy_vtgw(pcols,pver) 
+   real(r8) :: dummy_ttgw(pcols,pver) 
+   !    
+   real(r8) :: dummx_ls(pcols,pver)
+   real(r8) :: dummx_bl(pcols,pver)
+   real(r8) :: dummx_ss(pcols,pver)
+   real(r8) :: dummy_ls(pcols,pver)
+   real(r8) :: dummy_bl(pcols,pver)
+   real(r8) :: dummy_ss(pcols,pver)
+   real(r8) :: dummx3_ls(pcols,pver)
+   real(r8) :: dummx3_bl(pcols,pver)
+   real(r8) :: dummx3_ss(pcols,pver)
+   real(r8) :: dummy3_ls(pcols,pver)
+   real(r8) :: dummy3_bl(pcols,pver)
+   real(r8) :: dummy3_ss(pcols,pver)
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
@@ -3199,7 +3202,7 @@ end subroutine clubb_init_cnst
     ! Local Variables !
     ! --------------- !
 
-    integer :: i                                                ! indicees
+    integer :: i,k                                                ! indicees
     integer :: ncol                                             ! # of atmospheric columns
 
     real(r8) :: th(pcols)                                       ! surface potential temperature
@@ -3293,7 +3296,7 @@ end subroutine clubb_init_cnst
         kbfs_pcol(i)=kbfs
     enddo
     !
-    call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
+    call pblintd_ri(ncol, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
     endif
     !

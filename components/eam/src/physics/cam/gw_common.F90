@@ -1002,6 +1002,7 @@ end subroutine dxygrid
 !================================Jinbo Xie====================
 !-------------------------------------------------------------------------------
    subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                       &
+                       ncleff_ls,ncd_bl,sncleff_ss,                            &
                   rublten,rvblten,rthblten,                                    &
                   dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,                 &
                   dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
@@ -1090,6 +1091,7 @@ end subroutine dxygrid
                                                                dz
   real(r8),     dimension( ims:ime, kms:kme )                    , &
      intent(in   )   ::                                 p3di
+  real(r8),     intent(in)      ::                        ncleff_ls,ncd_bl,sncleff_ss
   real(r8),     dimension( ims:ime, kms:kme )                    , &
            intent(inout)   ::                   rublten, &
                                                           rvblten, &
@@ -1144,7 +1146,7 @@ end subroutine dxygrid
   integer ::  i,j,k,kpblmax
 !
         !===========Jinbo Xie=========
-        integer , intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd!Jinbo Xie 
+        logical, intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd!Jinbo Xie 
         !===========Jinbo Xie=========
    do k = kts,kte
      if(znu(k).gt.0.6_r8) kpblmax = k + 1
@@ -1178,6 +1180,7 @@ ENDIF
               !=================================================================
       call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                  &
              ,dthdt=rthblten(ims,kms)                                          &
+              ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                  &
               ,dtaux2d_ls=dtaux2d_ls,dtauy2d_ls=dtauy2d_ls                     &
               ,dtaux2d_bl=dtaux2d_bl,dtauy2d_bl=dtauy2d_bl                     &
               ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                     &
@@ -1232,7 +1235,8 @@ ENDIF
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
-   subroutine gwdo2d(dudt,dvdt,dthdt,dtaux2d_ls,dtauy2d_ls,                    &
+   subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
+                    dtaux2d_ls,dtauy2d_ls,                                     &
                     dtaux2d_bl,dtauy2d_bl,dtaux2d_ss,dtauy2d_ss,               &
                     dtaux2d_fd,dtauy2d_fd,u1,v1,t1,q1,                         &
                     del,                                                       &
@@ -1467,15 +1471,16 @@ real(r8)                 :: pe,ke
                                  od(its:ite)
    real(r8)                 :: taufb(its:ite,kts:kte+1)
         !===========Jinbo Xie=========
-        integer , intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd        !Jinbo Xie 
+        logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd        !Jinbo Xie 
         !===========Jinbo Xie=========
 
 
 !=====Jinbo Xie=====
 integer :: wdir_add_xjb(mdir,its:ite)
-real(r8):: ncleff  !!tunable parameter for gwd
-real(r8):: ncd  !!tunable parameter for fbd
-real(r8):: sncleff !!tunable parameter for sgwd
+!real(r8):: ncleff  !!tunable parameter for gwd
+!real(r8):: ncd  !!tunable parameter for fbd
+!real(r8):: sncleff !!tunable parameter for sgwd
+real(r8), intent(in) :: ncleff,ncd,sncleff
 !=====Jinbo Xie=====
 
 
@@ -1493,9 +1498,9 @@ real(r8):: sncleff !!tunable parameter for sgwd
  logical  :: scorer_on=.false.
  !===================================
 
-ncleff    = 3._r8
-ncd       = 3._r8!1._r8!1._r8!3._r8
-sncleff   = 1.0_r8
+!ncleff    = 3._r8
+!ncd       = 3._r8!1._r8!1._r8!3._r8
+!sncleff   = 1.0_r8
 !
 !---- constants                                                         
 !                                                                       

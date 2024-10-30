@@ -682,7 +682,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use dycore,     only: dycore_is
   !=====Jinbo Xie=====
   use phys_grid, only: get_rlat_all_p
-  use gw_common,  only: gwdo_gsd,pblh_get_level_idx,grid_size
+  use gw_common,  only: grid_size,gw_oro_interface
   use physconst,          only: gravit,rair
   !====Jinbo Xie=====
 
@@ -718,37 +718,28 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   !============================================
   !Jinbo Xie
   !locally added gw and bl drag
-    real(r8) :: dtaux3_ls(pcols,pver)
-    real(r8) :: dtauy3_ls(pcols,pver)
-    real(r8) :: dtaux3_bl(pcols,pver)
-    real(r8) :: dtauy3_bl(pcols,pver)
-    !
-    real(r8) :: dtaux3_ss(pcols,pver)
-    real(r8) :: dtauy3_ss(pcols,pver)
-    !real(r8) :: dtaux3_fd(pcols,pver)
-    !real(r8) :: dtauy3_fd(pcols,pver)
-
-    real(r8) :: dusfc_ls(pcols)
-    real(r8) :: dvsfc_ls(pcols)
-    real(r8) :: dusfc_bl(pcols)
-    real(r8) :: dvsfc_bl(pcols)
-    !
-    real(r8) :: dusfc_ss(pcols)
-    real(r8) :: dvsfc_ss(pcols)
-    !real(r8) :: dusfc_fd(pcols)
-    !real(r8) :: dvsfc_fd(pcols)
-    real(r8) :: g
-
-    real(r8) :: dtaux3_fd(pcols,pver)
-    real(r8) :: dtauy3_fd(pcols,pver)
-    real(r8) :: dusfc_fd(pcols)
-    real(r8) :: dvsfc_fd(pcols)
-  !==============
-  !Jinbo Xie
-  !real(r8) :: pblh(pcols) ! Planetary boundary layer height
+  !locally added gw and bl drag
+  real(r8) :: dtaux3_ls(pcols,pver)
+  real(r8) :: dtauy3_ls(pcols,pver)
+  real(r8) :: dtaux3_bl(pcols,pver)
+  real(r8) :: dtauy3_bl(pcols,pver)
+  real(r8) :: dtaux3_ss(pcols,pver)
+  real(r8) :: dtauy3_ss(pcols,pver)
+  real(r8) :: dummx3_fd(pcols,pver)
+  real(r8) :: dummy3_fd(pcols,pver)
+  !
+  real(r8) :: dusfc_ls(pcols)
+  real(r8) :: dvsfc_ls(pcols)
+  real(r8) :: dusfc_bl(pcols)
+  real(r8) :: dvsfc_bl(pcols)
+  real(r8) :: dusfc_ss(pcols)
+  real(r8) :: dvsfc_ss(pcols)
+  real(r8) :: dummx_fd(pcols)
+  real(r8) :: dummy_fd(pcols)
+  real(r8) :: g
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
-  !Jinbo Xie
+  logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
   !============================================
 
   !---------------------------Local storage-------------------------------
