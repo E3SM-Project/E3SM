@@ -1169,14 +1169,14 @@
       <pes compset="any" pesize="any">
         <comment>improv: any compset on ne30np4 grid</comment>
         <ntasks>
-          <ntasks_atm>-4</ntasks_atm>
-          <ntasks_lnd>-4</ntasks_lnd>
-          <ntasks_rof>-4</ntasks_rof>
-          <ntasks_ice>-4</ntasks_ice>
-          <ntasks_ocn>-4</ntasks_ocn>
-          <ntasks_cpl>-4</ntasks_cpl>
-          <ntasks_glc>-4</ntasks_glc>
-          <ntasks_wav>-4</ntasks_wav>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
         </ntasks>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
@@ -2063,6 +2063,21 @@
           <rootpe_ocn>1800</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
+      </pes>
+    </mach>
+    <mach name="improv">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>improv+allactive: RRM-WCYCL on 6 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
+        </ntasks>
       </pes>
     </mach>
     <mach name="chrysalis">
