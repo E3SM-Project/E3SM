@@ -11,6 +11,8 @@ on:
       - components/eam/src/physics/p3/scream/**
       - components/eam/src/physics/cam/**
       - .github/workflows/eamxx-v1-testing.yml
+  pull_request_review:
+    types: [submitted]
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -29,10 +31,10 @@ on:
 concurrency:
   # Two runs are in the same group if:
   #  - they have the same trigger
-  #  - if trigger=pull_request, the PR number must match
-  #  - if trigger=workflow_dispatch, the inputs are the same
+  #  - if trigger=pull_request/pull_request_review: the PR number must match
+  #  - if trigger=workflow_dispatch: no concurrency
   group: ${{ github.workflow }}-${{ github.event_name }}-${{
-             github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id
+             (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') && github.event.pull_request.number || github.run_id
            }}
   cancel-in-progress: true
 
@@ -55,31 +57,24 @@ jobs:
     # Run this workflow if:
     #   - workflow_dispatch: user requested this job.
     #   - schedule: always:
-    #   - pull_request: matching skip label is NOT found
-    if: |
-      ${{
-          github.event_name == 'schedule' ||
-          ( github.event_name == 'workflow_dispatch' && contains(github.event.inputs.jobs_list, 'gcc-openmp') ) ||
-          (
-            github.event_name == 'pull_request' &&
-            !(
-              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-v1') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
-            )
-          )
-        }}
+    #   - pull_request/pull_request_review: matching skip label is NOT found
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'cpu-gcc') }}
     steps:
-      - name: Show action trigger
-        uses: actions/github-script@v7
+      - name: Check out the repository
+        uses: actions/checkout@v4
         with:
-          script: |
-            const eventName = context.eventName;
-            const eventAction = context.payload.action || 'N/A';
-            const actor = context.actor;
-            console.log(`The job was triggered by a ${eventName} event.`);
-            console.log(`  - Event action: ${eventAction}`);
-            console.log(`  - Triggered by: ${actor}`);
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Check for skip labels
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+        uses: ./.github/actions/check-skip-labels
+        with:
+          skip_labels: 'AT: skip gcc,AT: skip openmp,AT: skip eamxx-sa,AT: skip eamxx-all'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.pull_request.number }}
       - name: Set CA certificates env var
         run: |
           # Ensure the operating system is Linux
@@ -108,12 +103,6 @@ jobs:
           fi
           echo "flags=$cmp_gen_flag -b master" >> $GITHUB_ENV
           echo "folder_suffix=$dir_suffix" >> $GITHUB_ENV
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
       - name: Run test
         run: |
           ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
