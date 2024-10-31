@@ -38,7 +38,7 @@ concurrency:
   #  - they have the same trigger
   #  - if trigger=pull_request/pull_request_review, the PR number must match
   #  - if trigger=workflow_dispatch/schedule: no concurrency
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{
+  group: ${{ github.workflow }}-${{
              (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') && github.event.pull_request.number || github.run_id
            }}
   cancel-in-progress: true
