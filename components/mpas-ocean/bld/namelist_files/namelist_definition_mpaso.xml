@@ -383,11 +383,35 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Redi_use_new_sfc_taper" type="logical"
+  category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+  If true, the new surface taper is used where Redi is horizontal in the boundary layer instead of off
+
+  Valid values: .true. or .false.
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_cavity_fix" type="logical"
+  category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+  If true, use the correction for horizontal T and S gradients in the redi calculation
+
+  Valid values: .true. or .false.
+  Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_Redi_closure" type="char*1024"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch.
 
 Valid values: 'constant', 'equalGM', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_redi_transition_layer_mld_offset" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+For instances where MLD lt BLD, the MLD for the transition layer (from isopycnal at depth to horizontal in the BLD) is set to BLD + this config value
+
+Valid values: Positive real numbers.
 Default: Defined in namelist_defaults.xml
 </entry>
 
