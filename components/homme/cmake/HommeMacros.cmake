@@ -162,17 +162,20 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
-    target_link_libraries(${execName} Kokkos::kokkos)
+    TARGET_LINK_LIBRARIES(${execName} Kokkos::kokkos)
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
   # doesn't have a race condition
   SET_TARGET_PROPERTIES(${execName}
-                        PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
+    PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -mkl)
-    TARGET_LINK_LIBRARIES(${execName} -mkl)
+    IF (MKL_TYPE STREQUAL "oneMKL")
+      TARGET_LINK_LIBRARIES(${execName} -qmkl)
+    ELSEIF (MKL_TYPE STREQUAL "Intel MKL")
+      TARGET_LINK_LIBRARIES(${execName} -mkl)
+    ENDIF ()
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${execName} lapack blas)
@@ -270,8 +273,11 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   ENDIF ()
 
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -mkl)
-    TARGET_LINK_LIBRARIES(${libName} -mkl)
+    IF (MKL_TYPE STREQUAL "oneMKL")
+      TARGET_LINK_LIBRARIES(${libName} -qmkl)
+    ELSEIF (MKL_TYPE STREQUAL "Intel MKL")
+      TARGET_LINK_LIBRARIES(${libName} -mkl)
+    ENDIF ()
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${libName} lapack blas)
