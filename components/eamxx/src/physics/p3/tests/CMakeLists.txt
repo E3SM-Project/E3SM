@@ -44,26 +44,27 @@ else ()
   set (FORCE_RUN_DIFF_FAILS "")
 endif()
 
+# All tests should understand the same baseline args
 if (SCREAM_ENABLE_BASELINE_TESTS)
   if (SCREAM_ONLY_GENERATE_BASELINES)
-    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
   else()
-    set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data/p3_run_and_cmp.baseline")
+    set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data")
   endif()
 else()
-  set(BASELINE_FILE_ARG "--no-baselines")
+  set(BASELINE_FILE_ARG "-n") # no baselines
 endif()
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
   LIBS p3
-  EXE_ARGS "${BASELINE_FILE_ARG}"
+  EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
   THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
   LABELS "p3;physics")
 
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
 CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
   LIBS p3
-  EXE_ARGS "${BASELINE_FILE_ARG}"
+  EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
   COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
   THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
   LABELS "p3;physics;fail"
@@ -72,14 +73,14 @@ CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
 if (NOT SCREAM_P3_SMALL_KERNELS)
   CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
     LIBS p3_sk
-    EXE_ARGS "${BASELINE_FILE_ARG}"
+    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics")
 
   # Make sure that a diff in the two implementation triggers a failed test (in debug only)
   CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
     LIBS p3_sk
-    EXE_ARGS "${BASELINE_FILE_ARG}"
+    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics;fail"

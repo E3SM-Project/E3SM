@@ -79,7 +79,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qi); fdipb(ni);
   fdipb(qm); fdipb(bm); fdipb(precip_liq_surf); fdipb(precip_ice_surf);
   fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(diag_eff_radius_qr); fdipb(rho_qi);
-  fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend); 
+  fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend);
   fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
   fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);

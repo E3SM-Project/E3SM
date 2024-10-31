@@ -20,7 +20,7 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestRainSed {
+struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWrap::UnitTest<D>::Base {
 
 static void run_phys_rain_vel()
 {
@@ -219,7 +219,7 @@ TEST_CASE("p3_rain_sed", "[p3_functions]")
 {
   using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
 
-  scream::p3::p3_init(); // need fortran table data
+  TRS::init();
 
   TRS::run_phys();
   TRS::run_bfb();

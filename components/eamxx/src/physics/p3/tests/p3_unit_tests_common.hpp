@@ -3,6 +3,11 @@
 
 #include "share/scream_types.hpp"
 #include "p3_functions.hpp"
+#include "p3_f90.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+
+#include <vector>
+#include <sstream>
 
 namespace scream {
 namespace p3 {
@@ -19,6 +24,12 @@ namespace unit_test {
  */
 
 struct UnitWrap {
+
+  enum BASELINE_ACTION {
+    NONE,
+    COMPARE,
+    GENERATE
+  };
 
   template <typename D=DefaultDevice>
   struct UnitTest : public KokkosTypes<D> {
@@ -57,6 +68,43 @@ struct UnitWrap {
 
     static constexpr Int max_pack_size = 16;
     static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+
+    struct Base {
+      static inline std::string     BASELINE_PATH;
+      static inline BASELINE_ACTION ACTION;
+
+      static void init()
+      {
+        scream::p3::p3_init(); // many tests will need fortran table data
+        auto& ts = ekat::TestSession::get();
+        auto raw_flags = ts.flags.begin()->first;
+        std::stringstream ss(raw_flags);
+        std::string flag;
+        ACTION = NONE;
+        BASELINE_PATH = "";
+        bool next_token_is_path = false;
+        while (ss >> flag) {
+          if (flag == "-c") {
+            ACTION = COMPARE;
+          }
+          else if (flag == "-g") {
+            ACTION = GENERATE;
+          }
+          else if (flag == "-n") {
+            ACTION = NONE;
+          }
+          else if (flag == "-b") {
+            next_token_is_path = true;
+          }
+          else if (next_token_is_path) {
+            BASELINE_PATH = flag;
+            next_token_is_path = false;
+          }
+        }
+        EKAT_REQUIRE_MSG( !(ACTION != NONE && BASELINE_PATH == ""),
+                          "P3 unit test flags problem: baseline actions were requested but no baseline path was provided");
+      }
+    };
 
     // Put struct decls here
     struct TestTableIce;
@@ -102,7 +150,6 @@ struct UnitWrap {
     struct TestIceDepositionSublimation;
     struct TestPreventLiqSupersaturation;
   };
-
 };
 
 } // namespace unit_test
