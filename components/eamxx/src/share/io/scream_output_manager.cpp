@@ -721,7 +721,7 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
       "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
-  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
+  m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
   // In case output is disabled, no point in doing anything else
   if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
@@ -747,7 +747,7 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
 
   if (m_params.isSublist("Checkpoint Control")) {
     auto& pl = m_params.sublist("Checkpoint Control");
-    m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
+    m_checkpoint_control.set_frequency_units(pl.get<std::string>("frequency_units"));
 
     if (m_checkpoint_control.output_enabled()) {
       m_checkpoint_control.frequency = pl.get<int>("Frequency");

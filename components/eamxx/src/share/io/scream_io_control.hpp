@@ -39,6 +39,30 @@ struct IOControl {
                                         ts.get_time()==next_write_ts.get_time());
   }
 
+  void set_frequency_units (const std::string& freq_unit) {
+    if (freq_unit=="none" or freq_unit=="never") {
+      frequency_units = freq_unit;
+    } else if (freq_unit=="nstep" or freq_unit=="nsteps") {
+      frequency_units = "nsteps";
+    } else if (freq_unit=="nsecond" or freq_unit=="nseconds" or freq_unit=="nsecs") {
+      frequency_units = "nsecs";
+    } else if (freq_unit=="nminute" or freq_unit=="nminutes" or freq_unit=="nmins") {
+      frequency_units = "nmins";
+    } else if (freq_unit=="nhour" or freq_unit=="nhours") {
+      frequency_units = "nhours";
+    } else if (freq_unit=="nday" or freq_unit=="ndays") {
+      frequency_units = "ndays";
+    } else if (freq_unit=="nmonth" or freq_unit=="nmonths") {
+      frequency_units = "nmonths";
+    } else if (freq_unit=="nyear" or freq_unit=="nyears") {
+      frequency_units = "nyears";
+    } else {
+      // TODO - add support for "end" as an option
+      EKAT_ERROR_MSG("Error! Unsupported frequency units of " + freq_unit + " provided.");
+    }
+
+  }
+
   void set_dt (const double dt_in) {
     EKAT_REQUIRE_MSG (dt==0 or dt==dt_in,
         "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
