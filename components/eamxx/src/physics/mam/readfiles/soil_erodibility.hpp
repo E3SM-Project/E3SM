@@ -50,7 +50,7 @@ struct soilErodibilityFunctions {
 
 };  // struct soilErodilityFunctions
 
-}  // namespace soil_erodibilty
+}  // namespace soil_erodibility
 }  // namespace scream
 #endif  // SOIL_ERODIBILITY_HPP
 

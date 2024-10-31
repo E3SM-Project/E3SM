@@ -258,27 +258,30 @@ void MAMSrfOnlineEmiss::set_grids(
   // initialize the file read
   soilErodibilityFunc::init_soil_erodibility_file_read(
       ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
-      soil_erodibility_data_file, srf_map_file, horizInterp_,
-      dataReader_);  // output
+      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
+      serod_dataReader_);  // output
   // -------------------------------------------------------------
   // setup to enable reading marine organics file
   // -------------------------------------------------------------
-#if 0
+
   const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
+  // /compyfs/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc
 
   // Field to be read from file
   const std::vector<std::string> marine_org_fld_name = {
-      "CHL1", "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+      "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
 
   // Dimensions of the filed
   const std::string marine_org_dname = "ncol";
 
   // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(
-      ncol_, marine_org_fld_name, marine_org_dname, grid_, marine_organics_data_file,
-      srf_map_file, horizInterp_, dataReader_);  // output
-#endif
+  marineOrganicsFunc::init_marine_organics_file_read(
+      ncol_, marine_org_fld_name, marine_org_dname, grid_,
+      marine_organics_data_file, srf_map_file,
+      // output
+      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
+      morg_dataReader_);
 
 }  // set_grid ends
 
@@ -385,7 +388,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // This data is time-independent, we read all data here for the
   // entire simulation
   soilErodibilityFunc::update_soil_erodibility_data_from_file(
-      dataReader_, *horizInterp_,
+      serod_dataReader_, *serod_horizInterp_,
       soil_erodibility_);  // output
 
   //--------------------------------------------------------------------

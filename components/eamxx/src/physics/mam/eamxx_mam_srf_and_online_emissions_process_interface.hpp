@@ -9,6 +9,9 @@
 #include <physics/mam/online_emission.hpp>
 #include <physics/mam/srf_emission.hpp>
 
+// For reading marine organics file
+#include <physics/mam/readfiles/marine_organics.hpp>
+
 // For declaring surface and online emission class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
@@ -54,13 +57,16 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
   // For reading soil erodibility file
-  std::shared_ptr<AbstractRemapper> horizInterp_;
-  std::shared_ptr<AtmosphereInput> dataReader_;
+  std::shared_ptr<AbstractRemapper> serod_horizInterp_;
+  std::shared_ptr<AtmosphereInput> serod_dataReader_;
   const_view_1d soil_erodibility_;
 
  public:
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
   using onlineEmiss  = mam_coupling::onlineEmissions<Real, DefaultDevice>;
+  // For reading marine organics file
+  using marineOrganicsFunc =
+      marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -167,6 +173,13 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   std::vector<srf_emiss_> srf_emiss_species_;
 
   onlineEmiss online_emissions;
+
+  // For reading marine organics file
+  std::shared_ptr<AbstractRemapper> morg_horizInterp_;
+  std::shared_ptr<AtmosphereInput> morg_dataReader_;
+  marineOrganicsFunc::marineOrganicsTimeState morg_timeState_;
+  marineOrganicsFunc::marineOrganicsInput morg_data_start_, morg_data_end_;
+  marineOrganicsFunc::marineOrganicsOutput morg_data_out_;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =

@@ -1,5 +1,5 @@
-#ifndef SOIL_ERODIBILITY_IMPL_HPP
-#define SOIL_ERODIBILITY_IMPL_HPP
+#ifndef MARINE_ORGANICS_IMPL_HPP
+#define MARINE_ORGANICS_IMPL_HPP
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
@@ -7,14 +7,14 @@
 #include "share/util/scream_timing.hpp"
 
 namespace scream {
-namespace soil_erodibility {
+namespace marine_organics {
 
 template <typename S, typename D>
 std::shared_ptr<AbstractRemapper>
-soilErodibilityFunctions<S, D>::create_horiz_remapper(
+marineOrganicsFunctions<S, D>::create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
     const std::string &data_file, const std::string &map_file,
-    const std::string &field_name, const std::string &dim_name1) {
+    const std::vector<std::string> &field_name, const std::string &dim_name1) {
   using namespace ShortFieldTagsNames;
 
   scorpio::register_file(data_file, scorpio::Read);
@@ -26,7 +26,7 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
   // but since shallow clones are cheap, we may as well do it (less lines of
   // code)
   auto horiz_interp_tgt_grid =
-      model_grid->clone("soil_erodibility_horiz_interp_tgt_grid", true);
+      model_grid->clone("marine_organics_horiz_interp_tgt_grid", true);
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
@@ -35,15 +35,15 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
     EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
-                     "Error! We do not allow to coarsen soil erodibility "
+                     "Error! We do not allow to coarsen marine organics "
                      "data to fit the model. We only allow\n"
-                     "       soil erodibility data to be at the same or "
+                     "       marine organics data to be at the same or "
                      "coarser resolution as the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG(map_file != "",
-                     "ERROR: soil erodibility data is on a different grid "
+                     "ERROR: marine organics data is on a different grid "
                      "than the model one,\n"
-                     "       but remap file is missing from soil erodibility "
+                     "       but remap file is missing from marine organics "
                      "parameter list.");
 
     remapper =
@@ -57,11 +57,17 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
   const auto nondim    = ekat::units::Units::nondimensional();
 
-  Field soil_erodibility(
-      FieldIdentifier(field_name, layout_2d, nondim, tgt_grid->name()));
-  soil_erodibility.allocate_view();
+  std::vector<Field> fields_vector;
 
-  remapper->register_field_from_tgt(soil_erodibility);
+  const int field_size = field_name.size();
+  for(int icomp = 0; icomp < field_size; ++icomp) {
+    auto comp_name = field_name[icomp];
+    // set and allocate fields
+    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    f.allocate_view();
+    fields_vector.push_back(f);
+    remapper->register_field_from_tgt(f);
+  }
 
   remapper->registration_ends();
 
@@ -74,7 +80,7 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
 
 template <typename S, typename D>
 std::shared_ptr<AtmosphereInput>
-soilErodibilityFunctions<S, D>::create_data_reader(
+marineOrganicsFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &data_file) {
   std::vector<Field> io_fields;
@@ -87,67 +93,77 @@ soilErodibilityFunctions<S, D>::create_data_reader(
 
 // -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
-
+#if 0
 template <typename S, typename D>
-void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
+void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
     AbstractRemapper &horiz_interp, const_view_1d &input) {
-  start_timer("EAMxx::soilErodibility::update_soil_erodibility_data_from_file");
+  start_timer("EAMxx::marineOrganics::update_marine_organics_data_from_file");
 
   // 1. Read from file
   start_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::read_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::read_"
       "data");
   scorpio_reader->read_variables();
   stop_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::read_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::read_"
       "data");
 
-  // 2. Run the horiz remapper (it is a do-nothing op if soilErodibility data is
+  // 2. Run the horiz remapper (it is a do-nothing op if marineOrganics data is
   // on same grid as model)
   start_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::horiz_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");
   horiz_interp.remap(/*forward = */ true);
   stop_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::horiz_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");
 
   // 3. Get the tgt field of the remapper
   start_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::get_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::get_"
       "field");
   // Recall, the fields are registered in the order:
   // Read the field from the file
   input = horiz_interp.get_tgt_field(0).get_view<const Real *>();
   stop_timer(
-      "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::get_"
+      "EAMxx::marineOrganics::update_marine_organics_data_from_file::get_"
       "field");
 
-  stop_timer("EAMxx::soilErodibility::update_soil_erodibility_data_from_file");
+  stop_timer("EAMxx::marineOrganics::update_marine_organics_data_from_file");
 
-}  // END update_soil_erodibility_data_from_file
-
+}  // END update_marine_organics_data_from_file
+#endif
 // -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
-void soilErodibilityFunctions<S, D>::init_soil_erodibility_file_read(
-    const int ncol, const std::string field_name, const std::string dim_name1,
+void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(
+    const int ncol, const std::vector<std::string> field_name,
+    const std::string dim_name1,
     const std::shared_ptr<const AbstractGrid> &grid,
     const std::string &data_file, const std::string &mapping_file,
     // output
-    std::shared_ptr<AbstractRemapper> &soilErodibilityHorizInterp,
-    std::shared_ptr<AtmosphereInput> &soilErodibilityDataReader) {
+    std::shared_ptr<AbstractRemapper> &marineOrganicsHorizInterp,
+    marineOrganicsInput data_start_, marineOrganicsInput data_end_,
+    marineOrganicsData data_out_,
+    std::shared_ptr<AtmosphereInput> &marineOrganicsDataReader) {
   // Init horizontal remap
-  soilErodibilityHorizInterp = create_horiz_remapper(
+
+  marineOrganicsHorizInterp = create_horiz_remapper(
       grid, data_file, mapping_file, field_name, dim_name1);
 
+  // Initialize the size of start/end/out data structures
+  data_start_ = marineOrganicsInput(ncol, field_name.size());
+  data_end_   = marineOrganicsInput(ncol, field_name.size());
+  data_out_.init(ncol, 1, true);
+
   // Create reader (an AtmosphereInput object)
-  soilErodibilityDataReader =
-      create_data_reader(soilErodibilityHorizInterp, data_file);
-}  // init_soil_erodibility_file_read
-}  // namespace soil_erodibility
+  marineOrganicsDataReader =
+      create_data_reader(marineOrganicsHorizInterp, data_file);
+
+}  // init_marine_organics_file_read
+}  // namespace marine_organics
 }  // namespace scream
 
-#endif  // SOIL_ERODIBILITY_IMPL_HPP
+#endif  // MARINE_ORGANICS_IMPL_HPP
