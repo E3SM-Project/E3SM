@@ -9,3 +9,6 @@ set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/c
 include (${EKAT_MACH_FILES_PATH}/kokkos/cuda.cmake)
 
 set(EKAT_MPI_NP_FLAG "-n" CACHE STRING "The mpirun flag for designating the total number of ranks")
+
+# TODO: rebuild cuda image with cuda-aware MPI, so we can set this to ON
+option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" OFF)
