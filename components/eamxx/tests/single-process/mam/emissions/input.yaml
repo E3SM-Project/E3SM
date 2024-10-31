@@ -25,34 +25,6 @@ atmosphere_processes:
 
     soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
     marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20241030.nc
-    # FIXME: just set everything to a constant scalar for testing
-    online_emis_IC_ncl_a1: 0.0
-    online_emis_IC_ncl_a2: 0.0
-    online_emis_IC_ncl_a3: 0.0
-    online_emis_IC_mom_a1: 0.16838301005552275E-013
-    online_emis_IC_mom_a2: 0.26554873160224250E-016
-    online_emis_IC_mom_a4: 0.0
-    online_emis_IC_num_a1: 0.0
-    online_emis_IC_num_a2: 0.0
-    online_emis_IC_num_a3: 0.0
-    online_emis_IC_num_a4: 0.0
-    online_emis_IC_dst_a1: 0.0
-    online_emis_IC_dst_a3: 0.18720550166902007E+003
-
-# NOTE: these are the single-call results from the mam validation test
-# (20) ncl_a1: 2.659900637e-13
-# (25) ncl_a2: 0
-# (29) ncl_a3: 2.391492482e-11
-# (21) mom_a1: 1.683830101e-14
-# (26) mom_a2: 2.655487316e-17
-# (38) mom_a4: 0
-# (22) num_a1: 2.594942753e-15
-# (27) num_a2: 4.092359179e-18
-# (35) num_a3: 0
-# (39) num_a4: 0
-# (19) dst_a1: 0
-# (28) dst_a3: 403.2611563
-
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE
@@ -65,12 +37,10 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  #Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
-  Filename: /qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/4src/screami_unit_tests_mam4xx_ne2np4L72_LAT_m5p57727434969464_LON_83p9312243922771_ONLINE_EMISS_1st.nc
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
-  #These should come from the input file
-
+  
   #we should get the following variables from other processes
   pbl_height : 1.0
   dstflx : [  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000]
@@ -78,7 +48,7 @@ initial_conditions:
   sst: 0.30178553874977507E+003
   cldfrac_tot: 0.138584624960092
   horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
-
+  constituent_fluxes: 0.0
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]

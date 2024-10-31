@@ -1,4 +1,3 @@
-
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
 // For reading soil erodibility file
@@ -124,8 +123,8 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // Constituent fluxes of species in [kg/m2/s]
   // FIXME: confirm if it is Updated or Computed
-  add_field<Computed>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
-                      grid_name);
+  add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
+                     grid_name);
 
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
