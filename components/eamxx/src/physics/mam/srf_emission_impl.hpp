@@ -182,10 +182,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     const int time_index,  // zero-based
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
-  // NOTE: these are currently unused
-  // using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
-  // using Member = typename KokkosTypes<DefaultDevice>::MemberType;
-
+  
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
 
   // 1. Read from file
@@ -204,14 +201,6 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::copy_and_pad");
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
-
-  // NOTE: these are currently unused
-  // const auto &layout = srfEmiss_horiz_interp.get_tgt_field(0)
-  //                          .get_header()
-  //                          .get_identifier()
-  //                          .get_layout();
-
-  const int ncols = layout.dim(COL);
 
   // Read fields from the file
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {

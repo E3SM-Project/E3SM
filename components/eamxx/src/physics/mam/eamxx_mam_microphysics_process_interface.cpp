@@ -76,7 +76,7 @@ void MAMMicrophysics::set_grids(
   constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
 =======
   config_.amicphys.nucleation = {};
-  // config_.amicphys.nucleation.dens_so4a_host = 1770.0;
+  //config_.amicphys.nucleation.dens_so4a_host = 1770.0;
   // config_.amicphys.nucleation.mw_so4a_host = 115.0;
   // config_.amicphys.nucleation.newnuc_method_user_choice = 2;
   // config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
