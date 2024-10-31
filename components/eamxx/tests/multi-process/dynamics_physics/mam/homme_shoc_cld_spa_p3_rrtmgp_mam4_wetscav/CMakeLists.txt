@@ -70,6 +70,7 @@ set (TEST_INPUT_FILES
   scream/init/spa_init_ne2np4.nc
   scream/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
   scream/init/${EAMxx_tests_IC_FILE_72lev}
+  scream/init/scream_unit_tests_aerosol_optics_ne2np4L72_20220822.nc
   cam/topo/${EAMxx_tests_TOPO_FILE}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
