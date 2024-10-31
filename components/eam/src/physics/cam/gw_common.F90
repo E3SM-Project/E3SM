@@ -745,7 +745,9 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   end if
 
 end subroutine gw_drag_prof
+
 !==========================================================================
+
 subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     nm,&
                             gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,&
                             ncleff_ls,ncd_bl,   sncleff_ss,&
@@ -760,14 +762,14 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   use ppgrid,         only: pcols,pver,pverp
   use physconst,      only: gravit,rair,cpair,rh2o,zvir,pi
   use hycoef,         only: etamid
-  !
+
   type(physics_state), intent(in) :: state      ! physics state structure            ! Standard deviation of orography.
   type(cam_in_t),      intent(in) :: cam_in
   real(r8), intent(in) :: sgh(pcols)
   type(physics_buffer_desc), pointer :: pbuf(:) ! Physics buffer
   real(r8), intent(in) :: dtime
   real(r8), intent(in) :: nm(state%ncol,pver)   ! midpoint Brunt-Vaisalla frequency
-  !
+  !options for the 4 schemes
   logical , intent(in) :: gwd_ls
   logical , intent(in) :: gwd_bl
   logical , intent(in) :: gwd_ss
@@ -776,11 +778,11 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   real(r8), intent(in) :: ncleff_ls
   real(r8), intent(in) :: ncd_bl
   real(r8), intent(in) :: sncleff_ss
-  !
+  !vertical profile of the momentum tendencies
   real(r8), intent(out), optional :: utgw(state%ncol,pver)
   real(r8), intent(out), optional :: vtgw(state%ncol,pver)
   real(r8), intent(out), optional :: ttgw(state%ncol,pver)
-  !
+  !output drag terms in 3D and surface
   real(r8), intent(out), optional :: dtaux3_ls(pcols,pver)
   real(r8), intent(out), optional :: dtauy3_ls(pcols,pver)
   real(r8), intent(out), optional :: dtaux3_bl(pcols,pver)
@@ -831,131 +833,138 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   real(r8) :: dusfc_fd_local(pcols)
   real(r8) :: dvsfc_fd_local(pcols)
 
-                !
-                ncol=state%ncol
-                !convert heights above surface to heights above sea level
-                !obtain z,dz,dx,dy
-                !ztop and zbot are already reversed, start from bottom to top
-                kpbl2d_in=0_r8
-                !
-                ztop(1:ncol,1:pver)=0._r8
-                zbot(1:ncol,1:pver)=0._r8
-                zmid(1:ncol,1:pver)=0._r8
-                !
-		do k=1,pverp-1
-		! assign values for level top/bottom
-		ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-		zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
-		end do
-		!transform adding the pressure
-        	!transfer from surface to sea level
-        	do k=1,pver
-                	do i=1,ncol
-                	ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
-                	zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
-                	zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
-                	!dz is from bottom to top already for gw_drag
-                	dz(i,k)=ztop(i,k)-zbot(i,k)
-                	end do
-        	end do
-		!reverse to keep good format in scheme
-        	ztop=ztop(:,pver:1:-1)
-        	zbot=zbot(:,pver:1:-1)
-        	!get the layer index of pblh in layer for input in drag scheme
-                pblh_idx = pbuf_get_index('pblh')
-        	call pbuf_get_field(pbuf, pblh_idx, pblh)
-        	do i=1,pcols
-        	kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
-        	end do
-                !
-                !get grid size for dx,dy
-                call grid_size(state,dx,dy)
-                !interface for orographic drag
-                !if (gwd_fd.eq.0) then
-                call gwdo_gsd(&
-                u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
-                qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
-                pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
-                ncleff_ls=ncleff_ls,ncd_bl=ncd_bl,sncleff_ss=sncleff_ss,&
-                rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
-                dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
-                dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
-                dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
-                dtaux3d_fd=dtaux3_fd(:ncol,pver:1:-1),dtauy3d_fd=dtauy3_fd(:ncol,pver:1:-1),&
-                dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
-                dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
-                dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
-                dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
-                xland=cam_in%landfrac,br=state%ribulk(:ncol),&
-                var2d=sgh(:ncol),oc12d=state%oc(:ncol),&
-                oa2d=state%oadir(:ncol,:),ol2d=state%ol(:ncol,:),&
-                znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
-                cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
-                dt=dtime,dx=dx,dy=dy,&
-                kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
-                ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
-                ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
-                its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
-                gwd_ls=gwd_ls,gwd_bl=gwd_bl,gwd_ss=gwd_ss,gwd_fd=gwd_fd )
-                !
+  ncol=state%ncol
+  !convert heights above surface to heights above sea level
+  !obtain z,dz,dx,dy
+  !ztop and zbot are already reversed, start from bottom to top
+
+  kpbl2d_in=0_r8
+  ztop(1:ncol,1:pver)=0._r8
+  zbot(1:ncol,1:pver)=0._r8
+  zmid(1:ncol,1:pver)=0._r8
+
+  do k=1,pverp-1
+  ! assign values for level top/bottom
+  ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
+  zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+  end do
+
+  !transform adding the pressure
+  !transfer from surface to sea level
+  do k=1,pver
+      do i=1,ncol
+      ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
+      zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
+      zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
+      !dz is from bottom to top already for gw_drag
+      dz(i,k)=ztop(i,k)-zbot(i,k)
+      end do
+  end do
+  !reverse to keep good format in scheme
+  ztop=ztop(:,pver:1:-1)
+  zbot=zbot(:,pver:1:-1)
+  !get the layer index of pblh in layer for input in drag scheme
+  pblh_idx = pbuf_get_index('pblh')
+  call pbuf_get_field(pbuf, pblh_idx, pblh)
+  do i=1,pcols
+      kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
+  end do
+
+  !get grid size for dx,dy
+  call grid_size(state,dx,dy)
+  !interface for orographic drag
+  call gwdo_gsd(&
+  u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
+  qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
+  pi3d=state%exner(:ncol,pver:1:-1),z=zbot(:ncol,pver:1:-1),&
+  ncleff_ls=ncleff_ls,ncd_bl=ncd_bl,sncleff_ss=sncleff_ss,&
+  rublten=utgw(:ncol,pver:1:-1),rvblten=vtgw(:ncol,pver:1:-1),rthblten=ttgw(:ncol,pver:1:-1),&
+  dtaux3d_ls=dtaux3_ls(:ncol,pver:1:-1),dtauy3d_ls=dtauy3_ls(:ncol,pver:1:-1),&
+  dtaux3d_bl=dtaux3_bl(:ncol,pver:1:-1),dtauy3d_bl=dtauy3_bl(:ncol,pver:1:-1),&
+  dtaux3d_ss=dtaux3_ss(:ncol,pver:1:-1),dtauy3d_ss=dtauy3_ss(:ncol,pver:1:-1),&
+  dtaux3d_fd=dtaux3_fd(:ncol,pver:1:-1),dtauy3d_fd=dtauy3_fd(:ncol,pver:1:-1),&
+  dusfcg_ls=dusfc_ls(:ncol),dvsfcg_ls=dvsfc_ls(:ncol),&
+  dusfcg_bl=dusfc_bl(:ncol),dvsfcg_bl=dvsfc_bl(:ncol),&
+  dusfcg_ss=dusfc_ss(:ncol),dvsfcg_ss=dvsfc_ss(:ncol),&
+  dusfcg_fd=dusfc_fd(:ncol),dvsfcg_fd=dvsfc_fd(:ncol),&
+  xland=cam_in%landfrac,br=state%ribulk(:ncol),&
+  var2d=sgh(:ncol),oc12d=state%oc(:ncol),&
+  oa2d=state%oadir(:ncol,:),ol2d=state%ol(:ncol,:),&
+  znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
+  cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
+  dt=dtime,dx=dx,dy=dy,&
+  kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
+  ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
+  ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
+  its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
+  gwd_ls=gwd_ls,gwd_bl=gwd_bl,gwd_ss=gwd_ss,gwd_fd=gwd_fd )
+
 end subroutine gw_oro_interface
+
 !==========================================================================
+
 function pblh_get_level_idx(height_array,pblheight)
-implicit none
-real(r8),intent(in),dimension(pver) :: height_array
-real(r8),intent(in) :: pblheight
-integer :: pblh_get_level_idx
-       
-!local 
-integer :: i
-logical :: found
+  implicit none
+  real(r8),intent(in),dimension(pver) :: height_array
+  real(r8),intent(in) :: pblheight
+  integer :: pblh_get_level_idx
+  !local 
+  integer :: i
+  logical :: found
 
-pblh_get_level_idx = -1
-found=.False.
+  pblh_get_level_idx = -1
+  found=.False.
+  !get the pblh level index and return
+  do i = 1, pver
+    if((pblheight >= height_array(i+1).and.pblheight <height_array(i)))then
+      pblh_get_level_idx =  pver+1-i
+      found=.True.
+      return
+    endif
+  enddo
 
-do i = 1, pver
-        if((pblheight >= height_array(i+1).and.pblheight <height_array(i)))then
-                pblh_get_level_idx =  pver+1-i
-                found=.True.
-                return
-        endif
-enddo
 end function
-!==========================================================================
-subroutine dxygrid(dx,dy,theta_in,dxy)
-IMPLICIT NONE
-real(r8),intent(in) :: dx,dy,theta_in
-real(r8),intent(out):: dxy
-real(r8) :: rad,theta,theta1
-                rad=4.0_r8*atan(1.0_r8)/180.0_r8
-                theta1=MOD(theta_in,360._r8)
-                !set negative axis into 0~360
-                if (theta1.ge.-360._r8.and.theta1.lt.0._r8) then
-                theta1=theta1+360._r8
-                endif
-                !in case the angle is not into the judgement
-                theta=theta1
-                !transform of angle into first quadrant
-                if      (theta1.ge.  0._r8.and.theta1.lt. 90._r8) then
-                theta=theta1
-                else if (theta1.gt. 90._r8.and.theta1.lt.180._r8) then
-                theta=(180._r8-theta1)
-                else if (theta1.gt.180._r8.and.theta1.lt.270._r8) then
-                theta=(theta1-180._r8)
-                else if (theta1.gt.270._r8.and.theta1.lt.360._r8) then
-                theta=(360._r8-theta1)
-                else if (theta1.eq.90._r8.or.theta1.eq.270._r8) then
-                theta=90._r8
-                else if (theta1.eq.0._r8.or.theta1.eq.180._r8) then
-                theta=0._r8
-                endif
 
-                !get dxy
-                if   (theta.ge. 0._r8.and.theta.lt.atan2(dy,dx)/rad) then
-                dxy=dx/cos(theta*rad)
-                else if (theta.ge.atan2(dy,dx)/rad.and.theta.le.90._r8)then
-                dxy=dy/sin(theta*rad)
-                endif
+!==========================================================================
+
+subroutine dxygrid(dx,dy,theta_in,dxy)
+
+  IMPLICIT NONE
+  real(r8),intent(in) :: dx,dy,theta_in
+  real(r8),intent(out):: dxy
+  !local variables
+  real(r8) :: rad,theta,theta1
+
+  rad=4.0_r8*atan(1.0_r8)/180.0_r8
+  theta1=MOD(theta_in,360._r8)
+  !set negative axis into 0~360
+  if (theta1.ge.-360._r8.and.theta1.lt.0._r8) then
+  theta1=theta1+360._r8
+  endif
+  !in case the angle is not into the judgement
+  theta=theta1
+  !transform of angle into first quadrant
+  if      (theta1.ge.  0._r8.and.theta1.lt. 90._r8) then
+  theta=theta1
+  else if (theta1.gt. 90._r8.and.theta1.lt.180._r8) then
+  theta=(180._r8-theta1)
+  else if (theta1.gt.180._r8.and.theta1.lt.270._r8) then
+  theta=(theta1-180._r8)
+  else if (theta1.gt.270._r8.and.theta1.lt.360._r8) then
+  theta=(360._r8-theta1)
+  else if (theta1.eq.90._r8.or.theta1.eq.270._r8) then
+  theta=90._r8
+  else if (theta1.eq.0._r8.or.theta1.eq.180._r8) then
+  theta=0._r8
+  endif
+
+  !get dxy
+  if   (theta.ge. 0._r8.and.theta.lt.atan2(dy,dx)/rad) then
+  dxy=dx/cos(theta*rad)
+  else if (theta.ge.atan2(dy,dx)/rad.and.theta.le.90._r8)then
+  dxy=dy/sin(theta*rad)
+  endif
+
 end subroutine dxygrid
 !==========================================================================
 subroutine grid_size(state, grid_dx, grid_dy)
@@ -975,7 +984,7 @@ subroutine grid_size(state, grid_dx, grid_dy)
   real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
   real(r8) :: mpdeglat, column_area, degree, lat_in_rad
   integer  :: i
-  !!
+  
   do i=1,state%ncol
       ! determine the column area in radians
       column_area = get_area_p(state%lchnk,i)
@@ -993,196 +1002,215 @@ subroutine grid_size(state, grid_dx, grid_dy)
       grid_dy(i) = grid_dx(i) ! Assume these are the same
   enddo
 end subroutine grid_size
+
 !==========================================================================
-   subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                       &
-                  ncleff_ls,ncd_bl,sncleff_ss,                                 &
-                  rublten,rvblten,rthblten,                                    &
-                  dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,                 &
-                  dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
-                  dusfcg_ls,dvsfcg_ls,dusfcg_bl,dvsfcg_bl,dusfcg_ss,dvsfcg_ss, &
-                  dusfcg_fd,dvsfcg_fd,xland,br,                                &
-                  var2d,oc12d,oa2d,ol2d,znu,znw,p_top,dz,pblh,                 &
-                  cp,g,rd,rv,ep1,pi,bnvbg,                                     &
-                  dt,dx,dy,kpbl2d,itimestep,gwd_opt,                           &
-                    ids,ide, jds,jde, kds,kde,                                 &
-                    ims,ime, jms,jme, kms,kme,                                 &
-                    its,ite, jts,jte, kts,kte,                                 &
+
+subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                            &
+                    ncleff_ls,ncd_bl,sncleff_ss,                                 &
+                    rublten,rvblten,rthblten,                                    &
+                    dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,                 &
+                    dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd,                 &
+                    dusfcg_ls,dvsfcg_ls,dusfcg_bl,dvsfcg_bl,dusfcg_ss,dvsfcg_ss, &
+                    dusfcg_fd,dvsfcg_fd,xland,br,                                &
+                    var2d,oc12d,oa2d,ol2d,znu,znw,p_top,dz,pblh,                 &
+                    cp,g,rd,rv,ep1,pi,bnvbg,                                     &
+                    dt,dx,dy,kpbl2d,itimestep,gwd_opt,                           &
+                    ids,ide, jds,jde, kds,kde,                                   &
+                    ims,ime, jms,jme, kms,kme,                                   &
+                    its,ite, jts,jte, kts,kte,                                   &
                     gwd_ls,gwd_bl,gwd_ss,gwd_fd)
-!-------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------
    implicit none
-!-------------------------------------------------------------------------------
-!                                                                       
-!-- u3d         3d u-velocity interpolated to theta points (m/s)
-!-- v3d         3d v-velocity interpolated to theta points (m/s)
-!-- t3d         temperature (k)
-!-- qv3d        3d water vapor mixing ratio (kg/kg)
-!-- p3d         3d pressure (pa)
-!-- p3di        3d pressure (pa) at interface level
-!-- pi3d        3d exner function (dimensionless)
-!-- rublten     u tendency due to pbl parameterization (m/s/s) 
-!-- rvblten     v tendency due to pbl parameterization (m/s/s)
-!-- rthblten    theta tendency due to pbl parameterization (K/s)
-!-- znu         eta values (sigma values)
-!-- cp          heat capacity at constant pressure for dry air (j/kg/k)
-!-- g           acceleration due to gravity (m/s^2)
-!-- rd          gas constant for dry air (j/kg/k)
-!-- z           height above sea level (m)
-!-- rv          gas constant for water vapor (j/kg/k)
-!-- dt          time step (s)
-!-- dx          model grid interval (m)
-!-- dz          height of model layers (m)
-!-- xland       land mask (1 for land, 2 for water)
-!-- br          bulk richardson number in surface layer
-!-- pblh        planetary boundary layer height (m)
-!-- ep1         constant for virtual temperature (r_v/r_d - 1) (dimensionless)
-!-- ids         start index for i in domain
-!-- ide         end index for i in domain
-!-- jds         start index for j in domain
-!-- jde         end index for j in domain
-!-- kds         start index for k in domain
-!-- kde         end index for k in domain
-!-- ims         start index for i in memory
-!-- ime         end index for i in memory
-!-- jms         start index for j in memory
-!-- jme         end index for j in memory
-!-- kms         start index for k in memory
-!-- kme         end index for k in memory
-!-- its         start index for i in tile
-!-- ite         end index for i in tile
-!-- jts         start index for j in tile
-!-- jte         end index for j in tile
-!-- kts         start index for k in tile
-!-- kte         end index for k in tile
-!-------------------------------------------------------------------------------
-  integer,  intent(in   )   ::      ids,ide, jds,jde, kds,kde,                 &
-                                     ims,ime, jms,jme, kms,kme,                &
-                                     its,ite, jts,jte, kts,kte
-  integer,  intent(in   )   ::      gwd_opt
-  real(r8), intent(in   )   ::      itimestep
-        real(r8),     intent(in   )   ::      cp,g,rd,rv,ep1,pi
-        real(r8),     intent(in), optional   ::  dt
-        real(r8),     intent(in), dimension( ims:ime, kms:kme ),optional   ::  bnvbg
-        real(r8),    intent(in)   ::     dx(:)
-        real(r8),    intent(in)   ::     dy(:)
-        real(r8),     dimension( ims:ime, kms:kme )             ,  &
-
-            intent(in)   ::                      qv3d, &
-                                                              p3d, &
-                                                             pi3d, &
-                                                              t3d, &
-                                                                z, &
-                                                               dz
-  real(r8),     dimension( ims:ime, kms:kme+1 )                   ,&
-     intent(in   )   ::                                       p3di
-  real(r8),     intent(in)      ::                        ncleff_ls,ncd_bl,sncleff_ss
-  real(r8),     dimension( ims:ime, kms:kme )                    , &
-  optional,     intent(inout)   ::                        rublten, &
-                                                          rvblten, &
-                                                          rthblten
-  real(r8),     dimension( ims:ime, kms:kme ), optional                 , &
-            intent(inout)   ::  dtaux3d_ls,dtauy3d_ls,dtaux3d_bl,dtauy3d_bl,   &
-                                dtaux3d_ss,dtauy3d_ss,dtaux3d_fd,dtauy3d_fd
-!
-  real(r8),     dimension( ims:ime, kms:kme)   ::                                    &
-                                  dtaux2d_ls,dtauy2d_ls,dtaux2d_bl,dtauy2d_bl, &
-                                  dtaux2d_ss,dtauy2d_ss,dtaux2d_fd,dtauy2d_fd
-  real(r8),      dimension( ims:ime, kms:kme )                          , &
-
-             intent(in   )   ::                        u3d, &
-                                                                v3d
-!
-  integer,   dimension( ims:ime )                                   , &
-             intent(in  )   ::                             kpbl2d
-
-  real(r8),   dimension( ims:ime )                                      , &
-        intent(in  )   ::                                   pblh, &
-                                                                 br, &
-                                                                 xland
-
-  real(r8),   dimension( ims:ime ), optional                            , &
-             intent(inout  )   ::  dusfcg_ls,dvsfcg_ls,dusfcg_bl,dvsfcg_bl,    &
-                                   dusfcg_ss,dvsfcg_ss,dusfcg_fd,dvsfcg_fd
-
-  real(r8),   dimension( ims:ime ) ::  dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,        &
-                                       dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd
- real(r8),   dimension( ims:ime ),     optional               , &
-             intent(in  )   ::                                  var2d, &
-                                                                oc12d
-       real(r8),dimension(ims:ime,nvar_dirOL),optional, intent(in) :: ol2d
-       real(r8),dimension(ims:ime,nvar_dirOA),optional, intent(in) :: oa2d
-            real(r8),   optional                                                         , &
-            intent(in)   ::                                             znu(:), &
-                                                                        znw(:)
-!
-  real(r8),     optional, intent(in)         ::                           p_top
-!
-!local
-!
-  real(r8),   dimension( its:ite, kts:kte )  ::                           delprsi, &
-                                                                          pdh
-  real(r8),   dimension( its:ite, kts:kte+1 )   ::     pdhi
-  real(r8),   dimension( its:ite, nvar_dirOA )  ::     oa4
-  real(r8),   dimension( its:ite, nvar_dirOL )  ::     ol4
+  !-------------------------------------------------------------------------------
+  !                                                                       
+  !-- u3d         3d u-velocity interpolated to theta points (m/s)
+  !-- v3d         3d v-velocity interpolated to theta points (m/s)
+  !-- t3d         temperature (k)
+  !-- qv3d        3d water vapor mixing ratio (kg/kg)
+  !-- p3d         3d pressure (pa)
+  !-- p3di        3d pressure (pa) at interface level
+  !-- pi3d        3d exner function (dimensionless)
+  !-- rublten     u tendency due to pbl parameterization (m/s/s) 
+  !-- rvblten     v tendency due to pbl parameterization (m/s/s)
+  !-- rthblten    theta tendency due to pbl parameterization (K/s)
+  !-- znu         eta values (sigma values)
+  !-- cp          heat capacity at constant pressure for dry air (j/kg/k)
+  !-- g           acceleration due to gravity (m/s^2)
+  !-- rd          gas constant for dry air (j/kg/k)
+  !-- z           height above sea level (m)
+  !-- rv          gas constant for water vapor (j/kg/k)
+  !-- dt          time step (s)
+  !-- dx          model grid interval (m)
+  !-- dz          height of model layers (m)
+  !-- xland       land mask (1 for land, 2 for water)
+  !-- br          bulk richardson number in surface layer
+  !-- pblh        planetary boundary layer height (m)
+  !-- ep1         constant for virtual temperature (r_v/r_d - 1) (dimensionless)
+  !-- ids         start index for i in domain
+  !-- ide         end index for i in domain
+  !-- jds         start index for j in domain
+  !-- jde         end index for j in domain
+  !-- kds         start index for k in domain
+  !-- kde         end index for k in domain
+  !-- ims         start index for i in memory
+  !-- ime         end index for i in memory
+  !-- jms         start index for j in memory
+  !-- jme         end index for j in memory
+  !-- kms         start index for k in memory
+  !-- kme         end index for k in memory
+  !-- its         start index for i in tile
+  !-- ite         end index for i in tile
+  !-- jts         start index for j in tile
+  !-- jte         end index for j in tile
+  !-- kts         start index for k in tile
+  !-- kte         end index for k in tile
+  !-------------------------------------------------------------------------------
+  integer,  intent(in)   ::      ids, ide, jds, jde, kds, kde
+  integer,  intent(in)   ::      ims, ime, jms, jme, kms, kme
+  integer,  intent(in)   ::      its, ite, jts, jte, kts, kte
+  integer,  intent(in)   ::      gwd_opt
+  real(r8), intent(in)   ::      itimestep
+  real(r8), intent(in)   ::      cp,g,rd,rv,ep1,pi
+  !input model grid length for the grid dx,dy
+  real(r8), intent(in)   ::     dx(:)
+  real(r8), intent(in)   ::     dy(:)
+  !input meterological inputs
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  :: qv3d
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  ::  p3d
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  :: pi3d
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  ::  t3d
+  real(r8), dimension( ims:ime, kms:kme+1), intent(in)  :: p3di
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  ::  u3d
+  real(r8), dimension( ims:ime, kms:kme ),  intent(in)  ::  v3d
+  !input tunable parameters
+  real(r8),                                 intent(in)  ::  ncleff_ls
+  real(r8),                                 intent(in)  ::     ncd_bl
+  real(r8),                                 intent(in)  :: sncleff_ss
+  !logical variables for selection of 4 schemes
+  logical,                                  intent(in)  :: gwd_ls
+  logical,                                  intent(in)  :: gwd_bl
+  logical,                                  intent(in)  :: gwd_ss
+  logical,                                  intent(in)  :: gwd_fd
+  !input variables
+  integer,  dimension( ims:ime ),           intent(in)  :: kpbl2d
+  real(r8), dimension( ims:ime ),           intent(in)  :: pblh, br, xland
+  real(r8), dimension( ims:ime,kms:kme ),   intent(in)  ::          z
+  real(r8), dimension( ims:ime,kms:kme ),   intent(in)  ::         dz
+  !input topographic parameters
+  real(r8), dimension( ims:ime ),           intent(in),   optional  :: var2d
+  real(r8), dimension( ims:ime ),           intent(in),   optional  :: oc12d
+  real(r8), dimension( ims:ime,nvar_dirOL ),intent(in),   optional  :: ol2d
+  real(r8), dimension( ims:ime,nvar_dirOA ),intent(in),   optional  :: oa2d
+  !input model parameters
+  real(r8),                                 intent(in),   optional  :: dt
+  real(r8),                                 intent(in),   optional  :: znu(:)
+  real(r8),                                 intent(in),   optional  :: znw(:)
+  real(r8),                                 intent(in),   optional  :: p_top
+  !input bnv from gw_drag
+  real(r8), dimension( ims:ime,kms:kme ),   intent(in),   optional  ::  bnvbg
+  !output of vertical profile for momentum terms
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   rublten
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   rvblten
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   rthblten
+  !output for 4 drag terms
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtaux3d_ls
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_ls
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtaux3d_bl
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_bl
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtaux3d_ss
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_ss
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtaux3d_fd
+  real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_fd
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ls,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ls,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_bl,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_bl,    
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ss,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ss,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_fd,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_fd
+  !local drag terms
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtaux2d_ls
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtauy2d_ls
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtaux2d_bl
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtauy2d_bl
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtaux2d_ss
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtauy2d_ss
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtaux2d_fd
+  real(r8), dimension( ims:ime, kms:kme )  ::  dtauy2d_fd
+  real(r8), dimension( ims:ime ) ::  dusfc_ls
+  real(r8), dimension( ims:ime ) ::  dvsfc_ls
+  real(r8), dimension( ims:ime ) ::  dusfc_bl
+  real(r8), dimension( ims:ime ) ::  dvsfc_bl
+  real(r8), dimension( ims:ime ) ::  dusfc_ss
+  real(r8), dimension( ims:ime ) ::  dvsfc_ss
+  real(r8), dimension( ims:ime ) ::  dusfc_fd
+  real(r8), dimension( ims:ime ) ::  dvsfc_fd
+  !local variables
+  real(r8),   dimension( its:ite, kts:kte )     ::  delprsi, 
+  real(r8),   dimension( its:ite, kts:kte )     ::  pdh
+  real(r8),   dimension( its:ite, kts:kte+1 )   ::  pdhi
+  real(r8),   dimension( its:ite, nvar_dirOA )  ::  oa4
+  real(r8),   dimension( its:ite, nvar_dirOL )  ::  ol4
   integer ::  i,j,k,kpblmax
-  logical, intent(in) :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
-  !!
-   do k = kts,kte
-     if(znu(k).gt.0.6_r8) kpblmax = k + 1
-   enddo
-!
-      do k = kts,kte+1
-         do i = its,ite
-            if(k.le.kte) pdh(i,k) = p3d(i,k)
-             pdhi(i,k) = p3di(i,k)
-         enddo
-      enddo
-!
-      do k = kts,kte
-        do i = its,ite
-          delprsi(i,k) = pdhi(i,k)-pdhi(i,k+1)
-        enddo
-      enddo
-!
-!no need when there is no large drag
-IF (gwd_ls.or.gwd_bl) then
-        do i = its,ite
-            oa4(i,:) = oa2d(i,:)
-            ol4(i,:) = ol2d(i,:)
-        enddo
-ENDIF
-!=================================================================
-      call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                  &
-                 ,dthdt=rthblten(ims,kms)                                      &
-              ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                  &
-              ,dtaux2d_ls=dtaux2d_ls,dtauy2d_ls=dtauy2d_ls                     &
-              ,dtaux2d_bl=dtaux2d_bl,dtauy2d_bl=dtauy2d_bl                     &
-              ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                     &
-              ,dtaux2d_fd=dtaux2d_fd,dtauy2d_fd=dtauy2d_fd                     &
-              ,u1=u3d(ims,kms),v1=v3d(ims,kms)                                 &
-              ,t1=t3d(ims,kms)                                                 &
-              ,q1=qv3d(ims,kms)                                                &
-              ,del=delprsi(its,kts)                                            &
-              ,prsi=pdhi(its,kts)                                              &
-              ,prsl=pdh(its,kts),prslk=pi3d(ims,kms)                           &
-              ,zl=z(ims,kms),rcl=1.0_r8                                        &
-              ,xland1=xland(ims),br1=br(ims),hpbl=pblh(ims)                    &
-              ,bnv_in=bnvbg(ims,kms)                                           &
-              ,dz2=dz(ims,kms)                                                 &
-              ,kpblmax=kpblmax                                                 &
-              ,dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls                             &
-              ,dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl                             &
-              ,dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss                             &
-              ,dusfc_fd=dusfc_fd,dvsfc_fd=dvsfc_fd                             &
-              ,var=var2d(ims),oc1=oc12d(ims)                                   &
-              ,oa4=oa4,ol4=ol4                                                 &
-              ,g=g,cp=cp,rd=rd,rv=rv,fv=ep1,pi=pi                              &
-              ,dxmeter=dx,dymeter=dy,deltim=dt                                 &
-              ,kpbl=kpbl2d(ims),kdt=itimestep,lat=j                            &
-              ,ids=ids,ide=ide, jds=jds,jde=jde, kds=kds,kde=kde               &
-              ,ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme               &
-              ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte               &
-              ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
-!!============================================      
+  !determine the lowest level for planet boundary layer
+  do k = kts,kte
+    if( znu(k).gt.0.6_r8 ) kpblmax = k + 1
+  enddo
+  !get the interface pressure (hPa) for each level
+  !for the last level over kte use mid-layer pressure instead
+  do k = kts,kte+1
+    do i = its,ite
+      if(k.le.kte) pdh(i,k) = p3d(i,k)
+        pdhi(i,k) = p3di(i,k)
+    enddo
+  enddo
+  !get the layer pressure for each level
+  do k = kts,kte
+    do i = its,ite
+      delprsi(i,k) = pdhi(i,k)-pdhi(i,k+1)
+    enddo
+  enddo
+  !no need when there is no large drag
+  if ( gwd_ls .or. gwd_bl ) then
+    do i = its,ite
+      oa4(i,:) = oa2d(i,:)
+      ol4(i,:) = ol2d(i,:)
+    enddo
+  endif
+      !call the gwdo2d for calculatino of each grid
+      call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                   &
+                 ,dthdt=rthblten(ims,kms)                                       &
+                 ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                &
+                 ,dtaux2d_ls=dtaux2d_ls,dtauy2d_ls=dtauy2d_ls                   &
+                 ,dtaux2d_bl=dtaux2d_bl,dtauy2d_bl=dtauy2d_bl                   &
+                 ,dtaux2d_ss=dtaux2d_ss,dtauy2d_ss=dtauy2d_ss                   &
+                 ,dtaux2d_fd=dtaux2d_fd,dtauy2d_fd=dtauy2d_fd                   &
+                 ,u1=u3d(ims,kms),v1=v3d(ims,kms)                               &
+                 ,t1=t3d(ims,kms)                                               &
+                 ,q1=qv3d(ims,kms)                                              &
+                 ,del=delprsi(its,kts)                                          &
+                 ,prsi=pdhi(its,kts)                                            &
+                 ,prsl=pdh(its,kts),prslk=pi3d(ims,kms)                         &
+                 ,zl=z(ims,kms),rcl=1.0_r8                                      &
+                 ,xland1=xland(ims),br1=br(ims),hpbl=pblh(ims)                  &
+                 ,bnv_in=bnvbg(ims,kms)                                         &
+                 ,dz2=dz(ims,kms)                                               &
+                 ,kpblmax=kpblmax                                               &
+                 ,dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls                           &
+                 ,dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl                           &
+                 ,dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss                           &
+                 ,dusfc_fd=dusfc_fd,dvsfc_fd=dvsfc_fd                           &
+                 ,var=var2d(ims),oc1=oc12d(ims)                                 &
+                 ,oa4=oa4,ol4=ol4                                               &
+                 ,g=g,cp=cp,rd=rd,rv=rv,fv=ep1,pi=pi                            &
+                 ,dxmeter=dx,dymeter=dy,deltim=dt                               &
+                 ,kpbl=kpbl2d(ims),kdt=itimestep,lat=j                          &
+                 ,ids=ids,ide=ide, jds=jds,jde=jde, kds=kds,kde=kde             &
+                 ,ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme             &
+                 ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte             &
+                 ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
+                !set the total stress output to each terms for the 4 drag schemes
                 do i = its,ite
                 dusfcg_ls(i)=dusfc_ls(i)
                 dvsfcg_ls(i)=dvsfc_ls(i)
@@ -1193,7 +1221,7 @@ ENDIF
                 dusfcg_fd(i)=dusfc_fd(i)
                 dvsfcg_fd(i)=dvsfc_fd(i)
                 enddo
-                !!
+                !set the 3D output tendencies to each terms for the 4 drag schemes
                 dtaux3d_ls=dtaux2d_ls
                 dtaux3d_bl=dtaux2d_bl
                 dtauy3d_ls=dtauy2d_ls
@@ -1202,12 +1230,13 @@ ENDIF
                 dtaux3d_fd=dtaux2d_fd
                 dtauy3d_ss=dtauy2d_ss
                 dtauy3d_fd=dtauy2d_fd
-   end subroutine gwdo_gsd
+
+end subroutine gwdo_gsd
 !
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
-   subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
+subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
                     dtaux2d_ls,dtauy2d_ls,                                     &
                     dtaux2d_bl,dtauy2d_bl,                                     &
                     dtaux2d_ss,dtauy2d_ss,                                     &
@@ -1223,134 +1252,132 @@ ENDIF
                     ims,ime, jms,jme, kms,kme,                                 &
                     its,ite, jts,jte, kts,kte,                                 &
                     gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd)
-!  This code handles the time tendencies of u v due to the effect of mountain 
-!  induced gravity wave drag from sub-grid scale orography. It includes 4 parts:
-!  orographic gravity wave drag and flow-blocking drag (Xie et al.,2020),small-scale  
-!  orographic gravity wave drag (Tsiringakis et al. 2017), and turbulent orographic
-!  form drag (Beljaars et al.,2004).
-!
-!           Activation of each component is done by specifying the integer-parameters
-!           (defined below) to .true. (active) or .false. (inactive)
-!                    gsd_gwd_ls : large-scale
-!                    gsd_gwd_bl : blocking drag 
-!                    gsd_gwd_ss : small-scale gravity wave drag
-!                    gsd_gwd_fd : topographic form drag
-!
-!
-!        References:
-!        Xie et al. (2020), JAMES
-!        Tsiringakis et al. (2017), QJRMS
-!        Beljaars et al., (2004), QJRMS
-!-------------------------------------------------------------------------------
-!
-!  input                                                                
-!        dudt (ims:ime,kms:kme)  non-lin tendency for u wind component
-!        dvdt (ims:ime,kms:kme)  non-lin tendency for v wind component
-!        u1(ims:ime,kms:kme) zonal wind / sqrt(rcl)  m/sec  at t0-dt
-!        v1(ims:ime,kms:kme) meridional wind / sqrt(rcl) m/sec at t0-dt
-!        t1(ims:ime,kms:kme) temperature deg k at t0-dt
-!        q1(ims:ime,kms:kme) specific humidity at t0-dt
-!
-!        rcl     a scaling factor = reciprocal of square of cos(lat)
-!                for gmp.  rcl=1 if u1 and v1 are wind components.
-!        deltim  time step    secs                                       
-!        del(kts:kte)  positive increment of pressure across layer (pa)
-!                                                                       
-!  output
-!        dudt, dvdt    wind tendency due to gwdo
-!
-!-------------------------------------------------------------------------------
-   implicit none
-!-------------------------------------------------------------------------------
-   integer              ::  lat,latd,lond,kpblmax,                             &
-                            ids,ide, jds,jde, kds,kde,                         &
-                            ims,ime, jms,jme, kms,kme,                         &
-                            its,ite, jts,jte, kts,kte
-   real(r8)                ::  kdt
-   real(r8)                ::  g,rd,rv,fv,cp,pi,deltim,rcl
-   real(r8),dimension(:)   ::  dxmeter
-   real(r8),dimension(:)   ::  dymeter
-   real(r8)                ::  dudt(ims:ime,kms:kme),dvdt(ims:ime,kms:kme),          &
-                               dthdt(ims:ime,kms:kme),&
-                            dtaux2d_ls(ims:ime,kms:kme),dtauy2d_ls(ims:ime,kms:kme), &
-                            dtaux2d_bl(ims:ime,kms:kme),dtauy2d_bl(ims:ime,kms:kme), &
-                            dtaux2d_ss(ims:ime,kms:kme),dtauy2d_ss(ims:ime,kms:kme), &
-                            dtaux2d_fd(ims:ime,kms:kme),dtauy2d_fd(ims:ime,kms:kme), &
-                            u1(ims:ime,kms:kme),v1(ims:ime,kms:kme),           &
-                            t1(ims:ime,kms:kme),q1(ims:ime,kms:kme),           &
-                            zl(ims:ime,kms:kme),prsl(its:ite,kts:kte),         &
-                            prslk(ims:ime,kms:kme)
-   real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
-   real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
-   real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
-!
-   !variables for open/close process
-   logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
-   !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
-   real(r8), intent(in) :: ncleff,ncd,sncleff
-!
-! added for small-scale orographic wave drag
-!
-   real(r8), dimension(its:ite,kts:kte)     :: utendwave,vtendwave,thx,thvx,za
-   real(r8), dimension(ims:ime), intent(in) :: br1,hpbl,xland1
-   real(r8), dimension(its:ite)             :: govrth
-   real(r8), dimension(ims:ime,kms:kme), intent(in) :: dz2
-   real(r8), dimension(its:ite,kts:kte+1)   :: zq
-   real(r8)                 :: tauwavex0,tauwavey0,XNBV,density,tvcon,hpbl2
-   integer              :: kpbl2,kvar
-   real(r8), parameter      :: varmax = 200._r8
-!
-   integer              ::  kpbl(ims:ime)
-   real(r8)                 ::  var(ims:ime),oc1(ims:ime),                         &
-                            dusfc_ls(ims:ime),dvsfc_ls(ims:ime),               &
-                            dusfc_bl(ims:ime),dvsfc_bl(ims:ime),               &
-                            dusfc_ss(ims:ime),dvsfc_ss(ims:ime),               &
-                            dusfc_fd(ims:ime),dvsfc_fd(ims:ime)
-! Variables for scale-awareness:
-! Small-scale GWD + turbulent form drag
-   real(r8), parameter   :: dxmin_ss = 1000._r8, dxmax_ss = 12000._r8  ! min,max range of tapering (m)
-! Large-scale GWD
-   real(r8), parameter   :: dxmin_ls = 3000._r8, dxmax_ls = 13000._r8  ! min,max range of tapering (m)
-!Add y axis for taper consider
-   real(r8), parameter   :: dymin_ls = 3000._r8, dymax_ls = 13000._r8  ! min,maxrange of tapering (m)
-   real(r8), parameter   :: dymin_ss = 3000._r8, dymax_ss = 13000._r8  ! min,maxrange of tapering (m)
-   real(r8)              :: ss_taper, ls_taper  ! small- and large-scale tapering factors (-)
-!
-! added Beljaars orographic form drag
-   real(r8), dimension(its:ite,kts:kte)     :: utendform,vtendform
-   real(r8)                 :: a1,a2,wsp
-! critical richardson number for wave breaking : ! larger drag with larger value
-   real(r8),parameter       ::  ric     = 1._r8!original 0.25, but 1. seems better at drag profile
-   real(r8),parameter       ::  ric_rig  = 0.25_r8
-   real(r8),parameter       ::  dw2min  = 1._r8
-   real(r8),parameter       ::  rimin   = -100._r8
-   real(r8),parameter       ::  bnv2min = 1.0e-5_r8
-   real(r8),parameter       ::  efmin   = 0.0_r8
-   real(r8),parameter       ::  efmax   = 10.0_r8
-   real(r8),parameter       ::  xl      = 4.0e4_r8
-   real(r8),parameter       ::  critac  = 1.0e-5_r8
-   real(r8),parameter       ::  gmax    = 1._r8
-   real(r8),parameter       ::  veleps  = 1.0_r8
-   real(r8),parameter       ::  factop  = 0.5_r8
-   real(r8),parameter       ::  frc     = 1.0_r8
-   real(r8),parameter       ::  ce      = 0.8_r8
-   real(r8),parameter       ::  cg      = 0.5_r8
-   integer,parameter    ::  kpblmin = 2
-!
-!  local variables
-!
-   integer              ::  j,i,k,lcap,lcapp1,nwd,idir,                          &
-                            klcap,kp1,ikount,kk,nwd1!added nwd1
-!
-   real(r8)                 ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks,                 &
-                            wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks,        &
-                            wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact,       &
-                            temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
-real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
-   logical              ::  ldrag(its:ite),icrilv(its:ite),                    &
-                            flag(its:ite),kloop1(its:ite)
-!                                                                       
-   real(r8)                 ::  taub(its:ite),taup(its:ite,kts:kte+1),             &
+  !  This code handles the time tendencies of u v due to the effect of mountain 
+  !  induced gravity wave drag from sub-grid scale orography. It includes 4 parts:
+  !  orographic gravity wave drag and flow-blocking drag (Xie et al.,2020),small-scale  
+  !  orographic gravity wave drag (Tsiringakis et al. 2017), and turbulent orographic
+  !  form drag (Beljaars et al.,2004).
+  !
+  !           Activation of each component is done by specifying the integer-parameters
+  !           (defined below) to .true. (active) or .false. (inactive)
+  !                    gsd_gwd_ls : large-scale
+  !                    gsd_gwd_bl : blocking drag 
+  !                    gsd_gwd_ss : small-scale gravity wave drag
+  !                    gsd_gwd_fd : topographic form drag
+  !
+  !
+  !        References:
+  !        Xie et al. (2020), JAMES
+  !        Tsiringakis et al. (2017), QJRMS
+  !        Beljaars et al., (2004), QJRMS
+  !-------------------------------------------------------------------------------
+  !
+  !  input                                                                
+  !        dudt (ims:ime,kms:kme)  non-lin tendency for u wind component
+  !        dvdt (ims:ime,kms:kme)  non-lin tendency for v wind component
+  !        u1(ims:ime,kms:kme) zonal wind / sqrt(rcl)  m/sec  at t0-dt
+  !        v1(ims:ime,kms:kme) meridional wind / sqrt(rcl) m/sec at t0-dt
+  !        t1(ims:ime,kms:kme) temperature deg k at t0-dt
+  !        q1(ims:ime,kms:kme) specific humidity at t0-dt
+  !
+  !        rcl     a scaling factor = reciprocal of square of cos(lat)
+  !                for gmp.  rcl=1 if u1 and v1 are wind components.
+  !        deltim  time step    secs                                       
+  !        del(kts:kte)  positive increment of pressure across layer (pa)
+  !                                                                       
+  !  output
+  !        dudt, dvdt    wind tendency due to gwdo
+  !
+  !-------------------------------------------------------------------------------
+  implicit none
+  !-------------------------------------------------------------------------------
+  integer              ::  lat,latd,lond,kpblmax,                             &
+                           ids,ide, jds,jde, kds,kde,                         &
+                           ims,ime, jms,jme, kms,kme,                         &
+                           its,ite, jts,jte, kts,kte
+  real(r8)                ::  kdt
+  real(r8)                ::  g,rd,rv,fv,cp,pi,deltim,rcl
+  real(r8),dimension(:)   ::  dxmeter
+  real(r8),dimension(:)   ::  dymeter
+  real(r8)                ::  dudt(ims:ime,kms:kme),dvdt(ims:ime,kms:kme),          &
+                              dthdt(ims:ime,kms:kme),&
+                           dtaux2d_ls(ims:ime,kms:kme),dtauy2d_ls(ims:ime,kms:kme), &
+                           dtaux2d_bl(ims:ime,kms:kme),dtauy2d_bl(ims:ime,kms:kme), &
+                           dtaux2d_ss(ims:ime,kms:kme),dtauy2d_ss(ims:ime,kms:kme), &
+                           dtaux2d_fd(ims:ime,kms:kme),dtauy2d_fd(ims:ime,kms:kme), &
+                           u1(ims:ime,kms:kme),v1(ims:ime,kms:kme),           &
+                           t1(ims:ime,kms:kme),q1(ims:ime,kms:kme),           &
+                           zl(ims:ime,kms:kme),prsl(its:ite,kts:kte),         &
+                           prslk(ims:ime,kms:kme)
+  real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
+  real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
+  real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
+  !variables for open/close process
+  logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
+  !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
+  real(r8), intent(in) :: ncleff,ncd,sncleff
+  !
+  ! added for small-scale orographic wave drag
+  !
+  real(r8), dimension(its:ite,kts:kte)     :: utendwave,vtendwave,thx,thvx,za
+  real(r8), dimension(ims:ime), intent(in) :: br1,hpbl,xland1
+  real(r8), dimension(its:ite)             :: govrth
+  real(r8), dimension(ims:ime,kms:kme), intent(in) :: dz2
+  real(r8), dimension(its:ite,kts:kte+1)   :: zq
+  real(r8)                 :: tauwavex0,tauwavey0,XNBV,density,tvcon,hpbl2
+  integer              :: kpbl2,kvar
+  real(r8), parameter      :: varmax = 200._r8
+
+  integer              ::  kpbl(ims:ime)
+  real(r8)                 ::  var(ims:ime),oc1(ims:ime),                     &
+                           dusfc_ls(ims:ime),dvsfc_ls(ims:ime),               &
+                           dusfc_bl(ims:ime),dvsfc_bl(ims:ime),               &
+                           dusfc_ss(ims:ime),dvsfc_ss(ims:ime),               &
+                           dusfc_fd(ims:ime),dvsfc_fd(ims:ime)
+  ! Variables for scale-awareness:
+  ! Small-scale GWD + turbulent form drag
+  real(r8), parameter   :: dxmin_ss = 1000._r8, dxmax_ss = 12000._r8  ! min,max range of tapering (m)
+  ! Large-scale GWD
+  real(r8), parameter   :: dxmin_ls = 3000._r8, dxmax_ls = 13000._r8  ! min,max range of tapering (m)
+  !Add y axis for taper consider
+  real(r8), parameter   :: dymin_ls = 3000._r8, dymax_ls = 13000._r8  ! min,maxrange of tapering (m)
+  real(r8), parameter   :: dymin_ss = 3000._r8, dymax_ss = 13000._r8  ! min,maxrange of tapering (m)
+  real(r8)              :: ss_taper, ls_taper  ! small- and large-scale tapering factors (-)
+  !
+  ! added Beljaars orographic form drag
+  real(r8), dimension(its:ite,kts:kte)     :: utendform,vtendform
+  real(r8)                 :: a1,a2,wsp
+  ! critical richardson number for wave breaking : ! larger drag with larger value
+  real(r8),parameter       ::  ric     = 1._r8!original 0.25, but 1. seems better at drag profile
+  real(r8),parameter       ::  ric_rig  = 0.25_r8
+  real(r8),parameter       ::  dw2min  = 1._r8
+  real(r8),parameter       ::  rimin   = -100._r8
+  real(r8),parameter       ::  bnv2min = 1.0e-5_r8
+  real(r8),parameter       ::  efmin   = 0.0_r8
+  real(r8),parameter       ::  efmax   = 10.0_r8
+  real(r8),parameter       ::  xl      = 4.0e4_r8
+  real(r8),parameter       ::  critac  = 1.0e-5_r8
+  real(r8),parameter       ::  gmax    = 1._r8
+  real(r8),parameter       ::  veleps  = 1.0_r8
+  real(r8),parameter       ::  factop  = 0.5_r8
+  real(r8),parameter       ::  frc     = 1.0_r8
+  real(r8),parameter       ::  ce      = 0.8_r8
+  real(r8),parameter       ::  cg      = 0.5_r8
+  integer,parameter    ::  kpblmin = 2
+  !
+  !  local variables
+  !
+  integer              ::  j,i,k,lcap,lcapp1,nwd,idir,                          &
+                           klcap,kp1,ikount,kk,nwd1!added nwd1
+  real(r8)                 ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks,                 &
+                           wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks,        &
+                           wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact,       &
+                           temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
+  real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
+  logical              ::  ldrag(its:ite),icrilv(its:ite),                    &
+                           flag(its:ite),kloop1(its:ite)
+  !                                                                       
+  real(r8)                 ::  taub(its:ite),taup(its:ite,kts:kte+1),             &
                             xn(its:ite),yn(its:ite),                           &
                             ubar(its:ite),vbar(its:ite),                       &
                             fr(its:ite),ulow(its:ite),                         &
@@ -1365,43 +1392,41 @@ real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
                             vtk(its:ite,kts:kte),vtj(its:ite,kts:kte),         &
                             zlowtop(its:ite),velco(its:ite,kts:kte-1),         &
                             coefm(its:ite)
-!
-   integer              ::  kbl(its:ite),klowtop(its:ite)
-!
-   logical :: iope
-   integer,parameter    ::  mdir=2*nvar_dirOL
-!  variables for flow-blocking drag
-   real(r8),parameter       :: frmax  = 10._r8
-   real(r8),parameter       :: olmin  = 1.0e-5_r8
-   real(r8),parameter       :: odmin  = 0.1_r8
-   real(r8),parameter       :: odmax  = 10._r8
-   real(r8),parameter       :: erad   = 6371.315e+3_r8
-   integer                  :: komax(its:ite)
-   integer                  :: kblk
-   real(r8)                 :: cd
-   real(r8)                 :: zblk,tautem
-   real(r8)                 :: pe,ke
-   real(r8)                 :: dely(its:ite),dxy4(its:ite,nvar_dirOL),&
-                               delx(its:ite),dxy4p(its:ite,nvar_dirOL)
-   real(r8)                 :: dxy(its:ite),dxyp(its:ite)
-   real(r8)                 ::  olp(its:ite),&
-                                 od(its:ite)
-   real(r8)                 :: taufb(its:ite,kts:kte+1)
-   !readdata for low-level determination of ogwd
-   real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
-   real(r8) :: zl_hint(its:ite)
-   logical  :: iint
-   !open/close low-level momentum adjustment according to scorer parameter
-   logical  :: scorer_on=.false.
-   !
-   !---- constants                                                         
-   !                                                                       
-   rcs    = sqrt(rcl)
-   cs     = 1._r8 / sqrt(rcl)
-   csg    = cs * g              
-   lcap   = kte
-   lcapp1 = lcap + 1
-   fdir   = mdir / (2.0_r8*pi)
+
+  integer              ::  kbl(its:ite),klowtop(its:ite)
+  integer,parameter    ::  mdir=2*nvar_dirOL
+  !  variables for flow-blocking drag
+  real(r8),parameter       :: frmax  = 10._r8
+  real(r8),parameter       :: olmin  = 1.0e-5_r8
+  real(r8),parameter       :: odmin  = 0.1_r8
+  real(r8),parameter       :: odmax  = 10._r8
+  real(r8),parameter       :: erad   = 6371.315e+3_r8
+  integer                  :: komax(its:ite)
+  integer                  :: kblk
+  real(r8)                 :: cd
+  real(r8)                 :: zblk,tautem
+  real(r8)                 :: pe,ke
+  real(r8)                 :: dely(its:ite),dxy4(its:ite,nvar_dirOL),&
+                              delx(its:ite),dxy4p(its:ite,nvar_dirOL)
+  real(r8)                 :: dxy(its:ite),dxyp(its:ite)
+  real(r8)                 ::  olp(its:ite),&
+                                od(its:ite)
+  real(r8)                 :: taufb(its:ite,kts:kte+1)
+  !readdata for low-level determination of ogwd
+  real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
+  real(r8) :: zl_hint(its:ite)
+  logical  :: iint
+  !open/close low-level momentum adjustment according to scorer parameter
+  logical  :: scorer_on=.false.
+  !
+  !---- constants                                                         
+  !                                                                       
+  rcs    = sqrt(rcl)
+  cs     = 1._r8 / sqrt(rcl)
+  csg    = cs * g              
+  lcap   = kte
+  lcapp1 = lcap + 1
+  fdir   = mdir / (2.0_r8*pi)
 !
 !--- calculate scale-aware tapering factors, currently set as no taper
 !
@@ -2134,7 +2159,8 @@ do i = its,ite
 enddo
 !
    return
-   end subroutine gwdo2d
+
+end subroutine gwdo2d
 !==========================================================================
 
 

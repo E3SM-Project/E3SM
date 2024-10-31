@@ -1179,7 +1179,6 @@ end subroutine clubb_init_cnst
    use gw_common,          only: grid_size,gw_oro_interface
    use hycoef,             only: etamid
    use physconst,          only: rh2o,pi,rearth,r_universal
-   !!get the znu,znw,p_top set to 0
    implicit none
 
    ! --------------- !
@@ -3230,7 +3229,7 @@ end subroutine clubb_init_cnst
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
-    real(r8) :: kbfs_pcol(pcols)
+    real(r8) :: kbfs_pcol(pcols)                                ! kinematic surface buoyancy flux stored for all pcols
     integer  :: ixq,ixcldliq !PMA fix for thv
     real(r8) :: rrho                                            ! Inverse air density
 
@@ -3261,33 +3260,36 @@ end subroutine clubb_init_cnst
          thv(i) = th(i)*(1._r8+zvir*state%q(i,pver,ixq))  ! diagnose virtual potential temperature
        end if
     enddo
-    !
+
     do i = 1, ncol
        call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
                         rrho, ustar(i) )
        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
-    !
+
     if (use_od_ss) then
     !add calculation of bulk richardson number here
     !
     !compute the whole level th and thv for diagnose of bulk richardson number
     thv_lv=0.0_r8
     th_lv=0.0_r8
-    !
+
+    !use the same virtual potential temperature formula as above (thv) except for all vertical levels
+    !used for bulk richardson number below in pblintd_ri
     do i=1,ncol
       do k=1,pver
          th_lv(i,k) = state%t(i,k)*state%exner(i,k)
          if (use_sgv) then
            thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq) &
-                    - state%q(i,k,ixcldliq))  !PMA corrects thv formula
+                    - state%q(i,k,ixcldliq))  
          else
            thv_lv(i,k) = th_lv(i,k)*(1.0_r8+zvir*state%q(i,k,ixq))
          end if
       enddo
     enddo
-    !
+
+    !recalculate the kbfs stored in kbfs_pcol for bulk richardson number in pblintd_ri
     kbfs_pcol=0.0_r8
     do i=1,ncol
         call calc_ustar( state%t(i,pver), state%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), rrho, ustar(i) )
@@ -3295,11 +3297,12 @@ end subroutine clubb_init_cnst
                         kinheat, kinwat, kbfs, obklen(i) )
         kbfs_pcol(i)=kbfs
     enddo
-    !
+
+    !calculate the bulk richardson number
     call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
                 ustar, obklen, kbfs_pcol, state%ribulk)
     endif
-    !
+
     return
 
 #endif
