@@ -5,9 +5,6 @@
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/scream_common_physics_functions.hpp>
 
-// For reading files
-#include "readfiles/tracer_reader_utils.hpp"
-
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
 #include <string>

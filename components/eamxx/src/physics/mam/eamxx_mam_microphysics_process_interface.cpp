@@ -5,18 +5,6 @@
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
-// When the preprocessor definition ENABLE_OUTPUT_TRACER_FIELDS is
-// enabled, the fields oxi_fields, linoz_fields, and
-// vertical_emission_fields will be saved.
-// These fields, which are the output of the tracer reader,
-// have been stored in the FM for evaluation purposes.
-// There are 33 fields (ncolxnlev) in total.
-// Therefore, it is recommended to disable
-// the ENABLE_OUTPUT_TRACER_FIELDS preprocessor
-// definition once the evaluation of the microphysics interface
-// is completed.
-#define ENABLE_OUTPUT_TRACER_FIELDS
-
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
@@ -226,21 +214,6 @@ void MAMMicrophysics::set_grids(
     const int nvars = int(var_names.size());
     linoz_data_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
     linoz_data_.allocate_temporal_views();
-
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-    FieldLayout scalar3d_mid_linoz =
-        grid_->get_3d_vector_layout(true, nvars, "nlinoz_fields");
-    // Note: Using nondim because the linoz fields have difference type of units
-    /* linoz_o3_clim : ozone (climatology) [vmr]
-    linoz_t_clim       ! temperature (climatology) [K]
-    linoz_o3col_clim   Column O3 above box (climatology) [Dobson Units or DU]
-    linoz_PmL_clim     P minus L (climatology) [vmr/s]
-    linoz_dPmL_dO3     Sensitivity of P minus L to O3 [1/s]
-    linoz_dPmL_dT      Sensitivity of P minus L to T [K]
-    linoz_dPmL_dO3col  Sensitivity of P minus L to overhead O3 column [vmr/DU]
-    linoz_cariolle_psc Cariolle parameter for PSC loss of ozone [1/s] */
-    add_field<Computed>("linoz_fields", scalar3d_mid_linoz, nondim, grid_name);
-#endif
   }  // LINOZ reader
 
   {
@@ -271,13 +244,6 @@ void MAMMicrophysics::set_grids(
     for(int ivar = 0; ivar < nvars; ++ivar) {
       cnst_offline_[ivar] = view_2d("cnst_offline_", ncol_, nlev_);
     }
-
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-    FieldLayout scalar3d_mid_oxi =
-        grid_->get_3d_vector_layout(true, nvars, "noxid_fields");
-    // NOTE: Assuming nondim for units.
-    add_field<Computed>("oxi_fields", scalar3d_mid_oxi, nondim, grid_name);
-#endif
   }  // oxid file reader
 
   {
@@ -363,13 +329,6 @@ void MAMMicrophysics::set_grids(
         "MAX_NUM_VERT_EMISSION_FIELDS. Increase the "
         "MAX_NUM_VERT_EMISSION_FIELDS in tracer_reader_utils.hpp \n");
 
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-    FieldLayout scalar3d_mid_emis_ver = grid_->get_3d_vector_layout(
-        true, offset_emis_ver, "nvertical_emission");
-    // NOTE: Assuming nondim for units.
-    add_field<Computed>("vertical_emission_fields", scalar3d_mid_emis_ver,
-                        nondim, grid_name);
-#endif
   }  // Tracer external forcing data
 }  // set_grids
 
@@ -648,16 +607,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       cnst_offline_);                    // out
   Kokkos::fence();
 
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-  const auto oxi_fields_outputs =
-      get_field_out("oxi_fields").get_view<Real ***>();
-  for(int ifield = 0; ifield < int(oxi_fields_outputs.extent(1)); ++ifield) {
-    const auto field_at_i = Kokkos::subview(oxi_fields_outputs, Kokkos::ALL(),
-                                            ifield, Kokkos::ALL());
-    Kokkos::deep_copy(field_at_i, cnst_offline_[ifield]);
-  }
-#endif
-
   scream::mam_coupling::advance_tracer_data(
       LinozDataReader_,                  // in
       *LinozHorizInterp_,                // out
@@ -666,16 +615,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       dry_atm_.p_mid, dry_atm_.z_iface,  // in
       linoz_output);                     // out
   Kokkos::fence();
-
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-  const auto linoz_fields_outputs =
-      get_field_out("linoz_fields").get_view<Real ***>();
-  for(int ifield = 0; ifield < int(linoz_fields_outputs.extent(1)); ++ifield) {
-    const auto field_at_i = Kokkos::subview(linoz_fields_outputs, Kokkos::ALL(),
-                                            ifield, Kokkos::ALL());
-    Kokkos::deep_copy(field_at_i, linoz_output[ifield]);
-  }
-#endif
 
   vert_emiss_time_state_.t_now = ts.frac_of_year_in_days();
   int i                        = 0;
@@ -694,17 +633,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     i++;
     Kokkos::fence();
   }
-
-#if defined(ENABLE_OUTPUT_TRACER_FIELDS)
-  const auto ver_emiss_fields_outputs =
-      get_field_out("vertical_emission_fields").get_view<Real ***>();
-  for(int ifield = 0; ifield < int(ver_emiss_fields_outputs.extent(1));
-      ++ifield) {
-    const auto field_at_i = Kokkos::subview(
-        ver_emiss_fields_outputs, Kokkos::ALL(), ifield, Kokkos::ALL());
-    Kokkos::deep_copy(field_at_i, vert_emis_output_[ifield]);
-  }
-#endif
 
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
