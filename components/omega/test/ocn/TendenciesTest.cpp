@@ -51,8 +51,10 @@ int initState() {
    auto *Mesh  = HorzMesh::getDefault();
    auto *State = OceanState::getDefault();
 
-   const auto &LayerThickCell = State->LayerThickness[0];
-   const auto &NormalVelEdge  = State->NormalVelocity[0];
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   Err += State->getLayerThickness(LayerThickCell, 0);
+   Err += State->getNormalVelocity(NormalVelEdge, 0);
 
    Array3DReal TracersArray;
    Err += Tracers::getAll(TracersArray, 0);
