@@ -22,9 +22,8 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
 
   scorpio::release_file(data_file);
 
-  // We could use model_grid directly if using same num levels,
-  // but since shallow clones are cheap, we may as well do it (less lines of
-  // code)
+  // Since shallow clones are cheap, we may as well do it (less lines of
+  //  code)
   auto horiz_interp_tgt_grid =
       model_grid->clone("marine_organics_horiz_interp_tgt_grid", true);
 
@@ -93,11 +92,11 @@ marineOrganicsFunctions<S, D>::create_data_reader(
 
 // -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
-#if 0
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader,
-    AbstractRemapper &horiz_interp, const_view_1d &input) {
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    const int &time_index,  // zero-based
+    AbstractRemapper &horiz_interp, marineOrganicsInput &marineOrganics_input) {
   start_timer("EAMxx::marineOrganics::update_marine_organics_data_from_file");
 
   // 1. Read from file
@@ -125,7 +124,9 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
       "field");
   // Recall, the fields are registered in the order:
   // Read the field from the file
+#if 0
   input = horiz_interp.get_tgt_field(0).get_view<const Real *>();
+#endif
   stop_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::get_"
       "field");
@@ -133,20 +134,145 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
   stop_timer("EAMxx::marineOrganics::update_marine_organics_data_from_file");
 
 }  // END update_marine_organics_data_from_file
-#endif
-// -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
 
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+void marineOrganicsFunctions<S, D>::update_marine_organics_timestate(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    AbstractRemapper &horiz_interp, marineOrganicsTimeState &time_state,
+    marineOrganicsInput &beg, marineOrganicsInput &end) {
+  // Now we check if we have to update the data that changes monthly
+  // NOTE:  This means that marineOrganics assumes monthly data to update.  Not
+  //        any other frequency.
+  const auto month = ts.get_month() - 1;  // Make it 0-based
+  if(month != time_state.current_month) {
+    // Update the marineOrganics time state information
+    time_state.current_month = month;
+    time_state.t_beg_month =
+        util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
+            .frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
+
+    // Copy end'data into beg'data, and read in the new
+    // end
+    std::swap(beg, end);
+
+    // Update the marineOrganics forcing data for this month and next month
+    // Start by copying next months data to this months data structure.
+    // NOTE: If the timestep is bigger than monthly this could cause the wrong
+    // values
+    //       to be assigned.  A timestep greater than a month is very unlikely
+    //       so we will proceed.
+    int next_month = (time_state.current_month + 1) % 12;
+    update_marine_organics_data_from_file(scorpio_reader, ts, next_month,
+                                          horiz_interp, end);
+  }
+
+}  // END updata_marine_organics_timestate
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+template <typename ScalarX, typename ScalarT>
+KOKKOS_INLINE_FUNCTION ScalarX marineOrganicsFunctions<S, D>::linear_interp(
+    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
+  return (1 - t) * x0 + t * x1;
+}  // linear_interp
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+void marineOrganicsFunctions<S, D>::perform_time_interpolation(
+    const marineOrganicsTimeState &time_state,
+    const marineOrganicsInput &data_beg, const marineOrganicsInput &data_end,
+    const marineOrganicsOutput &data_out) {
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+
+  // Gather time stamp info
+  auto &t_now   = time_state.t_now;
+  auto &t_beg   = time_state.t_beg_month;
+  auto &delta_t = time_state.days_this_month;
+
+  // At this stage, begin/end must have the same dimensions
+  EKAT_REQUIRE(data_end.data.ncols == data_beg.data.ncols);
+
+  auto delta_t_fraction = (t_now - t_beg) / delta_t;
+
+  EKAT_REQUIRE_MSG(delta_t_fraction >= 0 && delta_t_fraction <= 1,
+                   "Error! Convex interpolation with coefficient out of "
+                   "[0,1].\n  t_now  : " +
+                       std::to_string(t_now) +
+                       "\n"
+                       "  t_beg  : " +
+                       std::to_string(t_beg) +
+                       "\n  delta_t: " + std::to_string(delta_t) + "\n");
+
+  const int nsectors = data_beg.data.nsectors;
+  const int ncols    = data_beg.data.ncols;
+  using ExeSpace     = typename KT::ExeSpace;
+  using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
+  const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
+
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const MemberType &team) {
+        const int icol = team.league_rank();  // column index
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, 0u, nsectors), [&](int isec) {
+              const auto beg = data_beg.data.emiss_sectors(isec, icol);
+              const auto end = data_end.data.emiss_sectors(isec, icol);
+              data_out.emiss_sectors(isec, icol) =
+                  linear_interp(beg, end, delta_t_fraction);
+            });
+      });
+  Kokkos::fence();
+
+}  // perform_time_interpolation
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+void marineOrganicsFunctions<S, D>::marineOrganics_main(
+    const marineOrganicsTimeState &time_state,
+    const marineOrganicsInput &data_beg, const marineOrganicsInput &data_end,
+    const marineOrganicsOutput &data_out) {
+  // Beg/End/Tmp month must have all sizes matching
+
+  EKAT_REQUIRE_MSG(
+      data_end.data.ncols == data_beg.data.ncols,
+      "Error! marineOrganicsInput data structs must have the same number of "
+      "columns.\n");
+
+  // Horiz interpolation can be expensive, and does not depend on the particular
+  // time of the month, so it can be done ONCE per month, *outside*
+  // marineOrganics_main (when updating the beg/end states, reading them from
+  // file).
+  EKAT_REQUIRE_MSG(data_end.data.ncols == data_out.ncols,
+                   "Error! Horizontal interpolation is performed *before* "
+                   "calling marineOrganics_main,\n"
+                   "       marineOrganicsInput and marineOrganicsOutput data "
+                   "structs must have the "
+                   "same number columns "
+                       << data_end.data.ncols << "  " << data_out.ncols
+                       << ".\n");
+
+  // Step 1. Perform time interpolation
+  perform_time_interpolation(time_state, data_beg, data_end, data_out);
+}  // marineOrganics_main
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(
-    const int ncol, const std::vector<std::string> field_name,
-    const std::string dim_name1,
+    const int &ncol, const std::vector<std::string> &field_name,
+    const std::string &dim_name1,
     const std::shared_ptr<const AbstractGrid> &grid,
     const std::string &data_file, const std::string &mapping_file,
     // output
     std::shared_ptr<AbstractRemapper> &marineOrganicsHorizInterp,
-    marineOrganicsInput data_start_, marineOrganicsInput data_end_,
-    marineOrganicsData data_out_,
+    marineOrganicsInput &data_start_, marineOrganicsInput &data_end_,
+    marineOrganicsData &data_out_,
     std::shared_ptr<AtmosphereInput> &marineOrganicsDataReader) {
   // Init horizontal remap
 
@@ -156,7 +282,7 @@ void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(
   // Initialize the size of start/end/out data structures
   data_start_ = marineOrganicsInput(ncol, field_name.size());
   data_end_   = marineOrganicsInput(ncol, field_name.size());
-  data_out_.init(ncol, 1, true);
+  data_out_.init(ncol, field_name.size(), true);
 
   // Create reader (an AtmosphereInput object)
   marineOrganicsDataReader =

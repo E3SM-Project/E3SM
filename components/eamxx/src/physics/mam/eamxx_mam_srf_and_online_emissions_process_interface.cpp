@@ -260,10 +260,10 @@ void MAMSrfOnlineEmiss::set_grids(
       ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
       soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
       serod_dataReader_);  // output
+
   // -------------------------------------------------------------
   // setup to enable reading marine organics file
   // -------------------------------------------------------------
-
   const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
   // /compyfs/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc
@@ -282,6 +282,7 @@ void MAMSrfOnlineEmiss::set_grids(
       // output
       morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
       morg_dataReader_);
+  printf("END SIZE:%i,%i\n", morg_data_end_.data.ncols, ncol_);
 
 }  // set_grid ends
 
@@ -392,6 +393,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       soil_erodibility_);  // output
 
   //--------------------------------------------------------------------
+  // Update marine orgaincs from file
+  //--------------------------------------------------------------------
+
+  marineOrganicsFunc::update_marine_organics_data_from_file(
+      morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
+      morg_data_end_);  // output
+
+  //--------------------------------------------------------------------
   // Initialize online emissions from file
   //--------------------------------------------------------------------
   online_emissions.online_emis_data.init(ncol_);
@@ -421,9 +430,27 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // ALSO this code should in the preprocessor struct now
   Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
 
+  // Gather time and state information for interpolation
+  const auto ts = timestamp() + dt;
+
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
+
+  // --- Interpolate mariane organics data --
+
+  // Update TimeState, note the addition of dt
+  morg_timeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  marineOrganicsFunc::update_marine_organics_timestate(
+      morg_dataReader_, ts, *morg_horizInterp_,
+      // output
+      morg_timeState_, morg_data_start_, morg_data_end_);
+
+  // Call the main marineOrganics routine to get interpolated aerosol forcings.
+  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
+                                          morg_data_end_, morg_data_out_);
 
   // FIXME: Remove the following vars as they are used only for validation
   const const_view_2d z_mid2 = get_field_in("z_mid").get_view<const Real **>();
@@ -486,7 +513,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
   // Gather time and state information for interpolation
-  auto ts = timestamp() + dt;
+  // auto ts = timestamp() + dt;
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     // Update TimeState, note the addition of dt
