@@ -247,7 +247,7 @@ void MAMSrfOnlineEmiss::set_grids(
   // Field to be read from file
   const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
 
-  // Dimensions of the filed
+  // Dimensions of the field
   const std::string soil_erod_dname = "ncol";
 
   // initialize the file read
@@ -267,7 +267,7 @@ void MAMSrfOnlineEmiss::set_grids(
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
 
-  // Dimensions of the filed
+  // Dimensions of the field
   const std::string marine_org_dname = "ncol";
 
   // initialize the file read
@@ -526,6 +526,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
   }  // for loop for species
+  Kokkos::fence();
 }  // run_impl ends
 // =============================================================================
 }  // namespace scream

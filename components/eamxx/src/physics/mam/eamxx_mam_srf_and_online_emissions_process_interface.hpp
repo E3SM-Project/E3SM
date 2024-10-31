@@ -6,7 +6,6 @@
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
-#include <physics/mam/online_emission.hpp>
 #include <physics/mam/srf_emission.hpp>
 
 // For reading marine organics file
@@ -62,9 +61,8 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   const_view_1d soil_erodibility_;
 
  public:
+  // For reading surface emissions and marine organics file
   using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-  using onlineEmiss  = mam_coupling::onlineEmissions<Real, DefaultDevice>;
-  // For reading marine organics file
   using marineOrganicsFunc =
       marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
 

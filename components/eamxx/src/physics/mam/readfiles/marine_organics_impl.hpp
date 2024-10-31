@@ -85,8 +85,8 @@ marineOrganicsFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &data_file) {
   std::vector<Field> io_fields;
-  for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
-    io_fields.push_back(horiz_remapper->get_src_field(i));
+  for(int ifld = 0; ifld < horiz_remapper->get_num_fields(); ++ifld) {
+    io_fields.push_back(horiz_remapper->get_src_field(ifld));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
@@ -126,9 +126,16 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
       "field");
   // Recall, the fields are registered in the order:
   // Read the field from the file
-#if 0
-  input = horiz_interp.get_tgt_field(0).get_view<const Real *>();
-#endif
+
+  for(int ifld = 0; ifld < horiz_interp.get_num_fields(); ++ifld) {
+    auto sector = horiz_interp.get_tgt_field(ifld).get_view<const Real *>();
+    const auto emiss = Kokkos::subview(marineOrganics_input.data.emiss_sectors,
+                                       ifld, Kokkos::ALL());
+    Kokkos::deep_copy(emiss, sector);
+  }
+
+  Kokkos::fence();
+
   stop_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::get_"
       "field");

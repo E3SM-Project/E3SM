@@ -102,9 +102,6 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
 
-  using ExeSpace = typename KT::ExeSpace;
-  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
-
   // Gather time stamp info
   auto &t_now   = time_state.t_now;
   auto &t_beg   = time_state.t_beg_month;
