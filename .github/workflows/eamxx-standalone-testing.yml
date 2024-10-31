@@ -35,10 +35,10 @@ on:
 concurrency:
   # Two runs are in the same group if:
   #  - they have the same trigger
-  #  - if trigger=pull_request, the PR number must match
-  #  - if trigger=workflow_dispatch, the inputs are the same
+  #  - if trigger=pull_request/pull_request_review, the PR number must match
+  #  - if trigger=workflow_dispatch/schedule: no concurrency
   group: ${{ github.workflow }}-${{ github.event_name }}-${{
-             github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id
+             (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') && github.event.pull_request.number || github.run_id
            }}
   cancel-in-progress: true
 
