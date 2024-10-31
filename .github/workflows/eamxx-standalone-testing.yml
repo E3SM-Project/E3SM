@@ -65,6 +65,8 @@ jobs:
         uses: ./.github/actions/check-skip-labels
         with:
           skip_labels: 'AT: skip gcc,AT: skip openmp,AT: skip eamxx-sa,AT: skip eamxx-all'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.pull_request.number }}
       - name: Set test-all inputs based on event specs
         run: |
           echo "submit=false" >> $GITHUB_ENV

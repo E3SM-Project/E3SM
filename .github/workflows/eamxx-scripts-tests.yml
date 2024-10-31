@@ -45,6 +45,8 @@ jobs:
         uses: ./.github/actions/check-skip-labels
         with:
           skip_labels: 'AT: skip eamxx-all'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.pull_request.number }}
       - name: Run test
         run: |
           cd components/eamxx
