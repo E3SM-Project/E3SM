@@ -38,6 +38,7 @@ module ocn_time_integration_split_ab2
    use ocn_config
    use ocn_mesh
    use ocn_tendency
+   use ocn_tendency_benthos
    use ocn_diagnostics_variables
    use ocn_diagnostics
    use ocn_gm
@@ -163,13 +164,17 @@ module ocn_time_integration_split_ab2
          forcingPool,       &! structure holding forcing variables
          scratchPool,       &! structure holding temporary variables
          swForcingPool,     &! structure holding short-wave forcing vars
+         diagnosticsPool,   &! structure holding tracer diagnostics
+         seafloorTendPool,  &! structure holding benthos tendencies
+         seafloorTracersPool, & ! structure holding benthos tracers
          tracersIdealAgeFieldsPool     ! structure holding idealAge-related fields
 
       logical :: &
          activeTracersOnly   ! only compute tendencies for active tracers
 
       logical, pointer :: &
-         config_use_tracerGroup  ! flag for using each tracer group
+         config_use_tracerGroup, &    ! flag for using each tracer group
+         config_use_benthosTracers    ! flag for using benthos tracers
 
       integer :: &
          iCell, iEdge, k, &! loop iterators for cell, edge, vert loops
@@ -243,7 +248,12 @@ module ocn_time_integration_split_ab2
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
          tracersGroupCur,      &! old, new tracer arrays
-         tracersGroupNew
+         tracersGroupNew,      &
+         benthosTracersCur,    &! old benthosTracer arrays
+         benthosTracersNew      ! new benthosTracer arrays
+
+      integer, pointer :: &
+         nBenthicVertLevels     ! number of benthic vertical levels
 
       integer :: &
          startIndex, endIndex, &! start, end index for tracer groups
@@ -258,6 +268,9 @@ module ocn_time_integration_split_ab2
          modifiedGroupName,    &! constructed tracer group names
          configName             ! constructed config names for tracers
 
+      real (kind=RKIND), dimension(:), pointer :: &
+         benthosInterfaceLayerThickness ! benthos interface-grid layer thickness
+
       ! Tendency Array Pointers
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -271,7 +284,8 @@ module ocn_time_integration_split_ab2
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracersGroupTend,      &! tendencies for tracer groups
-         activeTracersTend       ! active tracer tendencies
+         activeTracersTend,     &! active tracer tendencies
+         benthosTracersTend      ! benthos tracer tendencies
 
       ! Forcing pool
       real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
@@ -341,6 +355,8 @@ module ocn_time_integration_split_ab2
                                                  forcingPool)
       call mpas_pool_get_subpool(block%structs, 'shortwave', &
                                                  swForcingPool)
+      call mpas_pool_get_subpool(block%structs, 'diagnostics', &
+                                                 diagnosticsPool)
       call mpas_pool_get_subpool(block%structs, 'tend', &
                                                  tendPool)
       call mpas_pool_get_subpool(block%structs, 'scratch', &
@@ -535,6 +551,48 @@ module ocn_time_integration_split_ab2
             end if
          end if
       end do
+
+      call mpas_pool_get_config(domain % configs, 'config_use_benthosTracers', config_use_benthosTracers)
+      if (config_use_benthosTracers) then    ! need to add benthosStorage
+         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+         call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+         call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+         call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+         call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur,1)
+         call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
+
+         if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
+
+#ifdef MPAS_OPENACC
+            !$acc enter data create(benthosTracersNew)
+            !$acc enter data copyin(benthosTracersCur)
+            !$acc parallel loop gang present(nBenthicVertLevels, &
+            !$acc    benthosTracersNew, benthosTracersCur)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+#endif
+            do iCell = 1, nCellsAll  ! couple tracers to thickness
+            do k = 1, nBenthicVertLevels+1
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
+
+               do iTracer = 1,size(benthosTracersCur,1)
+                  benthosTracersNew(iTracer, k, iCell) = &
+                  benthosTracersCur(iTracer, k, iCell)
+               end do
+            end do
+            end do
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(tracersGroupNew)
+               !$acc exit data delete(tracersGroupCur)
+#else
+               !$omp end do
+               !$omp end parallel
+#endif
+         end if
+      end if
 
       if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -1785,7 +1843,7 @@ module ocn_time_integration_split_ab2
 
          call mpas_timer_start('se tracer tend', .false.)
          call ocn_tend_tracer(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, &
+                              meshPool, swForcingPool, diagnosticsPool, &
                               dt, activeTracersOnly, 2)
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', &
@@ -1796,6 +1854,13 @@ module ocn_time_integration_split_ab2
                                                 normalVelocityCur, 1)
          call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
                                                    activeTracersTend)
+         if (config_use_benthosTracers .and. .not. activeTracersOnly) then
+            call mpas_timer_start('se benthos tracer tend')
+            call ocn_tend_benthos(tendPool, statePool, forcingPool, &
+                              meshPool, swForcingPool, diagnosticsPool, &
+                              dt, activeTracersOnly, 2)
+            call mpas_timer_stop('se benthos tracer tend')
+         end if
 
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
@@ -1864,6 +1929,11 @@ module ocn_time_integration_split_ab2
                end if
             end if
          end do
+         if (config_use_benthosTracers .and. .not. activeTracersOnly) then
+            call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+            call mpas_dmpar_field_halo_exch(domain, 'benthosTracersTend')
+         end if
+
          call mpas_timer_stop("se halo tracers")
 
          call mpas_timer_start('se loop fini')
@@ -1919,6 +1989,43 @@ module ocn_time_integration_split_ab2
             !$omp end do
             !$omp end parallel
 #endif
+
+            if (config_use_benthosTracers) then
+               call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+               call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+               call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+               call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur, 1)
+               call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew, 2)
+               call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
+               call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
+               if (associated(benthosTracersNew) .and. associated(benthosTracersCur) .and. associated(benthosTracersTend)) then
+
+!! Keeping this calc on the CPU for now
+#ifdef MPAS_OPENACC
+               !$acc update host(benthosInterfaceLayerThickness)
+               !$acc update host(activeTracersNew)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(i, k, temp)
+#endif
+               do iCell = 1, nCellsAll
+               do k = 1, nBenthicVertLevels+1
+
+               do i = 1,size(benthosTracersCur,1)
+                  benthosTracersNew(i,k,iCell) = &
+                     (benthosTracersCur(i,k,iCell) * &
+                     benthosInterfaceLayerThickness(k) + dt* &
+                     benthosTracersTend(i,k,iCell) )/ &
+                     benthosInterfaceLayerThickness(k)
+               end do ! tracer index
+               end do  ! vertical
+               end do  ! iCell
+#ifndef MPAS_OPENACC
+               !$omp end do
+               !$omp end parallel
+#endif
+            end if
+            end if
 
 #ifdef MPAS_OPENACC
             !$acc update device(layerThicknessNew)
@@ -2445,7 +2552,45 @@ module ocn_time_integration_split_ab2
                      end if ! debug tracers
                   end if ! use tracer group
                end if ! tracer
-            end do ! tracer group
+            end do              ! tracer group
+                                 
+            if (config_use_benthosTracers) then
+
+               call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+               call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+               call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+               call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur, 1)
+               call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew, 2)
+               call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
+               call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
+               if (associated(benthosTracersNew) .and. associated(benthosTracersCur) .and. associated(benthosTracersTend)) then
+
+! This tracer block is still computed on the CPU
+#ifdef MPAS_OPENACC
+                  !$acc update host(benthosInterfaceLayerThickness)
+                  !$acc update host(activeTracersNew)
+#else
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(i, k)
+#endif
+
+                  do iCell = 1, nCellsAll
+                     do k = 1, nBenthicVertLevels+1
+                     do i = 1,size(benthosTracersCur,1)
+                        benthosTracersNew(i,k,iCell) = &
+                           (benthosTracersCur(i,k,iCell) * &
+                           benthosInterfaceLayerThickness(k) + dt* &
+                           benthosTracersTend(i,k,iCell) )/ &
+                           benthosInterfaceLayerThickness(k)
+                     end do ! tracer index
+                     end do  ! vertical
+                  end do  ! iCell
+#ifndef MPAS_OPENACC
+               !$omp end do
+               !$omp end parallel
+#endif
+            endif
+            endif
 
 #ifdef MPAS_OPENACC
             !$acc update device(layerThicknessNew)
@@ -2744,6 +2889,8 @@ module ocn_time_integration_split_ab2
 
          end if
       end do
+
+      if (config_use_benthosTracers) call mpas_dmpar_field_halo_exch(domain, 'benthosTracers', timeLevel=2)
 
       call mpas_timer_stop('se vmix halos')
 

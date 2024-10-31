@@ -160,7 +160,8 @@ module ocn_time_integration_benthos
          i,j,             &! generic loop iterators
          cell1, cell2,    &! neighbor cell addresses
          eoe,             &! index for edge on edge
-         err,             &! local error flag
+         err,             &     ! local error flag
+         iTracer,         & ! tracer counter
          splitExplicitStep, &! loop index for outer timestep loop
          oldBtrSubcycleTime,&! time index for old barotropic value
          newBtrSubcycleTime,&! time index for new barotropic value
@@ -308,15 +309,32 @@ module ocn_time_integration_benthos
          call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
 
          if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k)
+#ifdef MPAS_OPENACC
+               !$acc enter data create(benthosTracersNew)
+               !$acc enter data copyin(benthosTracersCur)
+               !$acc parallel loop gang present(nBenthicVertLevels, &
+               !$acc    benthosTracersNew, benthosTracersCur)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+#endif
             do iCellBenthic = 1, nBenthicCells ! couple tracers to thickness
                do k = 1, nBenthicVertLevels+1
-                  benthosTracersNew(:, k, iCellBenthic) = benthosTracersCur(:, k, iCellBenthic)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
+               do iTracer = 1,size(benthosTracersCur,1)
+                  benthosTracersNew(iTracer, k, iCell) = benthosTracersCur(iTracer, k, iCell)
                end do
             end do
-            !$omp end do
-            !$omp end parallel
+            end do
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(benthosTracersNew)
+               !$acc exit data delete(benthosTracersCur)
+#else
+               !$omp end do
+               !$omp end parallel
+#endif
          end if
       end if
 
@@ -336,13 +354,15 @@ module ocn_time_integration_benthos
          newBtrSubcycleTime = 2
          activeTracersOnly = .false.
 
+
+         if (config_use_benthosTracers .and. .not. activeTracersOnly) then
          call mpas_timer_start('se tracer tend')
          call ocn_tend_benthos(tendPool, statePool, forcingPool, &
                               meshPool, swForcingPool, diagnosticsPool, &
                               dt, activeTracersOnly, 2)
 
          call mpas_timer_stop('se tracer tend')
-
+         end if
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers")
 

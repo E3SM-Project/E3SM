@@ -110,8 +110,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tend_benthos(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, &
-                              diagnosticsPool, dt, activeTracersOnlyIn, timeLevelIn )!{{{
+                           meshPool, swForcingPool, diagnosticsPool, &
+                           dt, activeTracersOnlyIn, timeLevelIn )!{{{
 
       !-----------------------------------------------------------------
       ! input variables

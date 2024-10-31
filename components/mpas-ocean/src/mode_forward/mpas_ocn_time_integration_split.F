@@ -34,6 +34,7 @@ module ocn_time_integration_split
    use ocn_config
    use ocn_mesh
    use ocn_tendency
+   use ocn_tendency_benthos
    use ocn_diagnostics_variables
    use ocn_diagnostics
    use ocn_gm
@@ -48,6 +49,7 @@ module ocn_time_integration_split
    use ocn_effective_density_in_land_ice
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
+   use ocn_tracer_benthos
 
    implicit none
    private
@@ -548,15 +550,33 @@ module ocn_time_integration_split
          call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
 
          if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k)
+
+#ifdef MPAS_OPENACC
+               !$acc enter data create(benthosTracersNew)
+               !$acc enter data copyin(benthosTracersCur)
+               !$acc parallel loop gang present(nBenthicVertLevels, &
+               !$acc    benthosTracersNew, benthosTracersCur)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll  ! couple tracers to thickness
             do k = 1, nBenthicVertLevels+1
-               benthosTracersNew(:, k, iCell) = benthosTracersCur(:, k, iCell)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
+               do iTracer = 1,size(benthosTracersCur,1)
+                  benthosTracersNew(iTracer, k, iCell) = benthosTracersCur(iTracer, k, iCell)
+               end do
             end do
             end do
-            !$omp end do
-            !$omp end parallel
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(benthosTracersNew)
+               !$acc exit data delete(benthosTracersCur)
+#else
+               !$omp end do
+               !$omp end parallel
+#endif
          end if
       end if
 
@@ -1840,6 +1860,14 @@ module ocn_time_integration_split
          call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
                                                    activeTracersTend)
 
+         if (config_use_benthosTracers .and. .not. activeTracersOnly) then
+            call mpas_timer_start('se benthos tracer tend')
+            call ocn_tend_benthos(tendPool, statePool, forcingPool, &
+                              meshPool, swForcingPool, diagnosticsPool, &
+                              dt, activeTracersOnly, 2)
+            call mpas_timer_stop('se benthos tracer tend')
+         endif
+
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
          !$acc enter data copyin(normalBarotropicVelocityNew, &
@@ -2314,8 +2342,10 @@ module ocn_time_integration_split
                call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
                call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
                if (associated(benthosTracersNew) .and. associated(benthosTracersCur) .and. associated(benthosTracersTend)) then
-                  !$omp parallel
-                  !$omp do schedule(runtime) private(k)
+
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+
                   do iCell = 1, nCellsAll
                      do k = 1, nBenthicVertLevels+1
                         benthosTracersNew(:,k,iCell) = &
@@ -2324,10 +2354,10 @@ module ocn_time_integration_split
                         benthosTracersTend(:,k,iCell) )/ &
                         benthosInterfaceLayerThickness(k)
                      end do
-                   end do
-#ifndef MPAS_OPENACC
-                   !$omp end do
-                   !$omp end parallel
+                  end do
+#ifdef MPAS_OPENACC
+               !$omp end do
+               !$omp end parallel
 #endif
                end if
             end if
