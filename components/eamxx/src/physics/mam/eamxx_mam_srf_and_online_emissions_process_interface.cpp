@@ -268,7 +268,7 @@ void MAMSrfOnlineEmiss::set_grids(
       m_params.get<std::string>("marine_organics_file");
   // /compyfs/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc
 
-  // Field to be read from file
+  // Field to be read from file (order matters as they are read in same order)
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
 
@@ -282,7 +282,6 @@ void MAMSrfOnlineEmiss::set_grids(
       // output
       morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
       morg_dataReader_);
-  printf("END SIZE:%i,%i\n", morg_data_end_.data.ncols, ncol_);
 
 }  // set_grid ends
 
@@ -452,6 +451,11 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
                                           morg_data_end_, morg_data_out_);
 
+  //  Marine organics emission data read from the file
+  const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
+  const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
+  const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
+
   // FIXME: Remove the following vars as they are used only for validation
   const const_view_2d z_mid2 = get_field_in("z_mid").get_view<const Real **>();
   // FIXME: Remove ^^^^^^
@@ -501,7 +505,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         mam4::aero_model_emissions::aero_model_emissions(
             sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
             v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
-            soil_erodibility(icol), fluxes_col);
+            soil_erodibility(icol), mpoly(icol), mprot(icol), mlip(icol),
+            // out
+            fluxes_col);
       });
 
   // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
