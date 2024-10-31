@@ -14,7 +14,7 @@
 #include "utilities/MathUtils.hpp"
 
 #ifdef KOKKOS_ENABLE_CUDA
-# include <cuda.h>
+#include <cuda.h>
 #endif
 
 #ifdef KOKKOS_ENABLE_HIP
@@ -34,49 +34,6 @@ namespace Homme {
 void initialize_kokkos () {
   // This is in fact const char*, but Kokkos::initialize requires char*.
   std::vector<char*> args;
-
-  //   This is the only way to get the round-robin rank assignment Kokkos
-  // provides, as that algorithm is hardcoded in Kokkos::initialize(int& narg,
-  // char* arg[]). Once the behavior is exposed in the InitArguments version of
-  // initialize, we can remove this string code.
-  //   If for some reason we're running on a GPU platform, have Cuda enabled,
-  // but are using a different execution space, this initialization is still
-  // OK. The rank gets a GPU assigned and simply will ignore it.
-#ifdef KOKKOS_ENABLE_CUDA
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_HIP)
-  int nd;
-  const auto ret = hipGetDeviceCount(&nd);
-  if (ret != hipSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_SYCL)
-
-//https://developer.codeplay.com/products/computecpp/ce/2.11.0/guides/sycl-for-cuda-developers/migrating-from-cuda-to-sycl
-
-//to make it build
-  int nd = 1;
-
-#endif
-
-
-#ifdef HOMMEXX_ENABLE_GPU  
-  std::stringstream ss;
-  ss << "--kokkos-num-devices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
-
-
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
 
