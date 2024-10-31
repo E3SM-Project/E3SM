@@ -22,9 +22,9 @@ namespace unit_test {
  * Unit-tests for p3 ice collection functions.
  */
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
+struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_rain_self_collection_bfb_tests(){
+  void run_rain_self_collection_bfb_tests() {
 
     RainSelfCollectionData dc[max_pack_size] = {
       //  rho, qr_incld, nr_incld, nr_selfcollect_tend
@@ -101,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     run_rain_self_collection_bfb_tests();
   }
 
@@ -114,7 +114,10 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 namespace {
 
 TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace

@@ -22,9 +22,9 @@ namespace unit_test {
 //
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestFind {
+struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::UnitTest<D>::Base {
 
-static void run()
+void run()
 {
   const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
@@ -112,7 +112,10 @@ namespace {
 
 TEST_CASE("p3_find", "[p3_functions]")
 {
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind::run();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind;
+
+  T t;
+  t.run();
 }
 
 } // namespace

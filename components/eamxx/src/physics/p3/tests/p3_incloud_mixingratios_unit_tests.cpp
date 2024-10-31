@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIncloudMixing {
+struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_incloud_mixing_bfb()
+  void run_incloud_mixing_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -129,7 +129,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
     }
   }
 
-  static void run_incloud_mixing_phys()
+  void run_incloud_mixing_phys()
   {
     // TODO
   }
@@ -143,10 +143,11 @@ namespace {
 
 TEST_CASE("p3_incloud_mixingratios", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIncloudMixing;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIncloudMixing;
 
-  TD::run_incloud_mixing_phys();
-  TD::run_incloud_mixing_bfb();
+  T t;
+  t.run_incloud_mixing_phys();
+  t.run_incloud_mixing_bfb();
 }
 
 }

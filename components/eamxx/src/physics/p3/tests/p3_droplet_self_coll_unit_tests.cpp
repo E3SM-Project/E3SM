@@ -18,14 +18,14 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDropletSelfCollection {
+struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
   // This is the threshold for whether the qc and qr cloud mixing ratios are
   // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
@@ -124,12 +124,11 @@ namespace {
 
 TEST_CASE("p3_droplet_self_collection", "[p3_functions]")
 {
-  using TCRA = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDropletSelfCollection;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDropletSelfCollection;
 
-  TCRA::run_phys();
-  TCRA::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

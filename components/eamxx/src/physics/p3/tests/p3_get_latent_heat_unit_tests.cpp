@@ -20,9 +20,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestLatentHeat {
+struct UnitWrap::UnitTest<D>::TestLatentHeat : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_latent_heat_bfb()
+  void run_latent_heat_bfb()
   {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
@@ -55,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
     }
   }
 
-  static void run_latent_heat_phys()
+  void run_latent_heat_phys()
   {
     // TODO
   }
@@ -69,10 +69,11 @@ namespace {
 
 TEST_CASE("p3_latent_heat", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestLatentHeat;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestLatentHeat;
 
-  TD::run_latent_heat_phys();
-  TD::run_latent_heat_bfb();
+  T t;
+  t.run_latent_heat_phys();
+  t.run_latent_heat_bfb();
 }
 
 }

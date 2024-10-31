@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
+struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_relaxation_timescale_bfb()
+  void run_ice_relaxation_timescale_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -101,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
     }
   }
 
-  static void run_ice_relaxation_timescale_phys()
+  void run_ice_relaxation_timescale_phys()
   {
     // TODO
   }
@@ -115,10 +115,11 @@ namespace {
 
 TEST_CASE("p3_ice_relaxation_timescale", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceRelaxationTimescale;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceRelaxationTimescale;
 
-  TD::run_ice_relaxation_timescale_phys();
-  TD::run_ice_relaxation_timescale_bfb();
+  T t;
+  t.run_ice_relaxation_timescale_phys();
+  t.run_ice_relaxation_timescale_bfb();
 }
 
 }

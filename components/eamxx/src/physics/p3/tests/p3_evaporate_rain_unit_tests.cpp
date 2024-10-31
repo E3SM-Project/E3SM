@@ -8,21 +8,14 @@
 
 #include "p3_unit_tests_common.hpp"
 
-//#include <thread>
-//#include <array>
-//#include <algorithm>
-//#include <random>
-//#include <iomanip>      // std::setprecision
-
 namespace scream {
 namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
-{
+struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property(){
+  void run_property() {
 
     //TEST WEIGHTING TIMESCALE
     //========================
@@ -133,9 +126,9 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
     REQUIRE( nrtend[0] <= nr_incld[0]/dt); //keep end-of-step nr positive. Should always be true.
 
-  }; //end run_property
+  } //end run_property
 
-  static void run_bfb(){
+  void run_bfb() {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
@@ -267,14 +260,18 @@ namespace {
 
   TEST_CASE("p3_evaporate_rain_property", "p3_unit_tests")
   {
-    using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
-    TestStruct::run_property();
+    using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
+
+    T t;
+    t.run_property();
   }
 
   TEST_CASE("p3_evaporate_rain_test", "p3_unit_tests")
   {
-    using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
-    TestStruct::run_bfb();
-}
+    using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
+
+    T t;
+    t.run_bfb();
+  }
 
 }// end anonymous namespace

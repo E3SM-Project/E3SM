@@ -19,11 +19,11 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
+struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::UnitTest<D>::Base
 {
 
   //-----------------------------------------------------------------
-  static void run_bfb_tests(){
+  void run_bfb_tests() {
     //test that C++ and F90 implementations are BFB
 
     //Set of relvar values to loop over
@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
   //-----------------------------------------------------------------
   KOKKOS_FUNCTION static void subgrid_variance_scaling_linearity_test(const Scalar& relvar,
-    int& errors){
+    int& errors) {
     //If expon=1, subgrid_variance_scaling should be 1
 
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
@@ -97,7 +97,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }
 
   //-----------------------------------------------------------------
-  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors){
+  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors) {
     //If relvar=1, subgrid_variance_scaling should be factorial(expon)
 
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
@@ -116,7 +116,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }
 
   //-----------------------------------------------------------------
-  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors){
+  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors) {
   //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
 
   Scalar tol = C::macheps * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
@@ -151,7 +151,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }   //end relvar3_test
 
   //-----------------------------------------------------------------
-  static void run_property_tests(){
+  void run_property_tests() {
     /*This function executes all the SGS variance scaling tests by looping
      *over a bunch of test and summing their return statuses.
      *If that sum is zero, no errors have occurred. Otherwise you have errors.
@@ -189,12 +189,14 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 } // namespace p3
 } // namespace scream
 
-namespace{
+namespace {
 
 TEST_CASE("p3_subgrid_variance_scaling_test", "[p3_subgrid_variance_scaling_test]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling::run_bfb_tests();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling::run_property_tests();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling;
+
+  T t;
+  t.run_bfb_tests();
+  t.run_property_tests();
 }
 
 } // namespace
-

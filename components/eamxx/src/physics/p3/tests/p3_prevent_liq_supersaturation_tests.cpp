@@ -15,9 +15,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
+struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   //Conceptual tests for prevent_liq_supersaturation. Note many conceptual tests make sense to run on
   //random data, so are included in run_bfb rather than here.
   {
@@ -88,7 +88,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
 
   } //end run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
@@ -187,14 +187,18 @@ namespace {
 
 TEST_CASE("prevent_liq_supersaturation_property", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
-  TestStruct::run_property();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
+
+  T t;
+  t.run_property();
 }
 
 TEST_CASE("prevent_liq_supersaturation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
-  TestStruct::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
+
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

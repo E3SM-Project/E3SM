@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
+struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_cldliq_wet_growth_bfb()
+  void run_ice_cldliq_wet_growth_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -127,7 +127,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     }
   }
 
-  static void run_ice_cldliq_wet_growth_phys()
+  void run_ice_cldliq_wet_growth_phys()
   {
     // TODO
   }
@@ -141,10 +141,11 @@ namespace {
 
 TEST_CASE("p3_ice_cldliq_wet_growth", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
 
-  TD::run_ice_cldliq_wet_growth_phys();
-  TD::run_ice_cldliq_wet_growth_bfb();
+  T t;
+  t.run_ice_cldliq_wet_growth_phys();
+  t.run_ice_cldliq_wet_growth_bfb();
 }
 
 }

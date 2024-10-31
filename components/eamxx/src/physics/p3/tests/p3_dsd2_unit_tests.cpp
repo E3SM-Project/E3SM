@@ -22,9 +22,9 @@ namespace unit_test {
  */
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDsd2 {
+struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_cloud_bfb()
+  void run_cloud_bfb()
   {
     // Read in tables
     view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
@@ -107,12 +107,12 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     }
   }
 
-  static void run_cloud_phys()
+  void run_cloud_phys()
   {
     // TODO
   }
 
-  static void run_rain_bfb()
+  void run_rain_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -190,7 +190,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     }
   }
 
-  static void run_rain_phys()
+  void run_rain_phys()
   {
     // TODO
   }
@@ -204,18 +204,20 @@ namespace {
 
 TEST_CASE("p3_cloud_dsd2", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
-  TD::run_cloud_phys();
-  TD::run_cloud_bfb();
+  T t;
+  t.run_cloud_phys();
+  t.run_cloud_bfb();
 }
 
 TEST_CASE("p3_rain_dsd2", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
-  TD::run_rain_phys();
-  TD::run_rain_bfb();
+  T t;
+  t.run_rain_phys();
+  t.run_rain_bfb();
 }
 
 }

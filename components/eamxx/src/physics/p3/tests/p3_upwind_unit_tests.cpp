@@ -36,9 +36,9 @@ namespace unit_test {
 // cells in the domain are 0. This lets us check the restricted-domain usage of
 // the upwind routine in the first time step.
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestUpwind {
+struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   using ekat::repack;
   constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
@@ -201,7 +201,7 @@ static void run_phys()
   }
 }
 
-static void run_bfb()
+void run_bfb()
 {
   auto engine = setup_random_test();
 
@@ -274,14 +274,14 @@ static void run_bfb()
 };
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGenSed {
+struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
   auto engine = setup_random_test();
 
@@ -358,18 +358,20 @@ namespace {
 
 TEST_CASE("p3_upwind", "[p3_functions]")
 {
-  using TU = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
-  TU::run_phys();
-  TU::run_bfb();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 TEST_CASE("p3_gen_sed", "[p3_functions]")
 {
-  using TG = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
 
-  TG::run_phys();
-  TG::run_bfb();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

@@ -19,29 +19,29 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3Main {
+struct UnitWrap::UnitTest<D>::TestP3Main : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys_p3_main_part1()
+void run_phys_p3_main_part1()
 {
   // TODO
 }
 
-static void run_phys_p3_main_part2()
+void run_phys_p3_main_part2()
 {
   // TODO
 }
 
-static void run_phys_p3_main_part3()
+void run_phys_p3_main_part3()
 {
   // TODO
 }
 
-static void run_phys_p3_main()
+void run_phys_p3_main()
 {
   // TODO
 }
 
-static void run_phys()
+void run_phys()
 {
   run_phys_p3_main_part1();
   run_phys_p3_main_part2();
@@ -49,7 +49,7 @@ static void run_phys()
   run_phys_p3_main();
 }
 
-static void run_bfb_p3_main_part1()
+void run_bfb_p3_main_part1()
 {
   auto engine = setup_random_test();
 
@@ -150,7 +150,7 @@ static void run_bfb_p3_main_part1()
   }
 }
 
-static void run_bfb_p3_main_part2()
+void run_bfb_p3_main_part2()
 {
   auto engine = setup_random_test();
 
@@ -274,7 +274,7 @@ static void run_bfb_p3_main_part2()
   }
 }
 
-static void run_bfb_p3_main_part3()
+void run_bfb_p3_main_part3()
 {
   constexpr Scalar latvap = C::LatVap;
   constexpr Scalar latice = C::LatIce;
@@ -369,7 +369,7 @@ static void run_bfb_p3_main_part3()
   }
 }
 
-static void run_bfb_p3_main()
+void run_bfb_p3_main()
 {
   auto engine = setup_random_test();
 
@@ -476,7 +476,7 @@ static void run_bfb_p3_main()
   }
 }
 
-static void run_bfb()
+void run_bfb()
 {
   run_bfb_p3_main_part1();
   run_bfb_p3_main_part2();
@@ -494,12 +494,11 @@ namespace {
 
 TEST_CASE("p3_main", "[p3_functions]")
 {
-  using TP3 = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Main;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Main;
 
-  TP3::run_phys();
-  TP3::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

@@ -19,31 +19,31 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceSed {
+struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys_calc_bulk_rhime()
+void run_phys_calc_bulk_rhime()
 {
   // TODO
 }
 
-static void run_phys_ice_sed()
+void run_phys_ice_sed()
 {
   // TODO
 }
 
-static void run_phys_homogeneous_freezing()
+void run_phys_homogeneous_freezing()
 {
   // TODO
 }
 
-static void run_phys()
+void run_phys()
 {
   run_phys_calc_bulk_rhime();
   run_phys_ice_sed();
   run_phys_homogeneous_freezing();
 }
 
-static void run_bfb_calc_bulk_rhime()
+void run_bfb_calc_bulk_rhime()
 {
   constexpr Scalar qsmall = C::QSMALL;
 
@@ -123,7 +123,7 @@ static void run_bfb_calc_bulk_rhime()
   }
 }
 
-static void run_bfb_ice_sed()
+void run_bfb_ice_sed()
 {
   auto engine = setup_random_test();
 
@@ -187,7 +187,7 @@ static void run_bfb_ice_sed()
   }
 }
 
-static void run_bfb_homogeneous_freezing()
+void run_bfb_homogeneous_freezing()
 {
   constexpr Scalar latice = C::LatIce;
 
@@ -256,7 +256,7 @@ static void run_bfb_homogeneous_freezing()
   }
 }
 
-static void run_bfb()
+void run_bfb()
 {
   run_bfb_calc_bulk_rhime();
   run_bfb_ice_sed();
@@ -273,12 +273,11 @@ namespace {
 
 TEST_CASE("p3_ice_sed", "[p3_functions]")
 {
-  using TCS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSed;
 
-  TCS::run_phys();
-  TCS::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

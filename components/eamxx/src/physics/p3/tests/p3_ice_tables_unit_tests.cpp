@@ -22,9 +22,9 @@ namespace unit_test {
  */
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestTableIce {
+struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base {
 
-  static void test_read_lookup_tables_bfb()
+  void test_read_lookup_tables_bfb()
   {
     // Read in ice tables
     view_ice_table ice_table_vals;
@@ -62,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
   }
 
   template <typename View>
-  static void init_table_linear_dimension(View& table, int linear_dimension)
+  void init_table_linear_dimension(View& table, int linear_dimension)
   {
     // set up views
     using NonConstView = typename View::non_const_type;
@@ -96,7 +96,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     table = view_device;
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -294,7 +294,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     }
   }
 
-  static void run_phys()
+  void run_phys()
   {
 #if 0
     view_ice_table ice_table_vals;
@@ -343,11 +343,12 @@ namespace {
 
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
-  using TTI = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
 
-  TTI::test_read_lookup_tables_bfb();
-  TTI::run_phys();
-  TTI::run_bfb();
+  T t;
+  t.test_read_lookup_tables_bfb();
+  t.run_phys();
+  t.run_bfb();
 }
 
 }

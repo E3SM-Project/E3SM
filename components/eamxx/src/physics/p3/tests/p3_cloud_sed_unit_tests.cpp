@@ -19,14 +19,14 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCloudSed {
+struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
   auto engine = setup_random_test();
 
@@ -98,12 +98,11 @@ namespace {
 
 TEST_CASE("p3_cloud_sed", "[p3_functions]")
 {
-  using TCS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudSed;
 
-  TCS::run_phys();
-  TCS::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

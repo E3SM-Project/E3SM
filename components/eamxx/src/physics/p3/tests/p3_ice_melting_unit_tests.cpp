@@ -19,10 +19,10 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3IceMelting
+struct UnitWrap::UnitTest<D>::TestP3IceMelting : public UnitWrap::UnitTest<D>::Base
 {
 
-static void ice_melting_bfb(){
+void ice_melting_bfb() {
   constexpr Scalar latvap = C::LatVap;
   constexpr Scalar latice = C::LatIce;
 
@@ -105,7 +105,7 @@ static void ice_melting_bfb(){
       REQUIRE(IceMelt[s].ni2nr_melt_tend == IceMelt_host(s).ni2nr_melt_tend);
     }
   }
-}; // TestP3IceMelting
+}
 
 }; // UnitWrap
 
@@ -113,11 +113,13 @@ static void ice_melting_bfb(){
 } // namespace p3
 } // namespace scream
 
-namespace{
+namespace {
 
-TEST_CASE("p3_ice_melting_test", "[p3_ice_melting_test]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceMelting::ice_melting_bfb();
+TEST_CASE("p3_ice_melting_test", "[p3_ice_melting_test]") {
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceMelting;
+
+  T t;
+  t.ice_melting_bfb();
 }
 
 } // namespace
-

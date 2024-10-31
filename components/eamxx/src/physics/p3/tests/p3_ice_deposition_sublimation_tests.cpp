@@ -13,9 +13,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
+struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property(){
+  void run_property() {
     //Note that a lot of property tests are included in run_bfb for simplicity
 
     //Choose default values (just grabbed a row from the array in run_bfb)
@@ -30,13 +30,13 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
 
     //init output vars
     Spack qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
-    
+
     //CHECK THAT UNREASONABLY LARGE VAPOR DEPOSITION DOESN'T LEAVE QV SUBSATURATED WRT QI
     Spack epsi_tmp=1e6; //make 1/(sat removal timescale) huge so vapdep rate removes all supersat in 1 dt.
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i,
 	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
     REQUIRE( (qv2qi_vapdep_tend[0]==0 || std::abs( qv2qi_vapdep_tend[0] - (qv[0] - qv_sat_i[0])*inv_dt) <1e-8) );
-   
+
     //CHECK THAT HUGE SUBLIMATION DOESN'T LEAVE QV SUPERSATURATED WRT QI
     Spack qv_sat_i_tmp=1e-2;
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i_tmp,
@@ -46,8 +46,8 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
     //CHECK BEHAVIOR AS DT->0?
 
   }
-  
-  static void run_bfb()
+
+  void run_bfb()
   {
     IceDepositionSublimationData f90_data[max_pack_size] = {
       {1.0000E-04,4.5010E+05,2.8750E+02,1.1279E-02,1.1279E-02,0.0000E+00,3.3648E+00,5.0000E-03,1.666667e-02},
@@ -67,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
       {5.1000E-03,5.1317E+05,2.5834E+02,1.6757E-03,1.4491E-03,6.0620E-02,1.3763E+00,5.0000E-03,1.666667e-02},
       {5.0000E-08,5.4479E+05,2.4793E+02,7.5430E-04,5.8895E-04,4.6769E-04,1.1661E+00,1.5278E-04,1.666667e-02},
     };
-    
+
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(IceDepositionSublimationData);
 
     // Generate random input data
@@ -162,16 +162,18 @@ namespace {
 
 TEST_CASE("ice_deposition_sublimation_property", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
 
-  TestStruct::run_property();
+  T t;
+  t.run_property();
 }
-  
+
 TEST_CASE("ice_deposition_sublimation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
 
-  TestStruct::run_bfb();
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

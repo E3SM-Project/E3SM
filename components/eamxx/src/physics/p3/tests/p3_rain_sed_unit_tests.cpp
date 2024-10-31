@@ -22,23 +22,23 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys_rain_vel()
+void run_phys_rain_vel()
 {
   // TODO
 }
 
-static void run_phys_rain_sed()
+void run_phys_rain_sed()
 {
   // TODO
 }
 
-static void run_phys()
+void run_phys()
 {
   run_phys_rain_vel();
   run_phys_rain_sed();
 }
 
-static void run_bfb_rain_vel()
+void run_bfb_rain_vel()
 {
   // Read in tables
   view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
@@ -124,7 +124,7 @@ static void run_bfb_rain_vel()
   }
 }
 
-static void run_bfb_rain_sed()
+void run_bfb_rain_sed()
 {
   auto engine = setup_random_test();
 
@@ -201,7 +201,7 @@ static void run_bfb_rain_sed()
   }
 }
 
-static void run_bfb()
+void run_bfb()
 {
   run_bfb_rain_vel();
   run_bfb_rain_sed();
@@ -217,14 +217,11 @@ namespace {
 
 TEST_CASE("p3_rain_sed", "[p3_functions]")
 {
-  using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
 
-  TRS::init();
-
-  TRS::run_phys();
-  TRS::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

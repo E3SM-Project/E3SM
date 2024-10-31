@@ -19,14 +19,14 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestBackToCellAverage {
+struct UnitWrap::UnitTest<D>::TestBackToCellAverage : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
   auto engine = setup_random_test();
 
@@ -181,12 +181,11 @@ namespace {
 
 TEST_CASE("p3_back_to_cell_average", "[p3_functions]")
 {
-  using TRIF = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestBackToCellAverage;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestBackToCellAverage;
 
-  TRIF::run_phys();
-  TRIF::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

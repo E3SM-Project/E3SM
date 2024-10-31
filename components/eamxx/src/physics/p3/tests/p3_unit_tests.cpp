@@ -21,10 +21,10 @@ namespace unit_test {
  * Unit-tests for p3_functions.
  */
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3Conservation
+struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>::Base
 {
 
-  static void cloud_water_conservation_tests_device() {
+  void cloud_water_conservation_tests_device() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -78,7 +78,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(cwdc_host[0].qc2qr_autoconv_tend * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
-  static void rain_water_conservation_tests_device() {
+  void rain_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
     RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
@@ -131,7 +131,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE( rwdc_host(0).qr2qv_evap_tend * rwdc_host(0).dt  <= rwdc_host(0).qr);
   }
 
-  static void ice_water_conservation_tests_device(){
+  void ice_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
     IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0}};
@@ -173,7 +173,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
-  static void run()
+  void run()
   {
     cloud_water_conservation_tests_device();
 
@@ -182,7 +182,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     ice_water_conservation_tests_device();
   }
 
-  static void cloud_water_conservation_unit_bfb_tests(){
+  void cloud_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -277,7 +277,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     }
   }
 
-  static void ice_water_conservation_unit_bfb_tests()
+  void ice_water_conservation_unit_bfb_tests()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -372,7 +372,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     }
   }
 
-  static void rain_water_conservation_unit_bfb_tests(){
+  void rain_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -462,7 +462,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     }
   }
 
-  static void run_bfb() {
+  void run_bfb() {
     cloud_water_conservation_unit_bfb_tests();
 
     rain_water_conservation_unit_bfb_tests();
@@ -473,9 +473,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 };
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitTest<D>::Base
 {
-  static void update_prognostic_ice_unit_bfb_tests() {
+  void update_prognostic_ice_unit_bfb_tests() {
 
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
@@ -695,16 +695,16 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_ice_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticIce
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
+struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::UnitTest<D>::Base
 {
-  static void get_time_space_phys_variables_unit_bfb_tests(){
+  void get_time_space_phys_variables_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
@@ -809,15 +809,15 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     get_time_space_phys_variables_unit_bfb_tests();
   }
 }; //TestGetTimeSpacePhysVariables
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitTest<D>::Base
 {
-  static void  update_prognostic_liquid_unit_bfb_tests(){
+  void update_prognostic_liquid_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
 
     //fortran generated data is input to the following
@@ -983,16 +983,16 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_liquid_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticLiq
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
+struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap::UnitTest<D>::Base
 {
-  static void impose_max_total_ni_bfb_test(){
+  void impose_max_total_ni_bfb_test() {
     constexpr Scalar max_total_ni = 740.0e3;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
@@ -1062,7 +1062,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     impose_max_total_ni_bfb_test();
   }
 
@@ -1075,24 +1075,39 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 namespace {
 
 TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
+
+  T t;
+  t.run();
+  t.run_bfb();
 }
 
 TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace

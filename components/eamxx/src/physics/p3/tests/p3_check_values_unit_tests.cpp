@@ -20,9 +20,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCheckValues {
+struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Base {
 
-static void run_check_values_bfb()
+void run_check_values_bfb()
 {
   auto engine = setup_random_test();
 
@@ -60,7 +60,7 @@ static void run_check_values_bfb()
   }
 }
 
-static void run_check_values_phys()
+void run_check_values_phys()
 {
   // TODO
 }
@@ -75,14 +75,11 @@ namespace {
 
 TEST_CASE("p3_check_values", "[p3_functions]")
 {
-  using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckValues;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckValues;
 
-  scream::p3::p3_init(); // need fortran table data
-
-  TRS::run_check_values_phys();
-  TRS::run_check_values_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_check_values_phys();
+  t.run_check_values_bfb();
 }
 
 } // namespace

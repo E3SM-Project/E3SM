@@ -5,6 +5,7 @@
 #include "p3_functions.hpp"
 #include "p3_f90.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
+#include "p3_functions_f90.hpp"
 
 #include <vector>
 #include <sstream>
@@ -70,39 +71,44 @@ struct UnitWrap {
     static constexpr Int num_test_itrs = max_pack_size / Spack::n;
 
     struct Base {
-      static inline std::string     BASELINE_PATH;
-      static inline BASELINE_ACTION ACTION;
+      std::string     m_baseline_path;
+      BASELINE_ACTION m_baseline_action;
 
-      static void init()
+      Base() :
+        m_baseline_path(""),
+        m_baseline_action(NONE)
       {
         scream::p3::p3_init(); // many tests will need fortran table data
         auto& ts = ekat::TestSession::get();
         auto raw_flags = ts.flags.begin()->first;
         std::stringstream ss(raw_flags);
         std::string flag;
-        ACTION = NONE;
-        BASELINE_PATH = "";
         bool next_token_is_path = false;
         while (ss >> flag) {
           if (flag == "-c") {
-            ACTION = COMPARE;
+            m_baseline_action = COMPARE;
           }
           else if (flag == "-g") {
-            ACTION = GENERATE;
+            m_baseline_action = GENERATE;
           }
           else if (flag == "-n") {
-            ACTION = NONE;
+            m_baseline_action = NONE;
           }
           else if (flag == "-b") {
             next_token_is_path = true;
           }
           else if (next_token_is_path) {
-            BASELINE_PATH = flag;
+            m_baseline_path = flag;
             next_token_is_path = false;
           }
         }
-        EKAT_REQUIRE_MSG( !(ACTION != NONE && BASELINE_PATH == ""),
+        EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
                           "P3 unit test flags problem: baseline actions were requested but no baseline path was provided");
+      }
+
+      ~Base()
+      {
+        scream::p3::P3GlobalForFortran::deinit();
       }
     };
 

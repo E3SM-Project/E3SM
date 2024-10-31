@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceNucleation {
+struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_nucleation_bfb()
+  void run_ice_nucleation_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -104,7 +104,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
     } //end for do_prescribed_CCN
   }
 
-  static void run_ice_nucleation_phys()
+  void run_ice_nucleation_phys()
   {
     // TODO
   }
@@ -118,10 +118,11 @@ namespace {
 
 TEST_CASE("p3_ice_nucleation", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceNucleation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceNucleation;
 
-  TD::run_ice_nucleation_phys();
-  TD::run_ice_nucleation_bfb();
+  T t;
+  t.run_ice_nucleation_phys();
+  t.run_ice_nucleation_bfb();
 }
 
 }

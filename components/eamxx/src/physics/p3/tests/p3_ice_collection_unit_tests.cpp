@@ -22,9 +22,9 @@ namespace unit_test {
  * Unit-tests for p3 ice collection functions.
  */
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceCollection {
+struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_cldliq_bfb()
+  void run_ice_cldliq_bfb()
   {
     // Read in tables
     view_2d_table vn_table_vals;
@@ -119,12 +119,12 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     }
   }
 
-  static void run_ice_cldliq_phys()
+  void run_ice_cldliq_phys()
   {
     // TODO
   }
 
-  static void run_ice_rain_bfb()
+  void run_ice_rain_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -206,12 +206,12 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     }
   }
 
-  static void run_ice_rain_phys()
+  void run_ice_rain_phys()
   {
     // TODO
   }
 
-  static void run_ice_self_bfb()
+  void run_ice_self_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -283,8 +283,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     }
   }
 
-
-  static void run_ice_self_phys()
+  void run_ice_self_phys()
   {
     // TODO
   }
@@ -298,24 +297,29 @@ namespace {
 
 TEST_CASE("p3_ice_cldliq", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
 
-  TD::run_ice_cldliq_phys();
-  TD::run_ice_cldliq_bfb();
+  T t;
+  t.run_ice_cldliq_phys();
+  t.run_ice_cldliq_bfb();
 }
 
 TEST_CASE("p3_ice_rain", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
 
-  TD::run_ice_rain_phys();
-  TD::run_ice_rain_bfb();
+  T t;
+  t.run_ice_rain_phys();
+  t.run_ice_rain_bfb();
 }
 
 TEST_CASE("p3_ice_self", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
-  TD::run_ice_self_phys();
-  TD::run_ice_self_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
+
+  T t;
+  t.run_ice_self_phys();
+  t.run_ice_self_bfb();
 }
+
 }

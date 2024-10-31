@@ -14,9 +14,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
+struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_bfb()
+  void run_bfb()
   {
     constexpr Scalar latvap       = C::LatVap;
     constexpr Scalar latice       = C::LatIce;
@@ -98,9 +98,10 @@ namespace {
 
 TEST_CASE("ice_supersat_conservation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSupersatConservation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSupersatConservation;
 
-  TestStruct::run_bfb();
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

@@ -20,14 +20,14 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
+struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_phys()
+  void run_phys()
   {
     // TODO
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
     auto engine = setup_random_test();
 
@@ -115,10 +115,11 @@ namespace {
 
 TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
 
-  TD::run_phys();
-  TD::run_bfb();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 }
