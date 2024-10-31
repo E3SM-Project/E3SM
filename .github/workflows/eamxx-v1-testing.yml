@@ -57,31 +57,16 @@ jobs:
     # Run this workflow if:
     #   - workflow_dispatch: user requested this job.
     #   - schedule: always:
-    #   - pull_request: matching skip label is NOT found
-    if: |
-      ${{
-          github.event_name == 'schedule' ||
-          ( github.event_name == 'workflow_dispatch' && contains(github.event.inputs.jobs_list, 'gcc-openmp') ) ||
-          (
-            github.event_name == 'pull_request' &&
-            !(
-              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-v1') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
-            )
-          )
-        }}
+    #   - pull_request/pull_request_review: matching skip label is NOT found
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'cpu-gcc') }}
     steps:
       - name: Show action trigger
-        uses: actions/github-script@v7
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Check for skip labels
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+        uses: ./.github/actions/check-skip-labels
         with:
-          script: |
-            const eventName = context.eventName;
-            const eventAction = context.payload.action || 'N/A';
-            const actor = context.actor;
-            console.log(`The job was triggered by a ${eventName} event.`);
-            console.log(`  - Event action: ${eventAction}`);
-            console.log(`  - Triggered by: ${actor}`);
+          skip_labels: 'AT: skip gcc,AT: skip openmp,AT: skip eamxx-sa,AT: skip eamxx-all'
       - name: Set CA certificates env var
         run: |
           # Ensure the operating system is Linux
