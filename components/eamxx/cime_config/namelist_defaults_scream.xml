@@ -348,7 +348,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-Surface-Emissions -->
     <mam4_srf_online_emiss inherit="atm_proc_base">
 
-      <!-- For all other grids -->      
+      <!-- For all other grids -->
       <srf_emis_specifier_for_DMS     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_DMS>
       <srf_emis_specifier_for_SO2     type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_SO2>
       <srf_emis_specifier_for_bc_a4   type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_bc_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_bc_a4>
@@ -358,8 +358,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_pom_a4  type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_pom_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_pom_a4>
       <srf_emis_specifier_for_so4_a1  type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a1>
       <srf_emis_specifier_for_so4_a2  type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a2>
-      
-      <!-- For ne4pg2 grid -->      
+
+      <!-- For ne4pg2 grid -->
       <srf_emis_specifier_for_DMS    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_DMS>
       <srf_emis_specifier_for_SO2    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_SO2>
       <srf_emis_specifier_for_bc_a4  hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_bc_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_bc_a4>
@@ -369,7 +369,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_pom_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_pom_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_pom_a4>
       <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a1>
       <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a2>
-      
+
 
       <!-- For ne4pg2 grid -->
       <srf_emis_specifier_for_DMS    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_DMS>
@@ -634,7 +634,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="array(real)" doc="Dry aerosol particles diameter [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
+    <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
     <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
     <wetdens type="array(real)" doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
     <bc_c1 type="real">0.0</bc_c1>
@@ -704,7 +704,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!--
        These options are meant for power users to debug the code.
        They are not meant to be used for typical eamxx simulations.
-  --> 
+  -->
   <driver_debug_options>
     <force_crash_nsteps type="integer"
 		  doc="Force simulation to fail at a specific atmosphere timestep">
