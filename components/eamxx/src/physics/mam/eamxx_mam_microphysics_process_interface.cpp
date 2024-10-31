@@ -1,7 +1,8 @@
 #include <physics/mam/eamxx_mam_microphysics_process_interface.hpp>
 
 // impl namespace for some driver level functions for microphysics
-#include "impl/photo_table_utils.cpp"
+#include "readfiles/tracer_reader_utils.hpp"
+#include "readfiles/photo_table_utils.cpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
 // When the preprocessor definition ENABLE_OUTPUT_TRACER_FIELDS is

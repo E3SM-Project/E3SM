@@ -6,7 +6,7 @@
 #include <share/util/scream_common_physics_functions.hpp>
 
 // For reading files
-#include "impl/tracer_reader_utils.hpp"
+#include "readfiles/tracer_reader_utils.hpp"
 
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
