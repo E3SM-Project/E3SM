@@ -152,15 +152,16 @@ contains
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: lt1, lt2, c_min
+      real(kind=RKIND) :: lt1, lt2, c_min, n2check, mld1, mld2, bldEdge, mldEdge
       real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
       real (kind=RKIND) :: eddyLength, eddyTime
-      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
+      real(kind=RKIND), dimension(:,:), allocatable :: dzTop, dTdzTop, dSdzTop
+      real(kind=RKIND), dimension(:), allocatable :: k33Norm
       real(kind=RKIND), dimension(:), allocatable :: RossbyRadiusTaper
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
-      real(kind=RKIND) :: c_mode1, resolution, dc_Lr
+      real(kind=RKIND) :: scaleFactor,slopeFactor, thickSlope, c_mode1, resolution, dc_Lr
       ! Dimensions
-      integer :: nCells, nEdges
+      integer :: kmin, kmax, nCells, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -216,21 +217,16 @@ contains
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
+            RediKappaSfcTaper(k, iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells + 1
-         do k = 1, nVertLevels
+         do k = 1, nVertLevels + 1
             k33(k, iCell) = 0.0_RKIND
          end do
-      end do
-      !$omp end do
-
-      !$omp do schedule(runtime)
-      do iCell = 1, nCells
-         RediKappaSfcTaper(:, iCell) = 1.0_RKIND
       end do
       !$omp end do
       !$omp end parallel
@@ -239,25 +235,105 @@ contains
       ! It is only needed when Redi mixing is enabled.
       if ( config_use_Redi ) then
 
-         allocate(dzTop(nVertLevels + 1))
-         allocate(dTdzTop(nVertLevels + 1))
-         allocate(dSdzTop(nVertLevels + 1))
+         allocate(dzTop(nVertLevels + 1,nCells))
+         allocate(dTdzTop(nVertLevels + 1,nCells))
+         allocate(dSdzTop(nVertLevels + 1,nCells))
          allocate(k33Norm(nVertLevels + 1))
 
-         if (config_Redi_use_surface_taper) then
-            !$omp parallel
-            !$omp do schedule (runtime) private(zMLD, k)
-            do iCell = 1, nCells
-               k = max(minLevelCell(iCell), indMLD(iCell))
-               zMLD = ssh(iCell) - zMid(k, iCell)
+         !$omp parallel
+         !$omp do schedule(runtime)  &
+         !$omp private(k, iEdge, cell1, cell2, kmin, kmax, n2check, mld1, mld2, mldEdge, &
+         !$omp         bldEdge, sfcTaper, thickSlope)
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
 
-               do k = minLevelCell(iCell), indMLD(iCell)
-                  RediKappaSfcTaper(k, iCell) = abs((ssh(iCell) - zMid(k, iCell))/(zMLD))
-               end do
+!            kmin = indexBoundaryLayerDepth(cell1)
+!            n2check = BruntVaisalaFreqTop(kmin, cell1)
+!            do k = kmin+1, maxLevelEdgeTop(iEdge)
+!               if(BruntVaisalaFreqTop(k,cell1) < n2check) then
+!                  kmax = k-1
+!                  mld1 = abs(zTop(k-1,cell1))
+!                  exit
+!               end if
+!            end do
+
+!            if(kmax == maxLevelEdgeTop(iEdge)) then
+!               mld1 = boundaryLayerDepth(cell1) + 100.0_RKIND !hard code a depth for now
+!            end if
+
+!            kmin = indexBoundaryLayerDepth(cell2)
+!            n2check = BruntVaisalaFreqTop(kmin, cell2)
+!            do k = kmin+1, maxLevelEdgeTop(iEdge)
+!               if(BruntVaisalaFreqTop(k,cell2) < n2check) then
+!                  kmax = k-1
+!                  mld2 = abs(zTop(k-1,cell2))
+!                  exit
+!               end if
+!            end do
+
+!            if(kmax == maxLevelEdgeTop(iEdge)) then
+!               mld2 = boundaryLayerDepth(cell2) + 100.0_RKIND !hard code a depth for now
+!            end if
+
+            if(dThreshMLD(cell1) < boundaryLayerDepth(cell1)) then
+              mld1 = boundaryLayerDepth(cell1) + 50.0_RKIND
+            else
+              mld1 = dThreshMLD(cell1)
+            end if
+
+            if(dThreshMLD(cell2) < boundaryLayerDepth(cell2)) then
+              mld2 = boundaryLayerDepth(cell2) + 50.0_RKIND
+            else
+              mld2 = dThreshMLD(cell2)
+            end if
+
+            mldEdge = 0.5_RKIND*(mld1+mld2)
+            bldEdge = 0.5_RKIND*(boundaryLayerDepth(cell1) + boundaryLayerDepth(cell2))
+            gmdiagMLD(iEdge) = mldEdge
+
+            ! if we need to turn off sfc taper we need to set rediKappaSfcTaper to 0 I think
+            ! so just wrap this in a use sfc taper thing and it's good
+            thickSlope = mldEdge - bldEdge
+
+            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+               scaleFactor = (0.5_RKIND*abs(zMid(k,cell1)+zMid(k,cell2)) - &
+                            bldEdge)/thickSlope
+               scaleFactor = max(0.0_RKIND,scaleFactor)
+               scaleFactor = min(1.0_RKIND,scaleFactor)
+
+               RediKappaSfcTaper(k,iEdge) = scaleFactor
             end do
-            !$omp end do
-            !$omp end parallel
-         end if
+         end do 
+         !$omp end do
+         !$omp end parallel
+
+         nCells = nCellsArray(4)
+         !$omp parallel
+         !$omp do schedule(runtime)  &
+         !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
+         !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
+         !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
+         do iCell = 1, nCells
+            ! prep dz, dTdz and dSdz for this column
+            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
+               dzTop(k,iCell) = 0.5_RKIND*(layerThickness(k - 1, iCell) + layerThickness(k, iCell))
+               dTdzTop(k,iCell) = (activeTracers(indexTemperature, k - 1, iCell) &
+                             - activeTracers(indexTemperature, k, iCell)) &
+                            /dzTop(k,iCell)
+               dSdzTop(k,iCell) = (activeTracers(indexSalinity, k - 1, iCell) &
+                             - activeTracers(indexSalinity, k, iCell)) &
+                            /dzTop(k,iCell)
+            end do
+            dzTop(1:minLevelCell(iCell),iCell) = -1e-15_RKIND
+            dTdzTop(1:minLevelCell(iCell),iCell) = -1e-15_RKIND
+            dSdzTop(1:minLevelCell(iCell),iCell) = -1e-15_RKIND
+            dzTop(maxLevelCell(iCell) + 1,iCell) = -1e-15_RKIND
+            dTdzTop(maxLevelCell(iCell) + 1,iCell) = -1e-15_RKIND
+            dSdzTop(maxLevelCell(iCell) + 1,iCell) = -1e-15_RKIND
+         end do
+         !$omp end do
+         !$omp end parallel
 
          nCells = nCellsArray(3)
          !$omp parallel
@@ -269,22 +345,6 @@ contains
             invAreaCell = 1.0_RKIND/areaCell(iCell)
             k33(1:maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
             k33Norm(1:maxLevelCell(iCell) + 1) = epsGM
-            ! prep dz, dTdz and dSdz for this column
-            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
-               dzTop(k) = 0.5_RKIND*(layerThickness(k - 1, iCell) + layerThickness(k, iCell))
-               dTdzTop(k) = (activeTracers(indexTemperature, k - 1, iCell) &
-                             - activeTracers(indexTemperature, k, iCell)) &
-                            /dzTop(k)
-               dSdzTop(k) = (activeTracers(indexSalinity, k - 1, iCell) &
-                             - activeTracers(indexSalinity, k, iCell)) &
-                            /dzTop(k)
-            end do
-            dzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
-            dTdzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
-            dSdzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
-            dzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
-            dTdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
-            dSdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
 
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
@@ -303,15 +363,18 @@ contains
                   drhoDS = salineContractCoeff(k, iCell)
                   dTdx = (activeTracers(indexTemperature, k, cell2) &
                           - activeTracers(indexTemperature, k, cell1)) &
-                         *dcEdgeInv
+                         *dcEdgeInv + 0.5_RKIND*(dTdzTop(k,cell2) + &
+                          dTdzTop(k,cell1))*(zMid(k,cell2) - zMid(k,cell1))* &
+                          dcEdgeInv
                   dSdx = (activeTracers(indexSalinity, k, cell2) &
                           - activeTracers(indexSalinity, k, cell1)) &
-                         *dcEdgeInv
+                         *dcEdgeInv + 0.5_RKIND*(dSdzTop(k,cell1) + &
+                         dSdzTop(k,cell2))*(zMid(k,cell2) - zMid(k,cell1))* &
+                         dcEdgeInv
                   drhoDx = drhoDT*dTdx + drhoDS*dSdx
 
-
-                  sfcTaperUp = drhoDT*dTdzTop(k) + drhoDS*dSdzTop(k)
-                  sfcTaperDown = drhoDT*dTdzTop(k+1) + drhoDS*dSdzTop(k+1)
+                  sfcTaperUp = drhoDT*dTdzTop(k,iCell) + drhoDS*dSdzTop(k,iCell)
+                  sfcTaperDown = drhoDT*dTdzTop(k+1,iCell) + drhoDS*dSdzTop(k+1,iCell)
 
                   ! Always compute *Up on the top cell and *Down on the bottom
                   ! cell, even though they are never used. This avoids an if
@@ -344,35 +407,30 @@ contains
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
-                  sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
-                  if (k < min( indMLD(cell1), indMLD(cell2))) then
-                    sfcTaper = 0.0_RKIND
-                  else
-                    sfcTaper = 1.0_RKIND
-                  end if
+                  limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
+                                    (1.0_RKIND - slopeTaperUp))
+                  limiterDown(k,iCellSelf,iEdge) = (1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
+                                    (1.0_RKIND - slopeTaperDown))
 
-                  sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
-                  sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
+                  sfcTaper = 1.0_RKIND + sfcTaperFactor*(RediKappaSfcTaper(k,iEdge) - 1.0_RKIND) !Note that this term is 1 - sfcTaper
+                  !removing sfcTaperUp/Down as they are identical
 
 !                  ! Griffies 1998 eqn 34
                   if (k > minLevelCell(iCell)) then
                      k33(k, iCell) = k33(k, iCell) +  &
-                                     slopeTaperUp*sfcTaperUp*areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
-                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
+                                     slopeTaperUp*sfcTaper*areaEdge*dzTop(k,iCell)*slopeTriadUp(k, iCellSelf, iEdge)**2
+                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k,iCell)
                   end if
 
 !                  !Taper Redi by tapering the slopes
                   k33(k + 1, iCell) = k33(k + 1, iCell) +  &
-                                      slopeTaperDown*sfcTaperDown*areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
-                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
-
-                  limiterUp(k,iCellSelf,iEdge) = slopeTaperUp*sfcTaperUp
-                  limiterDown(k,iCellSelf,iEdge) = slopeTaperDown*sfcTaperDown
+                                      slopeTaperDown*sfcTaper*areaEdge*dzTop(k + 1,iCell)*slopeTriadDown(k, iCellSelf, iEdge)**2
+                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1,iCell)
 
                   slopeTriadUp(k, iCellSelf, iEdge) = &
-                     slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
+                     slopeTaperUp*sfcTaper*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
-                     slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
+                     slopeTaperDown*sfcTaper*slopeTriadDown(k, iCellSelf, iEdge)
 
                end do ! maxLevelEdgeTop(iEdge)
             end do ! nEdgesOnCell(iCell)
@@ -424,17 +482,24 @@ contains
                k=minLevelEdgeBot(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
-               BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
-                                                    BruntVaisalaFreqTop(k,cell2))
+               i = max(1,min(int(indexBoundaryLayerDepth(cell1)),int(indexBoundaryLayerDepth(cell2))))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(i,cell1), &
+                                                    BruntVaisalaFreqTop(i,cell2))
                maxN = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                 BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
+               !Scan from the boundary layer depth only
+               do k = i+1, maxLevelEdgeTop(iEdge)
+                 !According to Danabasoglu and Marshall (2007) take max BVF
+                 BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k,cell1), &
                                                       BruntVaisalaFreqTop(k,cell2))
                  maxN = max(maxN,max(BruntVaisalaFreqTopEdge, 0.0_RKIND))
                enddo
 
-               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
+               do k = minLevelEdgeBot(iEdge), i
+                  gmKappaScaling(k,iEdge) = 1.0_RKIND
+               end do
+
+               do k = i+1, maxLevelEdgeTop(iEdge)
+                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k,cell1), &
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
@@ -442,6 +507,8 @@ contains
                                                      config_GM_spatially_variable_max_kappa,          &
                                                      BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                      1.0_RKIND)
+                  RediKappa(k,iEdge) = RediKappa(k,iEdge)*min(max(0.1_RKIND,BruntVaisalaFreqTopEdge/  &
+                                                                 (maxN+1.0E-15)),1.0_RKIND)
                end do
            enddo
            !$omp end do
@@ -673,18 +740,22 @@ contains
             ! same closure fields in RediKappa. The horizontal tapering still
             ! comes from the config_Redi_horizontal_taper flag, not GM.
             !$omp parallel
-            !$omp do schedule(runtime)
+            !$omp do schedule(runtime) private(k)
             do iEdge=1, nEdges
-               RediKappa(iEdge) = gmHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
+               do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+                  RediKappa(k,iEdge) = gmHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
+               end do
             end do
             !$omp end do
             !$omp end parallel
          else if (config_Redi_closure == 'constant'.and. &
                    config_Redi_horizontal_taper == 'RossbyRadius') then
             !$omp parallel
-            !$omp do schedule(runtime)
+            !$omp do schedule(runtime) private(k)
             do iEdge=1, nEdges
-               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * config_Redi_constant_kappa
+               do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+                  RediKappa(k,iEdge) = RediHorizontalTaper(iEdge) * config_Redi_constant_kappa
+               end do
             end do
             !$omp end do
             !$omp end parallel

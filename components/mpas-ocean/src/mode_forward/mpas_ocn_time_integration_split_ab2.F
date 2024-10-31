@@ -174,6 +174,8 @@ module ocn_time_integration_split_ab2
       integer :: &
          iCell, iEdge, k, &! loop iterators for cell, edge, vert loops
          nCells, nEdges,  &! number of cells or edges (incl halos)
+         edgeCount,       &
+		 iNeighbor,       &
          i,j,             &! generic loop iterators
          cell1, cell2,    &! neighbor cell addresses
          eoe,             &! index for edge on edge
@@ -287,6 +289,8 @@ module ocn_time_integration_split_ab2
       ! Remap variables
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
+
+      real (kind=RKIND) :: areaSum
 
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
@@ -2699,6 +2703,40 @@ module ocn_time_integration_split_ab2
 
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, &
                              scratchPool, err, 2)
+
+       !$omp parallel
+       !$omp do schedule(runtime) private(k, nEdges, areaSum, edgeCount, iEdge, iNeighbor)
+       do k=1,5 !smooth three times  
+         call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')
+         call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepthSmooth') 
+         nCells = nCellsHalo(2)
+
+         do iCell=1,nCells
+            nEdges = nEdgesOnCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = 0.0_RKIND
+            areaSum = 0.0_RKIND
+            edgeCount = 0
+
+            do iEdge = 1,nEdges
+               iNeighbor = cellsOnCell(iEdge,iCell)
+               boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +  &
+                             2.0_RKIND * cellMask(minLevelCell(iNeighbor),iNeighbor) * areaCell(iNeighbor)    &
+                             * boundaryLayerDepth(iNeighbor)
+               areaSum = areaSum + 2.0_RKIND * areaCell(iNeighbor) * cellMask(minLevelCell(iNeighbor),iNeighbor)
+               edgeCount = edgeCount + cellMask(minLevelCell(iNeighbor),iNeighbor)
+            end do
+            areaSum = areaSum + edgeCount * areaCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +   &
+                         boundaryLayerDepth(iCell) * edgeCount * areaCell(iCell)
+            boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) / areaSum
+         end do
+
+          do iCell=1, nCells
+             boundaryLayerDepth(iCell) = boundaryLayerDepthSmooth(iCell)
+          enddo
+      end do
+      !$omp end do
+      !$omp end parallel
 
       ! Update halo on u and tracers, which were just updated for
       ! implicit vertical mixing.  If not done, this leads to lack of

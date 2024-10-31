@@ -143,6 +143,8 @@ module ocn_diagnostics_variables
 
    integer, dimension(:), pointer :: indMLD
    real(kind=RKIND), dimension(:), pointer :: dThreshMLD
+   real(kind=RKIND), dimension(:), pointer :: gmdiagMLD
+
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
 
    real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
@@ -164,7 +166,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerNonLocalTendency
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerHorMixTendency
    real (kind=RKIND), dimension(:,:), pointer :: temperatureShortWaveTendency
-   real (kind=RKIND), dimension(:), pointer :: RediKappa
+   real (kind=RKIND), dimension(:,:), pointer :: RediKappa
 
    ! pointers for tendencies used in diagnostic budget computation
    real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
@@ -705,6 +707,7 @@ contains
                 sshAdjustmentMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
+      call mpas_pool_get_array(diagnosticsPool, 'gmdiagMLD', gmdiagMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
                 surfacePressure)
 
@@ -951,6 +954,7 @@ contains
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
       !$acc                   dThreshMLD,                              &
+      !$acc                   gmdiagMLD,                               &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -1211,6 +1215,7 @@ contains
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
       !$acc                   dThreshMLD,                              &
+      !$acc                   gmdiagMLD,                               &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -1414,6 +1419,7 @@ contains
               xtime,                                   &
               indMLD,                                  &
               dThreshMLD,                              &
+              gmdiagMLD,                               &
               density,                                 &
               betaEdge,                                &
               pressure,                                &
