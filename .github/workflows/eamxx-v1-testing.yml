@@ -29,13 +29,10 @@ on:
         type: boolean
 
 concurrency:
-  # Two runs are in the same group if:
-  #  - they have the same trigger
-  #  - if trigger=pull_request/pull_request_review: the PR number must match
-  #  - if trigger=workflow_dispatch: no concurrency
-  group: ${{ github.workflow }}-${{
-             (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') && github.event.pull_request.number || github.run_id
-           }}
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
