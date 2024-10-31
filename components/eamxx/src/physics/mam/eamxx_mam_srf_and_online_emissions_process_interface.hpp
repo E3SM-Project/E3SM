@@ -103,7 +103,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
+    void initialize(const int &ncol, const int &nlev,
                     const mam_coupling::WetAtmosphere &wet_atm,
                     const mam_coupling::DryAtmosphere &dry_atm,
                     const view_2d &constituent_fluxes) {
@@ -116,14 +116,25 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     KOKKOS_INLINE_FUNCTION
     void operator()(
         const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
+      const int icol = team.league_rank();  // column index
 
-      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, icol);
       team.team_barrier();
       // vertical heights has to be computed after computing dry mixing ratios
       // for atmosphere
-      compute_vertical_layer_heights(team, dry_atm_pre_, i);
-      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
+      compute_vertical_layer_heights(team, dry_atm_pre_, icol);
+      compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, icol);
+
+      view_1d flux_col = ekat::subview(constituent_fluxes_pre_, icol);
+
+      // Zero out constituent fluxes only for gasses and aerosols
+      const int pcnst         = mam4::aero_model::pcnst;
+      const int gas_start_ind = mam4::utils::gasses_start_ind();
+
+      // FIXME: Is there a better way to zero out a select indices?
+      for(int ispc = gas_start_ind; ispc < pcnst; ++ispc) {
+        flux_col(ispc) = 0;
+      }
     }  // Preprocess operator()
 
     // local variables for preprocess struct

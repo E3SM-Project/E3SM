@@ -413,12 +413,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  // Zero-out output
-  // FIXME: Find out if we do it in the fortran code
-  // if we do, this should be a "Computed" field,
-  // ALSO this code should in the preprocessor struct now
-  Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
-
   // Gather time and state information for interpolation
   const auto ts = timestamp() + dt;
 
@@ -468,25 +462,25 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   auto constituent_fluxes = this->constituent_fluxes_;
 
   // Soil edodibility [fraction]
-  auto soil_erodibility = this->soil_erodibility_;
+  const const_view_1d soil_erodibility = this->soil_erodibility_;
 
   // Vertical layer height at midpoints
   const const_view_2d z_mid = dry_atm_.z_mid;
 
-  // TODO: check that units are consistent with srf emissions!
-  // copy current values to online-emissions-local version
   // TODO: potentially combine with below parfor(icol) loop?
   const int surf_lev = nlev_ - 1;  // surface level
 
   Kokkos::parallel_for(
       "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        // input
+        // Input
         const const_view_1d dstflx_icol = ekat::subview(dstflx, icol);
 
-        // output
+        // Output
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
 
-        // comput online emissions
+        // Comput online emissions
+        // NOTE: mam4::aero_model_emissions calculates mass and number emission
+        // fluxes in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
         mam4::aero_model_emissions::aero_model_emissions(
             sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
             v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
@@ -494,11 +488,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
             // out
             fluxes_col);
       });
-
-  // NOTE: mam4::aero_model_emissions calculates mass and number emission fluxes
-  // in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
-  // Kokkos::deep_copy(constituent_fluxes_, online_data.cfluxes);
-  // Kokkos::fence();
+  Kokkos::fence();
 
   //--------------------------------------------------------------------
   // Interpolate srf emiss data read in from emissions files
@@ -540,16 +530,3 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 }  // run_impl ends
 // =============================================================================
 }  // namespace scream
-
-// NOTE: calling aero_model_emissions() this way hides the fact that
-// some hard-coded data is initialized within mam4::aero_model_emissions
-// some of these values definitely need to be read from here column-wise
-// the structs.{values} holding the above are:
-// SeasaltEmissionsData.{mpoly, mprot, mlip}
-// DustEmissionsData.dust_dmt_vwr
-// OnlineEmissionsData.{dust_flux_in, surface_temp, u_wind,
-//                      v_wind, z_bottom, ocean_frac}
-// NOTE: fortran mam4 gets dust_flux_in and ocean_frac from cam_in,
-// which is a chunk-wise variable at this point
-// (see: physpkg.F90:{1605 & 1327}) otherwise grabs the end/bottom
-// col-value once inside aero_model_emissions()
