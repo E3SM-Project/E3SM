@@ -3635,6 +3635,18 @@ Switch for diagnostic output of the aerosol optics
 Default: .false.
 </entry>
 
+<entry id="fix_plume_height" type="real"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: 0.0
+</entry>
+
+<entry id="detrainment_para" type="real"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: 0.0
+</entry>
+
 <entry id="diag_run_plumerise" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of the aerosol optics

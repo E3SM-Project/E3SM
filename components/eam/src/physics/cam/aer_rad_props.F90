@@ -23,7 +23,7 @@ use cam_history_support, only : fillvalue
 use ref_pres,     only: clim_modal_aero_top_lev
 
 use cam_abortutils,       only: endrun
-use tropopause,           only : tropopause_find
+use tropopause,           only : tropopause_find,tropopause_e90_3d
 use cam_logfile,          only: iulog
 
 implicit none
@@ -140,7 +140,7 @@ end subroutine aer_rad_props_init
 
 subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f, clear_rh)
-
+   use mo_chem_utls,        only : get_spc_ndx
    ! Return bulk layer tau, omega, g, f for all spectral intervals.
 
    ! Arguments
@@ -218,7 +218,12 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    real(r8) :: ext_sao_sw(pcols,0:pver,nswbands) !
    real(r8) :: ssa_sao   (pcols,0:pver,nswbands) !
    real(r8) :: af_sao    (pcols,0:pver,nswbands) !
-
+   ! for 3D Strat. Burden
+   integer :: e90_ndx
+   integer  :: tmp_tropLev(pcols)
+   logical  :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+   real(r8) :: tropFlagInt(pcols,pver)   ! 3D tropospheric level flag integer, troposphere 1, others 0
+   real(r8) :: tropP(pcols)              ! lowest tropopause pressure (Pa) from E90
    !-----------------------------------------------------------------------------
 
    ncol  = state%ncol
@@ -265,7 +270,13 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
          enddo
          call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
    endif
-
+   ! get 3D trop level from E90 method
+   e90_ndx = get_spc_ndx('E90')
+   if (e90_ndx > 0) then
+      call tropopause_e90_3d(state, tmp_tropLev, trop_level, tropFlag, tropFlagInt,tropP=tropP)
+   endif
+   !----------------------------------
+   !    
    if (is_cmip6_volc) then
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
@@ -292,8 +303,13 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
-           trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+      if (e90_ndx > 0) then
+         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
+               trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh, tropFlag=tropFlag)
+      else           
+         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), &
+               trop_level, tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+      end if 
    else
       tau    (1:ncol,:,:) = 0._r8
       tau_w  (1:ncol,:,:) = 0._r8

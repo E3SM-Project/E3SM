@@ -1339,18 +1339,18 @@ contains
    ! SINGLE MOMENT PARAMETERS
    integer,parameter,dimension(N_HYDRO) :: &
                     ! LSL  LSI  LSR  LSS  CVL  CVI  CVR  CVS  LSG    
-       HCLASS1_TYPE  = (/5,   1,   2,   2,   5,   1,   2,   2,   2/), & ! 
+       HCLASS1_TYPE  = (/1,   1,   2,   2,   1,   1,   2,   2,   2/), & ! 
        HCLASS1_PHASE = (/0,   1,   0,   1,   0,   1,   0,   1,   1/)    ! 
    real(wp),parameter,dimension(N_HYDRO) ::&
                       ! LSL   LSI    LSR    LSS    CVL   CVI    CVR    CVS    LSG    
        HCLASS1_DMIN = (/ -1.,  -1.,   -1.,   -1.,   -1.,  -1.,   -1.,   -1.,   -1.  /),  &
        HCLASS1_DMAX = (/ -1.,  -1.,   -1.,   -1.,   -1.,  -1.,   -1.,   -1.,   -1.  /),  &
-       HCLASS1_APM  = (/524., 110.8, 524.,   -1.,  524., 110.8, 524.,   -1.,   -1.  /),  &
-       HCLASS1_BPM  = (/  3.,   2.91,  3.,   -1.,    3.,   2.91,  3.,   -1.,   -1.  /),  &
-       HCLASS1_RHO  = (/ -1.,  -1.,   -1.,  100.,   -1.,  -1.,   -1.,  100.,  400.  /),  &
+       HCLASS1_APM  = (/524., -1., 524.,   -1.,  524., -1., 524.,   -1.,   -1.  /),  &
+       HCLASS1_BPM  = (/  3.,   -1.,  3.,   -1.,    3.,   -1.,  3.,   -1.,   -1.  /),  &
+       HCLASS1_RHO  = (/ -1.,  500.,   -1.,  250.,   -1.,  500.,   -1.,  250.,  400.  /),  &
        HCLASS1_P1   = (/ -1.,  -1.,    8.e6,  3.e6, -1.,  -1.,    8.e6,  3.e6,  4.e6/),  & 
-       HCLASS1_P2   = (/  6.,  40.,   -1.,   -1.,    6.,  40.,   -1.,   -1.,   -1.   /), & 
-       HCLASS1_P3   = (/  0.3,  2.,   -1.,   -1.,    0.3,  2.,   -1.,   -1.,   -1.   /)
+       HCLASS1_P2   = (/  12.,  40.,   -1.,   -1.,    12.,  40.,   -1.,   -1.,   -1.   /), & 
+       HCLASS1_P3   = (/  0.,  0.,   -1.,   -1.,    0.,  0.,   -1.,   -1.,   -1.   /)
 
     ! TWO MOMENT PARAMETERS
     integer,parameter,dimension(N_HYDRO) :: &

@@ -465,7 +465,7 @@ end subroutine modal_aer_opt_init
 !===============================================================================
 
 subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
-                         tauxar, wa, ga, fa, clear_rh)
+                         tauxar, wa, ga, fa, clear_rh, tropFlag)
 
    ! calculates aerosol sw radiative properties
 
@@ -481,6 +481,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    logical,             intent(in) :: is_cmip6_volc
    real(r8), optional,  intent(in) :: clear_rh(pcols,pver) ! optional clear air relative humidity
                                                            ! that gets passed to modal_aero_wateruptake_dr
+   logical, optional,   intent(in) :: tropFlag(pcols,pver)      ! 3D tropospheric level flag 
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
    real(r8), intent(out) :: wa(pcols,0:pver,nswbands)     ! layer single-scatter albedo
@@ -857,6 +858,20 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         absso4(i)    = -vol(i)*specrefi
                         hygroso4(i)  = vol(i)*hygro_aer
                      end do
+                     if (present(tropFlag)) then ! calculate 3D burden, true: tropospheric box
+                      do i= 1, ncol
+                         burdenso4(i) = burdenso4(i) + specmmr(i,k)*mass(i,k)
+                         aburdenso4(i) = aburdenso4(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         if (NOT(tropFlag(i,k))) then ! in strat.
+                            aburdenso4_str(i)    = aburdenso4_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         else
+                            aburdenso4_tro(i)    = aburdenso4_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         endif
+                         scatso4(i)   = vol(i)*specrefr
+                         absso4(i)    = -vol(i)*specrefi
+                         hygroso4(i)  = vol(i)*hygro_aer
+                      end do
+                    end if ! if present(tropFlag)
                   end if
                   if (trim(spectype) == 'black-c') then
                      do i = 1, ncol
@@ -871,6 +886,20 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         absbc(i)    = -vol(i)*specrefi
                         hygrobc(i)  = vol(i)*hygro_aer
                    end do
+                    if (present(tropFlag)) then ! calculate 3D burden, true: tropospheric box
+                      do i= 1, ncol 
+                         burdenbc(i) = burdenbc(i) + specmmr(i,k)*mass(i,k)
+                         aburdenbc(i) = aburdenbc(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         if (NOT(tropFlag(i,k))) then ! in strat.
+                            aburdenbc_str(i)    = aburdenbc_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         else
+                            aburdenbc_tro(i)    = aburdenbc_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         endif
+                         scatbc(i)   = vol(i)*specrefr
+                         absbc(i)    = -vol(i)*specrefi
+                         hygrobc(i)  = vol(i)*hygro_aer
+                      end do
+                    end if ! if present(tropFlag)
                   end if
                   if (trim(spectype) == 'p-organic') then
                      do i = 1, ncol
@@ -885,6 +914,20 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         abspom(i)    = -vol(i)*specrefi
                         hygropom(i)  = vol(i)*hygro_aer
                       end do
+                    if (present(tropFlag)) then ! calculate 3D burden, true: tropospheric box
+                      do i= 1, ncol
+                         burdenpom(i) = burdenpom(i) + specmmr(i,k)*mass(i,k)
+                         aburdenpom(i) = aburdenpom(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         if (NOT(tropFlag(i,k))) then ! in strat.
+                            aburdenpom_str(i)    = aburdenpom_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         else
+                            aburdenpom_tro(i)    = aburdenpom_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                         endif
+                         scatpom(i)   = vol(i)*specrefr
+                         abspom(i)    = -vol(i)*specrefi
+                         hygropom(i)  = vol(i)*hygro_aer
+                      end do
+                    end if ! if present(tropFlag) 
                   end if
                   if (trim(spectype) == 's-organic') then
                      do i = 1, ncol

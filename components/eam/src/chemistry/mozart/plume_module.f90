@@ -126,7 +126,8 @@ real(r8), parameter ::                    &
 contains
 
   subroutine  smk_pr_driver( plume_data , env, gfed_area, frp, lat, &
-             wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm )
+             wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm,&
+             qv_ini_e3sm,qv_end_e3sm,r_ini_e3sm,r_end_e3sm,rho_ini_e3sm,rho_end_e3sm )
 
   integer :: m1,m2,m3,ia,iz,ja,jz,ibcon,mynum,i,j,k,iveg_ag,&
              k_CO_smold,k_PM25_smold,imm,k1,k2,kmt,use_sound,kk
@@ -138,6 +139,15 @@ contains
   real(r8), intent(out):: plume_data
   real(r8), intent(out) :: wt_ini_e3sm(pver), wt_end_e3sm(pver), rbuoy_ini_e3sm(pver), rbuoy_end_e3sm(pver)
   real(r8), intent(out) :: t_ini_e3sm(pver), t_end_e3sm(pver)
+  real(r8), intent(out) :: qv_ini_e3sm(pver), qv_end_e3sm(pver)
+  real(r8), intent(out) :: r_ini_e3sm(pver), r_end_e3sm(pver)
+  real(r8), intent(out) :: rho_ini_e3sm(pver), rho_end_e3sm(pver)
+  wt_end_e3sm(:) = 0.0_r8
+  t_end_e3sm(:) = 0.0_r8
+  qv_end_e3sm(:) = 0.0_r8
+  r_end_e3sm(:) = 0.0_r8
+  rho_end_e3sm(:) = 0.0_r8
+
    
  !- initial settings (should be changed for the coupling with 3d host model)
  ia=1;iz=1;ja=1;jz=1; m1=38
@@ -192,7 +202,8 @@ contains
        !print*, 'finish get_fire_properties'
        !------  generate plume rise    ------	     
        call makeplume (kmt,ztopmax(imm),imm,lat,ini_f,&
-            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm)    ! finish the vertical loope
+            wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm,t_ini_e3sm,t_end_e3sm, &
+            qv_ini_e3sm, qv_end_e3sm, r_ini_e3sm, r_end_e3sm,rho_ini_e3sm,rho_end_e3sm)    ! finish the vertical loope
 
        !print*,' burnt_area (ha) - top cloud(km)- power (W m^2)' 
        !print*,burnt_area/10000.,ztopmax(imm)/1000.,heat_fluxW
@@ -623,7 +634,8 @@ end subroutine get_fire_properties
 !-------------------------------------------------------------------------------
 !
 SUBROUTINE MAKEPLUME ( kmt,ztopmax,imm, lat, ini_f,&
-           wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm, t_ini_e3sm,t_end_e3sm)  
+           wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm, t_ini_e3sm,t_end_e3sm, &
+           qv_ini_e3sm,qv_end_e3sm,r_ini_e3sm,r_end_e3sm,rho_ini_e3sm,rho_end_e3sm)  
 ! makeplume (kmt,ztopmax(imm),imm)
 ! *********************************************************************
 !
@@ -696,6 +708,9 @@ real(r8)::  vc, g,  r,  cp,  eps,  &
 real(r8):: ini_f
 real(r8), dimension(pver) :: wt_ini_e3sm, wt_end_e3sm, rbuoy_ini_e3sm, rbuoy_end_e3sm
 real(r8), dimension(pver) :: t_ini_e3sm,t_end_e3sm
+real(r8), dimension(pver) :: r_ini_e3sm,r_end_e3sm
+real(r8), dimension(pver) :: rho_ini_e3sm,rho_end_e3sm
+real(r8), dimension(pver) :: qv_ini_e3sm,qv_end_e3sm
 !
 integer :: imm,nk
 
@@ -788,14 +803,14 @@ wt_end_e3sm(:) = -999.0
     call lbound_mtt(ini_f)
     !print*,'wt-lb ', wt(2),w(2),wc(2)
 !kzm output w
-    nk = pver-8 !kzm
-    if (nstep == 1) then
-       call htint(kmt, w,zm,nk,wt_ini_e3sm,zcon)
-       call htint(kmt, t,zm,nk,t_ini_e3sm,zcon)
-    else
-       call htint(kmt, w,zm,nk,wt_end_e3sm,zcon)
-       call htint(kmt, t,zm,nk,t_end_e3sm,zcon)
-    endif     
+!    nk = pver-8 !kzm
+!    if (nstep == 1) then
+!       call htint(kmt, w,zm,nk,wt_ini_e3sm,zcon)
+!       call htint(kmt, t,zm,nk,t_ini_e3sm,zcon)
+!    else
+!       call htint(kmt, w,zm,nk,wt_end_e3sm,zcon)
+!       call htint(kmt, t,zm,nk,t_end_e3sm,zcon)
+!    endif     
    ! print*,alpha(1:2)
 !-- dynamics for the level k>1 
 
@@ -916,7 +931,22 @@ wt_end_e3sm(:) = -999.0
     kkmax   = max (kk  , kkmax  ) 
 !    print * ,'ztopmax=', mintime,'mn ',ztop_(mintime), ztopmax!,wtmax
 
-!
+!kzm output w
+    nk = pver-8 !kzm
+    if (nstep == 1) then
+       call htint(kmt, w,zm,nk,wt_ini_e3sm,zcon)
+       call htint(kmt, t,zm,nk,t_ini_e3sm,zcon)
+       !call htint(kmt, qv+qh+qi+qc,zm,nk,qv_ini_e3sm,zcon)
+       call htint(kmt, qv,zm,nk,qv_ini_e3sm,zcon)
+       call htint(kmt, radius,zm,nk,r_ini_e3sm,zcon)
+       call htint(kmt, rho,zm,nk,rho_ini_e3sm,zcon)
+    else
+       call htint(kmt, w,zm,nk,wt_end_e3sm,zcon)
+       call htint(kmt, t,zm,nk,t_end_e3sm,zcon)
+       call htint(kmt, qv,zm,nk,qv_end_e3sm,zcon)
+       call htint(kmt, radius,zm,nk,r_end_e3sm,zcon)
+       call htint(kmt, rho,zm,nk,rho_end_e3sm,zcon)
+    endif
 
 ! if the solution is going to a stationary phase, exit
    if(mintime > 40) then

@@ -130,7 +130,7 @@ module cospsimulator_intr
   logical :: cosp_amwg             = .false. ! CAM namelist variable default, not in COSP namelist
   logical :: cosp_lite             = .false. ! CAM namelist variable default, not in COSP namelist
   logical :: cosp_passive          = .false. ! CAM namelist variable default, not in COSP namelist
-  logical :: cosp_active           = .false. ! CAM namelist variable default, not in COSP namelist
+  logical :: cosp_active           = .true. ! CAM namelist variable default, not in COSP namelist
   logical :: cosp_isccp            = .false. ! CAM namelist variable default, not in COSP namelist
   logical :: cosp_lradar_sim       = .false. ! CAM namelist variable default
   logical :: cosp_llidar_sim     = .false. ! CAM namelist variable default
@@ -141,7 +141,7 @@ module cospsimulator_intr
   logical :: cosp_lfrac_out        = .false. ! CAM namelist variable default
   logical :: cosp_runall           = .false. ! flag to run all of the cosp simulator package
   integer :: cosp_ncolumns         = 50      ! CAM namelist variable default
-  integer :: cosp_histfile_num     =1        ! CAM namelist variable default, not in COSP namelist 
+  integer :: cosp_histfile_num     = 1        ! CAM namelist variable default, not in COSP namelist 
   integer :: cosp_histfile_aux_num =-1       ! CAM namelist variable default, not in COSP namelist
   
   ! COSP
@@ -170,8 +170,10 @@ module cospsimulator_intr
                                                  ! (if .true. then the CloudSat standard grid is used.
                                                  ! If set, overides use_vgrid.) (.true.)
   ! namelist variables for COSP input related to radar simulator
-  real(r8) :: radar_freq = 94.0_r8               ! CloudSat radar frequency (GHz) (94.0)
-  integer :: surface_radar = 0                   ! surface=1, spaceborne=0 (0)
+  !real(r8) :: radar_freq = 94.0_r8               ! CloudSat radar frequency (GHz) (94.0)
+  real(r8) :: radar_freq = 3.0_r8               ! kzm: CloudSat radar frequency (GHz) (3.0) for NEXRAD
+  !integer :: surface_radar = 0                   ! surface=1, spaceborne=0 (0)
+  integer :: surface_radar = 1                   ! kzm: surface=1, spaceborne=0 (0)
   integer :: use_mie_tables = 0                  ! use a precomputed lookup table? yes=1,no=0 (0)
   integer :: use_gas_abs = 1                     ! include gaseous absorption? yes=1,no=0 (1)
   integer :: do_ray = 0                          ! calculate/output Rayleigh refl=1, not=0 (0)
@@ -564,7 +566,7 @@ CONTAINS
        cosp_ncolumns = 10
        cosp_nradsteps = 3
     end if
-    
+    cosp_ncolumns = 2 !kzm forced value
     !! reset COSP namelist variables based on input from cam namelist variables
     if (cosp_ncolumns .ne. ncolumns) then
        ncolumns = cosp_ncolumns
@@ -1162,14 +1164,14 @@ CONTAINS
     lsreffsnow_idx = pbuf_get_index('LS_REFFSNOW')
     cvreffliq_idx  = pbuf_get_index('CV_REFFLIQ')
     cvreffice_idx  = pbuf_get_index('CV_REFFICE')
-    dpcldliq_idx   = pbuf_get_index('DP_CLDLIQ')
-    dpcldice_idx   = pbuf_get_index('DP_CLDICE')
+    !dpcldliq_idx   = pbuf_get_index('DP_CLDLIQ')
+    !dpcldice_idx   = pbuf_get_index('DP_CLDICE')
     shcldliq_idx   = pbuf_get_index('SH_CLDLIQ')
     shcldice_idx   = pbuf_get_index('SH_CLDICE')
     shcldliq1_idx  = pbuf_get_index('SH_CLDLIQ1')
     shcldice1_idx  = pbuf_get_index('SH_CLDICE1')
-    dpflxprc_idx   = pbuf_get_index('DP_FLXPRC')
-    dpflxsnw_idx   = pbuf_get_index('DP_FLXSNW')
+    !dpflxprc_idx   = pbuf_get_index('DP_FLXPRC')
+    !dpflxsnw_idx   = pbuf_get_index('DP_FLXSNW')
     shflxprc_idx   = pbuf_get_index('SH_FLXPRC')
     shflxsnw_idx   = pbuf_get_index('SH_FLXSNW')
     lsflxprc_idx   = pbuf_get_index('LS_FLXPRC')
@@ -1409,11 +1411,11 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: ls_reffsnow     ! snow effective drop size (microns)
     real(r8), pointer, dimension(:,:) :: cv_reffliq      ! convective cld liq effective drop radius (microns)
     real(r8), pointer, dimension(:,:) :: cv_reffice      ! convective cld ice effective drop size (microns)
-    
+    real(r8) :: cld_kzm(pcols,pver),concld_kzm(pcols,pver) ! kzm to replace cld, concld
     !! precip flux pointers (use for cam4 or cam5)
     ! Added pointers;  pbuff in zm_conv_intr.F90, calc in zm_conv.F90 
-    real(r8), pointer, dimension(:,:) :: dp_flxprc       ! deep interface gbm flux_convective_cloud_rain+snow (kg m^-2 s^-1)
-    real(r8), pointer, dimension(:,:) :: dp_flxsnw       ! deep interface gbm flux_convective_cloud_snow (kg m^-2 s^-1) 
+    !real(r8), pointer, dimension(:,:) :: dp_flxprc       ! deep interface gbm flux_convective_cloud_rain+snow (kg m^-2 s^-1)
+    !real(r8), pointer, dimension(:,:) :: dp_flxsnw       ! deep interface gbm flux_convective_cloud_snow (kg m^-2 s^-1) 
     ! More pointers;  pbuf in convect_shallow.F90, calc in hk_conv.F90/convect_shallow.F90 (CAM4), uwshcu.F90 (CAM5)
     real(r8), pointer, dimension(:,:) :: sh_flxprc       ! shallow interface gbm flux_convective_cloud_rain+snow (kg m^-2 s^-1) 
     real(r8), pointer, dimension(:,:) :: sh_flxsnw       ! shallow interface gbm flux_convective_cloud_snow (kg m^-2 s^-1)
@@ -1428,8 +1430,8 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: sh_cldliq       ! shallow gbm cloud liquid water (kg/kg)
     real(r8), pointer, dimension(:,:) :: sh_cldice       ! shallow gbm cloud ice water (kg/kg)
     ! More pointers;  pbuf in zm_conv_intr.F90, calc in zm_conv.F90, 0 for CAM4 and CAM5 (same convection scheme)
-    real(r8), pointer, dimension(:,:) :: dp_cldliq       ! deep gbm cloud liquid water (kg/kg)
-    real(r8), pointer, dimension(:,:) :: dp_cldice       ! deep gmb cloud ice water (kg/kg)
+    !real(r8), pointer, dimension(:,:) :: dp_cldliq       ! deep gbm cloud liquid water (kg/kg)
+    !real(r8), pointer, dimension(:,:) :: dp_cldice       ! deep gmb cloud ice water (kg/kg)
     
     ! Output CAM variables
     ! Notes:
@@ -1788,6 +1790,8 @@ CONTAINS
     
     ! 4) get variables from physics buffer
     itim_old = pbuf_old_tim_idx()
+    cld_kzm(:,:) = 1.0_r8 !kzm
+    concld_kzm(:,:) = 1.0_r8 !kzm 
     call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     call pbuf_get_field(pbuf, rel_idx, rel  )
@@ -1803,15 +1807,15 @@ CONTAINS
     ! all "1" at the end ok as is because radiation/intr after when these were added to physics buffer
     
     !! convective cloud mixing ratios (use for cam4 and cam5)
-    call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
-    call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
+    !call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
+    !call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
     !! get from pbuf in stratiform.F90
     call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
     call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
     
     !! precipitation fluxes (use for both cam4 and cam5 for now....)
-    call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
-    call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
+    !call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
+    !call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
     call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
     call pbuf_get_field(pbuf, shflxsnw_idx, sh_flxsnw  )
     call pbuf_get_field(pbuf, lsflxprc_idx, ls_flxprc  )
@@ -1906,9 +1910,9 @@ CONTAINS
     use_precipitation_fluxes = .true.      !!! consistent with cam4 implementation.
     
     ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
-    rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
-         (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
-    snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+    rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) !+ &
+         !(dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
+    snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) !+ dp_flxsnw(1:ncol,1:pverp)
     
     ! interpolate interface precip fluxes to mid points
     do i=1,ncol
@@ -1930,10 +1934,12 @@ CONTAINS
     !! Convective cloud water is NOT part of radiation calculations.
     do k=1,pver
        do i=1,ncol
-          if (cld(i,k) .gt. 0._r8) then
+          !kzm cld_kzm(ncol,pver) to replace cld
+          !if (cld(i,k) .gt. 0._r8) then
+          if (cld_kzm(i,k) .gt. 0._r8) then
              !! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
-             mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
-             mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
+             mr_ccliq(i,k) = sh_cldliq(i,k) !+ dp_cldliq(i,k)
+             mr_ccice(i,k) = sh_cldice(i,k) !+ dp_cldice(i,k)
              mr_lsliq(i,k)=state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
              mr_lsice(i,k)=state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
           else
@@ -2103,9 +2109,21 @@ CONTAINS
 
     ! *NOTE* Fields passed into subsample_and_optics are ordered from TOA-2-SFC.
     call t_startf("subsample_and_optics")
+!kzm +++
+    !call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
+    !     use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),&
+    !     concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
+    !     snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
+    !     rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
+    !     mr_lsliq(1:ncol,1:pver),mr_lsice(1:ncol,1:pver),                      &
+    !     mr_ccliq(1:ncol,1:pver),mr_ccice(1:ncol,1:pver),                      &
+    !     reff_cosp(1:ncol,1:pver,:),dtau_c(1:ncol,1:pver),                     &
+    !     dtau_s(1:ncol,1:pver),dem_c(1:ncol,1:pver),                           &
+    !     dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
+    !     dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),&
-         concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_kzm(1:ncol,1:pver),&
+         concld_kzm(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
          snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
          rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
          mr_lsliq(1:ncol,1:pver),mr_lsice(1:ncol,1:pver),                      &
@@ -2114,6 +2132,7 @@ CONTAINS
          dtau_s(1:ncol,1:pver),dem_c(1:ncol,1:pver),                           &
          dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
          dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
+!kzm ---
     if (lradar_sim) sd_cs(lchnk) = sd_wk
     call t_stopf("subsample_and_optics")
     
@@ -2660,6 +2679,7 @@ CONTAINS
        call outfld('CS_RAINHARD',   ptcloudsatflag8,  pcols, lchnk)
        call outfld('CS_UN',         ptcloudsatflag9,  pcols, lchnk)
        call outfld('CS_PIA',        cloudsatpia,      pcols, lchnk)
+       call outfld('DBZE_CS',dbze_cs,pcols,lchnk) !! fails check_accum if 'A' !kzm
     end if
     
     ! MISR SIMULATOR OUTPUTS
@@ -2781,9 +2801,9 @@ CONTAINS
        if (llidar_sim) then
           call outfld('ATB532_CAL',atb532_cal,pcols,lchnk) !! fails check_accum if 'A'
        end if
-       if (lradar_sim) then
-          call outfld('DBZE_CS',dbze_cs,pcols,lchnk) !! fails check_accum if 'A'
-       end if
+       !if (lradar_sim) then  !kzm
+       !   call outfld('DBZE_CS',dbze_cs,pcols,lchnk) !! fails check_accum if 'A'
+       !end if
     end if
     call t_stopf("writing_output")
 #endif

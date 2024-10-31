@@ -415,6 +415,8 @@ subroutine diag_init()
 
    call addfld ('U90M',horiz_only,    'A','m/s','Zonal wind at turbine hub height (90m above surface)')
    call addfld ('V90M',horiz_only,    'A','m/s','Meridional wind at turbine hub height (90m above surface)')
+   call addfld ('U10M',horiz_only,    'A','m/s','Zonal wind at turbine hub height (10m above surface)')
+   call addfld ('V10M',horiz_only,    'A','m/s','Meridional wind at turbine hub height (10m above surface)')
 
    ! This field is added by radiation when full physics is used
    if ( ideal_phys )then
@@ -1676,10 +1678,19 @@ end subroutine diag_conv_tend_ini
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%v, p_surf)
        call outfld('V90M    ', p_surf, pcols, lchnk )
     endif
+    if (hist_fld_active('U10M')) then
+       call vertinterpz(ncol, pcols, pver, state%zm, 10._r8, state%u, p_surf)
+       call outfld('U10M    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V10M')) then
+       call vertinterpz(ncol, pcols, pver, state%zm, 10._r8, state%v, p_surf)
+       call outfld('V10M    ', p_surf, pcols, lchnk )
+    endif
     if (hist_fld_active('V100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
        call outfld('V100    ', p_surf, pcols, lchnk )
     end if
+    
 
     ftem(:ncol,:) = state%t(:ncol,:)*state%t(:ncol,:)
     call outfld('TT      ',ftem    ,pcols   ,lchnk   )

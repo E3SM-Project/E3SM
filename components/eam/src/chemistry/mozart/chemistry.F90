@@ -144,6 +144,8 @@ module chemistry
   integer :: ndx_prain
   integer :: ndx_cldtop
   integer :: h2o_ndx
+  integer :: h2ofire_ndx = -1 ! fire related water vapor (kzm)
+  integer :: brc_a4_ndx = -1 ! fire related BrC (kzm)
   integer :: ixndrop             ! cloud droplet number index
   integer :: ndx_pblh
 
@@ -246,6 +248,10 @@ end function chem_is
     n2p_ndx   = get_spc_ndx('N2p')
     nop_ndx   = get_spc_ndx('NOp')
     h2o_ndx   = get_spc_ndx('H2O')
+    h2ofire_ndx   = get_spc_ndx('H2OFIRE')  !kzm
+    brc_a4_ndx = get_spc_ndx('brc_a4')  !kzm 
+    write(iulog,*)'kzm_h2ofire_ndx ', h2ofire_ndx
+    write(iulog,*)'kzm_h2o_ndx ', h2o_ndx
     o2p_ndx   = get_spc_ndx('O2p')
 
     cly_ndx   = get_spc_ndx('CLY')
@@ -1396,7 +1402,7 @@ end function chem_is_active
     use phys_control,        only : phys_getopts
     use mo_chem_utls,        only : get_spc_ndx
     use cam_abortutils,      only: endrun
- 
+    use phys_grid,           only : get_rlat_all_p, get_rlon_all_p !kzm
     implicit none
 
 !-----------------------------------------------------------------------
@@ -1460,6 +1466,11 @@ end function chem_is_active
 
     logical :: lq(pcnst)
     real(r8) :: tropP(pcols)              ! lowest tropopause pressure (Pa) from E90
+
+    integer  :: it, kt  
+    real(r8) :: clat(pcols)                   ! current latitudes(radians)
+    real(r8) :: clon(pcols)                   ! current longitudes(radians)
+    real(r8) :: ptend_sum,ptend_sum_brc
     if ( .not. chem_step ) return
 
     nstep = get_nstep()
@@ -1725,6 +1736,47 @@ end function chem_is_active
        ptend%lq(1) = .false.
        ptend%q(:ncol,:,1) = 0._r8
     endif
+
+!-----------------------------------------------------------------------
+! add H2OFIRE tendency into water vapor (kzm)
+!-----------------------------------------------------------------------
+    do n = 1,pcnst
+       m = map2chm(n)
+       if (m == h2ofire_ndx) then
+       ! add fire emitted vapor to water vapor tendency
+          call get_rlat_all_p(lchnk, ncol, clat)
+          call get_rlon_all_p(lchnk, ncol, clon)
+          ptend%lq(1) = .true.
+          do it = 1,pcols
+              ptend%q(it,:,1) = 0.0_r8 ! no q tend from other chemistry processes
+              do k = 1,pver-2 ! not the surface layer
+                 ! find the locations has positive plume water tend
+                 ! add plume water tendency to q
+                 ! remove same tendency to q at surface
+                 ! keep the water vapor conserve: qn*dpn = q1*dp1
+                 ! q(k,n)*pdel(k) from fireh2o to q(k,1)
+                 ! q(pver,1)*pdel(pver) removed from bottom layer
+                 ! q(pver,1) = q(k,n)*pdel(k)/pdel(pver)
+                 ! in the code, it should be:
+                 ! del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k) = del(ptend%q(:ncol,pver,1))*state%pdel(:ncol,pver)
+                 ! del(ptend%q(:ncol,pver,1)) = del(ptend%q(:ncol,k,n))*state%pdel(:ncol,k)/state%pdel(:ncol,pver) 
+                 if (ptend%q(it,k,n) > 1.0e-10_r8 )then
+                    ptend%q(it,k,1) =  ptend%q(it,k,1) + ptend%q(it,k,n) ! only tend from plume water
+                    if (state%pdel(it,k)/state%pdel(it,pver) > 0.0_r8) then
+                         ! write(iulog,*) 'kzm_pres_ratio ', state%pdel(it,k)/state%pdel(it,pver), &
+                         !                 ptend%q(it,k,n),k,clat(it),clon(it)-360.0_r8 
+                         ptend%q(it,pver,1) = ptend%q(it,pver,1) &
+                                                - 0.5_r8*ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver) ! remove same water at surface
+                         ptend%q(it,pver-1,1) = ptend%q(it,pver-1,1) &
+                                                - 0.5_r8*ptend%q(it,k,n)*state%pdel(it,k)/state%pdel(it,pver-1) ! remove same water at surfacea -1
+                    endif
+                 endif
+              end do
+          end do  
+          ptend%q(:ncol,:,n) = 0.0_r8 ! remove the plume water tend; no plume water accumulation
+      endif 
+    end do
+
 
 !-----------------------------------------------------------------------
 ! Compute water vapor flux required to make conservation check
