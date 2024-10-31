@@ -50,9 +50,6 @@ void MAMSrfOnlineEmiss::set_grids(
   // For components of dust flux
   const FieldLayout vector4d = grid_->get_2d_vector_layout(4);
 
-  // FIXME: The following variables are used for validation ONLY!!! REMOVE
-  // THEM!!!
-  add_field<Required>("z_mid", scalar3d_m, kg / m2 / s, grid_name);
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
@@ -79,8 +76,7 @@ void MAMSrfOnlineEmiss::set_grids(
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_m, K, grid_name);
 
-  // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
-  // DS)
+  // Vertical pressure velocity [Pa/s] at midpoints
   add_field<Required>("omega", scalar3d_m, Pa / s, grid_name);
 
   // Total pressure [Pa] at midpoints
@@ -266,9 +262,9 @@ void MAMSrfOnlineEmiss::set_grids(
   // -------------------------------------------------------------
   const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
-  // /compyfs/inputdata/atm/cam/chem/trop_mam/marine_BGC/monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc
 
-  // Field to be read from file (order matters as they are read in same order)
+  // Field to be read from file (order matters as they are read in the same
+  // order)
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
 
@@ -394,16 +390,10 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
-
+  // Time dependent data
   marineOrganicsFunc::update_marine_organics_data_from_file(
       morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
       morg_data_end_);  // output
-
-  //--------------------------------------------------------------------
-  // Initialize online emissions from file
-  //--------------------------------------------------------------------
-  online_emissions.online_emis_data.init(ncol_);
-  online_emissions.init_from_input_file(m_params);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -436,7 +426,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
 
-  // --- Interpolate mariane organics data --
+  // --- Interpolate marine organics data --
 
   // Update TimeState, note the addition of dt
   morg_timeState_.t_now = ts.frac_of_year_in_days();
@@ -447,21 +437,14 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
       // output
       morg_timeState_, morg_data_start_, morg_data_end_);
 
-  // Call the main marineOrganics routine to get interpolated aerosol forcings.
+  // Call the main marine organics routine to get interpolated forcings.
   marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
                                           morg_data_end_, morg_data_out_);
 
-  //  Marine organics emission data read from the file
+  // Marine organics emission data read from the file (order is important here)
   const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
   const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
   const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
-
-  // FIXME: Remove the following vars as they are used only for validation
-  const const_view_2d z_mid2 = get_field_in("z_mid").get_view<const Real **>();
-  // FIXME: Remove ^^^^^^
-
-  // dust fluxes [kg/m^2/s]: Four flux values for each column
-  const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
 
   // Ocean fraction [unitless]
   const const_view_1d ocnfrac =
@@ -478,6 +461,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const const_view_2d v_wind =
       get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
 
+  // Dust fluxes [kg/m^2/s]: Four flux values for each column
+  const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
+
   // Constituent fluxes [kg/m^2/s]
   auto constituent_fluxes = this->constituent_fluxes_;
 
@@ -490,11 +476,10 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // TODO: check that units are consistent with srf emissions!
   // copy current values to online-emissions-local version
   // TODO: potentially combine with below parfor(icol) loop?
-  const int surf_lev = nlev_ - 1;
+  const int surf_lev = nlev_ - 1;  // surface level
 
   Kokkos::parallel_for(
-      //      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-      "online_emis_fluxes", 1, KOKKOS_LAMBDA(int icol) {
+      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
         // input
         const const_view_1d dstflx_icol = ekat::subview(dstflx, icol);
 
@@ -518,8 +503,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
-  // Gather time and state information for interpolation
-  // auto ts = timestamp() + dt;
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     // Update TimeState, note the addition of dt

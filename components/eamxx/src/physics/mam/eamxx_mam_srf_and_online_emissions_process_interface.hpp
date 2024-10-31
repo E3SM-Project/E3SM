@@ -172,8 +172,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // A vector for carrying emissions for all the species
   std::vector<srf_emiss_> srf_emiss_species_;
 
-  onlineEmiss online_emissions;
-
   // For reading marine organics file
   std::shared_ptr<AbstractRemapper> morg_horizInterp_;
   std::shared_ptr<AtmosphereInput> morg_dataReader_;

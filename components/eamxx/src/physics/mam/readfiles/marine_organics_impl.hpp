@@ -54,7 +54,9 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
+  using namespace ekat::units;
+  using namespace ekat::prefixes;
+  Units umolC(micro * mol, "umol C");
 
   std::vector<Field> fields_vector;
 
@@ -62,7 +64,7 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
   for(int icomp = 0; icomp < field_size; ++icomp) {
     auto comp_name = field_name[icomp];
     // set and allocate fields
-    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    Field f(FieldIdentifier(comp_name, layout_2d, umolC, tgt_grid->name()));
     f.allocate_view();
     fields_vector.push_back(f);
     remapper->register_field_from_tgt(f);
