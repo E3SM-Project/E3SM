@@ -41,7 +41,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
   
-  #we should get the following variables from other processes
+  # we should get the following variables from other processes
   pbl_height : 1.0
   dstflx : [  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000]
   ocnfrac:   0.10000000000000000E+001
