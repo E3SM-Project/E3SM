@@ -24,7 +24,9 @@ runs:
         elif [[ "$GITHUB_EVENT_NAME" == "pull_request_review" ]]; then
           response=$(curl -s -H "Authorization: token $TOKEN" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
-          LABELS=$(echo "$response" | jq -r '.labels | map(.name) | join(",")')
+          # TODO: reinstante jq once the SNL image is rebuilt!
+          # LABELS=$(echo "$response" | jq -r '.labels | map(.name) | join(",")')
+          LABELS=$(echo "$response" | grep -o '"name": *"[^"]*"' | sed 's/"name": *//;s/"//g' | tr '\n' ',' | sed 's/,$//')
         fi
         echo "labels=$LABELS" >> $GITHUB_ENV
       shell: sh
