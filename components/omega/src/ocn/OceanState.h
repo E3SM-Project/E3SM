@@ -60,7 +60,7 @@ class OceanState {
    I4 CurTimeIndex; ///< Time dimension array index for current level
 
    /// Get the current time level index associated with a time level
-   I4 getTimeIndex(const I4 TimeLevel) const;
+   I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) const;
 
  public:
    // Variables

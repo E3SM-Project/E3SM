@@ -275,9 +275,10 @@ I4 Tracers::getName(std::string &TracerName, const I4 TracerIndex) {
 //---------------------------------------------------------------------------
 I4 Tracers::getAll(Array3DReal &TracerArray, const I4 TimeLevel) {
    I4 Err = 0;
+   I4 TimeIndex;
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
-   TracerArray  = TracerArrays[TimeIndex];
+   Err         = getTimeIndex(TimeIndex, TimeLevel);
+   TracerArray = TracerArrays[TimeIndex];
 
    return Err;
 }
@@ -291,10 +292,13 @@ I4 Tracers::getByIndex(Array2DReal &TracerArray, const I4 TimeLevel,
       return -2;
    }
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
-   TracerArray  = Kokkos::subview(TracerArrays[TimeIndex], TracerIndex,
-                                  Kokkos::ALL, Kokkos::ALL);
-   return 0;
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err         = getTimeIndex(TimeIndex, TimeLevel);
+   TracerArray = Kokkos::subview(TracerArrays[TimeIndex], TracerIndex,
+                                 Kokkos::ALL, Kokkos::ALL);
+   return Err;
 }
 
 I4 Tracers::getByName(Array2DReal &TracerArray, const I4 TimeLevel,
@@ -315,8 +319,9 @@ I4 Tracers::getByName(Array2DReal &TracerArray, const I4 TimeLevel,
 I4 Tracers::getAllHost(HostArray3DReal &TracerArrayH, const I4 TimeLevel) {
 
    I4 Err = 0;
+   I4 TimeIndex;
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
+   Err          = getTimeIndex(TimeIndex, TimeLevel);
    TracerArrayH = TracerArraysH[TimeIndex];
 
    return Err;
@@ -331,7 +336,10 @@ I4 Tracers::getHostByIndex(HostArray2DReal &TracerArrayH, const I4 TimeLevel,
       return -2;
    }
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err          = getTimeIndex(TimeIndex, TimeLevel);
    TracerArrayH = Kokkos::subview(TracerArraysH[TimeIndex], TracerIndex,
                                   Kokkos::ALL, Kokkos::ALL);
    return 0;
@@ -431,15 +439,21 @@ bool Tracers::isGroupMemberByName(const std::string &TracerName,
 //---------------------------------------------------------------------------
 I4 Tracers::copyToDevice(const I4 TimeLevel) {
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err = getTimeIndex(TimeIndex, TimeLevel);
    deepCopy(TracerArrays[TimeIndex], TracerArraysH[TimeIndex]);
 
-   return 0;
+   return Err;
 }
 
 I4 Tracers::copyToHost(const I4 TimeLevel) {
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err = getTimeIndex(TimeIndex, TimeLevel);
    deepCopy(TracerArraysH[TimeIndex], TracerArrays[TimeIndex]);
 
    return 0;
@@ -453,8 +467,11 @@ I4 Tracers::exchangeHalo(const I4 TimeLevel) {
    // TODO: copy only halo cells
    copyToHost(TimeLevel);
 
-   I4 TimeIndex = getTimeIndex(TimeLevel);
-   int Err = MeshHalo->exchangeFullArrayHalo(TracerArraysH[TimeIndex], OnCell);
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err = getTimeIndex(TimeIndex, TimeLevel);
+   Err = MeshHalo->exchangeFullArrayHalo(TracerArraysH[TimeIndex], OnCell);
    if (Err != 0)
       return -1;
 
@@ -502,22 +519,27 @@ I4 Tracers::updateTimeLevels() {
 // get index for time level
 // TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
 //---------------------------------------------------------------------------
-I4 Tracers::getTimeIndex(const I4 TimeLevel) {
+I4 Tracers::getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) {
 
+   // Handle single time level case (no new time level)
+   I4 TimeLevelAdj;
    if (NTimeLevels == 1) {
-      I4 TimeIndex = 0;
-      return TimeIndex;
+      TimeLevelAdj = TimeIndex;
+   } else {
+      TimeLevelAdj = TimeLevel - 1;
    }
 
+
    // Check if time level is valid
-   if (TimeLevel > 0 || (TimeLevel + NTimeLevels) <= 0) {
-      LOG_ERROR("Tracers: Time level {} is out of range", TimeLevel);
+   if (TimeLevelAdj > 0 || (TimeLevelAdj + NTimeLevels) <= 0) {
+      LOG_ERROR("Tracers: Time level {} is out of range for NTimeLevels {}",
+                TimeLevel, NTimeLevels);
       return -1;
    }
 
-   I4 TimeIndex = (TimeLevel + CurTimeIndex + NTimeLevels) % NTimeLevels;
+   TimeIndex = (TimeLevelAdj + CurTimeIndex + NTimeLevels) % NTimeLevels;
 
-   return TimeIndex;
+   return 0;
 }
 
 } // namespace OMEGA

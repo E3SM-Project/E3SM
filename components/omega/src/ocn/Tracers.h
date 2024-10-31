@@ -63,7 +63,7 @@ class Tracers {
    static I4 CurTimeIndex; ///< Time dimension array index for current level
 
    // get the time level index
-   static I4 getTimeIndex(const I4 TimeLevel);
+   static I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel);
 
    // locally defines all tracers but do not allocates memory
    static I4
