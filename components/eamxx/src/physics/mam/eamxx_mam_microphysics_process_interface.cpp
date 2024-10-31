@@ -1,7 +1,7 @@
 #include <physics/mam/eamxx_mam_microphysics_process_interface.hpp>
 
 // impl namespace for some driver level functions for microphysics
-#include "readfiles/tracer_reader_utils.hpp"
+
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
