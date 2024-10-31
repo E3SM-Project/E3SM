@@ -26,4 +26,19 @@ PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
   return *this;
 }
 
+void PhysicsTestData::read(const ekat::FILEPtr& fid)
+{
+  m_reals.read(fid);
+  m_ints.read(fid);
+  m_bools.read(fid);
+}
+
+void PhysicsTestData::write(const ekat::FILEPtr& fid) const
+{
+  m_reals.write(fid);
+  m_ints.write(fid);
+  m_bools.write(fid);
+}
+
+
 } // namespace scream

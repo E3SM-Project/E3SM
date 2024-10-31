@@ -4,6 +4,7 @@
 #include "physics/p3/p3_functions.hpp"
 #include "physics/share/physics_test_data.hpp"
 #include "share/scream_types.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <array>
 #include <utility>
@@ -471,6 +472,19 @@ struct ComputeRainFallVelocityData
 
   // Outputs
   Real mu_r, lamr, V_qr, V_nr;
+
+  PTD_RW_SCALARS(5, nr_incld, mu_r, lamr, V_qr, V_nr);
+
+  void read(const ekat::FILEPtr& fid)
+  {
+    read_scalars(fid);
+  }
+
+  void write(const ekat::FILEPtr& fid) const
+  {
+    write_scalars(fid);
+  }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

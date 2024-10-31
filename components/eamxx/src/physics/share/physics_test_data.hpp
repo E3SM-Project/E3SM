@@ -5,6 +5,7 @@
 
 #include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/ekat_assert.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <random>
 #include <vector>
@@ -90,12 +91,34 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s    ) PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)    ; s = rhs.s
 #define PTD_ASS20(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t ) PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) ; t = rhs.t
 
+#define  PTD_RW0(action                                  ) ((void) (0))
+#define  PTD_RW1(action, a                               )                                              ekat::action(&a, 1, fid)
+#define  PTD_RW2(action, a, b                            ) PTD_RW1(action, a)                         ; ekat::action(&b, 1, fid)
+#define  PTD_RW3(action, a, b, c                         ) PTD_RW2(action, a, b)                      ; ekat::action(&c, 1, fid)
+#define  PTD_RW4(action, a, b, c, d                      ) PTD_RW3(action, a, b, c)                   ; ekat::action(&d, 1, fid)
+#define  PTD_RW5(action, a, b, c, d, e                   ) PTD_RW4(action, a, b, c, d)                ; ekat::action(&e, 1, fid)
+#define  PTD_RW6(action, a, b, c, d, e, f                ) PTD_RW5(action, a, b, c, d, e)             ; ekat::action(&f, 1, fid)
+#define  PTD_RW7(action, a, b, c, d, e, f, g             ) PTD_RW6(action, a, b, c, d, e, f)          ; ekat::action(&g, 1, fid)
+#define  PTD_RW8(action, a, b, c, d, e, f, g, h          ) PTD_RW7(action, a, b, c, d, e, f, g)       ; ekat::action(&h, 1, fid)
+#define  PTD_RW9(action, a, b, c, d, e, f, g, h, i       ) PTD_RW8(action, a, b, c, d, e, f, g, h)    ; ekat::action(&i, 1, fid)
+#define PTD_RW10(action, a, b, c, d, e, f, g, h, i, j    ) PTD_RW9(action, a, b, c, d, e, f, g, h, i) ; ekat::action(&j, 1, fid)
+
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_RW_SCALARS(num_scalars, ...) \
+  void read_scalars(const ekat::FILEPtr& fid) { PTD_RW##num_scalars(read, __VA_ARGS__); } \
+  void write_scalars(const ekat::FILEPtr& fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
+
+#define PTD_RW() \
+  void read(const ekat::FILEPtr& fid) { read_scalars(fid); PhysicsTestData::read(fid); } \
+  void write(const ekat::FILEPtr& fid) const { write_scalars(fid); PhysicsTestData::write(fid); }
+
 #define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
-  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
 
 namespace scream {
 
@@ -241,6 +264,16 @@ class PhysicsTestData
       m_data = new_data;
     }
 
+    void read(const ekat::FILEPtr& fid)
+    {
+      ekat::read(m_data.data(), m_data.size(), fid);
+    }
+
+    void write(const ekat::FILEPtr& fid) const
+    {
+      ekat::write(m_data.data(), m_data.size(), fid);
+    }
+
     std::vector<std::vector<Int> > m_dims_list;    // list of dims, one per unique set of dims
     std::vector<std::vector<T**> > m_members_list; // list of member pointers, same outer index space as m_dims_list
     std::vector<T>                 m_data;         // the member data in a flat vector
@@ -335,6 +368,10 @@ class PhysicsTestData
       EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
     }
   }
+
+  void read(const ekat::FILEPtr& fid);
+
+  void write(const ekat::FILEPtr& fid) const;
 
  protected:
 

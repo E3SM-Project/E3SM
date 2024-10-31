@@ -46,7 +46,7 @@ void run_bfb_rain_vel()
   Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
   // Load some lookup inputs, need at least one per pack value
-  ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
+  ComputeRainFallVelocityData crfv_baseline[max_pack_size] = {
     // qr_incld,   rhofacr,   nr_incld
     {1.1030E-04, 1.3221E+00, 6.2964E+05},
     {2.1437E-13, 1.0918E+00, 6.5337E+07},
@@ -70,16 +70,20 @@ void run_bfb_rain_vel()
 
   };
 
-  // Sync to device, needs to happen before fortran calls so that
+  // Sync to device, needs to happen before reads so that
   // inout data is in original state
   view_1d<ComputeRainFallVelocityData> crfv_device("crfv", max_pack_size);
   const auto crfv_host = Kokkos::create_mirror_view(crfv_device);
-  std::copy(&crfv_fortran[0], &crfv_fortran[0] + max_pack_size, crfv_host.data());
+  std::copy(&crfv_baseline[0], &crfv_baseline[0] + max_pack_size, crfv_host.data());
   Kokkos::deep_copy(crfv_device, crfv_host);
 
-  // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
-    compute_rain_fall_velocity(crfv_fortran[i]);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/rain_fall_velocity.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (Int i = 0; i < max_pack_size; ++i) {
+      crfv_baseline[i].read(fid);
+    }
   }
 
   // Calc bulk rime from a kernel and copy results back to host
@@ -112,21 +116,28 @@ void run_bfb_rain_vel()
   // Sync back to host
   Kokkos::deep_copy(crfv_host, crfv_device);
 
-  // Validate results
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+    // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(crfv_fortran[s].nr_incld == crfv_host(s).nr_incld);
-      REQUIRE(crfv_fortran[s].mu_r     == crfv_host(s).mu_r);
-      REQUIRE(crfv_fortran[s].lamr     == crfv_host(s).lamr);
-      REQUIRE(crfv_fortran[s].V_qr     == crfv_host(s).V_qr);
-      REQUIRE(crfv_fortran[s].V_nr     == crfv_host(s).V_nr);
+      REQUIRE(crfv_baseline[s].nr_incld == crfv_host(s).nr_incld);
+      REQUIRE(crfv_baseline[s].mu_r     == crfv_host(s).mu_r);
+      REQUIRE(crfv_baseline[s].lamr     == crfv_host(s).lamr);
+      REQUIRE(crfv_baseline[s].V_qr     == crfv_host(s).V_qr);
+      REQUIRE(crfv_baseline[s].V_nr     == crfv_host(s).V_nr);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int s = 0; s < max_pack_size; ++s) {
+      crfv_host(s).write(fid);
     }
   }
 }
 
 void run_bfb_rain_sed()
 {
-  auto engine = setup_random_test();
+  // With stored baselines, we must use a fixed seed!
+  auto engine = setup_random_test(1267351);
 
   // F90 is quite slow on weaver, so we decrease dt to reduce
   // the number of steps in rain_sed.
@@ -151,7 +162,7 @@ void run_bfb_rain_sed()
     d.randomize(engine, { {d.qr_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   RainSedData rsds_cxx[num_runs] = {
     RainSedData(rsds_fortran[0]),
@@ -160,9 +171,13 @@ void run_bfb_rain_sed()
     RainSedData(rsds_fortran[3]),
   };
 
-  // Get data from fortran
-  for (auto& d : rsds_fortran) {
-    rain_sedimentation(d);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/rain_sed.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (auto& d : rsds_fortran) {
+      d.read(fid);
+    }
   }
 
   // Get data from cxx
@@ -180,7 +195,7 @@ void run_bfb_rain_sed()
                          d.qr_tend, d.nr_tend);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
       Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
@@ -197,6 +212,12 @@ void run_bfb_rain_sed()
       }
       REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
       REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int i = 0; i < num_runs; ++i) {
+      rsds_cxx[i].write(fid);
     }
   }
 }
