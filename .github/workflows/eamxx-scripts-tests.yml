@@ -8,8 +8,6 @@ on:
     paths:
       - components/eamxx/scripts/**
       - components/eamxx/cime_config/*.py
-  pull_request_review:
-    types: [submitted]
 
   # Manual run for debug purposes only
   workflow_dispatch:
