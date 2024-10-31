@@ -205,6 +205,8 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
          call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
          call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          
          waterPressure = max(0.0_RKIND, waterPressure)
          where (li_mask_is_grounded_ice(cellMask))
@@ -212,10 +214,6 @@ module li_subglacial_hydro
          end where
          
          ! set pressure and hydropotential correctly on ice-free land and in ocean
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         ! 
-         
          where ((.not. (li_mask_is_grounded_ice(cellMask))) .and. (bedTopography > config_sea_level))
             waterPressure = 0.0_RKIND
             hydropotential = rho_water * gravity * bedTopography
