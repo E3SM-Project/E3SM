@@ -93,42 +93,24 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, opt]
-    # Run this workflow if:
-    #   - workflow_dispatch: user requested this job.
-    #   - schedule: always:
-    #   - pull_request: matching skip label is NOT found
-    if: |
-      ${{
-          github.event_name == 'schedule' ||
-          ( github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list == 'gcc-cuda' ) ||
-          (
-            github.event_name == 'pull_request' &&
-            !(
-              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip cuda') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-sa') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
-            )
-          )
-        }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'gcc-cuda') }}
     name: gcc-cuda / ${{ matrix.build_type }}
     steps:
-      - name: Show action trigger
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const eventName = context.eventName;
-            const eventAction = context.payload.action || 'N/A';
-            const actor = context.actor;
-            console.log(`The job was triggered by a ${eventName} event.`);
-            console.log(`  - Event action: ${eventAction}`);
-            console.log(`  - Triggered by: ${actor}`);
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
           show-progress: false
           submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Check for skip labels
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+        uses: ./.github/actions/check-skip-labels
+        with:
+          skip_labels: 'AT: skip gcc,AT: skip cuda,AT: skip eamxx-sa,AT: skip eamxx-all'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.pull_request.number }}
       - name: Set test-all inputs based on event specs
         run: |
           echo "submit=false" >> $GITHUB_ENV

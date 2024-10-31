@@ -54,10 +54,6 @@ jobs:
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
-    # Run this workflow if:
-    #   - workflow_dispatch: user requested this job.
-    #   - schedule: always:
-    #   - pull_request/pull_request_review: matching skip label is NOT found
     if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'cpu-gcc') }}
     steps:
       - name: Check out the repository
